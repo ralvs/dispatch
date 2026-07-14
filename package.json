@@ -1,0 +1,44 @@
+{
+	"name": "dispatch",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "next dev --turbopack",
+		"build": "next build",
+		"start": "next start",
+		"lint": "biome check .",
+		"format": "biome format . --write",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"check": "biome check . && tsc --noEmit && vitest run"
+	},
+	"dependencies": {
+		"@ai-sdk/gateway": "^4.0.19",
+		"@hookform/resolvers": "^5.4.0",
+		"@supabase/ssr": "^0.12.3",
+		"@supabase/supabase-js": "^2.110.5",
+		"ai": "^7.0.26",
+		"luxon": "^3.7.2",
+		"motion": "^12.42.2",
+		"next": "^16.2.10",
+		"react": "^19.2.7",
+		"react-dom": "^19.2.7",
+		"react-hook-form": "^7.81.0",
+		"server-only": "^0.0.1",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.3",
+		"@tailwindcss/postcss": "^4.3.2",
+		"@types/luxon": "^3.7.2",
+		"@types/node": "^26.1.1",
+		"@types/react": "^19.2.17",
+		"@types/react-dom": "^19.2.3",
+		"postcss": "^8.5.19",
+		"tailwindcss": "^4.3.2",
+		"typescript": "^7.0.2",
+		"vitest": "^4.1.10"
+	},
+	"packageManager": "pnpm@10.33.2+sha512.a90faf6feeab71ad6c6e57f94e0fe1a12f5dcc22cd754db40ae9593eb6a3e0b6b12e3540218bb37ae083404b1f2ce6db2a4121e979829b4aff94b99f49da1cf8"
+}

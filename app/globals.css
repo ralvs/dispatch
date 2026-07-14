@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+/*
+ * Dispatch design tokens — editorial monochrome, two themes.
+ * Dark (default): warm near-black newsroom-at-night.
+ * Light: the warm-linen palette from the original briefing design.
+ * Semantic names only — components never reference raw colors.
+ */
+
+:root {
+	/* dark (default) */
+	--bg: #16130f;
+	--surface: #1e1a15;
+	--surface-2: #27221a;
+	--ink: #ede6d8;
+	--ink-2: #b5ac9c;
+	--ink-3: #857d6e;
+	--ink-4: #5a5346;
+	--line: rgba(237, 230, 216, 0.08);
+	--line-strong: rgba(237, 230, 216, 0.16);
+	--accent: #d3654a;
+	--accent-bg: rgba(211, 101, 74, 0.12);
+	--accent-ink: #de7f63;
+	--accent-slip: #c75b41;
+	color-scheme: dark;
+}
+
+[data-theme="light"] {
+	--bg: #f6f2ea;
+	--surface: #fbf8f2;
+	--surface-2: #efeae0;
+	--ink: #1a1612;
+	--ink-2: #5a544b;
+	--ink-3: #928a7e;
+	--ink-4: #b8b0a2;
+	--line: rgba(26, 22, 18, 0.08);
+	--line-strong: rgba(26, 22, 18, 0.16);
+	--accent: #b8442b;
+	--accent-bg: rgba(184, 68, 43, 0.08);
+	--accent-ink: #8a3320;
+	--accent-slip: #9c3f26;
+	color-scheme: light;
+}
+
+@theme inline {
+	--color-bg: var(--bg);
+	--color-surface: var(--surface);
+	--color-surface-2: var(--surface-2);
+	--color-ink: var(--ink);
+	--color-ink-2: var(--ink-2);
+	--color-ink-3: var(--ink-3);
+	--color-ink-4: var(--ink-4);
+	--color-line: var(--line);
+	--color-line-strong: var(--line-strong);
+	--color-accent: var(--accent);
+	--color-accent-bg: var(--accent-bg);
+	--color-accent-ink: var(--accent-ink);
+	--color-accent-slip: var(--accent-slip);
+
+	--font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
+	--font-sans: var(--font-geist), system-ui, sans-serif;
+	--font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+	--text-eyebrow: 10px;
+	--text-eyebrow--line-height: 1.4;
+	--text-eyebrow--letter-spacing: 0.08em;
+	--text-meta: 11px;
+	--text-meta--line-height: 1.4;
+
+	--radius-none: 0;
+}
+
+body {
+	background: var(--bg);
+	color: var(--ink);
+	font-family: var(--font-sans);
+	-webkit-font-smoothing: antialiased;
+	padding-top: env(safe-area-inset-top);
+}
+
+/* Hairline rules — the editorial section dividers used everywhere. */
+.hairline {
+	border-bottom: 1px solid var(--line);
+}
+.hairline-strong {
+	border-bottom: 1px solid var(--line-strong);
+}
