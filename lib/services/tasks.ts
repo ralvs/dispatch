@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { INBOX_DOMAIN_ID } from "@/lib/constants";
 import { nowUtc } from "@/lib/dates";
 import { isRecurrencePattern, nextDueDate } from "@/lib/recurrence";
+import { unwrap } from "@/lib/services/errors";
 
 export type TaskRow = {
 	id: string;
@@ -49,8 +50,7 @@ export async function listTasks(
 	if (filters.status) q = q.eq("status", filters.status);
 	if (filters.domainId) q = q.eq("domain_id", filters.domainId);
 	if (filters.projectId) q = q.eq("project_id", filters.projectId);
-	const { data, error } = await q;
-	if (error) throw error;
+	const data = unwrap(await q);
 	return (data ?? []).map(flatten);
 }
 
@@ -59,8 +59,7 @@ export async function listInboxTasks(sb: SupabaseClient): Promise<TaskRow[]> {
 }
 
 export async function getTask(sb: SupabaseClient, id: string): Promise<TaskRow | null> {
-	const { data, error } = await sb.from("tasks").select(TASK_SELECT).eq("id", id).maybeSingle();
-	if (error) throw error;
+	const data = unwrap(await sb.from("tasks").select(TASK_SELECT).eq("id", id).maybeSingle());
 	return data ? flatten(data) : null;
 }
 
@@ -78,17 +77,18 @@ export async function createTask(
 		source?: string;
 	},
 ): Promise<TaskRow> {
-	const { data, error } = await sb
-		.from("tasks")
-		.insert({
-			...input,
-			// Tasks without a destination land in the Inbox for triage.
-			domain_id: input.domain_id ?? INBOX_DOMAIN_ID,
-			source: input.source ?? "manual",
-		})
-		.select(TASK_SELECT)
-		.single();
-	if (error) throw error;
+	const data = unwrap(
+		await sb
+			.from("tasks")
+			.insert({
+				...input,
+				// Tasks without a destination land in the Inbox for triage.
+				domain_id: input.domain_id ?? INBOX_DOMAIN_ID,
+				source: input.source ?? "manual",
+			})
+			.select(TASK_SELECT)
+			.single(),
+	);
 	return flatten(data);
 }
 
@@ -106,8 +106,7 @@ export async function updateTask(
 		recurrence_rule: string | null;
 	}>,
 ): Promise<void> {
-	const { error } = await sb.from("tasks").update(patch).eq("id", id);
-	if (error) throw error;
+	unwrap(await sb.from("tasks").update(patch).eq("id", id));
 }
 
 /**
@@ -129,30 +128,20 @@ export async function completeTask(
 			rule: task.recurrence_rule,
 			todayIso,
 		});
-		const { error } = await sb.from("tasks").update({ due_date: due }).eq("id", id);
-		if (error) throw error;
+		unwrap(await sb.from("tasks").update({ due_date: due }).eq("id", id));
 		return { rolled: true };
 	}
 
-	const { error } = await sb
-		.from("tasks")
-		.update({ status: "done", completed_at: nowUtc() })
-		.eq("id", id);
-	if (error) throw error;
+	unwrap(await sb.from("tasks").update({ status: "done", completed_at: nowUtc() }).eq("id", id));
 	return { rolled: false };
 }
 
 export async function reopenTask(sb: SupabaseClient, id: string): Promise<void> {
-	const { error } = await sb
-		.from("tasks")
-		.update({ status: "open", completed_at: null })
-		.eq("id", id);
-	if (error) throw error;
+	unwrap(await sb.from("tasks").update({ status: "open", completed_at: null }).eq("id", id));
 }
 
 export async function deleteTask(sb: SupabaseClient, id: string): Promise<void> {
-	const { error } = await sb.from("tasks").delete().eq("id", id);
-	if (error) throw error;
+	unwrap(await sb.from("tasks").delete().eq("id", id));
 }
 
 /** Star / unstar a task as one of today's top 3. */
@@ -160,24 +149,23 @@ export async function toggleTop3(sb: SupabaseClient, id: string, todayIso: strin
 	const task = await getTask(sb, id);
 	if (!task) throw new Error("Task not found");
 	const next = task.top3_for_date === todayIso ? null : todayIso;
-	const { error } = await sb.from("tasks").update({ top3_for_date: next }).eq("id", id);
-	if (error) throw error;
+	unwrap(await sb.from("tasks").update({ top3_for_date: next }).eq("id", id));
 }
 
 /** Inbox triage: give a task a real home. */
 export async function triageTask(sb: SupabaseClient, id: string, domainId: string): Promise<void> {
-	const { error } = await sb.from("tasks").update({ domain_id: domainId }).eq("id", id);
-	if (error) throw error;
+	unwrap(await sb.from("tasks").update({ domain_id: domainId }).eq("id", id));
 }
 
 export async function listDomains(
 	sb: SupabaseClient,
 ): Promise<Array<{ id: string; name: string; is_system: boolean }>> {
-	const { data, error } = await sb
-		.from("stewardship_domains")
-		.select("id, name, is_system")
-		.eq("active", true)
-		.order("name");
-	if (error) throw error;
+	const data = unwrap(
+		await sb
+			.from("stewardship_domains")
+			.select("id, name, is_system")
+			.eq("active", true)
+			.order("name"),
+	);
 	return data ?? [];
 }
