@@ -48,7 +48,7 @@ export type SpeechRecognitionLike = {
 
 export type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 
-type SpeechWindow = {
+export type SpeechWindow = {
 	SpeechRecognition?: SpeechRecognitionCtor;
 	webkitSpeechRecognition?: SpeechRecognitionCtor;
 };
