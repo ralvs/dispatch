@@ -19,6 +19,7 @@ import { parse } from "@/lib/ai/parser";
 import { runActions } from "@/lib/services/capture/executor";
 import { markParsed, persistRaw } from "@/lib/services/capture/store";
 import { createNeedsReviewNote } from "@/lib/services/notes";
+import { getAppTimezone } from "@/lib/services/settings";
 
 const sb = {} as SupabaseClient;
 const RAW = { kind: "transcript", text: "ligar pro médico", via: "voice" } as const;
@@ -91,5 +92,55 @@ describe("capture", () => {
 			[{ action: "create_note", body: "ligar pro médico", source_type: "own_thought" }],
 			expect.anything(),
 		);
+	});
+});
+
+// The containment property: once the raw row is persisted, capture() must never
+// reject — no matter which downstream seam throws (rather than typed-failing).
+describe("capture containment (single no-throw boundary)", () => {
+	it("resolves when parse() REJECTS instead of returning a typed failure", async () => {
+		(parse as Mock).mockRejectedValue(new Error("boom"));
+
+		const record = await capture(sb, RAW);
+
+		// Contained to a last-resort needs_review note.
+		expect(record.outcome).toEqual({
+			kind: "needs_review",
+			noteId: "review-1",
+			reason: "capture_error",
+		});
+	});
+
+	it("resolves when date-context resolution (getAppTimezone) throws", async () => {
+		(getAppTimezone as Mock).mockRejectedValueOnce(new Error("no settings"));
+
+		await expect(capture(sb, RAW)).resolves.toMatchObject({
+			outcome: { kind: "needs_review", reason: "capture_error" },
+		});
+	});
+
+	it("resolves and leaves the row raw when even the fallback note insert fails", async () => {
+		(parse as Mock).mockResolvedValue({ ok: false, reason: "failed", raw: "x" });
+		(createNeedsReviewNote as Mock).mockRejectedValue(new Error("db down"));
+
+		const record = await capture(sb, RAW);
+
+		expect(record).toEqual({
+			capturedId: "cap-1",
+			status: "raw",
+			outcome: { kind: "recorded_only" },
+		});
+	});
+
+	it("resolves when markParsed REJECTS", async () => {
+		(parse as Mock).mockResolvedValue({
+			ok: true,
+			actions: [{ action: "create_task", title: "x" }],
+		});
+		(runActions as Mock).mockResolvedValue([]);
+		(markParsed as Mock).mockRejectedValueOnce(new Error("network"));
+
+		// Even a rejecting terminal marker cannot make capture() throw.
+		await expect(capture(sb, RAW)).resolves.toBeDefined();
 	});
 });

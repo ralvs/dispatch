@@ -46,5 +46,10 @@ export async function persistRaw(sb: SupabaseClient, input: CaptureInput): Promi
  * sweep (docs/adr/0008) will pick it up. The raw content is already durable.
  */
 export async function markParsed(sb: SupabaseClient, id: string): Promise<void> {
-	await sb.from("captured_data").update({ processed_status: "parsed" }).eq("id", id);
+	try {
+		await sb.from("captured_data").update({ processed_status: "parsed" }).eq("id", id);
+	} catch {
+		// A rejected request (network error) or an error result both leave the row
+		// 'raw' for the sweep. Swallowed so this can never escape into capture().
+	}
 }

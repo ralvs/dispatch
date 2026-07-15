@@ -38,22 +38,24 @@ function systemPrompt(ctx: ParseContext): string {
 		"  when the utterance references an entity you cannot resolve (a specific",
 		"  project, person, or quote). Set proposed_kind to the action you would",
 		"  have taken (e.g. create_project) and reason to a short explanation.",
-		"If nothing is actionable, return an empty array.",
+		"If nothing is actionable, use an empty actions array.",
 		"",
 		"Language: the user speaks Portuguese (pt-BR) or English. Detect it, and",
 		"NEVER translate. Copy every free-text field (title, body, reason) verbatim",
 		"in the language spoken.",
 		"",
 		`Resolve relative dates against NOW=${ctx.nowUtc}, TODAY=${ctx.todayIso},`,
-		`timezone ${ctx.tz}. Output due_date as YYYY-MM-DD.`,
-		"Return only the JSON array of actions.",
+		`timezone ${ctx.tz}. Output due_date as YYYY-MM-DD and due_time as HH:mm.`,
+		'Return a JSON object of the form {"actions": [ ...actions... ]}.',
 	].join("\n");
 }
 
 export async function parse(text: string, ctx: ParseContext): Promise<ParseResult> {
-	if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
-
 	try {
+		// Config lookup is INSIDE the try: env() is lazily validated and can throw,
+		// and parserModel() reads it too. A config failure degrades, never escapes.
+		if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
+
 		const { object } = await generateObject({
 			model: parserModel(),
 			schema: z.object({ actions: CaptureActionsSchema }),

@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { requireOwnerPage } from "@/lib/auth";
 import { CaptureRequestSchema } from "@/lib/schemas/capture";
 import { type CapturedRecord, capture } from "@/lib/services/capture";
@@ -20,10 +21,17 @@ export async function captureText(input: {
 }): Promise<CapturedRecord> {
 	const { sb } = await requireOwnerPage();
 	const parsed = CaptureRequestSchema.parse(input);
-	return capture(sb, {
+	const record = await capture(sb, {
 		kind: "transcript",
 		text: parsed.text,
 		via: parsed.via ?? "voice",
 		clientTime: parsed.client_time,
 	});
+
+	// A capture can create tasks and/or notes; refresh the views that surface
+	// them, matching tasks/actions.ts.
+	revalidatePath("/tasks");
+	revalidatePath("/inbox");
+	revalidatePath("/today");
+	return record;
 }

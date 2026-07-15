@@ -9,6 +9,7 @@ vi.mock("ai", () => ({ generateObject: vi.fn() }));
 
 import { generateObject } from "ai";
 import { isAiConfigured } from "@/lib/ai/gateway";
+import { CaptureActionsSchema } from "@/lib/schemas/capture";
 
 const CTX = { tz: "America/Sao_Paulo", todayIso: "2026-07-15", nowUtc: "2026-07-15T12:00:00Z" };
 
@@ -42,6 +43,22 @@ describe("parse", () => {
 		const result = await parse("hmm", CTX);
 
 		expect(result).toEqual({ ok: false, reason: "empty", raw: "hmm" });
+	});
+
+	it("maps a schema-mismatch (unknown verb) to a typed failed result", async () => {
+		// generateObject enforces CaptureActionsSchema and throws when the model's
+		// output does not match — an unknown verb is exactly such a mismatch. The
+		// parser catches that and degrades to `failed` rather than crashing.
+		expect(CaptureActionsSchema.safeParse([{ action: "create_quote", text: "x" }]).success).toBe(
+			false,
+		);
+
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockRejectedValue(new Error("TypeValidationError"));
+
+		const result = await parse("uma citação", CTX);
+
+		expect(result).toEqual({ ok: false, reason: "failed", raw: "uma citação" });
 	});
 
 	it("returns the parsed actions on success", async () => {

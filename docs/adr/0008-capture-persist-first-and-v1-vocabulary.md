@@ -14,11 +14,24 @@ Capture owns only `raw → parsed`; `displayed`/`archived` belong to the feed
 read-layer.
 
 1. **Insert `raw`** (source `manual`, type `voice_capture`, transcript + `via`
-   verbatim in `payload`) — the durability point and the sole throw. If it
+   verbatim in `payload`) — the durability point and the **sole throw**. If it
    fails nothing was captured; the palette keeps the text to retry.
-2. **Parse** (typed fallback, never throws).
+2. Everything after the raw insert runs inside **one no-throw boundary** (a
+   single `try/catch` in `capture()`), not per-seam discipline: config/env
+   validation, date-context resolution, parse, execute, and `markParsed`. Any
+   throw is caught and best-effort degraded to a linked `needs_review` note.
 3. **Execute** actions with per-action isolation (never throws).
-4. **`markParsed`** — best-effort; a failure leaves the row `raw`.
+4. **`markParsed`** (raw → parsed) — best-effort; internally swallows a rejected
+   request or an error result, so a failure leaves the row `raw` for the sweep
+   without tripping the boundary.
+
+**Once the raw row exists, `capture()` never rejects.** If even the fallback
+note write fails, it resolves with a `recorded_only` outcome (status stays
+`raw`) and the row is left for the reconciliation sweep — the caller always gets
+a representable receipt. `CapturedRecord.outcome` is therefore one of
+`executed` | `needs_review` | `recorded_only`; the degrade reason
+`capture_error` marks a note produced by the boundary (as opposed to a typed
+parser failure).
 
 ### Raw-orphan invariant and the reconciliation sweep
 

@@ -26,7 +26,12 @@ export const CaptureActionSchema = z.discriminatedUnion("action", [
 		action: z.literal("create_task"),
 		title: z.string().min(1),
 		due_date: z.string().date().optional(),
-		due_time: z.string().optional(),
+		// 24-hour HH:mm with valid ranges, so a malformed time fails schema-parse
+		// (→ typed failed → degrade) rather than reaching the executor.
+		due_time: z
+			.string()
+			.regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+			.optional(),
 		priority: z.number().int().min(1).max(4).optional(),
 	}),
 	z.object({
