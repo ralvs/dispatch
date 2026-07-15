@@ -1,13 +1,13 @@
 import Link from "next/link";
+import { requireOwnerPage } from "@/lib/auth";
 import { todayInTz } from "@/lib/dates";
 import { getAppTimezone } from "@/lib/services/settings";
 import { listDomains, listTasks } from "@/lib/services/tasks";
-import { createRlsClient } from "@/lib/supabase/server";
 import { TaskForm } from "./task-form";
 import { TaskRowItem } from "./task-row";
 
 export default async function TasksPage() {
-	const sb = await createRlsClient();
+	const { sb } = await requireOwnerPage();
 	const [tz, openTasks, doneTasks, domains] = await Promise.all([
 		getAppTimezone(sb),
 		listTasks(sb, { status: "open" }),

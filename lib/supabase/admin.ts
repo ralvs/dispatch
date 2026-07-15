@@ -7,7 +7,8 @@ let cached: SupabaseClient | undefined;
 /**
  * Service-role client — bypasses RLS. Reserved for the external surfaces
  * (cron, ingest, widget, link share) and CalDAV/push machinery. Never import
- * from page or action code; those use createRlsClient().
+ * from page or action code; those use requireOwner()/requireOwnerPage()
+ * (lib/auth.ts), which return the RLS-scoped client.
  */
 export function createAdminClient(): SupabaseClient {
 	if (!cached) {

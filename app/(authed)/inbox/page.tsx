@@ -1,9 +1,9 @@
+import { requireOwnerPage } from "@/lib/auth";
 import { listDomains, listInboxTasks } from "@/lib/services/tasks";
-import { createRlsClient } from "@/lib/supabase/server";
 import { TriageRow } from "./triage-row";
 
 export default async function InboxPage() {
-	const sb = await createRlsClient();
+	const { sb } = await requireOwnerPage();
 	const [tasks, domains] = await Promise.all([listInboxTasks(sb), listDomains(sb)]);
 
 	return (

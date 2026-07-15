@@ -4,7 +4,7 @@ import { DesktopRail } from "@/components/desktop-rail";
 import { requireOwnerPage } from "@/lib/auth";
 
 export default async function AuthedLayout({ children }: { children: React.ReactNode }) {
-	const user = await requireOwnerPage();
+	const { user } = await requireOwnerPage();
 	const theme = (await cookies()).get("theme")?.value === "light" ? "light" : "dark";
 
 	return (

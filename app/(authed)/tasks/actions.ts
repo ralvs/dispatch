@@ -14,7 +14,6 @@ import {
 	toggleTop3,
 	triageTask,
 } from "@/lib/services/tasks";
-import { createRlsClient } from "@/lib/supabase/server";
 
 function revalidateTaskViews() {
 	revalidatePath("/tasks");
@@ -37,9 +36,8 @@ const CreateTaskSchema = z.object({
 });
 
 export async function createTaskAction(formData: FormData) {
-	await requireOwnerPage();
+	const { sb } = await requireOwnerPage();
 	const parsed = CreateTaskSchema.parse(Object.fromEntries(formData));
-	const sb = await createRlsClient();
 	await createTask(sb, {
 		title: parsed.title,
 		notes: parsed.notes || null,
@@ -53,38 +51,33 @@ export async function createTaskAction(formData: FormData) {
 }
 
 export async function completeTaskAction(id: string) {
-	await requireOwnerPage();
-	const sb = await createRlsClient();
+	const { sb } = await requireOwnerPage();
 	const tz = await getAppTimezone(sb);
 	await completeTask(sb, z.uuid().parse(id), todayInTz(tz));
 	revalidateTaskViews();
 }
 
 export async function reopenTaskAction(id: string) {
-	await requireOwnerPage();
-	const sb = await createRlsClient();
+	const { sb } = await requireOwnerPage();
 	await reopenTask(sb, z.uuid().parse(id));
 	revalidateTaskViews();
 }
 
 export async function deleteTaskAction(id: string) {
-	await requireOwnerPage();
-	const sb = await createRlsClient();
+	const { sb } = await requireOwnerPage();
 	await deleteTask(sb, z.uuid().parse(id));
 	revalidateTaskViews();
 }
 
 export async function toggleTop3Action(id: string) {
-	await requireOwnerPage();
-	const sb = await createRlsClient();
+	const { sb } = await requireOwnerPage();
 	const tz = await getAppTimezone(sb);
 	await toggleTop3(sb, z.uuid().parse(id), todayInTz(tz));
 	revalidateTaskViews();
 }
 
 export async function triageTaskAction(id: string, domainId: string) {
-	await requireOwnerPage();
-	const sb = await createRlsClient();
+	const { sb } = await requireOwnerPage();
 	await triageTask(sb, z.uuid().parse(id), z.uuid().parse(domainId));
 	revalidateTaskViews();
 }

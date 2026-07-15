@@ -1,15 +1,15 @@
 import Link from "next/link";
+import { requireOwnerPage } from "@/lib/auth";
 import { formatDay, todayInTz } from "@/lib/dates";
 import { getAppTimezone } from "@/lib/services/settings";
 import { listInboxTasks, listTasks } from "@/lib/services/tasks";
-import { createRlsClient } from "@/lib/supabase/server";
 import { TaskRowItem } from "../tasks/task-row";
 
 // Phase 1 skeleton of the briefing: masthead + doing-today list + inbox
 // strip. The full editorial composition (cadence lines, resurfaced quote,
 // events, routines) lands in Phase 6.
 export default async function TodayPage() {
-	const sb = await createRlsClient();
+	const { sb } = await requireOwnerPage();
 	const [tz, open, inbox] = await Promise.all([
 		getAppTimezone(sb),
 		listTasks(sb, { status: "open" }),
