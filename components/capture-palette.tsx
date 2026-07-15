@@ -6,6 +6,7 @@ import { OPEN_CAPTURE_EVENT } from "@/lib/capture/palette-bus";
 import { type CaptureReceipt, deriveReceipt } from "@/lib/capture/receipt";
 import { isOpenShortcut, isSubmitShortcut } from "@/lib/capture/shortcuts";
 import { joinSpoken, nextLang, type RecognitionLang } from "@/lib/capture/speech";
+import { isBlank, isStaleSubmission } from "@/lib/capture/submission";
 import { useSpeechCapture } from "@/lib/capture/use-speech-capture";
 import type { CapturedRecord } from "@/lib/services/capture";
 
@@ -23,11 +24,18 @@ export function CapturePalette() {
 
 	const dialogRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const receiptHeadingRef = useRef<HTMLParagraphElement>(null);
 	const restoreFocusRef = useRef<HTMLElement | null>(null);
 	// Text present when dictation started, so recognised speech appends to it.
 	const speechBaseRef = useRef("");
 	// Whether the current draft came (even partly) from the mic — decides `via`.
 	const usedVoiceRef = useRef(false);
+	// Monotonic submit sequence: a completion whose sequence is no longer current
+	// (a newer submit, or a close/reopen) is stale and must not touch the UI.
+	const seqRef = useRef(0);
+	// Set when submit is requested mid-dictation: the actual request is deferred
+	// until recognition ends so a final result can't land after the snapshot.
+	const submitAfterStopRef = useRef(false);
 
 	const titleId = useId();
 
@@ -42,6 +50,10 @@ export function CapturePalette() {
 	const openPalette = useCallback(() => setOpen(true), []);
 
 	const closePalette = useCallback(() => {
+		// Invalidate any in-flight submit so its completion can't clobber a draft
+		// typed after a reopen, and cancel a deferred (mid-dictation) submit.
+		seqRef.current += 1;
+		submitAfterStopRef.current = false;
 		speech.stop();
 		setOpen(false);
 		setStatus("idle");
@@ -73,10 +85,19 @@ export function CapturePalette() {
 		}
 	}, [open]);
 
-	const submit = useCallback(() => {
-		const value = text.trim();
-		if (!value || pending) return;
-		speech.stop();
+	// On success the textarea unmounts; move focus onto the receipt (announced
+	// via its role="status" live region) so focus can't escape the dialog.
+	useEffect(() => {
+		if (status === "done") receiptHeadingRef.current?.focus();
+	}, [status]);
+
+	// The actual request. Snapshots the draft verbatim (untrimmed — iron rule #5)
+	// and guards its completion with the submit sequence.
+	const performSubmit = useCallback(() => {
+		const value = text;
+		if (isBlank(value) || pending) return;
+		seqRef.current += 1;
+		const seq = seqRef.current;
 		setStatus("pending");
 		startTransition(async () => {
 			try {
@@ -84,19 +105,42 @@ export function CapturePalette() {
 					text: value,
 					via: usedVoiceRef.current ? "voice" : "text",
 				});
+				if (isStaleSubmission(seq, seqRef.current)) return;
 				setReceipt(deriveReceipt(record));
 				setStatus("done");
 				// Cleared only on a durable success — capture another starts fresh.
 				setText("");
 				usedVoiceRef.current = false;
 			} catch {
+				if (isStaleSubmission(seq, seqRef.current)) return;
 				// Never-lose at the UI layer (iron rule #4): the raw insert or the
 				// network failed, so nothing was persisted. Keep the draft exactly
 				// as typed and offer a retry — never clear on error.
 				setStatus("error");
 			}
 		});
-	}, [text, pending, speech]);
+	}, [text, pending]);
+
+	const submit = useCallback(() => {
+		if (isBlank(text) || pending) return;
+		// Mid-dictation: stop first and defer the request until recognition ends,
+		// so a final result arriving after stop() is included, not dropped.
+		if (speech.listening) {
+			submitAfterStopRef.current = true;
+			speech.stop();
+			return;
+		}
+		performSubmit();
+	}, [text, pending, speech, performSubmit]);
+
+	// Fire the deferred submit once recognition has fully stopped (by which time
+	// its final result has flowed into `text`).
+	useEffect(() => {
+		if (!speech.listening && submitAfterStopRef.current) {
+			submitAfterStopRef.current = false;
+			performSubmit();
+		}
+	}, [speech.listening, performSubmit]);
 
 	function captureAnother() {
 		setStatus("idle");
@@ -183,9 +227,11 @@ export function CapturePalette() {
 						</div>
 
 						{status === "done" && receipt ? (
-							<div>
+							<div role="status" aria-live="polite">
 								<p
-									className={`font-serif text-lg ${
+									ref={receiptHeadingRef}
+									tabIndex={-1}
+									className={`font-serif text-lg outline-none ${
 										receipt.tone === "needs_review" ? "text-accent" : "text-ink"
 									}`}
 								>
@@ -218,6 +264,7 @@ export function CapturePalette() {
 								<textarea
 									ref={textareaRef}
 									value={text}
+									disabled={pending}
 									onChange={(event) => setText(event.target.value)}
 									onKeyDown={(event) => {
 										if (isSubmitShortcut(event)) {
@@ -228,7 +275,7 @@ export function CapturePalette() {
 									rows={3}
 									placeholder="What's on your mind?"
 									aria-label="Capture text"
-									className="w-full resize-none border-b border-line bg-transparent pb-2 font-serif text-lg text-ink outline-none placeholder:text-ink-4"
+									className="w-full resize-none border-b border-line bg-transparent pb-2 font-serif text-lg text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 placeholder:text-ink-4"
 								/>
 
 								{status === "error" ? (
@@ -243,12 +290,13 @@ export function CapturePalette() {
 											<>
 												<button
 													type="button"
+													disabled={pending}
 													aria-label={
 														speech.listening ? "Stop dictation" : "Dictate with your voice"
 													}
 													aria-pressed={speech.listening}
 													onClick={toggleMic}
-													className={`flex h-9 w-9 items-center justify-center border ${
+													className={`flex h-9 w-9 items-center justify-center border disabled:opacity-50 ${
 														speech.listening
 															? "border-accent text-accent"
 															: "border-line-strong text-ink-3 hover:text-ink"
@@ -258,12 +306,13 @@ export function CapturePalette() {
 												</button>
 												<button
 													type="button"
+													disabled={pending}
 													aria-label={`Recognition language: ${lang}. Switch to ${nextLang(lang)}`}
 													onClick={() => {
 														speech.stop();
 														setLang((current) => nextLang(current));
 													}}
-													className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
+													className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink disabled:opacity-50"
 												>
 													{lang === "pt-BR" ? "PT" : "EN"}
 												</button>
@@ -273,7 +322,7 @@ export function CapturePalette() {
 									<button
 										type="button"
 										onClick={submit}
-										disabled={pending || text.trim().length === 0}
+										disabled={pending || isBlank(text)}
 										className="bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
 									>
 										{status === "error" ? "Retry" : pending ? "Capturing…" : "Capture"}
