@@ -56,10 +56,12 @@ the past. Non-recurring tasks complete normally (`status = done`,
 
 ## notification ledger
 
-The append-only record, in the `notifications` table, of every autonomous or
-external action the system takes on Renan's behalf (iron rule #6). Writes go
-through `lib/services/notifications.ts`, whose `recordedAction` performs the
-mutation and records it in one call so the rule is structurally hard to
-violate. Each row has a free-text `type`, a human `title`/`body`, an optional
-`undo_payload`, and a `status` (unread → read → dismissed); web-push delivery
-(ADR-0005) is the same ledger surfaced to the phone.
+The record, in the `notifications` table, of every autonomous or external
+action the system takes on Renan's behalf (iron rule #6). Writes go through
+`lib/services/notifications.ts`, whose `recordedAction` performs the mutation
+and records it in one call — the sanctioned path that can't do the action
+without leaving a trace (it doesn't forbid a raw client from bypassing it).
+Each row has a free-text `type`, a human `title`/`body`, an optional
+`undo_payload`, and a `status` of `unread`, `read`, or `dismissed` (any of
+which is reachable from any other). Web-push delivery (ADR-0005) is planned: it
+will surface this same ledger to the phone.

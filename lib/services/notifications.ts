@@ -3,23 +3,40 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ServiceError, unwrap } from "@/lib/services/errors";
 
 // ─────────────────────────────────────────────────────────────────────────
-// Notification ledger — the single seam for iron rule #6:
+// Notification ledger — the sanctioned seam for iron rule #6:
 // "every autonomous/external action writes a `notifications` row."
 //
 // The point of this module is that performing an autonomous/external mutation
 // and recording it in the ledger happen in ONE call (`recordedAction`). Future
-// cron/ingest/CalDAV write paths go through this seam instead of a raw client,
-// which makes rule #6 structurally hard to violate: there is no way to run the
-// action here without also writing its trace.
+// cron/ingest/CalDAV write paths are expected to go through this seam instead
+// of a raw client: it is the one path that records a trace by construction, so
+// "did the action, forgot the row" isn't reachable through it. It does not
+// *prevent* a caller who holds a SupabaseClient from bypassing it (see Known
+// limits) — it's the blessed path, not a proof of impossibility.
 //
-// Web-push delivery (ADR-0005) slots in behind this same interface later — the
+// Web-push delivery (ADR-0005) is planned, not built: when it lands, the
 // delivery call belongs *inside* `recordedAction`/`recordNotification`, after
 // the ledger row is committed, so callers never change.
+//
+// ── Known limits (the first real cron/ingest caller must resolve these) ──
+//   - Not atomic / not crash-safe. There is no cross-call DB transaction in
+//     supabase-js, so a crash between the action and the ledger insert loses
+//     the trace, and a blind retry of the whole call may repeat the action.
+//     The first autonomous caller must bring an idempotency key (dedupe the
+//     action) and a reconciliation decision (how an orphaned action gets its
+//     row) with it — do not add generic machinery here speculatively.
+//   - Not a hard boundary. Anything holding a SupabaseClient can still write
+//     `notifications` (or skip it) directly; nothing at the type or DB level
+//     forces traffic through this module. Enforcement (e.g. an import-boundary
+//     lint) is deferred until there are callers to protect.
 // ─────────────────────────────────────────────────────────────────────────
+
+// Any JSON value — the honest domain of a jsonb column.
+export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
 
 // Mirrors exactly the `notifications` columns (supabase/migrations/0001_schema.sql).
 // The table has no severity/category column — `type` is the free-text
-// classifier and `status` is the read-state machine.
+// classifier and `status` is the read state.
 export type NotificationStatus = "unread" | "read" | "dismissed";
 
 export type NotificationRow = {
@@ -30,28 +47,30 @@ export type NotificationRow = {
 	source_ref: string | null;
 	source_url: string | null;
 	status: NotificationStatus;
-	undo_payload: unknown;
+	undo_payload: Json | null;
 	created_at: string;
 };
 
 const NOTIFICATION_SELECT =
 	"id, type, title, body, source_ref, source_url, status, undo_payload, created_at";
 
-// What a caller must supply to record a ledger entry. Snake_case to match the
+// What a caller supplies to record a ledger entry. Snake_case to match the
 // columns (and the rest of the services layer, e.g. tasks.createTask).
 //
 //   - `type`   NOT NULL. A conventional slug describing what happened, e.g.
 //              "task.created", "caldav.synced", "reminder.fired". Free text by
 //              schema; keep it dot-namespaced so the read side can group later.
 //   - `title`  NOT NULL. One-line human summary shown in the notification list.
-//   - `undo_payload`  Optional JSON the UI can later replay to undo the action.
+//   - `undo_payload`  Optional JSON object the UI can later replay to undo the
+//              action. Typed as an object (not any Json) because every real
+//              undo payload is a keyed record, e.g. `{ table, id, prev }`.
 export type NotificationEntry = {
 	type: string;
 	title: string;
 	body?: string | null;
 	source_ref?: string | null;
 	source_url?: string | null;
-	undo_payload?: Record<string, unknown> | null;
+	undo_payload?: { [key: string]: Json } | null;
 };
 
 /**
@@ -102,30 +121,33 @@ async function insertNotification(
 
 /**
  * Perform an autonomous/external mutation and record it in the ledger as ONE
- * call. The `action` and the ledger row commit under the *same* client (`sb`),
- * so they share RLS/service-role scope — a cron path passes a service-role
- * client; a session path passes the RLS client.
+ * call. The ledger `entry` is derived FROM the action's result (`entryFor`),
+ * so it can describe what actually happened — the created row's id in
+ * `source_ref`, a real count in the title — which a pre-built entry could not.
  *
- * Ordering & failure semantics (there is no cross-call DB transaction in
- * supabase-js, so this is deliberate, not atomic):
+ * The `action` and the ledger row run under the *same* client (`sb`), so they
+ * share RLS/service-role scope — a cron path passes a service-role client; a
+ * session path passes the RLS client.
  *
- *   1. The action runs FIRST, so the ledger row can describe what *actually*
- *      happened rather than what was merely intended. If the action throws,
- *      nothing is recorded — correct: nothing happened.
+ * Ordering & failure semantics (deliberate, not atomic — see Known limits):
+ *
+ *   1. The action runs FIRST; its result feeds `entryFor`. If the action
+ *      throws, nothing is recorded — correct: nothing happened.
  *   2. The ledger insert runs SECOND. If it fails after the action succeeded,
  *      the action is NOT rolled back (external side effects generally can't
  *      be) but the trace is never dropped silently: a {@link LedgerError} is
- *      thrown carrying the action's `result` and the `entry`.
+ *      thrown carrying the action's `result` and the derived `entry`.
  *
- * Resolving normally therefore guarantees BOTH the action and its trace
- * committed. That invariant is the whole reason this seam exists.
+ * Resolving normally therefore means BOTH the action and its trace committed.
+ * That is the guarantee this seam is here to provide.
  */
 export async function recordedAction<T>(
 	sb: SupabaseClient,
-	entry: NotificationEntry,
 	action: (sb: SupabaseClient) => Promise<T>,
+	entryFor: (result: T) => NotificationEntry,
 ): Promise<{ result: T; notification: NotificationRow }> {
 	const result = await action(sb);
+	const entry = entryFor(result);
 
 	let notification: NotificationRow;
 	try {
@@ -133,7 +155,7 @@ export async function recordedAction<T>(
 	} catch (cause) {
 		throw new LedgerError(entry, result, cause);
 	}
-	// Web-push delivery (ADR-0005) hooks in here, post-commit — callers unchanged.
+	// Web-push delivery (ADR-0005, planned) will hook in here, post-commit.
 
 	return { result, notification };
 }
@@ -149,7 +171,7 @@ export async function recordNotification(
 	entry: NotificationEntry,
 ): Promise<NotificationRow> {
 	return insertNotification(sb, entry);
-	// Web-push delivery (ADR-0005) hooks in here, post-commit — callers unchanged.
+	// Web-push delivery (ADR-0005, planned) will hook in here, post-commit.
 }
 
 // ─── Read / update surface ─────────────────────────────────────────────────
@@ -179,7 +201,10 @@ export async function unreadCount(sb: SupabaseClient): Promise<number> {
 	return count ?? 0;
 }
 
-/** Move a notification along its read-state machine (unread → read/dismissed). */
+/**
+ * Set a notification's read state. Any status is reachable from any other —
+ * `unread` can go straight to `dismissed` without passing through `read`.
+ */
 export async function markNotification(
 	sb: SupabaseClient,
 	id: string,

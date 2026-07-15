@@ -19,25 +19,25 @@ type StubResult = { data?: unknown; error?: unknown; count?: number };
 // on wiring without a real database. Mirrors the tasks.test.ts approach,
 // generalized to the several call shapes this module uses.
 function stubSupabase(results: Record<string, StubResult>) {
-	const calls: Array<{ table: string; op: "insert" | "update"; payload: unknown }> = [];
+	const calls: Array<{ table: string; op: string; payload: unknown }> = [];
 
 	const from = vi.fn((table: string) => {
 		const res = results[table] ?? { data: null, error: null };
 		// biome-ignore lint/suspicious/noExplicitAny: hand-rolled test double
 		const builder: any = {};
-		const passthrough = () => builder;
-		builder.insert = (payload: unknown) => {
-			calls.push({ table, op: "insert", payload });
+		const record = (op: string) => (payload: unknown) => {
+			calls.push({ table, op, payload });
 			return builder;
 		};
-		builder.update = (payload: unknown) => {
-			calls.push({ table, op: "update", payload });
+		builder.insert = record("insert");
+		builder.update = record("update");
+		builder.select = () => builder;
+		builder.eq = (col: string, value: unknown) => {
+			calls.push({ table, op: "eq", payload: { col, value } });
 			return builder;
 		};
-		builder.select = passthrough;
-		builder.eq = passthrough;
-		builder.order = passthrough;
-		builder.limit = passthrough;
+		builder.order = record("order");
+		builder.limit = record("limit");
 		builder.single = async () => res;
 		builder.maybeSingle = async () => res;
 		// Supabase's builder is thenable (awaitable without a terminal method);
@@ -51,20 +51,22 @@ function stubSupabase(results: Record<string, StubResult>) {
 	return { sb: { from } as unknown as SupabaseClient, calls };
 }
 
-const ENTRY: NotificationEntry = {
+// Entry derived from the action's result — the whole point of the entryFor
+// signature: the created row's id lands in source_ref, unknowable up front.
+const entryFor = (result: { id: string }): NotificationEntry => ({
 	type: "task.created",
 	title: "Created a task from your voice note",
-	source_ref: "task-1",
-};
+	source_ref: result.id,
+});
 
 describe("recordedAction", () => {
-	it("runs the action, then records the ledger row, returning both", async () => {
+	it("derives the entry from the action's result, then records the ledger row", async () => {
 		const { sb, calls } = stubSupabase({
 			notifications: { data: { id: "n1", type: "task.created" }, error: null },
 		});
 		const action = vi.fn(async () => ({ id: "task-1" }));
 
-		const { result, notification } = await recordedAction(sb, ENTRY, action);
+		const { result, notification } = await recordedAction(sb, action, entryFor);
 
 		expect(action).toHaveBeenCalledWith(sb);
 		expect(result).toEqual({ id: "task-1" });
@@ -73,7 +75,8 @@ describe("recordedAction", () => {
 			{
 				table: "notifications",
 				op: "insert",
-				payload: expect.objectContaining({ type: "task.created", title: ENTRY.title }),
+				// source_ref carries the id only knowable *after* the action ran.
+				payload: expect.objectContaining({ type: "task.created", source_ref: "task-1" }),
 			},
 		]);
 	});
@@ -84,7 +87,7 @@ describe("recordedAction", () => {
 			throw new Error("boom");
 		});
 
-		await expect(recordedAction(sb, ENTRY, action)).rejects.toThrow("boom");
+		await expect(recordedAction(sb, action, entryFor)).rejects.toThrow("boom");
 		// Action ran before any ledger write, so nothing was recorded.
 		expect(calls).toHaveLength(0);
 	});
@@ -96,14 +99,14 @@ describe("recordedAction", () => {
 		const action = vi.fn(async () => ({ id: "task-1" }));
 
 		try {
-			await recordedAction(sb, ENTRY, action);
+			await recordedAction(sb, action, entryFor);
 			throw new Error("recordedAction should have thrown");
 		} catch (err) {
 			expect(err).toBeInstanceOf(LedgerError);
 			const ledgerError = err as LedgerError;
 			// The action's real, un-rolled-back result survives on the throw path.
 			expect(ledgerError.result).toEqual({ id: "task-1" });
-			expect(ledgerError.entry).toBe(ENTRY);
+			expect(ledgerError.entry).toEqual(entryFor({ id: "task-1" }));
 			// Underlying Postgres code is preserved for the caller to branch on.
 			expect(ledgerError.code).toBe("08006");
 			expect(ledgerError).toBeInstanceOf(ServiceError);
@@ -138,6 +141,22 @@ describe("read surface", () => {
 		expect(await listNotifications(sb, { status: "unread", limit: 20 })).toEqual(rows);
 	});
 
+	it("listNotifications applies status filter, limit, and newest-first order", async () => {
+		const { sb, calls } = stubSupabase({ notifications: { data: [], error: null } });
+		await listNotifications(sb, { status: "unread", limit: 20 });
+		expect(calls).toEqual([
+			{ table: "notifications", op: "order", payload: "created_at" },
+			{ table: "notifications", op: "eq", payload: { col: "status", value: "unread" } },
+			{ table: "notifications", op: "limit", payload: 20 },
+		]);
+	});
+
+	it("listNotifications omits status/limit filters when not requested", async () => {
+		const { sb, calls } = stubSupabase({ notifications: { data: [], error: null } });
+		await listNotifications(sb);
+		expect(calls).toEqual([{ table: "notifications", op: "order", payload: "created_at" }]);
+	});
+
 	it("unreadCount returns the exact head count", async () => {
 		const { sb } = stubSupabase({ notifications: { count: 3, error: null } });
 		expect(await unreadCount(sb)).toBe(3);
@@ -146,6 +165,9 @@ describe("read surface", () => {
 	it("markNotification updates status by id", async () => {
 		const { sb, calls } = stubSupabase({ notifications: { data: null, error: null } });
 		await markNotification(sb, "n1", "read");
-		expect(calls).toEqual([{ table: "notifications", op: "update", payload: { status: "read" } }]);
+		expect(calls).toEqual([
+			{ table: "notifications", op: "update", payload: { status: "read" } },
+			{ table: "notifications", op: "eq", payload: { col: "id", value: "n1" } },
+		]);
 	});
 });
