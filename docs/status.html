@@ -158,11 +158,11 @@
 	</header>
 
 	<section class="meter" aria-label="Overall progress">
-		<div class="meter-caption"><span>Progress</span><span>3 of 9 phases complete · 1 underway</span></div>
-		<div class="meter-track" role="img" aria-label="3 of 9 phases done, phase 2 in progress">
+		<div class="meter-caption"><span>Progress</span><span>3 of 10 phases complete · 1 underway</span></div>
+		<div class="meter-track" role="img" aria-label="3 of 10 phases done, architecture hardening in progress">
 			<span class="done"></span><span class="done"></span><span class="done"></span>
 			<span class="active"></span>
-			<span></span><span></span><span></span><span></span><span></span>
+			<span></span><span></span><span></span><span></span><span></span><span></span>
 		</div>
 	</section>
 
@@ -208,7 +208,25 @@
 
 		<li class="phase">
 			<span class="dot active"></span>
-			<div class="phase-head"><h2>Phase 2 — AI capture pipeline</h2><span class="tag active">Up next</span></div>
+			<div class="phase-head"><h2>Architecture hardening — pre-Phase-2 fixes</h2><span class="tag active">Up next</span></div>
+			<p>Output of the July 15 architecture review: turn the discipline-only iron rules
+			into structural seams before the capture pipeline is built. Full actionable plan in
+			<code>docs/architecture-fixes-2026-07-15.md</code>.</p>
+			<ul>
+				<li><code>requireOwner()</code> returns the RLS client; <code>createRlsClient</code> goes private (rule #2 becomes structure)</li>
+				<li>Notification ledger seam — one funnel that acts + writes the <code>notifications</code> row (rule #6, required before cron/ingest/CalDAV)</li>
+				<li>One task shape: <code>lib/schemas/task.ts</code> as single source; overdue/top-3 predicates move into the module</li>
+				<li>Capture module designed around rule #4: persist raw first, adapters with typed fallbacks, <code>needs_review</code> degradation path</li>
+				<li><code>unwrap()</code> helper replacing the 14× untyped <code>if (error) throw error</code></li>
+				<li>Recurrence vocabulary migration — checklist CHECK omits <code>semiannually</code> (latent defect); add CHECK to <code>tasks.recurrence</code></li>
+				<li>Tests for the security predicates (<code>lib/auth.ts</code>, <code>lib/env.ts</code>) and <code>completeTask</code>'s recurrence wiring; create <code>CONTEXT.md</code> glossary</li>
+			</ul>
+			<div class="ref">docs/architecture-fixes-2026-07-15.md</div>
+		</li>
+
+		<li class="phase">
+			<span class="dot planned"></span>
+			<div class="phase-head"><h2>Phase 2 — AI capture pipeline</h2><span class="tag planned">Planned</span></div>
 			<p>The heart of the product: voice/text capture parsed by the LLM (via Vercel AI
 			Gateway) into structured records — tasks, notes, quotes, journal, people, events.
 			Iron rule: never lose a capture — parsing degrades to a <code>needs_review</code>
