@@ -43,7 +43,12 @@ let cached: z.infer<typeof EnvSchema> | undefined;
 
 export function env(): z.infer<typeof EnvSchema> {
 	if (!cached) {
-		const parsed = EnvSchema.safeParse(process.env);
+		// `.env` files declare unused vars as empty strings; treat "" as unset
+		// so optional() semantics hold.
+		const raw = Object.fromEntries(
+			Object.entries(process.env).filter(([, v]) => v !== undefined && v !== ""),
+		);
+		const parsed = EnvSchema.safeParse(raw);
 		if (!parsed.success) {
 			throw new Error(`Invalid environment: ${parsed.error.message}`);
 		}
