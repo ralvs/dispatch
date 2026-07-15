@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dispatch — Project Status</title>
+<style>
+	:root {
+		--paper: #faf7f0;
+		--ink: #1a1712;
+		--ink-2: #4a443a;
+		--ink-3: #857c6c;
+		--line: #d9d2c3;
+		--line-strong: #1a1712;
+		--done: #2f7d4f;
+		--active: #b97a12;
+		--planned: #a39a88;
+		--accent: #8c2f24;
+	}
+	@media (prefers-color-scheme: dark) {
+		:root {
+			--paper: #16140f;
+			--ink: #ece7db;
+			--ink-2: #b5ad9c;
+			--ink-3: #7d7565;
+			--line: #322e25;
+			--line-strong: #ece7db;
+			--done: #58b283;
+			--active: #d99a35;
+			--planned: #5d564a;
+			--accent: #d0685a;
+		}
+	}
+	* { margin: 0; padding: 0; box-sizing: border-box; }
+	body {
+		background: var(--paper);
+		color: var(--ink);
+		font: 16px/1.6 Georgia, "Times New Roman", serif;
+		padding: 3rem 1.25rem 5rem;
+	}
+	.sheet { max-width: 760px; margin: 0 auto; }
+
+	/* ── Masthead ─────────────────────────────────────────── */
+	header { text-align: center; border-bottom: 3px double var(--line-strong); padding-bottom: 1.25rem; }
+	.kicker {
+		font-family: ui-sans-serif, system-ui, sans-serif;
+		font-size: 0.7rem; letter-spacing: 0.35em; text-transform: uppercase;
+		color: var(--ink-3);
+	}
+	h1 { font-size: clamp(2.6rem, 8vw, 4rem); letter-spacing: 0.02em; font-weight: 700; line-height: 1.05; margin: 0.35rem 0; }
+	.dateline {
+		display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;
+		font-family: ui-sans-serif, system-ui, sans-serif;
+		font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2);
+		border-top: 1px solid var(--line); margin-top: 0.9rem; padding-top: 0.7rem;
+	}
+
+	/* ── Progress meter ───────────────────────────────────── */
+	.meter { margin: 2.25rem 0 0; }
+	.meter-caption {
+		display: flex; justify-content: space-between; align-items: baseline;
+		font-family: ui-sans-serif, system-ui, sans-serif;
+		font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2);
+		margin-bottom: 0.5rem;
+	}
+	.meter-track { display: flex; gap: 4px; height: 10px; }
+	.meter-track span { flex: 1; border-radius: 2px; background: var(--planned); opacity: 0.35; }
+	.meter-track span.done { background: var(--done); opacity: 1; }
+	.meter-track span.active { background: var(--active); opacity: 1; }
+
+	/* ── Legend ───────────────────────────────────────────── */
+	.legend {
+		display: flex; gap: 1.75rem; justify-content: center; flex-wrap: wrap;
+		margin: 1.5rem 0 2.5rem;
+		font-family: ui-sans-serif, system-ui, sans-serif;
+		font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2);
+	}
+	.legend span { display: inline-flex; align-items: center; gap: 0.45rem; }
+
+	/* ── Status dots ──────────────────────────────────────── */
+	.dot { width: 13px; height: 13px; border-radius: 50%; flex: none; }
+	.dot.done { background: var(--done); }
+	.dot.active { background: var(--active); box-shadow: 0 0 0 0 var(--active); animation: pulse 2.2s infinite; }
+	.dot.planned { background: transparent; border: 2px solid var(--planned); }
+	@keyframes pulse {
+		0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--active) 45%, transparent); }
+		70% { box-shadow: 0 0 0 9px transparent; }
+		100% { box-shadow: 0 0 0 0 transparent; }
+	}
+	@media (prefers-reduced-motion: reduce) { .dot.active { animation: none; } }
+
+	/* ── Timeline ─────────────────────────────────────────── */
+	.timeline { list-style: none; }
+	.phase {
+		display: grid; grid-template-columns: 34px 1fr; gap: 0 1.1rem;
+		position: relative; padding-bottom: 2.1rem;
+	}
+	.phase:last-child { padding-bottom: 0; }
+	.phase::before {
+		content: ""; position: absolute; left: 16px; top: 24px; bottom: 2px;
+		width: 1px; background: var(--line);
+	}
+	.phase:last-child::before { display: none; }
+	.phase .dot { margin: 7px auto 0; grid-row: 1 / span 3; }
+	.phase-head { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+	.phase h2 { font-size: 1.3rem; font-weight: 700; line-height: 1.3; }
+	.tag {
+		font-family: ui-sans-serif, system-ui, sans-serif;
+		font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase;
+		padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+	}
+	.tag.done { color: var(--done); border: 1px solid var(--done); }
+	.tag.active { color: var(--active); border: 1px solid var(--active); }
+	.tag.planned { color: var(--ink-3); border: 1px solid var(--line); }
+	.phase p { color: var(--ink-2); margin-top: 0.35rem; max-width: 60ch; }
+	.phase ul { margin: 0.6rem 0 0 1.1rem; color: var(--ink-2); font-size: 0.95rem; }
+	.phase li { margin-bottom: 0.15rem; }
+	.ref {
+		font-family: ui-sans-serif, system-ui, sans-serif;
+		font-size: 0.7rem; letter-spacing: 0.08em; color: var(--ink-3); margin-top: 0.5rem;
+	}
+	code {
+		font: 0.85em ui-monospace, SFMono-Regular, Menlo, monospace;
+		background: color-mix(in srgb, var(--ink) 7%, transparent);
+		padding: 1px 5px; border-radius: 3px;
+	}
+
+	/* ── Section rules ────────────────────────────────────── */
+	.rule {
+		display: flex; align-items: center; gap: 1rem; margin: 2.75rem 0 1.75rem;
+		font-family: ui-sans-serif, system-ui, sans-serif;
+		font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-3);
+	}
+	.rule::before, .rule::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+
+	/* ── Footnotes ────────────────────────────────────────── */
+	.adrs { columns: 2; column-gap: 2.5rem; font-size: 0.9rem; color: var(--ink-2); }
+	@media (max-width: 560px) { .adrs { columns: 1; } }
+	.adrs li { break-inside: avoid; margin: 0 0 0.4rem 1.1rem; }
+	footer {
+		margin-top: 3.5rem; padding-top: 1rem; border-top: 3px double var(--line-strong);
+		text-align: center; font-family: ui-sans-serif, system-ui, sans-serif;
+		font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3);
+	}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+	<header>
+		<div class="kicker">Project Status Report</div>
+		<h1>Dispatch</h1>
+		<div class="dateline">
+			<span>Voice in, order out</span>
+			<span>Edition of July 15, 2026</span>
+			<span>Single owner · renan@alves.id</span>
+		</div>
+	</header>
+
+	<section class="meter" aria-label="Overall progress">
+		<div class="meter-caption"><span>Progress</span><span>3 of 9 phases complete · 1 underway</span></div>
+		<div class="meter-track" role="img" aria-label="3 of 9 phases done, phase 2 in progress">
+			<span class="done"></span><span class="done"></span><span class="done"></span>
+			<span class="active"></span>
+			<span></span><span></span><span></span><span></span><span></span>
+		</div>
+	</section>
+
+	<div class="legend" aria-hidden="true">
+		<span><span class="dot done"></span> Shipped</span>
+		<span><span class="dot active"></span> In progress</span>
+		<span><span class="dot planned"></span> Planned</span>
+	</div>
+
+	<div class="rule">The record so far</div>
+
+	<ol class="timeline">
+		<li class="phase">
+			<span class="dot done"></span>
+			<div class="phase-head"><h2>Phase 0 — Scaffold &amp; founding decisions</h2><span class="tag done">Shipped</span></div>
+			<p>Next.js 16 (App Router, Turbopack) on Bun, Biome, TypeScript strict, Tailwind v4
+			with the editorial token system in <code>globals.css</code>. Six founding ADRs set the
+			architecture before any feature code.</p>
+			<div class="ref">commit d4d7398</div>
+		</li>
+
+		<li class="phase">
+			<span class="dot done"></span>
+			<div class="phase-head"><h2>Phase 1 — Foundation: data, auth, shell, tasks</h2><span class="tag done">Shipped</span></div>
+			<ul>
+				<li>Supabase project (sa-east-1) with the full 966-line schema migration, storage buckets, and generated types</li>
+				<li>Security boundary: <code>requireOwner()</code> on every server action, <code>proxy.ts</code> session refresh, single-owner RLS</li>
+				<li>App shell: sign-in, authed layout, bottom tab bar + desktop rail, theme toggle</li>
+				<li>Tasks end-to-end (list, form, row actions), inbox triage, first Today page</li>
+				<li>Core libraries with tests: <code>dates</code>, <code>recurrence</code>, <code>routine-stats</code>; Zod schemas for all 13 record kinds</li>
+			</ul>
+			<div class="ref">commits 9868748, 8d0c5f3</div>
+		</li>
+
+		<li class="phase">
+			<span class="dot done"></span>
+			<div class="phase-head"><h2>Deployment — Vercel wired up</h2><span class="tag done">Shipped</span></div>
+			<p>Repo linked to the <code>rlvs/dispatch</code> Vercel project and connected to GitHub.
+			Eleven environment variables pushed to Production and Preview: Supabase quartet,
+			freshly generated webhook/cron/widget secrets, VAPID keypair, calendar name.
+			Outstanding keys: <code>AI_GATEWAY_API_KEY</code>, iCloud credentials, <code>MEM_API_KEY</code>.</p>
+		</li>
+
+		<li class="phase">
+			<span class="dot active"></span>
+			<div class="phase-head"><h2>Phase 2 — AI capture pipeline</h2><span class="tag active">Up next</span></div>
+			<p>The heart of the product: voice/text capture parsed by the LLM (via Vercel AI
+			Gateway) into structured records — tasks, notes, quotes, journal, people, events.
+			Iron rule: never lose a capture — parsing degrades to a <code>needs_review</code>
+			note, AI calls return typed fallbacks. Requires the <code>AI_GATEWAY_API_KEY</code>.</p>
+		</li>
+
+		<li class="phase">
+			<span class="dot planned"></span>
+			<div class="phase-head"><h2>Phases 3–5 — The rest of the record kinds</h2><span class="tag planned">Planned</span></div>
+			<p>Pages and services for notes, quotes, people, journal, projects &amp; domains
+			(full CRUD, per ADR 0007), routines with streak stats, health log, books, and
+			milestones — the schemas and stats libraries already exist; the surfaces don't.</p>
+		</li>
+
+		<li class="phase">
+			<span class="dot planned"></span>
+			<div class="phase-head"><h2>Phase 6 — The editorial briefing</h2><span class="tag planned">Planned</span></div>
+			<p>Today page grows into the newspaper front page: the daily briefing that pulls
+			every domain into one pane of glass, plus the chat surface over the same data.</p>
+		</li>
+
+		<li class="phase">
+			<span class="dot planned"></span>
+			<div class="phase-head"><h2>Phase 7 — External surfaces</h2><span class="tag planned">Planned</span></div>
+			<ul>
+				<li>Ingest webhook (Apple Watch / iOS share sheet) behind <code>lib/secret-auth.ts</code></li>
+				<li>Cron endpoints (cron-job.org) and the widget feed — secrets already provisioned</li>
+				<li>Web Push notifications (VAPID keys live on Vercel; ADR 0005)</li>
+				<li>iCloud CalDAV — pull all calendars, push to the “Dispatch” calendar (ADR 0006)</li>
+			</ul>
+		</li>
+
+		<li class="phase">
+			<span class="dot planned"></span>
+			<div class="phase-head"><h2>Phase 8 — PWA polish</h2><span class="tag planned">Planned</span></div>
+			<p>Installable PWA: manifest, service worker, offline shell, mic-first capture
+			ergonomics on the phone.</p>
+		</li>
+
+		<li class="phase">
+			<span class="dot planned"></span>
+			<div class="phase-head"><h2>Phase 9 — Mem.ai import</h2><span class="tag planned">Planned</span></div>
+			<p>One-time migration of the existing Mem.ai corpus into Dispatch records
+			(<code>MEM_API_KEY</code>), then the old system retires.</p>
+		</li>
+	</ol>
+
+	<div class="rule">Decisions on file</div>
+
+	<ol class="adrs">
+		<li>Single Next app with a service layer</li>
+		<li>UTC storage, app timezone at the boundary</li>
+		<li><code>requireOwner()</code> is the security boundary</li>
+		<li>All AI through the Vercel Gateway</li>
+		<li>Web Push instead of Pushover</li>
+		<li>iCloud CalDAV: pull all, push one</li>
+		<li>Content pipeline cut; dead tables dropped</li>
+	</ol>
+
+	<footer>Dispatch · functional rebuild of jerad-ops · docs/adr for every deviation</footer>
+
+</div>
+</body>
+</html>
