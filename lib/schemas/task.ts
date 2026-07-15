@@ -10,6 +10,9 @@ export const TaskSourceSchema = z.enum(["manual", "voice", "email", "observation
 const nullableString = () => z.string().nullable().optional();
 const nullableDate = () => z.string().date().nullable().optional();
 
+// The full/write-side model — a superset of what TASK_SELECT reads today.
+// Not wired to a query yet (reminder_offsets/reminders_sent have no
+// executor); treat additions here as a wire-in path, not a feature.
 export const TaskSchema = z.object({
 	id: z.string().uuid(),
 	title: z.string().min(1),
@@ -29,6 +32,13 @@ export const TaskSchema = z.object({
 	completed_at: z.string().datetime({ offset: true }).nullable().optional(),
 	updated_at: z.string().datetime({ offset: true }),
 	// Optional joins — present when API returns linked entity metadata.
+	domain: z
+		.object({
+			id: z.string().uuid(),
+			name: z.string(),
+		})
+		.nullable()
+		.optional(),
 	project: z
 		.object({
 			id: z.string().uuid(),
@@ -61,3 +71,61 @@ export const CreateTaskSchema = z.object({
 export const UpdateTaskSchema = CreateTaskSchema.partial().extend({
 	status: TaskStatusSchema.optional(),
 });
+
+// ─── FormData-facing schema (app/(authed)/tasks/actions.ts) ────────────
+//
+// FormData only ever produces strings, so empty/unset fields arrive as ""
+// rather than being omitted — every optional field needs `.or(z.literal(""))`
+// and priority needs z.coerce. Shares the recurrence vocabulary with
+// CreateTaskSchema (RECURRENCE_PATTERNS) rather than redeclaring it.
+export const CreateTaskFormSchema = z.object({
+	title: z.string().trim().min(1).max(500),
+	notes: z.string().trim().max(5000).optional(),
+	due_date: z.iso.date().optional().or(z.literal("")),
+	due_time: z
+		.string()
+		.regex(/^\d{2}:\d{2}$/)
+		.optional()
+		.or(z.literal("")),
+	priority: z.coerce.number().int().min(1).max(4).default(4),
+	domain_id: z.uuid().optional().or(z.literal("")),
+	recurrence_rule: z.enum(RECURRENCE_PATTERNS).optional().or(z.literal("")),
+});
+
+// ─── Row shape actually returned by the tasks service ──────────────────
+//
+// Mirrors exactly the columns TASK_SELECT reads (lib/services/tasks.ts).
+// TASK_SELECT is derived from this schema's keys, so a field added here
+// automatically flows into the query — keep the two joins (domain/project)
+// listed last, since they map to PostgREST embedded-resource syntax rather
+// than a plain column name.
+export const TaskRowSchema = z.object({
+	id: z.string().uuid(),
+	title: z.string(),
+	notes: z.string().nullable(),
+	status: TaskStatusSchema,
+	due_date: z.string().nullable(),
+	due_time: z.string().nullable(),
+	priority: z.number(),
+	project_id: z.string().uuid().nullable(),
+	domain_id: z.string().uuid(),
+	recurrence_rule: z.string().nullable(),
+	top3_for_date: z.string().nullable(),
+	source: z.string(),
+	created_at: z.string(),
+	completed_at: z.string().nullable(),
+	domain: z.object({ id: z.string().uuid(), name: z.string() }).nullable().optional(),
+	project: z.object({ id: z.string().uuid(), name: z.string() }).nullable().optional(),
+});
+export type TaskRow = z.infer<typeof TaskRowSchema>;
+
+// Plain columns select as-is; joins need PostgREST's embedded-resource
+// syntax. Keep this map in sync with any relation added to TaskRowSchema.
+const TASK_JOIN_SELECTS: Record<string, string> = {
+	domain: "domain:stewardship_domains(id, name)",
+	project: "project:projects(id, name)",
+};
+
+export const TASK_SELECT = Object.keys(TaskRowSchema.shape)
+	.map((key) => TASK_JOIN_SELECTS[key] ?? key)
+	.join(", ");

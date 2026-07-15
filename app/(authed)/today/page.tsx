@@ -3,6 +3,7 @@ import { requireOwnerPage } from "@/lib/auth";
 import { formatDay, todayInTz } from "@/lib/dates";
 import { getAppTimezone } from "@/lib/services/settings";
 import { listInboxTasks, listTasks } from "@/lib/services/tasks";
+import { isTop3Today } from "@/lib/task-predicates";
 import { TaskRowItem } from "../tasks/task-row";
 
 // Phase 1 skeleton of the briefing: masthead + doing-today list + inbox
@@ -17,9 +18,9 @@ export default async function TodayPage() {
 	]);
 	const todayIso = todayInTz(tz);
 
-	const top3 = open.filter((t) => t.top3_for_date === todayIso);
+	const top3 = open.filter((t) => isTop3Today(t, todayIso));
 	const dueOrOverdue = open.filter(
-		(t) => t.top3_for_date !== todayIso && t.due_date !== null && t.due_date <= todayIso,
+		(t) => !isTop3Today(t, todayIso) && t.due_date !== null && t.due_date <= todayIso,
 	);
 	const doingToday = [...top3, ...dueOrOverdue].slice(0, 10);
 

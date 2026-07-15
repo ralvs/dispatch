@@ -3,29 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { INBOX_DOMAIN_ID } from "@/lib/constants";
 import { nowUtc } from "@/lib/dates";
 import { isRecurrencePattern, nextDueDate } from "@/lib/recurrence";
+import { TASK_SELECT, type TaskRow } from "@/lib/schemas/task";
 import { unwrap } from "@/lib/services/errors";
 
-export type TaskRow = {
-	id: string;
-	title: string;
-	notes: string | null;
-	status: "open" | "done";
-	due_date: string | null;
-	due_time: string | null;
-	priority: number;
-	project_id: string | null;
-	domain_id: string;
-	recurrence_rule: string | null;
-	top3_for_date: string | null;
-	source: string;
-	created_at: string;
-	completed_at: string | null;
-	domain?: { id: string; name: string } | null;
-	project?: { id: string; name: string } | null;
-};
-
-const TASK_SELECT =
-	"id, title, notes, status, due_date, due_time, priority, project_id, domain_id, recurrence_rule, top3_for_date, source, created_at, completed_at, domain:stewardship_domains(id, name), project:projects(id, name)";
+export type { TaskRow } from "@/lib/schemas/task";
 
 // supabase-js types FK joins as arrays; flatten to single objects.
 // biome-ignore lint/suspicious/noExplicitAny: PostgREST row shape normalized here once

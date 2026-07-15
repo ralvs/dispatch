@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { todayInTz } from "@/lib/dates";
-import { RECURRENCE_PATTERNS } from "@/lib/recurrence";
+import { CreateTaskFormSchema } from "@/lib/schemas/task";
 import { getAppTimezone } from "@/lib/services/settings";
 import {
 	completeTask,
@@ -21,23 +21,9 @@ function revalidateTaskViews() {
 	revalidatePath("/today");
 }
 
-const CreateTaskSchema = z.object({
-	title: z.string().trim().min(1).max(500),
-	notes: z.string().trim().max(5000).optional(),
-	due_date: z.iso.date().optional().or(z.literal("")),
-	due_time: z
-		.string()
-		.regex(/^\d{2}:\d{2}$/)
-		.optional()
-		.or(z.literal("")),
-	priority: z.coerce.number().int().min(1).max(4).default(4),
-	domain_id: z.uuid().optional().or(z.literal("")),
-	recurrence_rule: z.enum(RECURRENCE_PATTERNS).optional().or(z.literal("")),
-});
-
 export async function createTaskAction(formData: FormData) {
 	const { sb } = await requireOwnerPage();
-	const parsed = CreateTaskSchema.parse(Object.fromEntries(formData));
+	const parsed = CreateTaskFormSchema.parse(Object.fromEntries(formData));
 	await createTask(sb, {
 		title: parsed.title,
 		notes: parsed.notes || null,

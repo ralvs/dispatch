@@ -3,13 +3,14 @@
 import { useTransition } from "react";
 import { RECURRENCE_GLYPH } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/services/tasks";
+import { isOverdue, isTop3Today } from "@/lib/task-predicates";
 import { completeTaskAction, reopenTaskAction, toggleTop3Action } from "./actions";
 
 export function TaskRowItem({ task, todayIso }: { task: TaskRow; todayIso: string }) {
 	const [pending, startTransition] = useTransition();
 	const done = task.status === "done";
-	const overdue = !done && task.due_date !== null && task.due_date < todayIso;
-	const starred = task.top3_for_date === todayIso;
+	const overdue = isOverdue(task, todayIso);
+	const starred = isTop3Today(task, todayIso);
 
 	return (
 		<li
