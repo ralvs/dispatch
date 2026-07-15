@@ -11,6 +11,7 @@ export const NoteSourceTypeSchema = z.enum([
 	"observation",
 	"other",
 ]);
+export type NoteSourceType = z.infer<typeof NoteSourceTypeSchema>;
 
 // Image attachments — same shape used on notes + journal_entries. The
 // schema is intentionally loose (everything optional except url+path)
