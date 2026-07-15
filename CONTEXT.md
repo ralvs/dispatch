@@ -11,7 +11,7 @@ webhook, watch, or shared link — into the system before it is understood.
 Capture must never be lost (iron rule #4): the raw input is persisted first,
 then transcribed/parsed; any failure degrades to a `needs_review` note rather
 than dropping the input. The raw firehose lands in `captured_data`; parsed
-voice turns into one or more actions (`lib/schemas/voice.ts`).
+voice turns into one or more actions (`lib/schemas/capture.ts`, `docs/adr/0008`).
 
 ## triage
 

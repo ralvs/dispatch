@@ -807,6 +807,7 @@ export type Database = {
 					created_at: string;
 					id: string;
 					needs_review: boolean;
+					origin_capture_id: string | null;
 					related_person_id: string | null;
 					related_project_id: string | null;
 					related_quote_id: string | null;
@@ -822,6 +823,7 @@ export type Database = {
 					created_at?: string;
 					id?: string;
 					needs_review?: boolean;
+					origin_capture_id?: string | null;
 					related_person_id?: string | null;
 					related_project_id?: string | null;
 					related_quote_id?: string | null;
@@ -837,6 +839,7 @@ export type Database = {
 					created_at?: string;
 					id?: string;
 					needs_review?: boolean;
+					origin_capture_id?: string | null;
 					related_person_id?: string | null;
 					related_project_id?: string | null;
 					related_quote_id?: string | null;
@@ -847,6 +850,13 @@ export type Database = {
 					title?: string | null;
 				};
 				Relationships: [
+					{
+						foreignKeyName: "notes_origin_capture_id_fkey";
+						columns: ["origin_capture_id"];
+						isOneToOne: false;
+						referencedRelation: "captured_data";
+						referencedColumns: ["id"];
+					},
 					{
 						foreignKeyName: "notes_related_person_id_fkey";
 						columns: ["related_person_id"];
