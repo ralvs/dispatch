@@ -1,5 +1,6 @@
 export * from "./app-settings";
 export * from "./book";
+export * from "./capture";
 export * from "./captured";
 export * from "./domain";
 export * from "./health";
@@ -10,4 +11,3 @@ export * from "./project";
 export * from "./quote";
 export * from "./routine";
 export * from "./task";
-export * from "./voice";

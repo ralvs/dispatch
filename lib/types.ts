@@ -1,9 +1,9 @@
 import type { z } from "zod";
 import type {
+	CaptureActionSchema,
 	CapturedDataSchema,
 	DomainSchema,
 	NoteSchema,
-	ParsedActionSchema,
 	ProjectSchema,
 	TaskSchema,
 } from "@/lib/schemas";
@@ -13,7 +13,7 @@ export type Project = z.infer<typeof ProjectSchema>;
 export type Domain = z.infer<typeof DomainSchema>;
 export type Note = z.infer<typeof NoteSchema>;
 export type CapturedData = z.infer<typeof CapturedDataSchema>;
-export type ParsedAction = z.infer<typeof ParsedActionSchema>;
+export type CaptureAction = z.infer<typeof CaptureActionSchema>;
 
 export const TAB_KEYS = ["today", "domains", "projects", "people", "library"] as const;
 export type TabKey = (typeof TAB_KEYS)[number];
