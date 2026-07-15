@@ -39,7 +39,8 @@ async function currentUserAndClient(): Promise<{ user: User | null; sb: Supabase
 	return { user, sb };
 }
 
-function isOwner(user: User | null): user is User {
+/** Exported for testing the fail-closed owner check in isolation. */
+export function isOwner(user: User | null): user is User {
 	const ownerId = env().OWNER_USER_ID;
 	// Fail closed when OWNER_USER_ID is unset.
 	return Boolean(ownerId && user && user.id === ownerId);
