@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { RECURRENCE_PATTERNS } from "@/lib/recurrence";
 
 export const TaskStatusSchema = z.enum(["open", "done"]);
 export const TaskSourceSchema = z.enum(["manual", "voice", "email", "observation", "import"]);
@@ -20,7 +21,7 @@ export const TaskSchema = z.object({
 	project_id: z.string().uuid().nullable().optional(),
 	domain_id: z.string().uuid(),
 	parent_task_id: z.string().uuid().nullable().optional(),
-	recurrence_rule: nullableString(),
+	recurrence_rule: z.enum(RECURRENCE_PATTERNS).nullable().optional(),
 	reminder_offsets: z.array(z.number()).default([]),
 	source: TaskSourceSchema,
 	top3_for_date: nullableDate(),
@@ -51,7 +52,7 @@ export const CreateTaskSchema = z.object({
 	// are passed explicitly and mismatched, the server returns 400.
 	domain_id: z.string().uuid().nullable().optional(),
 	parent_task_id: z.string().uuid().nullable().optional(),
-	recurrence_rule: nullableString(),
+	recurrence_rule: z.enum(RECURRENCE_PATTERNS).nullable().optional(),
 	reminder_offsets: z.array(z.number()).optional(),
 	source: TaskSourceSchema.default("manual"),
 	top3_for_date: nullableDate(),
