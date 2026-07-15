@@ -218,20 +218,23 @@
 				<li>One task shape: <code>lib/schemas/task.ts</code> is the single source; overdue/top-3 predicates are tested pure functions in the module</li>
 				<li><code>unwrap()</code> helper replacing the 14× untyped <code>if (error) throw error</code> ritual</li>
 				<li>Recurrence vocabulary aligned across <code>lib/recurrence.ts</code> and both CHECK constraints (<code>semiannually</code> gap closed); migration applied to the remote Supabase project</li>
-				<li>Security-predicate tests for <code>lib/auth.ts</code> and <code>lib/env.ts</code>, plus <code>completeTask</code>'s recurrence wiring; <code>CONTEXT.md</code> domain glossary created — test count now 53</li>
+				<li>Security-predicate tests for <code>lib/auth.ts</code> and <code>lib/env.ts</code>, plus <code>completeTask</code>'s recurrence wiring; <code>CONTEXT.md</code> domain glossary created</li>
 			</ul>
 			<div class="ref">docs/architecture-fixes-2026-07-15.md</div>
 		</li>
 
 		<li class="phase">
 			<span class="dot active"></span>
-			<div class="phase-head"><h2>Phase 2 — AI capture pipeline</h2><span class="tag active">Up next</span></div>
+			<div class="phase-head"><h2>Phase 2 — AI capture pipeline</h2><span class="tag active">In progress — core shipped</span></div>
 			<p>The heart of the product: voice/text capture parsed by the LLM (via Vercel AI
 			Gateway) into structured records — tasks, notes, quotes, journal, people, events.
 			Iron rule: never lose a capture — parsing degrades to a <code>needs_review</code>
-			note, AI calls return typed fallbacks. Requires the <code>AI_GATEWAY_API_KEY</code>.
-			Next step: the capture-pipeline design decision (item 4 of the hardening plan) —
-			persist raw input first, adapters with typed fallbacks behind internal seams.</p>
+			note, AI calls return typed fallbacks.</p>
+			<ul>
+				<li>Capture core shipped: <code>capture(sb, raw)</code> in <code>lib/services/capture/</code> persists the raw input first, behind a structural no-throw boundary; typed AI adapters in <code>lib/ai/</code> (parser via the AI Gateway, transcriber stubbed); v1 vocabulary <code>create_task</code> / <code>create_note</code> / <code>needs_review</code> replaces the old <code>voice.ts</code> draft; notes service and migration 0004 (<code>origin_capture_id</code>) back the degrade path — design decided via a parallel two-track review, see ADR-0008</li>
+				<li>Still pending within this phase: UI palette for capture, the ingest webhook, and the sweep cron (deferred per ADR-0008)</li>
+			</ul>
+			<p>Requires the <code>AI_GATEWAY_API_KEY</code>. Test count now 74.</p>
 		</li>
 
 		<li class="phase">
@@ -285,6 +288,7 @@
 		<li>Web Push instead of Pushover</li>
 		<li>iCloud CalDAV: pull all, push one</li>
 		<li>Content pipeline cut; dead tables dropped</li>
+		<li>Capture: persist-first and v1 vocabulary</li>
 	</ol>
 
 	<footer>Dispatch · functional rebuild of jerad-ops · docs/adr for every deviation</footer>

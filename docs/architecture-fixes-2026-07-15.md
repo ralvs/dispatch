@@ -19,14 +19,25 @@ Executed same-day.
   known limits documented: not crash-atomic, not a hard boundary; the first
   cron/ingest caller must bring an idempotency key).
 - **3** — done (`772bfa8`).
-- **4** — intentionally **not done**. This is the Phase-2 opening design
-  decision and remains the next task.
+- **4** — done, same day, via a parallel two-track design (deep-reasoner +
+  cross-family peer), implemented in `4df58a1..42bccdc` with review-hardening
+  in `d45a2df`/`31771a0`; see `docs/adr/0008`. `capture(sb, raw)` in
+  `lib/services/capture/` persists the raw input first, behind a structural
+  no-throw boundary right after that insert; typed AI adapters live in
+  `lib/ai/` (parser via the AI Gateway, transcriber stubbed); the v1
+  vocabulary (`create_task` / `create_note` / `needs_review`) replaces the
+  `voice.ts` draft (deleted); a notes service plus migration `0004`
+  (`origin_capture_id`, applied remotely) backs the `needs_review` write path;
+  ingest, audio, and the sweep cron are deferred, with the decisions recorded
+  in ADR-0008.
 - **5** — done (`e5d3a87`).
 - **6** — done (`23764a5`; migration applied to the remote Supabase project).
 - **7** — needed no standalone action; absorbed by items 2 and 5.
 - Field-note fixes — done (`da35fe6`: auth fail-closed test, env coercion
   test, `completeTask` recurrence-wiring test; `CONTEXT.md` created in
   `bd0f9b1`).
+
+The whole plan is now executed.
 
 ## 1. Couple the owner guard to the RLS client — Strong
 
@@ -64,7 +75,7 @@ component overdue/top-3 derivation).
 - Move day-level predicates (`isOverdue`, `isTop3Today`) into the task module as tested pure functions — this is where ADR-0002's timezone rule can silently break today.
 - Leaves a clean wire-in path for `reminder_offsets` / `reminders_sent` (currently omitted from every copy).
 
-## 4. Design capture around the never-lose guarantee — decide before writing `app/api/ingest`
+## 4. Design capture around the never-lose guarantee — decide before writing `app/api/ingest` (done)
 
 **Files:** `lib/schemas/voice.ts`, `lib/schemas/captured.ts`, planned `app/api/ingest`, `lib/ai`, `lib/services/notes.ts`
 
