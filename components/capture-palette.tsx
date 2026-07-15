@@ -136,15 +136,18 @@ export function CapturePalette() {
 
 	return (
 		<>
-			{/* Mobile trigger — the rail carries the desktop one. */}
-			<button
-				type="button"
-				aria-label="Capture a thought"
-				onClick={openPalette}
-				className="fixed bottom-24 right-5 z-30 flex h-12 w-12 items-center justify-center border border-line-strong bg-accent font-serif text-2xl leading-none text-bg shadow-lg lg:hidden"
-			>
-				<span aria-hidden="true">+</span>
-			</button>
+			{/* Mobile trigger — the rail carries the desktop one. Hidden while the
+			    palette is open so it never becomes a stray tab target behind it. */}
+			{open ? null : (
+				<button
+					type="button"
+					aria-label="Capture a thought"
+					onClick={openPalette}
+					className="fixed bottom-24 right-5 z-30 flex h-12 w-12 items-center justify-center border border-line-strong bg-accent font-serif text-2xl leading-none text-bg shadow-lg lg:hidden"
+				>
+					<span aria-hidden="true">+</span>
+				</button>
+			)}
 
 			{open ? (
 				// biome-ignore lint/a11y/noStaticElementInteractions: backdrop is a click-to-dismiss convenience; Escape and the close button are the keyboard paths.
