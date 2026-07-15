@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { isActive, RAIL_EXTRAS, TABS } from "@/components/nav-links";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { openCapturePalette } from "@/lib/capture/palette-bus";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 function RailLink({ item, pathname }: { item: (typeof TABS)[number]; pathname: string }) {
@@ -36,6 +37,17 @@ export function DesktopRail({ email, theme }: { email: string; theme: "dark" | "
 			<Link href="/today" className="font-mono text-eyebrow uppercase tracking-widest text-ink">
 				Dispatch
 			</Link>
+
+			<button
+				type="button"
+				onClick={openCapturePalette}
+				className="mt-8 flex items-center justify-between border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-accent hover:text-ink"
+			>
+				<span>+ Capture</span>
+				<span aria-hidden="true" className="text-ink-4">
+					⌘J
+				</span>
+			</button>
 
 			<nav aria-label="Primary" className="mt-10 flex-1">
 				{TABS.map((t) => (

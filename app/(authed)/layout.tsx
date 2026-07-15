@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
+import { CapturePalette } from "@/components/capture-palette";
 import { DesktopRail } from "@/components/desktop-rail";
 import { requireOwnerPage } from "@/lib/auth";
 
@@ -14,6 +15,7 @@ export default async function AuthedLayout({ children }: { children: React.React
 				{children}
 			</main>
 			<BottomTabBar />
+			<CapturePalette />
 		</>
 	);
 }
