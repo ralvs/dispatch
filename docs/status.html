@@ -158,11 +158,11 @@
 	</header>
 
 	<section class="meter" aria-label="Overall progress">
-		<div class="meter-caption"><span>Progress</span><span>3 of 10 phases complete · 1 underway</span></div>
-		<div class="meter-track" role="img" aria-label="3 of 10 phases done, architecture hardening in progress">
-			<span class="done"></span><span class="done"></span><span class="done"></span>
+		<div class="meter-caption"><span>Progress</span><span>4 of 10 phases complete · 1 underway</span></div>
+		<div class="meter-track" role="img" aria-label="4 of 10 phases done, Phase 2 capture design underway">
+			<span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span>
 			<span class="active"></span>
-			<span></span><span></span><span></span><span></span><span></span><span></span>
+			<span></span><span></span><span></span><span></span><span></span>
 		</div>
 	</section>
 
@@ -207,30 +207,31 @@
 		</li>
 
 		<li class="phase">
-			<span class="dot active"></span>
-			<div class="phase-head"><h2>Architecture hardening — pre-Phase-2 fixes</h2><span class="tag active">Up next</span></div>
-			<p>Output of the July 15 architecture review: turn the discipline-only iron rules
-			into structural seams before the capture pipeline is built. Full actionable plan in
+			<span class="dot done"></span>
+			<div class="phase-head"><h2>Architecture hardening — pre-Phase-2 fixes</h2><span class="tag done">Shipped</span></div>
+			<p>Output of the July 15 architecture review, executed same-day: the discipline-only
+			iron rules are now structural seams. Full plan and status in
 			<code>docs/architecture-fixes-2026-07-15.md</code>.</p>
 			<ul>
-				<li><code>requireOwner()</code> returns the RLS client; <code>createRlsClient</code> goes private (rule #2 becomes structure)</li>
-				<li>Notification ledger seam — one funnel that acts + writes the <code>notifications</code> row (rule #6, required before cron/ingest/CalDAV)</li>
-				<li>One task shape: <code>lib/schemas/task.ts</code> as single source; overdue/top-3 predicates move into the module</li>
-				<li>Capture module designed around rule #4: persist raw first, adapters with typed fallbacks, <code>needs_review</code> degradation path</li>
-				<li><code>unwrap()</code> helper replacing the 14× untyped <code>if (error) throw error</code></li>
-				<li>Recurrence vocabulary migration — checklist CHECK omits <code>semiannually</code> (latent defect); add CHECK to <code>tasks.recurrence</code></li>
-				<li>Tests for the security predicates (<code>lib/auth.ts</code>, <code>lib/env.ts</code>) and <code>completeTask</code>'s recurrence wiring; create <code>CONTEXT.md</code> glossary</li>
+				<li><code>requireOwner()</code> now returns the RLS client; <code>createRlsClient</code> is private to the auth module (rule #2 is structure, not convention)</li>
+				<li>Notification ledger seam shipped — <code>recordedAction</code> acts and writes the <code>notifications</code> row in one call, entry derived from the action result; cross-family peer-reviewed (not crash-atomic, not a hard boundary — first cron/ingest caller must bring an idempotency key)</li>
+				<li>One task shape: <code>lib/schemas/task.ts</code> is the single source; overdue/top-3 predicates are tested pure functions in the module</li>
+				<li><code>unwrap()</code> helper replacing the 14× untyped <code>if (error) throw error</code> ritual</li>
+				<li>Recurrence vocabulary aligned across <code>lib/recurrence.ts</code> and both CHECK constraints (<code>semiannually</code> gap closed); migration applied to the remote Supabase project</li>
+				<li>Security-predicate tests for <code>lib/auth.ts</code> and <code>lib/env.ts</code>, plus <code>completeTask</code>'s recurrence wiring; <code>CONTEXT.md</code> domain glossary created — test count now 53</li>
 			</ul>
 			<div class="ref">docs/architecture-fixes-2026-07-15.md</div>
 		</li>
 
 		<li class="phase">
-			<span class="dot planned"></span>
-			<div class="phase-head"><h2>Phase 2 — AI capture pipeline</h2><span class="tag planned">Planned</span></div>
+			<span class="dot active"></span>
+			<div class="phase-head"><h2>Phase 2 — AI capture pipeline</h2><span class="tag active">Up next</span></div>
 			<p>The heart of the product: voice/text capture parsed by the LLM (via Vercel AI
 			Gateway) into structured records — tasks, notes, quotes, journal, people, events.
 			Iron rule: never lose a capture — parsing degrades to a <code>needs_review</code>
-			note, AI calls return typed fallbacks. Requires the <code>AI_GATEWAY_API_KEY</code>.</p>
+			note, AI calls return typed fallbacks. Requires the <code>AI_GATEWAY_API_KEY</code>.
+			Next step: the capture-pipeline design decision (item 4 of the hardening plan) —
+			persist raw input first, adapters with typed fallbacks behind internal seams.</p>
 		</li>
 
 		<li class="phase">

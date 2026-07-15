@@ -9,6 +9,25 @@ discipline-only rules break.
 Each item is independently committable (Conventional Commits, one commit per
 item). Run `bun run check` before every commit.
 
+## Status (2026-07-15)
+
+Executed same-day.
+
+- **1** — done (`9e5f2d0`).
+- **2** — done (`0ab6b41`, review fixes in `ffbf8df`; cross-family peer review
+  applied — `recordedAction`'s entry is now derived from the action result;
+  known limits documented: not crash-atomic, not a hard boundary; the first
+  cron/ingest caller must bring an idempotency key).
+- **3** — done (`772bfa8`).
+- **4** — intentionally **not done**. This is the Phase-2 opening design
+  decision and remains the next task.
+- **5** — done (`e5d3a87`).
+- **6** — done (`23764a5`; migration applied to the remote Supabase project).
+- **7** — needed no standalone action; absorbed by items 2 and 5.
+- Field-note fixes — done (`da35fe6`: auth fail-closed test, env coercion
+  test, `completeTask` recurrence-wiring test; `CONTEXT.md` created in
+  `bd0f9b1`).
+
 ## 1. Couple the owner guard to the RLS client — Strong
 
 **Files:** `lib/auth.ts`, `lib/supabase/server.ts`, `app/(authed)/tasks/actions.ts`, `app/(authed)/layout.tsx`
