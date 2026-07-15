@@ -54,6 +54,9 @@ export const NoteSchema = z.object({
 	related_person_id: z.string().uuid().nullable().optional(),
 	related_quote_id: z.string().uuid().nullable().optional(),
 	needs_review: z.boolean().default(false),
+	// Set when the note was degraded from a raw capture (docs/adr/0008); the
+	// reconciliation sweep dedupes on it. Null for hand-authored notes.
+	origin_capture_id: z.string().uuid().nullable().optional(),
 	attachments: z.array(AttachmentSchema).default([]),
 	created_at: z.string().datetime({ offset: true }),
 });
@@ -71,6 +74,7 @@ export const CreateNoteSchema = z.object({
 	related_person_id: z.string().uuid().nullable().optional(),
 	related_quote_id: z.string().uuid().nullable().optional(),
 	needs_review: z.boolean().optional(),
+	origin_capture_id: z.string().uuid().nullable().optional(),
 	attachments: z.array(AttachmentSchema).optional(),
 });
 
