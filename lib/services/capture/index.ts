@@ -33,6 +33,9 @@ export type CaptureInput = {
 	text: string;
 	via: "voice" | "text";
 	clientTime?: string;
+	// captured_data.source — where the firehose row came from. Palette captures
+	// omit it ('manual'); external surfaces (Phase 7) say who they are.
+	source?: "manual" | "webhook" | "watch";
 };
 
 export type ActionResult =

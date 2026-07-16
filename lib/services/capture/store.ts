@@ -24,7 +24,7 @@ export async function persistRaw(sb: SupabaseClient, input: CaptureInput): Promi
 		await sb
 			.from("captured_data")
 			.insert({
-				source: "manual",
+				source: input.source ?? "manual",
 				type: "voice_capture",
 				payload: {
 					transcript: input.text,
