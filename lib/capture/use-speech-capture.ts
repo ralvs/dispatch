@@ -2,13 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+	createTerminalSettle,
 	getSpeechRecognitionCtor,
 	joinSpoken,
 	type RecognitionLang,
 	type SpeechRecognitionEventLike,
 	type SpeechRecognitionLike,
 	type SpeechWindow,
+	type TerminalSettle,
 } from "@/lib/capture/speech";
+
+// Fallback for a graceful stop() whose recognizer fires neither `onend` nor
+// `onerror` — without this, a deferred submit waiting on `listening` to flip
+// false would stay armed forever.
+const STOP_SETTLE_TIMEOUT_MS = 2000;
 
 // The DOM lib does not type SpeechRecognition on Window, so read it through
 // our minimal shape.
@@ -32,7 +39,13 @@ type UseSpeechCapture = {
 	supported: boolean;
 	listening: boolean;
 	start: () => void;
+	// Graceful stop for the submit handoff: handlers stay attached so the
+	// terminal onend/onerror (or the safety timeout) can still flip `listening`.
 	stop: () => void;
+	// Immediate retirement for palette close/unmount: bumps the session,
+	// detaches handlers, and aborts the recognizer so no late onresult can
+	// reach a closed palette.
+	cancel: () => void;
 };
 
 /**
@@ -52,6 +65,7 @@ export function useSpeechCapture(opts: {
 	const [supported, setSupported] = useState(false);
 	const [listening, setListening] = useState(false);
 	const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+	const terminalRef = useRef<TerminalSettle | null>(null);
 	const sessionRef = useRef(0);
 	const finalRef = useRef("");
 	// Latest callback/lang without re-creating start().
@@ -64,18 +78,42 @@ export function useSpeechCapture(opts: {
 		setSupported(getSpeechRecognitionCtor(speechWindow()) !== null);
 	}, []);
 
+	// Retires the current session: bumps the id so any in-flight handlers and
+	// timers become no-ops, cancels a pending terminal-settle timer, and
+	// detaches/aborts the recognizer. Does not touch `listening` — callers that
+	// need the UI to reflect the retirement (cancel(), below) set it themselves.
+	const retire = useCallback(() => {
+		sessionRef.current += 1;
+		terminalRef.current?.cancel();
+		terminalRef.current = null;
+		detach(recognitionRef.current);
+		recognitionRef.current = null;
+	}, []);
+
 	const stop = useCallback(() => {
 		// Keep handlers attached: the terminal onend must still fire (and its
 		// session still matches) so a caller can act on the finalised transcript.
-		recognitionRef.current?.stop();
+		// A synchronous throw is itself a terminal signal — settle on it rather
+		// than leaving a deferred submit armed forever.
+		try {
+			recognitionRef.current?.stop();
+		} catch {
+			terminalRef.current?.settle();
+		}
 	}, []);
+
+	// Immediate retirement, e.g. on palette close: unlike stop(), no late event
+	// (onresult included) can reach this session afterwards.
+	const cancel = useCallback(() => {
+		retire();
+		setListening(false);
+	}, [retire]);
 
 	const start = useCallback(() => {
 		const Ctor = getSpeechRecognitionCtor(speechWindow());
 		if (!Ctor) return;
 		// Retire any prior session before starting a fresh one.
-		detach(recognitionRef.current);
-		sessionRef.current += 1;
+		retire();
 		const session = sessionRef.current;
 		const recognition = new Ctor();
 		recognition.lang = langRef.current;
@@ -93,26 +131,20 @@ export function useSpeechCapture(opts: {
 			}
 			onTranscriptRef.current(joinSpoken(finalRef.current, interim));
 		};
-		recognition.onerror = () => {
+		const terminal = createTerminalSettle(() => {
 			if (sessionRef.current === session) setListening(false);
-		};
-		recognition.onend = () => {
-			if (sessionRef.current === session) setListening(false);
-		};
+		}, STOP_SETTLE_TIMEOUT_MS);
+		recognition.onerror = () => terminal.settle();
+		recognition.onend = () => terminal.settle();
+		terminalRef.current = terminal;
 		recognitionRef.current = recognition;
 		recognition.start();
 		setListening(true);
-	}, []);
+	}, [retire]);
 
 	// Retire a running session on unmount so the mic is released and no late
 	// event can fire into an unmounted tree.
-	useEffect(
-		() => () => {
-			sessionRef.current += 1;
-			detach(recognitionRef.current);
-		},
-		[],
-	);
+	useEffect(() => retire, [retire]);
 
-	return { supported, listening, start, stop };
+	return { supported, listening, start, stop, cancel };
 }

@@ -61,3 +61,45 @@ export function getSpeechRecognitionCtor(win: SpeechWindow): SpeechRecognitionCt
 export function isSpeechRecognitionSupported(win: SpeechWindow): boolean {
 	return getSpeechRecognitionCtor(win) !== null;
 }
+
+export type TerminalSettle = {
+	/** Fires `onSettle` if it hasn't already; every trigger after the first is a no-op. */
+	settle: () => void;
+	/** Suppresses the fallback timer without firing `onSettle` — used when the
+	 * session is superseded or torn down before a terminal event arrives. */
+	cancel: () => void;
+};
+
+/**
+ * A recognizer's graceful `stop()` should end in exactly one terminal signal,
+ * but the Web Speech API gives no guarantee: `onend`, `onerror`, a synchronous
+ * throw from `stop()`, or (rarely) nothing at all are all observed in the
+ * wild. This wraps a callback so the first of those triggers wins and the
+ * rest are no-ops, with a fallback timer standing in for "nothing at all".
+ */
+export function createTerminalSettle(
+	onSettle: () => void,
+	timeoutMs: number,
+	scheduler: { setTimeout: typeof setTimeout; clearTimeout: typeof clearTimeout } = {
+		setTimeout,
+		clearTimeout,
+	},
+): TerminalSettle {
+	let settled = false;
+	const timer = scheduler.setTimeout(() => settle(), timeoutMs);
+
+	function settle(): void {
+		if (settled) return;
+		settled = true;
+		scheduler.clearTimeout(timer);
+		onSettle();
+	}
+
+	function cancel(): void {
+		if (settled) return;
+		settled = true;
+		scheduler.clearTimeout(timer);
+	}
+
+	return { settle, cancel };
+}

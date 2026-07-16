@@ -54,7 +54,9 @@ export function CapturePalette() {
 		// typed after a reopen, and cancel a deferred (mid-dictation) submit.
 		seqRef.current += 1;
 		submitAfterStopRef.current = false;
-		speech.stop();
+		// Retire (not graceful stop): detaches handlers and aborts the recognizer
+		// so a late onresult can't reach a closed palette or reappear on reopen.
+		speech.cancel();
 		setOpen(false);
 		setStatus("idle");
 		setReceipt(null);

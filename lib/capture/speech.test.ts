@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+	createTerminalSettle,
 	getSpeechRecognitionCtor,
 	isSpeechRecognitionSupported,
 	joinSpoken,
@@ -54,5 +55,57 @@ describe("isSpeechRecognitionSupported", () => {
 
 	it("is false when unsupported", () => {
 		expect(isSpeechRecognitionSupported({})).toBe(false);
+	});
+});
+
+describe("createTerminalSettle", () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it("settles on the first trigger and ignores the rest", () => {
+		const onSettle = vi.fn();
+		const terminal = createTerminalSettle(onSettle, 2000);
+		terminal.settle();
+		terminal.settle();
+		expect(onSettle).toHaveBeenCalledTimes(1);
+	});
+
+	it("falls back to the timeout when nothing else settles it", () => {
+		const onSettle = vi.fn();
+		createTerminalSettle(onSettle, 2000);
+		expect(onSettle).not.toHaveBeenCalled();
+		vi.advanceTimersByTime(1999);
+		expect(onSettle).not.toHaveBeenCalled();
+		vi.advanceTimersByTime(1);
+		expect(onSettle).toHaveBeenCalledTimes(1);
+	});
+
+	it("does not fire the timeout once settled early", () => {
+		const onSettle = vi.fn();
+		const terminal = createTerminalSettle(onSettle, 2000);
+		terminal.settle();
+		vi.advanceTimersByTime(2000);
+		expect(onSettle).toHaveBeenCalledTimes(1);
+	});
+
+	it("cancel suppresses the timeout without firing onSettle", () => {
+		const onSettle = vi.fn();
+		const terminal = createTerminalSettle(onSettle, 2000);
+		terminal.cancel();
+		vi.advanceTimersByTime(2000);
+		expect(onSettle).not.toHaveBeenCalled();
+	});
+
+	it("settle after cancel is a no-op", () => {
+		const onSettle = vi.fn();
+		const terminal = createTerminalSettle(onSettle, 2000);
+		terminal.cancel();
+		terminal.settle();
+		expect(onSettle).not.toHaveBeenCalled();
 	});
 });
