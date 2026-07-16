@@ -1,0 +1,4 @@
+# Pin the public registry so resolved URLs in bun.lock never point at a
+# private registry from the local ~/.npmrc (Vercel cannot authenticate there).
+[install]
+registry = "https://registry.npmjs.org"
