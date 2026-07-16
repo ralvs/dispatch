@@ -1,0 +1,74 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { describe, expect, it, vi } from "vitest";
+import { deleteRoutine, setCompletion } from "@/lib/services/routines";
+
+// Stub covering .from().upsert(), .from().delete().eq() (routines), and
+// .from().delete().eq().eq() (routine_completions pair delete).
+function stubSupabase() {
+	const upserts: Array<{ row: Record<string, unknown>; opts: Record<string, unknown> }> = [];
+	const deletedTables: string[] = [];
+
+	const sb = {
+		from: vi.fn((table: string) => ({
+			upsert: vi.fn((row: Record<string, unknown>, opts: Record<string, unknown>) => {
+				upserts.push({ row, opts });
+				return Promise.resolve({ data: null, error: null });
+			}),
+			delete: vi.fn(() => {
+				// routine_completions deletes chain two .eq() calls (routine_id +
+				// completed_date); routines deletes a single .eq("id", ...).
+				if (table === "routine_completions") {
+					return {
+						eq: vi.fn(() => ({
+							eq: vi.fn(async () => {
+								deletedTables.push(table);
+								return { data: null, error: null };
+							}),
+						})),
+					};
+				}
+				return {
+					eq: vi.fn(async () => {
+						deletedTables.push(table);
+						return { data: null, error: null };
+					}),
+				};
+			}),
+		})),
+	} as unknown as SupabaseClient;
+
+	return { sb, upserts, deletedTables };
+}
+
+describe("setCompletion", () => {
+	it("upserts with ignoreDuplicates so a double-tap is a no-op", async () => {
+		const { sb, upserts } = stubSupabase();
+
+		await setCompletion(sb, "routine-1", "2026-07-16", true);
+
+		expect(upserts).toHaveLength(1);
+		expect(upserts[0].row).toEqual({ routine_id: "routine-1", completed_date: "2026-07-16" });
+		expect(upserts[0].opts).toMatchObject({
+			onConflict: "routine_id,completed_date",
+			ignoreDuplicates: true,
+		});
+	});
+
+	it("deletes the (routine_id, completed_date) pair when untoggling", async () => {
+		const { sb, deletedTables } = stubSupabase();
+
+		await setCompletion(sb, "routine-1", "2026-07-16", false);
+
+		expect(deletedTables).toContain("routine_completions");
+	});
+});
+
+describe("deleteRoutine", () => {
+	it("deletes the routine row; completions cascade via FK", async () => {
+		const { sb, deletedTables } = stubSupabase();
+
+		await deleteRoutine(sb, "routine-1");
+
+		expect(deletedTables).toContain("routines");
+	});
+});
