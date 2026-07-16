@@ -39,3 +39,10 @@ export const CreateBookSchema = z.object({
 });
 
 export const UpdateBookSchema = CreateBookSchema.partial();
+
+// Payload accepted when moving a book to `finished` — rating and summary are
+// optional at the moment of finishing; can be filled in later via an edit.
+export const FinishBookSchema = z.object({
+	rating: z.number().int().min(1).max(5).nullable().optional(),
+	my_summary: z.string().nullable().optional(),
+});
