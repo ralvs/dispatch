@@ -49,16 +49,16 @@ describe("parse", () => {
 		// generateObject enforces CaptureActionsSchema and throws when the model's
 		// output does not match — an unknown verb is exactly such a mismatch. The
 		// parser catches that and degrades to `failed` rather than crashing.
-		expect(CaptureActionsSchema.safeParse([{ action: "create_quote", text: "x" }]).success).toBe(
+		expect(CaptureActionsSchema.safeParse([{ action: "create_project", name: "x" }]).success).toBe(
 			false,
 		);
 
 		(isAiConfigured as Mock).mockReturnValue(true);
 		(generateObject as Mock).mockRejectedValue(new Error("TypeValidationError"));
 
-		const result = await parse("uma citação", CTX);
+		const result = await parse("um novo projeto", CTX);
 
-		expect(result).toEqual({ ok: false, reason: "failed", raw: "uma citação" });
+		expect(result).toEqual({ ok: false, reason: "failed", raw: "um novo projeto" });
 	});
 
 	it("returns the parsed actions on success", async () => {

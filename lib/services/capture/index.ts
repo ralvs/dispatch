@@ -36,7 +36,7 @@ export type CaptureInput = {
 };
 
 export type ActionResult =
-	| { action: string; ok: true; entity: { table: "tasks" | "notes"; id: string } }
+	| { action: string; ok: true; entity: { table: "tasks" | "notes" | "quotes"; id: string } }
 	| { action: string; ok: false; reason: string; noteId: string };
 
 export type DegradeReason = "parser_unavailable" | "parser_failed" | "capture_error";

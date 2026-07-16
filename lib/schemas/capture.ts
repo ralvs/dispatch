@@ -41,6 +41,16 @@ export const CaptureActionSchema = z.discriminatedUnion("action", [
 		tags: z.array(z.string()).optional(),
 	}),
 	z.object({
+		action: z.literal("create_quote"),
+		text: z.string().min(1),
+		source_type: z
+			.enum(["book", "article", "podcast", "sermon", "video", "conversation", "other"])
+			.nullable()
+			.optional(),
+		source_author: z.string().nullable().optional(),
+		tags: z.array(z.string()).optional(),
+	}),
+	z.object({
 		// The parser flags content it can't confidently place — typically because
 		// it mentions an entity (project, person, quote) v1 has no service for —
 		// instead of guessing. The executor turns this into a needs_review note.

@@ -34,6 +34,8 @@ function systemPrompt(ctx: ParseContext): string {
 		"  priority is 1 (highest) to 4. due_date is YYYY-MM-DD, due_time is HH:mm.",
 		"- create_note { body, source_type?, tags? } — a thought, observation, or",
 		"  anything to remember that is not itself a task.",
+		"- create_quote { text, source_type?, source_author?, tags? } — a quotation",
+		"  the user is saving from something they read/heard. Copy text verbatim.",
 		"- needs_review { reason, proposed_kind? } — use this INSTEAD of guessing",
 		"  when the utterance references an entity you cannot resolve (a specific",
 		"  project, person, or quote). Set proposed_kind to the action you would",

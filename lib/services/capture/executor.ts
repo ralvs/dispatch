@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CaptureAction } from "@/lib/schemas/capture";
 import type { ActionResult } from "@/lib/services/capture";
 import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
+import { createQuote } from "@/lib/services/quotes";
 import { createTask } from "@/lib/services/tasks";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -68,6 +69,16 @@ async function runOne(
 					origin_capture_id: prov.capturedId,
 				});
 				return { action: "create_note", ok: true, entity: { table: "notes", id: note.id } };
+			}
+			case "create_quote": {
+				const q = await createQuote(sb, {
+					text: action.text,
+					source_type: action.source_type ?? null,
+					source_author: action.source_author ?? null,
+					tags: action.tags,
+					added_via: "voice",
+				});
+				return { action: "create_quote", ok: true, entity: { table: "quotes", id: q.id } };
 			}
 			case "needs_review":
 				return degrade(sb, prov, "needs_review", action.reason, action.proposed_kind);
