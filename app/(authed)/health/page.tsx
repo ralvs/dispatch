@@ -33,11 +33,11 @@ export default async function HealthPage() {
 				<div className="mt-3">
 					<MetricForm />
 				</div>
-				<ul className="mt-2" aria-label="Health metrics">
-					{metrics.length === 0 ? (
-						<p className="py-6 text-center font-serif italic text-ink-3">No readings logged yet.</p>
-					) : (
-						metrics.map((m) => (
+				{metrics.length === 0 ? (
+					<p className="py-6 text-center font-serif italic text-ink-3">No readings logged yet.</p>
+				) : (
+					<ul className="mt-2" aria-label="Health metrics">
+						{metrics.map((m) => (
 							<li key={m.id} className="hairline flex items-center justify-between py-3">
 								<div>
 									<p className="font-serif text-base text-ink">
@@ -59,9 +59,9 @@ export default async function HealthPage() {
 									</button>
 								</form>
 							</li>
-						))
-					)}
-				</ul>
+						))}
+					</ul>
+				)}
 			</section>
 
 			<section className="mt-8">
@@ -69,11 +69,11 @@ export default async function HealthPage() {
 				<div className="mt-3">
 					<MedicationForm />
 				</div>
-				<ul className="mt-2" aria-label="Medications">
-					{medications.length === 0 ? (
-						<p className="py-6 text-center font-serif italic text-ink-3">No medications on file.</p>
-					) : (
-						medications.map((med) => (
+				{medications.length === 0 ? (
+					<p className="py-6 text-center font-serif italic text-ink-3">No medications on file.</p>
+				) : (
+					<ul className="mt-2" aria-label="Medications">
+						{medications.map((med) => (
 							<li key={med.id} className="hairline flex items-center justify-between py-3">
 								<div>
 									<p className="font-serif text-base text-ink">
@@ -110,9 +110,9 @@ export default async function HealthPage() {
 									</form>
 								</div>
 							</li>
-						))
-					)}
-				</ul>
+						))}
+					</ul>
+				)}
 			</section>
 
 			<section className="mt-8">
@@ -120,11 +120,11 @@ export default async function HealthPage() {
 				<div className="mt-3">
 					<VisitForm />
 				</div>
-				<ul className="mt-2" aria-label="Health visits">
-					{visits.length === 0 ? (
-						<p className="py-6 text-center font-serif italic text-ink-3">No visits recorded yet.</p>
-					) : (
-						visits.map((v) => (
+				{visits.length === 0 ? (
+					<p className="py-6 text-center font-serif italic text-ink-3">No visits recorded yet.</p>
+				) : (
+					<ul className="mt-2" aria-label="Health visits">
+						{visits.map((v) => (
 							<li key={v.id} className="hairline flex items-center justify-between py-3">
 								<div>
 									<p className="font-serif text-base text-ink">
@@ -146,9 +146,9 @@ export default async function HealthPage() {
 									</button>
 								</form>
 							</li>
-						))
-					)}
-				</ul>
+						))}
+					</ul>
+				)}
 			</section>
 		</div>
 	);

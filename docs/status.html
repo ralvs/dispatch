@@ -158,11 +158,11 @@
 	</header>
 
 	<section class="meter" aria-label="Overall progress">
-		<div class="meter-caption"><span>Progress</span><span>6 of 10 phases complete</span></div>
-		<div class="meter-track" role="img" aria-label="6 of 10 phases done">
+		<div class="meter-caption"><span>Progress</span><span>7 of 10 phases complete</span></div>
+		<div class="meter-track" role="img" aria-label="7 of 10 phases done">
 			<span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span>
-			<span class="done"></span><span class="done"></span>
-			<span></span><span></span><span></span><span></span>
+			<span class="done"></span><span class="done"></span><span class="done"></span>
+			<span></span><span></span><span></span>
 		</div>
 	</section>
 
@@ -251,11 +251,23 @@
 		</li>
 
 		<li class="phase">
+			<span class="dot done"></span>
+			<div class="phase-head"><h2>Phase 4 — Journal, routines, health</h2><span class="tag done">Shipped</span></div>
+			<ul>
+				<li>Services with tests: <code>journal</code> (text entries, v1 — no images/OCR), <code>routines</code> over the existing <code>routine-stats</code> library, <code>health</code> (metrics, medications, visits — labs/wellbeing/workouts deferred)</li>
+				<li>Pages: <code>/journal</code> with date-grouped entries, <code>/routines</code> with idempotent done-today toggle, streaks, and 30-day heatmap, <code>/health</code> with three sections</li>
+				<li>Capture vocabulary: <code>create_journal_entry</code> and <code>log_health_metric</code> verbs; app timezone threaded through capture provenance so journal days respect iron rule #1; <code>complete_routine</code> deferred (entity resolution)</li>
+				<li>Journal surfaced in the rail. Test count now 142.</li>
+			</ul>
+			<div class="ref">commits 2cf2d62…68dd61a</div>
+		</li>
+
+		<li class="phase">
 			<span class="dot planned"></span>
-			<div class="phase-head"><h2>Phases 4–5 — The rest of the record kinds</h2><span class="tag planned">Planned</span></div>
-			<p>Pages and services for journal, projects &amp; domains (full CRUD, per ADR 0007),
-			routines with streak stats, health log, books, and milestones — the schemas and
-			stats libraries already exist; the surfaces don't.</p>
+			<div class="phase-head"><h2>Phase 5 — The last record kinds</h2><span class="tag planned">Planned</span></div>
+			<p>Pages and services for projects &amp; domains (full CRUD, per ADR 0007), books,
+			and milestones — plus the health surfaces deferred from Phase 4 (labs, wellbeing,
+			workouts) if wanted.</p>
 		</li>
 
 		<li class="phase">
