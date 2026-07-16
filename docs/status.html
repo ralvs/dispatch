@@ -246,6 +246,7 @@
 				<li>Pages: <code>/notes</code> (needs-review queue first, then all), <code>/quotes</code> with inline annotations, <code>/people</code> list + detail with facts and interaction log</li>
 				<li>Capture vocabulary grew per ADR-0008's path: <code>create_quote</code> verb + executor + parser prompt; person verbs stay deferred (entity resolution) — references still degrade to <code>needs_review</code></li>
 				<li>Notes and Quotes surfaced in the desktop rail; People tab now resolves. Test count now 126.</li>
+				<li>Notes body is now edited in place — TipTap live markdown, 2s debounced autosave with save-on-blur (ADR-0009)</li>
 			</ul>
 			<div class="ref">commits 6cb5ebf…0e6e93d</div>
 		</li>
