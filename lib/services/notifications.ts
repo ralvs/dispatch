@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ServiceError, unwrap } from "@/lib/services/errors";
+import { sendPushToAll } from "@/lib/services/push";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Notification ledger — the sanctioned seam for iron rule #6:
@@ -98,6 +99,25 @@ export class LedgerError extends ServiceError {
 	}
 }
 
+/**
+ * Best-effort web-push delivery for a just-committed ledger row (ADR-0005).
+ * Awaited (not fire-and-forget — serverless functions don't outlive the
+ * response), but never allowed to throw or reject into the caller: a push
+ * failure must never turn a successful ledger write into a caller-visible
+ * error.
+ */
+async function pushNotification(sb: SupabaseClient, entry: NotificationEntry): Promise<void> {
+	try {
+		await sendPushToAll(sb, {
+			title: entry.title,
+			body: entry.body ?? undefined,
+			url: entry.source_url ?? undefined,
+		});
+	} catch {
+		// Never surface a push failure to the caller of recordedAction/recordNotification.
+	}
+}
+
 async function insertNotification(
 	sb: SupabaseClient,
 	entry: NotificationEntry,
@@ -155,7 +175,11 @@ export async function recordedAction<T>(
 	} catch (cause) {
 		throw new LedgerError(entry, result, cause);
 	}
-	// Web-push delivery (ADR-0005, planned) will hook in here, post-commit.
+	// Web-push delivery (ADR-0005). `sb` is RLS-scoped on session paths (server
+	// actions/route handlers via requireOwner()), and push_subscriptions has RLS
+	// enabled with no policies — so that select silently returns zero rows there.
+	// Only a service-role `sb` (cron/ingest/autonomous callers) actually pushes.
+	await pushNotification(sb, entry);
 
 	return { result, notification };
 }
@@ -170,8 +194,11 @@ export async function recordNotification(
 	sb: SupabaseClient,
 	entry: NotificationEntry,
 ): Promise<NotificationRow> {
-	return insertNotification(sb, entry);
-	// Web-push delivery (ADR-0005, planned) will hook in here, post-commit.
+	const notification = await insertNotification(sb, entry);
+	// Web-push delivery (ADR-0005). Same RLS caveat as recordedAction above:
+	// only a service-role `sb` actually reaches any subscriptions to push to.
+	await pushNotification(sb, entry);
+	return notification;
 }
 
 // ─── Read / update surface ─────────────────────────────────────────────────
