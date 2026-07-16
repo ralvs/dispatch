@@ -7,7 +7,7 @@ export default async function NotesPage() {
 	const { sb } = await requireOwnerPage();
 	const [needsReview, allNotes] = await Promise.all([
 		listNotes(sb, { needsReview: true }),
-		listNotes(sb),
+		listNotes(sb, { needsReview: false }),
 	]);
 
 	return (

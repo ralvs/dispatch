@@ -5,6 +5,7 @@ import {
 	createNeedsReviewNote,
 	createNote,
 	deleteNote,
+	listNotes,
 	resolveNeedsReview,
 } from "@/lib/services/notes";
 
@@ -103,6 +104,56 @@ function stubMutationSupabase() {
 
 	return { sb, updatePatches, wasDeleted: () => deleted };
 }
+
+// Minimal chainable stub mirroring the read path: .from().select().order()
+// and an optional trailing .eq() when a needsReview filter is applied. Both
+// the .order() result and the .eq() result are awaitable directly, matching
+// how listNotes conditionally chains .eq() before awaiting the query.
+function stubListSupabase() {
+	const eqCalls: Array<[string, unknown]> = [];
+	const result = Promise.resolve({ data: [], error: null });
+	const sb = {
+		from: vi.fn(() => ({
+			select: vi.fn(() => ({
+				order: vi.fn(() =>
+					Object.assign(Promise.resolve({ data: [], error: null }), {
+						eq: vi.fn((col: string, val: unknown) => {
+							eqCalls.push([col, val]);
+							return result;
+						}),
+					}),
+				),
+			})),
+		})),
+	} as unknown as SupabaseClient;
+	return { sb, eqCalls };
+}
+
+describe("listNotes", () => {
+	it("applies no needs_review filter by default", async () => {
+		const { sb, eqCalls } = stubListSupabase();
+
+		await listNotes(sb);
+
+		expect(eqCalls).toEqual([]);
+	});
+
+	it("filters to needs_review = true", async () => {
+		const { sb, eqCalls } = stubListSupabase();
+
+		await listNotes(sb, { needsReview: true });
+
+		expect(eqCalls).toEqual([["needs_review", true]]);
+	});
+
+	it("filters to needs_review = false", async () => {
+		const { sb, eqCalls } = stubListSupabase();
+
+		await listNotes(sb, { needsReview: false });
+
+		expect(eqCalls).toEqual([["needs_review", false]]);
+	});
+});
 
 describe("resolveNeedsReview", () => {
 	it("clears needs_review only, preserving the body", async () => {

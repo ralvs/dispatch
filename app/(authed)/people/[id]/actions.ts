@@ -7,8 +7,8 @@ import { requireOwnerPage } from "@/lib/auth";
 import { instantFromLocal } from "@/lib/dates";
 import {
 	CreatePersonFactSchema,
-	CreatePersonSchema,
-	PersonInteractionTypeSchema,
+	CreatePersonInteractionSchema,
+	UpdatePersonSchema,
 } from "@/lib/schemas/person";
 import {
 	createFact,
@@ -28,7 +28,7 @@ function revalidatePersonViews(id: string) {
 export async function updatePersonAction(id: string, formData: FormData) {
 	const { sb } = await requireOwnerPage();
 	const personId = z.uuid().parse(id);
-	const parsed = CreatePersonSchema.partial().parse({
+	const parsed = UpdatePersonSchema.parse({
 		name: formData.get("name") || undefined,
 		relationship_type: formData.get("relationship_type") || null,
 		email: formData.get("email") || null,
@@ -75,11 +75,12 @@ export async function createInteractionAction(personId: string, formData: FormDa
 		const tz = await getAppTimezone(sb);
 		occurredAt = instantFromLocal(dateIso, typeof time === "string" && time ? time : "00:00", tz);
 	}
-	await createInteraction(sb, id, {
-		interaction_type: PersonInteractionTypeSchema.parse(formData.get("interaction_type")),
-		notes: (formData.get("notes") as string) || null,
+	const parsed = CreatePersonInteractionSchema.parse({
+		interaction_type: formData.get("interaction_type"),
+		notes: formData.get("notes") || null,
 		occurred_at: occurredAt,
 	});
+	await createInteraction(sb, id, parsed);
 	revalidatePersonViews(id);
 }
 

@@ -98,7 +98,7 @@ export async function listNotes(
 	filters: { needsReview?: boolean } = {},
 ): Promise<NoteListRow[]> {
 	let q = sb.from("notes").select(NOTE_LIST_SELECT).order("created_at", { ascending: false });
-	if (filters.needsReview) q = q.eq("needs_review", true);
+	if (filters.needsReview !== undefined) q = q.eq("needs_review", filters.needsReview);
 	const data = unwrap(await q);
 	return (data ?? []) as unknown as NoteListRow[];
 }

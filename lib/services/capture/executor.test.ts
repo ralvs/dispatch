@@ -5,8 +5,10 @@ import { runActions } from "@/lib/services/capture/executor";
 
 vi.mock("@/lib/services/tasks", () => ({ createTask: vi.fn() }));
 vi.mock("@/lib/services/notes", () => ({ createNote: vi.fn(), createNeedsReviewNote: vi.fn() }));
+vi.mock("@/lib/services/quotes", () => ({ createQuote: vi.fn() }));
 
 import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
+import { createQuote } from "@/lib/services/quotes";
 import { createTask } from "@/lib/services/tasks";
 
 const sb = {} as SupabaseClient;
@@ -64,6 +66,35 @@ describe("runActions", () => {
 		expect(createNeedsReviewNote).toHaveBeenCalledWith(
 			sb,
 			expect.objectContaining({ proposed_kind: "create_project", origin_capture_id: "cap-1" }),
+		);
+	});
+
+	it("creates a quote for the create_quote verb", async () => {
+		(createQuote as Mock).mockResolvedValue({ id: "quote-1" });
+
+		const actions: CaptureAction[] = [{ action: "create_quote", text: "stay hungry" }];
+
+		const results = await runActions(sb, actions, PROV);
+
+		expect(results[0]).toEqual({
+			action: "create_quote",
+			ok: true,
+			entity: { table: "quotes", id: "quote-1" },
+		});
+	});
+
+	it("degrades create_quote to a linked needs_review note when the insert fails", async () => {
+		(createQuote as Mock).mockRejectedValue(new Error("db down"));
+		(createNeedsReviewNote as Mock).mockResolvedValue({ id: "review-3" });
+
+		const actions: CaptureAction[] = [{ action: "create_quote", text: "stay hungry" }];
+
+		const results = await runActions(sb, actions, PROV);
+
+		expect(results[0]).toMatchObject({ action: "create_quote", ok: false, noteId: "review-3" });
+		expect(createNeedsReviewNote).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({ body: "verbatim text", origin_capture_id: "cap-1" }),
 		);
 	});
 });
