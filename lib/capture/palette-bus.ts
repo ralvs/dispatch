@@ -7,6 +7,8 @@
 
 export const OPEN_CAPTURE_EVENT = "dispatch:open-capture";
 
-export function openCapturePalette(): void {
-	window.dispatchEvent(new CustomEvent(OPEN_CAPTURE_EVENT));
+export function openCapturePalette(opts?: { voice?: boolean }): void {
+	window.dispatchEvent(
+		new CustomEvent(OPEN_CAPTURE_EVENT, { detail: { voice: opts?.voice ?? false } }),
+	);
 }

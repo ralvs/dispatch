@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useId, useRef, useState, useTransition } from "react";
 import { captureText } from "@/app/(authed)/capture/actions";
-import { OPEN_CAPTURE_EVENT } from "@/lib/capture/palette-bus";
+import { OPEN_CAPTURE_EVENT, openCapturePalette } from "@/lib/capture/palette-bus";
 import { type CaptureReceipt, deriveReceipt } from "@/lib/capture/receipt";
 import { isOpenShortcut, isSubmitShortcut } from "@/lib/capture/shortcuts";
 import { joinSpoken, nextLang, type RecognitionLang } from "@/lib/capture/speech";
 import { isBlank, isStaleSubmission } from "@/lib/capture/submission";
 import { useSpeechCapture } from "@/lib/capture/use-speech-capture";
+import { readCaptureIntent } from "@/lib/pwa/capture-intent";
 import type { CapturedRecord } from "@/lib/services/capture";
 
 type Status = "idle" | "pending" | "done" | "error";
@@ -18,6 +19,9 @@ export function CapturePalette() {
 	const [open, setOpen] = useState(false);
 	const [text, setText] = useState("");
 	const [status, setStatus] = useState<Status>("idle");
+	// Whether the browser was offline at the moment of the last failure —
+	// decides which error copy to show and whether an auto-retry is armed.
+	const [offlineError, setOfflineError] = useState(false);
 	const [receipt, setReceipt] = useState<CaptureReceipt | null>(null);
 	const [lang, setLang] = useState<RecognitionLang>("pt-BR");
 	const [pending, startTransition] = useTransition();
@@ -47,7 +51,21 @@ export function CapturePalette() {
 		},
 	});
 
-	const openPalette = useCallback(() => setOpen(true), []);
+	// Opens from the window event, optionally starting dictation in the same
+	// tick — this only works when the event was dispatched from a real user
+	// gesture (the FAB tap), since starting SpeechRecognition needs that
+	// activation to still be live.
+	const onOpenCaptureEvent = useCallback(
+		(event: Event) => {
+			const voice = (event as CustomEvent<{ voice?: boolean }>).detail?.voice;
+			setOpen(true);
+			if (voice && speech.supported) {
+				speechBaseRef.current = "";
+				speech.start();
+			}
+		},
+		[speech],
+	);
 
 	const closePalette = useCallback(() => {
 		// Invalidate any in-flight submit so its completion can't clobber a draft
@@ -59,6 +77,7 @@ export function CapturePalette() {
 		speech.cancel();
 		setOpen(false);
 		setStatus("idle");
+		setOfflineError(false);
 		setReceipt(null);
 		restoreFocusRef.current?.focus();
 	}, [speech]);
@@ -72,12 +91,27 @@ export function CapturePalette() {
 			}
 		}
 		window.addEventListener("keydown", onKeyDown);
-		window.addEventListener(OPEN_CAPTURE_EVENT, openPalette);
+		window.addEventListener(OPEN_CAPTURE_EVENT, onOpenCaptureEvent);
 		return () => {
 			window.removeEventListener("keydown", onKeyDown);
-			window.removeEventListener(OPEN_CAPTURE_EVENT, openPalette);
+			window.removeEventListener(OPEN_CAPTURE_EVENT, onOpenCaptureEvent);
 		};
-	}, [openPalette]);
+	}, [onOpenCaptureEvent]);
+
+	// Deep link from the manifest shortcut (?capture=voice): open the palette
+	// but never auto-start the mic — arriving via navigation isn't a user
+	// gesture, so SpeechRecognition.start() would be silently rejected. Runs
+	// once on mount; the ref guards against the effect re-firing after the
+	// param is stripped.
+	const intentHandledRef = useRef(false);
+	useEffect(() => {
+		if (intentHandledRef.current) return;
+		intentHandledRef.current = true;
+		if (readCaptureIntent(window.location.search) === "voice") {
+			setOpen(true);
+			window.history.replaceState(null, "", window.location.pathname);
+		}
+	}, []);
 
 	// Move focus into the palette on open, restore it on close.
 	useEffect(() => {
@@ -118,10 +152,24 @@ export function CapturePalette() {
 				// Never-lose at the UI layer (iron rule #4): the raw insert or the
 				// network failed, so nothing was persisted. Keep the draft exactly
 				// as typed and offer a retry — never clear on error.
+				setOfflineError(!navigator.onLine);
 				setStatus("error");
 			}
 		});
 	}, [text, pending]);
+
+	// While an error is showing and the browser was offline for it, retry once
+	// automatically as soon as connectivity returns — the draft is untouched,
+	// so this is just a courtesy re-submit rather than something the user has
+	// to remember to trigger by hand.
+	useEffect(() => {
+		if (status !== "error" || !offlineError) return;
+		function onOnline() {
+			performSubmit();
+		}
+		window.addEventListener("online", onOnline);
+		return () => window.removeEventListener("online", onOnline);
+	}, [status, offlineError, performSubmit]);
 
 	const submit = useCallback(() => {
 		if (isBlank(text) || pending) return;
@@ -188,8 +236,9 @@ export function CapturePalette() {
 				<button
 					type="button"
 					aria-label="Capture a thought"
-					onClick={openPalette}
-					className="fixed bottom-24 right-5 z-30 flex h-12 w-12 items-center justify-center border border-line-strong bg-accent font-serif text-2xl leading-none text-bg shadow-lg lg:hidden"
+					onClick={() => openCapturePalette({ voice: true })}
+					style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
+					className="fixed right-5 z-30 flex h-12 w-12 items-center justify-center border border-line-strong bg-accent font-serif text-2xl leading-none text-bg shadow-lg lg:hidden"
 				>
 					<span aria-hidden="true">+</span>
 				</button>
@@ -209,7 +258,7 @@ export function CapturePalette() {
 						aria-labelledby={titleId}
 						onClick={(event) => event.stopPropagation()}
 						onKeyDown={onDialogKeyDown}
-						className="w-full max-w-md border border-line-strong bg-surface p-5 shadow-xl"
+						className="max-h-[85dvh] w-full max-w-md overflow-y-auto border border-line-strong bg-surface p-5 shadow-xl"
 					>
 						<div className="mb-3 flex items-center justify-between">
 							<h2
@@ -282,7 +331,9 @@ export function CapturePalette() {
 
 								{status === "error" ? (
 									<p className="mt-2 text-sm text-accent">
-										Couldn't save — your text is kept. Check your connection and retry.
+										{offlineError
+											? "Offline — draft kept."
+											: "Couldn't save — your text is kept. Check your connection and retry."}
 									</p>
 								) : null}
 

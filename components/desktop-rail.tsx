@@ -40,7 +40,7 @@ export function DesktopRail({ email, theme }: { email: string; theme: "dark" | "
 
 			<button
 				type="button"
-				onClick={openCapturePalette}
+				onClick={() => openCapturePalette()}
 				className="mt-8 flex items-center justify-between border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-accent hover:text-ink"
 			>
 				<span>+ Capture</span>
