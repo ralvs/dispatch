@@ -13,8 +13,13 @@ export const TABS: NavItem[] = [
 	{ key: "domains", label: "Domains", href: "/domains" },
 	{ key: "projects", label: "Projects", href: "/projects" },
 	{ key: "people", label: "People", href: "/people" },
-	// Library's hub page is future work; books is its front door for now.
-	{ key: "library", label: "Library", href: "/books", aliases: ["/quotes", "/notes", "/library"] },
+	// Library is the mobile front door to everything without its own tab.
+	{
+		key: "library",
+		label: "Library",
+		href: "/library",
+		aliases: ["/books", "/notes", "/quotes", "/journal", "/routines", "/health"],
+	},
 ];
 
 // Desktop rail gets the full map.
