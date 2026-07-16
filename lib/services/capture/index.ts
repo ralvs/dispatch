@@ -36,7 +36,14 @@ export type CaptureInput = {
 };
 
 export type ActionResult =
-	| { action: string; ok: true; entity: { table: "tasks" | "notes" | "quotes"; id: string } }
+	| {
+			action: string;
+			ok: true;
+			entity: {
+				table: "tasks" | "notes" | "quotes" | "journal_entries" | "health_metrics";
+				id: string;
+			};
+	  }
 	| { action: string; ok: false; reason: string; noteId: string };
 
 export type DegradeReason = "parser_unavailable" | "parser_failed" | "capture_error";
@@ -101,7 +108,7 @@ async function process(
 	const actions: CaptureAction[] = parsed.ok
 		? parsed.actions
 		: [{ action: "create_note", body: raw.text, source_type: "own_thought" }];
-	const results = await runActions(sb, actions, { capturedId, transcript: raw.text });
+	const results = await runActions(sb, actions, { capturedId, transcript: raw.text, tz });
 
 	// Terminal marker (best-effort — markParsed never throws).
 	await markParsed(sb, capturedId);

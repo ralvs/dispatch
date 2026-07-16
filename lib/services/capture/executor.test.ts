@@ -6,13 +6,17 @@ import { runActions } from "@/lib/services/capture/executor";
 vi.mock("@/lib/services/tasks", () => ({ createTask: vi.fn() }));
 vi.mock("@/lib/services/notes", () => ({ createNote: vi.fn(), createNeedsReviewNote: vi.fn() }));
 vi.mock("@/lib/services/quotes", () => ({ createQuote: vi.fn() }));
+vi.mock("@/lib/services/journal", () => ({ createEntry: vi.fn() }));
+vi.mock("@/lib/services/health", () => ({ createMetric: vi.fn() }));
 
+import { createMetric } from "@/lib/services/health";
+import { createEntry } from "@/lib/services/journal";
 import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
 import { createQuote } from "@/lib/services/quotes";
 import { createTask } from "@/lib/services/tasks";
 
 const sb = {} as SupabaseClient;
-const PROV = { capturedId: "cap-1", transcript: "verbatim text" };
+const PROV = { capturedId: "cap-1", transcript: "verbatim text", tz: "America/Sao_Paulo" };
 
 beforeEach(() => {
 	vi.clearAllMocks();
@@ -92,6 +96,87 @@ describe("runActions", () => {
 		const results = await runActions(sb, actions, PROV);
 
 		expect(results[0]).toMatchObject({ action: "create_quote", ok: false, noteId: "review-3" });
+		expect(createNeedsReviewNote).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({ body: "verbatim text", origin_capture_id: "cap-1" }),
+		);
+	});
+
+	it("creates a journal entry for the create_journal_entry verb, defaulting entry_date to today in the app tz", async () => {
+		(createEntry as Mock).mockResolvedValue({ id: "entry-1" });
+
+		const actions: CaptureAction[] = [
+			{ action: "create_journal_entry", body: "today was a good day" },
+		];
+
+		const results = await runActions(sb, actions, PROV);
+
+		expect(results[0]).toEqual({
+			action: "create_journal_entry",
+			ok: true,
+			entity: { table: "journal_entries", id: "entry-1" },
+		});
+		expect(createEntry).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({
+				transcription_text: "today was a good day",
+				source: "voice",
+			}),
+		);
+	});
+
+	it("degrades create_journal_entry to a linked needs_review note when the insert fails", async () => {
+		(createEntry as Mock).mockRejectedValue(new Error("db down"));
+		(createNeedsReviewNote as Mock).mockResolvedValue({ id: "review-4" });
+
+		const actions: CaptureAction[] = [{ action: "create_journal_entry", body: "diary text" }];
+
+		const results = await runActions(sb, actions, PROV);
+
+		expect(results[0]).toMatchObject({
+			action: "create_journal_entry",
+			ok: false,
+			noteId: "review-4",
+		});
+		expect(createNeedsReviewNote).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({ body: "verbatim text", origin_capture_id: "cap-1" }),
+		);
+	});
+
+	it("logs a health metric for the log_health_metric verb", async () => {
+		(createMetric as Mock).mockResolvedValue({ id: "metric-1" });
+
+		const actions: CaptureAction[] = [
+			{ action: "log_health_metric", metric: "weight", value: 82.5, unit: "kg" },
+		];
+
+		const results = await runActions(sb, actions, PROV);
+
+		expect(results[0]).toEqual({
+			action: "log_health_metric",
+			ok: true,
+			entity: { table: "health_metrics", id: "metric-1" },
+		});
+		expect(createMetric).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({ metric: "weight", value: 82.5, unit: "kg", source: "manual" }),
+		);
+	});
+
+	it("degrades log_health_metric to a linked needs_review note when the insert fails", async () => {
+		(createMetric as Mock).mockRejectedValue(new Error("db down"));
+		(createNeedsReviewNote as Mock).mockResolvedValue({ id: "review-5" });
+
+		const actions: CaptureAction[] = [{ action: "log_health_metric", metric: "weight" }];
+
+		const results = await runActions(sb, actions, PROV);
+
+		expect(results[0]).toMatchObject({
+			action: "log_health_metric",
+			ok: false,
+			noteId: "review-5",
+		});
 		expect(createNeedsReviewNote).toHaveBeenCalledWith(
 			sb,
 			expect.objectContaining({ body: "verbatim text", origin_capture_id: "cap-1" }),

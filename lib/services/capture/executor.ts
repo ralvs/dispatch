@@ -1,7 +1,10 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { nowUtc, todayInTz } from "@/lib/dates";
 import type { CaptureAction } from "@/lib/schemas/capture";
 import type { ActionResult } from "@/lib/services/capture";
+import { createMetric } from "@/lib/services/health";
+import { createEntry } from "@/lib/services/journal";
 import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
 import { createQuote } from "@/lib/services/quotes";
 import { createTask } from "@/lib/services/tasks";
@@ -19,6 +22,9 @@ export type Provenance = {
 	// The verbatim transcript — the body used when an action degrades, so
 	// content is preserved as-spoken with no model in the loop.
 	transcript: string;
+	// App timezone (iron rule #1) — used to resolve "today" for date-only
+	// fields (e.g. journal entry_date) instead of raw `new Date()` math.
+	tz: string;
 };
 
 async function degrade(
@@ -79,6 +85,35 @@ async function runOne(
 					added_via: "voice",
 				});
 				return { action: "create_quote", ok: true, entity: { table: "quotes", id: q.id } };
+			}
+			case "create_journal_entry": {
+				const e = await createEntry(sb, {
+					transcription_text: action.body,
+					entry_date: action.entry_date ?? todayInTz(prov.tz),
+					source: "voice",
+					tags: action.tags,
+				});
+				return {
+					action: "create_journal_entry",
+					ok: true,
+					entity: { table: "journal_entries", id: e.id },
+				};
+			}
+			case "log_health_metric": {
+				const m = await createMetric(sb, {
+					measured_at: nowUtc(),
+					metric: action.metric,
+					value: action.value ?? null,
+					value_secondary: action.value_secondary ?? null,
+					unit: action.unit ?? null,
+					notes: action.notes ?? null,
+					source: "manual",
+				});
+				return {
+					action: "log_health_metric",
+					ok: true,
+					entity: { table: "health_metrics", id: m.id },
+				};
 			}
 			case "needs_review":
 				return degrade(sb, prov, "needs_review", action.reason, action.proposed_kind);

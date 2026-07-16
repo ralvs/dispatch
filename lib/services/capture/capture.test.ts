@@ -59,6 +59,7 @@ describe("capture", () => {
 		expect(runActions).toHaveBeenCalledWith(sb, [{ action: "create_task", title: "x" }], {
 			capturedId: "cap-1",
 			transcript: "ligar pro médico",
+			tz: "America/Sao_Paulo",
 		});
 	});
 
