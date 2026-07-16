@@ -319,6 +319,17 @@ export const WorkoutSchema = z.object({
 });
 export type Workout = z.infer<typeof WorkoutSchema>;
 
+// Manual-entry create payload — device-import fields (avg_hr, calories,
+// elevation, pace, power) are populated by the future import path, not this
+// form.
+export const CreateWorkoutSchema = z.object({
+	started_at: z.string().datetime({ offset: true }),
+	duration_min: z.number().nullable().optional(),
+	activity_type: z.string().nullable().optional(),
+	distance_m: z.number().nullable().optional(),
+	notes: z.string().nullable().optional(),
+});
+
 // ─── Health history (singleton) ──────────────────────────────────────────
 
 export const HistoryEntrySchema = z

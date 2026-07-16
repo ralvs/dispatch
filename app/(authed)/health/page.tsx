@@ -1,24 +1,39 @@
 import { requireOwnerPage } from "@/lib/auth";
 import { formatDay, formatInstant } from "@/lib/dates";
-import { listMedications, listMetrics, listVisits } from "@/lib/services/health";
+import {
+	listLabPanels,
+	listMedications,
+	listMetrics,
+	listVisits,
+	listWellbeingCheckIns,
+	listWorkouts,
+} from "@/lib/services/health";
 import { getAppTimezone } from "@/lib/services/settings";
 import {
 	deleteMedicationAction,
 	deleteMetricAction,
 	deleteVisitAction,
+	deleteWorkoutAction,
 	setMedicationActiveAction,
 } from "./actions";
+import { LabPanelForm } from "./lab-panel-form";
+import { LabPanelRowItem } from "./lab-panel-row";
 import { MedicationForm } from "./medication-form";
 import { MetricForm } from "./metric-form";
 import { VisitForm } from "./visit-form";
+import { WellbeingForm } from "./wellbeing-form";
+import { WorkoutForm } from "./workout-form";
 
 export default async function HealthPage() {
 	const { sb } = await requireOwnerPage();
 	const tz = await getAppTimezone(sb);
-	const [metrics, medications, visits] = await Promise.all([
+	const [metrics, medications, visits, labPanels, checkIns, workouts] = await Promise.all([
 		listMetrics(sb, { limit: 50 }),
 		listMedications(sb, { includeInactive: true }),
 		listVisits(sb),
+		listLabPanels(sb),
+		listWellbeingCheckIns(sb, { limit: 20 }),
+		listWorkouts(sb, { limit: 20 }),
 	]);
 
 	return (
@@ -140,6 +155,84 @@ export default async function HealthPage() {
 									<button
 										type="submit"
 										aria-label={`Delete visit on ${v.visit_date}`}
+										className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+									>
+										Delete
+									</button>
+								</form>
+							</li>
+						))}
+					</ul>
+				)}
+			</section>
+
+			<section className="mt-8">
+				<h2 className="font-serif text-xl text-ink">Lab panels</h2>
+				<div className="mt-3">
+					<LabPanelForm />
+				</div>
+				{labPanels.length === 0 ? (
+					<p className="py-6 text-center font-serif italic text-ink-3">No lab panels on file.</p>
+				) : (
+					<ul className="mt-2" aria-label="Lab panels">
+						{labPanels.map((panel) => (
+							<LabPanelRowItem key={panel.id} panel={panel} tz={tz} formatDay={formatDay} />
+						))}
+					</ul>
+				)}
+			</section>
+
+			<section className="mt-8">
+				<h2 className="font-serif text-xl text-ink">Wellbeing check-ins</h2>
+				<div className="mt-3">
+					<WellbeingForm />
+				</div>
+				{checkIns.length === 0 ? (
+					<p className="py-6 text-center font-serif italic text-ink-3">No check-ins logged yet.</p>
+				) : (
+					<ul className="mt-2" aria-label="Wellbeing check-ins">
+						{checkIns.map((c) => (
+							<li key={c.id} className="hairline py-3">
+								<p className="font-serif text-base text-ink">
+									Mood {c.mood ?? "—"} · Energy {c.energy ?? "—"} · Sleep {c.sleep_quality ?? "—"} ·
+									Pain {c.pain ?? "—"}
+								</p>
+								<p className="mt-0.5 font-mono text-meta text-ink-4">
+									{formatInstant(c.checked_in_at, tz)}
+									{c.notes ? ` · ${c.notes}` : ""}
+								</p>
+							</li>
+						))}
+					</ul>
+				)}
+			</section>
+
+			<section className="mt-8">
+				<h2 className="font-serif text-xl text-ink">Workouts</h2>
+				<div className="mt-3">
+					<WorkoutForm />
+				</div>
+				{workouts.length === 0 ? (
+					<p className="py-6 text-center font-serif italic text-ink-3">No workouts logged yet.</p>
+				) : (
+					<ul className="mt-2" aria-label="Workouts">
+						{workouts.map((w) => (
+							<li key={w.id} className="hairline flex items-center justify-between py-3">
+								<div>
+									<p className="font-serif text-base text-ink">
+										{w.activity_type ?? "Workout"}
+										{w.duration_min != null ? ` · ${w.duration_min} min` : ""}
+										{w.distance_m != null ? ` · ${(w.distance_m / 1000).toFixed(2)} km` : ""}
+									</p>
+									<p className="mt-0.5 font-mono text-meta text-ink-4">
+										{formatInstant(w.started_at, tz)}
+										{w.notes ? ` · ${w.notes}` : ""}
+									</p>
+								</div>
+								<form action={deleteWorkoutAction.bind(null, w.id)}>
+									<button
+										type="submit"
+										aria-label={`Delete workout on ${formatInstant(w.started_at, tz)}`}
 										className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 									>
 										Delete
