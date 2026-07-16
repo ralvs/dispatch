@@ -264,11 +264,15 @@
 		</li>
 
 		<li class="phase">
-			<span class="dot planned"></span>
-			<div class="phase-head"><h2>Phase 5 — The last record kinds</h2><span class="tag planned">Planned</span></div>
-			<p>Pages and services for projects &amp; domains (full CRUD, per ADR 0007), books,
-			and milestones — plus the health surfaces deferred from Phase 4 (labs, wellbeing,
-			workouts) if wanted.</p>
+			<span class="dot done"></span>
+			<div class="phase-head"><h2>Phase 5 — The last record kinds</h2><span class="tag done">Shipped</span></div>
+			<ul>
+				<li>Services with tests: <code>projects</code> (CRUD, complete/archive, milestones with weight-based progress), <code>domains</code> (full CRUD per ADR 0007 — create/edit/archive/reactivate, mark-shipped stamp; system Inbox guarded in the service), <code>books</code> (CRUD + status transitions stamping <code>started_at</code>/<code>finished_at</code>)</li>
+				<li>Health surfaces deferred from Phase 4: lab panels &amp; results (flag styling), wellbeing check-ins, workouts — service + three new <code>/health</code> sections</li>
+				<li>Pages: <code>/projects</code> grouped by status with <code>[id]</code> detail + milestones, <code>/domains</code> with active/archived sections, <code>/books</code> grouped by status</li>
+				<li>Nav: Library tab now fronts <code>/books</code> (quotes/notes aliased); Books added to the rail. No UI for <code>project_checklist_items</code>/<code>activity_log</code> (deferred). Test count now 174.</li>
+			</ul>
+			<div class="ref">commits 07cba30…981dd09</div>
 		</li>
 
 		<li class="phase">
