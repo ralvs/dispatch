@@ -75,9 +75,17 @@ describe("createTerminalSettle", () => {
 		expect(onSettle).toHaveBeenCalledTimes(1);
 	});
 
-	it("falls back to the timeout when nothing else settles it", () => {
+	it("runs no timer until armed, even past the timeout", () => {
 		const onSettle = vi.fn();
 		createTerminalSettle(onSettle, 2000);
+		vi.advanceTimersByTime(10_000);
+		expect(onSettle).not.toHaveBeenCalled();
+	});
+
+	it("falls back to the timeout once armed", () => {
+		const onSettle = vi.fn();
+		const terminal = createTerminalSettle(onSettle, 2000);
+		terminal.arm();
 		expect(onSettle).not.toHaveBeenCalled();
 		vi.advanceTimersByTime(1999);
 		expect(onSettle).not.toHaveBeenCalled();
@@ -88,7 +96,17 @@ describe("createTerminalSettle", () => {
 	it("does not fire the timeout once settled early", () => {
 		const onSettle = vi.fn();
 		const terminal = createTerminalSettle(onSettle, 2000);
+		terminal.arm();
 		terminal.settle();
+		vi.advanceTimersByTime(2000);
+		expect(onSettle).toHaveBeenCalledTimes(1);
+	});
+
+	it("settle before arm suppresses the timer", () => {
+		const onSettle = vi.fn();
+		const terminal = createTerminalSettle(onSettle, 2000);
+		terminal.settle();
+		terminal.arm();
 		vi.advanceTimersByTime(2000);
 		expect(onSettle).toHaveBeenCalledTimes(1);
 	});
@@ -96,6 +114,7 @@ describe("createTerminalSettle", () => {
 	it("cancel suppresses the timeout without firing onSettle", () => {
 		const onSettle = vi.fn();
 		const terminal = createTerminalSettle(onSettle, 2000);
+		terminal.arm();
 		terminal.cancel();
 		vi.advanceTimersByTime(2000);
 		expect(onSettle).not.toHaveBeenCalled();
@@ -107,5 +126,26 @@ describe("createTerminalSettle", () => {
 		terminal.cancel();
 		terminal.settle();
 		expect(onSettle).not.toHaveBeenCalled();
+	});
+
+	it("arm is idempotent: calling it again does not reset or duplicate the timer", () => {
+		const onSettle = vi.fn();
+		const terminal = createTerminalSettle(onSettle, 2000);
+		terminal.arm();
+		vi.advanceTimersByTime(1000);
+		terminal.arm();
+		vi.advanceTimersByTime(999);
+		expect(onSettle).not.toHaveBeenCalled();
+		vi.advanceTimersByTime(1);
+		expect(onSettle).toHaveBeenCalledTimes(1);
+	});
+
+	it("arm after settle or cancel is a no-op", () => {
+		const onSettle = vi.fn();
+		const terminal = createTerminalSettle(onSettle, 2000);
+		terminal.settle();
+		terminal.arm();
+		vi.advanceTimersByTime(2000);
+		expect(onSettle).toHaveBeenCalledTimes(1);
 	});
 });

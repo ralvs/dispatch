@@ -93,8 +93,11 @@ export function useSpeechCapture(opts: {
 	const stop = useCallback(() => {
 		// Keep handlers attached: the terminal onend must still fire (and its
 		// session still matches) so a caller can act on the finalised transcript.
-		// A synchronous throw is itself a terminal signal — settle on it rather
-		// than leaving a deferred submit armed forever.
+		// Arm the fallback timer only now — a stop is actually in flight — so it
+		// can't fire mid-dictation and flip `listening` false under a still-live
+		// recognizer. A synchronous throw is itself a terminal signal — settle on
+		// it rather than leaving a deferred submit armed forever.
+		terminalRef.current?.arm();
 		try {
 			recognitionRef.current?.stop();
 		} catch {

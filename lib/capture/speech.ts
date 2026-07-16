@@ -63,6 +63,9 @@ export function isSpeechRecognitionSupported(win: SpeechWindow): boolean {
 }
 
 export type TerminalSettle = {
+	/** Starts the fallback timer. Idempotent — a no-op if already armed, or if
+	 * already settled/cancelled. No timer runs before this is called. */
+	arm: () => void;
 	/** Fires `onSettle` if it hasn't already; every trigger after the first is a no-op. */
 	settle: () => void;
 	/** Suppresses the fallback timer without firing `onSettle` — used when the
@@ -75,7 +78,8 @@ export type TerminalSettle = {
  * but the Web Speech API gives no guarantee: `onend`, `onerror`, a synchronous
  * throw from `stop()`, or (rarely) nothing at all are all observed in the
  * wild. This wraps a callback so the first of those triggers wins and the
- * rest are no-ops, with a fallback timer standing in for "nothing at all".
+ * rest are no-ops, with a fallback timer — armed only once a stop is actually
+ * requested, standing in for "nothing at all" — as the last resort.
  */
 export function createTerminalSettle(
 	onSettle: () => void,
@@ -86,20 +90,25 @@ export function createTerminalSettle(
 	},
 ): TerminalSettle {
 	let settled = false;
-	const timer = scheduler.setTimeout(() => settle(), timeoutMs);
+	let timer: ReturnType<typeof setTimeout> | null = null;
+
+	function arm(): void {
+		if (settled || timer !== null) return;
+		timer = scheduler.setTimeout(() => settle(), timeoutMs);
+	}
 
 	function settle(): void {
 		if (settled) return;
 		settled = true;
-		scheduler.clearTimeout(timer);
+		if (timer !== null) scheduler.clearTimeout(timer);
 		onSettle();
 	}
 
 	function cancel(): void {
 		if (settled) return;
 		settled = true;
-		scheduler.clearTimeout(timer);
+		if (timer !== null) scheduler.clearTimeout(timer);
 	}
 
-	return { settle, cancel };
+	return { arm, settle, cancel };
 }
