@@ -158,11 +158,11 @@
 	</header>
 
 	<section class="meter" aria-label="Overall progress">
-		<div class="meter-caption"><span>Progress</span><span>7 of 10 phases complete</span></div>
-		<div class="meter-track" role="img" aria-label="7 of 10 phases done">
+		<div class="meter-caption"><span>Progress</span><span>8 of 10 phases complete</span></div>
+		<div class="meter-track" role="img" aria-label="8 of 10 phases done">
 			<span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span>
-			<span class="done"></span><span class="done"></span><span class="done"></span>
-			<span></span><span></span><span></span>
+			<span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span>
+			<span></span><span></span>
 		</div>
 	</section>
 
@@ -276,10 +276,15 @@
 		</li>
 
 		<li class="phase">
-			<span class="dot planned"></span>
-			<div class="phase-head"><h2>Phase 6 — The editorial briefing</h2><span class="tag planned">Planned</span></div>
-			<p>Today page grows into the newspaper front page: the daily briefing that pulls
-			every domain into one pane of glass, plus the chat surface over the same data.</p>
+			<span class="dot done"></span>
+			<div class="phase-head"><h2>Phase 6 — The editorial briefing</h2><span class="tag done">Shipped</span></div>
+			<ul>
+				<li><code>briefing</code> service with tested pure helpers: cadence lines (overdue, due today, routines done, reading, needs review), deterministic date-seeded quote-of-day, doing-today assembly</li>
+				<li>Today page is now the front page: masthead with Ask link, cadence strip, inbox strip, doing today, routines today, resurfaced quote. Calendar events await Phase 7 CalDAV</li>
+				<li>Chat surface: <code>/api/chat</code> (session-authed, streaming via <code>CHAT_MODEL</code> through the gateway, 503 when AI unconfigured) over a context-stuffed snapshot of every record kind — read-only, no tools in v1; <code>/chat</code> page added to rail and Library hub</li>
+				<li>No migration; test count now 188.</li>
+			</ul>
+			<div class="ref">commits 4302228…4dd0f11</div>
 		</li>
 
 		<li class="phase">

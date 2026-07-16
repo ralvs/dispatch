@@ -16,3 +16,9 @@ export function parserModel() {
 	const gw = createGateway({ apiKey: env().AI_GATEWAY_API_KEY });
 	return gw(env().PARSER_MODEL);
 }
+
+/** The gateway-routed chat model (env.CHAT_MODEL). */
+export function chatModel() {
+	const gw = createGateway({ apiKey: env().AI_GATEWAY_API_KEY });
+	return gw(env().CHAT_MODEL);
+}

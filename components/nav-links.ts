@@ -24,6 +24,7 @@ export const TABS: NavItem[] = [
 
 // Desktop rail gets the full map.
 export const RAIL_EXTRAS: NavItem[] = [
+	{ key: "chat", label: "Chat", href: "/chat" },
 	{ key: "routines", label: "Routines", href: "/routines" },
 	{ key: "health", label: "Health", href: "/health" },
 	{ key: "journal", label: "Journal", href: "/journal" },

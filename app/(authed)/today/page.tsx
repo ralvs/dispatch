@@ -1,44 +1,53 @@
 import Link from "next/link";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatDay, todayInTz } from "@/lib/dates";
+import { getBriefing } from "@/lib/services/briefing";
 import { getAppTimezone } from "@/lib/services/settings";
-import { listInboxTasks, listTasks } from "@/lib/services/tasks";
-import { isTop3Today } from "@/lib/task-predicates";
 import { TaskRowItem } from "../tasks/task-row";
 
-// Phase 1 skeleton of the briefing: masthead + doing-today list + inbox
-// strip. The full editorial composition (cadence lines, resurfaced quote,
-// events, routines) lands in Phase 6.
 export default async function TodayPage() {
 	const { sb } = await requireOwnerPage();
-	const [tz, open, inbox] = await Promise.all([
-		getAppTimezone(sb),
-		listTasks(sb, { status: "open" }),
-		listInboxTasks(sb),
-	]);
+	const tz = await getAppTimezone(sb);
 	const todayIso = todayInTz(tz);
-
-	const top3 = open.filter((t) => isTop3Today(t, todayIso));
-	const dueOrOverdue = open.filter(
-		(t) => !isTop3Today(t, todayIso) && t.due_date !== null && t.due_date <= todayIso,
-	);
-	const doingToday = [...top3, ...dueOrOverdue].slice(0, 10);
+	const briefing = await getBriefing(sb, tz, todayIso);
 
 	return (
 		<div>
-			<header className="hairline-strong pb-5">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-					Dispatch · Daily edition
-				</p>
-				<h1 className="mt-1 font-serif text-4xl text-ink">{formatDay(todayIso, tz)}</h1>
+			<header className="hairline-strong flex items-baseline justify-between pb-5">
+				<div>
+					<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+						Dispatch · Daily edition
+					</p>
+					<h1 className="mt-1 font-serif text-4xl text-ink">{formatDay(todayIso, tz)}</h1>
+				</div>
+				<Link href="/chat" className="font-mono text-meta text-ink-3 hover:text-ink-2">
+					Ask →
+				</Link>
 			</header>
 
-			{inbox.length > 0 && (
+			{briefing.cadence.length > 0 && (
+				<section className="hairline flex flex-wrap gap-x-8 gap-y-3 py-4" aria-label="Cadence">
+					{briefing.cadence.map((line) => (
+						<Link key={line.key} href={line.href} className="block">
+							<span
+								className={`block font-serif text-2xl ${line.slip ? "text-accent-slip" : "text-ink"}`}
+							>
+								{line.big}
+							</span>
+							<span className="font-mono text-meta uppercase tracking-widest text-ink-3">
+								{line.label}
+							</span>
+						</Link>
+					))}
+				</section>
+			)}
+
+			{briefing.inboxCount > 0 && (
 				<Link
 					href="/inbox"
 					className="hairline mt-4 block py-3 font-mono text-meta uppercase tracking-widest text-accent-ink"
 				>
-					{inbox.length} capture{inbox.length === 1 ? "" : "s"} awaiting triage →
+					{briefing.inboxCount} capture{briefing.inboxCount === 1 ? "" : "s"} awaiting triage →
 				</Link>
 			)}
 
@@ -51,18 +60,59 @@ export default async function TodayPage() {
 						All tasks →
 					</Link>
 				</div>
-				{doingToday.length === 0 ? (
+				{briefing.doingToday.length === 0 ? (
 					<p className="py-8 text-center font-serif italic text-ink-3">
 						A clear slate. Star tasks or set due dates to shape the day.
 					</p>
 				) : (
 					<ul className="mt-2">
-						{doingToday.map((t) => (
+						{briefing.doingToday.map((t) => (
 							<TaskRowItem key={t.id} task={t} todayIso={todayIso} />
 						))}
 					</ul>
 				)}
 			</section>
+
+			{briefing.routines.total > 0 && (
+				<section className="mt-6" aria-label="Routines today">
+					<div className="flex items-baseline justify-between">
+						<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+							Routines today
+						</h2>
+						<Link href="/routines" className="font-mono text-meta text-ink-4 hover:text-ink-2">
+							All routines →
+						</Link>
+					</div>
+					<p className="mt-2 font-serif text-xl text-ink">
+						{briefing.routines.done}/{briefing.routines.total} done
+					</p>
+					{briefing.routines.remainingNames.length > 0 && (
+						<ul className="mt-1 font-mono text-meta text-ink-4">
+							{briefing.routines.remainingNames.map((name) => (
+								<li key={name}>{name}</li>
+							))}
+						</ul>
+					)}
+				</section>
+			)}
+
+			{briefing.quoteOfDay && (
+				<Link href="/quotes" className="mt-6 block" aria-label="Resurfaced quote">
+					<section>
+						<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+							Resurfaced
+						</p>
+						<blockquote className="mt-2 font-serif text-2xl italic text-ink">
+							“{briefing.quoteOfDay.text}”
+						</blockquote>
+						{(briefing.quoteOfDay.source_author || briefing.quoteOfDay.source_reference) && (
+							<p className="mt-2 font-mono text-meta text-ink-3">
+								{briefing.quoteOfDay.source_author ?? briefing.quoteOfDay.source_reference}
+							</p>
+						)}
+					</section>
+				</Link>
+			)}
 		</div>
 	);
 }

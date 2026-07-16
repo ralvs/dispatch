@@ -13,6 +13,7 @@ const SHELF: ShelfItem[] = [
 const MORE: ShelfItem[] = [
 	{ href: "/routines", label: "Routines", blurb: "Daily practice, streaks, heatmap." },
 	{ href: "/health", label: "Health", blurb: "Metrics, medications, visits, labs, workouts." },
+	{ href: "/chat", label: "Chat", blurb: "Ask about your tasks, notes, quotes, and more." },
 ];
 
 function Shelf({ label, items }: { label: string; items: ShelfItem[] }) {
