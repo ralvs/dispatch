@@ -1,6 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
-import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
+import {
+	countNeedsReview,
+	createNeedsReviewNote,
+	createNote,
+	deleteNote,
+	resolveNeedsReview,
+} from "@/lib/services/notes";
 
 // Stub covering the one shape these functions use:
 // .from().insert().select().single(). Records every insert payload so tests
@@ -67,5 +73,63 @@ describe("createNeedsReviewNote", () => {
 		await createNeedsReviewNote(sb, { body: "raw text", origin_capture_id: "cap-2" });
 
 		expect(inserts[0].tags).toEqual(["capture:needs_review"]);
+	});
+});
+
+// Minimal chainable stub mirroring the shapes resolveNeedsReview/deleteNote/
+// countNeedsReview actually call: .from().update().eq(), .from().delete().eq(),
+// and the count-only select.
+function stubMutationSupabase() {
+	const updatePatches: Array<Record<string, unknown>> = [];
+	let deleted = false;
+
+	const sb = {
+		from: vi.fn(() => ({
+			update: vi.fn((patch: Record<string, unknown>) => {
+				updatePatches.push(patch);
+				return { eq: vi.fn(async () => ({ data: null, error: null })) };
+			}),
+			delete: vi.fn(() => ({
+				eq: vi.fn(async () => {
+					deleted = true;
+					return { data: null, error: null };
+				}),
+			})),
+			select: vi.fn(() => ({
+				eq: vi.fn(async () => ({ data: null, error: null, count: 3 })),
+			})),
+		})),
+	} as unknown as SupabaseClient;
+
+	return { sb, updatePatches, wasDeleted: () => deleted };
+}
+
+describe("resolveNeedsReview", () => {
+	it("clears needs_review only, preserving the body", async () => {
+		const { sb, updatePatches } = stubMutationSupabase();
+
+		await resolveNeedsReview(sb, "note-1");
+
+		expect(updatePatches).toEqual([{ needs_review: false }]);
+	});
+});
+
+describe("deleteNote", () => {
+	it("hard-deletes the row", async () => {
+		const { sb, wasDeleted } = stubMutationSupabase();
+
+		await deleteNote(sb, "note-1");
+
+		expect(wasDeleted()).toBe(true);
+	});
+});
+
+describe("countNeedsReview", () => {
+	it("returns the count of needs_review notes", async () => {
+		const { sb } = stubMutationSupabase();
+
+		const count = await countNeedsReview(sb);
+
+		expect(count).toBe(3);
 	});
 });
