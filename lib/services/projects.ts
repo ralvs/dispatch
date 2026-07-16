@@ -168,9 +168,4 @@ export async function deleteMilestone(sb: SupabaseClient, id: string): Promise<v
 }
 
 /** Done weight / total weight, in [0, 1]. 0 for an empty milestone list. */
-export function milestoneProgress(milestones: Pick<MilestoneRow, "status" | "weight">[]): number {
-	const total = milestones.reduce((sum, m) => sum + m.weight, 0);
-	if (total === 0) return 0;
-	const done = milestones.filter((m) => m.status === "done").reduce((sum, m) => sum + m.weight, 0);
-	return done / total;
-}
+export { milestoneProgress } from "@/lib/services/projects-shared";

@@ -2,7 +2,8 @@
 
 import { useRef, useState, useTransition } from "react";
 import type { DomainRow } from "@/lib/services/domains";
-import { type MilestoneRow, milestoneProgress, type ProjectRow } from "@/lib/services/projects";
+import type { MilestoneRow, ProjectRow } from "@/lib/services/projects";
+import { milestoneProgress } from "@/lib/services/projects-shared";
 import {
 	archiveProjectAction,
 	completeProjectAction,
