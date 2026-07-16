@@ -158,11 +158,11 @@
 	</header>
 
 	<section class="meter" aria-label="Overall progress">
-		<div class="meter-caption"><span>Progress</span><span>9 of 10 phases complete</span></div>
-		<div class="meter-track" role="img" aria-label="9 of 10 phases done">
+		<div class="meter-caption"><span>Progress</span><span>10 of 11 phases complete</span></div>
+		<div class="meter-track" role="img" aria-label="10 of 11 phases done">
 			<span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span>
 			<span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span>
-			<span class="done"></span><span></span>
+			<span class="done"></span><span class="done"></span><span></span>
 		</div>
 	</section>
 
@@ -301,10 +301,16 @@
 		</li>
 
 		<li class="phase">
-			<span class="dot planned"></span>
-			<div class="phase-head"><h2>Phase 8 — PWA polish</h2><span class="tag planned">Planned</span></div>
-			<p>Installable PWA: manifest, service worker, offline shell, mic-first capture
-			ergonomics on the phone.</p>
+			<span class="dot done"></span>
+			<div class="phase-head"><h2>Phase 8 — PWA polish</h2><span class="tag done">Shipped</span></div>
+			<ul>
+				<li>Shipped: web app manifest (<code>app/manifest.ts</code>) — standalone, dark editorial colors, Capture shortcut (<code>/today?capture=voice</code>), generated icon set incl. maskable and apple-touch (<code>scripts/generate-icons.ts</code>, PNGs committed)</li>
+				<li>Shipped: offline service worker — <code>sw.js</code> keeps its push handlers verbatim and gains a versioned cache: navigations are network-first with a self-contained <code>offline.html</code> fallback, <code>_next/static</code> is cache-first, authed HTML and <code>/api/*</code> are never cached. Registered for everyone at app load (<code>SwRegister</code>); push opt-in path unchanged</li>
+				<li>Shipped: mic-first capture on the phone — the FAB now opens the palette with dictation already listening (tap is the user gesture), <code>?capture=voice</code> deep link opens the palette focused (no auto-mic — navigation isn't a gesture), safe-area insets in standalone, keyboard-safe modal</li>
+				<li>Shipped: offline-aware capture failure — “Offline — draft kept.” copy and an auto-retry when the connection returns; the offline queue (IndexedDB/Background Sync) is explicitly deferred — iOS Safari has no Background Sync and replay needs idempotency, so keep-draft-and-retry stands. Test count now 223.</li>
+				<li>Housekeeping: stale <code>pnpm-lock.yaml</code> dropped and <code>packageManager</code> set to Bun so Vercel installs from <code>bun.lock</code>; <code>sharp</code> added as a build-time devDependency for icon generation</li>
+			</ul>
+			<div class="ref">commits 622c31b…33805b5</div>
 		</li>
 
 		<li class="phase">
