@@ -1,76 +1,80 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import type { Editor } from "@tiptap/core";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { Markdown, type MarkdownStorage } from "tiptap-markdown";
+import { createDebouncedSave } from "@/lib/debounced-save";
 import type { NoteListRow } from "@/lib/services/notes";
 import { deleteNoteAction, resolveNeedsReviewAction, updateNoteAction } from "./actions";
 
+function getMarkdown(editor: Editor): string {
+	const storage = editor.storage as unknown as { markdown: MarkdownStorage };
+	return storage.markdown.getMarkdown();
+}
+
+type SaveState = "idle" | "saving" | "saved";
+
 export function NoteRowItem({ note }: { note: NoteListRow }) {
 	const [pending, startTransition] = useTransition();
-	const [editing, setEditing] = useState(false);
-	const [title, setTitle] = useState(note.title ?? "");
-	const [body, setBody] = useState(note.body);
+	const [saveState, setSaveState] = useState<SaveState>("idle");
+	const bodyRef = useRef(note.body);
+	const savedIndicatorTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-	function save() {
+	function save(body: string) {
+		if (body === bodyRef.current) return;
+		bodyRef.current = body;
 		const fd = new FormData();
-		fd.set("title", title);
+		fd.set("title", note.title ?? "");
 		fd.set("body", body);
 		fd.set("tags", note.tags.join(", "));
 		fd.set("source_type", note.source_type);
+		setSaveState("saving");
 		startTransition(async () => {
 			await updateNoteAction(note.id, fd);
-			setEditing(false);
+			setSaveState("saved");
+			clearTimeout(savedIndicatorTimer.current);
+			savedIndicatorTimer.current = setTimeout(() => setSaveState("idle"), 1500);
 		});
 	}
 
-	if (editing) {
-		return (
-			<li className={`hairline space-y-2 py-3 ${pending ? "opacity-50" : ""}`}>
-				<label className="block">
-					<span className="font-mono text-eyebrow uppercase text-ink-3">Title</span>
-					<input
-						value={title}
-						onChange={(e) => setTitle(e.target.value)}
-						className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
-					/>
-				</label>
-				<label className="block">
-					<span className="font-mono text-eyebrow uppercase text-ink-3">Body</span>
-					<textarea
-						value={body}
-						onChange={(e) => setBody(e.target.value)}
-						rows={3}
-						aria-label="Edit note body"
-						className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
-					/>
-				</label>
-				<div className="flex gap-2">
-					<button
-						type="button"
-						disabled={pending}
-						onClick={save}
-						className="bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
-					>
-						Save
-					</button>
-					<button
-						type="button"
-						onClick={() => setEditing(false)}
-						className="px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3"
-					>
-						Cancel
-					</button>
-				</div>
-			</li>
-		);
-	}
+	const debouncedRef = useRef(createDebouncedSave(save));
+
+	useEffect(() => {
+		return () => {
+			clearTimeout(savedIndicatorTimer.current);
+			debouncedRef.current.cancel();
+		};
+	}, []);
+
+	const editor = useEditor({
+		immediatelyRender: false,
+		extensions: [StarterKit, Markdown.configure({ html: false })],
+		content: note.body,
+		editorProps: {
+			attributes: {
+				"aria-label": "Note body",
+				class: "whitespace-pre-wrap text-sm text-ink outline-none",
+			},
+		},
+		onUpdate: ({ editor }) => {
+			debouncedRef.current.schedule(getMarkdown(editor));
+		},
+		onBlur: () => {
+			debouncedRef.current.flush();
+		},
+	});
 
 	return (
 		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>
 			{note.title && <p className="font-serif text-base text-ink">{note.title}</p>}
-			<p className="whitespace-pre-wrap text-sm text-ink">{note.body}</p>
+			<EditorContent editor={editor} />
 			<p className="mt-1 font-mono text-meta text-ink-4">
 				{note.source_type}
 				{note.tags.length > 0 ? ` · ${note.tags.join(", ")}` : ""}
+				{saveState === "saving" ? " · Saving…" : ""}
+				{saveState === "saved" ? " · Saved" : ""}
 			</p>
 			<div className="mt-2 flex gap-2">
 				{note.needs_review && (
@@ -84,14 +88,6 @@ export function NoteRowItem({ note }: { note: NoteListRow }) {
 						Resolve
 					</button>
 				)}
-				<button
-					type="button"
-					aria-label={`Edit note "${note.title ?? note.body.slice(0, 20)}"`}
-					onClick={() => setEditing(true)}
-					className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
-				>
-					Edit
-				</button>
 				<button
 					type="button"
 					aria-label={`Delete note "${note.title ?? note.body.slice(0, 20)}"`}
