@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PushToggle } from "@/components/push-toggle";
 import { requireOwnerPage } from "@/lib/auth";
 
 type ShelfItem = { href: string; label: string; blurb: string };
@@ -46,6 +47,15 @@ export default async function LibraryPage() {
 
 			<Shelf label="Shelves" items={SHELF} />
 			<Shelf label="Elsewhere" items={MORE} />
+
+			<section className="mt-6" aria-label="Notifications">
+				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
+					Notifications
+				</h2>
+				<div className="mt-2 border-b border-line pb-4">
+					<PushToggle />
+				</div>
+			</section>
 		</div>
 	);
 }
