@@ -69,3 +69,7 @@ export const UpdateProjectSchema = CreateProjectSchema.partial().extend({
 	status: ProjectStatusSchema.optional(),
 	hours_logged: z.number().optional(),
 });
+
+// Milestone schemas (MilestoneSchema, CreateMilestoneSchema,
+// UpdateMilestoneSchema, MilestoneStatusSchema) live in ./milestone —
+// pre-existing in this repo, re-exported via ./index.
