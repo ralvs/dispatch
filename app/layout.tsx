@@ -22,6 +22,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
 	title: "Dispatch",
 	description: "Personal operations. Voice in, order out.",
+	appleWebApp: {
+		capable: true,
+		title: "Dispatch",
+		statusBarStyle: "black-translucent",
+	},
+	icons: {
+		icon: "/icons/icon-192.png",
+		apple: "/icons/apple-touch-icon-180.png",
+	},
 };
 
 export const viewport: Viewport = {
