@@ -13,7 +13,8 @@ export const TABS: NavItem[] = [
 	{ key: "domains", label: "Domains", href: "/domains" },
 	{ key: "projects", label: "Projects", href: "/projects" },
 	{ key: "people", label: "People", href: "/people" },
-	{ key: "library", label: "Library", href: "/library" },
+	// Library's hub page is future work; books is its front door for now.
+	{ key: "library", label: "Library", href: "/books", aliases: ["/quotes", "/notes", "/library"] },
 ];
 
 // Desktop rail gets the full map.
@@ -22,6 +23,7 @@ export const RAIL_EXTRAS: NavItem[] = [
 	{ key: "health", label: "Health", href: "/health" },
 	{ key: "journal", label: "Journal", href: "/journal" },
 	{ key: "notes", label: "Notes", href: "/notes" },
+	{ key: "books", label: "Books", href: "/books" },
 	{ key: "quotes", label: "Quotes", href: "/quotes" },
 ];
 
