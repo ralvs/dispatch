@@ -152,17 +152,17 @@
 		<h1>Dispatch</h1>
 		<div class="dateline">
 			<span>Voice in, order out</span>
-			<span>Edition of July 15, 2026</span>
+			<span>Edition of July 16, 2026</span>
 			<span>Single owner · renan@alves.id</span>
 		</div>
 	</header>
 
 	<section class="meter" aria-label="Overall progress">
-		<div class="meter-caption"><span>Progress</span><span>4 of 10 phases complete · 1 underway</span></div>
-		<div class="meter-track" role="img" aria-label="4 of 10 phases done, Phase 2 capture design underway">
+		<div class="meter-caption"><span>Progress</span><span>6 of 10 phases complete</span></div>
+		<div class="meter-track" role="img" aria-label="6 of 10 phases done">
 			<span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span>
-			<span class="active"></span>
-			<span></span><span></span><span></span><span></span><span></span>
+			<span class="done"></span><span class="done"></span>
+			<span></span><span></span><span></span><span></span>
 		</div>
 	</section>
 
@@ -224,25 +224,38 @@
 		</li>
 
 		<li class="phase">
-			<span class="dot active"></span>
-			<div class="phase-head"><h2>Phase 2 — AI capture pipeline</h2><span class="tag active">In progress — core shipped</span></div>
+			<span class="dot done"></span>
+			<div class="phase-head"><h2>Phase 2 — AI capture pipeline</h2><span class="tag done">Shipped</span></div>
 			<p>The heart of the product: voice/text capture parsed by the LLM (via Vercel AI
 			Gateway) into structured records — tasks, notes, quotes, journal, people, events.
 			Iron rule: never lose a capture — parsing degrades to a <code>needs_review</code>
 			note, AI calls return typed fallbacks.</p>
 			<ul>
 				<li>Capture core shipped: <code>capture(sb, raw)</code> in <code>lib/services/capture/</code> persists the raw input first, behind a structural no-throw boundary; typed AI adapters in <code>lib/ai/</code> (parser via the AI Gateway, transcriber stubbed); v1 vocabulary <code>create_task</code> / <code>create_note</code> / <code>needs_review</code> replaces the old <code>voice.ts</code> draft; notes service and migration 0004 (<code>origin_capture_id</code>) back the degrade path — design decided via a parallel two-track review, see ADR-0008</li>
-				<li>Still pending within this phase: UI palette for capture, the ingest webhook, and the sweep cron (deferred per ADR-0008)</li>
+				<li>Capture palette shipped: Cmd+J palette with speech input, receipt feedback, mobile FAB, hardened per review (commits fdd7bb9…9ffd28e)</li>
+				<li>Ingest webhook and sweep cron deferred to Phase 7 per ADR-0008 — not part of this phase's v1</li>
 			</ul>
-			<p>Requires the <code>AI_GATEWAY_API_KEY</code>. Test count now 74.</p>
+			<p>Requires the <code>AI_GATEWAY_API_KEY</code>.</p>
+		</li>
+
+		<li class="phase">
+			<span class="dot done"></span>
+			<div class="phase-head"><h2>Phase 3 — Notes, quotes, people</h2><span class="tag done">Shipped</span></div>
+			<ul>
+				<li>Services with tests: <code>notes</code> (list/edit/resolve/delete/count), <code>quotes</code> + annotations, <code>people</code> + facts + interactions</li>
+				<li>Pages: <code>/notes</code> (needs-review queue first, then all), <code>/quotes</code> with inline annotations, <code>/people</code> list + detail with facts and interaction log</li>
+				<li>Capture vocabulary grew per ADR-0008's path: <code>create_quote</code> verb + executor + parser prompt; person verbs stay deferred (entity resolution) — references still degrade to <code>needs_review</code></li>
+				<li>Notes and Quotes surfaced in the desktop rail; People tab now resolves. Test count now 126.</li>
+			</ul>
+			<div class="ref">commits 6cb5ebf…0e6e93d</div>
 		</li>
 
 		<li class="phase">
 			<span class="dot planned"></span>
-			<div class="phase-head"><h2>Phases 3–5 — The rest of the record kinds</h2><span class="tag planned">Planned</span></div>
-			<p>Pages and services for notes, quotes, people, journal, projects &amp; domains
-			(full CRUD, per ADR 0007), routines with streak stats, health log, books, and
-			milestones — the schemas and stats libraries already exist; the surfaces don't.</p>
+			<div class="phase-head"><h2>Phases 4–5 — The rest of the record kinds</h2><span class="tag planned">Planned</span></div>
+			<p>Pages and services for journal, projects &amp; domains (full CRUD, per ADR 0007),
+			routines with streak stats, health log, books, and milestones — the schemas and
+			stats libraries already exist; the surfaces don't.</p>
 		</li>
 
 		<li class="phase">
