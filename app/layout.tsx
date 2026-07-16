@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { cookies } from "next/headers";
+import { SwRegister } from "@/components/sw-register";
 import "./globals.css";
 
 const newsreader = Newsreader({
@@ -50,7 +51,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 			data-theme={theme}
 			className={`${newsreader.variable} ${geist.variable} ${geistMono.variable}`}
 		>
-			<body>{children}</body>
+			<body>
+				{children}
+				<SwRegister />
+			</body>
 		</html>
 	);
 }
