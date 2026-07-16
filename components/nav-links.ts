@@ -20,6 +20,7 @@ export const TABS: NavItem[] = [
 export const RAIL_EXTRAS: NavItem[] = [
 	{ key: "routines", label: "Routines", href: "/routines" },
 	{ key: "health", label: "Health", href: "/health" },
+	{ key: "journal", label: "Journal", href: "/journal" },
 	{ key: "notes", label: "Notes", href: "/notes" },
 	{ key: "quotes", label: "Quotes", href: "/quotes" },
 ];
