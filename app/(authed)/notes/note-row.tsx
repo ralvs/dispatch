@@ -1,7 +1,6 @@
 "use client";
 
-import type { Editor } from "@tiptap/core";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Markdown, type MarkdownStorage } from "tiptap-markdown";
@@ -21,6 +20,7 @@ export function NoteRowItem({ note }: { note: NoteListRow }) {
 	const [saveState, setSaveState] = useState<SaveState>("idle");
 	const bodyRef = useRef(note.body);
 	const savedIndicatorTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+	const mountedRef = useRef(true);
 
 	function save(body: string) {
 		if (body === bodyRef.current) return;
@@ -30,9 +30,10 @@ export function NoteRowItem({ note }: { note: NoteListRow }) {
 		fd.set("body", body);
 		fd.set("tags", note.tags.join(", "));
 		fd.set("source_type", note.source_type);
-		setSaveState("saving");
+		if (mountedRef.current) setSaveState("saving");
 		startTransition(async () => {
 			await updateNoteAction(note.id, fd);
+			if (!mountedRef.current) return;
 			setSaveState("saved");
 			clearTimeout(savedIndicatorTimer.current);
 			savedIndicatorTimer.current = setTimeout(() => setSaveState("idle"), 1500);
@@ -42,9 +43,13 @@ export function NoteRowItem({ note }: { note: NoteListRow }) {
 	const debouncedRef = useRef(createDebouncedSave(save));
 
 	useEffect(() => {
+		mountedRef.current = true;
 		return () => {
+			mountedRef.current = false;
 			clearTimeout(savedIndicatorTimer.current);
-			debouncedRef.current.cancel();
+			// Flush, don't cancel: TipTap's destroy doesn't guarantee a blur,
+			// so a pending edit inside the 2s window must not be dropped.
+			debouncedRef.current.flush();
 		};
 	}, []);
 
