@@ -294,7 +294,7 @@
 				<li>Shipped: <code>lib/secret-auth.ts</code> (timing-safe bearer secrets) and the ingest webhook — <code>POST /api/ingest</code> runs the capture pipeline under the service-role client, threads <code>captured_data.source</code> (<code>webhook</code>/<code>watch</code>), writes an <code>ingest.captured</code> ledger row</li>
 				<li>Shipped: reconciliation sweep cron (ADR-0008) — <code>/api/cron/sweep</code> behind <code>CRON_SECRET</code> degrades orphaned <code>raw</code> captures to linked <code>needs_review</code> notes, dedupes on <code>origin_capture_id</code>, never replays</li>
 				<li>Shipped: widget feed — <code>GET /api/widget</code> behind <code>WIDGET_SECRET</code>, a compact JSON projection of the Today briefing. Test count now 199.</li>
-				<li>Web Push notifications (VAPID keys live on Vercel; ADR 0005)</li>
+				<li>Shipped: Web Push (ADR 0005) — <code>push</code> service with 404/410 pruning, delivery inside the <code>recordedAction</code>/<code>recordNotification</code> seam (RLS-gated: only service-role callers push), <code>public/sw.js</code>, session-authed <code>/api/push</code>, subscribe toggle on Library. Test count now 205.</li>
 				<li>iCloud CalDAV — pull all calendars, push to the “Dispatch” calendar (ADR 0006)</li>
 			</ul>
 		</li>
