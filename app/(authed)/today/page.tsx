@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireOwnerPage } from "@/lib/auth";
-import { formatDay, todayInTz } from "@/lib/dates";
+import { formatDay, formatInstant, todayInTz } from "@/lib/dates";
 import { getBriefing } from "@/lib/services/briefing";
 import { getAppTimezone } from "@/lib/services/settings";
 import { TaskRowItem } from "../tasks/task-row";
@@ -72,6 +72,37 @@ export default async function TodayPage() {
 					</ul>
 				)}
 			</section>
+
+			{briefing.todayEvents.length > 0 && (
+				<section className="mt-6" aria-label="Today's calendar">
+					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+						Today's calendar
+					</h2>
+					<ul className="mt-2">
+						{briefing.todayEvents.map((event) => (
+							<li
+								key={event.id}
+								className="hairline flex items-baseline justify-between gap-3 py-2.5"
+							>
+								<div className="min-w-0 flex-1">
+									<p className="text-sm text-ink">{event.title}</p>
+									{event.calendar_name && (
+										<p className="mt-0.5 font-mono text-meta text-ink-4">
+											{event.calendar_name}
+											{event.location ? ` · ${event.location}` : ""}
+										</p>
+									)}
+								</div>
+								<span className="shrink-0 font-mono text-meta text-ink-3">
+									{event.all_day
+										? "all day"
+										: `${formatInstant(event.start_at, tz, "HH:mm")}–${formatInstant(event.end_at, tz, "HH:mm")}`}
+								</span>
+							</li>
+						))}
+					</ul>
+				</section>
+			)}
 
 			{briefing.routines.total > 0 && (
 				<section className="mt-6" aria-label="Routines today">

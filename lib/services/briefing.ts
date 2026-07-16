@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { listBooks } from "@/lib/services/books";
+import { type CalendarEventRow, listEventsOn } from "@/lib/services/calendar";
 import { countNeedsReview } from "@/lib/services/notes";
 import { listQuotes, type QuoteRow } from "@/lib/services/quotes";
 import { listCompletionsOn, listRoutines } from "@/lib/services/routines";
@@ -28,6 +29,7 @@ export type BriefingView = {
 	doingToday: TaskRow[];
 	routines: { total: number; done: number; remainingNames: string[] };
 	quoteOfDay: QuoteRow | null;
+	todayEvents: CalendarEventRow[];
 };
 
 /**
@@ -132,11 +134,11 @@ export function assembleDoingToday(open: TaskRow[], todayIso: string): TaskRow[]
 
 export async function getBriefing(
 	sb: SupabaseClient,
-	_tz: string,
+	tz: string,
 	todayIso: string,
 ): Promise<BriefingView> {
-	const [open, inbox, routines, completionsToday, reading, needsReview, quotes] = await Promise.all(
-		[
+	const [open, inbox, routines, completionsToday, reading, needsReview, quotes, todayEvents] =
+		await Promise.all([
 			listTasks(sb, { status: "open" }),
 			listInboxTasks(sb),
 			listRoutines(sb),
@@ -144,8 +146,8 @@ export async function getBriefing(
 			listBooks(sb, { status: "reading" }),
 			countNeedsReview(sb),
 			listQuotes(sb),
-		],
-	);
+			listEventsOn(sb, todayIso, tz),
+		]);
 
 	const overdue = open.filter((t) => isOverdue(t, todayIso));
 	const dueToday = open.filter((t) => t.due_date === todayIso);
@@ -169,5 +171,6 @@ export async function getBriefing(
 		doingToday: assembleDoingToday(open, todayIso),
 		routines: { total: routines.length, done: routinesDone, remainingNames },
 		quoteOfDay: quoteOfDay(quotes, todayIso),
+		todayEvents,
 	};
 }
