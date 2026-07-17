@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { CollapsibleForm, useCollapsibleForm } from "@/components/collapsible-form";
 import { createNoteAction } from "./actions";
 
 const SOURCE_TYPES = [
@@ -13,35 +13,14 @@ const SOURCE_TYPES = [
 ];
 
 export function NoteForm() {
-	const formRef = useRef<HTMLFormElement>(null);
-	const [open, setOpen] = useState(false);
-	const [pending, startTransition] = useTransition();
-
-	function submit(formData: FormData) {
-		startTransition(async () => {
-			await createNoteAction(formData);
-			formRef.current?.reset();
-			setOpen(false);
-		});
-	}
-
-	if (!open) {
-		return (
-			<button
-				type="button"
-				onClick={() => setOpen(true)}
-				className="w-full border border-line px-3 py-2.5 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
-			>
-				+ New note
-			</button>
-		);
-	}
+	const form = useCollapsibleForm(createNoteAction);
 
 	return (
-		<form
-			ref={formRef}
-			action={submit}
-			className="space-y-3 border border-line-strong bg-surface p-4"
+		<CollapsibleForm
+			form={form}
+			triggerLabel="+ New note"
+			submitLabel="Add note"
+			pendingLabel="Adding…"
 		>
 			<label className="block">
 				<span className="font-mono text-eyebrow uppercase text-ink-3">Title</span>
@@ -86,22 +65,6 @@ export function NoteForm() {
 					/>
 				</label>
 			</div>
-			<div className="flex gap-2 pt-1">
-				<button
-					type="submit"
-					disabled={pending}
-					className="bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
-				>
-					{pending ? "Adding…" : "Add note"}
-				</button>
-				<button
-					type="button"
-					onClick={() => setOpen(false)}
-					className="px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3"
-				>
-					Cancel
-				</button>
-			</div>
-		</form>
+		</CollapsibleForm>
 	);
 }
