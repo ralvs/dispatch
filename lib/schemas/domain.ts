@@ -53,3 +53,25 @@ export const UpdateDomainSchema = z.object({
 	// Accept ISO datetime or null (to clear).
 	last_shipped_at: z.string().datetime({ offset: true }).nullable().optional(),
 });
+
+// ─── Row shape actually returned by the domains service ────────────────
+//
+// Mirrors exactly the columns DOMAIN_SELECT reads (lib/services/domains.ts).
+// DOMAIN_SELECT is derived from this schema's keys. No joins for this
+// entity.
+export const DomainRowSchema = z.object({
+	id: z.string().uuid(),
+	name: z.string(),
+	description: z.string().nullable(),
+	fruit_definition: z.string().nullable(),
+	failure_patterns: z.unknown(),
+	expected_cadence: z.string().nullable(),
+	active: z.boolean(),
+	is_system: z.boolean(),
+	last_shipped_at: z.string().nullable(),
+	created_at: z.string(),
+	updated_at: z.string(),
+});
+export type DomainRow = z.infer<typeof DomainRowSchema>;
+
+export const DOMAIN_SELECT = Object.keys(DomainRowSchema.shape).join(", ");

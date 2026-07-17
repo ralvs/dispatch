@@ -1,6 +1,9 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { z } from "zod";
 import { nowUtc } from "@/lib/dates";
+import type { CreateDomainSchema } from "@/lib/schemas/domain";
+import { DOMAIN_SELECT, type DomainRow, type UpdateDomainSchema } from "@/lib/schemas/domain";
 import { ServiceError, unwrap } from "@/lib/services/errors";
 
 // ─── Stewardship domains ───────────────────────────────────────────────
@@ -9,31 +12,10 @@ import { ServiceError, unwrap } from "@/lib/services/errors";
 // catch-all — never renamable, never archivable. That's enforced here, not
 // just hidden in the UI, so a stray direct call can't slip past it.
 
-const DOMAIN_SELECT =
-	"id, name, description, fruit_definition, failure_patterns, expected_cadence, active, is_system, last_shipped_at, created_at, updated_at";
+export type { DomainRow };
 
-export type DomainRow = {
-	id: string;
-	name: string;
-	description: string | null;
-	fruit_definition: string | null;
-	failure_patterns: unknown;
-	expected_cadence: string | null;
-	active: boolean;
-	is_system: boolean;
-	last_shipped_at: string | null;
-	created_at: string;
-	updated_at: string;
-};
-
-export type CreateDomainInput = {
-	name: string;
-	description?: string | null;
-	fruit_definition?: string | null;
-	expected_cadence?: string | null;
-};
-
-export type UpdateDomainInput = Partial<CreateDomainInput>;
+export type CreateDomainInput = z.infer<typeof CreateDomainSchema>;
+export type UpdateDomainInput = z.infer<typeof UpdateDomainSchema>;
 
 export async function listDomains(
 	sb: SupabaseClient,
@@ -46,7 +28,7 @@ export async function listDomains(
 		.order("name", { ascending: true });
 	if (!filters.includeArchived) q = q.eq("active", true);
 	const data = unwrap(await q);
-	return (data ?? []) as DomainRow[];
+	return (data ?? []) as unknown as DomainRow[];
 }
 
 export async function getDomain(sb: SupabaseClient, id: string): Promise<DomainRow | null> {
@@ -63,7 +45,7 @@ export async function createDomain(
 	const data = unwrap(
 		await sb.from("stewardship_domains").insert(input).select(DOMAIN_SELECT).single(),
 	);
-	return data as DomainRow;
+	return data as unknown as DomainRow;
 }
 
 async function assertNotSystem(sb: SupabaseClient, id: string, action: string): Promise<void> {
