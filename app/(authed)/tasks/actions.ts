@@ -3,9 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
-import { todayInTz } from "@/lib/dates";
 import { CreateTaskFormSchema } from "@/lib/schemas/task";
-import { getAppTimezone } from "@/lib/services/settings";
+import { todayForRequest } from "@/lib/services/settings";
 import {
 	completeTask,
 	createTask,
@@ -38,8 +37,7 @@ export async function createTaskAction(formData: FormData) {
 
 export async function completeTaskAction(id: string) {
 	const { sb } = await requireOwnerPage();
-	const tz = await getAppTimezone(sb);
-	await completeTask(sb, z.uuid().parse(id), todayInTz(tz));
+	await completeTask(sb, z.uuid().parse(id), await todayForRequest(sb));
 	revalidateTaskViews();
 }
 
@@ -57,8 +55,7 @@ export async function deleteTaskAction(id: string) {
 
 export async function toggleTop3Action(id: string) {
 	const { sb } = await requireOwnerPage();
-	const tz = await getAppTimezone(sb);
-	await toggleTop3(sb, z.uuid().parse(id), todayInTz(tz));
+	await toggleTop3(sb, z.uuid().parse(id), await todayForRequest(sb));
 	revalidateTaskViews();
 }
 

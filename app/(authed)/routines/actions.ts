@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
-import { todayInTz } from "@/lib/dates";
 import { CreateRoutineSchema } from "@/lib/schemas/routine";
 import {
 	archiveRoutine,
@@ -11,7 +10,7 @@ import {
 	deleteRoutine,
 	setCompletion,
 } from "@/lib/services/routines";
-import { getAppTimezone } from "@/lib/services/settings";
+import { todayForRequest } from "@/lib/services/settings";
 
 function revalidateRoutineViews() {
 	revalidatePath("/routines");
@@ -33,8 +32,7 @@ export async function createRoutineAction(formData: FormData) {
 /** Toggles today's completion. The date is derived server-side, never trusted from the client. */
 export async function toggleCompletionAction(routineId: string, currentlyDone: boolean) {
 	const { sb } = await requireOwnerPage();
-	const tz = await getAppTimezone(sb);
-	await setCompletion(sb, z.uuid().parse(routineId), todayInTz(tz), !currentlyDone);
+	await setCompletion(sb, z.uuid().parse(routineId), await todayForRequest(sb), !currentlyDone);
 	revalidateRoutineViews();
 }
 
