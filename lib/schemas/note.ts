@@ -82,3 +82,36 @@ export const CreateNoteSchema = z.object({
 export const UpdateNoteSchema = CreateNoteSchema.partial().extend({
 	resurface_weight: z.number().min(0).optional(),
 });
+
+// ─── Row shapes actually returned by the notes service ──────────────────
+//
+// Two selects: a narrow one for the write paths (capture pipeline only
+// needs the id back) and a wider one for list/detail views. NoteRowSchema
+// is the narrow shape; NoteListRowSchema extends it with the columns only
+// the UI reads. NOTE_SELECT/NOTE_LIST_SELECT are derived from their keys
+// (lib/services/notes.ts). No joins for this entity — note the DB also has
+// an `attachments` column that neither select reads today; that's existing
+// behavior, left untouched here.
+export const NoteRowSchema = z.object({
+	id: z.string().uuid(),
+	title: z.string().nullable(),
+	body: z.string(),
+	source_type: NoteSourceTypeSchema,
+	needs_review: z.boolean(),
+	tags: z.array(z.string()),
+	origin_capture_id: z.string().uuid().nullable(),
+	created_at: z.string(),
+});
+export type NoteRow = z.infer<typeof NoteRowSchema>;
+
+export const NOTE_SELECT = Object.keys(NoteRowSchema.shape).join(", ");
+
+export const NoteListRowSchema = NoteRowSchema.extend({
+	source_reference: z.string().nullable(),
+	related_project_id: z.string().uuid().nullable(),
+	related_person_id: z.string().uuid().nullable(),
+	related_quote_id: z.string().uuid().nullable(),
+});
+export type NoteListRow = z.infer<typeof NoteListRowSchema>;
+
+export const NOTE_LIST_SELECT = Object.keys(NoteListRowSchema.shape).join(", ");

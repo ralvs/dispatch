@@ -1,41 +1,28 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import type { NoteSourceType, UpdateNoteSchema } from "@/lib/schemas/note";
+import {
+	type CreateNoteSchema,
+	NOTE_LIST_SELECT,
+	NOTE_SELECT,
+	type NoteListRow,
+	type NoteRow,
+	type UpdateNoteSchema,
+} from "@/lib/schemas/note";
 import { unwrap, unwrapCount } from "@/lib/services/errors";
 
-// Columns returned by the write paths. Kept small and explicit — callers of the
-// capture pipeline only need the id, but the shape is honest about what a note
-// row carries out of an insert.
-const NOTE_SELECT =
-	"id, title, body, source_type, needs_review, tags, origin_capture_id, created_at";
+export type { NoteListRow, NoteRow };
 
-export type NoteRow = {
-	id: string;
-	title: string | null;
-	body: string;
-	source_type: NoteSourceType;
-	needs_review: boolean;
-	tags: string[];
-	origin_capture_id: string | null;
-	created_at: string;
-};
-
-// Wider read for the notes page/list views — adds the columns the write
-// paths above don't need but the UI does (relations, source_reference).
-const NOTE_LIST_SELECT = `${NOTE_SELECT}, source_reference, related_project_id, related_person_id, related_quote_id`;
-
-export type NoteListRow = NoteRow & {
-	source_reference: string | null;
-	related_project_id: string | null;
-	related_person_id: string | null;
-	related_quote_id: string | null;
-};
-
+// shape intentionally differs from CreateNoteSchema: source_type there has a
+// Zod `.default("own_thought")`, so z.infer's output type makes it required
+// — but callers here (e.g. the capture executor) construct this object
+// directly, without going through CreateNoteSchema.parse(), and rely on
+// source_type being optional (createNote below applies the same fallback
+// manually). Keeping the hand-written, all-optional-except-body shape.
 export type CreateNoteInput = {
 	body: string;
 	title?: string | null;
-	source_type?: NoteSourceType;
+	source_type?: z.infer<typeof CreateNoteSchema>["source_type"];
 	source_reference?: string | null;
 	tags?: string[];
 	related_project_id?: string | null;
@@ -57,7 +44,7 @@ export async function createNote(sb: SupabaseClient, input: CreateNoteInput): Pr
 			.select(NOTE_SELECT)
 			.single(),
 	);
-	return data as NoteRow;
+	return data as unknown as NoteRow;
 }
 
 /**
@@ -105,7 +92,7 @@ export async function listNotes(
 
 export async function getNote(sb: SupabaseClient, id: string): Promise<NoteListRow | null> {
 	const data = unwrap(await sb.from("notes").select(NOTE_LIST_SELECT).eq("id", id).maybeSingle());
-	return (data as NoteListRow | null) ?? null;
+	return (data as unknown as NoteListRow | null) ?? null;
 }
 
 export async function updateNote(
