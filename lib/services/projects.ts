@@ -134,6 +134,28 @@ export async function listMilestones(
 	return (data ?? []) as MilestoneRow[];
 }
 
+/** Milestones for many projects in one query, grouped by project id. */
+export async function listMilestonesForProjects(
+	sb: SupabaseClient,
+	projectIds: string[],
+): Promise<Record<string, MilestoneRow[]>> {
+	if (projectIds.length === 0) return {};
+	const data = unwrap(
+		await sb
+			.from("milestones")
+			.select(MILESTONE_SELECT)
+			.in("project_id", projectIds)
+			.order("position", { ascending: true })
+			.order("created_at", { ascending: true }),
+	);
+	const grouped: Record<string, MilestoneRow[]> = {};
+	for (const row of (data ?? []) as MilestoneRow[]) {
+		if (!grouped[row.project_id]) grouped[row.project_id] = [];
+		grouped[row.project_id].push(row);
+	}
+	return grouped;
+}
+
 export async function createMilestone(
 	sb: SupabaseClient,
 	projectId: string,

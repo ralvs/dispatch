@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
 	dateOfInstant,
 	dayWindowUtc,
+	formatDateline,
 	instantFromLocal,
+	isoWeek,
 	shiftDay,
 	startOfWeek,
 	todayInTz,
@@ -50,5 +52,25 @@ describe("shiftDay / startOfWeek", () => {
 describe("instantFromLocal", () => {
 	it("converts local wall-clock to the correct UTC instant", () => {
 		expect(instantFromLocal("2026-07-14", "15:00", SP)).toBe("2026-07-14T18:00:00.000Z");
+	});
+});
+
+describe("isoWeek / formatDateline", () => {
+	it("computes ISO week numbers, including year-boundary weeks", () => {
+		// 2026-07-17 is a Friday in ISO week 29.
+		expect(isoWeek("2026-07-17")).toBe(29);
+		// 2026-01-01 is a Thursday — ISO week 1.
+		expect(isoWeek("2026-01-01")).toBe(1);
+		// 2027-01-01 is a Friday — still ISO week 53 of 2026.
+		expect(isoWeek("2027-01-01")).toBe(53);
+	});
+
+	it("renders the masthead dateline in uppercase mono style", () => {
+		expect(formatDateline("2026-07-17")).toBe("FRI · JUL 17 · WEEK 29");
+	});
+
+	it("throws on an invalid date", () => {
+		expect(() => isoWeek("not-a-date")).toThrow();
+		expect(() => formatDateline("not-a-date")).toThrow();
 	});
 });

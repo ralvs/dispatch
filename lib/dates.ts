@@ -70,6 +70,20 @@ export function instantFromLocal(dateIso: string, time: string, tz: string): str
 	return iso;
 }
 
+/** ISO week number of a calendar date (pure string math, no timezone needed). */
+export function isoWeek(dateIso: string): number {
+	const dt = DateTime.fromISO(dateIso, { zone: "utc" });
+	if (!dt.isValid) throw new Error(`Invalid date: ${dateIso}`);
+	return dt.weekNumber;
+}
+
+/** Masthead dateline: `THU · JUL 17 · WEEK 29`. */
+export function formatDateline(dateIso: string): string {
+	const dt = DateTime.fromISO(dateIso, { zone: "utc" });
+	if (!dt.isValid) throw new Error(`Invalid date: ${dateIso}`);
+	return `${dt.toFormat("ccc · LLL d").toUpperCase()} · WEEK ${dt.weekNumber}`;
+}
+
 /** Editorial display formats used across the UI. */
 export function formatDay(dateIso: string, tz: string, format = "cccc, d LLLL yyyy"): string {
 	return DateTime.fromISO(dateIso, { zone: tz }).toFormat(format);

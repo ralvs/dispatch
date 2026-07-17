@@ -39,6 +39,28 @@ export async function listInboxTasks(sb: SupabaseClient): Promise<TaskRow[]> {
 	return listTasks(sb, { status: "open", domainId: INBOX_DOMAIN_ID });
 }
 
+/**
+ * Most recent completion instant per domain, from the latest done tasks.
+ * One bounded query, reduced in JS — 500 rows comfortably covers every
+ * domain's recent activity for cadence math.
+ */
+export async function lastCompletedByDomain(sb: SupabaseClient): Promise<Record<string, string>> {
+	const data = unwrap(
+		await sb
+			.from("tasks")
+			.select("domain_id, completed_at")
+			.eq("status", "done")
+			.not("completed_at", "is", null)
+			.order("completed_at", { ascending: false })
+			.limit(500),
+	);
+	const latest: Record<string, string> = {};
+	for (const row of (data ?? []) as Array<{ domain_id: string; completed_at: string }>) {
+		if (!(row.domain_id in latest)) latest[row.domain_id] = row.completed_at;
+	}
+	return latest;
+}
+
 export async function getTask(sb: SupabaseClient, id: string): Promise<TaskRow | null> {
 	const data = unwrap(await sb.from("tasks").select(TASK_SELECT).eq("id", id).maybeSingle());
 	return data ? flatten(data) : null;

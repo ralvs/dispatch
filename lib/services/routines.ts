@@ -120,6 +120,21 @@ export async function listCompletions(
 	return (data ?? []) as CompletionRow[];
 }
 
+/** All completions since a calendar date, across routines — streak math input. */
+export async function listCompletionsSince(
+	sb: SupabaseClient,
+	sinceIso: string,
+): Promise<CompletionRow[]> {
+	const data = unwrap(
+		await sb
+			.from("routine_completions")
+			.select(COMPLETION_SELECT)
+			.gte("completed_date", sinceIso)
+			.order("completed_date", { ascending: true }),
+	);
+	return (data ?? []) as CompletionRow[];
+}
+
 /** All completions recorded for a single calendar date, across routines. */
 export async function listCompletionsOn(
 	sb: SupabaseClient,
