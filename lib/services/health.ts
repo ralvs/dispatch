@@ -1,44 +1,38 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import type {
-	HealthMetricSourceSchema,
-	LabResultFlagSchema,
-	MedicationKindSchema,
-	VisitTypeSchema,
-	WorkoutSourceSchema,
+import {
+	type CreateHealthMetricSchema,
+	type CreateHealthVisitSchema,
+	type CreateLabPanelSchema,
+	type CreateLabResultSchema,
+	type CreateMedicationSchema,
+	type CreateWellbeingCheckInSchema,
+	type CreateWorkoutSchema,
+	type HealthMetricRow,
+	type HealthVisitRow,
+	LAB_PANEL_SELECT,
+	LAB_RESULT_SELECT,
+	type LabPanelRow,
+	type LabPanelWithResults,
+	type LabResultRow,
+	MEDICATION_SELECT,
+	METRIC_SELECT,
+	type MedicationRow,
+	VISIT_SELECT,
+	WELLBEING_SELECT,
+	type WellbeingCheckInRow,
+	WORKOUT_SELECT,
+	type WorkoutRow,
+	type WorkoutSourceSchema,
 } from "@/lib/schemas/health";
 import { unwrap } from "@/lib/services/errors";
 
 // ─── Metrics ────────────────────────────────────────────────────────────
 
-const METRIC_SELECT =
-	"id, measured_at, metric, value, value_secondary, unit, source, visit_id, notes, created_at, updated_at";
+export type { HealthMetricRow };
 
-export type HealthMetricRow = {
-	id: string;
-	measured_at: string;
-	metric: string;
-	value: number | null;
-	value_secondary: number | null;
-	unit: string | null;
-	source: z.infer<typeof HealthMetricSourceSchema>;
-	visit_id: string | null;
-	notes: string | null;
-	created_at: string;
-	updated_at: string;
-};
-
-export type CreateHealthMetricInput = {
-	measured_at: string;
-	metric: string;
-	value?: number | null;
-	value_secondary?: number | null;
-	unit?: string | null;
-	source?: z.infer<typeof HealthMetricSourceSchema>;
-	visit_id?: string | null;
-	notes?: string | null;
-};
+export type CreateHealthMetricInput = z.infer<typeof CreateHealthMetricSchema>;
 
 export async function listMetrics(
 	sb: SupabaseClient,
@@ -50,7 +44,7 @@ export async function listMetrics(
 	if (filters.metric) q = q.eq("metric", filters.metric);
 	if (filters.limit) q = q.limit(filters.limit);
 	const data = unwrap(await q);
-	return (data ?? []) as HealthMetricRow[];
+	return (data ?? []) as unknown as HealthMetricRow[];
 }
 
 export async function createMetric(
@@ -58,7 +52,7 @@ export async function createMetric(
 	input: CreateHealthMetricInput,
 ): Promise<HealthMetricRow> {
 	const data = unwrap(await sb.from("health_metrics").insert(input).select(METRIC_SELECT).single());
-	return data as HealthMetricRow;
+	return data as unknown as HealthMetricRow;
 }
 
 export async function updateMetric(
@@ -75,37 +69,9 @@ export async function deleteMetric(sb: SupabaseClient, id: string): Promise<void
 
 // ─── Medications ────────────────────────────────────────────────────────
 
-const MEDICATION_SELECT =
-	"id, name, kind, dosage, frequency, prescribing_provider, reason, start_date, stop_date, active, notes, created_at, updated_at";
+export type { MedicationRow };
 
-export type MedicationRow = {
-	id: string;
-	name: string;
-	kind: z.infer<typeof MedicationKindSchema>;
-	dosage: string | null;
-	frequency: string | null;
-	prescribing_provider: string | null;
-	reason: string | null;
-	start_date: string | null;
-	stop_date: string | null;
-	active: boolean;
-	notes: string | null;
-	created_at: string;
-	updated_at: string;
-};
-
-export type CreateMedicationInput = {
-	name: string;
-	kind?: z.infer<typeof MedicationKindSchema>;
-	dosage?: string | null;
-	frequency?: string | null;
-	prescribing_provider?: string | null;
-	reason?: string | null;
-	start_date?: string | null;
-	stop_date?: string | null;
-	active?: boolean;
-	notes?: string | null;
-};
+export type CreateMedicationInput = z.infer<typeof CreateMedicationSchema>;
 
 export async function listMedications(
 	sb: SupabaseClient,
@@ -118,7 +84,7 @@ export async function listMedications(
 		.order("name", { ascending: true });
 	if (!filters.includeInactive) q = q.eq("active", true);
 	const data = unwrap(await q);
-	return (data ?? []) as MedicationRow[];
+	return (data ?? []) as unknown as MedicationRow[];
 }
 
 export async function createMedication(
@@ -128,7 +94,7 @@ export async function createMedication(
 	const data = unwrap(
 		await sb.from("medications").insert(input).select(MEDICATION_SELECT).single(),
 	);
-	return data as MedicationRow;
+	return data as unknown as MedicationRow;
 }
 
 export async function updateMedication(
@@ -153,41 +119,15 @@ export async function setMedicationActive(
 
 // ─── Visits ─────────────────────────────────────────────────────────────
 
-const VISIT_SELECT =
-	"id, visit_date, provider_name, provider_specialty, visit_type, reason, assessment, plan, notes, follow_up_date, created_at, updated_at";
+export type { HealthVisitRow };
 
-export type HealthVisitRow = {
-	id: string;
-	visit_date: string;
-	provider_name: string | null;
-	provider_specialty: string | null;
-	visit_type: z.infer<typeof VisitTypeSchema> | null;
-	reason: string | null;
-	assessment: string | null;
-	plan: string | null;
-	notes: string | null;
-	follow_up_date: string | null;
-	created_at: string;
-	updated_at: string;
-};
-
-export type CreateHealthVisitInput = {
-	visit_date: string;
-	provider_name?: string | null;
-	provider_specialty?: string | null;
-	visit_type?: z.infer<typeof VisitTypeSchema> | null;
-	reason?: string | null;
-	assessment?: string | null;
-	plan?: string | null;
-	notes?: string | null;
-	follow_up_date?: string | null;
-};
+export type CreateHealthVisitInput = z.infer<typeof CreateHealthVisitSchema>;
 
 export async function listVisits(sb: SupabaseClient): Promise<HealthVisitRow[]> {
 	const data = unwrap(
 		await sb.from("health_visits").select(VISIT_SELECT).order("visit_date", { ascending: false }),
 	);
-	return (data ?? []) as HealthVisitRow[];
+	return (data ?? []) as unknown as HealthVisitRow[];
 }
 
 export async function createVisit(
@@ -195,7 +135,7 @@ export async function createVisit(
 	input: CreateHealthVisitInput,
 ): Promise<HealthVisitRow> {
 	const data = unwrap(await sb.from("health_visits").insert(input).select(VISIT_SELECT).single());
-	return data as HealthVisitRow;
+	return data as unknown as HealthVisitRow;
 }
 
 export async function updateVisit(
@@ -212,68 +152,16 @@ export async function deleteVisit(sb: SupabaseClient, id: string): Promise<void>
 
 // ─── Lab panels + results ────────────────────────────────────────────────
 
-const LAB_RESULT_SELECT =
-	"id, panel_id, analyte, value, value_text, unit, reference_range_low, reference_range_high, reference_text, flag, notes, created_at";
+export type { LabPanelRow, LabPanelWithResults, LabResultRow };
 
-export type LabResultRow = {
-	id: string;
-	panel_id: string;
-	analyte: string;
-	value: number | null;
-	value_text: string | null;
-	unit: string | null;
-	reference_range_low: number | null;
-	reference_range_high: number | null;
-	reference_text: string | null;
-	flag: z.infer<typeof LabResultFlagSchema> | null;
-	notes: string | null;
-	created_at: string;
-};
-
-export type CreateLabResultInput = {
-	analyte: string;
-	value?: number | null;
-	value_text?: string | null;
-	unit?: string | null;
-	reference_range_low?: number | null;
-	reference_range_high?: number | null;
-	reference_text?: string | null;
-	flag?: z.infer<typeof LabResultFlagSchema> | null;
-	notes?: string | null;
-};
-
-const LAB_PANEL_SELECT =
-	"id, drawn_date, panel_name, ordering_provider, lab_facility, notes, visit_id, created_at, updated_at";
-
-export type LabPanelRow = {
-	id: string;
-	drawn_date: string;
-	panel_name: string;
-	ordering_provider: string | null;
-	lab_facility: string | null;
-	notes: string | null;
-	visit_id: string | null;
-	created_at: string;
-	updated_at: string;
-};
-
-export type LabPanelWithResults = LabPanelRow & { results: LabResultRow[] };
-
-export type CreateLabPanelInput = {
-	drawn_date: string;
-	panel_name: string;
-	ordering_provider?: string | null;
-	lab_facility?: string | null;
-	notes?: string | null;
-	visit_id?: string | null;
-	results?: CreateLabResultInput[];
-};
+export type CreateLabResultInput = z.infer<typeof CreateLabResultSchema>;
+export type CreateLabPanelInput = z.infer<typeof CreateLabPanelSchema>;
 
 /** Panels newest-drawn-first, each with its results attached. */
 export async function listLabPanels(sb: SupabaseClient): Promise<LabPanelWithResults[]> {
 	const panels = unwrap(
 		await sb.from("lab_panels").select(LAB_PANEL_SELECT).order("drawn_date", { ascending: false }),
-	) as LabPanelRow[];
+	) as unknown as LabPanelRow[];
 	if (!panels || panels.length === 0) return [];
 
 	const results = unwrap(
@@ -284,7 +172,7 @@ export async function listLabPanels(sb: SupabaseClient): Promise<LabPanelWithRes
 				"panel_id",
 				panels.map((p) => p.id),
 			),
-	) as LabResultRow[];
+	) as unknown as LabResultRow[];
 
 	return panels.map((panel) => ({
 		...panel,
@@ -300,7 +188,7 @@ export async function createLabPanel(
 	const { results, ...panelInput } = input;
 	const panel = unwrap(
 		await sb.from("lab_panels").insert(panelInput).select(LAB_PANEL_SELECT).single(),
-	) as LabPanelRow;
+	) as unknown as LabPanelRow;
 
 	if (!results || results.length === 0) return { ...panel, results: [] };
 
@@ -309,7 +197,7 @@ export async function createLabPanel(
 			.from("lab_results")
 			.insert(results.map((r) => ({ ...r, panel_id: panel.id })))
 			.select(LAB_RESULT_SELECT),
-	) as LabResultRow[];
+	) as unknown as LabResultRow[];
 
 	return { ...panel, results: inserted ?? [] };
 }
@@ -331,7 +219,7 @@ export async function addLabResult(
 			.select(LAB_RESULT_SELECT)
 			.single(),
 	);
-	return data as LabResultRow;
+	return data as unknown as LabResultRow;
 }
 
 export async function deleteLabResult(sb: SupabaseClient, id: string): Promise<void> {
@@ -340,27 +228,9 @@ export async function deleteLabResult(sb: SupabaseClient, id: string): Promise<v
 
 // ─── Wellbeing check-ins ─────────────────────────────────────────────────
 
-const WELLBEING_SELECT = "id, checked_in_at, mood, energy, sleep_quality, pain, notes, created_at";
+export type { WellbeingCheckInRow };
 
-export type WellbeingCheckInRow = {
-	id: string;
-	checked_in_at: string;
-	mood: number | null;
-	energy: number | null;
-	sleep_quality: number | null;
-	pain: number | null;
-	notes: string | null;
-	created_at: string;
-};
-
-export type CreateWellbeingCheckInInput = {
-	checked_in_at?: string;
-	mood?: number | null;
-	energy?: number | null;
-	sleep_quality?: number | null;
-	pain?: number | null;
-	notes?: string | null;
-};
+export type CreateWellbeingCheckInInput = z.infer<typeof CreateWellbeingCheckInSchema>;
 
 export async function listWellbeingCheckIns(
 	sb: SupabaseClient,
@@ -372,7 +242,7 @@ export async function listWellbeingCheckIns(
 		.order("checked_in_at", { ascending: false });
 	if (filters.limit) q = q.limit(filters.limit);
 	const data = unwrap(await q);
-	return (data ?? []) as WellbeingCheckInRow[];
+	return (data ?? []) as unknown as WellbeingCheckInRow[];
 }
 
 export async function createWellbeingCheckIn(
@@ -382,7 +252,7 @@ export async function createWellbeingCheckIn(
 	const data = unwrap(
 		await sb.from("wellbeing_check_ins").insert(input).select(WELLBEING_SELECT).single(),
 	);
-	return data as WellbeingCheckInRow;
+	return data as unknown as WellbeingCheckInRow;
 }
 
 export async function deleteWellbeingCheckIn(sb: SupabaseClient, id: string): Promise<void> {
@@ -391,33 +261,15 @@ export async function deleteWellbeingCheckIn(sb: SupabaseClient, id: string): Pr
 
 // ─── Workouts ────────────────────────────────────────────────────────────
 
-const WORKOUT_SELECT =
-	"id, started_at, ended_at, duration_min, activity_type, distance_m, avg_hr, max_hr, calories, elevation_gain_m, pace_sec_per_km, power_avg_watts, source, notes, created_at";
+export type { WorkoutRow };
 
-export type WorkoutRow = {
-	id: string;
-	started_at: string;
-	ended_at: string | null;
-	duration_min: number | null;
-	activity_type: string | null;
-	distance_m: number | null;
-	avg_hr: number | null;
-	max_hr: number | null;
-	calories: number | null;
-	elevation_gain_m: number | null;
-	pace_sec_per_km: number | null;
-	power_avg_watts: number | null;
-	source: z.infer<typeof WorkoutSourceSchema>;
-	notes: string | null;
-	created_at: string;
-};
-
-export type CreateWorkoutInput = {
-	started_at: string;
-	duration_min?: number | null;
-	activity_type?: string | null;
-	distance_m?: number | null;
-	notes?: string | null;
+// shape intentionally differs from CreateWorkoutSchema: the zod schema
+// deliberately omits `source` (device-import fields are populated by a
+// future import path, not the manual-entry form per its own comment in
+// lib/schemas/health.ts) — but createWorkout below still accepts an
+// optional `source` override and defaults it to "manual". Keeping the
+// hand-written type so that field stays typed here.
+export type CreateWorkoutInput = z.infer<typeof CreateWorkoutSchema> & {
 	source?: z.infer<typeof WorkoutSourceSchema>;
 };
 
@@ -428,7 +280,7 @@ export async function listWorkouts(
 	let q = sb.from("workouts").select(WORKOUT_SELECT).order("started_at", { ascending: false });
 	if (filters.limit) q = q.limit(filters.limit);
 	const data = unwrap(await q);
-	return (data ?? []) as WorkoutRow[];
+	return (data ?? []) as unknown as WorkoutRow[];
 }
 
 /** Manual workout entry. Device-import fields (avg_hr, calories, etc.) stay
@@ -444,7 +296,7 @@ export async function createWorkout(
 			.select(WORKOUT_SELECT)
 			.single(),
 	);
-	return data as WorkoutRow;
+	return data as unknown as WorkoutRow;
 }
 
 export async function deleteWorkout(sb: SupabaseClient, id: string): Promise<void> {

@@ -372,3 +372,133 @@ export const UpdateHealthHistorySchema = z.object({
 	immunizations: z.array(HistoryEntrySchema).optional(),
 	family_history: z.array(HistoryEntrySchema).optional(),
 });
+
+// ─── Row shapes actually returned by the health service ─────────────────
+//
+// Mirror exactly the columns each *_SELECT reads (lib/services/health.ts).
+// Each *_SELECT below is derived from its schema's keys. No joins for any
+// of these entities.
+
+export const HealthMetricRowSchema = z.object({
+	id: z.string().uuid(),
+	measured_at: z.string(),
+	metric: z.string(),
+	value: z.number().nullable(),
+	value_secondary: z.number().nullable(),
+	unit: z.string().nullable(),
+	source: HealthMetricSourceSchema,
+	visit_id: z.string().uuid().nullable(),
+	notes: z.string().nullable(),
+	created_at: z.string(),
+	updated_at: z.string(),
+});
+export type HealthMetricRow = z.infer<typeof HealthMetricRowSchema>;
+
+export const METRIC_SELECT = Object.keys(HealthMetricRowSchema.shape).join(", ");
+
+export const MedicationRowSchema = z.object({
+	id: z.string().uuid(),
+	name: z.string(),
+	kind: MedicationKindSchema,
+	dosage: z.string().nullable(),
+	frequency: z.string().nullable(),
+	prescribing_provider: z.string().nullable(),
+	reason: z.string().nullable(),
+	start_date: z.string().nullable(),
+	stop_date: z.string().nullable(),
+	active: z.boolean(),
+	notes: z.string().nullable(),
+	created_at: z.string(),
+	updated_at: z.string(),
+});
+export type MedicationRow = z.infer<typeof MedicationRowSchema>;
+
+export const MEDICATION_SELECT = Object.keys(MedicationRowSchema.shape).join(", ");
+
+export const HealthVisitRowSchema = z.object({
+	id: z.string().uuid(),
+	visit_date: z.string(),
+	provider_name: z.string().nullable(),
+	provider_specialty: z.string().nullable(),
+	visit_type: VisitTypeSchema.nullable(),
+	reason: z.string().nullable(),
+	assessment: z.string().nullable(),
+	plan: z.string().nullable(),
+	notes: z.string().nullable(),
+	follow_up_date: z.string().nullable(),
+	created_at: z.string(),
+	updated_at: z.string(),
+});
+export type HealthVisitRow = z.infer<typeof HealthVisitRowSchema>;
+
+export const VISIT_SELECT = Object.keys(HealthVisitRowSchema.shape).join(", ");
+
+export const LabResultRowSchema = z.object({
+	id: z.string().uuid(),
+	panel_id: z.string().uuid(),
+	analyte: z.string(),
+	value: z.number().nullable(),
+	value_text: z.string().nullable(),
+	unit: z.string().nullable(),
+	reference_range_low: z.number().nullable(),
+	reference_range_high: z.number().nullable(),
+	reference_text: z.string().nullable(),
+	flag: LabResultFlagSchema.nullable(),
+	notes: z.string().nullable(),
+	created_at: z.string(),
+});
+export type LabResultRow = z.infer<typeof LabResultRowSchema>;
+
+export const LAB_RESULT_SELECT = Object.keys(LabResultRowSchema.shape).join(", ");
+
+export const LabPanelRowSchema = z.object({
+	id: z.string().uuid(),
+	drawn_date: z.string(),
+	panel_name: z.string(),
+	ordering_provider: z.string().nullable(),
+	lab_facility: z.string().nullable(),
+	notes: z.string().nullable(),
+	visit_id: z.string().uuid().nullable(),
+	created_at: z.string(),
+	updated_at: z.string(),
+});
+export type LabPanelRow = z.infer<typeof LabPanelRowSchema>;
+
+export const LAB_PANEL_SELECT = Object.keys(LabPanelRowSchema.shape).join(", ");
+
+export type LabPanelWithResults = LabPanelRow & { results: LabResultRow[] };
+
+export const WellbeingCheckInRowSchema = z.object({
+	id: z.string().uuid(),
+	checked_in_at: z.string(),
+	mood: z.number().nullable(),
+	energy: z.number().nullable(),
+	sleep_quality: z.number().nullable(),
+	pain: z.number().nullable(),
+	notes: z.string().nullable(),
+	created_at: z.string(),
+});
+export type WellbeingCheckInRow = z.infer<typeof WellbeingCheckInRowSchema>;
+
+export const WELLBEING_SELECT = Object.keys(WellbeingCheckInRowSchema.shape).join(", ");
+
+export const WorkoutRowSchema = z.object({
+	id: z.string().uuid(),
+	started_at: z.string(),
+	ended_at: z.string().nullable(),
+	duration_min: z.number().nullable(),
+	activity_type: z.string().nullable(),
+	distance_m: z.number().nullable(),
+	avg_hr: z.number().nullable(),
+	max_hr: z.number().nullable(),
+	calories: z.number().nullable(),
+	elevation_gain_m: z.number().nullable(),
+	pace_sec_per_km: z.number().nullable(),
+	power_avg_watts: z.number().nullable(),
+	source: WorkoutSourceSchema,
+	notes: z.string().nullable(),
+	created_at: z.string(),
+});
+export type WorkoutRow = z.infer<typeof WorkoutRowSchema>;
+
+export const WORKOUT_SELECT = Object.keys(WorkoutRowSchema.shape).join(", ");
