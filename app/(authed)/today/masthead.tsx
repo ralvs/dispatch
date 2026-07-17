@@ -18,11 +18,14 @@ export function Masthead({
 				</p>
 				<div className="flex items-baseline gap-4">
 					{unreadNotifications > 0 && (
-						<span className="flex items-baseline gap-1.5 font-mono text-meta text-ink-3">
+						<Link
+							href="/notifications"
+							className="flex items-baseline gap-1.5 font-mono text-meta text-ink-3 hover:text-ink-2"
+						>
 							<span aria-hidden className="inline-block h-1.5 w-1.5 self-center bg-accent" />
 							{unreadNotifications}
 							<span className="sr-only"> unread notifications</span>
-						</span>
+						</Link>
 					)}
 					<Link href="/chat" className="font-mono text-meta text-ink-3 hover:text-ink-2">
 						Ask →
