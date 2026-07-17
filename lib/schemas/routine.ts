@@ -82,3 +82,41 @@ export const ToggleCompletionSchema = z.object({
 	// explicit done=false to delete; default true.
 	done: z.boolean().optional(),
 });
+
+// ─── Row shape actually returned by the routines service ────────────────
+//
+// Mirrors exactly the columns ROUTINE_SELECT reads (lib/services/routines.ts).
+// ROUTINE_SELECT is derived from this schema's keys. No joins for this
+// entity.
+export const RoutineRowSchema = z.object({
+	id: z.string().uuid(),
+	name: z.string(),
+	description: z.string().nullable(),
+	position: z.number(),
+	active: z.boolean(),
+	time_of_day: TimeOfDayBucketSchema,
+	specific_time: z.string().nullable(),
+	reminder_enabled: z.boolean(),
+	last_reminder_sent_date: z.string().nullable(),
+	goal_days: z.number().nullable(),
+	archived_at: z.string().nullable(),
+	created_at: z.string(),
+	updated_at: z.string(),
+});
+export type RoutineRow = z.infer<typeof RoutineRowSchema>;
+
+export const ROUTINE_SELECT = Object.keys(RoutineRowSchema.shape).join(", ");
+
+// ─── Row shape actually returned by the routine_completions service ─────
+//
+// Mirrors exactly the columns COMPLETION_SELECT reads
+// (lib/services/routines.ts). No joins for this entity.
+export const CompletionRowSchema = z.object({
+	id: z.string().uuid(),
+	routine_id: z.string().uuid(),
+	completed_date: z.string(),
+	created_at: z.string(),
+});
+export type CompletionRow = z.infer<typeof CompletionRowSchema>;
+
+export const COMPLETION_SELECT = Object.keys(CompletionRowSchema.shape).join(", ");

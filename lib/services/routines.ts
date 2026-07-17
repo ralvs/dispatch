@@ -2,44 +2,22 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { nowUtc } from "@/lib/dates";
-import type { TimeOfDayBucketSchema } from "@/lib/schemas/routine";
+import {
+	COMPLETION_SELECT,
+	type CompletionRow,
+	type CreateRoutineSchema,
+	ROUTINE_SELECT,
+	type RoutineRow,
+	type UpdateRoutineSchema,
+} from "@/lib/schemas/routine";
 import { unwrap } from "@/lib/services/errors";
 
 // ─── Routines ───────────────────────────────────────────────────────────
 
-const ROUTINE_SELECT =
-	"id, name, description, position, active, time_of_day, specific_time, reminder_enabled, last_reminder_sent_date, goal_days, archived_at, created_at, updated_at";
+export type { CompletionRow, RoutineRow };
 
-export type RoutineRow = {
-	id: string;
-	name: string;
-	description: string | null;
-	position: number;
-	active: boolean;
-	time_of_day: z.infer<typeof TimeOfDayBucketSchema>;
-	specific_time: string | null;
-	reminder_enabled: boolean;
-	last_reminder_sent_date: string | null;
-	goal_days: number | null;
-	archived_at: string | null;
-	created_at: string;
-	updated_at: string;
-};
-
-export type CreateRoutineInput = {
-	name: string;
-	description?: string | null;
-	position?: number;
-	time_of_day?: z.infer<typeof TimeOfDayBucketSchema>;
-	specific_time?: string | null;
-	reminder_enabled?: boolean;
-	goal_days?: number | null;
-};
-
-export type UpdateRoutineInput = Partial<CreateRoutineInput> & {
-	active?: boolean;
-	archived_at?: string | null;
-};
+export type CreateRoutineInput = z.infer<typeof CreateRoutineSchema>;
+export type UpdateRoutineInput = z.infer<typeof UpdateRoutineSchema>;
 
 export async function listRoutines(
 	sb: SupabaseClient,
@@ -52,12 +30,12 @@ export async function listRoutines(
 		.order("position", { ascending: true });
 	if (!filters.includeArchived) q = q.is("archived_at", null);
 	const data = unwrap(await q);
-	return (data ?? []) as RoutineRow[];
+	return (data ?? []) as unknown as RoutineRow[];
 }
 
 export async function getRoutine(sb: SupabaseClient, id: string): Promise<RoutineRow | null> {
 	const data = unwrap(await sb.from("routines").select(ROUTINE_SELECT).eq("id", id).maybeSingle());
-	return (data as RoutineRow | null) ?? null;
+	return (data as unknown as RoutineRow | null) ?? null;
 }
 
 export async function createRoutine(
@@ -65,7 +43,7 @@ export async function createRoutine(
 	input: CreateRoutineInput,
 ): Promise<RoutineRow> {
 	const data = unwrap(await sb.from("routines").insert(input).select(ROUTINE_SELECT).single());
-	return data as RoutineRow;
+	return data as unknown as RoutineRow;
 }
 
 export async function updateRoutine(
@@ -96,15 +74,6 @@ export async function archiveRoutine(
 
 // ─── Routine completions ────────────────────────────────────────────────
 
-const COMPLETION_SELECT = "id, routine_id, completed_date, created_at";
-
-export type CompletionRow = {
-	id: string;
-	routine_id: string;
-	completed_date: string;
-	created_at: string;
-};
-
 export async function listCompletions(
 	sb: SupabaseClient,
 	routineId: string,
@@ -117,7 +86,7 @@ export async function listCompletions(
 		.order("completed_date", { ascending: true });
 	if (sinceIso) q = q.gte("completed_date", sinceIso);
 	const data = unwrap(await q);
-	return (data ?? []) as CompletionRow[];
+	return (data ?? []) as unknown as CompletionRow[];
 }
 
 /** All completions since a calendar date, across routines — streak math input. */
@@ -132,7 +101,7 @@ export async function listCompletionsSince(
 			.gte("completed_date", sinceIso)
 			.order("completed_date", { ascending: true }),
 	);
-	return (data ?? []) as CompletionRow[];
+	return (data ?? []) as unknown as CompletionRow[];
 }
 
 /** All completions recorded for a single calendar date, across routines. */
@@ -143,7 +112,7 @@ export async function listCompletionsOn(
 	const data = unwrap(
 		await sb.from("routine_completions").select(COMPLETION_SELECT).eq("completed_date", dateIso),
 	);
-	return (data ?? []) as CompletionRow[];
+	return (data ?? []) as unknown as CompletionRow[];
 }
 
 /**
