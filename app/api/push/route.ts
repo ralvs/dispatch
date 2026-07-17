@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireOwner } from "@/lib/auth";
+import { ownerRoute } from "@/lib/auth";
 import { isPushConfigured } from "@/lib/env";
 import { deletePushSubscription, savePushSubscription } from "@/lib/services/push";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -24,10 +24,7 @@ const DeleteSchema = z.object({
 	endpoint: z.string().url(),
 });
 
-export async function POST(request: Request) {
-	const auth = await requireOwner();
-	if (auth instanceof NextResponse) return auth;
-
+export const POST = ownerRoute(async (request) => {
 	if (!isPushConfigured()) {
 		return NextResponse.json({ error: "push_not_configured" }, { status: 503 });
 	}
@@ -40,12 +37,9 @@ export async function POST(request: Request) {
 
 	await savePushSubscription(createAdminClient(), parsed.data);
 	return NextResponse.json({ ok: true }, { status: 201 });
-}
+});
 
-export async function DELETE(request: Request) {
-	const auth = await requireOwner();
-	if (auth instanceof NextResponse) return auth;
-
+export const DELETE = ownerRoute(async (request) => {
 	if (!isPushConfigured()) {
 		return NextResponse.json({ error: "push_not_configured" }, { status: 503 });
 	}
@@ -58,4 +52,4 @@ export async function DELETE(request: Request) {
 
 	await deletePushSubscription(createAdminClient(), parsed.data.endpoint);
 	return NextResponse.json({ ok: true }, { status: 200 });
-}
+});

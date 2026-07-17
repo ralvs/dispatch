@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { buildChatSystemPrompt } from "@/lib/ai/chat-context";
 import { chatModel, isAiConfigured } from "@/lib/ai/gateway";
-import { requireOwner } from "@/lib/auth";
+import { ownerRoute } from "@/lib/auth";
 import { todayInTz } from "@/lib/dates";
 import { getAppTimezone } from "@/lib/services/settings";
 
@@ -17,11 +17,7 @@ const BodySchema = z.object({
 	messages: z.array(z.unknown()).min(1),
 });
 
-export async function POST(request: Request) {
-	const auth = await requireOwner();
-	if (auth instanceof NextResponse) return auth;
-	const { sb } = auth;
-
+export const POST = ownerRoute(async (request, { sb }) => {
 	if (!isAiConfigured()) {
 		return NextResponse.json({ error: "ai_not_configured" }, { status: 503 });
 	}
@@ -44,4 +40,4 @@ export async function POST(request: Request) {
 	});
 
 	return result.toUIMessageStreamResponse();
-}
+});

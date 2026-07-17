@@ -74,3 +74,23 @@ export async function requireOwnerPage(): Promise<{ user: User; sb: SupabaseClie
 	if (!isOwner(user)) redirect("/sign-in");
 	return { user, sb };
 }
+
+/**
+ * Wraps a route handler with the requireOwner() check so handlers never see
+ * the `{user,sb} | NextResponse` union directly:
+ *
+ *   export const POST = ownerRoute((request, { sb }) => { ... });
+ */
+export function ownerRoute<Args extends unknown[]>(
+	handler: (
+		request: Request,
+		auth: { user: User; sb: SupabaseClient },
+		...args: Args
+	) => Promise<Response>,
+): (request: Request, ...args: Args) => Promise<Response> {
+	return async (request, ...args) => {
+		const auth = await requireOwner();
+		if (auth instanceof NextResponse) return auth;
+		return handler(request, auth, ...args);
+	};
+}
