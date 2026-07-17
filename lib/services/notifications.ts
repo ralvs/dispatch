@@ -1,5 +1,11 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+	type Json,
+	NOTIFICATION_SELECT,
+	type NotificationRow,
+	type NotificationStatus,
+} from "@/lib/schemas/notification";
 import { unwrap, unwrapCount } from "@/lib/services/errors";
 import { sendPushToAll } from "@/lib/services/push";
 
@@ -25,28 +31,7 @@ import { sendPushToAll } from "@/lib/services/push";
 //     lint) is deferred until there are callers to protect.
 // ─────────────────────────────────────────────────────────────────────────
 
-// Any JSON value — the honest domain of a jsonb column.
-export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
-
-// Mirrors exactly the `notifications` columns (supabase/migrations/0001_schema.sql).
-// The table has no severity/category column — `type` is the free-text
-// classifier and `status` is the read state.
-export type NotificationStatus = "unread" | "read" | "dismissed";
-
-export type NotificationRow = {
-	id: string;
-	type: string;
-	title: string;
-	body: string | null;
-	source_ref: string | null;
-	source_url: string | null;
-	status: NotificationStatus;
-	undo_payload: Json | null;
-	created_at: string;
-};
-
-const NOTIFICATION_SELECT =
-	"id, type, title, body, source_ref, source_url, status, undo_payload, created_at";
+export type { Json, NotificationRow, NotificationStatus };
 
 // What a caller supplies to record a ledger entry. Snake_case to match the
 // columns (and the rest of the services layer, e.g. tasks.createTask).
@@ -104,7 +89,7 @@ async function insertNotification(
 			.select(NOTIFICATION_SELECT)
 			.single(),
 	);
-	return data as NotificationRow;
+	return data as unknown as NotificationRow;
 }
 
 /**
@@ -140,7 +125,7 @@ export async function listNotifications(
 	if (opts.status) q = q.eq("status", opts.status);
 	if (opts.limit != null) q = q.limit(opts.limit);
 	const data = unwrap(await q);
-	return (data ?? []) as NotificationRow[];
+	return (data ?? []) as unknown as NotificationRow[];
 }
 
 /** Count of unread notifications — the badge number. */
