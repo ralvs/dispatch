@@ -44,7 +44,8 @@ degrade-not-replay is the safe never-lose choice. The sweep dedupes on
 `notes.origin_capture_id` (migration 0004): if a note already links to the
 capture, it skips it.
 
-**Known gap (accepted, documented — same class as `recordedAction`'s):** a
+**Known gap (accepted, documented — same class as `recordedAction`'s; since
+removed — `recordNotification` is the ledger path):** a
 crash in the window between execute and `markParsed` leaves actions done and
 the row `raw`; the sweep then makes a *duplicate `needs_review` note* (never a
 duplicate task). Rare, low-harm, single-user.
@@ -90,7 +91,8 @@ Decided future shape for ingest: it wraps capture via an **atomic RPC** that
 inserts the `captured_data` row and the `notifications` row in one Postgres
 transaction, **idempotency-keyed on `source_ref`**. Rule #6 must not be
 droppable for external actions via a post-hoc `LedgerError` (the gap
-`recordedAction` documents), which is why ingest gets a transaction rather than
+`recordedAction` documents — since removed, `recordNotification` is the
+ledger path), which is why ingest gets a transaction rather than
 the two-call seam the palette path does not even need.
 
 ## Bilingual verbatim

@@ -15,7 +15,8 @@ Executed same-day.
 
 - **1** — done (`9e5f2d0`).
 - **2** — done (`0ab6b41`, review fixes in `ffbf8df`; cross-family peer review
-  applied — `recordedAction`'s entry is now derived from the action result;
+  applied — `recordedAction`'s entry is now derived from the action result
+  (since removed — `recordNotification` is the ledger path);
   known limits documented: not crash-atomic, not a hard boundary; the first
   cron/ingest caller must bring an idempotency key).
 - **3** — done (`772bfa8`).
@@ -58,7 +59,8 @@ fine and falls back to RLS alone.
 
 Iron rule #6 ("every autonomous/external action writes a `notifications` row")
 has zero code. Build a ledger module whose interface performs the mutation
-*and* records it in one call (e.g. `recordedAction(sb, …)`); cron/ingest/
+*and* records it in one call (e.g. `recordedAction(sb, …)`; since removed —
+`recordNotification` is the ledger path); cron/ingest/
 CalDAV write paths go only through this interface, never a raw client. Push
 delivery slots in behind the same seam later (ADR-0005).
 
