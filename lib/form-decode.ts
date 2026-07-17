@@ -1,10 +1,18 @@
 import type { z } from "zod";
 
-// FormData → typed-input decoder. Schema-derived blank rule: a blank string
+// FormData → typed-input decoder. Semantic distinction between ABSENT and
+// PRESENT-BUT-BLANK: a key entirely missing from the form (`formData.get(key)
+// === null`) is never in the form's UI, so it is OMITTED — the caller's
+// `.update(patch)` must not touch that column just because a narrower form
+// didn't render it. A field that IS present but submitted blank ("" or
+// whitespace) means "clear this", so the schema-derived blank rule applies:
 // becomes `null` if the field is nullable (schema.shape[key] accepts null),
 // otherwise the key is omitted entirely. This reproduces today's `|| null`
 // (clear) and `|| undefined` (omit) behaviors automatically, for both
-// create and partial-update schemas, without per-site branching.
+// create and partial-update schemas, without per-site branching. Boolean
+// (checkbox) fields are unaffected by the absent/blank distinction: a
+// checkbox spec'd in FormSpec is by definition part of the form, and its
+// absence from FormData means unchecked → `false`.
 
 export type FieldKind = "string" | "number" | "boolean";
 export type FormSpec = Record<string, FieldKind>; // default per field: "string"
@@ -36,6 +44,8 @@ export function decodeFields(
 			continue;
 		}
 
+		const absent = raw === null;
+
 		let value: unknown;
 		let blank: boolean;
 
@@ -59,10 +69,12 @@ export function decodeFields(
 		}
 
 		if (blank) {
-			if (isNullable(schema, key)) {
+			if (absent) {
+				// Key never appeared in the form at all — leave the column untouched.
+			} else if (isNullable(schema, key)) {
 				result[key] = null;
 			}
-			// else: omit the key entirely.
+			// else: present-but-blank on a non-nullable field — omit the key entirely.
 		} else {
 			result[key] = value;
 		}

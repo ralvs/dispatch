@@ -72,6 +72,46 @@ describe("decodeFields", () => {
 	});
 });
 
+const UpdateTestSchema = TestSchema.partial();
+
+describe("decodeFields — absent vs blank", () => {
+	it("regression: a partial update schema with only one field submitted returns only that field (no nulls for unsubmitted nullable fields)", () => {
+		const result = decodeFields(UpdateTestSchema, fd({ title: "New Title" }));
+		expect(result).toEqual({ title: "New Title" });
+	});
+
+	it("an absent number field is omitted, not defaulted to null", () => {
+		const result = decodeFields(UpdateTestSchema, fd({ title: "x" }), {
+			priority: "number",
+			rating: "number",
+		});
+		expect("rating" in result).toBe(false);
+		expect("priority" in result).toBe(false);
+	});
+
+	it("a present-but-blank nullable field still clears to null", () => {
+		const result = decodeFields(UpdateTestSchema, fd({ title: "x", notes: "" }));
+		expect(result.notes).toBeNull();
+	});
+
+	it("a present-but-blank non-nullable optional field is still omitted", () => {
+		const result = decodeFields(UpdateTestSchema, fd({ title: "x", kind: "" }));
+		expect("kind" in result).toBe(false);
+	});
+
+	it("an absent boolean field still defaults to false — unaffected by the absent/blank distinction", () => {
+		const result = decodeFields(UpdateTestSchema, fd({ title: "x" }), { active: "boolean" });
+		expect(result.active).toBe(false);
+	});
+
+	it("overrides still win over an absent field", () => {
+		const result = decodeForm(UpdateTestSchema, fd({ title: "x" }), {
+			overrides: { notes: "forced" },
+		});
+		expect(result.notes).toBe("forced");
+	});
+});
+
 const NUMERIC_SPEC = { priority: "number", rating: "number", active: "boolean" } as const;
 
 describe("decodeForm", () => {
@@ -83,8 +123,6 @@ describe("decodeForm", () => {
 			title: "Hello",
 			priority: 1,
 			active: false,
-			notes: null,
-			rating: null,
 		});
 	});
 
