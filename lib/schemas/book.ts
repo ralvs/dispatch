@@ -46,3 +46,25 @@ export const FinishBookSchema = z.object({
 	rating: z.number().int().min(1).max(5).nullable().optional(),
 	my_summary: z.string().nullable().optional(),
 });
+
+// ─── Row shape actually returned by the books service ───────────────────
+//
+// Mirrors exactly the columns BOOK_SELECT reads (lib/services/books.ts).
+// BOOK_SELECT is derived from this schema's keys. No joins for this entity.
+export const BookRowSchema = z.object({
+	id: z.string().uuid(),
+	title: z.string(),
+	author: z.string().nullable(),
+	isbn: z.string().nullable(),
+	cover_image_url: z.string().nullable(),
+	status: BookStatusSchema,
+	format: BookFormatSchema.nullable(),
+	started_at: z.string().nullable(),
+	finished_at: z.string().nullable(),
+	rating: z.number().nullable(),
+	my_summary: z.string().nullable(),
+	created_at: z.string(),
+});
+export type BookRow = z.infer<typeof BookRowSchema>;
+
+export const BOOK_SELECT = Object.keys(BookRowSchema.shape).join(", ");
