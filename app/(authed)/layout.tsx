@@ -11,7 +11,7 @@ export default async function AuthedLayout({ children }: { children: React.React
 	return (
 		<>
 			<DesktopRail email={user.email ?? ""} theme={theme} />
-			<main className="mx-auto max-w-md px-5 pb-28 pt-6 lg:max-w-4xl lg:pb-12 lg:pl-60 lg:pt-10">
+			<main className="mx-auto max-w-md px-5 pb-28 pt-6 lg:max-w-6xl lg:pb-12 lg:pl-60 lg:pt-10">
 				{children}
 			</main>
 			<BottomTabBar />

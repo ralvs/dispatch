@@ -15,6 +15,8 @@ import { getAppTimezone } from "@/lib/services/settings";
 
 function revalidateRoutineViews() {
 	revalidatePath("/routines");
+	// The Today rail renders routine state too (docs: Briefing redesign).
+	revalidatePath("/today");
 }
 
 export async function createRoutineAction(formData: FormData) {
