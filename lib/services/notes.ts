@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { NoteSourceType, UpdateNoteSchema } from "@/lib/schemas/note";
-import { unwrap } from "@/lib/services/errors";
+import { unwrap, unwrapCount } from "@/lib/services/errors";
 
 // Columns returned by the write paths. Kept small and explicit — callers of the
 // capture pipeline only need the id, but the shape is honest about what a note
@@ -126,10 +126,7 @@ export async function deleteNote(sb: SupabaseClient, id: string): Promise<void> 
 }
 
 export async function countNeedsReview(sb: SupabaseClient): Promise<number> {
-	const result = await sb
-		.from("notes")
-		.select("*", { count: "exact", head: true })
-		.eq("needs_review", true);
-	unwrap(result);
-	return result.count ?? 0;
+	return unwrapCount(
+		await sb.from("notes").select("*", { count: "exact", head: true }).eq("needs_review", true),
+	);
 }

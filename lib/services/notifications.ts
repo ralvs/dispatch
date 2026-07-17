@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ServiceError, unwrap } from "@/lib/services/errors";
+import { unwrap, unwrapCount } from "@/lib/services/errors";
 import { sendPushToAll } from "@/lib/services/push";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -118,8 +118,10 @@ export async function recordNotification(
 	entry: NotificationEntry,
 ): Promise<NotificationRow> {
 	const notification = await insertNotification(sb, entry);
-	// Web-push delivery (ADR-0005). Same RLS caveat as recordedAction above:
-	// only a service-role `sb` actually reaches any subscriptions to push to.
+	// Web-push delivery (ADR-0005). `sb` is RLS-scoped on session paths (server
+	// actions/route handlers via requireOwner()), and push_subscriptions has RLS
+	// enabled with no policies — so that select silently returns zero rows there.
+	// Only a service-role `sb` (cron/ingest/autonomous callers) actually pushes.
 	await pushNotification(sb, entry);
 	return notification;
 }
@@ -143,12 +145,12 @@ export async function listNotifications(
 
 /** Count of unread notifications — the badge number. */
 export async function unreadCount(sb: SupabaseClient): Promise<number> {
-	const { count, error } = await sb
-		.from("notifications")
-		.select("*", { count: "exact", head: true })
-		.eq("status", "unread");
-	if (error) throw new ServiceError(error.message, error.code ?? null, error.details ?? undefined);
-	return count ?? 0;
+	return unwrapCount(
+		await sb
+			.from("notifications")
+			.select("*", { count: "exact", head: true })
+			.eq("status", "unread"),
+	);
 }
 
 /**

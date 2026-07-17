@@ -43,3 +43,25 @@ export function unwrap<T>(result: SupabaseResult<T>): T {
 	}
 	return result.data;
 }
+
+type SupabaseCountResult = {
+	count: number | null;
+	error: { message: string; code?: string; details?: string | null } | null;
+};
+
+/**
+ * `unwrap`'s counterpart for `{ count: "exact", head: true }` queries, whose
+ * result shape (`{ count, error }`, no `data`) `unwrap` doesn't model. Throws
+ * a typed ServiceError on failure; otherwise returns `count`, coalescing the
+ * head-query's possible `null` to `0`.
+ */
+export function unwrapCount(result: SupabaseCountResult): number {
+	if (result.error) {
+		throw new ServiceError(
+			result.error.message,
+			result.error.code ?? null,
+			result.error.details ?? undefined,
+		);
+	}
+	return result.count ?? 0;
+}
