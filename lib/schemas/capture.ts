@@ -5,11 +5,12 @@ import { NoteSourceTypeSchema } from "@/lib/schemas/note";
 // Capture v1 contract (docs/adr/0008).
 //
 // Supersedes the 15-variant lib/schemas/voice.ts draft. v1 speaks only the
-// verbs the executor can actually fulfil today — the tasks and notes services.
-// Everything the reference vocabulary added (projects, quotes, people, journal,
-// inventory, …) is deferred; the growth path is: add a service + an executor
-// case + a variant here. The full reference vocabulary is recorded in the ADR
-// and the reference impl stays linked in CLAUDE.md.
+// verbs the executor can actually fulfil today — tasks, notes, quotes,
+// journal entries, and health metrics. Everything else the reference
+// vocabulary added (projects, people, inventory, …) is deferred; the growth
+// path is: add a service + an executor case + a variant here. The full
+// reference vocabulary is recorded in the ADR and the reference impl stays
+// linked in CLAUDE.md.
 //
 // Unknown/unsupported verbs the model might emit are NOT listed here, so they
 // fail this schema during parsing (→ typed "failed" → degrade to a

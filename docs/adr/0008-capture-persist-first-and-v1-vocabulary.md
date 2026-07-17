@@ -51,14 +51,19 @@ duplicate task). Rare, low-harm, single-user.
 
 ## v1 vocabulary supersedes the `voice.ts` draft
 
-Only the tasks and notes services exist, so v1 (`lib/schemas/capture.ts`)
-emits three verbs, replacing the 15-variant `VoiceActionSchema` draft (deleted):
+Only the tasks and notes services existed at the time, so v1
+(`lib/schemas/capture.ts`) emitted three verbs, replacing the 15-variant
+`VoiceActionSchema` draft (deleted):
 
 - `create_task` — `{ title, due_date?, due_time?, priority? }`
 - `create_note` — `{ body, source_type?, tags? }`
 - `needs_review` — `{ reason, proposed_kind? }`: the parser flags content that
-  references an entity it cannot resolve (a project, person, quote) instead of
+  references an entity it cannot resolve (a project, person) instead of
   guessing; the executor turns it into a `needs_review` note.
+
+Since landed (executor + variant added, no rewrite needed): `create_quote`,
+`create_journal_entry`, `log_health_metric` — see
+`lib/services/capture/executor.ts`.
 
 Unknown/unsupported verbs the model might emit are **not** in the schema, so
 they fail `CaptureActionsSchema` during parsing (→ typed `failed` → degrade),
@@ -68,9 +73,10 @@ never a runtime error in the executor. Parser fallbacks are `unavailable`
 `needs_review = false`).
 
 **Growth path to the full reference vocabulary:** add a service, add its
-executor case, add a variant here. The reference vocabulary (projects, quotes,
-people, journal, inventory, milestones, calendar, resurface-weight) is the
-roadmap; the reference impl stays linked in `CLAUDE.md`. No rewrite needed.
+executor case, add a variant here. The reference vocabulary (projects,
+people, inventory, milestones, calendar, resurface-weight) is the roadmap;
+the reference impl stays linked in `CLAUDE.md`. No rewrite needed — quotes,
+journal entries, and health metrics landed exactly this way.
 
 ## Ledger applies at ingest, not at the palette
 
@@ -99,9 +105,9 @@ parser is unavailable or wrong.
 
 Audio transcription (palette sends text; transcriber is a stub returning
 `unavailable`); `complete_task` and every entity-resolution verb; the
-project/quote/person/journal/inventory executors; the `needs_disambiguation`
-flow; the reconciliation sweep cron (invariant fixed here); external ingest and
-its atomic RPC.
+project/person/inventory executors (quote/journal/health landed — see above);
+the `needs_disambiguation` flow; the reconciliation sweep cron (invariant
+fixed here); external ingest and its atomic RPC.
 
 ## Why
 
