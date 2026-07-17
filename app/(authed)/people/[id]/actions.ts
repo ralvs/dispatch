@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { instantFromLocal } from "@/lib/dates";
+import { decodeForm } from "@/lib/form-decode";
 import {
 	CreatePersonFactSchema,
 	CreatePersonInteractionSchema,
@@ -28,14 +29,7 @@ function revalidatePersonViews(id: string) {
 export async function updatePersonAction(id: string, formData: FormData) {
 	const { sb } = await requireOwnerPage();
 	const personId = z.uuid().parse(id);
-	const parsed = UpdatePersonSchema.parse({
-		name: formData.get("name") || undefined,
-		relationship_type: formData.get("relationship_type") || null,
-		email: formData.get("email") || null,
-		phone: formData.get("phone") || null,
-		company: formData.get("company") || null,
-		notes: formData.get("notes") || null,
-	});
+	const parsed = decodeForm(UpdatePersonSchema, formData);
 	await updatePerson(sb, personId, parsed);
 	revalidatePersonViews(personId);
 }
@@ -50,11 +44,7 @@ export async function deletePersonAction(id: string) {
 export async function createFactAction(personId: string, formData: FormData) {
 	const { sb } = await requireOwnerPage();
 	const id = z.uuid().parse(personId);
-	const parsed = CreatePersonFactSchema.parse({
-		fact_type: formData.get("fact_type"),
-		fact_value: formData.get("fact_value"),
-		date_relevant: formData.get("date_relevant") || null,
-	});
+	const parsed = decodeForm(CreatePersonFactSchema, formData);
 	await createFact(sb, id, parsed);
 	revalidatePersonViews(id);
 }
@@ -75,10 +65,8 @@ export async function createInteractionAction(personId: string, formData: FormDa
 		const tz = await getAppTimezone(sb);
 		occurredAt = instantFromLocal(dateIso, typeof time === "string" && time ? time : "00:00", tz);
 	}
-	const parsed = CreatePersonInteractionSchema.parse({
-		interaction_type: formData.get("interaction_type"),
-		notes: formData.get("notes") || null,
-		occurred_at: occurredAt,
+	const parsed = decodeForm(CreatePersonInteractionSchema, formData, {
+		overrides: { occurred_at: occurredAt },
 	});
 	await createInteraction(sb, id, parsed);
 	revalidatePersonViews(id);

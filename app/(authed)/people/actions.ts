@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { decodeForm } from "@/lib/form-decode";
 import { CreatePersonSchema } from "@/lib/schemas/person";
 import { createPerson, deletePerson } from "@/lib/services/people";
 
@@ -12,13 +13,7 @@ function revalidatePeopleViews() {
 
 export async function createPersonAction(formData: FormData) {
 	const { sb } = await requireOwnerPage();
-	const parsed = CreatePersonSchema.parse({
-		name: formData.get("name"),
-		relationship_type: formData.get("relationship_type") || null,
-		email: formData.get("email") || null,
-		phone: formData.get("phone") || null,
-		company: formData.get("company") || null,
-	});
+	const parsed = decodeForm(CreatePersonSchema, formData);
 	await createPerson(sb, parsed);
 	revalidatePeopleViews();
 }
