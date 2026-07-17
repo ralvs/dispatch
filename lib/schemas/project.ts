@@ -73,3 +73,31 @@ export const UpdateProjectSchema = CreateProjectSchema.partial().extend({
 // Milestone schemas (MilestoneSchema, CreateMilestoneSchema,
 // UpdateMilestoneSchema, MilestoneStatusSchema) live in ./milestone —
 // pre-existing in this repo, re-exported via ./index.
+
+// ─── Row shape actually returned by the projects service ───────────────
+//
+// Mirrors exactly the columns PROJECT_SELECT reads
+// (lib/services/projects.ts). PROJECT_SELECT is derived from this schema's
+// keys. No joins for this entity.
+export const ProjectRowSchema = z.object({
+	id: z.string().uuid(),
+	name: z.string(),
+	description: z.string().nullable(),
+	domain_id: z.string().uuid().nullable(),
+	status: ProjectStatusSchema,
+	type: ProjectTypeSchema.nullable(),
+	client_id: z.string().uuid().nullable(),
+	quoted_hours: z.number().nullable(),
+	hours_logged: z.number(),
+	start_date: z.string().nullable(),
+	target_date: z.string().nullable(),
+	completed_at: z.string().nullable(),
+	color: z.string().nullable(),
+	engagement_type: EngagementTypeSchema,
+	kind: ProjectKindSchema,
+	created_at: z.string(),
+	updated_at: z.string(),
+});
+export type ProjectRow = z.infer<typeof ProjectRowSchema>;
+
+export const PROJECT_SELECT = Object.keys(ProjectRowSchema.shape).join(", ");

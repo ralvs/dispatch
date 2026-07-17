@@ -72,3 +72,22 @@ export const UpdateProjectChecklistItemSchema = z.object({
 	position: z.number().int().optional(),
 	recurrence_rule: ProjectChecklistRecurrenceSchema.nullable().optional(),
 });
+
+// ─── Row shape actually returned by the milestones service ─────────────
+//
+// Mirrors exactly the columns MILESTONE_SELECT reads
+// (lib/services/projects.ts). MILESTONE_SELECT is derived from this
+// schema's keys. No joins for this entity.
+export const MilestoneRowSchema = z.object({
+	id: z.string().uuid(),
+	project_id: z.string().uuid(),
+	title: z.string(),
+	status: MilestoneStatusSchema,
+	weight: z.number(),
+	position: z.number(),
+	completed_at: z.string().nullable(),
+	created_at: z.string(),
+});
+export type MilestoneRow = z.infer<typeof MilestoneRowSchema>;
+
+export const MILESTONE_SELECT = Object.keys(MilestoneRowSchema.shape).join(", ");

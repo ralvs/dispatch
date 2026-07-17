@@ -2,59 +2,26 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { nowUtc } from "@/lib/dates";
-import type { MilestoneStatusSchema } from "@/lib/schemas/milestone";
-import type {
-	EngagementType,
-	ProjectKind,
-	ProjectStatusSchema,
-	ProjectTypeSchema,
+import {
+	type CreateMilestoneSchema,
+	MILESTONE_SELECT,
+	type MilestoneRow,
+} from "@/lib/schemas/milestone";
+import {
+	type CreateProjectSchema,
+	PROJECT_SELECT,
+	type ProjectRow,
+	type ProjectStatusSchema,
+	type UpdateProjectSchema,
 } from "@/lib/schemas/project";
 import { unwrap } from "@/lib/services/errors";
 
 // ─── Projects ───────────────────────────────────────────────────────────
 
-const PROJECT_SELECT =
-	"id, name, description, domain_id, status, type, client_id, quoted_hours, hours_logged, start_date, target_date, completed_at, color, engagement_type, kind, created_at, updated_at";
+export type { ProjectRow };
 
-export type ProjectRow = {
-	id: string;
-	name: string;
-	description: string | null;
-	domain_id: string | null;
-	status: z.infer<typeof ProjectStatusSchema>;
-	type: z.infer<typeof ProjectTypeSchema> | null;
-	client_id: string | null;
-	quoted_hours: number | null;
-	hours_logged: number;
-	start_date: string | null;
-	target_date: string | null;
-	completed_at: string | null;
-	color: string | null;
-	engagement_type: EngagementType;
-	kind: ProjectKind;
-	created_at: string;
-	updated_at: string;
-};
-
-export type CreateProjectInput = {
-	name: string;
-	description?: string | null;
-	domain_id?: string | null;
-	type?: z.infer<typeof ProjectTypeSchema> | null;
-	client_id?: string | null;
-	quoted_hours?: number | null;
-	start_date?: string | null;
-	target_date?: string | null;
-	color?: string | null;
-	engagement_type?: EngagementType;
-	kind?: ProjectKind;
-};
-
-export type UpdateProjectInput = Partial<CreateProjectInput> & {
-	status?: z.infer<typeof ProjectStatusSchema>;
-	hours_logged?: number;
-	completed_at?: string | null;
-};
+export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;
+export type UpdateProjectInput = z.infer<typeof UpdateProjectSchema>;
 
 export async function listProjects(
 	sb: SupabaseClient,
@@ -63,12 +30,12 @@ export async function listProjects(
 	let q = sb.from("projects").select(PROJECT_SELECT).order("name", { ascending: true });
 	if (filters.status) q = q.eq("status", filters.status);
 	const data = unwrap(await q);
-	return (data ?? []) as ProjectRow[];
+	return (data ?? []) as unknown as ProjectRow[];
 }
 
 export async function getProject(sb: SupabaseClient, id: string): Promise<ProjectRow | null> {
 	const data = unwrap(await sb.from("projects").select(PROJECT_SELECT).eq("id", id).maybeSingle());
-	return (data as ProjectRow | null) ?? null;
+	return (data as unknown as ProjectRow | null) ?? null;
 }
 
 export async function createProject(
@@ -76,7 +43,7 @@ export async function createProject(
 	input: CreateProjectInput,
 ): Promise<ProjectRow> {
 	const data = unwrap(await sb.from("projects").insert(input).select(PROJECT_SELECT).single());
-	return data as ProjectRow;
+	return data as unknown as ProjectRow;
 }
 
 export async function updateProject(
@@ -99,25 +66,9 @@ export async function archiveProject(sb: SupabaseClient, id: string): Promise<vo
 
 // ─── Milestones ─────────────────────────────────────────────────────────
 
-const MILESTONE_SELECT =
-	"id, project_id, title, status, weight, position, completed_at, created_at";
+export type { MilestoneRow };
 
-export type MilestoneRow = {
-	id: string;
-	project_id: string;
-	title: string;
-	status: z.infer<typeof MilestoneStatusSchema>;
-	weight: number;
-	position: number;
-	completed_at: string | null;
-	created_at: string;
-};
-
-export type CreateMilestoneInput = {
-	title: string;
-	weight?: number;
-	position?: number;
-};
+export type CreateMilestoneInput = z.infer<typeof CreateMilestoneSchema>;
 
 export async function listMilestones(
 	sb: SupabaseClient,
@@ -131,7 +82,7 @@ export async function listMilestones(
 			.order("position", { ascending: true })
 			.order("created_at", { ascending: true }),
 	);
-	return (data ?? []) as MilestoneRow[];
+	return (data ?? []) as unknown as MilestoneRow[];
 }
 
 /** Milestones for many projects in one query, grouped by project id. */
@@ -149,7 +100,7 @@ export async function listMilestonesForProjects(
 			.order("created_at", { ascending: true }),
 	);
 	const grouped: Record<string, MilestoneRow[]> = {};
-	for (const row of (data ?? []) as MilestoneRow[]) {
+	for (const row of (data ?? []) as unknown as MilestoneRow[]) {
 		if (!grouped[row.project_id]) grouped[row.project_id] = [];
 		grouped[row.project_id].push(row);
 	}
@@ -168,7 +119,7 @@ export async function createMilestone(
 			.select(MILESTONE_SELECT)
 			.single(),
 	);
-	return data as MilestoneRow;
+	return data as unknown as MilestoneRow;
 }
 
 /** Flips a milestone open<->done, stamping/clearing completed_at to match. */
