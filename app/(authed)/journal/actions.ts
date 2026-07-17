@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { decodeForm } from "@/lib/form-decode";
 import { CreateJournalEntrySchema } from "@/lib/schemas/journal";
 import { createEntry, deleteEntry } from "@/lib/services/journal";
 import { todayForRequest } from "@/lib/services/settings";
@@ -23,10 +24,12 @@ function tagsFromForm(raw: FormDataEntryValue | null): string[] | undefined {
 export async function createEntryAction(formData: FormData) {
 	const { sb } = await requireOwnerPage();
 	const entryDate = formData.get("entry_date");
-	const parsed = CreateJournalEntrySchema.parse({
-		transcription_text: formData.get("transcription_text"),
-		entry_date: typeof entryDate === "string" && entryDate ? entryDate : await todayForRequest(sb),
-		tags: tagsFromForm(formData.get("tags")),
+	const parsed = decodeForm(CreateJournalEntrySchema, formData, {
+		overrides: {
+			tags: tagsFromForm(formData.get("tags")),
+			entry_date:
+				typeof entryDate === "string" && entryDate ? entryDate : await todayForRequest(sb),
+		},
 	});
 	await createEntry(sb, parsed);
 	revalidateJournalViews();

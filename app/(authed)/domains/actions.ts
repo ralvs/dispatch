@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { decodeForm } from "@/lib/form-decode";
 import { CreateDomainSchema, UpdateDomainSchema } from "@/lib/schemas/domain";
 import {
 	archiveDomain,
@@ -18,12 +19,7 @@ function revalidateDomainViews() {
 
 export async function createDomainAction(formData: FormData) {
 	const { sb } = await requireOwnerPage();
-	const parsed = CreateDomainSchema.parse({
-		name: formData.get("name"),
-		description: formData.get("description") || null,
-		fruit_definition: formData.get("fruit_definition") || null,
-		expected_cadence: formData.get("expected_cadence") || null,
-	});
+	const parsed = decodeForm(CreateDomainSchema, formData);
 	await createDomain(sb, parsed);
 	revalidateDomainViews();
 }
@@ -31,12 +27,7 @@ export async function createDomainAction(formData: FormData) {
 export async function updateDomainAction(id: string, formData: FormData) {
 	const { sb } = await requireOwnerPage();
 	const domainId = z.uuid().parse(id);
-	const parsed = UpdateDomainSchema.parse({
-		name: formData.get("name") || undefined,
-		description: formData.get("description") || null,
-		fruit_definition: formData.get("fruit_definition") || null,
-		expected_cadence: formData.get("expected_cadence") || null,
-	});
+	const parsed = decodeForm(UpdateDomainSchema, formData);
 	await updateDomain(sb, domainId, parsed);
 	revalidateDomainViews();
 }
