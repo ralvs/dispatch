@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { decodeForm } from "@/lib/form-decode";
 import { CreateBookSchema, FinishBookSchema, UpdateBookSchema } from "@/lib/schemas/book";
 import {
 	createBook,
@@ -18,26 +19,9 @@ function revalidateBookViews() {
 	revalidatePath("/books");
 }
 
-function stringOrNull(raw: FormDataEntryValue | null): string | null {
-	if (typeof raw !== "string") return null;
-	const trimmed = raw.trim();
-	return trimmed === "" ? null : trimmed;
-}
-
-function numberOrNull(raw: FormDataEntryValue | null): number | null {
-	if (typeof raw !== "string" || raw.trim() === "") return null;
-	const n = Number(raw);
-	return Number.isFinite(n) ? n : null;
-}
-
 export async function createBookAction(formData: FormData) {
 	const { sb } = await requireOwnerPage();
-	const parsed = CreateBookSchema.parse({
-		title: formData.get("title"),
-		author: stringOrNull(formData.get("author")),
-		isbn: stringOrNull(formData.get("isbn")),
-		format: formData.get("format") || null,
-	});
+	const parsed = decodeForm(CreateBookSchema, formData);
 	await createBook(sb, parsed);
 	revalidateBookViews();
 }
@@ -69,10 +53,7 @@ export async function abandonBookAction(id: string) {
 
 export async function finishBookAction(id: string, formData: FormData) {
 	const { sb } = await requireOwnerPage();
-	const parsed = FinishBookSchema.parse({
-		rating: numberOrNull(formData.get("rating")),
-		my_summary: stringOrNull(formData.get("my_summary")),
-	});
+	const parsed = decodeForm(FinishBookSchema, formData, { spec: { rating: "number" } });
 	const tz = await getAppTimezone(sb);
 	await finishBook(sb, z.uuid().parse(id), tz, parsed);
 	revalidateBookViews();
@@ -80,14 +61,7 @@ export async function finishBookAction(id: string, formData: FormData) {
 
 export async function updateBookAction(id: string, formData: FormData) {
 	const { sb } = await requireOwnerPage();
-	const title = stringOrNull(formData.get("title"));
-	const parsed = UpdateBookSchema.parse({
-		title: title ?? undefined,
-		author: stringOrNull(formData.get("author")),
-		isbn: stringOrNull(formData.get("isbn")),
-		format: formData.get("format") || null,
-		my_summary: stringOrNull(formData.get("my_summary")),
-	});
+	const parsed = decodeForm(UpdateBookSchema, formData);
 	await updateBook(sb, z.uuid().parse(id), parsed);
 	revalidateBookViews();
 }
