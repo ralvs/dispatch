@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { requireOwnerPage } from "@/lib/auth";
 import { todayInTz } from "@/lib/dates";
+import { listDomains } from "@/lib/services/domains";
 import { getAppTimezone } from "@/lib/services/settings";
-import { listDomains, listTasks } from "@/lib/services/tasks";
+import { listTasks } from "@/lib/services/tasks";
 import { TaskForm } from "./task-form";
 import { TaskRowItem } from "./task-row";
 

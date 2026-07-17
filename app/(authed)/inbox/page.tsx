@@ -1,5 +1,6 @@
 import { requireOwnerPage } from "@/lib/auth";
-import { listDomains, listInboxTasks } from "@/lib/services/tasks";
+import { listDomains } from "@/lib/services/domains";
+import { listInboxTasks } from "@/lib/services/tasks";
 import { TriageRow } from "./triage-row";
 
 export default async function InboxPage() {

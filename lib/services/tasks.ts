@@ -159,16 +159,3 @@ export async function toggleTop3(sb: SupabaseClient, id: string, todayIso: strin
 export async function triageTask(sb: SupabaseClient, id: string, domainId: string): Promise<void> {
 	unwrap(await sb.from("tasks").update({ domain_id: domainId }).eq("id", id));
 }
-
-export async function listDomains(
-	sb: SupabaseClient,
-): Promise<Array<{ id: string; name: string; is_system: boolean }>> {
-	const data = unwrap(
-		await sb
-			.from("stewardship_domains")
-			.select("id, name, is_system")
-			.eq("active", true)
-			.order("name"),
-	);
-	return data ?? [];
-}
