@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { decodeForm } from "@/lib/form-decode";
 import { CreateQuoteAnnotationSchema, CreateQuoteSchema } from "@/lib/schemas/quote";
 import {
 	createAnnotation,
@@ -27,12 +28,8 @@ function tagsFromForm(raw: FormDataEntryValue | null): string[] | undefined {
 
 export async function createQuoteAction(formData: FormData) {
 	const { sb } = await requireOwnerPage();
-	const parsed = CreateQuoteSchema.parse({
-		text: formData.get("text"),
-		source_type: formData.get("source_type") || null,
-		source_author: formData.get("source_author") || null,
-		tags: tagsFromForm(formData.get("tags")),
-		added_via: "manual",
+	const parsed = decodeForm(CreateQuoteSchema, formData, {
+		overrides: { tags: tagsFromForm(formData.get("tags")), added_via: "manual" },
 	});
 	await createQuote(sb, parsed);
 	revalidateQuoteViews();
@@ -46,9 +43,8 @@ export async function deleteQuoteAction(id: string) {
 
 export async function createAnnotationAction(quoteId: string, formData: FormData) {
 	const { sb } = await requireOwnerPage();
-	const parsed = CreateQuoteAnnotationSchema.parse({
-		quote_id: z.uuid().parse(quoteId),
-		body: formData.get("body"),
+	const parsed = decodeForm(CreateQuoteAnnotationSchema, formData, {
+		overrides: { quote_id: z.uuid().parse(quoteId) },
 	});
 	await createAnnotation(sb, parsed);
 	revalidateQuoteViews();

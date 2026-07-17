@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { decodeForm } from "@/lib/form-decode";
 import { CreateNoteSchema, UpdateNoteSchema } from "@/lib/schemas/note";
 import { createNote, deleteNote, resolveNeedsReview, updateNote } from "@/lib/services/notes";
 
@@ -21,11 +22,8 @@ function tagsFromForm(raw: FormDataEntryValue | null): string[] | undefined {
 
 export async function createNoteAction(formData: FormData) {
 	const { sb } = await requireOwnerPage();
-	const parsed = CreateNoteSchema.parse({
-		title: formData.get("title") || null,
-		body: formData.get("body"),
-		source_type: formData.get("source_type") || undefined,
-		tags: tagsFromForm(formData.get("tags")),
+	const parsed = decodeForm(CreateNoteSchema, formData, {
+		overrides: { tags: tagsFromForm(formData.get("tags")), body: formData.get("body") },
 	});
 	await createNote(sb, parsed);
 	revalidateNoteViews();
@@ -33,11 +31,12 @@ export async function createNoteAction(formData: FormData) {
 
 export async function updateNoteAction(id: string, formData: FormData) {
 	const { sb } = await requireOwnerPage();
-	const parsed = UpdateNoteSchema.parse({
-		title: formData.get("title") || null,
-		body: formData.get("body"),
-		source_type: formData.get("source_type") || undefined,
-		tags: tagsFromForm(formData.get("tags")),
+	// body is passed via override, not the blank-rule: UpdateNoteSchema (a
+	// .partial()) makes body optional/non-nullable, so a blank value would
+	// otherwise be silently omitted (no-op update) instead of throwing —
+	// override preserves the original "blank body always rejects" behavior.
+	const parsed = decodeForm(UpdateNoteSchema, formData, {
+		overrides: { tags: tagsFromForm(formData.get("tags")), body: formData.get("body") },
 	});
 	await updateNote(sb, z.uuid().parse(id), parsed);
 	revalidateNoteViews();

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { decodeForm } from "@/lib/form-decode";
 import { CreateRoutineSchema } from "@/lib/schemas/routine";
 import {
 	archiveRoutine,
@@ -20,11 +21,7 @@ function revalidateRoutineViews() {
 
 export async function createRoutineAction(formData: FormData) {
 	const { sb } = await requireOwnerPage();
-	const timeOfDay = formData.get("time_of_day");
-	const parsed = CreateRoutineSchema.parse({
-		name: formData.get("name"),
-		time_of_day: typeof timeOfDay === "string" && timeOfDay ? timeOfDay : undefined,
-	});
+	const parsed = decodeForm(CreateRoutineSchema, formData);
 	await createRoutine(sb, parsed);
 	revalidateRoutineViews();
 }
