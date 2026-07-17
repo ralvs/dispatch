@@ -108,3 +108,57 @@ export const CreatePersonInteractionSchema = z.object({
 });
 
 export const UpdatePersonInteractionSchema = CreatePersonInteractionSchema.partial();
+
+// ─── Row shape actually returned by the people service ──────────────────
+//
+// Mirrors exactly the columns PEOPLE_SELECT reads (lib/services/people.ts).
+// PEOPLE_SELECT is derived from this schema's keys. No joins for this
+// entity.
+export const PersonRowSchema = z.object({
+	id: z.string().uuid(),
+	name: z.string(),
+	relationship_type: RelationshipTypeSchema.nullable(),
+	email: z.string().nullable(),
+	phone: z.string().nullable(),
+	company: z.string().nullable(),
+	notes: z.string().nullable(),
+	created_at: z.string(),
+	updated_at: z.string(),
+});
+export type PersonRow = z.infer<typeof PersonRowSchema>;
+
+export const PEOPLE_SELECT = Object.keys(PersonRowSchema.shape).join(", ");
+
+// ─── Row shape actually returned by the person_facts service ───────────
+//
+// Mirrors exactly the columns PERSON_FACT_SELECT reads
+// (lib/services/people.ts). No joins for this entity.
+export const PersonFactRowSchema = z.object({
+	id: z.string().uuid(),
+	person_id: z.string().uuid(),
+	fact_type: PersonFactTypeSchema,
+	fact_value: z.string(),
+	source_ref: z.string().nullable(),
+	// Bare `date` column — YYYY-MM-DD, stored unconverted (no tz math).
+	date_relevant: z.string().nullable(),
+	recurring: z.boolean(),
+	created_at: z.string(),
+});
+export type PersonFactRow = z.infer<typeof PersonFactRowSchema>;
+
+export const PERSON_FACT_SELECT = Object.keys(PersonFactRowSchema.shape).join(", ");
+
+// ─── Row shape actually returned by the person_interactions service ────
+//
+// Mirrors exactly the columns PERSON_INTERACTION_SELECT reads
+// (lib/services/people.ts). No joins for this entity.
+export const PersonInteractionRowSchema = z.object({
+	id: z.string().uuid(),
+	person_id: z.string().uuid(),
+	interaction_type: PersonInteractionTypeSchema,
+	notes: z.string().nullable(),
+	occurred_at: z.string(),
+});
+export type PersonInteractionRow = z.infer<typeof PersonInteractionRowSchema>;
+
+export const PERSON_INTERACTION_SELECT = Object.keys(PersonInteractionRowSchema.shape).join(", ");
