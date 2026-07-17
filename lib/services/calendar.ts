@@ -5,6 +5,7 @@ import type { CaldavConnection } from "@/lib/caldav/client";
 import { parseCalendarObject } from "@/lib/caldav/ical";
 import { dayWindowUtc, nowUtc } from "@/lib/dates";
 import { env } from "@/lib/env";
+import { type CalendarEventRow, EVENT_SELECT } from "@/lib/schemas/calendar";
 import { ServiceError, unwrap } from "@/lib/services/errors";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -15,23 +16,9 @@ import { ServiceError, unwrap } from "@/lib/services/errors";
 // row that falls inside the window but wasn't seen on this sync is gone.
 // ─────────────────────────────────────────────────────────────────────────
 
+export type { CalendarEventRow };
+
 const WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
-
-const EVENT_SELECT =
-	"id, title, description, start_at, end_at, all_day, location, calendar_name, attendees, source";
-
-export type CalendarEventRow = {
-	id: string;
-	title: string;
-	description: string | null;
-	start_at: string;
-	end_at: string;
-	all_day: boolean;
-	location: string | null;
-	calendar_name: string | null;
-	attendees: string[];
-	source: "caldav" | "created_here";
-};
 
 /** Postgres text-array literal for a `.not(col, "in", …)` filter, quoted per value. */
 function inListLiteral(values: Iterable<string>): string {
@@ -167,7 +154,7 @@ export async function listEventsOn(
 			.gt("end_at", startUtc)
 			.order("start_at", { ascending: true }),
 	);
-	return (data ?? []) as CalendarEventRow[];
+	return (data ?? []) as unknown as CalendarEventRow[];
 }
 
 export type CreateEventHereInput = {
@@ -241,5 +228,5 @@ export async function createEventHere(
 			.select(EVENT_SELECT)
 			.single(),
 	);
-	return data as CalendarEventRow;
+	return data as unknown as CalendarEventRow;
 }
