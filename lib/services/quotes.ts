@@ -1,34 +1,24 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
-import type {
-	AnnotationContextSchema,
-	QuoteAddedViaSchema,
-	QuoteSourceTypeSchema,
+import {
+	type AnnotationContextSchema,
+	QUOTE_ANNOTATION_SELECT,
+	QUOTE_SELECT,
+	type QuoteAddedViaSchema,
+	type QuoteAnnotationRow,
+	type QuoteRow,
+	type QuoteSourceTypeSchema,
 } from "@/lib/schemas/quote";
 import { unwrap } from "@/lib/services/errors";
 
-// Explicit columns, mirroring TASK_SELECT/NOTE_SELECT — no FK-join flattening
-// needed here (quotes has no relations the UI reads through a join).
-const QUOTE_SELECT =
-	"id, book_id, text, page_number, chapter, source_type, source_reference, source_url, source_author, tags, added_via, last_surfaced_at, created_at";
+export type { QuoteAnnotationRow, QuoteRow };
 
-export type QuoteRow = {
-	id: string;
-	book_id: string | null;
-	text: string;
-	page_number: number | null;
-	chapter: string | null;
-	source_type: z.infer<typeof QuoteSourceTypeSchema> | null;
-	source_reference: string | null;
-	source_url: string | null;
-	source_author: string | null;
-	tags: string[];
-	added_via: z.infer<typeof QuoteAddedViaSchema>;
-	last_surfaced_at: string | null;
-	created_at: string;
-};
-
+// shape intentionally differs from CreateQuoteSchema: added_via here allows
+// the full QuoteAddedViaSchema enum (incl. kindle_import, reserved for a
+// future import job) while CreateQuoteSchema's zod validator restricts to
+// DB_ADDED_VIA (the current CHECK constraint's value set, which excludes
+// kindle_import). Keeping the wider hand-written type here.
 export type CreateQuoteInput = {
 	text: string;
 	book_id?: string | null;
@@ -49,12 +39,12 @@ export async function listQuotes(
 	let q = sb.from("quotes").select(QUOTE_SELECT).order("created_at", { ascending: false });
 	if (filters.tag) q = q.contains("tags", [filters.tag]);
 	const data = unwrap(await q);
-	return (data ?? []) as QuoteRow[];
+	return (data ?? []) as unknown as QuoteRow[];
 }
 
 export async function getQuote(sb: SupabaseClient, id: string): Promise<QuoteRow | null> {
 	const data = unwrap(await sb.from("quotes").select(QUOTE_SELECT).eq("id", id).maybeSingle());
-	return (data as QuoteRow | null) ?? null;
+	return (data as unknown as QuoteRow | null) ?? null;
 }
 
 /** Create a quote. Text is stored verbatim in whatever language it arrived in. */
@@ -69,7 +59,7 @@ export async function createQuote(sb: SupabaseClient, input: CreateQuoteInput): 
 			.select(QUOTE_SELECT)
 			.single(),
 	);
-	return data as QuoteRow;
+	return data as unknown as QuoteRow;
 }
 
 export async function updateQuote(
@@ -86,20 +76,6 @@ export async function deleteQuote(sb: SupabaseClient, id: string): Promise<void>
 
 // ─── Quote annotations ──────────────────────────────────────────────────
 
-const QUOTE_ANNOTATION_SELECT =
-	"id, quote_id, body, annotated_at, context, tags, created_at, updated_at";
-
-export type QuoteAnnotationRow = {
-	id: string;
-	quote_id: string;
-	body: string;
-	annotated_at: string;
-	context: z.infer<typeof AnnotationContextSchema>;
-	tags: string[];
-	created_at: string;
-	updated_at: string;
-};
-
 export async function listAnnotations(
 	sb: SupabaseClient,
 	quoteId: string,
@@ -111,7 +87,7 @@ export async function listAnnotations(
 			.eq("quote_id", quoteId)
 			.order("annotated_at", { ascending: false }),
 	);
-	return (data ?? []) as QuoteAnnotationRow[];
+	return (data ?? []) as unknown as QuoteAnnotationRow[];
 }
 
 export async function createAnnotation(
@@ -126,7 +102,7 @@ export async function createAnnotation(
 	const data = unwrap(
 		await sb.from("quote_annotations").insert(input).select(QUOTE_ANNOTATION_SELECT).single(),
 	);
-	return data as QuoteAnnotationRow;
+	return data as unknown as QuoteAnnotationRow;
 }
 
 export async function updateAnnotation(

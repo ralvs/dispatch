@@ -100,3 +100,44 @@ export const UpdateQuoteAnnotationSchema = z.object({
 	context: AnnotationContextSchema.optional(),
 	tags: z.array(z.string()).optional(),
 });
+
+// ─── Row shape actually returned by the quotes service ──────────────────
+//
+// Mirrors exactly the columns QUOTE_SELECT reads (lib/services/quotes.ts).
+// QUOTE_SELECT is derived from this schema's keys. No joins for this entity.
+export const QuoteRowSchema = z.object({
+	id: z.string().uuid(),
+	book_id: z.string().uuid().nullable(),
+	text: z.string(),
+	page_number: z.number().nullable(),
+	chapter: z.string().nullable(),
+	source_type: QuoteSourceTypeSchema.nullable(),
+	source_reference: z.string().nullable(),
+	source_url: z.string().nullable(),
+	source_author: z.string().nullable(),
+	tags: z.array(z.string()),
+	added_via: QuoteAddedViaSchema,
+	last_surfaced_at: z.string().nullable(),
+	created_at: z.string(),
+});
+export type QuoteRow = z.infer<typeof QuoteRowSchema>;
+
+export const QUOTE_SELECT = Object.keys(QuoteRowSchema.shape).join(", ");
+
+// ─── Row shape actually returned by the quote_annotations service ───────
+//
+// Mirrors exactly the columns QUOTE_ANNOTATION_SELECT reads
+// (lib/services/quotes.ts). No joins for this entity.
+export const QuoteAnnotationRowSchema = z.object({
+	id: z.string().uuid(),
+	quote_id: z.string().uuid(),
+	body: z.string(),
+	annotated_at: z.string(),
+	context: AnnotationContextSchema,
+	tags: z.array(z.string()),
+	created_at: z.string(),
+	updated_at: z.string(),
+});
+export type QuoteAnnotationRow = z.infer<typeof QuoteAnnotationRowSchema>;
+
+export const QUOTE_ANNOTATION_SELECT = Object.keys(QuoteAnnotationRowSchema.shape).join(", ");
