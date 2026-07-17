@@ -2,92 +2,127 @@
 
 import { useCallback, useEffect, useId, useRef, useState, useTransition } from "react";
 import { captureText } from "@/app/(authed)/capture/actions";
+import {
+	type CaptureEffect,
+	type CaptureEvent,
+	captureMachine,
+	initialCaptureState,
+} from "@/lib/capture/machine";
 import { OPEN_CAPTURE_EVENT, openCapturePalette } from "@/lib/capture/palette-bus";
-import { type CaptureReceipt, deriveReceipt } from "@/lib/capture/receipt";
+import { deriveReceipt } from "@/lib/capture/receipt";
 import { isOpenShortcut, isSubmitShortcut } from "@/lib/capture/shortcuts";
-import { joinSpoken, nextLang, type RecognitionLang } from "@/lib/capture/speech";
-import { isBlank, isStaleSubmission } from "@/lib/capture/submission";
+import { nextLang } from "@/lib/capture/speech";
+import { isBlank } from "@/lib/capture/submission";
 import { useSpeechCapture } from "@/lib/capture/use-speech-capture";
 import { readCaptureIntent } from "@/lib/pwa/capture-intent";
 import type { CapturedRecord } from "@/lib/services/capture";
 
-type Status = "idle" | "pending" | "done" | "error";
-
 const FOCUSABLE = 'a[href],button:not([disabled]),textarea,input,[tabindex]:not([tabindex="-1"])';
 
 export function CapturePalette() {
-	const [open, setOpen] = useState(false);
-	const [text, setText] = useState("");
-	const [status, setStatus] = useState<Status>("idle");
-	// Whether the browser was offline at the moment of the last failure —
-	// decides which error copy to show and whether an auto-retry is armed.
-	const [offlineError, setOfflineError] = useState(false);
-	const [receipt, setReceipt] = useState<CaptureReceipt | null>(null);
-	const [lang, setLang] = useState<RecognitionLang>("pt-BR");
-	const [pending, startTransition] = useTransition();
+	// All status/text/speech/submit-sequence logic lives in captureMachine
+	// (lib/capture/machine.ts); this component is a thin shell that dispatches
+	// events into it and drains the effects it emits.
+	const [state, setState] = useState(initialCaptureState);
+	const stateRef = useRef(state);
+	stateRef.current = state;
+	const [effectsBatch, setEffectsBatch] = useState<{ id: number; effects: CaptureEffect[] }>({
+		id: 0,
+		effects: [],
+	});
+	const [, startTransition] = useTransition();
 
 	const dialogRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const receiptHeadingRef = useRef<HTMLParagraphElement>(null);
 	const restoreFocusRef = useRef<HTMLElement | null>(null);
-	// Text present when dictation started, so recognised speech appends to it.
-	const speechBaseRef = useRef("");
-	// Whether the current draft came (even partly) from the mic — decides `via`.
-	const usedVoiceRef = useRef(false);
-	// Monotonic submit sequence: a completion whose sequence is no longer current
-	// (a newer submit, or a close/reopen) is stale and must not touch the UI.
-	const seqRef = useRef(0);
-	// Set when submit is requested mid-dictation: the actual request is deferred
-	// until recognition ends so a final result can't land after the snapshot.
-	const submitAfterStopRef = useRef(false);
 
 	const titleId = useId();
 
+	// Plain callback (not a useReducer reducer) so dispatching is never
+	// double-invoked under StrictMode — each call runs the pure machine exactly
+	// once and queues whatever effects it emits for the drain effect below.
+	const dispatch = useCallback((event: CaptureEvent) => {
+		const { state: next, effects } = captureMachine(stateRef.current, event);
+		stateRef.current = next;
+		setState(next);
+		if (effects.length > 0) {
+			setEffectsBatch((batch) => ({ id: batch.id + 1, effects }));
+		}
+	}, []);
+
 	const speech = useSpeechCapture({
-		lang,
-		onTranscript: (spoken) => {
-			usedVoiceRef.current = true;
-			setText(joinSpoken(speechBaseRef.current, spoken));
-		},
+		lang: state.lang,
+		onTranscript: (spoken) => dispatch({ type: "TRANSCRIPT", spoken }),
 	});
+
+	// The actual request behind a SUBMIT effect. Guards its completion via the
+	// seq the machine handed out, same as before.
+	const runSubmitEffect = useCallback(
+		(text: string, via: "voice" | "text", seq: number) => {
+			startTransition(async () => {
+				try {
+					const record: CapturedRecord = await captureText({ text, via });
+					dispatch({ type: "SUBMIT_OK", seq, receipt: deriveReceipt(record) });
+				} catch {
+					dispatch({ type: "SUBMIT_ERR", seq, offline: !navigator.onLine });
+				}
+			});
+		},
+		[dispatch],
+	);
+
+	// Drain effects emitted by the most recent dispatch. Runs after commit, so
+	// FOCUS_RECEIPT/FOCUS_TEXTAREA can rely on the DOM already reflecting the
+	// state that produced them.
+	useEffect(() => {
+		for (const effect of effectsBatch.effects) {
+			switch (effect.type) {
+				case "START_SPEECH":
+					speech.start();
+					break;
+				case "STOP_SPEECH":
+					speech.stop();
+					break;
+				case "CANCEL_SPEECH":
+					speech.cancel();
+					break;
+				case "SUBMIT":
+					runSubmitEffect(effect.text, effect.via, effect.seq);
+					break;
+				case "FOCUS_TEXTAREA":
+					requestAnimationFrame(() => textareaRef.current?.focus());
+					break;
+				case "FOCUS_RECEIPT":
+					receiptHeadingRef.current?.focus();
+					break;
+				case "RESTORE_FOCUS":
+					restoreFocusRef.current?.focus();
+					break;
+			}
+		}
+	}, [effectsBatch, speech.start, speech.stop, speech.cancel, runSubmitEffect]);
 
 	// Opens from the window event, optionally starting dictation in the same
 	// tick — this only works when the event was dispatched from a real user
 	// gesture (the FAB tap), since starting SpeechRecognition needs that
-	// activation to still be live.
+	// activation to still be live. Voice is only actually requested when the
+	// browser supports it — matches current behaviour of never landing the
+	// machine in a "listening" state that can never receive a terminal event.
 	const onOpenCaptureEvent = useCallback(
 		(event: Event) => {
-			const voice = (event as CustomEvent<{ voice?: boolean }>).detail?.voice;
-			setOpen(true);
-			if (voice && speech.supported) {
-				speechBaseRef.current = "";
-				speech.start();
-			}
+			const requestedVoice = (event as CustomEvent<{ voice?: boolean }>).detail?.voice ?? false;
+			dispatch({ type: "OPEN", voice: requestedVoice && speech.supported });
 		},
-		[speech],
+		[dispatch, speech.supported],
 	);
-
-	const closePalette = useCallback(() => {
-		// Invalidate any in-flight submit so its completion can't clobber a draft
-		// typed after a reopen, and cancel a deferred (mid-dictation) submit.
-		seqRef.current += 1;
-		submitAfterStopRef.current = false;
-		// Retire (not graceful stop): detaches handlers and aborts the recognizer
-		// so a late onresult can't reach a closed palette or reappear on reopen.
-		speech.cancel();
-		setOpen(false);
-		setStatus("idle");
-		setOfflineError(false);
-		setReceipt(null);
-		restoreFocusRef.current?.focus();
-	}, [speech]);
 
 	// Global open triggers: Cmd/Ctrl+J and the window event from other triggers.
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
 			if (isOpenShortcut(event)) {
 				event.preventDefault();
-				setOpen(true);
+				dispatch({ type: "OPEN", voice: false });
 			}
 		}
 		window.addEventListener("keydown", onKeyDown);
@@ -96,7 +131,7 @@ export function CapturePalette() {
 			window.removeEventListener("keydown", onKeyDown);
 			window.removeEventListener(OPEN_CAPTURE_EVENT, onOpenCaptureEvent);
 		};
-	}, [onOpenCaptureEvent]);
+	}, [dispatch, onOpenCaptureEvent]);
 
 	// Deep link from the manifest shortcut (?capture=voice): open the palette
 	// but never auto-start the mic — arriving via navigation isn't a user
@@ -108,94 +143,48 @@ export function CapturePalette() {
 		if (intentHandledRef.current) return;
 		intentHandledRef.current = true;
 		if (readCaptureIntent(window.location.search) === "voice") {
-			setOpen(true);
+			dispatch({ type: "OPEN", voice: false });
 			window.history.replaceState(null, "", window.location.pathname);
 		}
-	}, []);
+	}, [dispatch]);
 
 	// Move focus into the palette on open, restore it on close.
 	useEffect(() => {
-		if (open) {
+		if (state.open) {
 			restoreFocusRef.current = document.activeElement as HTMLElement | null;
 			textareaRef.current?.focus();
 		}
-	}, [open]);
+	}, [state.open]);
 
-	// On success the textarea unmounts; move focus onto the receipt (announced
-	// via its role="status" live region) so focus can't escape the dialog.
+	// Keep the machine's dictation status in sync with the real recognizer: any
+	// time it stops — mic toggle, lang switch, the submit handoff, or the
+	// browser ending it on its own — feeds SPEECH_ENDED back in. The machine
+	// no-ops unless it actually cares (deferred submit, or "listening" status).
 	useEffect(() => {
-		if (status === "done") receiptHeadingRef.current?.focus();
-	}, [status]);
-
-	// The actual request. Snapshots the draft verbatim (untrimmed — iron rule #5)
-	// and guards its completion with the submit sequence.
-	const performSubmit = useCallback(() => {
-		const value = text;
-		if (isBlank(value) || pending) return;
-		seqRef.current += 1;
-		const seq = seqRef.current;
-		setStatus("pending");
-		startTransition(async () => {
-			try {
-				const record: CapturedRecord = await captureText({
-					text: value,
-					via: usedVoiceRef.current ? "voice" : "text",
-				});
-				if (isStaleSubmission(seq, seqRef.current)) return;
-				setReceipt(deriveReceipt(record));
-				setStatus("done");
-				// Cleared only on a durable success — capture another starts fresh.
-				setText("");
-				usedVoiceRef.current = false;
-			} catch {
-				if (isStaleSubmission(seq, seqRef.current)) return;
-				// Never-lose at the UI layer (iron rule #4): the raw insert or the
-				// network failed, so nothing was persisted. Keep the draft exactly
-				// as typed and offer a retry — never clear on error.
-				setOfflineError(!navigator.onLine);
-				setStatus("error");
-			}
-		});
-	}, [text, pending]);
+		if (!speech.listening) dispatch({ type: "SPEECH_ENDED" });
+	}, [speech.listening, dispatch]);
 
 	// While an error is showing and the browser was offline for it, retry once
-	// automatically as soon as connectivity returns — the draft is untouched,
-	// so this is just a courtesy re-submit rather than something the user has
-	// to remember to trigger by hand.
+	// automatically as soon as connectivity returns; ONLINE is a no-op in the
+	// machine for every other status.
 	useEffect(() => {
-		if (status !== "error" || !offlineError) return;
 		function onOnline() {
-			performSubmit();
+			dispatch({ type: "ONLINE" });
 		}
 		window.addEventListener("online", onOnline);
 		return () => window.removeEventListener("online", onOnline);
-	}, [status, offlineError, performSubmit]);
+	}, [dispatch]);
 
-	const submit = useCallback(() => {
-		if (isBlank(text) || pending) return;
-		// Mid-dictation: stop first and defer the request until recognition ends,
-		// so a final result arriving after stop() is included, not dropped.
-		if (speech.listening) {
-			submitAfterStopRef.current = true;
-			speech.stop();
-			return;
-		}
-		performSubmit();
-	}, [text, pending, speech, performSubmit]);
+	function closePalette() {
+		dispatch({ type: "CLOSE" });
+	}
 
-	// Fire the deferred submit once recognition has fully stopped (by which time
-	// its final result has flowed into `text`).
-	useEffect(() => {
-		if (!speech.listening && submitAfterStopRef.current) {
-			submitAfterStopRef.current = false;
-			performSubmit();
-		}
-	}, [speech.listening, performSubmit]);
+	function submit() {
+		dispatch({ type: "SUBMIT" });
+	}
 
 	function captureAnother() {
-		setStatus("idle");
-		setReceipt(null);
-		requestAnimationFrame(() => textareaRef.current?.focus());
+		dispatch({ type: "CAPTURE_ANOTHER" });
 	}
 
 	function onDialogKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
@@ -220,19 +209,16 @@ export function CapturePalette() {
 	}
 
 	function toggleMic() {
-		if (speech.listening) {
-			speech.stop();
-			return;
-		}
-		speechBaseRef.current = text;
-		speech.start();
+		dispatch({ type: "MIC_TOGGLED" });
 	}
+
+	const pending = state.status === "submitting";
 
 	return (
 		<>
 			{/* Mobile trigger — the rail carries the desktop one. Hidden while the
 			    palette is open so it never becomes a stray tab target behind it. */}
-			{open ? null : (
+			{state.open ? null : (
 				<button
 					type="button"
 					aria-label="Capture a thought"
@@ -244,7 +230,7 @@ export function CapturePalette() {
 				</button>
 			)}
 
-			{open ? (
+			{state.open ? (
 				// biome-ignore lint/a11y/noStaticElementInteractions: backdrop is a click-to-dismiss convenience; Escape and the close button are the keyboard paths.
 				<div
 					className="fixed inset-0 z-50 flex items-start justify-center bg-bg/80 px-4 pt-[12vh] backdrop-blur-sm"
@@ -277,19 +263,19 @@ export function CapturePalette() {
 							</button>
 						</div>
 
-						{status === "done" && receipt ? (
+						{state.status === "done" && state.receipt ? (
 							<div role="status" aria-live="polite">
 								<p
 									ref={receiptHeadingRef}
 									tabIndex={-1}
 									className={`font-serif text-lg outline-none ${
-										receipt.tone === "needs_review" ? "text-accent" : "text-ink"
+										state.receipt.tone === "needs_review" ? "text-accent" : "text-ink"
 									}`}
 								>
-									{receipt.title}
+									{state.receipt.title}
 								</p>
 								<ul className="mt-1 space-y-0.5 text-sm text-ink-2">
-									{receipt.lines.map((line) => (
+									{state.receipt.lines.map((line) => (
 										<li key={line}>{line}</li>
 									))}
 								</ul>
@@ -314,9 +300,9 @@ export function CapturePalette() {
 							<div>
 								<textarea
 									ref={textareaRef}
-									value={text}
+									value={state.text}
 									disabled={pending}
-									onChange={(event) => setText(event.target.value)}
+									onChange={(event) => dispatch({ type: "TEXT_CHANGED", text: event.target.value })}
 									onKeyDown={(event) => {
 										if (isSubmitShortcut(event)) {
 											event.preventDefault();
@@ -329,9 +315,9 @@ export function CapturePalette() {
 									className="w-full resize-none border-b border-line bg-transparent pb-2 font-serif text-lg text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 placeholder:text-ink-4"
 								/>
 
-								{status === "error" ? (
+								{state.status === "error" ? (
 									<p className="mt-2 text-sm text-accent">
-										{offlineError
+										{state.offlineError
 											? "Offline — draft kept."
 											: "Couldn't save — your text is kept. Check your connection and retry."}
 									</p>
@@ -360,14 +346,11 @@ export function CapturePalette() {
 												<button
 													type="button"
 													disabled={pending}
-													aria-label={`Recognition language: ${lang}. Switch to ${nextLang(lang)}`}
-													onClick={() => {
-														speech.stop();
-														setLang((current) => nextLang(current));
-													}}
+													aria-label={`Recognition language: ${state.lang}. Switch to ${nextLang(state.lang)}`}
+													onClick={() => dispatch({ type: "LANG_TOGGLED" })}
 													className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink disabled:opacity-50"
 												>
-													{lang === "pt-BR" ? "PT" : "EN"}
+													{state.lang === "pt-BR" ? "PT" : "EN"}
 												</button>
 											</>
 										) : null}
@@ -375,10 +358,10 @@ export function CapturePalette() {
 									<button
 										type="button"
 										onClick={submit}
-										disabled={pending || isBlank(text)}
+										disabled={pending || isBlank(state.text)}
 										className="bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
 									>
-										{status === "error" ? "Retry" : pending ? "Capturing…" : "Capture"}
+										{state.status === "error" ? "Retry" : pending ? "Capturing…" : "Capture"}
 									</button>
 								</div>
 							</div>

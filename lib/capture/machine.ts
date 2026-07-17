@@ -94,9 +94,13 @@ export function captureMachine(state: CaptureState, event: CaptureEvent): Captur
 				status: event.voice ? "listening" : "editing",
 			};
 			if (event.voice) {
+				// Matches current behaviour: opening via the voice trigger starts a
+				// fresh dictation base ("") rather than composing onto whatever draft
+				// (if any) is still sitting in `text` from a prior unsubmitted session.
+				// MIC_TOGGLED, by contrast, composes onto the current text.
 				return {
-					state: { ...next, speechBase: state.text },
-					effects: [{ type: "START_SPEECH", baseText: state.text, lang: state.lang }],
+					state: { ...next, speechBase: "" },
+					effects: [{ type: "START_SPEECH", baseText: "", lang: state.lang }],
 				};
 			}
 			return { state: next, effects: [] };
