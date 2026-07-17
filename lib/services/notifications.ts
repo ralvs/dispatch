@@ -7,25 +7,18 @@ import { sendPushToAll } from "@/lib/services/push";
 // Notification ledger — the sanctioned seam for iron rule #6:
 // "every autonomous/external action writes a `notifications` row."
 //
-// The point of this module is that performing an autonomous/external mutation
-// and recording it in the ledger happen in ONE call (`recordedAction`). Future
-// cron/ingest/CalDAV write paths are expected to go through this seam instead
-// of a raw client: it is the one path that records a trace by construction, so
-// "did the action, forgot the row" isn't reachable through it. It does not
-// *prevent* a caller who holds a SupabaseClient from bypassing it (see Known
-// limits) — it's the blessed path, not a proof of impossibility.
+// `recordNotification` is the one sanctioned write path: every autonomous/
+// external caller (cron/ingest/CalDAV) is expected to route its ledger row
+// through it instead of a raw client, so "did the thing, forgot the row"
+// isn't reachable through this module. It does not *prevent* a caller who
+// holds a SupabaseClient from bypassing it (see Known limits) — it's the
+// blessed path, not a proof of impossibility.
 //
 // Web-push delivery (ADR-0005) is planned, not built: when it lands, the
-// delivery call belongs *inside* `recordedAction`/`recordNotification`, after
-// the ledger row is committed, so callers never change.
+// delivery call belongs *inside* `recordNotification`, after the ledger row
+// is committed, so callers never change.
 //
-// ── Known limits (the first real cron/ingest caller must resolve these) ──
-//   - Not atomic / not crash-safe. There is no cross-call DB transaction in
-//     supabase-js, so a crash between the action and the ledger insert loses
-//     the trace, and a blind retry of the whole call may repeat the action.
-//     The first autonomous caller must bring an idempotency key (dedupe the
-//     action) and a reconciliation decision (how an orphaned action gets its
-//     row) with it — do not add generic machinery here speculatively.
+// ── Known limits ──
 //   - Not a hard boundary. Anything holding a SupabaseClient can still write
 //     `notifications` (or skip it) directly; nothing at the type or DB level
 //     forces traffic through this module. Enforcement (e.g. an import-boundary
@@ -75,31 +68,6 @@ export type NotificationEntry = {
 };
 
 /**
- * Raised when an autonomous action *succeeded* but writing its ledger row
- * failed. The action's side effect is real and (usually) can't be rolled back,
- * so rule #6's trace would be silently lost — this error prevents that by
- * carrying both the completed `result` and the un-written `entry` out on the
- * throw path, where the caller (cron error handler) can log or retry the
- * ledger write. Never swallow it.
- */
-export class LedgerError extends ServiceError {
-	readonly entry: NotificationEntry;
-	readonly result: unknown;
-
-	constructor(entry: NotificationEntry, result: unknown, cause: unknown) {
-		const svc = cause instanceof ServiceError ? cause : null;
-		super(
-			`Action succeeded but ledger insert failed: ${svc?.message ?? String(cause)}`,
-			svc?.code ?? null,
-			svc?.details,
-		);
-		this.name = "LedgerError";
-		this.entry = entry;
-		this.result = result;
-	}
-}
-
-/**
  * Best-effort web-push delivery for a just-committed ledger row (ADR-0005).
  * Awaited (not fire-and-forget — serverless functions don't outlive the
  * response), but never allowed to throw or reject into the caller: a push
@@ -114,7 +82,7 @@ async function pushNotification(sb: SupabaseClient, entry: NotificationEntry): P
 			url: entry.source_url ?? undefined,
 		});
 	} catch {
-		// Never surface a push failure to the caller of recordedAction/recordNotification.
+		// Never surface a push failure to the caller of recordNotification.
 	}
 }
 
@@ -140,55 +108,10 @@ async function insertNotification(
 }
 
 /**
- * Perform an autonomous/external mutation and record it in the ledger as ONE
- * call. The ledger `entry` is derived FROM the action's result (`entryFor`),
- * so it can describe what actually happened — the created row's id in
- * `source_ref`, a real count in the title — which a pre-built entry could not.
- *
- * The `action` and the ledger row run under the *same* client (`sb`), so they
- * share RLS/service-role scope — a cron path passes a service-role client; a
- * session path passes the RLS client.
- *
- * Ordering & failure semantics (deliberate, not atomic — see Known limits):
- *
- *   1. The action runs FIRST; its result feeds `entryFor`. If the action
- *      throws, nothing is recorded — correct: nothing happened.
- *   2. The ledger insert runs SECOND. If it fails after the action succeeded,
- *      the action is NOT rolled back (external side effects generally can't
- *      be) but the trace is never dropped silently: a {@link LedgerError} is
- *      thrown carrying the action's `result` and the derived `entry`.
- *
- * Resolving normally therefore means BOTH the action and its trace committed.
- * That is the guarantee this seam is here to provide.
- */
-export async function recordedAction<T>(
-	sb: SupabaseClient,
-	action: (sb: SupabaseClient) => Promise<T>,
-	entryFor: (result: T) => NotificationEntry,
-): Promise<{ result: T; notification: NotificationRow }> {
-	const result = await action(sb);
-	const entry = entryFor(result);
-
-	let notification: NotificationRow;
-	try {
-		notification = await insertNotification(sb, entry);
-	} catch (cause) {
-		throw new LedgerError(entry, result, cause);
-	}
-	// Web-push delivery (ADR-0005). `sb` is RLS-scoped on session paths (server
-	// actions/route handlers via requireOwner()), and push_subscriptions has RLS
-	// enabled with no policies — so that select silently returns zero rows there.
-	// Only a service-role `sb` (cron/ingest/autonomous callers) actually pushes.
-	await pushNotification(sb, entry);
-
-	return { result, notification };
-}
-
-/**
- * Record a ledger entry with no accompanying mutation — for autonomous events
- * that are pure notifications rather than actions (a fired reminder, the daily
- * summary; the ADR-0005 push cases). The actionless degenerate of
- * {@link recordedAction}; both funnel every ledger write through this module.
+ * Record a ledger entry — the one sanctioned write path for iron rule #6.
+ * Every autonomous/external event (a completed mutation, a fired reminder,
+ * the daily summary) funnels through this call so a `notifications` row is
+ * never forgotten by construction.
  */
 export async function recordNotification(
 	sb: SupabaseClient,

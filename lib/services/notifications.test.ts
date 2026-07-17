@@ -1,12 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
-import { ServiceError } from "@/lib/services/errors";
 import {
-	LedgerError,
 	listNotifications,
 	markNotification,
-	type NotificationEntry,
-	recordedAction,
 	recordNotification,
 	unreadCount,
 } from "@/lib/services/notifications";
@@ -50,69 +46,6 @@ function stubSupabase(results: Record<string, StubResult>) {
 
 	return { sb: { from } as unknown as SupabaseClient, calls };
 }
-
-// Entry derived from the action's result — the whole point of the entryFor
-// signature: the created row's id lands in source_ref, unknowable up front.
-const entryFor = (result: { id: string }): NotificationEntry => ({
-	type: "task.created",
-	title: "Created a task from your voice note",
-	source_ref: result.id,
-});
-
-describe("recordedAction", () => {
-	it("derives the entry from the action's result, then records the ledger row", async () => {
-		const { sb, calls } = stubSupabase({
-			notifications: { data: { id: "n1", type: "task.created" }, error: null },
-		});
-		const action = vi.fn(async () => ({ id: "task-1" }));
-
-		const { result, notification } = await recordedAction(sb, action, entryFor);
-
-		expect(action).toHaveBeenCalledWith(sb);
-		expect(result).toEqual({ id: "task-1" });
-		expect(notification).toMatchObject({ id: "n1" });
-		expect(calls).toEqual([
-			{
-				table: "notifications",
-				op: "insert",
-				// source_ref carries the id only knowable *after* the action ran.
-				payload: expect.objectContaining({ type: "task.created", source_ref: "task-1" }),
-			},
-		]);
-	});
-
-	it("does not record and does not swallow when the action itself fails", async () => {
-		const { sb, calls } = stubSupabase({ notifications: { data: null, error: null } });
-		const action = vi.fn(async () => {
-			throw new Error("boom");
-		});
-
-		await expect(recordedAction(sb, action, entryFor)).rejects.toThrow("boom");
-		// Action ran before any ledger write, so nothing was recorded.
-		expect(calls).toHaveLength(0);
-	});
-
-	it("throws LedgerError carrying result + entry when the action succeeded but the ledger insert failed", async () => {
-		const { sb } = stubSupabase({
-			notifications: { data: null, error: { message: "db down", code: "08006" } },
-		});
-		const action = vi.fn(async () => ({ id: "task-1" }));
-
-		try {
-			await recordedAction(sb, action, entryFor);
-			throw new Error("recordedAction should have thrown");
-		} catch (err) {
-			expect(err).toBeInstanceOf(LedgerError);
-			const ledgerError = err as LedgerError;
-			// The action's real, un-rolled-back result survives on the throw path.
-			expect(ledgerError.result).toEqual({ id: "task-1" });
-			expect(ledgerError.entry).toEqual(entryFor({ id: "task-1" }));
-			// Underlying Postgres code is preserved for the caller to branch on.
-			expect(ledgerError.code).toBe("08006");
-			expect(ledgerError).toBeInstanceOf(ServiceError);
-		}
-	});
-});
 
 describe("recordNotification", () => {
 	it("inserts an actionless ledger row and coerces omitted fields to null", async () => {

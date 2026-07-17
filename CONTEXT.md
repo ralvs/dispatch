@@ -58,9 +58,8 @@ the past. Non-recurring tasks complete normally (`status = done`,
 
 The record, in the `notifications` table, of every autonomous or external
 action the system takes on Renan's behalf (iron rule #6). Writes go through
-`lib/services/notifications.ts`, whose `recordedAction` performs the mutation
-and records it in one call — the sanctioned path that can't do the action
-without leaving a trace (it doesn't forbid a raw client from bypassing it).
+`lib/services/notifications.ts`, whose `recordNotification` is the single
+sanctioned write path (it doesn't forbid a raw client from bypassing it).
 Each row has a free-text `type`, a human `title`/`body`, an optional
 `undo_payload`, and a `status` of `unread`, `read`, or `dismissed` (any of
 which is reachable from any other). Web-push delivery (ADR-0005) is planned: it
