@@ -1,5 +1,9 @@
 # Notes are edited in place with live markdown; no explicit Save
 
+> Editing moved from inline list rows (`note-row.tsx`, since removed) to a
+> dedicated `/notes/[id]` page — docs/adr/0012. The editing semantics below
+> still hold there.
+
 The notes page drops the Edit → textarea → Save/Cancel flow. `note-row.tsx`
 mounts a TipTap (`@tiptap/react` + `@tiptap/starter-kit`) editor directly over
 the body, always editable — Apple Notes / Mem style. Live markdown input

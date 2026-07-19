@@ -1,55 +1,54 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
-import { decodeForm } from "@/lib/form-decode";
-import { CreateNoteSchema, UpdateNoteSchema } from "@/lib/schemas/note";
 import { createNote, deleteNote, resolveNeedsReview, updateNote } from "@/lib/services/notes";
 
-function revalidateNoteViews() {
+function revalidateNoteViews(id?: string) {
 	revalidatePath("/notes");
+	if (id) revalidatePath(`/notes/${id}`);
 }
 
-function tagsFromForm(raw: FormDataEntryValue | null): string[] | undefined {
-	if (typeof raw !== "string") return undefined;
-	const tags = raw
-		.split(",")
-		.map((t) => t.trim())
-		.filter(Boolean);
-	return tags.length > 0 ? tags : [];
-}
-
-export async function createNoteAction(formData: FormData) {
+/**
+ * Apple Notes-style creation: the row exists before any content does, so the
+ * editor page always autosaves against a real id. The body starts empty —
+ * blank notes are a valid editor state (docs/adr/0012), unlike the old
+ * create-form flow.
+ */
+export async function createBlankNoteAction() {
 	const { sb } = await requireOwnerPage();
-	const parsed = decodeForm(CreateNoteSchema, formData, {
-		overrides: { tags: tagsFromForm(formData.get("tags")), body: formData.get("body") },
-	});
-	await createNote(sb, parsed);
+	const note = await createNote(sb, { body: "", source_type: "own_thought" });
 	revalidateNoteViews();
+	redirect(`/notes/${note.id}`);
 }
 
-export async function updateNoteAction(id: string, formData: FormData) {
+const SaveNoteSchema = z.object({
+	title: z.string().nullable(),
+	body: z.string(),
+});
+
+/** Autosave from the editor page. Empty body is allowed — a cleared note stays a note. */
+export async function saveNoteAction(id: string, input: { title: string | null; body: string }) {
 	const { sb } = await requireOwnerPage();
-	// body is passed via override, not the blank-rule: UpdateNoteSchema (a
-	// .partial()) makes body optional/non-nullable, so a blank value would
-	// otherwise be silently omitted (no-op update) instead of throwing —
-	// override preserves the original "blank body always rejects" behavior.
-	const parsed = decodeForm(UpdateNoteSchema, formData, {
-		overrides: { tags: tagsFromForm(formData.get("tags")), body: formData.get("body") },
+	const parsed = SaveNoteSchema.parse(input);
+	await updateNote(sb, z.uuid().parse(id), {
+		title: parsed.title !== null && parsed.title.trim() !== "" ? parsed.title : null,
+		body: parsed.body,
 	});
-	await updateNote(sb, z.uuid().parse(id), parsed);
-	revalidateNoteViews();
+	revalidateNoteViews(id);
 }
 
 export async function resolveNeedsReviewAction(id: string) {
 	const { sb } = await requireOwnerPage();
 	await resolveNeedsReview(sb, z.uuid().parse(id));
-	revalidateNoteViews();
+	revalidateNoteViews(id);
 }
 
 export async function deleteNoteAction(id: string) {
 	const { sb } = await requireOwnerPage();
 	await deleteNote(sb, z.uuid().parse(id));
 	revalidateNoteViews();
+	redirect("/notes");
 }

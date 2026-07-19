@@ -1,25 +1,59 @@
+import Link from "next/link";
 import { requireOwnerPage } from "@/lib/auth";
-import { listNotes } from "@/lib/services/notes";
-import { NoteForm } from "./note-form";
-import { NoteRowItem } from "./note-row";
+import { formatInstant } from "@/lib/dates";
+import { listNotes, type NoteListRow } from "@/lib/services/notes";
+import { getAppTimezone } from "@/lib/services/settings";
+import { createBlankNoteAction } from "./actions";
+
+// Mem/Apple Notes-style index: titles only, newest first; the body is edited
+// on the note's own page (docs/adr/0012). Untitled notes fall back to their
+// first body line.
+function displayTitle(note: NoteListRow): string {
+	const title = note.title?.trim();
+	if (title) return title;
+	const firstLine = note.body.split("\n")[0]?.trim();
+	return firstLine || "Untitled";
+}
+
+function NoteLinkRow({ note, tz }: { note: NoteListRow; tz: string }) {
+	return (
+		<li className="border-b border-line">
+			<Link href={`/notes/${note.id}`} className="block py-3 hover:bg-surface">
+				<span className="block truncate font-serif text-base text-ink">{displayTitle(note)}</span>
+				<span className="mt-0.5 block font-mono text-meta text-ink-4">
+					{formatInstant(note.created_at, tz)}
+					{note.needs_review ? " · needs review" : ""}
+					{note.tags.length > 0 ? ` · ${note.tags.join(", ")}` : ""}
+				</span>
+			</Link>
+		</li>
+	);
+}
 
 export default async function NotesPage() {
 	const { sb } = await requireOwnerPage();
-	const [needsReview, allNotes] = await Promise.all([
+	const [needsReview, allNotes, tz] = await Promise.all([
 		listNotes(sb, { needsReview: true }),
 		listNotes(sb, { needsReview: false }),
+		getAppTimezone(sb),
 	]);
 
 	return (
 		<div>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Notes</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">Loose thoughts</h1>
+			<header className="hairline-strong flex items-end justify-between pb-4">
+				<div>
+					<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Notes</p>
+					<h1 className="mt-1 font-serif text-3xl text-ink">Loose thoughts</h1>
+				</div>
+				<form action={createBlankNoteAction}>
+					<button
+						type="submit"
+						className="border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-accent hover:text-ink"
+					>
+						+ New note
+					</button>
+				</form>
 			</header>
-
-			<section className="mt-6">
-				<NoteForm />
-			</section>
 
 			{needsReview.length > 0 && (
 				<section className="mt-6" aria-label="Needs review">
@@ -28,7 +62,7 @@ export default async function NotesPage() {
 					</h2>
 					<ul className="mt-2">
 						{needsReview.map((n) => (
-							<NoteRowItem key={n.id} note={n} />
+							<NoteLinkRow key={n.id} note={n} tz={tz} />
 						))}
 					</ul>
 				</section>
@@ -43,7 +77,7 @@ export default async function NotesPage() {
 				) : (
 					<ul className="mt-2">
 						{allNotes.map((n) => (
-							<NoteRowItem key={n.id} note={n} />
+							<NoteLinkRow key={n.id} note={n} tz={tz} />
 						))}
 					</ul>
 				)}

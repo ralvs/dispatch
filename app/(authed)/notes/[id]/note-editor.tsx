@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Markdown, type MarkdownStorage } from "tiptap-markdown";
 import { createDebouncedSave } from "@/lib/debounced-save";
 import type { NoteListRow } from "@/lib/services/notes";
-import { deleteNoteAction, resolveNeedsReviewAction, updateNoteAction } from "./actions";
+import { deleteNoteAction, resolveNeedsReviewAction, saveNoteAction } from "../actions";
 
 function getMarkdown(editor: Editor): string {
 	const storage = editor.storage as unknown as { markdown: MarkdownStorage };
@@ -15,24 +15,28 @@ function getMarkdown(editor: Editor): string {
 
 type SaveState = "idle" | "saving" | "saved";
 
-export function NoteRowItem({ note }: { note: NoteListRow }) {
+// Full-page live-markdown editor (docs/adr/0009 + 0012): title and body are
+// always editable, markdown shortcuts format as you type, and saving is
+// autosave — debounced 2s, flushed on blur/unmount. The stored body stays
+// plain markdown text, verbatim (iron rule #5).
+export function NoteEditor({ note }: { note: NoteListRow }) {
 	const [pending, startTransition] = useTransition();
 	const [saveState, setSaveState] = useState<SaveState>("idle");
+	const titleRef = useRef(note.title ?? "");
 	const bodyRef = useRef(note.body);
+	const lastSavedRef = useRef(`${note.title ?? ""}\u0000${note.body}`);
 	const savedIndicatorTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 	const mountedRef = useRef(true);
 
-	function save(body: string) {
-		if (body === bodyRef.current) return;
-		bodyRef.current = body;
-		const fd = new FormData();
-		fd.set("title", note.title ?? "");
-		fd.set("body", body);
-		fd.set("tags", note.tags.join(", "));
-		fd.set("source_type", note.source_type);
+	function save() {
+		const title = titleRef.current;
+		const body = bodyRef.current;
+		const key = `${title}\u0000${body}`;
+		if (key === lastSavedRef.current) return;
+		lastSavedRef.current = key;
 		if (mountedRef.current) setSaveState("saving");
 		startTransition(async () => {
-			await updateNoteAction(note.id, fd);
+			await saveNoteAction(note.id, { title: title.trim() === "" ? null : title, body });
 			if (!mountedRef.current) return;
 			setSaveState("saved");
 			clearTimeout(savedIndicatorTimer.current);
@@ -55,16 +59,18 @@ export function NoteRowItem({ note }: { note: NoteListRow }) {
 
 	const editor = useEditor({
 		immediatelyRender: false,
+		autofocus: note.body === "" ? "start" : false,
 		extensions: [StarterKit, Markdown.configure({ html: false })],
 		content: note.body,
 		editorProps: {
 			attributes: {
 				"aria-label": "Note body",
-				class: "whitespace-pre-wrap text-sm text-ink outline-none",
+				class: "min-h-64 whitespace-pre-wrap text-sm text-ink outline-none",
 			},
 		},
 		onUpdate: ({ editor }) => {
-			debouncedRef.current.schedule(getMarkdown(editor));
+			bodyRef.current = getMarkdown(editor);
+			debouncedRef.current.schedule(bodyRef.current);
 		},
 		onBlur: () => {
 			debouncedRef.current.flush();
@@ -72,20 +78,34 @@ export function NoteRowItem({ note }: { note: NoteListRow }) {
 	});
 
 	return (
-		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>
-			{note.title && <p className="font-serif text-base text-ink">{note.title}</p>}
-			<EditorContent editor={editor} />
-			<p className="mt-1 font-mono text-meta text-ink-4">
+		<article>
+			<input
+				aria-label="Note title"
+				defaultValue={note.title ?? ""}
+				placeholder="Untitled"
+				onChange={(e) => {
+					titleRef.current = e.target.value;
+					debouncedRef.current.schedule(e.target.value);
+				}}
+				onBlur={() => debouncedRef.current.flush()}
+				className="w-full border-b border-line bg-transparent pb-2 font-serif text-2xl text-ink outline-none placeholder:text-ink-4"
+			/>
+			{/* Preflight strips heading/list styling; restore just enough for the
+			    markdown to read as formatted, matching the app's serif headings. */}
+			<div className="mt-4 [&_blockquote]:border-l-2 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_blockquote]:text-ink-2 [&_code]:font-mono [&_code]:text-[0.85em] [&_h1]:font-serif [&_h1]:text-2xl [&_h1]:text-ink [&_h2]:font-serif [&_h2]:text-xl [&_h2]:text-ink [&_h3]:font-serif [&_h3]:text-lg [&_h3]:text-ink [&_hr]:my-3 [&_hr]:border-line [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
+				<EditorContent editor={editor} />
+			</div>
+			<p className="mt-3 font-mono text-meta text-ink-4">
 				{note.source_type}
 				{note.tags.length > 0 ? ` · ${note.tags.join(", ")}` : ""}
 				{saveState === "saving" ? " · Saving…" : ""}
 				{saveState === "saved" ? " · Saved" : ""}
 			</p>
-			<div className="mt-2 flex gap-2">
+			<div className="mt-4 flex gap-2">
 				{note.needs_review && (
 					<button
 						type="button"
-						aria-label={`Resolve needs-review flag on "${note.title ?? note.body.slice(0, 20)}"`}
+						aria-label="Resolve needs-review flag"
 						disabled={pending}
 						onClick={() => startTransition(() => resolveNeedsReviewAction(note.id))}
 						className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
@@ -95,7 +115,7 @@ export function NoteRowItem({ note }: { note: NoteListRow }) {
 				)}
 				<button
 					type="button"
-					aria-label={`Delete note "${note.title ?? note.body.slice(0, 20)}"`}
+					aria-label="Delete note"
 					disabled={pending}
 					onClick={() => startTransition(() => deleteNoteAction(note.id))}
 					className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
@@ -103,6 +123,6 @@ export function NoteRowItem({ note }: { note: NoteListRow }) {
 					Delete
 				</button>
 			</div>
-		</li>
+		</article>
 	);
 }
