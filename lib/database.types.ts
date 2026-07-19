@@ -97,51 +97,6 @@ export type Database = {
 				};
 				Relationships: [];
 			};
-			books: {
-				Row: {
-					author: string | null;
-					cover_image_url: string | null;
-					created_at: string;
-					finished_at: string | null;
-					format: string | null;
-					id: string;
-					isbn: string | null;
-					my_summary: string | null;
-					rating: number | null;
-					started_at: string | null;
-					status: string;
-					title: string;
-				};
-				Insert: {
-					author?: string | null;
-					cover_image_url?: string | null;
-					created_at?: string;
-					finished_at?: string | null;
-					format?: string | null;
-					id?: string;
-					isbn?: string | null;
-					my_summary?: string | null;
-					rating?: number | null;
-					started_at?: string | null;
-					status?: string;
-					title: string;
-				};
-				Update: {
-					author?: string | null;
-					cover_image_url?: string | null;
-					created_at?: string;
-					finished_at?: string | null;
-					format?: string | null;
-					id?: string;
-					isbn?: string | null;
-					my_summary?: string | null;
-					rating?: number | null;
-					started_at?: string | null;
-					status?: string;
-					title?: string;
-				};
-				Relationships: [];
-			};
 			caldav_sync_state: {
 				Row: {
 					id: boolean;
@@ -250,197 +205,6 @@ export type Database = {
 					source_ref?: string | null;
 					tags?: string[];
 					type?: string;
-				};
-				Relationships: [];
-			};
-			health_documents: {
-				Row: {
-					created_at: string;
-					document_date: string | null;
-					document_type: string | null;
-					filename: string;
-					id: string;
-					mime_type: string;
-					notes: string | null;
-					panel_id: string | null;
-					size_bytes: number | null;
-					storage_path: string;
-					updated_at: string;
-					uploaded_at: string;
-					visit_id: string | null;
-				};
-				Insert: {
-					created_at?: string;
-					document_date?: string | null;
-					document_type?: string | null;
-					filename: string;
-					id?: string;
-					mime_type: string;
-					notes?: string | null;
-					panel_id?: string | null;
-					size_bytes?: number | null;
-					storage_path: string;
-					updated_at?: string;
-					uploaded_at?: string;
-					visit_id?: string | null;
-				};
-				Update: {
-					created_at?: string;
-					document_date?: string | null;
-					document_type?: string | null;
-					filename?: string;
-					id?: string;
-					mime_type?: string;
-					notes?: string | null;
-					panel_id?: string | null;
-					size_bytes?: number | null;
-					storage_path?: string;
-					updated_at?: string;
-					uploaded_at?: string;
-					visit_id?: string | null;
-				};
-				Relationships: [
-					{
-						foreignKeyName: "health_documents_panel_id_fkey";
-						columns: ["panel_id"];
-						isOneToOne: false;
-						referencedRelation: "lab_panels";
-						referencedColumns: ["id"];
-					},
-					{
-						foreignKeyName: "health_documents_visit_id_fkey";
-						columns: ["visit_id"];
-						isOneToOne: false;
-						referencedRelation: "health_visits";
-						referencedColumns: ["id"];
-					},
-				];
-			};
-			health_history: {
-				Row: {
-					allergies: Json;
-					conditions: Json;
-					family_history: Json;
-					id: boolean;
-					immunizations: Json;
-					narrative: string | null;
-					surgeries: Json;
-					updated_at: string;
-				};
-				Insert: {
-					allergies?: Json;
-					conditions?: Json;
-					family_history?: Json;
-					id?: boolean;
-					immunizations?: Json;
-					narrative?: string | null;
-					surgeries?: Json;
-					updated_at?: string;
-				};
-				Update: {
-					allergies?: Json;
-					conditions?: Json;
-					family_history?: Json;
-					id?: boolean;
-					immunizations?: Json;
-					narrative?: string | null;
-					surgeries?: Json;
-					updated_at?: string;
-				};
-				Relationships: [];
-			};
-			health_metrics: {
-				Row: {
-					created_at: string;
-					id: string;
-					measured_at: string;
-					metric: string;
-					notes: string | null;
-					source: string;
-					unit: string | null;
-					updated_at: string;
-					value: number | null;
-					value_secondary: number | null;
-					visit_id: string | null;
-				};
-				Insert: {
-					created_at?: string;
-					id?: string;
-					measured_at: string;
-					metric: string;
-					notes?: string | null;
-					source?: string;
-					unit?: string | null;
-					updated_at?: string;
-					value?: number | null;
-					value_secondary?: number | null;
-					visit_id?: string | null;
-				};
-				Update: {
-					created_at?: string;
-					id?: string;
-					measured_at?: string;
-					metric?: string;
-					notes?: string | null;
-					source?: string;
-					unit?: string | null;
-					updated_at?: string;
-					value?: number | null;
-					value_secondary?: number | null;
-					visit_id?: string | null;
-				};
-				Relationships: [
-					{
-						foreignKeyName: "health_metrics_visit_id_fkey";
-						columns: ["visit_id"];
-						isOneToOne: false;
-						referencedRelation: "health_visits";
-						referencedColumns: ["id"];
-					},
-				];
-			};
-			health_visits: {
-				Row: {
-					assessment: string | null;
-					created_at: string;
-					follow_up_date: string | null;
-					id: string;
-					notes: string | null;
-					plan: string | null;
-					provider_name: string | null;
-					provider_specialty: string | null;
-					reason: string | null;
-					updated_at: string;
-					visit_date: string;
-					visit_type: string | null;
-				};
-				Insert: {
-					assessment?: string | null;
-					created_at?: string;
-					follow_up_date?: string | null;
-					id?: string;
-					notes?: string | null;
-					plan?: string | null;
-					provider_name?: string | null;
-					provider_specialty?: string | null;
-					reason?: string | null;
-					updated_at?: string;
-					visit_date: string;
-					visit_type?: string | null;
-				};
-				Update: {
-					assessment?: string | null;
-					created_at?: string;
-					follow_up_date?: string | null;
-					id?: string;
-					notes?: string | null;
-					plan?: string | null;
-					provider_name?: string | null;
-					provider_specialty?: string | null;
-					reason?: string | null;
-					updated_at?: string;
-					visit_date?: string;
-					visit_type?: string | null;
 				};
 				Relationships: [];
 			};
@@ -613,151 +377,6 @@ export type Database = {
 						referencedColumns: ["id"];
 					},
 				];
-			};
-			lab_panels: {
-				Row: {
-					created_at: string;
-					drawn_date: string;
-					id: string;
-					lab_facility: string | null;
-					notes: string | null;
-					ordering_provider: string | null;
-					panel_name: string;
-					updated_at: string;
-					visit_id: string | null;
-				};
-				Insert: {
-					created_at?: string;
-					drawn_date: string;
-					id?: string;
-					lab_facility?: string | null;
-					notes?: string | null;
-					ordering_provider?: string | null;
-					panel_name: string;
-					updated_at?: string;
-					visit_id?: string | null;
-				};
-				Update: {
-					created_at?: string;
-					drawn_date?: string;
-					id?: string;
-					lab_facility?: string | null;
-					notes?: string | null;
-					ordering_provider?: string | null;
-					panel_name?: string;
-					updated_at?: string;
-					visit_id?: string | null;
-				};
-				Relationships: [
-					{
-						foreignKeyName: "lab_panels_visit_id_fkey";
-						columns: ["visit_id"];
-						isOneToOne: false;
-						referencedRelation: "health_visits";
-						referencedColumns: ["id"];
-					},
-				];
-			};
-			lab_results: {
-				Row: {
-					analyte: string;
-					created_at: string;
-					flag: string | null;
-					id: string;
-					notes: string | null;
-					panel_id: string;
-					reference_range_high: number | null;
-					reference_range_low: number | null;
-					reference_text: string | null;
-					unit: string | null;
-					value: number | null;
-					value_text: string | null;
-				};
-				Insert: {
-					analyte: string;
-					created_at?: string;
-					flag?: string | null;
-					id?: string;
-					notes?: string | null;
-					panel_id: string;
-					reference_range_high?: number | null;
-					reference_range_low?: number | null;
-					reference_text?: string | null;
-					unit?: string | null;
-					value?: number | null;
-					value_text?: string | null;
-				};
-				Update: {
-					analyte?: string;
-					created_at?: string;
-					flag?: string | null;
-					id?: string;
-					notes?: string | null;
-					panel_id?: string;
-					reference_range_high?: number | null;
-					reference_range_low?: number | null;
-					reference_text?: string | null;
-					unit?: string | null;
-					value?: number | null;
-					value_text?: string | null;
-				};
-				Relationships: [
-					{
-						foreignKeyName: "lab_results_panel_id_fkey";
-						columns: ["panel_id"];
-						isOneToOne: false;
-						referencedRelation: "lab_panels";
-						referencedColumns: ["id"];
-					},
-				];
-			};
-			medications: {
-				Row: {
-					active: boolean;
-					created_at: string;
-					dosage: string | null;
-					frequency: string | null;
-					id: string;
-					kind: string;
-					name: string;
-					notes: string | null;
-					prescribing_provider: string | null;
-					reason: string | null;
-					start_date: string | null;
-					stop_date: string | null;
-					updated_at: string;
-				};
-				Insert: {
-					active?: boolean;
-					created_at?: string;
-					dosage?: string | null;
-					frequency?: string | null;
-					id?: string;
-					kind?: string;
-					name: string;
-					notes?: string | null;
-					prescribing_provider?: string | null;
-					reason?: string | null;
-					start_date?: string | null;
-					stop_date?: string | null;
-					updated_at?: string;
-				};
-				Update: {
-					active?: boolean;
-					created_at?: string;
-					dosage?: string | null;
-					frequency?: string | null;
-					id?: string;
-					kind?: string;
-					name?: string;
-					notes?: string | null;
-					prescribing_provider?: string | null;
-					reason?: string | null;
-					start_date?: string | null;
-					stop_date?: string | null;
-					updated_at?: string;
-				};
-				Relationships: [];
 			};
 			milestones: {
 				Row: {
@@ -1266,7 +885,6 @@ export type Database = {
 			quotes: {
 				Row: {
 					added_via: string;
-					book_id: string | null;
 					chapter: string | null;
 					created_at: string;
 					id: string;
@@ -1282,7 +900,6 @@ export type Database = {
 				};
 				Insert: {
 					added_via?: string;
-					book_id?: string | null;
 					chapter?: string | null;
 					created_at?: string;
 					id?: string;
@@ -1298,7 +915,6 @@ export type Database = {
 				};
 				Update: {
 					added_via?: string;
-					book_id?: string | null;
 					chapter?: string | null;
 					created_at?: string;
 					id?: string;
@@ -1312,15 +928,7 @@ export type Database = {
 					tags?: string[];
 					text?: string;
 				};
-				Relationships: [
-					{
-						foreignKeyName: "quotes_book_id_fkey";
-						columns: ["book_id"];
-						isOneToOne: false;
-						referencedRelation: "books";
-						referencedColumns: ["id"];
-					},
-				];
+				Relationships: [];
 			};
 			resurfacing_seen: {
 				Row: {
@@ -1552,93 +1160,6 @@ export type Database = {
 						referencedColumns: ["id"];
 					},
 				];
-			};
-			wellbeing_check_ins: {
-				Row: {
-					checked_in_at: string;
-					created_at: string;
-					energy: number | null;
-					id: string;
-					mood: number | null;
-					notes: string | null;
-					pain: number | null;
-					sleep_quality: number | null;
-				};
-				Insert: {
-					checked_in_at?: string;
-					created_at?: string;
-					energy?: number | null;
-					id?: string;
-					mood?: number | null;
-					notes?: string | null;
-					pain?: number | null;
-					sleep_quality?: number | null;
-				};
-				Update: {
-					checked_in_at?: string;
-					created_at?: string;
-					energy?: number | null;
-					id?: string;
-					mood?: number | null;
-					notes?: string | null;
-					pain?: number | null;
-					sleep_quality?: number | null;
-				};
-				Relationships: [];
-			};
-			workouts: {
-				Row: {
-					activity_type: string | null;
-					avg_hr: number | null;
-					calories: number | null;
-					created_at: string;
-					distance_m: number | null;
-					duration_min: number | null;
-					elevation_gain_m: number | null;
-					ended_at: string | null;
-					id: string;
-					max_hr: number | null;
-					notes: string | null;
-					pace_sec_per_km: number | null;
-					power_avg_watts: number | null;
-					source: string;
-					started_at: string;
-				};
-				Insert: {
-					activity_type?: string | null;
-					avg_hr?: number | null;
-					calories?: number | null;
-					created_at?: string;
-					distance_m?: number | null;
-					duration_min?: number | null;
-					elevation_gain_m?: number | null;
-					ended_at?: string | null;
-					id?: string;
-					max_hr?: number | null;
-					notes?: string | null;
-					pace_sec_per_km?: number | null;
-					power_avg_watts?: number | null;
-					source?: string;
-					started_at: string;
-				};
-				Update: {
-					activity_type?: string | null;
-					avg_hr?: number | null;
-					calories?: number | null;
-					created_at?: string;
-					distance_m?: number | null;
-					duration_min?: number | null;
-					elevation_gain_m?: number | null;
-					ended_at?: string | null;
-					id?: string;
-					max_hr?: number | null;
-					notes?: string | null;
-					pace_sec_per_km?: number | null;
-					power_avg_watts?: number | null;
-					source?: string;
-					started_at?: string;
-				};
-				Relationships: [];
 			};
 		};
 		Views: {

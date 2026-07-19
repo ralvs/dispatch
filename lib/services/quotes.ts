@@ -21,7 +21,6 @@ export type { QuoteAnnotationRow, QuoteRow };
 // kindle_import). Keeping the wider hand-written type here.
 export type CreateQuoteInput = {
 	text: string;
-	book_id?: string | null;
 	page_number?: number | null;
 	chapter?: string | null;
 	source_type?: z.infer<typeof QuoteSourceTypeSchema> | null;

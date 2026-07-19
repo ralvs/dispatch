@@ -6,7 +6,7 @@ import { NoteSourceTypeSchema } from "@/lib/schemas/note";
 //
 // Supersedes the 15-variant lib/schemas/voice.ts draft. v1 speaks only the
 // verbs the executor can actually fulfil today — tasks, notes, quotes,
-// journal entries, and health metrics. Everything else the reference
+// and journal entries. Everything else the reference
 // vocabulary added (projects, people, inventory, …) is deferred; the growth
 // path is: add a service + an executor case + a variant here. The full
 // reference vocabulary is recorded in the ADR and the reference impl stays
@@ -56,14 +56,6 @@ export const CaptureActionSchema = z.discriminatedUnion("action", [
 		body: z.string().min(1),
 		entry_date: z.string().date().optional(),
 		tags: z.array(z.string()).optional(),
-	}),
-	z.object({
-		action: z.literal("log_health_metric"),
-		metric: z.string().min(1),
-		value: z.number().nullable().optional(),
-		value_secondary: z.number().nullable().optional(),
-		unit: z.string().nullable().optional(),
-		notes: z.string().nullable().optional(),
 	}),
 	z.object({
 		// The parser flags content it can't confidently place — typically because

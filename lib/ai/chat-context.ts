@@ -1,7 +1,5 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { BookRow } from "@/lib/services/books";
-import { listBooks } from "@/lib/services/books";
 import { type BriefingView, getBriefing } from "@/lib/services/briefing";
 import type { DomainRow } from "@/lib/services/domains";
 import { listDomains } from "@/lib/services/domains";
@@ -40,7 +38,6 @@ export type ChatSnapshot = {
 	entries?: JournalEntryRow[];
 	notes?: NoteListRow[];
 	quotes?: QuoteRow[];
-	books?: BookRow[];
 	domains?: DomainRow[];
 };
 
@@ -48,7 +45,7 @@ const SYSTEM_PROMPT_TEMPLATE = (
 	todayIso: string,
 	context: string,
 ) => `You are Dispatch, the personal-operations assistant for Renan (renan@alves.id). You answer
-questions about his tasks, projects, notes, journal, quotes, people, books, routines, and
+questions about his tasks, projects, notes, journal, quotes, people, routines, and
 domains using ONLY the context block below — a live snapshot of his dashboard.
 
 Rules:
@@ -146,15 +143,6 @@ export function renderChatContext(snapshot: ChatSnapshot): string {
 		);
 	}
 
-	if (snapshot.books) {
-		sections.push(
-			[
-				"## Currently reading",
-				...snapshot.books.map((b) => `- ${b.title}${b.author ? ` by ${b.author}` : ""}`),
-			].join("\n"),
-		);
-	}
-
 	if (snapshot.domains) {
 		sections.push(
 			[
@@ -183,18 +171,16 @@ export async function buildChatSystemPrompt(
 	tz: string,
 	todayIso: string,
 ): Promise<string> {
-	const [briefing, tasks, projects, people, entries, notes, quotes, books, domains] =
-		await Promise.all([
-			safeFetch(() => getBriefing(sb, tz, todayIso)),
-			safeFetch(() => listTasks(sb, { status: "open" })),
-			safeFetch(() => listProjects(sb)),
-			safeFetch(() => listPeople(sb)),
-			safeFetch(() => listEntries(sb)),
-			safeFetch(() => listNotes(sb)),
-			safeFetch(() => listQuotes(sb)),
-			safeFetch(() => listBooks(sb, { status: "reading" })),
-			safeFetch(() => listDomains(sb)),
-		]);
+	const [briefing, tasks, projects, people, entries, notes, quotes, domains] = await Promise.all([
+		safeFetch(() => getBriefing(sb, tz, todayIso)),
+		safeFetch(() => listTasks(sb, { status: "open" })),
+		safeFetch(() => listProjects(sb)),
+		safeFetch(() => listPeople(sb)),
+		safeFetch(() => listEntries(sb)),
+		safeFetch(() => listNotes(sb)),
+		safeFetch(() => listQuotes(sb)),
+		safeFetch(() => listDomains(sb)),
+	]);
 
 	const context = renderChatContext({
 		briefing,
@@ -204,7 +190,6 @@ export async function buildChatSystemPrompt(
 		entries,
 		notes,
 		quotes,
-		books,
 		domains,
 	});
 

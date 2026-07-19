@@ -23,7 +23,6 @@ export const QuoteAddedViaSchema = z.enum([
 
 export const QuoteSchema = z.object({
 	id: z.string().uuid(),
-	book_id: z.string().uuid().nullable().optional(),
 	text: z.string().min(1),
 	page_number: z.union([z.number().int(), z.string()]).nullable().optional(),
 	chapter: z.string().nullable().optional(),
@@ -53,7 +52,6 @@ const DB_ADDED_VIA = ["voice", "readwise_import", "manual", "journal_extraction"
 
 export const CreateQuoteSchema = z.object({
 	text: z.string().min(1),
-	book_id: z.string().uuid().nullable().optional(),
 	page_number: z.number().int().nullable().optional(),
 	chapter: z.string().nullable().optional(),
 	source_type: z.enum(DB_SOURCE_TYPES).nullable().optional(),
@@ -107,7 +105,6 @@ export const UpdateQuoteAnnotationSchema = z.object({
 // QUOTE_SELECT is derived from this schema's keys. No joins for this entity.
 export const QuoteRowSchema = z.object({
 	id: z.string().uuid(),
-	book_id: z.string().uuid().nullable(),
 	text: z.string(),
 	page_number: z.number().nullable(),
 	chapter: z.string().nullable(),

@@ -27,7 +27,6 @@ describe("renderChatContext", () => {
 			entries: [],
 			notes: [],
 			quotes: [],
-			books: [],
 			domains: [],
 		});
 
@@ -37,7 +36,6 @@ describe("renderChatContext", () => {
 		expect(context).toContain("## Journal entries");
 		expect(context).toContain("## Notes");
 		expect(context).toContain("## Quotes");
-		expect(context).toContain("## Currently reading");
 		expect(context).toContain("## Domains");
 	});
 

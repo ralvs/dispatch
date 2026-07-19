@@ -7,9 +7,7 @@ vi.mock("@/lib/services/tasks", () => ({ createTask: vi.fn() }));
 vi.mock("@/lib/services/notes", () => ({ createNote: vi.fn(), createNeedsReviewNote: vi.fn() }));
 vi.mock("@/lib/services/quotes", () => ({ createQuote: vi.fn() }));
 vi.mock("@/lib/services/journal", () => ({ createEntry: vi.fn() }));
-vi.mock("@/lib/services/health", () => ({ createMetric: vi.fn() }));
 
-import { createMetric } from "@/lib/services/health";
 import { createEntry } from "@/lib/services/journal";
 import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
 import { createQuote } from "@/lib/services/quotes";
@@ -137,45 +135,6 @@ describe("runActions", () => {
 			action: "create_journal_entry",
 			ok: false,
 			noteId: "review-4",
-		});
-		expect(createNeedsReviewNote).toHaveBeenCalledWith(
-			sb,
-			expect.objectContaining({ body: "verbatim text", origin_capture_id: "cap-1" }),
-		);
-	});
-
-	it("logs a health metric for the log_health_metric verb", async () => {
-		(createMetric as Mock).mockResolvedValue({ id: "metric-1" });
-
-		const actions: CaptureAction[] = [
-			{ action: "log_health_metric", metric: "weight", value: 82.5, unit: "kg" },
-		];
-
-		const results = await runActions(sb, actions, PROV);
-
-		expect(results[0]).toEqual({
-			action: "log_health_metric",
-			ok: true,
-			entity: { table: "health_metrics", id: "metric-1" },
-		});
-		expect(createMetric).toHaveBeenCalledWith(
-			sb,
-			expect.objectContaining({ metric: "weight", value: 82.5, unit: "kg", source: "manual" }),
-		);
-	});
-
-	it("degrades log_health_metric to a linked needs_review note when the insert fails", async () => {
-		(createMetric as Mock).mockRejectedValue(new Error("db down"));
-		(createNeedsReviewNote as Mock).mockResolvedValue({ id: "review-5" });
-
-		const actions: CaptureAction[] = [{ action: "log_health_metric", metric: "weight" }];
-
-		const results = await runActions(sb, actions, PROV);
-
-		expect(results[0]).toMatchObject({
-			action: "log_health_metric",
-			ok: false,
-			noteId: "review-5",
 		});
 		expect(createNeedsReviewNote).toHaveBeenCalledWith(
 			sb,

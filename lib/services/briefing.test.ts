@@ -22,7 +22,6 @@ const TODAY = "2026-07-15";
 function quote(id: string, text = "text"): QuoteRow {
 	return {
 		id,
-		book_id: null,
 		text,
 		page_number: null,
 		chapter: null,
@@ -95,19 +94,12 @@ describe("buildCadenceLines", () => {
 			dueToday: 3,
 			routinesDone: 1,
 			routinesTotal: 4,
-			readingCount: 1,
 			needsReview: 2,
 		});
 
-		expect(lines.map((l) => l.key)).toEqual([
-			"overdue",
-			"dueToday",
-			"routines",
-			"reading",
-			"needsReview",
-		]);
-		expect(lines.map((l) => l.href)).toEqual(["/tasks", "/tasks", "/routines", "/books", "/notes"]);
-		expect(lines.map((l) => Boolean(l.slip))).toEqual([true, false, false, false, true]);
+		expect(lines.map((l) => l.key)).toEqual(["overdue", "dueToday", "routines", "needsReview"]);
+		expect(lines.map((l) => l.href)).toEqual(["/tasks", "/tasks", "/routines", "/notes"]);
+		expect(lines.map((l) => Boolean(l.slip))).toEqual([true, false, false, true]);
 		expect(lines.find((l) => l.key === "routines")?.big).toBe("1/4");
 	});
 
@@ -117,7 +109,6 @@ describe("buildCadenceLines", () => {
 			dueToday: 0,
 			routinesDone: 0,
 			routinesTotal: 3,
-			readingCount: 0,
 			needsReview: 0,
 		});
 		expect(lines).toHaveLength(1);
@@ -130,7 +121,6 @@ describe("buildCadenceLines", () => {
 			dueToday: 0,
 			routinesDone: 0,
 			routinesTotal: 0,
-			readingCount: 0,
 			needsReview: 0,
 		});
 		expect(lines).toHaveLength(0);

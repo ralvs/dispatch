@@ -1,9 +1,8 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { nowUtc, todayInTz } from "@/lib/dates";
+import { todayInTz } from "@/lib/dates";
 import type { CaptureAction } from "@/lib/schemas/capture";
 import type { ActionResult } from "@/lib/services/capture";
-import { createMetric } from "@/lib/services/health";
 import { createEntry } from "@/lib/services/journal";
 import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
 import { createQuote } from "@/lib/services/quotes";
@@ -97,22 +96,6 @@ async function runOne(
 					action: "create_journal_entry",
 					ok: true,
 					entity: { table: "journal_entries", id: e.id },
-				};
-			}
-			case "log_health_metric": {
-				const m = await createMetric(sb, {
-					measured_at: nowUtc(),
-					metric: action.metric,
-					value: action.value ?? null,
-					value_secondary: action.value_secondary ?? null,
-					unit: action.unit ?? null,
-					notes: action.notes ?? null,
-					source: "manual",
-				});
-				return {
-					action: "log_health_metric",
-					ok: true,
-					entity: { table: "health_metrics", id: m.id },
 				};
 			}
 			case "needs_review":

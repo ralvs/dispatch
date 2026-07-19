@@ -1,8 +1,8 @@
 "use client";
 
 // Shared choreography + chrome for the "+ New X" collapsible create-forms that
-// recur across the app (health readings, tasks, people, quotes, books,
-// routines, notes, journal entries, domains, projects…). Every one of them
+// recur across the app (tasks, people, quotes, routines, notes, journal
+// entries, domains, projects…). Every one of them
 // wired up the identical dance by hand: a form ref, an `open` flag, a
 // transition wrapping the server action, and byte-identical Tailwind chrome
 // for the collapsed trigger and the open card's footer. This module is that

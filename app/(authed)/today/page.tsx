@@ -7,12 +7,10 @@ import { BriefSection } from "./brief-section";
 import { CaptureChips } from "./capture-chips";
 import { DoingCard } from "./doing-card";
 import { EventsCard } from "./events-card";
-import { HealthCard } from "./health-card";
 import { InboxStrip } from "./inbox-strip";
 import { LatestQuote } from "./latest-quote";
 import { Masthead } from "./masthead";
 import { ProjectsCard } from "./projects-card";
-import { ReadingCard } from "./reading-card";
 import { ResurfacedQuote } from "./resurfaced-quote";
 import { RoutinesCard } from "./routines-card";
 
@@ -44,7 +42,6 @@ export default async function TodayPage() {
 						hasQuotes={briefing.latestQuote !== null}
 					/>
 					{showLatestQuote && briefing.latestQuote && <LatestQuote quote={briefing.latestQuote} />}
-					<ReadingCard books={briefing.readingBooks} />
 				</div>
 
 				<div className="mt-9 lg:mt-0">
@@ -61,7 +58,6 @@ export default async function TodayPage() {
 						total={briefing.routines.total}
 					/>
 					<ProjectsCard projects={briefing.projects} />
-					<HealthCard health={briefing.health} tz={tz} />
 				</div>
 			</div>
 

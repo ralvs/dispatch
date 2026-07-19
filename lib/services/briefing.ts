@@ -2,18 +2,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { dateOfInstant, isoWeek, shiftDay } from "@/lib/dates";
 import { computeRoutineStats, type RoutineStats } from "@/lib/routine-stats";
-import { type BookRow, listBooks } from "@/lib/services/books";
 import { type CalendarEventRow, listEventsOn } from "@/lib/services/calendar";
 import { type DomainRow, listDomains } from "@/lib/services/domains";
-import {
-	type HealthMetricRow,
-	listMedications,
-	listMetrics,
-	listWellbeingCheckIns,
-	listWorkouts,
-	type WellbeingCheckInRow,
-	type WorkoutRow,
-} from "@/lib/services/health";
 import { countNeedsReview } from "@/lib/services/notes";
 import { unreadCount } from "@/lib/services/notifications";
 import {
@@ -95,13 +85,6 @@ export type ProjectBrief = {
 	nextMilestone: { title: string } | null;
 };
 
-export type HealthGlance = {
-	latestMetric: HealthMetricRow | null;
-	activeMedsCount: number;
-	lastWorkout: WorkoutRow | null;
-	lastCheckIn: WellbeingCheckInRow | null;
-};
-
 export type BriefingView = {
 	cadence: CadenceLine[];
 	inboxCount: number;
@@ -116,9 +99,7 @@ export type BriefingView = {
 	resurfaced: QuoteRow | null;
 	resurfacedSkips: number;
 	latestQuote: QuoteRow | null;
-	health: HealthGlance;
 	projects: ProjectBrief[];
-	readingBooks: BookRow[];
 };
 
 /**
@@ -174,7 +155,6 @@ export function buildCadenceLines(input: {
 	dueToday: number;
 	routinesDone: number;
 	routinesTotal: number;
-	readingCount: number;
 	needsReview: number;
 }): CadenceLine[] {
 	const lines: CadenceLine[] = [];
@@ -204,15 +184,6 @@ export function buildCadenceLines(input: {
 			big: `${input.routinesDone}/${input.routinesTotal}`,
 			label: "routines done",
 			href: "/routines",
-		});
-	}
-
-	if (input.readingCount > 0) {
-		lines.push({
-			key: "reading",
-			big: String(input.readingCount),
-			label: "reading",
-			href: "/books",
 		});
 	}
 
@@ -328,7 +299,7 @@ export function deriveBriefLines(
 			slipping: daysSince > thresholdDays,
 			unit: daysSince === 1 ? "day since" : "days since",
 			nextAction: domain.expected_cadence ?? "Give it some attention.",
-			href: "/domains",
+			href: "/settings",
 		});
 	}
 	return lines.sort((a, b) => b.daysSince / b.thresholdDays - a.daysSince / a.thresholdDays);
@@ -403,7 +374,6 @@ export async function getBriefing(
 		inbox,
 		routines,
 		completionsToday,
-		reading,
 		needsReview,
 		quotes,
 		todayEvents,
@@ -412,17 +382,12 @@ export async function getBriefing(
 		unreadNotifications,
 		skippedQuoteIds,
 		completionHistory,
-		latestMetrics,
-		activeMedications,
-		recentWorkouts,
-		recentCheckIns,
 		activeProjects,
 	] = await Promise.all([
 		listTasks(sb, { status: "open" }),
 		listInboxTasks(sb),
 		listRoutines(sb),
 		listCompletionsOn(sb, todayIso),
-		listBooks(sb, { status: "reading" }),
 		countNeedsReview(sb),
 		listQuotes(sb),
 		listEventsOn(sb, todayIso, tz),
@@ -431,10 +396,6 @@ export async function getBriefing(
 		unreadCount(sb),
 		listSkippedToday(sb, todayIso),
 		listCompletionsSince(sb, shiftDay(todayIso, -STREAK_HISTORY_DAYS)),
-		listMetrics(sb, { limit: 1 }),
-		listMedications(sb),
-		listWorkouts(sb, { limit: 1 }),
-		listWellbeingCheckIns(sb, { limit: 1 }),
 		listProjects(sb, { status: "active" }),
 	]);
 
@@ -455,7 +416,6 @@ export async function getBriefing(
 		dueToday: dueToday.length,
 		routinesDone,
 		routinesTotal: routines.length,
-		readingCount: reading.length,
 		needsReview,
 	});
 
@@ -481,13 +441,6 @@ export async function getBriefing(
 		resurfaced,
 		resurfacedSkips: skippedQuoteIds.length,
 		latestQuote,
-		health: {
-			latestMetric: latestMetrics[0] ?? null,
-			activeMedsCount: activeMedications.length,
-			lastWorkout: recentWorkouts[0] ?? null,
-			lastCheckIn: recentCheckIns[0] ?? null,
-		},
 		projects: summarizeProjects(activeProjects, milestonesByProject),
-		readingBooks: reading,
 	};
 }
