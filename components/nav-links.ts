@@ -6,30 +6,22 @@ export type NavItem = {
 	aliases?: string[];
 };
 
-// The 5-tab shell (content tab removed — docs/adr/0007). /tasks and /inbox
-// are Today sub-views and keep Today highlighted.
+// The 5-tab shell (content tab removed — docs/adr/0007; library and domains
+// tabs removed — docs/adr/0011). /tasks and /inbox are Today sub-views and
+// keep Today highlighted. Settings hosts domains and app-level toggles.
 export const TABS: NavItem[] = [
 	{ key: "today", label: "Today", href: "/today", aliases: ["/tasks", "/inbox", "/calendar"] },
-	{ key: "domains", label: "Domains", href: "/domains" },
+	{ key: "notes", label: "Notes", href: "/notes" },
 	{ key: "projects", label: "Projects", href: "/projects" },
 	{ key: "people", label: "People", href: "/people" },
-	// Library is the mobile front door to everything without its own tab.
-	{
-		key: "library",
-		label: "Library",
-		href: "/library",
-		aliases: ["/books", "/notes", "/quotes", "/journal", "/routines", "/health"],
-	},
+	{ key: "settings", label: "Settings", href: "/settings", aliases: ["/notifications"] },
 ];
 
 // Desktop rail gets the full map.
 export const RAIL_EXTRAS: NavItem[] = [
 	{ key: "chat", label: "Chat", href: "/chat" },
 	{ key: "routines", label: "Routines", href: "/routines" },
-	{ key: "health", label: "Health", href: "/health" },
 	{ key: "journal", label: "Journal", href: "/journal" },
-	{ key: "notes", label: "Notes", href: "/notes" },
-	{ key: "books", label: "Books", href: "/books" },
 	{ key: "quotes", label: "Quotes", href: "/quotes" },
 ];
 

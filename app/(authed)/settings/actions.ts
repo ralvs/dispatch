@@ -14,7 +14,7 @@ import {
 } from "@/lib/services/domains";
 
 function revalidateDomainViews() {
-	revalidatePath("/domains");
+	revalidatePath("/settings");
 }
 
 export async function createDomainAction(formData: FormData) {

@@ -64,12 +64,6 @@ export function DesktopRail({ email, theme }: { email: string; theme: "dark" | "
 				>
 					Notifications
 				</Link>
-				<Link
-					href="/settings"
-					className="block py-1.5 font-mono text-meta uppercase tracking-widest text-ink-3 hover:text-ink"
-				>
-					Settings
-				</Link>
 			</nav>
 
 			<footer className="space-y-3">
