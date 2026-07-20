@@ -1,5 +1,9 @@
 "use client";
 
+import Paragraph from "@tiptap/extension-paragraph";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
+import type { Node as PMNode } from "@tiptap/pm/model";
 import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -7,6 +11,41 @@ import { Markdown, type MarkdownStorage } from "tiptap-markdown";
 import { createDebouncedSave } from "@/lib/debounced-save";
 import type { NoteListRow } from "@/lib/services/notes";
 import { deleteNoteAction, resolveNeedsReviewAction, saveNoteAction } from "../actions";
+
+// Markdown has no syntax for an empty paragraph, so blank lines between blocks
+// were dropped on save — and two different lists left adjacent in the stored
+// markdown re-parse as one merged list, spawning a stray task item. Serialize
+// empty paragraphs as `&nbsp;` (GFM renders it as a blank line) and parse them
+// back to truly empty paragraphs on load.
+type MarkdownState = {
+	write(text: string): void;
+	renderInline(node: PMNode): void;
+	closeBlock(node: PMNode): void;
+};
+
+const ParagraphKeepBlank = Paragraph.extend({
+	addStorage() {
+		return {
+			markdown: {
+				serialize(state: MarkdownState, node: PMNode) {
+					if (node.childCount === 0) {
+						state.write("&nbsp;");
+					} else {
+						state.renderInline(node);
+					}
+					state.closeBlock(node);
+				},
+				parse: {
+					updateDOM(element: HTMLElement) {
+						for (const p of element.querySelectorAll("p")) {
+							if (p.textContent === "\u00a0") p.textContent = "";
+						}
+					},
+				},
+			},
+		};
+	},
+});
 
 function getMarkdown(editor: Editor): string {
 	const storage = editor.storage as unknown as { markdown: MarkdownStorage };
@@ -60,7 +99,13 @@ export function NoteEditor({ note }: { note: NoteListRow }) {
 	const editor = useEditor({
 		immediatelyRender: false,
 		autofocus: note.body === "" ? "start" : false,
-		extensions: [StarterKit, Markdown.configure({ html: false })],
+		extensions: [
+			StarterKit.configure({ paragraph: false }),
+			ParagraphKeepBlank,
+			TaskList,
+			TaskItem.configure({ nested: true }),
+			Markdown.configure({ html: false }),
+		],
 		content: note.body,
 		editorProps: {
 			attributes: {
@@ -92,7 +137,7 @@ export function NoteEditor({ note }: { note: NoteListRow }) {
 			/>
 			{/* Preflight strips heading/list styling; restore just enough for the
 			    markdown to read as formatted, matching the app's serif headings. */}
-			<div className="mt-4 [&_blockquote]:border-l-2 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_blockquote]:text-ink-2 [&_code]:font-mono [&_code]:text-[0.85em] [&_h1]:font-serif [&_h1]:text-2xl [&_h1]:text-ink [&_h2]:font-serif [&_h2]:text-xl [&_h2]:text-ink [&_h3]:font-serif [&_h3]:text-lg [&_h3]:text-ink [&_hr]:my-3 [&_hr]:border-line [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
+			<div className="mt-4 [&_a]:cursor-pointer [&_a]:text-accent [&_a]:underline [&_a]:underline-offset-2 [&_a:hover]:text-ink [&_blockquote]:border-l-2 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_blockquote]:text-ink-2 [&_code]:font-mono [&_code]:text-[0.85em] [&_h1]:font-serif [&_h1]:text-2xl [&_h1]:text-ink [&_h2]:font-serif [&_h2]:text-xl [&_h2]:text-ink [&_h3]:font-serif [&_h3]:text-lg [&_h3]:text-ink [&_hr]:my-3 [&_hr]:border-line [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_ul[data-type=taskList]]:list-none [&_ul[data-type=taskList]]:pl-0 [&_ul[data-type=taskList]_ul[data-type=taskList]]:pl-5 [&_ul[data-type=taskList]_li]:flex [&_ul[data-type=taskList]_li]:items-baseline [&_ul[data-type=taskList]_li]:gap-2 [&_ul[data-type=taskList]_li>div]:flex-1 [&_ul[data-type=taskList]_input]:accent-accent">
 				<EditorContent editor={editor} />
 			</div>
 			<p className="mt-3 font-mono text-meta text-ink-4">
