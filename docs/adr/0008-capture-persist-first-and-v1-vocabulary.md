@@ -95,6 +95,12 @@ droppable for external actions via a post-hoc `LedgerError` (the gap
 ledger path), which is why ingest gets a transaction rather than
 the two-call seam the palette path does not even need.
 
+> **Superseded 2026-07-19 — see [ADR-0015](./0015-best-effort-ledger-on-external-write-paths.md).**
+> The RPC was never built. Phase 7's `/api/ingest` and ADR-0014's `/api/links`
+> both ship the two-call seam with a best-effort ledger write, and ADR-0015
+> accepts that as the pattern for external surfaces. The paragraph above is
+> kept as the record of what was intended at the time.
+
 ## Bilingual verbatim
 
 Content is stored verbatim in the language spoken (PT-BR or EN), never
@@ -110,6 +116,12 @@ Audio transcription (palette sends text; transcriber is a stub returning
 project/person/inventory executors (quote/journal/health landed — see above);
 the `needs_disambiguation` flow; the reconciliation sweep cron (invariant
 fixed here); external ingest and its atomic RPC.
+
+> **Status 2026-07-19.** Of that list: the reconciliation sweep cron shipped
+> (`lib/services/capture/sweep.ts`, `app/api/cron/sweep/route.ts`) and
+> external ingest shipped in Phase 7 — without the RPC, per ADR-0015. Audio
+> transcription, `complete_task`, the entity-resolution verbs, the
+> project/person executors, and `needs_disambiguation` are still deferred.
 
 ## Why
 
