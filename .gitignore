@@ -27,3 +27,4 @@ supabase/.branches/
 *.tsbuildinfo
 .vercel
 .env*
+.codex/
