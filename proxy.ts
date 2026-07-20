@@ -64,6 +64,8 @@ export const config = {
 	matcher: [
 		// Everything except /sign-in, Next internals, and static assets. /api is
 		// deliberately INCLUDED so token refresh happens here, serially.
-		"/((?!_next/static|_next/image|favicon.ico|sign-in|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+		// TEMPORARY: /compare is the UI bake-off surface — static mock data, no
+		// user content. Remove this exemption together with app/compare/.
+		"/((?!_next/static|_next/image|favicon.ico|sign-in|compare|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
 	],
 };
