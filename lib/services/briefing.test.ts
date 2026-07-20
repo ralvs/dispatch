@@ -329,6 +329,16 @@ describe("deriveBriefLines", () => {
 		expect(lines).toHaveLength(1);
 		expect(lines[0].slipping).toBe(false);
 	});
+
+	it("deep-links each line to its settings domain row", () => {
+		const d = domain({
+			id: "abc-123",
+			name: "Travel",
+			last_shipped_at: "2026-06-01T12:00:00.000Z",
+		});
+		const lines = deriveBriefLines([d], {}, TODAY, SP);
+		expect(lines[0].href).toBe("/settings#domain-abc-123");
+	});
 });
 
 describe("bucketRoutines", () => {

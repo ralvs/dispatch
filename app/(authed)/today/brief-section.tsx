@@ -37,7 +37,7 @@ export function BriefSection({ lines }: { lines: BriefLine[] }) {
 									<span className="ml-3 text-[13px] text-ink-2">{line.nextAction}</span>
 								</p>
 								<p className="mt-1 font-mono text-eyebrow uppercase tracking-widest text-accent">
-									Open domains →
+									Open {line.name} →
 								</p>
 							</Link>
 						</li>

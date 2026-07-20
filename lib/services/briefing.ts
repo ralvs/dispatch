@@ -424,7 +424,9 @@ export function deriveBriefLines(
 			slipping: daysSince > thresholdDays,
 			unit: daysSince === 1 ? "day since" : "days since",
 			nextAction: domain.expected_cadence ?? "Give it some attention.",
-			href: "/settings",
+			// Deep-link the row so "Mark shipped" / cadence edit are one scroll away
+			// rather than dumping the owner at the top of Settings.
+			href: `/settings#domain-${domain.id}`,
 		});
 	}
 	return lines.sort((a, b) => b.daysSince / b.thresholdDays - a.daysSince / a.thresholdDays);

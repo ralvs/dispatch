@@ -35,7 +35,7 @@ export function DomainRowItem({
 
 	if (editing) {
 		return (
-			<li className="hairline py-3">
+			<li id={`domain-${domain.id}`} className="hairline scroll-mt-24 py-3">
 				<form
 					action={saveDetails}
 					className="space-y-2 rounded-xl border border-line-strong bg-surface p-3"
@@ -114,7 +114,10 @@ export function DomainRowItem({
 	}
 
 	return (
-		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>
+		<li
+			id={`domain-${domain.id}`}
+			className={`hairline scroll-mt-24 py-3 ${pending ? "opacity-50" : ""}`}
+		>
 			<div className="flex items-baseline justify-between gap-3">
 				<span className="font-serif text-base text-ink">{domain.name}</span>
 				{domain.is_system && (
