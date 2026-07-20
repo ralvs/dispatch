@@ -63,8 +63,10 @@ Only the tasks and notes services existed at the time, so v1
   guessing; the executor turns it into a `needs_review` note.
 
 Since landed (executor + variant added, no rewrite needed): `create_quote`,
-`create_journal_entry`, `log_health_metric` — see
-`lib/services/capture/executor.ts`.
+`create_journal_entry`. `log_health_metric` landed the same way and was then
+**cut** along with the rest of the health subsystem (ADR-0011); an unsupported
+verb still degrades to `needs_review` exactly as any other unknown verb does.
+See `lib/services/capture/executor.ts` for what runs today.
 
 Unknown/unsupported verbs the model might emit are **not** in the schema, so
 they fail `CaptureActionsSchema` during parsing (→ typed `failed` → degrade),

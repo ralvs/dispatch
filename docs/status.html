@@ -180,11 +180,11 @@
 	</header>
 
 	<section class="meter" aria-label="Overall progress">
-		<div class="meter-caption"><span>Progress</span><span>Phases 0–8 and 10 shipped · Phase 9 planned</span></div>
-		<div class="meter-track" role="img" aria-label="10 of 11 major phases done, one planned">
+		<div class="meter-caption"><span>Progress</span><span>Phases 0–8 and 10 shipped · Phase 9 and 11 planned</span></div>
+		<div class="meter-track" role="img" aria-label="10 of 12 major phases done, two planned">
 			<span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span>
 			<span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span>
-			<span class="done"></span><span class="done"></span><span></span>
+			<span class="done"></span><span class="done"></span><span></span><span></span>
 		</div>
 	</section>
 
@@ -195,25 +195,28 @@
 	</div>
 
 	<div class="plan-box">
-		<h3>Last execution plan — Ops shell &amp; Today day schedule (shipped)</h3>
+		<h3>Next execution plan — Capture vocabulary growth &amp; audio transcription</h3>
 		<p>
-			Owner decisions locked 2026-07-19, all ten items landed. Naming is settled and
-			not up for re-litigation: the link reading list owns <code>/ingest</code>, task
-			domain triage lives at <code>/triage</code>, and <b>Inbox</b> names only the
-			system stewardship domain in data.
+			Closes the rest of ADR-0008's deferred list. Two decisions locked in
+			ADR-0016 before any code: an ambiguous entity reference degrades to
+			<code>needs_review</code> rather than a new candidate-picker UI, and a
+			failed audio transcription degrades to a note pointing at the
+			already-durable recording rather than losing it.
 		</p>
 		<ol>
-			<li>Nav ops-first tiers · collapsible Library · mobile More</li>
-			<li>Today: all-day band + mixed task/event timeline · cadence strip · alerts</li>
-			<li>Link Ingest (schema · page · secret API · mark as read)</li>
-			<li>Capture chips → palette · settings polish (tz + cadence rule)</li>
+			<li>Entity-resolution module + parser context (fuzzy-match tasks/projects/domains/people)</li>
+			<li><code>complete_task</code>, <code>create_project</code>, <code>update_project_status</code>, <code>create_person_fact</code></li>
+			<li>Ambiguity → <code>needs_review</code> prompt rule</li>
+			<li>Real transcriber · audio persists to storage before transcribing · palette recording UI</li>
 		</ol>
 		<div class="links">
-			Plan: <a href="./ui-ops-shell-2026-07-19.md">docs/ui-ops-shell-2026-07-19.md</a>
-			· ADR: <a href="./adr/0014-ops-shell-day-schedule-link-ingest.md">0014</a>
-			· Review: <a href="./review-ui-architecture-2026-07-19.html">visual</a>
-			· <a href="./review-ui-architecture-2026-07-19.md">md</a>
+			Plan: <a href="./capture-vocabulary-2026-07-20.md">docs/capture-vocabulary-2026-07-20.md</a>
+			· ADR: <a href="./adr/0016-capture-vocabulary-growth-and-audio-transcription.md">0016</a>
 		</div>
+		<p style="margin-top:0.65rem">
+			Previous plan (shipped in full): <a href="./ui-ops-shell-2026-07-19.md">ops shell &amp; day schedule</a>,
+			<a href="./adr/0014-ops-shell-day-schedule-link-ingest.md">ADR-0014</a>.
+		</p>
 	</div>
 
 	<div class="rule">The record so far</div>
@@ -351,7 +354,17 @@
 			<span class="dot planned"></span>
 			<div class="phase-head"><h2>Phase 9 — Mem.ai import</h2><span class="tag planned">Planned</span></div>
 			<p>One-time migration of the existing Mem.ai corpus (<code>MEM_API_KEY</code>), then retire Mem.
-			Numbering kept for historical “Phase 9” references; the only major phase still outstanding.</p>
+			Numbering kept for historical “Phase 9” references.</p>
+		</li>
+
+		<li class="phase">
+			<span class="dot planned"></span>
+			<div class="phase-head"><h2>Phase 11 — Capture vocabulary growth &amp; audio transcription</h2><span class="tag planned">Planned</span></div>
+			<p>Closes the rest of ADR-0008's deferred list: <code>complete_task</code>, entity-resolution
+			fuzzy matching, <code>create_project</code>/<code>update_project_status</code>/<code>create_person_fact</code>,
+			and a real audio path (persist-first upload → gateway transcription → the same capture pipeline).
+			Two decisions locked before code in ADR-0016.</p>
+			<div class="ref">docs/capture-vocabulary-2026-07-20.md · ADR-0016</div>
 		</li>
 	</ol>
 
@@ -373,6 +386,7 @@
 		<li>0013 Vercel Geist design system</li>
 		<li>0014 Ops shell, day schedule, link Ingest</li>
 		<li>0015 Best-effort ledger on external write paths</li>
+		<li>0016 Capture vocabulary growth and audio transcription</li>
 	</ol>
 
 	<div class="rule">Agent entry points</div>

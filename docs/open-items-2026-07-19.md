@@ -8,8 +8,9 @@ are deliberate non-work.
 
 | | |
 |--|--|
-| **Covers** | `docs/adr/0001`–`0015`, both execution plans, `CONTEXT.md`, `CLAUDE.md` |
+| **Covers** | `docs/adr/0001`–`0016`, both execution plans, `CONTEXT.md`, `CLAUDE.md` |
 | **Closed plans** | [`architecture-fixes-2026-07-15.md`](./architecture-fixes-2026-07-15.md) (fully executed) · [`ui-ops-shell-2026-07-19.md`](./ui-ops-shell-2026-07-19.md) (fully executed) |
+| **Open plan** | [`capture-vocabulary-2026-07-20.md`](./capture-vocabulary-2026-07-20.md) — planned, not started; supersedes section 2 below |
 | **Status page** | [`status.html`](./status.html) |
 
 ---
@@ -23,18 +24,27 @@ are deliberate non-work.
 | 1.3 | **People-to-contact on Today** | plan P2 | |
 | 1.4 | **Task list grouping / edit depth** | plan P2 | |
 
-## 2. Capture vocabulary still deferred (ADR-0008)
+## 2. Capture vocabulary still deferred (ADR-0008) — now planned, not just deferred
 
 Every one of these is a growth-path verb the parser is not allowed to emit,
 because there is no executor behind it. The v1 vocabulary is `create_task` /
 `create_note` / `create_quote` / `create_journal_entry` / `needs_review`.
 
+As of 2026-07-20 this whole section has a plan:
+[`capture-vocabulary-2026-07-20.md`](./capture-vocabulary-2026-07-20.md), with
+two design questions settled in
+[ADR-0016](./adr/0016-capture-vocabulary-growth-and-audio-transcription.md)
+before any code — an ambiguous entity reference folds into `needs_review`
+rather than a new candidate-picker UI, and a failed audio transcription
+degrades to a note pointing at the already-durable recording. The table below
+is kept as a quick index; the plan is the executable version.
+
 | # | Item | Notes |
 |---|------|-------|
-| 2.1 | **Audio transcription** | `lib/ai/transcriber.ts` is a stub returning `unavailable`; the palette sends text. Un-stubbing is the whole audio path. |
-| 2.2 | **`complete_task`** and every entity-resolution verb | Needs resolution against existing rows, which is why they were cut. |
-| 2.3 | **Project / person executors** | Quote, journal landed. |
-| 2.4 | **`needs_disambiguation` flow** | Today everything ambiguous degrades to `needs_review`. |
+| 2.1 | **Audio transcription** | `lib/ai/transcriber.ts` is a stub returning `unavailable`; the palette sends text. Plan items 6–8. |
+| 2.2 | **`complete_task`** and every entity-resolution verb | Plan items 1–3 (`lib/services/capture/match.ts`, parser context). |
+| 2.3 | **Project / person executors** | `create_project`, `update_project_status`, `create_person_fact` — plan item 4. `log_activity` and `update_milestone` stay out of scope (no service / needs double resolution — see the plan's out-of-scope table). |
+| 2.4 | **`needs_disambiguation` flow** | Decided **not** to build a picker (ADR-0016 Decision 1) — plan item 5 folds ambiguity into `needs_review` instead. |
 
 ## 3. Decisions taken, with a named trigger to revisit
 
