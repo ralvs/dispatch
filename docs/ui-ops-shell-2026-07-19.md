@@ -30,7 +30,7 @@ autonomous/external actions write `notifications`.
 | 1 | Nav tiers + collapsible Library + mobile More | done |
 | 2 | Task triage → `/triage` | done |
 | 3 | `buildDaySchedule` pure helper + tests | done |
-| 4 | Today: cadence, alerts, day schedule, mobile order | pending |
+| 4 | Today: cadence, alerts, day schedule, mobile order | done |
 | 5 | Link Ingest schema + service | pending |
 | 6 | Link Ingest page + mark read | pending |
 | 7 | Link Ingest API + ledger + Today unread | pending |

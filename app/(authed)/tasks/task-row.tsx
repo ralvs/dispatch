@@ -6,17 +6,36 @@ import type { TaskRow } from "@/lib/services/tasks";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
 import { completeTaskAction, reopenTaskAction, toggleTop3Action } from "./actions";
 
-export function TaskRowItem({ task, todayIso }: { task: TaskRow; todayIso: string }) {
+/**
+ * Passing `timeLabel` places the row inside one of Today's schedule bands: it
+ * gains a clock column (null renders the all-day dash) and drops the due-date
+ * meta, since its position on the day already says when it is due.
+ */
+export function TaskRowItem({
+	task,
+	todayIso,
+	timeLabel,
+}: {
+	task: TaskRow;
+	todayIso: string;
+	timeLabel?: string | null;
+}) {
 	const [pending, startTransition] = useTransition();
 	const done = task.status === "done";
 	const overdue = isOverdue(task, todayIso);
 	const starred = isTop3Today(task, todayIso);
+	const scheduled = timeLabel !== undefined;
 
 	return (
 		<li
 			className={`hairline flex items-baseline gap-3 py-2.5 ${pending ? "opacity-50" : ""}`}
 			data-task-id={task.id}
 		>
+			{scheduled && (
+				<span className="w-12 shrink-0 font-mono text-meta tabular-nums text-ink-3">
+					{timeLabel ?? "—"}
+				</span>
+			)}
 			<input
 				type="checkbox"
 				checked={done}
@@ -41,7 +60,7 @@ export function TaskRowItem({ task, todayIso }: { task: TaskRow; todayIso: strin
 				<p className="mt-0.5 font-mono text-meta text-ink-4">
 					{task.domain?.name ?? "—"}
 					{task.project?.name ? ` · ${task.project.name}` : ""}
-					{task.due_date && (
+					{!scheduled && task.due_date && (
 						<span className={overdue ? "text-accent-slip" : ""}>
 							{" · "}
 							{task.due_date}

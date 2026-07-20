@@ -1,0 +1,96 @@
+import Link from "next/link";
+import type { DaySchedule as DayScheduleData } from "@/lib/services/briefing";
+import { isTop3Today } from "@/lib/task-predicates";
+import { TaskRowItem } from "../tasks/task-row";
+import { ScheduleRow } from "./timeline-row";
+
+const TOP3_SLOTS = 3;
+
+function Band({ title, children }: { title: string; children: React.ReactNode }) {
+	return (
+		<div className="mt-4">
+			<h3 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">{title}</h3>
+			<ul className="mt-1">{children}</ul>
+		</div>
+	);
+}
+
+/**
+ * "When is my day" in one place (ADR-0014), replacing the flat events card
+ * sitting beside a separate doing card: an all-day band, a timeline where
+ * timed events and timed tasks share one clock, and everything open that has
+ * no hour attached to it.
+ */
+export function DaySchedule({
+	schedule,
+	todayIso,
+	openCount,
+	overdueCount,
+}: {
+	schedule: DayScheduleData;
+	todayIso: string;
+	openCount: number;
+	overdueCount: number;
+}) {
+	const { allDay, timeline, open } = schedule;
+	const empty = allDay.length === 0 && timeline.length === 0 && open.length === 0;
+
+	const starred = [
+		...allDay.filter((i) => i.kind === "task" && isTop3Today(i.task, todayIso)),
+		...timeline.filter((i) => i.kind === "task" && isTop3Today(i.task, todayIso)),
+		...open.filter((t) => isTop3Today(t, todayIso)),
+	].length;
+	const slotsOpen = TOP3_SLOTS - starred;
+
+	return (
+		<section className="mt-7" aria-label="Day schedule">
+			<div className="flex items-baseline justify-between">
+				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+					The day · {openCount} open
+					{overdueCount > 0 && <span className="text-accent"> · {overdueCount} overdue</span>}
+				</h2>
+				<Link href="/tasks" className="font-mono text-meta text-ink-4 hover:text-ink-2">
+					All tasks →
+				</Link>
+			</div>
+
+			{empty ? (
+				<p className="py-8 text-center font-serif italic text-ink-3">
+					Nothing on the clock. Star tasks or set due dates to shape the day.
+				</p>
+			) : (
+				<>
+					{allDay.length > 0 && (
+						<Band title="All day">
+							{allDay.map((item) => (
+								<ScheduleRow key={item.key} item={item} todayIso={todayIso} />
+							))}
+						</Band>
+					)}
+
+					{timeline.length > 0 && (
+						<Band title="Timeline">
+							{timeline.map((item) => (
+								<ScheduleRow key={item.key} item={item} todayIso={todayIso} />
+							))}
+						</Band>
+					)}
+
+					{open.length > 0 && (
+						<Band title="Open">
+							{open.map((task) => (
+								<TaskRowItem key={task.id} task={task} todayIso={todayIso} />
+							))}
+						</Band>
+					)}
+
+					{slotsOpen > 0 && (
+						<p className="mt-3 font-mono text-meta text-ink-4">
+							{slotsOpen} Top 3 slot{slotsOpen === 1 ? "" : "s"} open · tap ☆ on a row to pin
+						</p>
+					)}
+				</>
+			)}
+		</section>
+	);
+}

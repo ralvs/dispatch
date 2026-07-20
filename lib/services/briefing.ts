@@ -87,7 +87,10 @@ export type ProjectBrief = {
 
 export type BriefingView = {
 	cadence: CadenceLine[];
+	// Counts Today's alerts row reads: tasks with no domain, notes the parser
+	// could not place. Both already feed cadence lines; the row links them.
 	inboxCount: number;
+	needsReviewCount: number;
 	// doingToday and todayEvents predate daySchedule and still feed the widget
 	// payload (app/api/widget/route.ts) and chat context — keep them until
 	// those callers migrate.
@@ -546,6 +549,7 @@ export async function getBriefing(
 	return {
 		cadence,
 		inboxCount: inbox.length,
+		needsReviewCount: needsReview,
 		doingToday: assembleDoingToday(open, todayIso),
 		daySchedule: buildDaySchedule({ events: todayEvents, openTasks: open, todayIso, tz }),
 		routines: { total: routines.length, done: routinesDone, remainingNames },
