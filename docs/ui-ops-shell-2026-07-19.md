@@ -7,7 +7,7 @@ reading list (**Ingest**).
 
 | | |
 |--|--|
-| **Status** | Planned — not started |
+| **Status** | Shipped — all items landed 2026-07-19 |
 | **Decisions ADR** | [`docs/adr/0014-ops-shell-day-schedule-link-ingest.md`](./adr/0014-ops-shell-day-schedule-link-ingest.md) |
 | **Review (why)** | [`docs/review-ui-architecture-2026-07-19.md`](./review-ui-architecture-2026-07-19.md) · [visual HTML](./review-ui-architecture-2026-07-19.html) |
 | **Project status** | [`docs/status.html`](./status.html) |
@@ -36,9 +36,18 @@ autonomous/external actions write `notifications`.
 | 7 | Link Ingest API + ledger + Today unread | done |
 | 8 | Capture chips → palette | done |
 | 9 | Settings: timezone + domain cadence threshold (P1) | done |
-| 10 | Docs / CONTEXT touch-up | pending |
+| 10 | Docs / CONTEXT touch-up | done |
 
-Update this table as items land (commit hash optional).
+All ten landed as one commit each, in the suggested order. Two things worth
+knowing when reading the diffs:
+
+- Item 4 groups the `lg` grid as *(routines, projects)* and *(in brief,
+  quotes)* column wrappers rather than interleaving the four blocks in DOM
+  order. Interleaving needs both columns pinned to shared grid rows, which
+  leaves a gap under whichever card is shorter.
+- Item 7 reuses `INGEST_WEBHOOK_SECRET` for `POST /api/links` instead of
+  minting a fourth secret — same sender, same device, and the ADR's
+  requirement was path separation.
 
 ---
 

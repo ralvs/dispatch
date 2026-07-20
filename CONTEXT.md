@@ -18,8 +18,8 @@ voice turns into one or more actions (`lib/schemas/capture.ts`, `docs/adr/0008`)
 Giving an unassigned **task** a real home. A task captured without a destination
 lands in the system **Inbox domain** (`INBOX_DOMAIN_ID`); triage reassigns it
 to a stewardship domain (`triageTask` in `lib/services/tasks.ts`). UI route is
-**`/triage`** (moved from `/inbox` in the 2026-07-19 ops-shell plan — ADR-0014).
-Today surfaces the awaiting-triage count.
+**`/triage`** (moved from `/inbox` per ADR-0014; `/inbox` permanently redirects).
+Today's alerts row surfaces the awaiting-triage count.
 
 ## top-3
 
@@ -69,14 +69,19 @@ will surface this same ledger to the phone.
 ## ingest (link list)
 
 Shared or API-posted **URLs** stored with title, description, and link, then
-marked read. Primary nav label **Ingest** at **`/ingest`**. Distinct from task
-**triage**, from the system **Inbox domain**, and from text capture
-`POST /api/ingest` (watch/webhook free text). Link API uses a separate path
-(e.g. `/api/links`). Execution: `docs/ui-ops-shell-2026-07-19.md` items 5–7.
+marked read. Primary nav label **Ingest** at **`/ingest`**; rows live in
+`ingest_links` with a `unread`/`read`/`dismissed` status, written through
+`lib/services/ingest-links.ts`. External senders POST to **`/api/links`**
+(shared `INGEST_WEBHOOK_SECRET`, service-role insert, `ingest.link` ledger
+row). Distinct from task **triage**, from the system **Inbox domain**, and from
+text capture `POST /api/ingest` — that path runs the LLM parser, this one never
+does. See ADR-0014.
 
 ## day schedule
 
 Today’s “when is my day” composition: **all-day** band (all-day events + due
-tasks without time), **timeline** (timed events interleaved with timed tasks),
-and **open/unscheduled** tasks. Built by pure helpers in the briefing service;
-see ADR-0014.
+tasks without time), **timeline** (timed events interleaved with timed tasks,
+ordered by UTC instant so a spillover event keeps its true place), and
+**open/unscheduled** tasks (starred first, then already-due, capped at 10).
+Built by `buildDaySchedule` in `lib/services/briefing.ts` — pure, so the
+partition and the sort are tested without a database. See ADR-0014.

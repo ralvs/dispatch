@@ -180,11 +180,11 @@
 	</header>
 
 	<section class="meter" aria-label="Overall progress">
-		<div class="meter-caption"><span>Progress</span><span>Phases 0–8 shipped · Phase 10 active · Phase 9 planned</span></div>
-		<div class="meter-track" role="img" aria-label="9 of 11 major phases done, one active, one planned">
+		<div class="meter-caption"><span>Progress</span><span>Phases 0–8 and 10 shipped · Phase 9 planned</span></div>
+		<div class="meter-track" role="img" aria-label="10 of 11 major phases done, one planned">
 			<span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span>
 			<span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span>
-			<span class="done"></span><span class="active"></span><span></span>
+			<span class="done"></span><span class="done"></span><span></span>
 		</div>
 	</section>
 
@@ -195,15 +195,16 @@
 	</div>
 
 	<div class="plan-box">
-		<h3>Next execution plan — Ops shell &amp; Today day schedule</h3>
+		<h3>Last execution plan — Ops shell &amp; Today day schedule (shipped)</h3>
 		<p>
-			Owner decisions locked 2026-07-19. Agents should implement from the execution plan
-			(not re-open IA debates). Naming locked in ADR-0014: link reading list owns
-			<code>/ingest</code>; task domain triage moves to <code>/triage</code>.
+			Owner decisions locked 2026-07-19, all ten items landed. Naming is settled and
+			not up for re-litigation: the link reading list owns <code>/ingest</code>, task
+			domain triage lives at <code>/triage</code>, and <b>Inbox</b> names only the
+			system stewardship domain in data.
 		</p>
 		<ol>
 			<li>Nav ops-first tiers · collapsible Library · mobile More</li>
-			<li>Today: all-day band + mixed task/event timeline · cadence strip</li>
+			<li>Today: all-day band + mixed task/event timeline · cadence strip · alerts</li>
 			<li>Link Ingest (schema · page · secret API · mark as read)</li>
 			<li>Capture chips → palette · settings polish (tz + cadence rule)</li>
 		</ol>
@@ -331,15 +332,17 @@
 		</li>
 
 		<li class="phase">
-			<span class="dot active"></span>
-			<div class="phase-head"><h2>Phase 10 — Ops shell, day schedule, link Ingest</h2><span class="tag active">Next</span></div>
-			<p>Formal plan for agents. Does not reintroduce health/books.</p>
+			<span class="dot done"></span>
+			<div class="phase-head"><h2>Phase 10 — Ops shell, day schedule, link Ingest</h2><span class="tag done">Shipped</span></div>
+			<p>Navigation that matches daily use, one honest answer to “when is my day”, and a
+			first-class home for shared links. Health/books stay cut.</p>
 			<ul>
 				<li><strong>Nav:</strong> Daily (Today · Tasks · Notes · Ingest · Chat) · collapsible Library (Projects · Journal · Routines · Quotes · People) · System · mobile More</li>
-				<li><strong>Triage:</strong> task-domain page moves <code>/inbox</code> → <code>/triage</code></li>
+				<li><strong>Triage:</strong> task-domain page moved <code>/inbox</code> → <code>/triage</code>, old path 308s across</li>
 				<li><strong>Today:</strong> cadence strip · alerts · all-day band · timeline mixing timed events + timed tasks · open bucket</li>
-				<li><strong>Link Ingest:</strong> URL API → title/description/link → mark read at <code>/ingest</code></li>
-				<li>Keep <code>/calendar</code> alias; full calendar page deferred</li>
+				<li><strong>Link Ingest:</strong> <code>ingest_links</code> table · <code>POST /api/links</code> (secret-authed, ledger row) · mark read at <code>/ingest</code></li>
+				<li><strong>Settings:</strong> timezone editor · per-domain cadence threshold feeding “In brief”</li>
+				<li><code>/calendar</code> alias kept; full calendar page still deferred</li>
 			</ul>
 			<div class="ref">docs/ui-ops-shell-2026-07-19.md · ADR-0014</div>
 		</li>
@@ -348,7 +351,7 @@
 			<span class="dot planned"></span>
 			<div class="phase-head"><h2>Phase 9 — Mem.ai import</h2><span class="tag planned">Planned</span></div>
 			<p>One-time migration of the existing Mem.ai corpus (<code>MEM_API_KEY</code>), then retire Mem.
-			Numbering kept for historical “Phase 9” references; execute after or beside Phase 10 as priority allows.</p>
+			Numbering kept for historical “Phase 9” references; the only major phase still outstanding.</p>
 		</li>
 	</ol>
 
@@ -373,8 +376,9 @@
 
 	<div class="rule">Agent entry points</div>
 	<p style="color:var(--ink-2);font-size:0.95rem;max-width:60ch;margin-bottom:0.75rem">
-		New work on the current plan starts at <code>docs/ui-ops-shell-2026-07-19.md</code>.
-		Product “why” lives in the review pair; iron rules in <code>CLAUDE.md</code> / <code>CONTEXT.md</code>.
+		The ops-shell plan at <code>docs/ui-ops-shell-2026-07-19.md</code> is complete — read it
+		for what landed and why, not as a queue. Product “why” lives in the review pair;
+		iron rules in <code>CLAUDE.md</code>, vocabulary in <code>CONTEXT.md</code>.
 	</p>
 
 	<footer>Dispatch · functional rebuild of jerad-ops · docs/adr for every deviation</footer>
