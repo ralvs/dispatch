@@ -1,46 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { FlightdeckDesign } from "./designs/flightdeck";
+import { LedgerDesign } from "./designs/ledger";
 import { LedgerNoirDesign } from "./designs/ledger-noir";
 import { NightdeskDesign } from "./designs/nightdesk";
-import { NocturneDesign } from "./designs/nocturne";
-import { PhosphorDesign } from "./designs/phosphor";
 import { DAY } from "./mock";
 
-// Temporary bake-off surface. Round 2: all dark, all spacious — five takes on
-// Today, one frozen day of data, no auth. Delete once a direction is picked.
+// Temporary bake-off surface. Round 3: "Ledger" is the candidate — Ledger
+// Noir's structure re-expressed in the app's real design system, with
+// Nightdesk's two-column split. The other two stay as reference. Delete the
+// route once the direction ships.
 
 const DESIGNS = [
 	{
+		id: "ledger",
+		name: "Ledger",
+		note: "The candidate — Ledger Noir on the app's own tokens: real checkboxes, icons, day tape, two columns",
+		Component: LedgerDesign,
+	},
+	{
 		id: "ledger-noir",
 		name: "Ledger Noir",
-		note: "Swiss ruled ledger on a slate-blue night ground — the round-1 favorites, merged",
+		note: "Round-2 winner, kept for reference — Swiss ruled ledger on a slate-blue night ground",
 		Component: LedgerNoirDesign,
 	},
 	{
 		id: "nightdesk",
 		name: "Nightdesk",
-		note: "The newspaper's night edition — editorial serif, lede paragraph, dark and unhurried",
+		note: "Reference for the two-column editorial layout — the newspaper's night edition",
 		Component: NightdeskDesign,
-	},
-	{
-		id: "phosphor",
-		name: "Phosphor",
-		note: "The console decompressed — same palette, monospace voice, room to breathe",
-		Component: PhosphorDesign,
-	},
-	{
-		id: "flightdeck",
-		name: "Flightdeck",
-		note: "Night-flight instrument panel — gauges, readouts, semantic signal lamps",
-		Component: FlightdeckDesign,
-	},
-	{
-		id: "nocturne",
-		name: "Nocturne",
-		note: "The luxe minimal night page — one serif sentence, everything else folded away",
-		Component: NocturneDesign,
 	},
 ] as const;
 
@@ -58,7 +46,7 @@ export default function ComparePage() {
 			<header className="sticky top-0 z-10 border-b border-neutral-300 bg-neutral-100/90 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/90">
 				<div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-6 gap-y-3 px-5 py-3">
 					<span className="font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-500">
-						Today · 5 directions
+						Today · {DESIGNS.length} directions
 					</span>
 
 					<nav className="flex flex-wrap gap-1" aria-label="Design directions">
