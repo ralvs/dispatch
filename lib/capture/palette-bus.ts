@@ -7,8 +7,16 @@
 
 export const OPEN_CAPTURE_EVENT = "dispatch:open-capture";
 
-export function openCapturePalette(opts?: { voice?: boolean }): void {
+/**
+ * `prefill` seeds the textarea with a kind hint (the Today capture chips send
+ * "Task: ", "Note: ", …) so the parser knows what it is reading. It is only
+ * ever honoured on an empty palette — see the OPEN transition in
+ * lib/capture/machine.ts.
+ */
+export function openCapturePalette(opts?: { voice?: boolean; prefill?: string }): void {
 	window.dispatchEvent(
-		new CustomEvent(OPEN_CAPTURE_EVENT, { detail: { voice: opts?.voice ?? false } }),
+		new CustomEvent(OPEN_CAPTURE_EVENT, {
+			detail: { voice: opts?.voice ?? false, prefill: opts?.prefill },
+		}),
 	);
 }

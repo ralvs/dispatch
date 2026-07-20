@@ -47,7 +47,7 @@ export const initialCaptureState: CaptureState = {
 };
 
 export type CaptureEvent =
-	| { type: "OPEN"; voice: boolean }
+	| { type: "OPEN"; voice: boolean; prefill?: string }
 	| { type: "CLOSE" }
 	| { type: "TEXT_CHANGED"; text: string }
 	| { type: "TRANSCRIPT"; spoken: string }
@@ -88,9 +88,16 @@ function beginSubmit(state: CaptureState): CaptureTransition {
 export function captureMachine(state: CaptureState, event: CaptureEvent): CaptureTransition {
 	switch (event.type) {
 		case "OPEN": {
+			// A prefill seeds an EMPTY palette only — overwriting an unsubmitted
+			// draft would lose a capture (iron rule #4). Voice opens ignore it:
+			// dictation composes onto its own base, below.
+			const prefill = event.prefill;
+			const text =
+				!event.voice && prefill !== undefined && isBlank(state.text) ? prefill : state.text;
 			const next: CaptureState = {
 				...state,
 				open: true,
+				text,
 				status: event.voice ? "listening" : "editing",
 			};
 			if (event.voice) {

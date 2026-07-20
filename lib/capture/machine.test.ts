@@ -153,6 +153,7 @@ describe("captureMachine", () => {
 	describe("text-preservation invariant", () => {
 		const events: CaptureEvent[] = [
 			{ type: "OPEN", voice: false },
+			{ type: "OPEN", voice: false, prefill: "Task: " },
 			{ type: "CLOSE" },
 			{ type: "OPEN", voice: true },
 			{ type: "TRANSCRIPT", spoken: "hello" },
@@ -187,6 +188,50 @@ describe("captureMachine", () => {
 			const seq = t.state.seq;
 			expect(t.state.text).toBe("precious draft");
 			t = captureMachine(t.state, { type: "SUBMIT_OK", seq, receipt });
+			expect(t.state.text).toBe("");
+		});
+	});
+
+	describe("OPEN prefill (Today's capture chips)", () => {
+		it("seeds an empty palette with the chip's kind hint", () => {
+			const t = captureMachine(initialCaptureState, {
+				type: "OPEN",
+				voice: false,
+				prefill: "Task: ",
+			});
+			expect(t.state.text).toBe("Task: ");
+			expect(t.state.status).toBe("editing");
+		});
+
+		it("never overwrites an unsubmitted draft", () => {
+			const t = captureMachine(
+				{ ...initialCaptureState, text: "half a thought" },
+				{ type: "OPEN", voice: false, prefill: "Task: " },
+			);
+			expect(t.state.text).toBe("half a thought");
+		});
+
+		it("treats a whitespace-only draft as empty", () => {
+			const t = captureMachine(
+				{ ...initialCaptureState, text: "   \n " },
+				{ type: "OPEN", voice: false, prefill: "Note: " },
+			);
+			expect(t.state.text).toBe("Note: ");
+		});
+
+		it("ignores a prefill on a voice open, which starts its own base", () => {
+			const t = captureMachine(initialCaptureState, {
+				type: "OPEN",
+				voice: true,
+				prefill: "Task: ",
+			});
+			expect(t.state.text).toBe("");
+			expect(t.state.speechBase).toBe("");
+			expect(t.effects).toEqual([{ type: "START_SPEECH", baseText: "", lang: "pt-BR" }]);
+		});
+
+		it("leaves text alone when no prefill is sent", () => {
+			const t = captureMachine(initialCaptureState, { type: "OPEN", voice: false });
 			expect(t.state.text).toBe("");
 		});
 	});

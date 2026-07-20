@@ -111,8 +111,12 @@ export function CapturePalette() {
 	// machine in a "listening" state that can never receive a terminal event.
 	const onOpenCaptureEvent = useCallback(
 		(event: Event) => {
-			const requestedVoice = (event as CustomEvent<{ voice?: boolean }>).detail?.voice ?? false;
-			dispatch({ type: "OPEN", voice: requestedVoice && speech.supported });
+			const detail = (event as CustomEvent<{ voice?: boolean; prefill?: string }>).detail;
+			dispatch({
+				type: "OPEN",
+				voice: (detail?.voice ?? false) && speech.supported,
+				prefill: detail?.prefill,
+			});
 		},
 		[dispatch, speech.supported],
 	);
@@ -152,7 +156,10 @@ export function CapturePalette() {
 	useEffect(() => {
 		if (state.open) {
 			restoreFocusRef.current = document.activeElement as HTMLElement | null;
-			textareaRef.current?.focus();
+			const textarea = textareaRef.current;
+			textarea?.focus();
+			// Land the caret after a chip's prefill, not in front of it.
+			textarea?.setSelectionRange(textarea.value.length, textarea.value.length);
 		}
 	}, [state.open]);
 

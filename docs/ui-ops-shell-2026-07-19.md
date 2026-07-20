@@ -34,7 +34,7 @@ autonomous/external actions write `notifications`.
 | 5 | Link Ingest schema + service | done |
 | 6 | Link Ingest page + mark read | done |
 | 7 | Link Ingest API + ledger + Today unread | done |
-| 8 | Capture chips → palette | pending |
+| 8 | Capture chips → palette | done |
 | 9 | Settings: timezone + domain cadence threshold (P1) | pending |
 | 10 | Docs / CONTEXT touch-up | pending |
 
