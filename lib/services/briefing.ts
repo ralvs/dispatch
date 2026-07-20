@@ -4,6 +4,7 @@ import { dateOfInstant, formatInstant, instantFromLocal, isoWeek, shiftDay } fro
 import { computeRoutineStats, type RoutineStats } from "@/lib/routine-stats";
 import { type CalendarEventRow, listEventsOn } from "@/lib/services/calendar";
 import { type DomainRow, listDomains } from "@/lib/services/domains";
+import { unreadLinkCount } from "@/lib/services/ingest-links";
 import { countNeedsReview } from "@/lib/services/notes";
 import { unreadCount } from "@/lib/services/notifications";
 import {
@@ -88,9 +89,10 @@ export type ProjectBrief = {
 export type BriefingView = {
 	cadence: CadenceLine[];
 	// Counts Today's alerts row reads: tasks with no domain, notes the parser
-	// could not place. Both already feed cadence lines; the row links them.
+	// could not place, links not yet read.
 	inboxCount: number;
 	needsReviewCount: number;
+	ingestUnreadCount: number;
 	// doingToday and todayEvents predate daySchedule and still feed the widget
 	// payload (app/api/widget/route.ts) and chat context — keep them until
 	// those callers migrate.
@@ -507,6 +509,7 @@ export async function getBriefing(
 		skippedQuoteIds,
 		completionHistory,
 		activeProjects,
+		ingestUnread,
 	] = await Promise.all([
 		listTasks(sb, { status: "open" }),
 		listInboxTasks(sb),
@@ -521,6 +524,7 @@ export async function getBriefing(
 		listSkippedToday(sb, todayIso),
 		listCompletionsSince(sb, shiftDay(todayIso, -STREAK_HISTORY_DAYS)),
 		listProjects(sb, { status: "active" }),
+		unreadLinkCount(sb),
 	]);
 
 	const milestonesByProject = await listMilestonesForProjects(
@@ -550,6 +554,7 @@ export async function getBriefing(
 		cadence,
 		inboxCount: inbox.length,
 		needsReviewCount: needsReview,
+		ingestUnreadCount: ingestUnread,
 		doingToday: assembleDoingToday(open, todayIso),
 		daySchedule: buildDaySchedule({ events: todayEvents, openTasks: open, todayIso, tz }),
 		routines: { total: routines.length, done: routinesDone, remainingNames },

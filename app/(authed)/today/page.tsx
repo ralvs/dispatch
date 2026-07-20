@@ -38,8 +38,7 @@ export default async function TodayPage() {
 			<AlertsRow
 				triage={briefing.inboxCount}
 				needsReview={briefing.needsReviewCount}
-				// Live once the link reading list lands (plan item 7).
-				ingestUnread={0}
+				ingestUnread={briefing.ingestUnreadCount}
 			/>
 			<DaySchedule
 				schedule={briefing.daySchedule}
