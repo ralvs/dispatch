@@ -47,7 +47,7 @@ export const CaptureActionSchema = z.discriminatedUnion("action", [
 		action: z.literal("create_quote"),
 		text: z.string().min(1),
 		source_type: z
-			.enum(["book", "article", "podcast", "sermon", "video", "conversation", "other"])
+			.enum(["book", "article", "podcast", "video", "conversation", "other"])
 			.nullable()
 			.optional(),
 		source_author: z.string().nullable().optional(),

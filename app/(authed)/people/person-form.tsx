@@ -7,7 +7,6 @@ const RELATIONSHIP_TYPES = [
 	{ value: "", label: "Unspecified" },
 	{ value: "client", label: "Client" },
 	{ value: "family", label: "Family" },
-	{ value: "church", label: "Church" },
 	{ value: "friend", label: "Friend" },
 	{ value: "team", label: "Team" },
 	{ value: "vendor", label: "Vendor" },

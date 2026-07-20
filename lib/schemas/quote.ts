@@ -7,7 +7,6 @@ export const QuoteSourceTypeSchema = z.enum([
 	"book",
 	"article",
 	"podcast",
-	"sermon",
 	"video",
 	"conversation",
 	"other",
@@ -37,17 +36,7 @@ export const QuoteSchema = z.object({
 });
 
 // Source types and added_via values that the DB CHECK constraint accepts.
-// Migration 0029 added 'sermon' + renamed source_ref → source_reference.
-// Migration 0030 added 'video' + a source_url column.
-const DB_SOURCE_TYPES = [
-	"book",
-	"article",
-	"podcast",
-	"sermon",
-	"video",
-	"conversation",
-	"other",
-] as const;
+const DB_SOURCE_TYPES = ["book", "article", "podcast", "video", "conversation", "other"] as const;
 const DB_ADDED_VIA = ["voice", "readwise_import", "manual", "journal_extraction"] as const;
 
 export const CreateQuoteSchema = z.object({

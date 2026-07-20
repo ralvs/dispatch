@@ -8,7 +8,6 @@ const SOURCE_TYPES = [
 	{ value: "book", label: "Book" },
 	{ value: "article", label: "Article" },
 	{ value: "podcast", label: "Podcast" },
-	{ value: "sermon", label: "Sermon" },
 	{ value: "video", label: "Video" },
 	{ value: "conversation", label: "Conversation" },
 	{ value: "other", label: "Other" },

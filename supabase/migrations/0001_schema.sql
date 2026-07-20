@@ -10,7 +10,7 @@
 --   2. Creates indexes.
 --   3. Installs the set_updated_at() trigger + attaches it.
 --   4. Enables RLS + writes the authenticated-user-all policies.
---   5. Seeds stewardship_domains (7 domains + Inbox system domain),
+--   5. Seeds stewardship_domains (6 domains + Inbox system domain),
 --      app_settings (America/Sao_Paulo), health_history (singleton), and
 --      the Link Inbox system note.
 --
@@ -65,7 +65,7 @@ create table if not exists people (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   relationship_type text check (relationship_type in
-    ('client','family','church','friend','team','vendor','other')),
+    ('client','family','friend','team','vendor','other')),
   email text,
   phone text,
   company text,
@@ -293,7 +293,7 @@ create table if not exists quotes (
   page_number integer,
   chapter text,
   source_type text check (source_type in
-    ('book','article','podcast','sermon','video','conversation','other')),
+    ('book','article','podcast','video','conversation','other')),
   source_reference text,
   source_url text,
   source_author text,
@@ -500,7 +500,7 @@ create index if not exists idx_action_log_time on action_log(executed_at desc);
 create table if not exists resurfacing_seen (
   id uuid primary key default gen_random_uuid(),
   item_type text not null check (item_type in
-    ('journal','quote','verse','win','note','project_milestone')),
+    ('journal','quote','win','note','project_milestone')),
   item_id uuid not null,
   surfaced_on date not null default current_date,
   user_response text check (user_response in ('viewed','dismissed','saved')),
@@ -869,7 +869,7 @@ end $$;
 -- Seed data
 -- ─────────────────────────────────────────────────────────────────────────
 
--- Seven user-facing stewardship domains for Renan Alves (software developer).
+-- Six user-facing stewardship domains for Renan Alves (software developer).
 -- The failure_patterns JSON must match what the observations cron parses.
 insert into stewardship_domains (name, description, fruit_definition, failure_patterns, expected_cadence) values
   ('Engine',
@@ -895,14 +895,6 @@ insert into stewardship_domains (name, description, fruit_definition, failure_pa
       {"rule":"no_activity_days","value":7}
     ]'::jsonb,
     'weekly minimum'),
-
-  ('Spirituality',
-    'Prayer, meditation, reflection.',
-    'Consistent reflective practice.',
-    '[
-      {"rule":"days_since_journal","value":7}
-    ]'::jsonb,
-    'weekly journal minimum'),
 
   ('Finance',
     'Budget, investments, subscriptions.',

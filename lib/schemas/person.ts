@@ -12,7 +12,6 @@ import { z } from "zod";
 export const RelationshipTypeSchema = z.enum([
 	"client",
 	"family",
-	"church",
 	"friend",
 	"team",
 	"vendor",
