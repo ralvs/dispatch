@@ -208,6 +208,39 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			ingest_links: {
+				Row: {
+					created_at: string;
+					description: string | null;
+					id: string;
+					source: string | null;
+					status: string;
+					title: string | null;
+					updated_at: string;
+					url: string;
+				};
+				Insert: {
+					created_at?: string;
+					description?: string | null;
+					id?: string;
+					source?: string | null;
+					status?: string;
+					title?: string | null;
+					updated_at?: string;
+					url: string;
+				};
+				Update: {
+					created_at?: string;
+					description?: string | null;
+					id?: string;
+					source?: string | null;
+					status?: string;
+					title?: string | null;
+					updated_at?: string;
+					url?: string;
+				};
+				Relationships: [];
+			};
 			inventory_categories: {
 				Row: {
 					created_at: string;
