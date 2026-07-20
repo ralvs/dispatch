@@ -15,10 +15,11 @@ voice turns into one or more actions (`lib/schemas/capture.ts`, `docs/adr/0008`)
 
 ## triage
 
-Giving a captured item a real home. A task captured without a destination
-lands in the **Inbox** system domain (`INBOX_DOMAIN_ID`); triage reassigns it
-to a stewardship domain (`triageTask` in `lib/services/tasks.ts`). The Today
-page surfaces the count of "captures awaiting triage".
+Giving an unassigned **task** a real home. A task captured without a destination
+lands in the system **Inbox domain** (`INBOX_DOMAIN_ID`); triage reassigns it
+to a stewardship domain (`triageTask` in `lib/services/tasks.ts`). UI route is
+**`/triage`** (moved from `/inbox` in the 2026-07-19 ops-shell plan — ADR-0014).
+Today surfaces the awaiting-triage count.
 
 ## top-3
 
@@ -64,3 +65,18 @@ Each row has a free-text `type`, a human `title`/`body`, an optional
 `undo_payload`, and a `status` of `unread`, `read`, or `dismissed` (any of
 which is reachable from any other). Web-push delivery (ADR-0005) is planned: it
 will surface this same ledger to the phone.
+
+## ingest (link list)
+
+Shared or API-posted **URLs** stored with title, description, and link, then
+marked read. Primary nav label **Ingest** at **`/ingest`**. Distinct from task
+**triage**, from the system **Inbox domain**, and from text capture
+`POST /api/ingest` (watch/webhook free text). Link API uses a separate path
+(e.g. `/api/links`). Execution: `docs/ui-ops-shell-2026-07-19.md` items 5–7.
+
+## day schedule
+
+Today’s “when is my day” composition: **all-day** band (all-day events + due
+tasks without time), **timeline** (timed events interleaved with timed tasks),
+and **open/unscheduled** tasks. Built by pure helpers in the briefing service;
+see ADR-0014.

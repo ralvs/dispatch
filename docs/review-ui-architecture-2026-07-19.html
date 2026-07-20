@@ -351,7 +351,6 @@
 	}
 	.tl-time {
 		font: 0.72rem/1.4 var(--mono);
-		tabular-nums: true;
 		font-variant-numeric: tabular-nums;
 		color: var(--ink-3);
 		text-align: right;
@@ -667,7 +666,7 @@
 	<a href="#decisions">Decisions</a>
 	<a href="#nav">Navigation</a>
 	<a href="#today">Today timeline</a>
-	<a href="#inbox">Ingest / Inbox</a>
+	<a href="#inbox">Ingest</a>
 	<a href="#roadmap">Roadmap</a>
 	<a href="#summary">Summary</a>
 </nav>
@@ -676,17 +675,17 @@
 
 	<header class="hero">
 		<p class="kicker">UI &amp; Architecture Review · Revised 2026-07-19 · Decisions locked</p>
-		<h1>Option A, a real day schedule, and a missing reading inbox</h1>
+		<h1>Option A, a real day schedule, and a missing link Ingest list</h1>
 		<p class="sub">
 			Nav is ops-first. Library collapses. Chat rises; Projects sinks.
 			Today gets an <strong style="color:var(--ink);font-weight:600">all-day band + mixed task/event timeline</strong>.
-			Calendar stays (alias kept). A dedicated <strong style="color:var(--ink);font-weight:600">link ingest → mark-as-read</strong> surface is in scope.
+			Calendar stays (alias kept). A dedicated <strong style="color:var(--ink);font-weight:600">Ingest</strong> surface (URL → mark as read) is in scope.
 		</p>
 		<div class="hero-meta">
 			<span class="pill good">Option A chosen</span>
-			<span class="pill accent">Formal plan next</span>
-			<span class="pill">Markdown + HTML synced</span>
-			<span class="pill warn">1 naming open: Inbox vs Ingest</span>
+			<span class="pill accent">Plan: ui-ops-shell-2026-07-19.md</span>
+			<span class="pill good">ADR-0014 · Ingest + Triage locked</span>
+			<span class="pill">status.html aligned</span>
 		</div>
 	</header>
 
@@ -728,7 +727,7 @@
 				<div class="d">Timeline mixes events &amp; timed tasks</div>
 			</article>
 			<article>
-				<div class="k">Link inbox</div>
+				<div class="k">Ingest</div>
 				<div class="v">In scope · missing UI</div>
 				<div class="d">URL API → title/desc/link → mark read</div>
 			</article>
@@ -789,7 +788,7 @@
 						<div class="item active primary">Today</div>
 						<div class="item primary">Tasks <span class="tag">promoted</span></div>
 						<div class="item primary">Notes</div>
-						<div class="item new">Inbox <span class="tag">new</span></div>
+						<div class="item new">Ingest <span class="tag">new</span></div>
 						<div class="item primary moved-up">Chat <span class="tag">↑ from lib</span></div>
 
 						<div class="sep"></div>
@@ -827,7 +826,7 @@
 			<div class="card-head">
 				<h3>Mobile bottom bar</h3>
 			</div>
-			<p class="caption">Five slots. Projects leave the bar; Inbox (link ingest) takes a primary slot.</p>
+			<p class="caption">Five slots. Projects leave the bar; Ingest (link list) takes a primary slot.</p>
 			<div style="margin-bottom:0.7rem">
 				<span class="badge now">Now</span>
 				<div class="tabs-bar" style="margin-top:0.45rem">
@@ -844,7 +843,7 @@
 					<span class="on">Today</span>
 					<span>Tasks</span>
 					<span>Notes</span>
-					<span class="hl">Inbox</span>
+					<span class="hl">Ingest</span>
 					<span>More</span>
 				</div>
 			</div>
@@ -872,9 +871,9 @@
 						<td>No longer “Today-only sub-view.”</td>
 					</tr>
 					<tr>
-						<td><span class="dot warn"></span>Task triage <code>/inbox</code></td>
+						<td><span class="dot warn"></span>Task triage (was <code>/inbox</code>)</td>
 						<td>Rename or nest</td>
-						<td>Conflicts with link-inbox naming — resolve in plan (see next section).</td>
+						<td>Moves to <code>/triage</code>; Ingest is <code>/ingest</code>.</td>
 					</tr>
 				</tbody>
 			</table>
@@ -1023,7 +1022,7 @@
 				<div class="today-block improve">
 					<span class="status">wire up</span>
 					<div class="blk-label">Alerts row</div>
-					<div class="blk-body">Task triage count · needs-review notes · unread link-inbox (when built)</div>
+					<div class="blk-body">Task triage count · needs-review notes · unread ingest (when built)</div>
 				</div>
 				<div class="today-block decided-new">
 					<span class="status">new shape</span>
@@ -1079,7 +1078,7 @@
 	<!-- INGEST / INBOX -->
 	<section class="section" id="inbox">
 		<p class="section-kicker">04 · Missing surface</p>
-		<h2>Link ingest / reading inbox</h2>
+		<h2>Link Ingest</h2>
 		<p class="lede">
 			You described a surface that accepts a URL via API, stores title / description / link,
 			and lets you mark items read. That is <strong style="color:var(--ink)">not</strong> the current task-triage page.
@@ -1088,17 +1087,17 @@
 		<div class="two-col">
 			<div class="inbox-card have">
 				<span class="badge now">Exists today</span>
-				<h4>Task triage · <code>/inbox</code></h4>
+				<h4>Task triage · <code>/triage</code> (from <code>/inbox</code>)</h4>
 				<p>Open tasks in the system Inbox domain — assign a stewardship domain. Not a reading list.</p>
 				<ul>
-					<li>Linked from Today inbox strip</li>
+					<li>Linked from Today triage strip</li>
 					<li>No URL / title / description model</li>
 					<li>Completing triage ≠ “mark as read”</li>
 				</ul>
 			</div>
 			<div class="inbox-card need">
 				<span class="badge gap">Missing UI</span>
-				<h4>Link ingest · mark as read</h4>
+				<h4>Ingest · <code>/ingest</code> · mark as read</h4>
 				<p>Share sheet / API posts a URL; system stores title, description, link; you process and mark read.</p>
 				<ul>
 					<li>Primary nav slot (decided)</li>
@@ -1117,7 +1116,7 @@
 				<span class="flow-arrow">→</span>
 				<div class="flow-node">Store title · description · link</div>
 				<span class="flow-arrow">→</span>
-				<div class="flow-node ok">Inbox page list</div>
+				<div class="flow-node ok">Ingest page list</div>
 				<span class="flow-arrow">→</span>
 				<div class="flow-node ok">Mark read</div>
 			</div>
@@ -1130,28 +1129,26 @@
 		</div>
 
 		<div class="card">
-			<div class="card-head"><h3>Naming (one open choice for the plan)</h3></div>
+			<div class="card-head"><h3>Naming — locked (ADR-0014)</h3></div>
 			<table class="matrix">
 				<thead>
-					<tr><th>Option</th><th>Link surface</th><th>Task triage</th><th>When to pick</th></tr>
+					<tr><th>Product</th><th>Route</th><th>Label</th></tr>
 				</thead>
 				<tbody>
 					<tr>
-						<td><strong>A</strong></td>
-						<td><strong>Inbox</strong> (primary tab)</td>
-						<td>Rename → <strong>Triage</strong> / under Tasks</td>
-						<td>Mental model: “process stuff that isn’t scheduled”</td>
+						<td>Link / reading list</td>
+						<td><code>/ingest</code></td>
+						<td><strong>Ingest</strong> (primary nav)</td>
 					</tr>
 					<tr>
-						<td><strong>B</strong> <span class="badge decided" style="margin-left:0.25rem">lean this way if share-sheet language wins</span></td>
-						<td><strong>Ingest</strong> or <strong>Reading</strong></td>
-						<td>Keep <code>/inbox</code> as triage</td>
-						<td>Preserve current triage URL; clearer API name</td>
+						<td>Task domain triage</td>
+						<td><code>/triage</code></td>
+						<td><strong>Triage</strong> (was <code>/inbox</code>)</td>
 					</tr>
 				</tbody>
 			</table>
-			<div class="callout warn-c">
-				<strong>Do not ship two different “Inbox” meanings.</strong> The formal plan must pick A or B before nav-links land.
+			<div class="callout">
+				<strong>Execution:</strong> item 2 in <code>docs/ui-ops-shell-2026-07-19.md</code> moves triage first; then items 5–7 ship <code>/ingest</code> for links.
 			</div>
 		</div>
 	</section>
@@ -1183,12 +1180,12 @@
 				<div class="wf-row">
 					<div class="wf-pri p1">P1</div>
 					<div class="wf-body">
-						<strong>Link inbox + capture polish</strong>
+						<strong>Link Ingest + capture polish</strong>
 						<span>Close external share → process loop.</span>
 						<div class="wf-chips">
 							<span class="chip">Link ingest API + page + mark read</span>
 							<span class="chip">Unread on Today</span>
-							<span class="chip">Name: Inbox vs Ingest</span>
+							<span class="chip">Ingest (locked)</span>
 							<span class="chip">Chips → palette</span>
 							<span class="chip">Domain cadence editor</span>
 							<span class="chip">Timezone editor</span>
@@ -1228,7 +1225,7 @@
 						<td><code>nav-links.ts</code>: Daily / Library / System tiers; Library collapsible client component; keep calendar alias.</td>
 					</tr>
 					<tr>
-						<td>Link inbox</td>
+						<td>Link Ingest</td>
 						<td>Service + schema + page + secret API; ledger notification on ingest; never-lose if parse fails.</td>
 					</tr>
 					<tr>
@@ -1265,14 +1262,16 @@
 					<li>Today all-day + mixed timeline</li>
 					<li>Cadence + needs-review on Today</li>
 					<li>Link ingest page + mark read</li>
-					<li>Resolve Inbox vs Ingest naming</li>
+					<li>Ingest + Triage naming locked</li>
 				</ul>
 			</div>
 		</div>
 
 		<div class="callout" style="margin-top:1.25rem">
-			<strong>Next step:</strong> formal implementation plan (PR breakdown). Sources of truth:
-			<code>docs/review-ui-architecture-2026-07-19.md</code> and this HTML.
+			<strong>Execute next:</strong>
+			<code>docs/ui-ops-shell-2026-07-19.md</code> (commit-sized items) ·
+			<code>docs/adr/0014-ops-shell-day-schedule-link-ingest.md</code> ·
+			project board: <code>docs/status.html</code>.
 		</div>
 	</section>
 

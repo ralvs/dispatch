@@ -1,8 +1,11 @@
 # Dispatch — UI & Architecture Review (revised)
 
 **Date:** 2026-07-19  
-**Status:** Decisions locked for a formal plan (not yet implementation)  
-**Visual companion:** [`review-ui-architecture-2026-07-19.html`](./review-ui-architecture-2026-07-19.html)
+**Status:** Decisions locked · **execution plan:** [`ui-ops-shell-2026-07-19.md`](./ui-ops-shell-2026-07-19.md) · **ADR:** [`adr/0014-ops-shell-day-schedule-link-ingest.md`](./adr/0014-ops-shell-day-schedule-link-ingest.md)  
+**Visual companion:** [`review-ui-architecture-2026-07-19.html`](./review-ui-architecture-2026-07-19.html)  
+**Project status:** [`status.html`](./status.html)
+
+> Agents implementing work should follow **`docs/ui-ops-shell-2026-07-19.md`**, not this review alone.
 
 ---
 
@@ -16,7 +19,7 @@
 | Library | **Collapsible / hideable** as a group |
 | `/calendar` | **Keep** alias (future page OK); Today must surface events well now |
 | Today schedule | **All-day band** + **timed timeline** that **mixes tasks and events** |
-| Ingest / reading inbox | **Missing product surface** — must be planned (see below) |
+| Ingest (link list) | **Missing product surface** — planned in execution plan |
 
 ---
 
@@ -32,7 +35,7 @@ DISPATCH
 Today
 Tasks
 Notes
-Inbox          ← link/read-later ingest (new surface)
+Ingest         ← link/read-later list (new surface)
 Chat           ← promoted from Library
 
 ── Library (collapsible) ─
@@ -51,7 +54,7 @@ theme · email · sign out
 
 ### Mobile bottom bar
 
-`Today · Tasks · Notes · Inbox · More`
+`Today · Tasks · Notes · Ingest · More`
 
 - **More** opens Library + System destinations (and any rail extras).
 - Library section is collapsible on desktop; collapsed-by-default is acceptable.
@@ -61,30 +64,28 @@ theme · email · sign out
 | Item | Aliases / notes |
 |------|-----------------|
 | Today | `/tasks` remains a sibling destination but **Tasks is also a primary link**; keep `/calendar` for future page |
-| Inbox | New primary route for **link ingest / read-later** (see distinction below) |
+| Ingest | New primary route for **link reading list** (see distinction below) |
 | Settings | Notifications may stay system-tier, not Settings-active alias if confusing |
 
-### Task triage vs link Inbox
+### Task triage vs link Ingest
 
 There are **two different “inbox” concepts** in the product vocabulary:
 
 | Concept | Route today | Purpose |
 |---------|-------------|---------|
-| **Task triage** | `/inbox` | Open tasks in the system Inbox domain — assign a stewardship domain |
-| **Link / reading inbox** | **missing UI** | Shared URL (API) → title / description / link → mark as read |
+| **Task triage** | `/triage` (today still `/inbox` until plan item 2) | Open tasks in the system Inbox domain — assign a domain |
+| **Link / reading list (Ingest)** | `/ingest` (missing UI) | Shared URL (API) → title / description / link → mark as read |
 
-**Plan requirement:** do not overload names. Prefer:
+**Locked:** new surface is **Ingest** at `/ingest`. Task triage is **Triage** at `/triage`.
+System domain stays “Inbox”. Text `POST /api/ingest` stays free-text capture.
 
-- Keep task triage as **Triage** or **Unassigned** (or under Tasks), **or**
-- Call the new surface **Ingest** / **Reading** / **Links**, and reserve **Inbox** for one of them only.
-
-User intent for the new page: *accept a URL via API, store title + description + link, list them, mark as read.*
+User intent for Ingest: *accept a URL via API, store title + description + link, list them, mark as read.*
 
 What exists today:
 
 - `POST /api/ingest` — text capture pipeline (voice/watch/share → `capture()`), not a dedicated link-reading list UI.
 - `/inbox` — task triage only.
-- Schema/comments mention loose ingest payloads and “link share”, but **no first-class reading-inbox page**.
+- Schema/comments mention loose ingest payloads and “link share”, but **no first-class `/ingest` reading-list page**.
 
 ---
 
@@ -103,7 +104,7 @@ What exists today:
 Masthead
 Cadence strip                    ← wire existing briefing.cadence
 Anchor (optional, shorter)
-Alerts: task-triage count · needs-review · unread link-inbox
+Alerts: task-triage count · needs-review · unread ingest
 
 ┌─ Day schedule ─────────────────────────────────────┐
 │  ALL DAY                                           │
@@ -146,7 +147,7 @@ Star (top-3) and complete/checkbox remain on task rows inside the timeline.
 ### Mobile order (action-first)
 
 1. Masthead + cadence  
-2. Alerts (triage / needs-review / link-inbox)  
+2. Alerts (triage / needs-review / ingest)  
 3. **Day schedule** (all-day + timeline)  
 4. Routines  
 5. In brief / projects  
@@ -159,11 +160,11 @@ Star (top-3) and complete/checkbox remain on task rows inside the timeline.
 
 ### P0 (with decisions applied)
 
-1. Nav Option A + Library collapsible + Chat up + Projects down + **Inbox/Ingest primary**  
+1. Nav Option A + Library collapsible + Chat up + Projects down + **Ingest primary**  
 2. Today **day schedule**: all-day band + mixed task/event timeline  
 3. Render **cadence strip** (data already exists)  
 4. **Needs-review** strip on Today  
-5. Surface **link-inbox unread** count when that page exists  
+5. Surface **ingest unread** count when that page exists  
 
 ### P1
 
@@ -187,16 +188,18 @@ Star (top-3) and complete/checkbox remain on task rows inside the timeline.
 
 - **Briefing view model** should grow a `daySchedule` (or pure helper) that partitions events + tasks into `allDay[]` and `timeline[]` — unit-test the merge sort (timezone-safe via existing `lib/dates.ts`).
 - **Do not remove** `/calendar` alias.
-- **Link inbox** is a new product surface: route + service + API shape (URL → title/description/link → read state). Distinguish from task triage in naming and nav.
+- **Link Ingest** is a new product surface: route `/ingest` + service + API shape (URL → title/description/link → read state). Distinguish from task triage and from text `POST /api/ingest`.
 - Service layer, capture never-lose, UTC boundary: **keep**.
 
 ---
 
-## Open naming choice (one decision left for the plan)
+## Naming — locked in ADR-0014 / execution plan
 
-Only naming remains ambiguous:
+| Product | Route | Label |
+|---------|--------|--------|
+| Link / reading list | `/ingest` | **Ingest** (primary nav) |
+| Task domain triage | `/triage` | **Triage** (Today alert; was `/inbox`) |
+| System stewardship domain | (data) | **Inbox** domain (not a nav page) |
+| Text capture webhook | `POST /api/ingest` | Unchanged free-text capture |
 
-1. **Inbox** = link reading list; rename task triage to **Triage**  
-2. **Inbox** = task triage (current); new page = **Ingest** / **Reading** / **Links**
-
-Recommendation for plan draft: **(2) Ingest** for the URL surface if share-sheet language matters; **(1) Inbox** if the primary mental model is “things to process that aren’t tasks yet.”
+Do not re-open this unless a new ADR supersedes 0014.

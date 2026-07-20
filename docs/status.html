@@ -6,61 +6,67 @@
 <title>Dispatch — Project Status</title>
 <style>
 	:root {
-		--paper: #faf7f0;
-		--ink: #1a1712;
-		--ink-2: #4a443a;
-		--ink-3: #857c6c;
-		--line: #d9d2c3;
-		--line-strong: #1a1712;
-		--done: #2f7d4f;
-		--active: #b97a12;
-		--planned: #a39a88;
-		--accent: #8c2f24;
+		--paper: #0a0a0a;
+		--ink: #ededed;
+		--ink-2: #a1a1a1;
+		--ink-3: #8f8f8f;
+		--line: #232323;
+		--line-strong: #343434;
+		--done: #50e3c2;
+		--active: #f5a623;
+		--planned: #525252;
+		--accent: #0070f3;
+		--surface: #141414;
 	}
-	@media (prefers-color-scheme: dark) {
+	@media (prefers-color-scheme: light) {
 		:root {
-			--paper: #16140f;
-			--ink: #ece7db;
-			--ink-2: #b5ad9c;
-			--ink-3: #7d7565;
-			--line: #322e25;
-			--line-strong: #ece7db;
-			--done: #58b283;
-			--active: #d99a35;
-			--planned: #5d564a;
-			--accent: #d0685a;
+			--paper: #fafafa;
+			--ink: #171717;
+			--ink-2: #4d4d4d;
+			--ink-3: #8f8f8f;
+			--line: #ebebeb;
+			--line-strong: #d9d9d9;
+			--done: #0761d1;
+			--active: #ab570a;
+			--planned: #a1a1a1;
+			--accent: #0070f3;
+			--surface: #ffffff;
 		}
 	}
 	* { margin: 0; padding: 0; box-sizing: border-box; }
 	body {
 		background: var(--paper);
 		color: var(--ink);
-		font: 16px/1.6 Georgia, "Times New Roman", serif;
+		font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 		padding: 3rem 1.25rem 5rem;
+		-webkit-font-smoothing: antialiased;
 	}
 	.sheet { max-width: 760px; margin: 0 auto; }
 
-	/* ── Masthead ─────────────────────────────────────────── */
-	header { text-align: center; border-bottom: 3px double var(--line-strong); padding-bottom: 1.25rem; }
+	header { text-align: center; border-bottom: 1px solid var(--line-strong); padding-bottom: 1.25rem; }
 	.kicker {
-		font-family: ui-sans-serif, system-ui, sans-serif;
-		font-size: 0.7rem; letter-spacing: 0.35em; text-transform: uppercase;
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase;
 		color: var(--ink-3);
 	}
-	h1 { font-size: clamp(2.6rem, 8vw, 4rem); letter-spacing: 0.02em; font-weight: 700; line-height: 1.05; margin: 0.35rem 0; }
+	h1 {
+		font-size: clamp(2.4rem, 8vw, 3.6rem); letter-spacing: -0.04em; font-weight: 600;
+		line-height: 1.05; margin: 0.4rem 0;
+		background: linear-gradient(90deg, #007cf0, #00dfd8 45%, var(--ink) 85%);
+		-webkit-background-clip: text; background-clip: text; color: transparent;
+	}
 	.dateline {
 		display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;
-		font-family: ui-sans-serif, system-ui, sans-serif;
-		font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2);
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2);
 		border-top: 1px solid var(--line); margin-top: 0.9rem; padding-top: 0.7rem;
 	}
 
-	/* ── Progress meter ───────────────────────────────────── */
 	.meter { margin: 2.25rem 0 0; }
 	.meter-caption {
 		display: flex; justify-content: space-between; align-items: baseline;
-		font-family: ui-sans-serif, system-ui, sans-serif;
-		font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2);
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2);
 		margin-bottom: 0.5rem;
 	}
 	.meter-track { display: flex; gap: 4px; height: 10px; }
@@ -68,16 +74,14 @@
 	.meter-track span.done { background: var(--done); opacity: 1; }
 	.meter-track span.active { background: var(--active); opacity: 1; }
 
-	/* ── Legend ───────────────────────────────────────────── */
 	.legend {
 		display: flex; gap: 1.75rem; justify-content: center; flex-wrap: wrap;
 		margin: 1.5rem 0 2.5rem;
-		font-family: ui-sans-serif, system-ui, sans-serif;
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 		font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2);
 	}
 	.legend span { display: inline-flex; align-items: center; gap: 0.45rem; }
 
-	/* ── Status dots ──────────────────────────────────────── */
 	.dot { width: 13px; height: 13px; border-radius: 50%; flex: none; }
 	.dot.done { background: var(--done); }
 	.dot.active { background: var(--active); box-shadow: 0 0 0 0 var(--active); animation: pulse 2.2s infinite; }
@@ -89,7 +93,6 @@
 	}
 	@media (prefers-reduced-motion: reduce) { .dot.active { animation: none; } }
 
-	/* ── Timeline ─────────────────────────────────────────── */
 	.timeline { list-style: none; }
 	.phase {
 		display: grid; grid-template-columns: 34px 1fr; gap: 0 1.1rem;
@@ -103,10 +106,10 @@
 	.phase:last-child::before { display: none; }
 	.phase .dot { margin: 7px auto 0; grid-row: 1 / span 3; }
 	.phase-head { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
-	.phase h2 { font-size: 1.3rem; font-weight: 700; line-height: 1.3; }
+	.phase h2 { font-size: 1.25rem; font-weight: 600; line-height: 1.3; letter-spacing: -0.02em; }
 	.tag {
-		font-family: ui-sans-serif, system-ui, sans-serif;
-		font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase;
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase;
 		padding: 2px 8px; border-radius: 999px; white-space: nowrap;
 	}
 	.tag.done { color: var(--done); border: 1px solid var(--done); }
@@ -116,31 +119,50 @@
 	.phase ul { margin: 0.6rem 0 0 1.1rem; color: var(--ink-2); font-size: 0.95rem; }
 	.phase li { margin-bottom: 0.15rem; }
 	.ref {
-		font-family: ui-sans-serif, system-ui, sans-serif;
-		font-size: 0.7rem; letter-spacing: 0.08em; color: var(--ink-3); margin-top: 0.5rem;
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 0.7rem; letter-spacing: 0.06em; color: var(--ink-3); margin-top: 0.5rem;
 	}
 	code {
 		font: 0.85em ui-monospace, SFMono-Regular, Menlo, monospace;
-		background: color-mix(in srgb, var(--ink) 7%, transparent);
+		background: color-mix(in srgb, var(--ink) 8%, transparent);
 		padding: 1px 5px; border-radius: 3px;
 	}
 
-	/* ── Section rules ────────────────────────────────────── */
 	.rule {
 		display: flex; align-items: center; gap: 1rem; margin: 2.75rem 0 1.75rem;
-		font-family: ui-sans-serif, system-ui, sans-serif;
-		font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-3);
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3);
 	}
 	.rule::before, .rule::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
 
-	/* ── Footnotes ────────────────────────────────────────── */
+	.plan-box {
+		background: var(--surface);
+		border: 1px solid var(--line-strong);
+		border-radius: 12px;
+		padding: 1.15rem 1.25rem;
+		margin: 0 0 2rem;
+	}
+	.plan-box h3 {
+		font-size: 1rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.4rem;
+	}
+	.plan-box p { color: var(--ink-2); font-size: 0.92rem; margin-bottom: 0.65rem; }
+	.plan-box ol { margin-left: 1.2rem; color: var(--ink-2); font-size: 0.9rem; }
+	.plan-box li { margin-bottom: 0.25rem; }
+	.plan-box .links {
+		margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid var(--line);
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 0.72rem; color: var(--ink-3);
+	}
+	.plan-box a { color: var(--accent); }
+
 	.adrs { columns: 2; column-gap: 2.5rem; font-size: 0.9rem; color: var(--ink-2); }
 	@media (max-width: 560px) { .adrs { columns: 1; } }
 	.adrs li { break-inside: avoid; margin: 0 0 0.4rem 1.1rem; }
+
 	footer {
-		margin-top: 3.5rem; padding-top: 1rem; border-top: 3px double var(--line-strong);
-		text-align: center; font-family: ui-sans-serif, system-ui, sans-serif;
-		font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3);
+		margin-top: 3.5rem; padding-top: 1rem; border-top: 1px solid var(--line-strong);
+		text-align: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3);
 	}
 </style>
 </head>
@@ -152,24 +174,45 @@
 		<h1>Dispatch</h1>
 		<div class="dateline">
 			<span>Voice in, order out</span>
-			<span>Edition of July 16, 2026</span>
+			<span>Edition of July 19, 2026</span>
 			<span>Single owner · renan@alves.id</span>
 		</div>
 	</header>
 
 	<section class="meter" aria-label="Overall progress">
-		<div class="meter-caption"><span>Progress</span><span>10 of 11 phases complete</span></div>
-		<div class="meter-track" role="img" aria-label="10 of 11 phases done">
+		<div class="meter-caption"><span>Progress</span><span>Phases 0–8 shipped · Phase 10 active · Phase 9 planned</span></div>
+		<div class="meter-track" role="img" aria-label="9 of 11 major phases done, one active, one planned">
 			<span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span>
 			<span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span>
-			<span class="done"></span><span class="done"></span><span></span>
+			<span class="done"></span><span class="active"></span><span></span>
 		</div>
 	</section>
 
 	<div class="legend" aria-hidden="true">
 		<span><span class="dot done"></span> Shipped</span>
-		<span><span class="dot active"></span> In progress</span>
+		<span><span class="dot active"></span> In progress / next</span>
 		<span><span class="dot planned"></span> Planned</span>
+	</div>
+
+	<div class="plan-box">
+		<h3>Next execution plan — Ops shell &amp; Today day schedule</h3>
+		<p>
+			Owner decisions locked 2026-07-19. Agents should implement from the execution plan
+			(not re-open IA debates). Naming locked in ADR-0014: link reading list owns
+			<code>/ingest</code>; task domain triage moves to <code>/triage</code>.
+		</p>
+		<ol>
+			<li>Nav ops-first tiers · collapsible Library · mobile More</li>
+			<li>Today: all-day band + mixed task/event timeline · cadence strip</li>
+			<li>Link Ingest (schema · page · secret API · mark as read)</li>
+			<li>Capture chips → palette · settings polish (tz + cadence rule)</li>
+		</ol>
+		<div class="links">
+			Plan: <a href="./ui-ops-shell-2026-07-19.md">docs/ui-ops-shell-2026-07-19.md</a>
+			· ADR: <a href="./adr/0014-ops-shell-day-schedule-link-ingest.md">0014</a>
+			· Review: <a href="./review-ui-architecture-2026-07-19.html">visual</a>
+			· <a href="./review-ui-architecture-2026-07-19.md">md</a>
+		</div>
 	</div>
 
 	<div class="rule">The record so far</div>
@@ -178,9 +221,8 @@
 		<li class="phase">
 			<span class="dot done"></span>
 			<div class="phase-head"><h2>Phase 0 — Scaffold &amp; founding decisions</h2><span class="tag done">Shipped</span></div>
-			<p>Next.js 16 (App Router, Turbopack) on Bun, Biome, TypeScript strict, Tailwind v4
-			with the editorial token system in <code>globals.css</code>. Six founding ADRs set the
-			architecture before any feature code.</p>
+			<p>Next.js 16 (App Router, Turbopack) on Bun, Biome, TypeScript strict, Tailwind v4.
+			Founding ADRs set architecture before feature code.</p>
 			<div class="ref">commit d4d7398</div>
 		</li>
 
@@ -188,151 +230,152 @@
 			<span class="dot done"></span>
 			<div class="phase-head"><h2>Phase 1 — Foundation: data, auth, shell, tasks</h2><span class="tag done">Shipped</span></div>
 			<ul>
-				<li>Supabase project (sa-east-1) with the full 966-line schema migration, storage buckets, and generated types</li>
-				<li>Security boundary: <code>requireOwner()</code> on every server action, <code>proxy.ts</code> session refresh, single-owner RLS</li>
-				<li>App shell: sign-in, authed layout, bottom tab bar + desktop rail, theme toggle</li>
-				<li>Tasks end-to-end (list, form, row actions), inbox triage, first Today page</li>
-				<li>Core libraries with tests: <code>dates</code>, <code>recurrence</code>, <code>routine-stats</code>; Zod schemas for all 13 record kinds</li>
+				<li>Supabase schema, storage, generated types</li>
+				<li><code>requireOwner()</code>, session proxy, single-owner RLS</li>
+				<li>App shell: sign-in, authed layout, tabs + rail, theme toggle</li>
+				<li>Tasks, task-domain inbox (triage), first Today page</li>
 			</ul>
 			<div class="ref">commits 9868748, 8d0c5f3</div>
 		</li>
 
 		<li class="phase">
 			<span class="dot done"></span>
-			<div class="phase-head"><h2>Deployment — Vercel wired up</h2><span class="tag done">Shipped</span></div>
-			<p>Repo linked to the <code>rlvs/dispatch</code> Vercel project and connected to GitHub.
-			Eleven environment variables pushed to Production and Preview: Supabase quartet,
-			freshly generated webhook/cron/widget secrets, VAPID keypair, calendar name.
-			Outstanding keys: <code>AI_GATEWAY_API_KEY</code>, iCloud credentials, <code>MEM_API_KEY</code>.</p>
+			<div class="phase-head"><h2>Deployment — Vercel</h2><span class="tag done">Shipped</span></div>
+			<p>Repo on Vercel; secrets for Supabase, webhooks, cron, widget, VAPID, calendar.
+			Runtime keys as needed: <code>AI_GATEWAY_API_KEY</code>, iCloud, optional <code>MEM_API_KEY</code>.</p>
 		</li>
 
 		<li class="phase">
 			<span class="dot done"></span>
-			<div class="phase-head"><h2>Architecture hardening — pre-Phase-2 fixes</h2><span class="tag done">Shipped</span></div>
-			<p>Output of the July 15 architecture review, executed same-day: the discipline-only
-			iron rules are now structural seams. Full plan and status in
-			<code>docs/architecture-fixes-2026-07-15.md</code>.</p>
-			<ul>
-				<li><code>requireOwner()</code> now returns the RLS client; <code>createRlsClient</code> is private to the auth module (rule #2 is structure, not convention)</li>
-				<li>Notification ledger seam shipped — <code>recordedAction</code> acts and writes the <code>notifications</code> row in one call, entry derived from the action result; cross-family peer-reviewed (not crash-atomic, not a hard boundary — first cron/ingest caller must bring an idempotency key)</li>
-				<li>One task shape: <code>lib/schemas/task.ts</code> is the single source; overdue/top-3 predicates are tested pure functions in the module</li>
-				<li><code>unwrap()</code> helper replacing the 14× untyped <code>if (error) throw error</code> ritual</li>
-				<li>Recurrence vocabulary aligned across <code>lib/recurrence.ts</code> and both CHECK constraints (<code>semiannually</code> gap closed); migration applied to the remote Supabase project</li>
-				<li>Security-predicate tests for <code>lib/auth.ts</code> and <code>lib/env.ts</code>, plus <code>completeTask</code>'s recurrence wiring; <code>CONTEXT.md</code> domain glossary created</li>
-			</ul>
+			<div class="phase-head"><h2>Architecture hardening</h2><span class="tag done">Shipped</span></div>
+			<p>Pre-Phase-2 plan executed: owner guard returns RLS client, notification ledger,
+			one task shape, <code>unwrap()</code>, recurrence CHECK alignment, security tests,
+			<code>CONTEXT.md</code>.</p>
 			<div class="ref">docs/architecture-fixes-2026-07-15.md</div>
 		</li>
 
 		<li class="phase">
 			<span class="dot done"></span>
 			<div class="phase-head"><h2>Phase 2 — AI capture pipeline</h2><span class="tag done">Shipped</span></div>
-			<p>The heart of the product: voice/text capture parsed by the LLM (via Vercel AI
-			Gateway) into structured records — tasks, notes, quotes, journal, people, events.
-			Iron rule: never lose a capture — parsing degrades to a <code>needs_review</code>
-			note, AI calls return typed fallbacks.</p>
 			<ul>
-				<li>Capture core shipped: <code>capture(sb, raw)</code> in <code>lib/services/capture/</code> persists the raw input first, behind a structural no-throw boundary; typed AI adapters in <code>lib/ai/</code> (parser via the AI Gateway, transcriber stubbed); v1 vocabulary <code>create_task</code> / <code>create_note</code> / <code>needs_review</code> replaces the old <code>voice.ts</code> draft; notes service and migration 0004 (<code>origin_capture_id</code>) back the degrade path — design decided via a parallel two-track review, see ADR-0008</li>
-				<li>Capture palette shipped: Cmd+J palette with speech input, receipt feedback, mobile FAB, hardened per review (commits fdd7bb9…9ffd28e)</li>
-				<li>Ingest webhook and sweep cron deferred to Phase 7 per ADR-0008 — not part of this phase's v1</li>
+				<li><code>capture(sb, raw)</code> persist-first; typed AI adapters; v1 verbs + <code>needs_review</code></li>
+				<li>Capture palette (⌘J, speech, receipt, mobile FAB)</li>
 			</ul>
-			<p>Requires the <code>AI_GATEWAY_API_KEY</code>.</p>
+			<div class="ref">ADR-0008</div>
 		</li>
 
 		<li class="phase">
 			<span class="dot done"></span>
 			<div class="phase-head"><h2>Phase 3 — Notes, quotes, people</h2><span class="tag done">Shipped</span></div>
 			<ul>
-				<li>Services with tests: <code>notes</code> (list/edit/resolve/delete/count), <code>quotes</code> + annotations, <code>people</code> + facts + interactions</li>
-				<li>Pages: <code>/notes</code> (needs-review queue first, then all), <code>/quotes</code> with inline annotations, <code>/people</code> list + detail with facts and interaction log</li>
-				<li>Capture vocabulary grew per ADR-0008's path: <code>create_quote</code> verb + executor + parser prompt; person verbs stay deferred (entity resolution) — references still degrade to <code>needs_review</code></li>
-				<li>Notes and Quotes surfaced in the desktop rail; People tab now resolves. Test count now 126.</li>
-				<li>Notes body is now edited in place — TipTap live markdown, 2s debounced autosave with save-on-blur (ADR-0009)</li>
+				<li>Services + pages; TipTap live markdown notes (ADR-0009, 0012)</li>
+				<li><code>create_quote</code> in capture vocabulary</li>
 			</ul>
-			<div class="ref">commits 6cb5ebf…0e6e93d · notes editor 37e07ae</div>
 		</li>
 
 		<li class="phase">
 			<span class="dot done"></span>
-			<div class="phase-head"><h2>Phase 4 — Journal, routines, health</h2><span class="tag done">Shipped</span></div>
+			<div class="phase-head"><h2>Phase 4 — Journal &amp; routines</h2><span class="tag done">Shipped</span></div>
 			<ul>
-				<li>Services with tests: <code>journal</code> (text entries, v1 — no images/OCR), <code>routines</code> over the existing <code>routine-stats</code> library, <code>health</code> (metrics, medications, visits — labs/wellbeing/workouts deferred)</li>
-				<li>Pages: <code>/journal</code> with date-grouped entries, <code>/routines</code> with idempotent done-today toggle, streaks, and 30-day heatmap, <code>/health</code> with three sections</li>
-				<li>Capture vocabulary: <code>create_journal_entry</code> and <code>log_health_metric</code> verbs; app timezone threaded through capture provenance so journal days respect iron rule #1; <code>complete_routine</code> deferred (entity resolution)</li>
-				<li>Journal surfaced in the rail. Test count now 142.</li>
+				<li>Journal entries, routines with streaks/heatmap</li>
+				<li>Health was shipped then <strong>cut</strong> in ADR-0011 (not part of current product)</li>
 			</ul>
-			<div class="ref">commits 2cf2d62…68dd61a</div>
 		</li>
 
 		<li class="phase">
 			<span class="dot done"></span>
-			<div class="phase-head"><h2>Phase 5 — The last record kinds</h2><span class="tag done">Shipped</span></div>
+			<div class="phase-head"><h2>Phase 5 — Projects &amp; domains; shelf cut</h2><span class="tag done">Shipped</span></div>
 			<ul>
-				<li>Services with tests: <code>projects</code> (CRUD, complete/archive, milestones with weight-based progress), <code>domains</code> (full CRUD per ADR 0007 — create/edit/archive/reactivate, mark-shipped stamp; system Inbox guarded in the service), <code>books</code> (CRUD + status transitions stamping <code>started_at</code>/<code>finished_at</code>)</li>
-				<li>Health surfaces deferred from Phase 4: lab panels &amp; results (flag styling), wellbeing check-ins, workouts — service + three new <code>/health</code> sections</li>
-				<li>Pages: <code>/projects</code> grouped by status with <code>[id]</code> detail + milestones, <code>/domains</code> with active/archived sections, <code>/books</code> grouped by status</li>
-				<li>Nav: Library tab now fronts <code>/books</code> (quotes/notes aliased); Books added to the rail. No UI for <code>project_checklist_items</code>/<code>activity_log</code> (deferred). Test count now 174.</li>
+				<li>Projects + milestones; domains CRUD</li>
+				<li>Books / health / library tab removed (ADR-0011); domains live in Settings</li>
+				<li>Tab shell became Today / Notes / Projects / People / Settings (superseded by Phase 10 plan)</li>
 			</ul>
-			<div class="ref">commits 07cba30…981dd09</div>
+			<div class="ref">ADR-0011 · migration 0005</div>
 		</li>
 
 		<li class="phase">
 			<span class="dot done"></span>
-			<div class="phase-head"><h2>Phase 6 — The editorial briefing</h2><span class="tag done">Shipped</span></div>
+			<div class="phase-head"><h2>Phase 6 — Editorial briefing</h2><span class="tag done">Shipped</span></div>
 			<ul>
-				<li><code>briefing</code> service with tested pure helpers: cadence lines (overdue, due today, routines done, reading, needs review), deterministic date-seeded quote-of-day, doing-today assembly</li>
-				<li>Today page is now the front page: masthead with Ask link, cadence strip, inbox strip, doing today, routines today, resurfaced quote. Calendar events await Phase 7 CalDAV</li>
-				<li>Chat surface: <code>/api/chat</code> (session-authed, streaming via <code>CHAT_MODEL</code> through the gateway, 503 when AI unconfigured) over a context-stuffed snapshot of every record kind — read-only, no tools in v1; <code>/chat</code> page added to rail and Library hub</li>
-				<li>No migration; test count now 188.</li>
+				<li><code>briefing</code> service: cadence helpers, doing-today, resurfaced quotes</li>
+				<li>Today two-column briefing (ADR-0010) — cadence data built but UI strip incomplete until Phase 10</li>
+				<li>Chat: <code>/api/chat</code> + <code>/chat</code> page</li>
 			</ul>
-			<div class="ref">commits 4302228…4dd0f11</div>
+			<div class="ref">ADR-0010</div>
 		</li>
 
 		<li class="phase">
 			<span class="dot done"></span>
 			<div class="phase-head"><h2>Phase 7 — External surfaces</h2><span class="tag done">Shipped</span></div>
 			<ul>
-				<li>Shipped: <code>lib/secret-auth.ts</code> (timing-safe bearer secrets) and the ingest webhook — <code>POST /api/ingest</code> runs the capture pipeline under the service-role client, threads <code>captured_data.source</code> (<code>webhook</code>/<code>watch</code>), writes an <code>ingest.captured</code> ledger row</li>
-				<li>Shipped: reconciliation sweep cron (ADR-0008) — <code>/api/cron/sweep</code> behind <code>CRON_SECRET</code> degrades orphaned <code>raw</code> captures to linked <code>needs_review</code> notes, dedupes on <code>origin_capture_id</code>, never replays</li>
-				<li>Shipped: widget feed — <code>GET /api/widget</code> behind <code>WIDGET_SECRET</code>, a compact JSON projection of the Today briefing. Test count now 199.</li>
-				<li>Shipped: Web Push (ADR 0005) — <code>push</code> service with 404/410 pruning, delivery inside the <code>recordedAction</code>/<code>recordNotification</code> seam (RLS-gated: only service-role callers push), <code>public/sw.js</code>, session-authed <code>/api/push</code>, subscribe toggle on Library. Test count now 205.</li>
-				<li>Shipped: iCloud CalDAV (ADR 0006) — pure iCal parsing layer (<code>lib/caldav/</code>, RRULE first-occurrence-in-window), <code>calendar</code> service (±7-day pull from all calendars, unchanged-event skip, set-difference removal that refuses to delete on a dead connection, push-to-one <code>createEventHere</code>), <code>/api/cron/caldav</code>, and a “Today's calendar” section on the front page. Test count now 220.</li>
+				<li>Text capture webhook <code>POST /api/ingest</code>, sweep cron, widget feed</li>
+				<li>Web Push (ADR-0005)</li>
+				<li>iCloud CalDAV pull (ADR-0006); events on Today (flat list — day schedule in Phase 10)</li>
 			</ul>
-			<div class="ref">commits 01a2e7c…f98eb1e</div>
 		</li>
 
 		<li class="phase">
 			<span class="dot done"></span>
 			<div class="phase-head"><h2>Phase 8 — PWA polish</h2><span class="tag done">Shipped</span></div>
 			<ul>
-				<li>Shipped: web app manifest (<code>app/manifest.ts</code>) — standalone, dark editorial colors, Capture shortcut (<code>/today?capture=voice</code>), generated icon set incl. maskable and apple-touch (<code>scripts/generate-icons.ts</code>, PNGs committed)</li>
-				<li>Shipped: offline service worker — <code>sw.js</code> keeps its push handlers verbatim and gains a versioned cache: navigations are network-first with a self-contained <code>offline.html</code> fallback, <code>_next/static</code> is cache-first, authed HTML and <code>/api/*</code> are never cached. Registered for everyone at app load (<code>SwRegister</code>); push opt-in path unchanged</li>
-				<li>Shipped: mic-first capture on the phone — the FAB now opens the palette with dictation already listening (tap is the user gesture), <code>?capture=voice</code> deep link opens the palette focused (no auto-mic — navigation isn't a gesture), safe-area insets in standalone, keyboard-safe modal</li>
-				<li>Shipped: offline-aware capture failure — “Offline — draft kept.” copy and an auto-retry when the connection returns; the offline queue (IndexedDB/Background Sync) is explicitly deferred — iOS Safari has no Background Sync and replay needs idempotency, so keep-draft-and-retry stands. Test count now 223.</li>
-				<li>Housekeeping: stale <code>pnpm-lock.yaml</code> dropped and <code>packageManager</code> set to Bun so Vercel installs from <code>bun.lock</code>; <code>sharp</code> added as a build-time devDependency for icon generation</li>
+				<li>Manifest, icons, offline SW, mic-first FAB, offline capture retry</li>
 			</ul>
-			<div class="ref">commits 622c31b…33805b5</div>
+		</li>
+
+		<li class="phase">
+			<span class="dot done"></span>
+			<div class="phase-head"><h2>Design system — Geist</h2><span class="tag done">Shipped</span></div>
+			<p>Vercel Geist palette, dark default, accent blue, gradient masthead (ADR-0013).
+			Replaces earlier editorial newspaper / ElevenLabs experiments.</p>
+			<div class="ref">ADR-0013</div>
+		</li>
+
+		<li class="phase">
+			<span class="dot active"></span>
+			<div class="phase-head"><h2>Phase 10 — Ops shell, day schedule, link Ingest</h2><span class="tag active">Next</span></div>
+			<p>Formal plan for agents. Does not reintroduce health/books.</p>
+			<ul>
+				<li><strong>Nav:</strong> Daily (Today · Tasks · Notes · Ingest · Chat) · collapsible Library (Projects · Journal · Routines · Quotes · People) · System · mobile More</li>
+				<li><strong>Triage:</strong> task-domain page moves <code>/inbox</code> → <code>/triage</code></li>
+				<li><strong>Today:</strong> cadence strip · alerts · all-day band · timeline mixing timed events + timed tasks · open bucket</li>
+				<li><strong>Link Ingest:</strong> URL API → title/description/link → mark read at <code>/ingest</code></li>
+				<li>Keep <code>/calendar</code> alias; full calendar page deferred</li>
+			</ul>
+			<div class="ref">docs/ui-ops-shell-2026-07-19.md · ADR-0014</div>
 		</li>
 
 		<li class="phase">
 			<span class="dot planned"></span>
 			<div class="phase-head"><h2>Phase 9 — Mem.ai import</h2><span class="tag planned">Planned</span></div>
-			<p>One-time migration of the existing Mem.ai corpus into Dispatch records
-			(<code>MEM_API_KEY</code>), then the old system retires.</p>
+			<p>One-time migration of the existing Mem.ai corpus (<code>MEM_API_KEY</code>), then retire Mem.
+			Numbering kept for historical “Phase 9” references; execute after or beside Phase 10 as priority allows.</p>
 		</li>
 	</ol>
 
 	<div class="rule">Decisions on file</div>
 
 	<ol class="adrs">
-		<li>Single Next app with a service layer</li>
-		<li>UTC storage, app timezone at the boundary</li>
-		<li><code>requireOwner()</code> is the security boundary</li>
-		<li>All AI through the Vercel Gateway</li>
-		<li>Web Push instead of Pushover</li>
-		<li>iCloud CalDAV: pull all, push one</li>
-		<li>Content pipeline cut; dead tables dropped</li>
-		<li>Capture: persist-first and v1 vocabulary</li>
+		<li>0001 Single Next app + service layer</li>
+		<li>0002 UTC storage, tz at boundary</li>
+		<li>0003 <code>requireOwner()</code> security boundary</li>
+		<li>0004 All AI through Vercel Gateway</li>
+		<li>0005 Web Push instead of Pushover</li>
+		<li>0006 iCloud CalDAV: pull all, push one</li>
+		<li>0007 Content pipeline cut; dead tables dropped</li>
+		<li>0008 Capture persist-first + v1 vocabulary</li>
+		<li>0009 Notes live markdown editing</li>
+		<li>0010 Briefing two-column redesign</li>
+		<li>0011 Health/books cut; domains in Settings</li>
+		<li>0012 Notes title list + editor page</li>
+		<li>0013 Vercel Geist design system</li>
+		<li>0014 Ops shell, day schedule, link Ingest</li>
 	</ol>
+
+	<div class="rule">Agent entry points</div>
+	<p style="color:var(--ink-2);font-size:0.95rem;max-width:60ch;margin-bottom:0.75rem">
+		New work on the current plan starts at <code>docs/ui-ops-shell-2026-07-19.md</code>.
+		Product “why” lives in the review pair; iron rules in <code>CLAUDE.md</code> / <code>CONTEXT.md</code>.
+	</p>
 
 	<footer>Dispatch · functional rebuild of jerad-ops · docs/adr for every deviation</footer>
 
