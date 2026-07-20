@@ -25,7 +25,7 @@ Executed same-day.
   in `d45a2df`/`31771a0`; see `docs/adr/0008`. `capture(sb, raw)` in
   `lib/services/capture/` persists the raw input first, behind a structural
   no-throw boundary right after that insert; typed AI adapters live in
-  `lib/ai/` (parser via the AI Gateway, transcriber stubbed); the v1
+  `lib/ai/` (parser via the AI Gateway); the v1
   vocabulary (`create_task` / `create_note` / `needs_review`) replaces the
   `voice.ts` draft (deleted); a notes service plus migration `0004`
   (`origin_capture_id`, applied remotely) backs the `needs_review` write path;
@@ -85,7 +85,7 @@ Iron rule #4 ("never lose a capture") has no seam: `voice.ts` prescribes a
 15-variant action union pointing at an executor that doesn't exist, and the
 degradation target (a `needs_review` note) has no write path.
 
-- One deep capture module: `capture(sb, raw) → CapturedRecord`, which **persists the raw input first**, then transcribes/parses internally.
+- One deep capture module: `capture(sb, raw) → CapturedRecord`, which **persists the raw input first**, then parses internally.
 - Transcriber and parser are adapters behind internal seams with **typed fallbacks that never throw** into the capture path; any failure degrades to a `needs_review` note.
 - Requires a `notes` service write path before or with this work.
 - This is a design decision for the start of Phase 2 — treat the existing schemas as a draft interface to renegotiate, not a contract.

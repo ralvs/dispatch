@@ -4,8 +4,7 @@ The reference ran a separate Fastify server that the web app called through a
 1300-line typed fetch wrapper. Dispatch is a single Next.js app: server
 components and server actions call `lib/services/*` directly — no HTTP hop, no
 wrapper. Only surfaces that external clients hit are route handlers under
-`app/api/` (ingest, cron, widget, voice-audio capture, uploads, link share,
-streaming chat).
+`app/api/` (ingest, cron, widget, uploads, link share, streaming chat).
 
 ## Why
 

@@ -22,7 +22,7 @@ import { createNeedsReviewNote } from "@/lib/services/notes";
 import { getAppTimezone } from "@/lib/services/settings";
 
 const sb = {} as SupabaseClient;
-const RAW = { kind: "transcript", text: "ligar pro médico", via: "voice" } as const;
+const RAW = { kind: "transcript", text: "ligar pro médico", via: "text" } as const;
 
 beforeEach(() => {
 	vi.clearAllMocks();

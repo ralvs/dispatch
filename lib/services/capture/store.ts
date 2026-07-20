@@ -6,16 +6,16 @@ import { unwrap } from "@/lib/services/errors";
 // ─────────────────────────────────────────────────────────────────────────
 // The captured_data ledger: persist-first durability for iron rule #4.
 //
-// Palette captures land as source='manual', type='voice_capture', with the
-// transcript + `via` verbatim in the payload (the captured_data.source CHECK
-// has no 'voice'/'text' values — those are the transcript origin, not the
-// firehose source). The insert is the durability point: once it returns an id
-// the capture cannot be lost. capture() owns only raw -> parsed; 'displayed'
+// Palette captures land as source='manual', type='text_capture', with the
+// text + `via` verbatim in the payload (the captured_data.source CHECK has
+// no 'voice'/'text' values — those are the text origin, not the firehose
+// source). The insert is the durability point: once it returns an id the
+// capture cannot be lost. capture() owns only raw -> parsed; 'displayed'
 // and 'archived' belong to the feed read-layer.
 // ─────────────────────────────────────────────────────────────────────────
 
 /**
- * Persist the raw input FIRST, before any transcribe/parse. Returns the new
+ * Persist the raw input FIRST, before any parse. Returns the new
  * captured_data id. This is the ONLY step in the pipeline allowed to throw —
  * if it fails, nothing was captured and the caller still holds the text.
  */
@@ -25,7 +25,7 @@ export async function persistRaw(sb: SupabaseClient, input: CaptureInput): Promi
 			.from("captured_data")
 			.insert({
 				source: input.source ?? "manual",
-				type: "voice_capture",
+				type: "text_capture",
 				payload: {
 					transcript: input.text,
 					via: input.via,

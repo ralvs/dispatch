@@ -367,7 +367,7 @@ this file’s status table.
 | Full `/calendar` page | Alias kept; build later (P2) |
 | Mem.ai import | Former Phase 9 — still separate |
 | Capture verbs (person, project, complete_routine) | Growth path ADR-0008 |
-| Transcriber un-stub | Audio path later |
+| ~~Transcriber un-stub~~ | Cut — ADR-0017 |
 | People-to-contact on Today | P2 |
 | Task list grouping/edit depth | P2 |
 | Health/books | Cut (ADR-0011) — do not reintroduce |

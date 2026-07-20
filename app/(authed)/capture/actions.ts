@@ -24,7 +24,7 @@ export async function captureText(input: {
 	const record = await capture(sb, {
 		kind: "transcript",
 		text: parsed.text,
-		via: parsed.via ?? "voice",
+		via: parsed.via ?? "text",
 		clientTime: parsed.client_time,
 	});
 

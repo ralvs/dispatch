@@ -1,16 +1,20 @@
-# Capture vocabulary growth and audio transcription — scope and two deviations
+# Capture vocabulary growth — scope and ambiguity handling
 
 Date: 2026-07-20
 
+> **Partial supersession (2026-07-20).** Decision 2 (audio capture +
+> transcription failure path) is **superseded by
+> [ADR-0017](./0017-no-in-app-audio-transcription.md)** — Dispatch does not
+> transcribe audio. Decision 1 and the vocabulary table below still stand.
+
 ## Context
 
-ADR-0008 deferred five things: audio transcription, `complete_task`, the
-entity-resolution verbs, the project/person executors, and a
-`needs_disambiguation` flow. All five are still open (see
-`docs/open-items-2026-07-19.md` §2). This ADR researches the reference
-implementation (`ralvs/jerad-ops`, private) for how it solved the same
-problems, records where Dispatch follows it and where it deliberately
-doesn't, and locks the vocabulary scope for the execution plan
+ADR-0008 deferred `complete_task`, the entity-resolution verbs, the
+project/person executors, and a `needs_disambiguation` flow (audio
+transcription was also deferred then; it is now cut — ADR-0017). This ADR
+researches the reference implementation (`ralvs/jerad-ops`, private) for how
+it solved the same problems, records where Dispatch follows it and where it
+deliberately doesn't, and locks the vocabulary scope for the execution plan
 (`docs/capture-vocabulary-2026-07-20.md`).
 
 The reference resolves `*_match` fuzzy phrases ("the Reviews plugin",
@@ -54,33 +58,12 @@ manual resolution is the actual daily friction — not before. A picker is a
 straightforward addition on top of this (the parser already has the
 candidate list in context; only the UI and one more machine state are new).
 
-## Decision 2 — audio capture persists the recording before transcribing; a failed transcription degrades to a note that points at the audio
+## Decision 2 — ~~audio capture~~ **SUPERSEDED by ADR-0017**
 
-Extending the never-lose guarantee (iron rule #4) to a new medium raises a
-question text capture never had to answer: **what do you write into a
-`needs_review` note when transcription fails and there is no text?**
-
-**Decision:** audio capture gets its own `CaptureInput` variant. The audio
-file uploads to the existing private `media` Storage bucket *first* — that
-upload, not a `captured_data` insert, becomes the new durability point for
-this medium, mirroring exactly what the raw-text insert already is for typed
-capture. `captured_data` gets a row referencing the storage path
-(`type: 'voice_audio_capture'`, `payload: { audio_path, mime_type, via:
-'voice' }`) once the file is safely stored. Transcription then runs against
-the stored file, never against bytes that only exist in memory.
-
-If transcription fails, the capture degrades to a `needs_review` note whose
-body names the medium and points at the stored audio (timestamp + path/URL),
-e.g. *"Voice memo, 14:32 — transcription failed. Audio saved, not yet
-transcribed."* No in-app player ships in v1; the storage URL is enough to
-locate and manually replay the file if the content matters enough to
-recover. The audio itself is never at risk — it was durable before the
-transcription attempt was ever made.
-
-**Revisit when** transcription failures are common enough that "go find the
-file and listen to it" is a real workflow rather than a rare escape hatch —
-that's when an in-app player or a retry-transcription action earns its
-keep.
+Originally: audio capture would persist a recording before transcribing, and
+a failed transcription would degrade to a note pointing at the audio. That
+path is cancelled — see ADR-0017. Kept only as historical record of the
+question that was asked.
 
 ## Vocabulary scope — what ships, what doesn't
 
@@ -116,9 +99,6 @@ Dispatch keeps that constraint.
   recently-interacted people) so it has something to fuzzy-match against and
   decide ambiguity from — same shape as `lib/ai/chat-context.ts`, capped the
   same way.
-- `CaptureInput` gains an `audio` kind; `lib/services/capture/store.ts`
-  gains the storage-upload durability point; `lib/ai/transcriber.ts` stops
-  being a stub (gateway multimodal call, `TRANSCRIBE_MODEL`); the palette
-  gains a `MediaRecorder` path for browsers where Web Speech isn't available.
 - Full breakdown, files, and acceptance criteria:
-  `docs/capture-vocabulary-2026-07-20.md`.
+  `docs/capture-vocabulary-2026-07-20.md` (audio items 6–8 cancelled per
+  ADR-0017).

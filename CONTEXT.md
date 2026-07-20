@@ -6,12 +6,13 @@ grounded in what the code actually does. See `CLAUDE.md` for the iron rules and
 
 ## capture
 
-Frictionless intake of a raw thought — typically a voice utterance, but also a
+Frictionless intake of a raw thought — typed or pasted text, or text from a
 webhook, watch, or shared link — into the system before it is understood.
 Capture must never be lost (iron rule #4): the raw input is persisted first,
-then transcribed/parsed; any failure degrades to a `needs_review` note rather
-than dropping the input. The raw firehose lands in `captured_data`; parsed
-voice turns into one or more actions (`lib/schemas/capture.ts`, `docs/adr/0008`).
+then parsed; any failure degrades to a `needs_review` note rather than
+dropping the input. The raw firehose lands in `captured_data`; parsed text
+turns into one or more actions (`lib/schemas/capture.ts`, `docs/adr/0008`).
+Dispatch does not transcribe audio (docs/adr/0017).
 
 ## triage
 
@@ -42,9 +43,9 @@ exactly one domain.
 
 A boolean flag on a `notes` row marking content the system captured but could
 not confidently place — the safety net for the never-lose-a-capture guarantee.
-When transcription or parsing fails, input degrades to a note with
-`needs_review = true` (indexed for quick retrieval) so nothing is dropped and
-the item can be resolved by hand later.
+When parsing fails, input degrades to a note with `needs_review = true`
+(indexed for quick retrieval) so nothing is dropped and the item can be
+resolved by hand later.
 
 ## recurrence roll
 

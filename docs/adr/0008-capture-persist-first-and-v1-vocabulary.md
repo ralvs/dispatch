@@ -2,7 +2,7 @@
 
 The capture module is one deep function, `capture(sb, raw) → CapturedRecord`
 (`lib/services/capture/`). It **persists the raw input to `captured_data`
-first**, then transcribes/parses/executes internally. The raw insert is the
+first**, then parses/executes internally. The raw insert is the
 only step allowed to throw; every internal seam returns a typed fallback and
 degrades failure to a `needs_review` note rather than dropping input (iron
 rule #4).
@@ -13,7 +13,7 @@ rule #4).
 Capture owns only `raw → parsed`; `displayed`/`archived` belong to the feed
 read-layer.
 
-1. **Insert `raw`** (source `manual`, type `voice_capture`, transcript + `via`
+1. **Insert `raw`** (source `manual`, type `text_capture`, transcript + `via`
    verbatim in `payload`) — the durability point and the **sole throw**. If it
    fails nothing was captured; the palette keeps the text to retry.
 2. Everything after the raw insert runs inside **one no-throw boundary** (a
@@ -113,17 +113,18 @@ parser is unavailable or wrong.
 
 ## Deferred
 
-Audio transcription (palette sends text; transcriber is a stub returning
-`unavailable`); `complete_task` and every entity-resolution verb; the
-project/person/inventory executors (quote/journal/health landed — see above);
-the `needs_disambiguation` flow; the reconciliation sweep cron (invariant
-fixed here); external ingest and its atomic RPC.
+`complete_task` and every entity-resolution verb; the project/person/inventory
+executors (quote/journal/health landed — see above); the
+`needs_disambiguation` flow; the reconciliation sweep cron (invariant fixed
+here); external ingest and its atomic RPC.
 
-> **Status 2026-07-19.** Of that list: the reconciliation sweep cron shipped
+> **Status 2026-07-20.** Of that list: the reconciliation sweep cron shipped
 > (`lib/services/capture/sweep.ts`, `app/api/cron/sweep/route.ts`) and
 > external ingest shipped in Phase 7 — without the RPC, per ADR-0015. Audio
-> transcription, `complete_task`, the entity-resolution verbs, the
-> project/person executors, and `needs_disambiguation` are still deferred.
+> transcription was cut entirely ([ADR-0017](./0017-no-in-app-audio-transcription.md)).
+> `complete_task`, the entity-resolution verbs, the project/person executors,
+> and `needs_disambiguation` remain deferred (see ADR-0016 Decision 1 for the
+> ambiguity path).
 
 ## Why
 

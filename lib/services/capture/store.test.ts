@@ -2,10 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { markParsed, persistRaw } from "@/lib/services/capture/store";
 
-const RAW = { kind: "transcript", text: "verbatim", via: "voice" } as const;
+const RAW = { kind: "transcript", text: "verbatim", via: "text" } as const;
 
 describe("persistRaw", () => {
-	it("records the transcript verbatim under source=manual/type=voice_capture", async () => {
+	it("records the text verbatim under source=manual/type=text_capture", async () => {
 		const inserts: Array<Record<string, unknown>> = [];
 		const sb = {
 			from: vi.fn(() => ({
@@ -25,9 +25,9 @@ describe("persistRaw", () => {
 		expect(id).toBe("cap-1");
 		expect(inserts[0]).toMatchObject({
 			source: "manual",
-			type: "voice_capture",
+			type: "text_capture",
 			processed_status: "raw",
-			payload: { transcript: "verbatim", via: "voice", client_time: null },
+			payload: { transcript: "verbatim", via: "text", client_time: null },
 		});
 	});
 });

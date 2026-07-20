@@ -18,7 +18,6 @@ const EnvSchema = z.object({
 	AI_GATEWAY_API_KEY: z.string().min(1).optional(),
 	PARSER_MODEL: z.string().default("anthropic/claude-sonnet-5"),
 	CHAT_MODEL: z.string().default("anthropic/claude-sonnet-5"),
-	TRANSCRIBE_MODEL: z.string().default("google/gemini-2.5-flash"),
 
 	// External-surface secrets (Phase 7)
 	INGEST_WEBHOOK_SECRET: z.string().min(20).optional(),

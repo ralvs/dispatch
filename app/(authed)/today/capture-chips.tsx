@@ -28,7 +28,7 @@ export function CaptureChips() {
 						{chip.label}
 					</button>
 				))}
-				<span className="ml-2 font-mono text-meta text-ink-4">— or hold the mic.</span>
+				<span className="ml-2 font-mono text-meta text-ink-4">— or ⌘J.</span>
 			</div>
 		</section>
 	);

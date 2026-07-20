@@ -13,19 +13,19 @@ import { getAppTimezone } from "@/lib/services/settings";
 // built around the never-lose guarantee (iron rule #4):
 //
 //   1. persist the raw input FIRST — the ONLY step allowed to throw.
-//   2. everything after runs inside a single no-throw boundary: transcribe/
-//      parse/execute and the terminal marker. Any failure best-effort degrades
-//      to a linked needs_review note; if even that write fails, the row is left
-//      'raw' for the reconciliation sweep and capture RESOLVES with a
-//      `recorded_only` outcome.
+//   2. everything after runs inside a single no-throw boundary: parse/execute
+//      and the terminal marker. Any failure best-effort degrades to a linked
+//      needs_review note; if even that write fails, the row is left 'raw' for
+//      the reconciliation sweep and capture RESOLVES with a `recorded_only`
+//      outcome.
 //
 // Once the raw row exists, capture() never rejects. The containment is
 // structural (the try/catch below), not incidental to each seam — so no
 // downstream failure (env validation, date math, parser, note insert,
 // markParsed) can escape and lose the caller's receipt.
 //
-// v1 handles the transcript kind only; audio/ingest are deferred (ADR-0008),
-// hence the module takes `sb` first (iron rule #3) and never builds a client.
+// Capture is text-only (docs/adr/0017). The module takes `sb` first (iron
+// rule #3) and never builds a client.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type CaptureInput = {

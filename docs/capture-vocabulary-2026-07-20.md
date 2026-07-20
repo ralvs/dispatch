@@ -1,16 +1,16 @@
-# Capture vocabulary growth and audio transcription — execution plan
+# Capture vocabulary growth — execution plan
 
 Output of research into ADR-0008's deferred list against the reference
 implementation (`ralvs/jerad-ops`). Owner decisions locked in
-[`docs/adr/0016-capture-vocabulary-growth-and-audio-transcription.md`](./adr/0016-capture-vocabulary-growth-and-audio-transcription.md) —
-**read that ADR first**, it settles two design questions this plan assumes
-answers to (ambiguity → `needs_review`, no picker; audio failure → a note
-pointing at the stored file).
+[`docs/adr/0016-capture-vocabulary-growth-and-audio-transcription.md`](./adr/0016-capture-vocabulary-growth-and-audio-transcription.md)
+(ambiguity → `needs_review`, no picker) and
+[`docs/adr/0017-no-in-app-audio-transcription.md`](./adr/0017-no-in-app-audio-transcription.md)
+(no in-app transcription — items 6–8 cancelled).
 
 | | |
 |--|--|
-| **Status** | Planned — not started |
-| **Decisions ADR** | [`docs/adr/0016-…`](./adr/0016-capture-vocabulary-growth-and-audio-transcription.md) |
+| **Status** | Planned — not started (audio items cancelled) |
+| **Decisions ADR** | [`docs/adr/0016-…`](./adr/0016-capture-vocabulary-growth-and-audio-transcription.md), [`docs/adr/0017-…`](./adr/0017-no-in-app-audio-transcription.md) |
 | **Reference read** | `ralvs/jerad-ops` (private): `apps/api/src/lib/{match,parser,executor}.ts`, `apps/web/src/lib/voice-actions.ts` |
 | **Supersedes** | ADR-0008's "Deferred" list, items 2.1–2.4 in `docs/open-items-2026-07-19.md` |
 
@@ -35,9 +35,9 @@ user-initiated, unchanged from ADR-0008).
 | 3 | `complete_task` verb | pending |
 | 4 | `create_project` / `update_project_status` / `create_person_fact` verbs | pending |
 | 5 | Ambiguity → `needs_review` prompt rule | pending |
-| 6 | Real transcriber (`lib/ai/transcriber.ts`) | pending |
-| 7 | Audio `CaptureInput` + persist-first storage upload | pending |
-| 8 | Palette audio-recording UI | pending |
+| 6 | Real transcriber (`lib/ai/transcriber.ts`) | **cancelled** (ADR-0017) |
+| 7 | Audio `CaptureInput` + persist-first storage upload | **cancelled** (ADR-0017) |
+| 8 | Palette audio-recording UI | **cancelled** (ADR-0017) |
 | 9 | Docs touch-up | pending |
 
 ---
@@ -217,130 +217,10 @@ user-initiated, unchanged from ADR-0008).
 
 ---
 
-## 6. Real transcriber — Strong
+## 6–8. Audio transcription / recording — **cancelled**
 
-**Files:** `lib/ai/gateway.ts`, `lib/ai/transcriber.ts` (+ test)
-
-**Do:**
-
-- `gateway.ts` gains `transcriberModel()` — same shape as `parserModel`/
-  `chatModel`, reading `env().TRANSCRIBE_MODEL` (already defaulted to
-  `google/gemini-2.5-flash`, currently unused).
-- `transcriber.ts`: replace the stub with a real `generateText` call, one
-  multimodal user message —
-  `content: [{ type: "text", text: <instruction> }, { type: "file", data:
-  <audio bytes>, mediaType: input.mimeType }]`. Instruction: transcribe
-  verbatim; the speaker may use Portuguese (pt-BR) or English — transcribe
-  in whichever was spoken, never translate (ADR-0004's bilingual-verbatim
-  rule applies to transcription too, not just the parser).
-- Guard with `isAiConfigured()` → `unavailable`, exactly like `parser.ts`
-  does. Empty/whitespace-only result → `failed` (nothing was said, or the
-  model produced nothing usable) rather than a false-positive empty
-  transcript reaching `capture()`.
-- Errors from the gateway call → `failed`, never thrown.
-
-**Acceptance:**
-
-- Unit tests (mock `generateText`, same style as `parser.test.ts` mocks
-  `generateObject`): unavailable when ungated, failed on rejection, failed
-  on empty text, ok on a real-shaped response.
-- No caller yet — this item lands the seam only, matching how item 3 of the
-  ops-shell plan landed `buildDaySchedule` before Today's UI used it.
-
-**Commit sketch:** `feat(ai): real audio transcription via the gateway`
-
----
-
-## 7. Audio `CaptureInput` + persist-first storage upload — Strong
-
-**Depends on:** 6.
-
-**Files:** `lib/services/capture/index.ts`, `lib/services/capture/store.ts`,
-`lib/capture/receipt.ts`, `lib/supabase/admin.ts` or wherever a storage
-upload helper belongs
-
-**Do:**
-
-- `CaptureInput` gains a variant:
-  `{ kind: "audio"; audioPath: string; mimeType: string; via: "voice";
-  clientTime?: string }`. Note **`audioPath`**, not raw bytes — the upload
-  to the `media` bucket happens *before* `capture()` is called at all (the
-  server action in item 8 does it), so the durability point for this medium
-  is the storage write, exactly as the raw-text insert is for typed
-  capture. `capture()` itself never receives bytes it could lose.
-- `persistRaw` (store.ts): for `kind: "audio"`, insert `captured_data` with
-  `type: 'voice_audio_capture'`, `payload: { audio_path, mime_type, via }`
-  (no `transcript` key — nothing to put there yet).
-- `process()` (index.ts): branch on `raw.kind`. For `"audio"`: fetch the
-  file from storage, call `transcribe()`. On success, proceed through the
-  *existing* parse/execute pipeline unchanged, using the resulting text as
-  if it were typed. On failure, degrade per ADR-0016 Decision 2 — a
-  `needs_review` note whose body names the medium, a timestamp, and the
-  storage path/URL (not the verbatim-transcript body the text path uses,
-  since there is no transcript).
-- `deriveReceipt` (receipt.ts): the palette needs a way to tell "audio,
-  transcription failed" apart from the text-path `needs_review` reasons it
-  already renders — extend `reviewLines` (or the reason union) rather than
-  introducing a whole new tone; the receipt is otherwise the same shape.
-
-**Acceptance:**
-
-- Unit tests: audio persist-first is asserted with a mocked storage
-  client — the `captured_data` insert happens, and a transcription failure
-  never causes an exception to reach the caller (same no-throw-boundary
-  contract as the text path, exercised for the new branch).
-- A successful transcription's resulting `CapturedRecord` is
-  indistinguishable in shape from a text capture's — same `outcome` union,
-  so nothing downstream (widget, chat context, receipt) needs to special-case
-  audio once transcription succeeds.
-- `bun run check` green.
-
-**Commit sketch:** `feat(capture): audio input persists to storage before transcribing`
-
----
-
-## 8. Palette audio-recording UI — Strong
-
-**Depends on:** 7.
-
-**Files:** `components/capture-palette.tsx`, new
-`app/(authed)/capture/actions.ts` export (or a sibling action), possibly a
-small `lib/capture/use-audio-capture.ts` hook mirroring
-`use-speech-capture.ts`'s shape
-
-**Do:**
-
-- A `MediaRecorder`-backed hook, same shape as `useSpeechCapture` (supported/
-  recording/start/stop), so the palette's dictation UI and this one compose
-  similarly. `supported` gates on `MediaRecorder` + `getUserMedia` existing.
-- Surfaces as a fallback when `speech.supported` is `false` (the primary
-  case this closes — browsers with no usable Web Speech, notably some iOS
-  Safari versions) — not necessarily a second control alongside a working
-  mic button. Confirm the actual behavior with a manual check on a browser
-  where Web Speech is genuinely unavailable before deciding whether to also
-  offer it as an alternative when Web Speech *is* available.
-- New server action (FormData, matching `captureText`'s shape): receives
-  the recorded `Blob`, uploads it to the `media` bucket under a per-capture
-  path, then calls `capture(sb, { kind: "audio", audioPath, mimeType,
-  via: "voice" })`. Same `revalidatePath` calls as `captureText`.
-- Capture machine (`lib/capture/machine.ts`): decide whether this needs new
-  states or can reuse `"listening"`/`"submitting"` with a flag — recording
-  audio and dictating text are different user actions but arguably the same
-  *shape* of state machine (idle → recording/listening → submitting →
-  done/error). Prefer reusing the existing states if the semantics genuinely
-  match; don't fork the machine for cosmetic reasons.
-
-**Acceptance:**
-
-- Manual: on a browser/device where `speech.supported` is false, the
-  palette offers audio recording instead of no voice option at all; a
-  recorded memo round-trips to a real capture with the same receipt UI text
-  path captures get.
-- Mic permission denial degrades gracefully (an error state, not a crash) —
-  same bar `use-speech-capture.ts` already holds for `SpeechRecognition`
-  failures.
-
-**Commit sketch:** `feat(capture): audio recording in the palette for browsers without Web Speech`
+Cancelled by [ADR-0017](./adr/0017-no-in-app-audio-transcription.md). Capture
+is text-only; speech-to-text happens outside Dispatch.
 
 ---
 
@@ -350,12 +230,11 @@ small `lib/capture/use-audio-capture.ts` hook mirroring
 `docs/open-items-2026-07-19.md` (§1.2/§2 pointers), `docs/status.html`, this
 file's status table
 
-**Do:** Glossary entries for `complete_task`/entity resolution/audio capture;
-close out ADR-0008's Deferred list fully; update the open-items doc so §2
-points here instead of restating "still deferred"; status only, no product
-code.
+**Do:** Glossary entries for `complete_task`/entity resolution; close out
+ADR-0008's Deferred list fully; update the open-items doc so §2 points here
+instead of restating "still deferred"; status only, no product code.
 
-**Commit sketch:** `docs: capture vocabulary and audio transcription glossary`
+**Commit sketch:** `docs: capture vocabulary glossary`
 
 ---
 
@@ -365,18 +244,18 @@ code.
 |------|-------|
 | `log_activity` | No `activity_log` service layer exists — a new service, not a growth-path wire-in. Separate plan if wanted. |
 | `update_milestone` | Cheap but needs double resolution (project → milestone). P2 stretch. |
-| `create_calendar_event` via voice | Dispatch creates events through CalDAV push (`createEventHere`, ADR-0006) — a different, already-decided path. |
+| `create_calendar_event` via capture | Dispatch creates events through CalDAV push (`createEventHere`, ADR-0006) — a different, already-decided path. |
 | Interactive disambiguation picker | ADR-0016 Decision 1 — folds into `needs_review` instead. |
-| In-app audio playback for failed transcriptions | ADR-0016 Decision 2 — a storage URL is enough for v1. |
+| In-app audio transcription / recording | ADR-0017 — cut. |
 | `create_quote_annotation`, `set_resurface_weight`, `update_content_item`, `add_inventory_item` | No UI/service surface for the first two; content pipeline and inventory were cut (ADR-0007, and inventory was never built here). |
-| Creating a new person by voice | Reference doesn't do this either — facts only attach to existing contacts. |
+| Creating a new person via capture | Reference doesn't do this either — facts only attach to existing contacts. |
 
 ---
 
 ## Suggested order
 
 ```
-0 (done) → 1 ⟷ 2 (parallel) → 3 ⟷ 4 (parallel) → 5 → 6 → 7 → 8 → 9
+0 (done) → 1 ⟷ 2 (parallel) → 3 ⟷ 4 (parallel) → 5 → 9
 ```
 
 Rationale:

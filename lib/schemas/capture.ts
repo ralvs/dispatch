@@ -17,8 +17,10 @@ import { NoteSourceTypeSchema } from "@/lib/schemas/note";
 // needs_review note) instead of reaching the executor and throwing at runtime.
 // ─────────────────────────────────────────────────────────────────────────
 
-// How the transcript was produced. 'voice' = spoken into the mic (Web Speech
-// or, later, an audio-transcription seam). 'text' = typed into the palette.
+// How the text was produced. 'text' = typed (or pasted) into the palette.
+// 'voice' is retained for external surfaces that already transcribed elsewhere
+// (share sheet, watch, etc.) — Dispatch does not transcribe audio itself
+// (docs/adr/0017).
 export const CaptureTranscriptSourceSchema = z.enum(["voice", "text"]);
 export type CaptureTranscriptSource = z.infer<typeof CaptureTranscriptSourceSchema>;
 

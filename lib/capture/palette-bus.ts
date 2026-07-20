@@ -13,10 +13,10 @@ export const OPEN_CAPTURE_EVENT = "dispatch:open-capture";
  * ever honoured on an empty palette — see the OPEN transition in
  * lib/capture/machine.ts.
  */
-export function openCapturePalette(opts?: { voice?: boolean; prefill?: string }): void {
+export function openCapturePalette(opts?: { prefill?: string }): void {
 	window.dispatchEvent(
 		new CustomEvent(OPEN_CAPTURE_EVENT, {
-			detail: { voice: opts?.voice ?? false, prefill: opts?.prefill },
+			detail: { prefill: opts?.prefill },
 		}),
 	);
 }

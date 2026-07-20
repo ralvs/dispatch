@@ -5,7 +5,7 @@ import { isAiConfigured, parserModel } from "@/lib/ai/gateway";
 import { type CaptureAction, CaptureActionsSchema } from "@/lib/schemas/capture";
 
 // ─────────────────────────────────────────────────────────────────────────
-// Text -> actions seam. Turns one transcript into v1 capture actions via the
+// Text -> actions seam. Turns one capture text into v1 capture actions via the
 // gateway (generateObject, schema-validated). Never throws into the capture
 // path: every failure mode returns a typed fallback the orchestrator degrades.
 //

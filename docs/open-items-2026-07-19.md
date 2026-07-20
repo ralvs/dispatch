@@ -32,16 +32,15 @@ because there is no executor behind it. The v1 vocabulary is `create_task` /
 
 As of 2026-07-20 this whole section has a plan:
 [`capture-vocabulary-2026-07-20.md`](./capture-vocabulary-2026-07-20.md), with
-two design questions settled in
+ambiguity settled in
 [ADR-0016](./adr/0016-capture-vocabulary-growth-and-audio-transcription.md)
-before any code — an ambiguous entity reference folds into `needs_review`
-rather than a new candidate-picker UI, and a failed audio transcription
-degrades to a note pointing at the already-durable recording. The table below
-is kept as a quick index; the plan is the executable version.
+(ambiguous entity → `needs_review`, no picker). Audio transcription was
+planned then **cut** — [ADR-0017](./adr/0017-no-in-app-audio-transcription.md).
+The table below is a quick index; the plan is the executable version.
 
 | # | Item | Notes |
 |---|------|-------|
-| 2.1 | **Audio transcription** | `lib/ai/transcriber.ts` is a stub returning `unavailable`; the palette sends text. Plan items 6–8. |
+| 2.1 | ~~**Audio transcription**~~ | **Cut** (ADR-0017). Plan items 6–8 cancelled. |
 | 2.2 | **`complete_task`** and every entity-resolution verb | Plan items 1–3 (`lib/services/capture/match.ts`, parser context). |
 | 2.3 | **Project / person executors** | `create_project`, `update_project_status`, `create_person_fact` — plan item 4. `log_activity` and `update_milestone` stay out of scope (no service / needs double resolution — see the plan's out-of-scope table). |
 | 2.4 | **`needs_disambiguation` flow** | Decided **not** to build a picker (ADR-0016 Decision 1) — plan item 5 folds ambiguity into `needs_review` instead. |

@@ -1,12 +1,15 @@
 # Dispatch
 
-Personal operations dashboard. Voice in, order out.
+Personal operations dashboard. Capture in, order out.
 
 A dispatch is a report filed from the field and the act of routing work where
-it belongs — this app is both: voice-first capture from anywhere (PWA mic,
-Apple Watch webhook, iOS share sheet) parsed by an LLM into structured records
-(tasks, notes, quotes, journal, people, events), surfaced back as an editorial
-daily briefing.
+it belongs — this app is both: frictionless text capture from anywhere (PWA
+palette, Apple Watch webhook, iOS share sheet) parsed by an LLM into
+structured records (tasks, notes, quotes, journal, people, events), surfaced
+back as an editorial daily briefing.
+
+Speech-to-text is done outside the app (OS dictation, third-party tools);
+Dispatch routes the words. See `docs/adr/0017`.
 
 Functional rebuild of [jerad-ops](https://github.com/ralvs/jerad-ops) —
 see `docs/adr/` for every deliberate deviation.

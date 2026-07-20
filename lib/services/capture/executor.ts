@@ -62,7 +62,7 @@ async function runOne(
 					due_date: action.due_date ?? null,
 					due_time: action.due_time ?? null,
 					priority: action.priority,
-					source: "voice_capture",
+					source: "manual",
 				});
 				return { action: "create_task", ok: true, entity: { table: "tasks", id: task.id } };
 			}
@@ -81,7 +81,7 @@ async function runOne(
 					source_type: action.source_type ?? null,
 					source_author: action.source_author ?? null,
 					tags: action.tags,
-					added_via: "voice",
+					added_via: "manual",
 				});
 				return { action: "create_quote", ok: true, entity: { table: "quotes", id: q.id } };
 			}
@@ -89,7 +89,7 @@ async function runOne(
 				const e = await createEntry(sb, {
 					transcription_text: action.body,
 					entry_date: action.entry_date ?? todayInTz(prov.tz),
-					source: "voice",
+					source: "typed",
 					tags: action.tags,
 				});
 				return {

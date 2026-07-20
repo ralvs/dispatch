@@ -118,7 +118,7 @@ describe("runActions", () => {
 			sb,
 			expect.objectContaining({
 				transcription_text: "today was a good day",
-				source: "voice",
+				source: "typed",
 			}),
 		);
 	});

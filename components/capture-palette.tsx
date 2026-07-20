@@ -11,16 +11,14 @@ import {
 import { OPEN_CAPTURE_EVENT, openCapturePalette } from "@/lib/capture/palette-bus";
 import { deriveReceipt } from "@/lib/capture/receipt";
 import { isOpenShortcut, isSubmitShortcut } from "@/lib/capture/shortcuts";
-import { nextLang } from "@/lib/capture/speech";
 import { isBlank } from "@/lib/capture/submission";
-import { useSpeechCapture } from "@/lib/capture/use-speech-capture";
 import { readCaptureIntent } from "@/lib/pwa/capture-intent";
 import type { CapturedRecord } from "@/lib/services/capture";
 
 const FOCUSABLE = 'a[href],button:not([disabled]),textarea,input,[tabindex]:not([tabindex="-1"])';
 
 export function CapturePalette() {
-	// All status/text/speech/submit-sequence logic lives in captureMachine
+	// All status/text/submit-sequence logic lives in captureMachine
 	// (lib/capture/machine.ts); this component is a thin shell that dispatches
 	// events into it and drains the effects it emits.
 	const [state, setState] = useState(initialCaptureState);
@@ -51,18 +49,13 @@ export function CapturePalette() {
 		}
 	}, []);
 
-	const speech = useSpeechCapture({
-		lang: state.lang,
-		onTranscript: (spoken) => dispatch({ type: "TRANSCRIPT", spoken }),
-	});
-
 	// The actual request behind a SUBMIT effect. Guards its completion via the
 	// seq the machine handed out, same as before.
 	const runSubmitEffect = useCallback(
-		(text: string, via: "voice" | "text", seq: number) => {
+		(text: string, seq: number) => {
 			startTransition(async () => {
 				try {
-					const record: CapturedRecord = await captureText({ text, via });
+					const record: CapturedRecord = await captureText({ text, via: "text" });
 					dispatch({ type: "SUBMIT_OK", seq, receipt: deriveReceipt(record) });
 				} catch {
 					dispatch({ type: "SUBMIT_ERR", seq, offline: !navigator.onLine });
@@ -78,17 +71,8 @@ export function CapturePalette() {
 	useEffect(() => {
 		for (const effect of effectsBatch.effects) {
 			switch (effect.type) {
-				case "START_SPEECH":
-					speech.start();
-					break;
-				case "STOP_SPEECH":
-					speech.stop();
-					break;
-				case "CANCEL_SPEECH":
-					speech.cancel();
-					break;
 				case "SUBMIT":
-					runSubmitEffect(effect.text, effect.via, effect.seq);
+					runSubmitEffect(effect.text, effect.seq);
 					break;
 				case "FOCUS_TEXTAREA":
 					requestAnimationFrame(() => textareaRef.current?.focus());
@@ -101,24 +85,14 @@ export function CapturePalette() {
 					break;
 			}
 		}
-	}, [effectsBatch, speech.start, speech.stop, speech.cancel, runSubmitEffect]);
+	}, [effectsBatch, runSubmitEffect]);
 
-	// Opens from the window event, optionally starting dictation in the same
-	// tick — this only works when the event was dispatched from a real user
-	// gesture (the FAB tap), since starting SpeechRecognition needs that
-	// activation to still be live. Voice is only actually requested when the
-	// browser supports it — matches current behaviour of never landing the
-	// machine in a "listening" state that can never receive a terminal event.
 	const onOpenCaptureEvent = useCallback(
 		(event: Event) => {
-			const detail = (event as CustomEvent<{ voice?: boolean; prefill?: string }>).detail;
-			dispatch({
-				type: "OPEN",
-				voice: (detail?.voice ?? false) && speech.supported,
-				prefill: detail?.prefill,
-			});
+			const detail = (event as CustomEvent<{ prefill?: string }>).detail;
+			dispatch({ type: "OPEN", prefill: detail?.prefill });
 		},
-		[dispatch, speech.supported],
+		[dispatch],
 	);
 
 	// Global open triggers: Cmd/Ctrl+J and the window event from other triggers.
@@ -126,7 +100,7 @@ export function CapturePalette() {
 		function onKeyDown(event: KeyboardEvent) {
 			if (isOpenShortcut(event)) {
 				event.preventDefault();
-				dispatch({ type: "OPEN", voice: false });
+				dispatch({ type: "OPEN" });
 			}
 		}
 		window.addEventListener("keydown", onKeyDown);
@@ -137,17 +111,15 @@ export function CapturePalette() {
 		};
 	}, [dispatch, onOpenCaptureEvent]);
 
-	// Deep link from the manifest shortcut (?capture=voice): open the palette
-	// but never auto-start the mic — arriving via navigation isn't a user
-	// gesture, so SpeechRecognition.start() would be silently rejected. Runs
-	// once on mount; the ref guards against the effect re-firing after the
-	// param is stripped.
+	// Deep link from the manifest shortcut (?capture=1 or legacy ?capture=voice):
+	// open the palette on mount. Runs once; the ref guards against re-firing
+	// after the param is stripped.
 	const intentHandledRef = useRef(false);
 	useEffect(() => {
 		if (intentHandledRef.current) return;
 		intentHandledRef.current = true;
-		if (readCaptureIntent(window.location.search) === "voice") {
-			dispatch({ type: "OPEN", voice: false });
+		if (readCaptureIntent(window.location.search)) {
+			dispatch({ type: "OPEN" });
 			window.history.replaceState(null, "", window.location.pathname);
 		}
 	}, [dispatch]);
@@ -162,14 +134,6 @@ export function CapturePalette() {
 			textarea?.setSelectionRange(textarea.value.length, textarea.value.length);
 		}
 	}, [state.open]);
-
-	// Keep the machine's dictation status in sync with the real recognizer: any
-	// time it stops — mic toggle, lang switch, the submit handoff, or the
-	// browser ending it on its own — feeds SPEECH_ENDED back in. The machine
-	// no-ops unless it actually cares (deferred submit, or "listening" status).
-	useEffect(() => {
-		if (!speech.listening) dispatch({ type: "SPEECH_ENDED" });
-	}, [speech.listening, dispatch]);
 
 	// While an error is showing and the browser was offline for it, retry once
 	// automatically as soon as connectivity returns; ONLINE is a no-op in the
@@ -215,10 +179,6 @@ export function CapturePalette() {
 		}
 	}
 
-	function toggleMic() {
-		dispatch({ type: "MIC_TOGGLED" });
-	}
-
 	const pending = state.status === "submitting";
 
 	return (
@@ -229,7 +189,7 @@ export function CapturePalette() {
 				<button
 					type="button"
 					aria-label="Capture a thought"
-					onClick={() => openCapturePalette({ voice: true })}
+					onClick={() => openCapturePalette()}
 					style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
 					className="fixed right-5 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-line-strong bg-accent font-serif text-2xl leading-none text-bg shadow-lg lg:hidden"
 				>
@@ -330,38 +290,7 @@ export function CapturePalette() {
 									</p>
 								) : null}
 
-								<div className="mt-4 flex items-center justify-between">
-									<div className="flex items-center gap-2">
-										{speech.supported ? (
-											<>
-												<button
-													type="button"
-													disabled={pending}
-													aria-label={
-														speech.listening ? "Stop dictation" : "Dictate with your voice"
-													}
-													aria-pressed={speech.listening}
-													onClick={toggleMic}
-													className={`flex h-9 w-9 items-center justify-center rounded-full border disabled:opacity-50 ${
-														speech.listening
-															? "border-accent text-accent"
-															: "border-line-strong text-ink-3 hover:text-ink"
-													}`}
-												>
-													<span aria-hidden="true">{speech.listening ? "◉" : "🎙"}</span>
-												</button>
-												<button
-													type="button"
-													disabled={pending}
-													aria-label={`Recognition language: ${state.lang}. Switch to ${nextLang(state.lang)}`}
-													onClick={() => dispatch({ type: "LANG_TOGGLED" })}
-													className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink disabled:opacity-50"
-												>
-													{state.lang === "pt-BR" ? "PT" : "EN"}
-												</button>
-											</>
-										) : null}
-									</div>
+								<div className="mt-4 flex items-center justify-end">
 									<button
 										type="button"
 										onClick={submit}
