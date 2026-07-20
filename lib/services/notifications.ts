@@ -20,15 +20,18 @@ import { sendPushToAll } from "@/lib/services/push";
 // holds a SupabaseClient from bypassing it (see Known limits) — it's the
 // blessed path, not a proof of impossibility.
 //
-// Web-push delivery (ADR-0005) is planned, not built: when it lands, the
-// delivery call belongs *inside* `recordNotification`, after the ledger row
-// is committed, so callers never change.
+// Web-push delivery (ADR-0005) landed where this comment always said it
+// belonged: *inside* `recordNotification`, after the ledger row is committed,
+// so callers never changed to get it.
 //
 // ── Known limits ──
 //   - Not a hard boundary. Anything holding a SupabaseClient can still write
 //     `notifications` (or skip it) directly; nothing at the type or DB level
 //     forces traffic through this module. Enforcement (e.g. an import-boundary
 //     lint) is deferred until there are callers to protect.
+//   - The ledger write is best-effort on external surfaces (ADR-0015): they
+//     commit the durable record first and swallow a failure here rather than
+//     fail the caller.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type { Json, NotificationRow, NotificationStatus };
