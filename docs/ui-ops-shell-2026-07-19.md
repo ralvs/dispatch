@@ -32,7 +32,7 @@ autonomous/external actions write `notifications`.
 | 3 | `buildDaySchedule` pure helper + tests | done |
 | 4 | Today: cadence, alerts, day schedule, mobile order | done |
 | 5 | Link Ingest schema + service | done (migration not yet applied) |
-| 6 | Link Ingest page + mark read | pending |
+| 6 | Link Ingest page + mark read | done |
 | 7 | Link Ingest API + ledger + Today unread | pending |
 | 8 | Capture chips → palette | pending |
 | 9 | Settings: timezone + domain cadence threshold (P1) | pending |
