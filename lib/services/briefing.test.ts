@@ -4,6 +4,7 @@ import {
 	bucketRoutines,
 	buildAnchor,
 	buildCadenceLines,
+	buildDaySchedule,
 	cadenceThresholdDays,
 	deriveBriefLines,
 	pickResurfaced,
@@ -393,5 +394,110 @@ describe("summarizeProjects", () => {
 		const [brief] = summarizeProjects([{ id: "p1", name: "Empty" } as ProjectRow], {});
 		expect(brief.progress).toBe(0);
 		expect(brief.nextMilestone).toBeNull();
+	});
+});
+
+describe("buildDaySchedule", () => {
+	// SP is UTC-3 year-round (Brazil dropped DST in 2019), so 14:00Z reads 11:00.
+	function schedule(events: CalendarEventRow[], openTasks: TaskRow[]) {
+		return buildDaySchedule({ events, openTasks, todayIso: TODAY, tz: SP });
+	}
+
+	it("returns three empty bands for an empty day", () => {
+		const day = schedule([], []);
+		expect(day.allDay).toEqual([]);
+		expect(day.timeline).toEqual([]);
+		expect(day.open).toEqual([]);
+	});
+
+	it("puts all-day events and untimed due tasks in the all-day band", () => {
+		const day = schedule(
+			[event({ id: "e1", all_day: true })],
+			[task({ id: "t1", due_date: TODAY })],
+		);
+		expect(day.allDay.map((i) => i.key)).toEqual(["event:e1", "task:t1"]);
+		expect(day.allDay.map((i) => i.time)).toEqual([null, null]);
+		expect(day.timeline).toEqual([]);
+		expect(day.open).toEqual([]);
+	});
+
+	it("merges timed events and timed tasks into one ascending timeline", () => {
+		const day = schedule(
+			[
+				event({ id: "late", start_at: `${TODAY}T20:00:00.000Z` }),
+				event({ id: "early", start_at: `${TODAY}T12:00:00.000Z` }),
+			],
+			[task({ id: "mid", due_date: TODAY, due_time: "14:30" })],
+		);
+		expect(day.timeline.map((i) => i.key)).toEqual(["event:early", "task:mid", "event:late"]);
+		expect(day.timeline.map((i) => i.time)).toEqual(["09:00", "14:30", "17:00"]);
+	});
+
+	it("reads the HH:MM:SS form a Postgres time column returns", () => {
+		const day = schedule([], [task({ id: "t1", due_date: TODAY, due_time: "08:15:00" })]);
+		expect(day.timeline.map((i) => i.time)).toEqual(["08:15"]);
+	});
+
+	it("demotes a task with an unparseable time to the all-day band", () => {
+		const day = schedule([], [task({ id: "t1", due_date: TODAY, due_time: "sometime" })]);
+		expect(day.allDay.map((i) => i.key)).toEqual(["task:t1"]);
+		expect(day.timeline).toEqual([]);
+	});
+
+	it("breaks equal times events-first, then by title", () => {
+		const day = schedule(
+			[event({ id: "e", title: "Standup", start_at: `${TODAY}T13:00:00.000Z` })],
+			[
+				task({ id: "z", title: "Zebra", due_date: TODAY, due_time: "10:00" }),
+				task({ id: "a", title: "Apple", due_date: TODAY, due_time: "10:00" }),
+			],
+		);
+		expect(day.timeline.map((i) => i.key)).toEqual(["event:e", "task:a", "task:z"]);
+	});
+
+	it("keeps an event that began yesterday ahead of today's timed items", () => {
+		const day = schedule(
+			[
+				event({
+					id: "spillover",
+					start_at: "2026-07-14T22:00:00.000Z",
+					end_at: `${TODAY}T14:00:00.000Z`,
+				}),
+				event({ id: "morning", start_at: `${TODAY}T12:00:00.000Z` }),
+			],
+			[],
+		);
+		expect(day.timeline.map((i) => i.key)).toEqual(["event:spillover", "event:morning"]);
+	});
+
+	it("orders the open band starred-first, then whatever is already due", () => {
+		const day = schedule(
+			[],
+			[
+				task({ id: "old", due_date: "2026-07-01" }),
+				task({ id: "later", due_date: "2026-08-01" }),
+				task({ id: "star", top3_for_date: TODAY }),
+			],
+		);
+		expect(day.open.map((t) => t.id)).toEqual(["star", "old"]);
+	});
+
+	it("never repeats a task that already has a place on the day", () => {
+		const timed = task({ id: "t1", due_date: TODAY, due_time: "09:00", top3_for_date: TODAY });
+		const day = schedule([], [timed]);
+		expect(day.timeline).toHaveLength(1);
+		expect(day.open).toEqual([]);
+	});
+
+	it("caps the open band at 10", () => {
+		const tasks = Array.from({ length: 15 }, (_, i) => task({ id: `t${i}`, top3_for_date: TODAY }));
+		expect(schedule([], tasks).open).toHaveLength(10);
+	});
+
+	it("leaves a task due on another day off every band", () => {
+		const day = schedule([], [task({ id: "t1", due_date: "2026-07-16", due_time: "09:00" })]);
+		expect(day.allDay).toEqual([]);
+		expect(day.timeline).toEqual([]);
+		expect(day.open).toEqual([]);
 	});
 });

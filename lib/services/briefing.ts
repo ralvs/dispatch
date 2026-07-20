@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { dateOfInstant, isoWeek, shiftDay } from "@/lib/dates";
+import { dateOfInstant, formatInstant, instantFromLocal, isoWeek, shiftDay } from "@/lib/dates";
 import { computeRoutineStats, type RoutineStats } from "@/lib/routine-stats";
 import { type CalendarEventRow, listEventsOn } from "@/lib/services/calendar";
 import { type DomainRow, listDomains } from "@/lib/services/domains";
@@ -88,7 +88,11 @@ export type ProjectBrief = {
 export type BriefingView = {
 	cadence: CadenceLine[];
 	inboxCount: number;
+	// doingToday and todayEvents predate daySchedule and still feed the widget
+	// payload (app/api/widget/route.ts) and chat context — keep them until
+	// those callers migrate.
 	doingToday: TaskRow[];
+	daySchedule: DaySchedule;
 	routines: { total: number; done: number; remainingNames: string[] };
 	quoteOfDay: QuoteRow | null;
 	todayEvents: CalendarEventRow[];
@@ -211,6 +215,123 @@ export function assembleDoingToday(open: TaskRow[], todayIso: string): TaskRow[]
 		(t) => !isTop3Today(t, todayIso) && t.due_date !== null && t.due_date <= todayIso,
 	);
 	return [...top3, ...dueOrOverdue].slice(0, 10);
+}
+
+// ─── Day schedule (ADR-0014) ────────────────────────────────────────────
+//
+// One "when is my day" composition instead of a flat events card beside a
+// separate task card. Three bands:
+//
+//   allDay   all-day events + tasks due today with no time on them
+//   timeline timed events and timed tasks merged, ascending by clock time
+//   open     top-3 and other tasks that want attention but sit nowhere
+//
+// Ordering runs on UTC instants, never on formatted strings: an event that
+// began yesterday and runs into today keeps its real start, and a task's
+// wall-clock due_time is resolved through the app timezone
+// (instantFromLocal) rather than compared as text. Ties break events before
+// tasks, then by title, so the same input always yields the same order.
+
+// `sortAt` is the UTC instant an item occupies on the timeline, and `time` its
+// wall-clock rendering in the app timezone. All-day items have neither: they
+// carry "" / null and order by kind then title inside their own band.
+export type DayScheduleItem =
+	| { kind: "event"; key: string; sortAt: string; time: string | null; event: CalendarEventRow }
+	| { kind: "task"; key: string; sortAt: string; time: string | null; task: TaskRow };
+
+export type DaySchedule = {
+	allDay: DayScheduleItem[];
+	timeline: DayScheduleItem[];
+	open: TaskRow[];
+};
+
+/** Cap on the open/unscheduled band — same ceiling assembleDoingToday used. */
+const OPEN_CAP = 10;
+
+/** Postgres `time` arrives as HH:MM:SS; hand-entered values may be HH:MM. */
+const TIME_RE = /^\d{2}:\d{2}(:\d{2})?$/;
+
+/**
+ * A task's due time as a UTC instant, or null when it has no usable one.
+ * Defensive rather than throwing: a malformed time demotes the task to the
+ * all-day band instead of taking the whole briefing down with it.
+ */
+function taskDueInstant(task: TaskRow, todayIso: string, tz: string): string | null {
+	if (task.due_time === null || !TIME_RE.test(task.due_time)) return null;
+	try {
+		return instantFromLocal(todayIso, task.due_time, tz);
+	} catch {
+		return null;
+	}
+}
+
+function compareItems(a: DayScheduleItem, b: DayScheduleItem): number {
+	if (a.sortAt !== b.sortAt) return a.sortAt < b.sortAt ? -1 : 1;
+	if (a.kind !== b.kind) return a.kind === "event" ? -1 : 1;
+	const titleA = a.kind === "event" ? a.event.title : a.task.title;
+	const titleB = b.kind === "event" ? b.event.title : b.task.title;
+	return titleA < titleB ? -1 : titleA > titleB ? 1 : 0;
+}
+
+export function buildDaySchedule(input: {
+	events: CalendarEventRow[];
+	openTasks: TaskRow[];
+	todayIso: string;
+	tz: string;
+}): DaySchedule {
+	const { events, openTasks, todayIso, tz } = input;
+
+	const allDay: DayScheduleItem[] = [];
+	const timeline: DayScheduleItem[] = [];
+
+	for (const event of events) {
+		if (event.all_day) {
+			allDay.push({ kind: "event", key: `event:${event.id}`, sortAt: "", time: null, event });
+			continue;
+		}
+		timeline.push({
+			kind: "event",
+			key: `event:${event.id}`,
+			sortAt: event.start_at,
+			time: formatInstant(event.start_at, tz, "HH:mm"),
+			event,
+		});
+	}
+
+	const dueToday = openTasks.filter((t) => t.due_date === todayIso);
+	for (const task of dueToday) {
+		const at = taskDueInstant(task, todayIso, tz);
+		if (at === null) {
+			allDay.push({ kind: "task", key: `task:${task.id}`, sortAt: "", time: null, task });
+			continue;
+		}
+		timeline.push({
+			kind: "task",
+			key: `task:${task.id}`,
+			sortAt: at,
+			time: formatInstant(at, tz, "HH:mm"),
+			task,
+		});
+	}
+
+	// Whatever the bands above already show must not repeat below them.
+	const placed = new Set(
+		[...allDay, ...timeline].filter((i) => i.kind === "task").map((i) => i.task.id),
+	);
+	const unplaced = openTasks.filter((t) => !placed.has(t.id));
+	const top3 = unplaced.filter((t) => isTop3Today(t, todayIso));
+	// Same reach as assembleDoingToday: starred first, then anything whose due
+	// date has already arrived (overdue included — it is not on today's spine
+	// but it is certainly open).
+	const arrived = unplaced.filter(
+		(t) => !isTop3Today(t, todayIso) && t.due_date !== null && t.due_date <= todayIso,
+	);
+
+	return {
+		allDay: allDay.sort(compareItems),
+		timeline: timeline.sort(compareItems),
+		open: [...top3, ...arrived].slice(0, OPEN_CAP),
+	};
 }
 
 /** The one-sentence commitments anchor under the masthead. */
@@ -426,6 +547,7 @@ export async function getBriefing(
 		cadence,
 		inboxCount: inbox.length,
 		doingToday: assembleDoingToday(open, todayIso),
+		daySchedule: buildDaySchedule({ events: todayEvents, openTasks: open, todayIso, tz }),
 		routines: { total: routines.length, done: routinesDone, remainingNames },
 		quoteOfDay: quoteOfDay(quotes, todayIso),
 		todayEvents,
