@@ -48,17 +48,21 @@ Not work — recorded positions. Do not "fix" these without the trigger.
 | 3.4 | **System stewardship domain stays named "Inbox" in data** (ADR-0014) | Never. `/triage` is the UI, `/ingest` is the link list. |
 | 3.5 | **`assembleDoingToday` survives alongside `buildDaySchedule`** | It feeds the widget payload and chat context; Today reads `daySchedule`. Retire it when those two callers migrate. |
 
-## 4. Verification debt from the ops-shell plan
+## 4. Verification debt from the ops-shell plan — closed 2026-07-20
 
-Acceptance criteria that were reasoned about and unit-tested but never
-exercised end-to-end. Listed so nobody assumes they were seen working.
+Closed with the owner's authorization to write reversible seed data and run
+one real capture against the live project. What each check actually showed:
 
-| # | Unverified | Why not | Coverage that exists |
-|---|-----------|---------|----------------------|
-| 4.1 | Timed event + timed task rendering on one timeline | No calendar events and no timed tasks existed on the day it shipped — only the Open band rendered | 11 unit tests over `buildDaySchedule` partition + sort |
-| 4.2 | Changing the timezone moves `todayInTz` boundaries | Would have mutated `app_settings` | `isValidTimezone` unit tests; service rejects unknown zones |
-| 4.3 | Setting N days puts a domain into "In brief" past 75% | Would have mutated a real domain | `withCadenceThresholdDays` round-trips through `cadenceThresholdDays` in tests |
-| 4.4 | `POST /api/ingest` end-to-end after the ops-shell changes | A real capture writes `captured_data` and spends an LLM call | Guards re-checked live: 401 without auth, 400 on empty body; route present in the build |
+| # | Verified | Result |
+|---|----------|--------|
+| 4.1 | Timed event + timed task rendering on one timeline | Seeded 3 `calendar_events` (`created_here`, deleted after) plus the already-due-today task. All-day band and timeline separated correctly; a 09:00 event and a 09:00 task tied and broke events-first, matching the documented rule. |
+| 4.2 | Changing the timezone moves `todayInTz` boundaries | Flipped `app_settings.timezone` to `Europe/London` via the real Settings form. Both events' displayed times shifted (09:00→13:00, 18:00→22:00); the task stayed at 09:00 because `due_time` is wall-clock local, resolved through `instantFromLocal` — so it re-sorted to first place. Confirms the timeline orders on resolved UTC instants, not displayed strings. Reverted to `America/Sao_Paulo`. |
+| 4.3 | Setting N days puts a domain into "In brief" past 75% | Set Travel's cadence to 5 days via the real domain edit form (was 60, `days since` was 6). Travel appeared in "In brief", sorted by slip ratio, rule name (`no_activity_days`) preserved. Reverted to 60. |
+| 4.4 | `POST /api/ingest` end-to-end after the ops-shell changes | Real webhook call, real LLM parser run. Outcome: the parser routed it to a `needs_review` note rather than a task — itself a useful path to have seen work. Confirmed the raw `captured_data` row persisted before the parse (iron rule #4), the `notes` row landed tagged `capture:needs_review`, the `ingest.captured` ledger row was written, and Today's cadence strip + alerts row both picked up the live `needsReviewCount`. Left in place — see 5.4. |
+
+All four now have live evidence, not just unit coverage. The unit tests listed
+in the previous revision of this section still stand and still run in CI;
+this table records what watching it work actually showed.
 
 ## 5. Housekeeping
 
@@ -67,6 +71,7 @@ exercised end-to-end. Listed so nobody assumes they were seen working.
 | 5.1 | **Seeded "Link Inbox" note is vestigial** | Row `7d1f6a2e-…` from migration `0001`, a markdown note shared links were once meant to append to. ADR-0014 replaced the design with `ingest_links`. Left in place — it is the owner's data, not the system's. |
 | 5.2 | **Two test links sit in the reading pile** | `nextjs.org/docs` and `example.com/hello`, created while verifying `POST /api/links`, with their two `ingest.link` ledger rows. Dismissing them at `/ingest` is the intended cleanup. |
 | 5.3 | **The 2026-07-19 review doc is point-in-time** | [`review-ui-architecture-2026-07-19.md`](./review-ui-architecture-2026-07-19.md) still says triage is "today still `/inbox`". Kept as a dated record of the argument, not corrected. |
+| 5.4 | **One real capture sits in Notes and the ledger** | Created while closing 4.4: a `needs_review` note ("Verification capture 2026-07-20…", tagged `capture:needs_review`), its `captured_data` row, and one `ingest.captured` notification. Left in place — same call as 5.2; resolve or delete it at `/notes` whenever it's convenient. |
 
 ---
 
