@@ -32,7 +32,7 @@ export function QuoteForm() {
 					rows={3}
 					aria-label="Quote text"
 					placeholder="Copy it verbatim"
-					className="mt-1 w-full border border-line bg-bg px-2 py-1.5 font-serif text-base text-ink placeholder:text-ink-4"
+					className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 font-serif text-base text-ink placeholder:text-ink-4"
 				/>
 			</label>
 			<div className="grid grid-cols-2 gap-3">
@@ -41,7 +41,7 @@ export function QuoteForm() {
 					<select
 						name="source_type"
 						defaultValue=""
-						className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 					>
 						{SOURCE_TYPES.map((s) => (
 							<option key={s.value} value={s.value}>
@@ -55,7 +55,7 @@ export function QuoteForm() {
 					<input
 						name="source_author"
 						placeholder="Optional"
-						className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
+						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
 					/>
 				</label>
 				<label className="col-span-2 block">
@@ -63,7 +63,7 @@ export function QuoteForm() {
 					<input
 						name="tags"
 						placeholder="comma, separated"
-						className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
+						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
 					/>
 				</label>
 			</div>

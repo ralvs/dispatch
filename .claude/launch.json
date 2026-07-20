@@ -6,6 +6,12 @@
 			"runtimeExecutable": "/Volumes/stuff/renan/dispatch/node_modules/.bin/next",
 			"runtimeArgs": ["dev", "--turbopack"],
 			"port": 3000
+		},
+		{
+			"name": "dispatch-alt",
+			"runtimeExecutable": "/Volumes/stuff/renan/dispatch/node_modules/.bin/next",
+			"runtimeArgs": ["dev", "--turbopack", "-p", "3100"],
+			"port": 3100
 		}
 	]
 }

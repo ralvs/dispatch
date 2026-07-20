@@ -108,7 +108,7 @@ export function NoteEditor({ note }: { note: NoteListRow }) {
 						aria-label="Resolve needs-review flag"
 						disabled={pending}
 						onClick={() => startTransition(() => resolveNeedsReviewAction(note.id))}
-						className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 					>
 						Resolve
 					</button>
@@ -118,7 +118,7 @@ export function NoteEditor({ note }: { note: NoteListRow }) {
 					aria-label="Delete note"
 					disabled={pending}
 					onClick={() => startTransition(() => deleteNoteAction(note.id))}
-					className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 				>
 					Delete
 				</button>

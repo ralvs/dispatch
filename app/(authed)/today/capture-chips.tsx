@@ -16,7 +16,7 @@ export function CaptureChips() {
 					<Link
 						key={chip.href}
 						href={chip.href}
-						className="border border-line px-3 py-1.5 text-xs text-ink-2 hover:border-line-strong hover:text-ink"
+						className="rounded-full border border-line px-3 py-1.5 text-xs text-ink-2 hover:border-line-strong hover:text-ink"
 					>
 						{chip.label}
 					</Link>

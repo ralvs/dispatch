@@ -10,8 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
 		scope: "/",
 		display: "standalone",
 		orientation: "portrait",
-		background_color: "#16130f",
-		theme_color: "#16130f",
+		background_color: "#0a0a0a",
+		theme_color: "#0a0a0a",
 		lang: "en",
 		shortcuts: [{ name: "Capture", short_name: "Capture", url: "/today?capture=voice" }],
 		icons: [

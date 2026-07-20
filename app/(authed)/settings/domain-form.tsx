@@ -26,7 +26,7 @@ export function DomainForm() {
 					name="description"
 					rows={2}
 					placeholder="Optional"
-					className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
+					className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
 				/>
 			</label>
 			<label className="block">
@@ -35,7 +35,7 @@ export function DomainForm() {
 					name="fruit_definition"
 					rows={2}
 					placeholder="What does healthy look like here?"
-					className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
+					className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
 				/>
 			</label>
 			<label className="block">
@@ -43,7 +43,7 @@ export function DomainForm() {
 				<input
 					name="expected_cadence"
 					placeholder="Optional"
-					className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
+					className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
 				/>
 			</label>
 		</CollapsibleForm>

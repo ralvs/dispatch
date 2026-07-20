@@ -224,7 +224,7 @@ export function CapturePalette() {
 					aria-label="Capture a thought"
 					onClick={() => openCapturePalette({ voice: true })}
 					style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
-					className="fixed right-5 z-30 flex h-12 w-12 items-center justify-center border border-line-strong bg-accent font-serif text-2xl leading-none text-bg shadow-lg lg:hidden"
+					className="fixed right-5 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-line-strong bg-accent font-serif text-2xl leading-none text-bg shadow-lg lg:hidden"
 				>
 					<span aria-hidden="true">+</span>
 				</button>
@@ -244,7 +244,7 @@ export function CapturePalette() {
 						aria-labelledby={titleId}
 						onClick={(event) => event.stopPropagation()}
 						onKeyDown={onDialogKeyDown}
-						className="max-h-[85dvh] w-full max-w-md overflow-y-auto border border-line-strong bg-surface p-5 shadow-xl"
+						className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-xl border border-line-strong bg-surface p-5 shadow-xl"
 					>
 						<div className="mb-3 flex items-center justify-between">
 							<h2
@@ -283,7 +283,7 @@ export function CapturePalette() {
 									<button
 										type="button"
 										onClick={captureAnother}
-										className="bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg"
+										className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg"
 									>
 										Capture another
 									</button>
@@ -316,7 +316,7 @@ export function CapturePalette() {
 								/>
 
 								{state.status === "error" ? (
-									<p className="mt-2 text-sm text-accent">
+									<p className="mt-2 text-sm text-error">
 										{state.offlineError
 											? "Offline — draft kept."
 											: "Couldn't save — your text is kept. Check your connection and retry."}
@@ -335,7 +335,7 @@ export function CapturePalette() {
 													}
 													aria-pressed={speech.listening}
 													onClick={toggleMic}
-													className={`flex h-9 w-9 items-center justify-center border disabled:opacity-50 ${
+													className={`flex h-9 w-9 items-center justify-center rounded-full border disabled:opacity-50 ${
 														speech.listening
 															? "border-accent text-accent"
 															: "border-line-strong text-ink-3 hover:text-ink"
@@ -359,7 +359,7 @@ export function CapturePalette() {
 										type="button"
 										onClick={submit}
 										disabled={pending || isBlank(state.text)}
-										className="bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+										className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
 									>
 										{state.status === "error" ? "Retry" : pending ? "Capturing…" : "Capture"}
 									</button>

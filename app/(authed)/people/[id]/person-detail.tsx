@@ -71,14 +71,17 @@ export function PersonDetail({
 
 			<section className="mt-6" aria-label="Details">
 				{editing ? (
-					<form action={saveDetails} className="space-y-3 border border-line-strong bg-surface p-4">
+					<form
+						action={saveDetails}
+						className="space-y-3 rounded-xl border border-line-strong bg-surface p-4"
+					>
 						<label className="block">
 							<span className="font-mono text-eyebrow uppercase text-ink-3">Name</span>
 							<input
 								name="name"
 								required
 								defaultValue={person.name}
-								className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 							/>
 						</label>
 						<div className="grid grid-cols-2 gap-3">
@@ -87,7 +90,7 @@ export function PersonDetail({
 								<select
 									name="relationship_type"
 									defaultValue={person.relationship_type ?? ""}
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								>
 									{RELATIONSHIP_TYPES.map((r) => (
 										<option key={r.value} value={r.value}>
@@ -101,7 +104,7 @@ export function PersonDetail({
 								<input
 									name="company"
 									defaultValue={person.company ?? ""}
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								/>
 							</label>
 							<label className="block">
@@ -110,7 +113,7 @@ export function PersonDetail({
 									name="email"
 									type="email"
 									defaultValue={person.email ?? ""}
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								/>
 							</label>
 							<label className="block">
@@ -118,7 +121,7 @@ export function PersonDetail({
 								<input
 									name="phone"
 									defaultValue={person.phone ?? ""}
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								/>
 							</label>
 							<label className="col-span-2 block">
@@ -127,7 +130,7 @@ export function PersonDetail({
 									name="notes"
 									rows={3}
 									defaultValue={person.notes ?? ""}
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								/>
 							</label>
 						</div>
@@ -135,7 +138,7 @@ export function PersonDetail({
 							<button
 								type="submit"
 								disabled={pending}
-								className="bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+								className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
 							>
 								Save
 							</button>
@@ -179,7 +182,7 @@ export function PersonDetail({
 								type="button"
 								aria-label={`Edit ${person.name}`}
 								onClick={() => setEditing(true)}
-								className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+								className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 							>
 								Edit
 							</button>
@@ -188,7 +191,7 @@ export function PersonDetail({
 								aria-label={`Delete ${person.name}`}
 								disabled={pending}
 								onClick={() => startTransition(() => deletePersonAction(person.id))}
-								className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+								className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 							>
 								Delete
 							</button>
@@ -245,7 +248,7 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 				<form
 					ref={formRef}
 					action={submit}
-					className="mt-2 space-y-2 border border-line-strong bg-surface p-3"
+					className="mt-2 space-y-2 rounded-xl border border-line-strong bg-surface p-3"
 				>
 					<div className="grid grid-cols-2 gap-2">
 						<label className="block">
@@ -253,7 +256,7 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 							<select
 								name="fact_type"
 								defaultValue="other"
-								className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 							>
 								{FACT_TYPES.map((f) => (
 									<option key={f.value} value={f.value}>
@@ -267,7 +270,7 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 							<input
 								type="date"
 								name="date_relevant"
-								className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 							/>
 						</label>
 					</div>
@@ -276,14 +279,14 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 						<input
 							name="fact_value"
 							required
-							className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 						/>
 					</label>
 					<div className="flex gap-2">
 						<button
 							type="submit"
 							disabled={pending}
-							className="bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
 						>
 							Add
 						</button>
@@ -300,7 +303,7 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 				<button
 					type="button"
 					onClick={() => setOpen(true)}
-					className="mt-2 w-full border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="mt-2 w-full rounded-md border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 				>
 					+ Add fact
 				</button>
@@ -358,7 +361,7 @@ function InteractionsSection({
 				<form
 					ref={formRef}
 					action={submit}
-					className="mt-2 space-y-2 border border-line-strong bg-surface p-3"
+					className="mt-2 space-y-2 rounded-xl border border-line-strong bg-surface p-3"
 				>
 					<div className="grid grid-cols-2 gap-2">
 						<label className="block">
@@ -366,7 +369,7 @@ function InteractionsSection({
 							<select
 								name="interaction_type"
 								defaultValue="call"
-								className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 							>
 								{INTERACTION_TYPES.map((t) => (
 									<option key={t.value} value={t.value}>
@@ -381,7 +384,7 @@ function InteractionsSection({
 								<input
 									type="date"
 									name="occurred_date"
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								/>
 							</label>
 							<label className="block">
@@ -389,7 +392,7 @@ function InteractionsSection({
 								<input
 									type="time"
 									name="occurred_time"
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								/>
 							</label>
 						</div>
@@ -399,14 +402,14 @@ function InteractionsSection({
 						<textarea
 							name="notes"
 							rows={2}
-							className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 						/>
 					</label>
 					<div className="flex gap-2">
 						<button
 							type="submit"
 							disabled={pending}
-							className="bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
 						>
 							Log
 						</button>
@@ -423,7 +426,7 @@ function InteractionsSection({
 				<button
 					type="button"
 					onClick={() => setOpen(true)}
-					className="mt-2 w-full border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="mt-2 w-full rounded-md border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 				>
 					+ Log interaction
 				</button>

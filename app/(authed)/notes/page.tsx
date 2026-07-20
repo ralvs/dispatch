@@ -48,7 +48,7 @@ export default async function NotesPage() {
 				<form action={createBlankNoteAction}>
 					<button
 						type="submit"
-						className="border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-accent hover:text-ink"
+						className="rounded-md border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-accent hover:text-ink"
 					>
 						+ New note
 					</button>

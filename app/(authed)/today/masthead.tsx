@@ -32,7 +32,7 @@ export function Masthead({
 					</Link>
 				</div>
 			</div>
-			<h1 className="mt-1 font-serif text-4xl text-ink">Dispatch</h1>
+			<h1 className="display-tight gradient-text-mesh mt-1 w-fit font-serif text-4xl">Dispatch</h1>
 			<p className="mt-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3">
 				{formatDay(todayIso, tz)}
 			</p>

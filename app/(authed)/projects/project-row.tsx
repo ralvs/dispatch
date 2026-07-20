@@ -16,7 +16,7 @@ export function ProjectRowItem({ project }: { project: ProjectRow }) {
 					<span className="font-serif text-base text-ink">{project.name}</span>
 				</span>
 				{project.type && (
-					<span className="shrink-0 border border-line px-1.5 py-0.5 font-mono text-meta uppercase tracking-widest text-ink-3">
+					<span className="shrink-0 rounded-md border border-line px-1.5 py-0.5 font-mono text-meta uppercase tracking-widest text-ink-3">
 						{project.type}
 					</span>
 				)}

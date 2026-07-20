@@ -62,7 +62,7 @@ export function RoutineRowItem({
 						aria-label={`Delete routine "${routine.name}"`}
 						disabled={pending}
 						onClick={remove}
-						className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 					>
 						Delete
 					</button>

@@ -4,7 +4,7 @@ import type { QuoteRow } from "@/lib/services/quotes";
 /** The newest quote in the library — hidden by the page when it matches Resurfaced. */
 export function LatestQuote({ quote }: { quote: QuoteRow }) {
 	return (
-		<section className="mt-6 border border-line px-5 py-5" aria-label="Latest quote">
+		<section className="mt-6 rounded-xl border border-line px-5 py-5" aria-label="Latest quote">
 			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Latest quote</h2>
 			<blockquote className="mt-3 font-serif text-[17px] italic leading-snug text-ink">
 				“{quote.text}”

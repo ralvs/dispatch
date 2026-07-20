@@ -21,7 +21,7 @@ export function EntryRowItem({ entry }: { entry: JournalEntryRow }) {
 					aria-label={`Delete journal entry from ${entry.entry_date}`}
 					disabled={pending}
 					onClick={() => startTransition(() => deleteEntryAction(entry.id))}
-					className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 				>
 					Delete
 				</button>

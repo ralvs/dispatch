@@ -1,6 +1,6 @@
 /**
  * The cadence bar under a brief line: a 3px track where neutral fill runs up
- * to the expected cadence, accent fill shows the overflow past it, and a
+ * to the expected cadence, ship-gradient fill shows the overflow past it, and a
  * vertical tick marks the threshold. Pure divs, no SVG.
  */
 export function CadenceBar({
@@ -21,7 +21,7 @@ export function CadenceBar({
 		<div className="relative mt-2 h-[3px] w-full bg-line-strong" aria-hidden>
 			<div className="absolute left-0 top-0 h-full bg-ink-3" style={{ width: `${neutralPct}%` }} />
 			<div
-				className="absolute top-0 h-full bg-accent"
+				className="gradient-ship absolute top-0 h-full"
 				style={{ left: `${neutralPct}%`, width: `${overflowPct}%` }}
 			/>
 			<div className="absolute top-[-2px] h-[7px] w-px bg-ink-2" style={{ left: `${tickPct}%` }} />

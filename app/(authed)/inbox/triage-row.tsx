@@ -20,7 +20,7 @@ export function TriageRow({ task, domains }: { task: TaskRow; domains: DomainOpt
 						type="button"
 						disabled={pending}
 						onClick={() => startTransition(() => triageTaskAction(task.id, d.id))}
-						className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 					>
 						{d.name}
 					</button>

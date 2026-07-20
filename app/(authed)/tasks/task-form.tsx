@@ -29,7 +29,7 @@ export function TaskForm({ domains }: { domains: DomainOption[] }) {
 					<input
 						type="date"
 						name="due_date"
-						className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 					/>
 				</label>
 				<label className="block">
@@ -37,14 +37,14 @@ export function TaskForm({ domains }: { domains: DomainOption[] }) {
 					<input
 						type="time"
 						name="due_time"
-						className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 					/>
 				</label>
 				<label className="block">
 					<span className="font-mono text-eyebrow uppercase text-ink-3">Domain</span>
 					<select
 						name="domain_id"
-						className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 					>
 						{domains.map((d) => (
 							<option key={d.id} value={d.id}>
@@ -58,7 +58,7 @@ export function TaskForm({ domains }: { domains: DomainOption[] }) {
 					<select
 						name="priority"
 						defaultValue="4"
-						className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 					>
 						<option value="1">P1 — critical</option>
 						<option value="2">P2</option>
@@ -71,7 +71,7 @@ export function TaskForm({ domains }: { domains: DomainOption[] }) {
 					<select
 						name="recurrence_rule"
 						defaultValue=""
-						className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 					>
 						<option value="">Never</option>
 						{RECURRENCE_PATTERNS.map((p) => (

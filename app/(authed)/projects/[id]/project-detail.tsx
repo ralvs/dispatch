@@ -72,14 +72,17 @@ export function ProjectDetail({
 
 			<section className="mt-6" aria-label="Details">
 				{editing ? (
-					<form action={saveDetails} className="space-y-3 border border-line-strong bg-surface p-4">
+					<form
+						action={saveDetails}
+						className="space-y-3 rounded-xl border border-line-strong bg-surface p-4"
+					>
 						<label className="block">
 							<span className="font-mono text-eyebrow uppercase text-ink-3">Name</span>
 							<input
 								name="name"
 								required
 								defaultValue={project.name}
-								className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 							/>
 						</label>
 						<label className="block">
@@ -88,7 +91,7 @@ export function ProjectDetail({
 								name="description"
 								rows={2}
 								defaultValue={project.description ?? ""}
-								className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 							/>
 						</label>
 						<div className="grid grid-cols-2 gap-3">
@@ -97,7 +100,7 @@ export function ProjectDetail({
 								<select
 									name="domain_id"
 									defaultValue={project.domain_id ?? ""}
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								>
 									<option value="">Unassigned</option>
 									{domains.map((d) => (
@@ -112,7 +115,7 @@ export function ProjectDetail({
 								<select
 									name="type"
 									defaultValue={project.type ?? ""}
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								>
 									{PROJECT_TYPES.map((t) => (
 										<option key={t.value} value={t.value}>
@@ -126,7 +129,7 @@ export function ProjectDetail({
 								<select
 									name="kind"
 									defaultValue={project.kind}
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								>
 									{KINDS.map((k) => (
 										<option key={k.value} value={k.value}>
@@ -140,7 +143,7 @@ export function ProjectDetail({
 								<select
 									name="engagement_type"
 									defaultValue={project.engagement_type}
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								>
 									{ENGAGEMENT_TYPES.map((e) => (
 										<option key={e.value} value={e.value}>
@@ -157,7 +160,7 @@ export function ProjectDetail({
 									min="0"
 									step="0.5"
 									defaultValue={project.quoted_hours ?? ""}
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								/>
 							</label>
 							<label className="block">
@@ -166,7 +169,7 @@ export function ProjectDetail({
 									name="start_date"
 									type="date"
 									defaultValue={project.start_date ?? ""}
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								/>
 							</label>
 							<label className="block">
@@ -175,7 +178,7 @@ export function ProjectDetail({
 									name="target_date"
 									type="date"
 									defaultValue={project.target_date ?? ""}
-									className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								/>
 							</label>
 						</div>
@@ -183,7 +186,7 @@ export function ProjectDetail({
 							<button
 								type="submit"
 								disabled={pending}
-								className="bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+								className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
 							>
 								Save
 							</button>
@@ -235,7 +238,7 @@ export function ProjectDetail({
 								type="button"
 								aria-label={`Edit ${project.name}`}
 								onClick={() => setEditing(true)}
-								className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+								className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 							>
 								Edit
 							</button>
@@ -245,7 +248,7 @@ export function ProjectDetail({
 									aria-label={`Mark ${project.name} done`}
 									disabled={pending}
 									onClick={() => startTransition(() => completeProjectAction(project.id))}
-									className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+									className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 								>
 									Mark done
 								</button>
@@ -256,7 +259,7 @@ export function ProjectDetail({
 									aria-label={`Archive ${project.name}`}
 									disabled={pending}
 									onClick={() => startTransition(() => archiveProjectAction(project.id))}
-									className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+									className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 								>
 									Archive
 								</button>
@@ -347,7 +350,7 @@ function MilestonesSection({
 				<form
 					ref={formRef}
 					action={submit}
-					className="mt-2 space-y-2 border border-line-strong bg-surface p-3"
+					className="mt-2 space-y-2 rounded-xl border border-line-strong bg-surface p-3"
 				>
 					<div className="grid grid-cols-3 gap-2">
 						<label className="col-span-2 block">
@@ -355,7 +358,7 @@ function MilestonesSection({
 							<input
 								name="title"
 								required
-								className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 							/>
 						</label>
 						<label className="block">
@@ -366,7 +369,7 @@ function MilestonesSection({
 								min="1"
 								step="1"
 								placeholder="1"
-								className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
+								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
 							/>
 						</label>
 					</div>
@@ -374,7 +377,7 @@ function MilestonesSection({
 						<button
 							type="submit"
 							disabled={pending}
-							className="bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
 						>
 							Add
 						</button>
@@ -391,7 +394,7 @@ function MilestonesSection({
 				<button
 					type="button"
 					onClick={() => setOpen(true)}
-					className="mt-2 w-full border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="mt-2 w-full rounded-md border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 				>
 					+ Add milestone
 				</button>

@@ -21,7 +21,7 @@ export function JournalForm({ todayIso }: { todayIso: string }) {
 					rows={5}
 					aria-label="Journal entry"
 					placeholder="What happened today?"
-					className="mt-1 w-full border border-line bg-bg px-2 py-1.5 font-serif text-base text-ink placeholder:text-ink-4"
+					className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 font-serif text-base text-ink placeholder:text-ink-4"
 				/>
 			</label>
 			<div className="grid grid-cols-2 gap-3">
@@ -32,7 +32,7 @@ export function JournalForm({ todayIso }: { todayIso: string }) {
 						name="entry_date"
 						defaultValue={todayIso}
 						aria-label="Entry date"
-						className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 					/>
 				</label>
 				<label className="block">
@@ -40,7 +40,7 @@ export function JournalForm({ todayIso }: { todayIso: string }) {
 					<input
 						name="tags"
 						placeholder="comma, separated"
-						className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
+						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
 					/>
 				</label>
 			</div>

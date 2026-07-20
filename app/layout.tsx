@@ -1,14 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Newsreader } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { SwRegister } from "@/components/sw-register";
 import "./globals.css";
-
-const newsreader = Newsreader({
-	subsets: ["latin"],
-	style: ["normal", "italic"],
-	variable: "--font-newsreader",
-});
 
 const geist = Geist({
 	subsets: ["latin"],
@@ -36,7 +30,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
 	// Matched to the dark theme; the light value ships with the theme toggle.
-	themeColor: "#16130F",
+	themeColor: "#0A0A0A",
 	viewportFit: "cover",
 	maximumScale: 1,
 	userScalable: false,
@@ -46,11 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 	const theme = (await cookies()).get("theme")?.value === "light" ? "light" : "dark";
 
 	return (
-		<html
-			lang="en"
-			data-theme={theme}
-			className={`${newsreader.variable} ${geist.variable} ${geistMono.variable}`}
-		>
+		<html lang="en" data-theme={theme} className={`${geist.variable} ${geistMono.variable}`}>
 			<body>
 				{children}
 				<SwRegister />

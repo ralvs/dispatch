@@ -39,7 +39,7 @@ export function NotificationRow({ notification, tz }: { notification: Row; tz: s
 						type="button"
 						disabled={pending}
 						onClick={() => startTransition(() => markNotificationAction(notification.id, "read"))}
-						className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 					>
 						Mark read
 					</button>
@@ -50,7 +50,7 @@ export function NotificationRow({ notification, tz }: { notification: Row; tz: s
 					onClick={() =>
 						startTransition(() => markNotificationAction(notification.id, "dismissed"))
 					}
-					className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 				>
 					Dismiss
 				</button>

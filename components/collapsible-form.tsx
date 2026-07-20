@@ -60,11 +60,11 @@ export function useCollapsibleForm(
 }
 
 const TRIGGER_CLASS =
-	"w-full border border-line px-3 py-2.5 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink";
-const CARD_CLASS = "space-y-3 border border-line-strong bg-surface p-4";
+	"w-full rounded-md border border-line px-4 py-2.5 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink";
+const CARD_CLASS = "space-y-3 rounded-xl border border-line-strong bg-surface p-4";
 const FOOTER_CLASS = "flex gap-2 pt-1";
 const SUBMIT_CLASS =
-	"bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50";
+	"rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50";
 const CANCEL_CLASS = "px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3";
 
 /**

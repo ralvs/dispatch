@@ -19,7 +19,10 @@ export function ResurfacedQuote({
 	if (!hasQuotes) return null;
 
 	return (
-		<section className="mt-8 border-y border-line bg-surface px-5 py-6" aria-label="Resurfaced">
+		<section
+			className="mt-8 rounded-xl border border-line bg-surface px-5 py-6"
+			aria-label="Resurfaced"
+		>
 			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Resurfaced</h2>
 			{quote ? (
 				<>

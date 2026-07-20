@@ -24,14 +24,17 @@ export function DomainRowItem({ domain, tz }: { domain: DomainRowType; tz: strin
 	if (editing) {
 		return (
 			<li className="hairline py-3">
-				<form action={saveDetails} className="space-y-2 border border-line-strong bg-surface p-3">
+				<form
+					action={saveDetails}
+					className="space-y-2 rounded-xl border border-line-strong bg-surface p-3"
+				>
 					<label className="block">
 						<span className="font-mono text-eyebrow uppercase text-ink-3">Name</span>
 						<input
 							name="name"
 							required
 							defaultValue={domain.name}
-							className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 						/>
 					</label>
 					<label className="block">
@@ -40,7 +43,7 @@ export function DomainRowItem({ domain, tz }: { domain: DomainRowType; tz: strin
 							name="description"
 							rows={2}
 							defaultValue={domain.description ?? ""}
-							className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 						/>
 					</label>
 					<label className="block">
@@ -49,7 +52,7 @@ export function DomainRowItem({ domain, tz }: { domain: DomainRowType; tz: strin
 							name="fruit_definition"
 							rows={2}
 							defaultValue={domain.fruit_definition ?? ""}
-							className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 						/>
 					</label>
 					<label className="block">
@@ -57,14 +60,14 @@ export function DomainRowItem({ domain, tz }: { domain: DomainRowType; tz: strin
 						<input
 							name="expected_cadence"
 							defaultValue={domain.expected_cadence ?? ""}
-							className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 						/>
 					</label>
 					<div className="flex gap-2 pt-1">
 						<button
 							type="submit"
 							disabled={pending}
-							className="bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
 						>
 							Save
 						</button>
@@ -86,7 +89,7 @@ export function DomainRowItem({ domain, tz }: { domain: DomainRowType; tz: strin
 			<div className="flex items-baseline justify-between gap-3">
 				<span className="font-serif text-base text-ink">{domain.name}</span>
 				{domain.is_system && (
-					<span className="shrink-0 border border-line px-1.5 py-0.5 font-mono text-meta uppercase tracking-widest text-ink-3">
+					<span className="shrink-0 rounded-md border border-line px-1.5 py-0.5 font-mono text-meta uppercase tracking-widest text-ink-3">
 						System
 					</span>
 				)}
@@ -108,7 +111,7 @@ export function DomainRowItem({ domain, tz }: { domain: DomainRowType; tz: strin
 						type="button"
 						aria-label={`Edit ${domain.name}`}
 						onClick={() => setEditing(true)}
-						className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 					>
 						Edit
 					</button>
@@ -117,7 +120,7 @@ export function DomainRowItem({ domain, tz }: { domain: DomainRowType; tz: strin
 						aria-label={`Mark ${domain.name} shipped`}
 						disabled={pending}
 						onClick={() => startTransition(() => markDomainShippedAction(domain.id))}
-						className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 					>
 						Mark shipped
 					</button>
@@ -127,7 +130,7 @@ export function DomainRowItem({ domain, tz }: { domain: DomainRowType; tz: strin
 							aria-label={`Archive ${domain.name}`}
 							disabled={pending}
 							onClick={() => startTransition(() => archiveDomainAction(domain.id))}
-							className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+							className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 						>
 							Archive
 						</button>
@@ -137,7 +140,7 @@ export function DomainRowItem({ domain, tz }: { domain: DomainRowType; tz: strin
 							aria-label={`Reactivate ${domain.name}`}
 							disabled={pending}
 							onClick={() => startTransition(() => reactivateDomainAction(domain.id))}
-							className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+							className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 						>
 							Reactivate
 						</button>

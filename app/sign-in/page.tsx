@@ -50,10 +50,10 @@ export default function SignInPage() {
 						id="email"
 						type="email"
 						autoComplete="email"
-						className="mt-2 w-full border border-line bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-line-strong"
+						className="mt-2 w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-line-strong"
 						{...register("email")}
 					/>
-					{errors.email && <p className="mt-1 text-meta text-accent">{errors.email.message}</p>}
+					{errors.email && <p className="mt-1 text-meta text-error">{errors.email.message}</p>}
 				</div>
 
 				<div>
@@ -64,20 +64,20 @@ export default function SignInPage() {
 						id="password"
 						type="password"
 						autoComplete="current-password"
-						className="mt-2 w-full border border-line bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-line-strong"
+						className="mt-2 w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-line-strong"
 						{...register("password")}
 					/>
 					{errors.password && (
-						<p className="mt-1 text-meta text-accent">{errors.password.message}</p>
+						<p className="mt-1 text-meta text-error">{errors.password.message}</p>
 					)}
 				</div>
 
-				{serverError && <p className="text-meta text-accent">{serverError}</p>}
+				{serverError && <p className="text-meta text-error">{serverError}</p>}
 
 				<button
 					type="submit"
 					disabled={isSubmitting}
-					className="w-full bg-ink px-4 py-2.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+					className="w-full rounded-full bg-ink px-4 py-2.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
 				>
 					{isSubmitting ? "Signing in…" : "Enter"}
 				</button>

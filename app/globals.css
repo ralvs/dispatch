@@ -1,44 +1,55 @@
 @import "tailwindcss";
 
 /*
- * Dispatch design tokens — editorial monochrome, two themes.
- * Dark (default): warm near-black newsroom-at-night.
- * Light: the warm-linen palette from the original briefing design.
+ * Dispatch design tokens — Vercel Geist system, two themes.
+ * (See DESIGN-vercel.md analysis + docs/adr/0013: near-white/near-black
+ * canvas, a single ink ladder, hairline cards, Geist Sans display at 600
+ * with tight negative tracking, Geist Mono eyebrows.)
+ * Dark (default) is the Geist dark inversion: #0a0a0a canvas, #ededed ink.
+ * Color is deliberate and scarce, but present: Vercel Blue (#0070f3) is the
+ * accent/link/active signal, and the develop / preview / ship gradients are
+ * the decorative system (masthead, slip overflow).
  * Semantic names only — components never reference raw colors.
  */
 
 :root {
 	/* dark (default) */
-	--bg: #16130f;
-	--surface: #1e1a15;
-	--surface-2: #27221a;
-	--ink: #ede6d8;
-	--ink-2: #b5ac9c;
-	--ink-3: #857d6e;
-	--ink-4: #5a5346;
-	--line: rgba(237, 230, 216, 0.08);
-	--line-strong: rgba(237, 230, 216, 0.16);
-	--accent: #d3654a;
-	--accent-bg: rgba(211, 101, 74, 0.12);
-	--accent-ink: #de7f63;
-	--accent-slip: #c75b41;
+	--bg: #0a0a0a;
+	--surface: #141414;
+	--surface-2: #1f1f1f;
+	--ink: #ededed;
+	--ink-2: #a1a1a1;
+	--ink-3: #8f8f8f;
+	--ink-4: #525252;
+	--line: #232323;
+	--line-strong: #343434;
+	--accent: #0070f3;
+	--accent-bg: rgba(0, 112, 243, 0.16);
+	--accent-ink: #52a8ff;
+	--accent-slip: #47a1ff;
+	--error: #ff4d4d;
+	--warning: #f5a623;
+	--success: #50e3c2;
 	color-scheme: dark;
 }
 
 [data-theme="light"] {
-	--bg: #f6f2ea;
-	--surface: #fbf8f2;
-	--surface-2: #efeae0;
-	--ink: #1a1612;
-	--ink-2: #5a544b;
-	--ink-3: #928a7e;
-	--ink-4: #b8b0a2;
-	--line: rgba(26, 22, 18, 0.08);
-	--line-strong: rgba(26, 22, 18, 0.16);
-	--accent: #b8442b;
-	--accent-bg: rgba(184, 68, 43, 0.08);
-	--accent-ink: #8a3320;
-	--accent-slip: #9c3f26;
+	--bg: #fafafa;
+	--surface: #ffffff;
+	--surface-2: #f2f2f2;
+	--ink: #171717;
+	--ink-2: #4d4d4d;
+	--ink-3: #8f8f8f;
+	--ink-4: #a1a1a1;
+	--line: #ebebeb;
+	--line-strong: #d9d9d9;
+	--accent: #0070f3;
+	--accent-bg: rgba(0, 112, 243, 0.08);
+	--accent-ink: #0761d1;
+	--accent-slip: #0070f3;
+	--error: #ee0000;
+	--warning: #ab570a;
+	--success: #0761d1;
 	color-scheme: light;
 }
 
@@ -56,15 +67,21 @@
 	--color-accent-bg: var(--accent-bg);
 	--color-accent-ink: var(--accent-ink);
 	--color-accent-slip: var(--accent-slip);
+	--color-error: var(--error);
+	--color-warning: var(--warning);
+	--color-success: var(--success);
 
-	--font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
-	--font-sans: var(--font-geist), system-ui, sans-serif;
-	--font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+	/* One family: Geist. font-serif survives as the "display" slot — Geist
+	 * Sans at 600 with tight tracking (see .font-serif below). */
+	--font-serif: var(--font-geist), Arial, ui-sans-serif, sans-serif;
+	--font-sans: var(--font-geist), Arial, ui-sans-serif, sans-serif;
+	--font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-	--text-eyebrow: 10px;
-	--text-eyebrow--line-height: 1.4;
+	--text-eyebrow: 11px;
+	--text-eyebrow--line-height: 1.45;
 	--text-eyebrow--letter-spacing: 0.08em;
-	--text-meta: 11px;
+	--text-eyebrow--font-weight: 500;
+	--text-meta: 12px;
 	--text-meta--line-height: 1.4;
 
 	--radius-none: 0;
@@ -78,10 +95,44 @@ body {
 	padding-top: env(safe-area-inset-top);
 }
 
-/* Hairline rules — the editorial section dividers used everywhere. */
+/* Display type: Geist 600 with the system's tight negative tracking. The
+ * larger the heading, the tighter — this base tier covers card/list titles;
+ * hero-scale text tightens further via .display-tight. */
+.font-serif {
+	font-weight: 600;
+	letter-spacing: -0.02em;
+}
+.display-tight {
+	letter-spacing: -0.05em;
+}
+
+/* Hairline rules — the structural 1px dividers used everywhere. */
 .hairline {
 	border-bottom: 1px solid var(--line);
 }
 .hairline-strong {
 	border-bottom: 1px solid var(--line-strong);
+}
+
+/* The brand gradients — develop / preview / ship — and the blended mesh.
+ * Decoration only: gradient text and thin fills, never chrome surfaces. */
+.gradient-develop {
+	background-image: linear-gradient(90deg, #007cf0, #00dfd8);
+}
+.gradient-preview {
+	background-image: linear-gradient(90deg, #7928ca, #ff0080);
+}
+.gradient-ship {
+	background-image: linear-gradient(90deg, #ff4d4d, #f9cb28);
+}
+.gradient-text {
+	background-clip: text;
+	-webkit-background-clip: text;
+	color: transparent;
+}
+.gradient-text-mesh {
+	background-image: linear-gradient(100deg, #007cf0 0%, #00dfd8 28%, #7928ca 52%, #ff0080 74%, #f9cb28 100%);
+	background-clip: text;
+	-webkit-background-clip: text;
+	color: transparent;
 }

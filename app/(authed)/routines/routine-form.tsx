@@ -21,7 +21,7 @@ export function RoutineForm() {
 					required
 					aria-label="Routine name"
 					placeholder="Stretch, read, drink water…"
-					className="mt-1 w-full border border-line bg-bg px-2 py-1.5 font-serif text-base text-ink placeholder:text-ink-4"
+					className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 font-serif text-base text-ink placeholder:text-ink-4"
 				/>
 			</label>
 			<label className="block">
@@ -29,7 +29,7 @@ export function RoutineForm() {
 				<select
 					name="time_of_day"
 					defaultValue="anytime"
-					className="mt-1 w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink"
+					className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 				>
 					{TIME_OF_DAY_ORDER.map((t) => (
 						<option key={t} value={t}>

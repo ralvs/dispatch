@@ -45,7 +45,7 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 					aria-label={expanded ? "Collapse annotations" : "Expand annotations"}
 					aria-pressed={expanded}
 					onClick={toggleExpand}
-					className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 				>
 					{expanded ? "Hide" : "Annotations"}
 				</button>
@@ -54,7 +54,7 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 					aria-label={`Delete quote "${quote.text.slice(0, 20)}"`}
 					disabled={pending}
 					onClick={() => startTransition(() => deleteQuoteAction(quote.id))}
-					className="border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 				>
 					Delete
 				</button>
@@ -73,13 +73,13 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 							rows={2}
 							aria-label="Add annotation"
 							placeholder="Add a reflection…"
-							className="w-full border border-line bg-bg px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
+							className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
 						/>
 						<button
 							type="button"
 							disabled={pending}
 							onClick={addAnnotation}
-							className="shrink-0 bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+							className="shrink-0 rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
 						>
 							Add
 						</button>
