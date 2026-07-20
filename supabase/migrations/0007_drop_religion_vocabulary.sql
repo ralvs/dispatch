@@ -1,5 +1,6 @@
 -- ─────────────────────────────────────────────────────────────────────────
--- Drop church / sermon / verse / Spirituality domain vocabulary.
+-- Drop church / sermon / verse vocabulary (religion-specific enums).
+-- Spirituality remains a stewardship domain — it is not religion.
 -- Safe to re-run. Existing rows are remapped before CHECK constraints tighten.
 -- ─────────────────────────────────────────────────────────────────────────
 
@@ -33,26 +34,3 @@ alter table resurfacing_seen
   add constraint resurfacing_seen_item_type_check
   check (item_type in
     ('journal','quote','win','note','project_milestone'));
-
--- Spirituality stewardship domain: rehome dependents into Inbox, then delete
-do $$
-declare
-  spirituality_id uuid;
-  inbox_id uuid := 'acf035ee-b247-4c96-a07e-5946bc2b2e91';
-begin
-  select id into spirituality_id
-  from stewardship_domains
-  where name = 'Spirituality'
-  limit 1;
-
-  if spirituality_id is null then
-    return;
-  end if;
-
-  update tasks set domain_id = inbox_id where domain_id = spirituality_id;
-  update projects set domain_id = inbox_id where domain_id = spirituality_id;
-  -- observations.domain_id is nullable; rehome so nothing points at the row
-  update observations set domain_id = inbox_id where domain_id = spirituality_id;
-
-  delete from stewardship_domains where id = spirituality_id;
-end $$;

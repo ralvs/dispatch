@@ -32,9 +32,9 @@ due/overdue ones.
 
 ## stewardship domain
 
-A long-lived area of life Renan is responsible for — the six seeded domains
-are Engine, Health, Family, Finance, Code, Travel, plus the system **Inbox**
-(`stewardship_domains`). Each carries a `fruit_definition`
+A long-lived area of life Renan is responsible for — the seven seeded domains
+are Engine, Health, Family, Spirituality, Finance, Code, Travel, plus the
+system **Inbox** (`stewardship_domains`). Each carries a `fruit_definition`
 (what "tended well" looks like) and `failure_patterns` (e.g. "no activity for N
 days") that the observations cron reads to flag neglect. Every task belongs to
 exactly one domain.

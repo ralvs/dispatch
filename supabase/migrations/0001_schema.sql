@@ -10,7 +10,7 @@
 --   2. Creates indexes.
 --   3. Installs the set_updated_at() trigger + attaches it.
 --   4. Enables RLS + writes the authenticated-user-all policies.
---   5. Seeds stewardship_domains (6 domains + Inbox system domain),
+--   5. Seeds stewardship_domains (7 domains + Inbox system domain),
 --      app_settings (America/Sao_Paulo), health_history (singleton), and
 --      the Link Inbox system note.
 --
@@ -869,7 +869,7 @@ end $$;
 -- Seed data
 -- ─────────────────────────────────────────────────────────────────────────
 
--- Six user-facing stewardship domains for Renan Alves (software developer).
+-- Seven user-facing stewardship domains for Renan Alves (software developer).
 -- The failure_patterns JSON must match what the observations cron parses.
 insert into stewardship_domains (name, description, fruit_definition, failure_patterns, expected_cadence) values
   ('Engine',
@@ -895,6 +895,14 @@ insert into stewardship_domains (name, description, fruit_definition, failure_pa
       {"rule":"no_activity_days","value":7}
     ]'::jsonb,
     'weekly minimum'),
+
+  ('Spirituality',
+    'Meditation, reflection, contemplative practice.',
+    'Consistent reflective practice.',
+    '[
+      {"rule":"days_since_journal","value":7}
+    ]'::jsonb,
+    'weekly journal minimum'),
 
   ('Finance',
     'Budget, investments, subscriptions.',
