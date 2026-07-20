@@ -25,8 +25,8 @@ export default async function TasksPage() {
 				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Tasks</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">The docket</h1>
 				{inboxCount > 0 && (
-					<Link href="/inbox" className="mt-2 inline-block text-meta text-accent-ink">
-						{inboxCount} in the inbox awaiting triage →
+					<Link href="/triage" className="mt-2 inline-block text-meta text-accent-ink">
+						{inboxCount} in the Inbox domain awaiting triage →
 					</Link>
 				)}
 			</header>

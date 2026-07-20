@@ -7,12 +7,12 @@ import { BriefSection } from "./brief-section";
 import { CaptureChips } from "./capture-chips";
 import { DoingCard } from "./doing-card";
 import { EventsCard } from "./events-card";
-import { InboxStrip } from "./inbox-strip";
 import { LatestQuote } from "./latest-quote";
 import { Masthead } from "./masthead";
 import { ProjectsCard } from "./projects-card";
 import { ResurfacedQuote } from "./resurfaced-quote";
 import { RoutinesCard } from "./routines-card";
+import { TriageStrip } from "./triage-strip";
 
 export default async function TodayPage() {
 	const { sb } = await requireOwnerPage();
@@ -31,7 +31,7 @@ export default async function TodayPage() {
 				unreadNotifications={briefing.masthead.unreadNotifications}
 			/>
 			<AnchorLine anchor={briefing.anchor} tz={tz} />
-			{briefing.inboxCount > 0 && <InboxStrip count={briefing.inboxCount} />}
+			{briefing.inboxCount > 0 && <TriageStrip count={briefing.inboxCount} />}
 
 			<div className="mt-7 lg:grid lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-x-10">
 				<div>

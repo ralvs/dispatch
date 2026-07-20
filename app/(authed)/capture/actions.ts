@@ -31,7 +31,7 @@ export async function captureText(input: {
 	// A capture can create tasks and/or notes; refresh the views that surface
 	// them, matching tasks/actions.ts.
 	revalidatePath("/tasks");
-	revalidatePath("/inbox");
+	revalidatePath("/triage");
 	revalidatePath("/today");
 	return record;
 }

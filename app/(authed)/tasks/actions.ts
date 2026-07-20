@@ -16,7 +16,7 @@ import {
 
 function revalidateTaskViews() {
 	revalidatePath("/tasks");
-	revalidatePath("/inbox");
+	revalidatePath("/triage");
 	revalidatePath("/today");
 }
 

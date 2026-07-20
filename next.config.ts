@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
 			bodySizeLimit: "25mb",
 		},
 	},
+	async redirects() {
+		return [
+			// Task triage moved to /triage (ADR-0014). /inbox is not the link
+			// reading list — that is Ingest at /ingest — so send old bookmarks
+			// to the page they actually meant.
+			{ source: "/inbox", destination: "/triage", permanent: true },
+		];
+	},
 };
 
 export default nextConfig;

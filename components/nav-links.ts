@@ -7,10 +7,10 @@ export type NavItem = {
 };
 
 // The 5-tab shell (content tab removed — docs/adr/0007; library and domains
-// tabs removed — docs/adr/0011). /tasks and /inbox are Today sub-views and
+// tabs removed — docs/adr/0011). /tasks and /triage are Today sub-views and
 // keep Today highlighted. Settings hosts domains and app-level toggles.
 export const TABS: NavItem[] = [
-	{ key: "today", label: "Today", href: "/today", aliases: ["/tasks", "/inbox", "/calendar"] },
+	{ key: "today", label: "Today", href: "/today", aliases: ["/tasks", "/triage", "/calendar"] },
 	{ key: "notes", label: "Notes", href: "/notes" },
 	{ key: "projects", label: "Projects", href: "/projects" },
 	{ key: "people", label: "People", href: "/people" },
