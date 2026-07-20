@@ -10,7 +10,19 @@ import {
 	updateDomainAction,
 } from "./actions";
 
-export function DomainRowItem({ domain, tz }: { domain: DomainRowType; tz: string }) {
+/**
+ * `cadenceDays` is read out of failure_patterns by the page — the parser for
+ * that shape is server-only, so it arrives already resolved.
+ */
+export function DomainRowItem({
+	domain,
+	tz,
+	cadenceDays,
+}: {
+	domain: DomainRowType;
+	tz: string;
+	cadenceDays: number | null;
+}) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
 
@@ -63,6 +75,23 @@ export function DomainRowItem({ domain, tz }: { domain: DomainRowType; tz: strin
 							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 						/>
 					</label>
+					<label className="block">
+						<span className="font-mono text-eyebrow uppercase text-ink-3">Flag after (days)</span>
+						<input
+							name="cadence_days"
+							type="number"
+							min={1}
+							max={365}
+							step={1}
+							inputMode="numeric"
+							placeholder="Leave blank for never"
+							defaultValue={cadenceDays ?? ""}
+							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
+						/>
+						<span className="mt-1 block font-mono text-meta text-ink-4">
+							Surfaces in "In brief" from 75% of this, slipping past it.
+						</span>
+					</label>
 					<div className="flex gap-2 pt-1">
 						<button
 							type="submit"
@@ -100,6 +129,13 @@ export function DomainRowItem({ domain, tz }: { domain: DomainRowType; tz: strin
 			)}
 			{domain.expected_cadence && (
 				<p className="mt-0.5 text-meta text-ink-4">Cadence: {domain.expected_cadence}</p>
+			)}
+			{!domain.is_system && (
+				<p className="mt-0.5 text-meta text-ink-4">
+					{cadenceDays === null
+						? "Flags after: never — no cadence rule"
+						: `Flags after: ${cadenceDays} day${cadenceDays === 1 ? "" : "s"}`}
+				</p>
 			)}
 			<p className="mt-0.5 font-mono text-meta text-ink-4">
 				Last shipped: {domain.last_shipped_at ? formatInstant(domain.last_shipped_at, tz) : "never"}

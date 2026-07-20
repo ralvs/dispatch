@@ -81,3 +81,57 @@ export async function markDomainShipped(sb: SupabaseClient, id: string): Promise
 	await assertNotSystem(sb, id, "marked shipped");
 	unwrap(await sb.from("stewardship_domains").update({ last_shipped_at: nowUtc() }).eq("id", id));
 }
+
+// ─── Cadence rule ───────────────────────────────────────────────────────
+//
+// The numeric threshold that decides whether a domain shows up in Today's
+// "In brief". The reader is cadenceThresholdDays in lib/services/briefing.ts;
+// these two must agree on the failure_patterns shape, which is why the writer
+// recognises exactly the same rule names.
+
+const CADENCE_RULES = ["no_activity_days", "days_since_journal"];
+
+type FailurePattern = { rule: string; value?: unknown };
+
+function isFailurePattern(entry: unknown): entry is FailurePattern {
+	return (
+		typeof entry === "object" &&
+		entry !== null &&
+		typeof (entry as FailurePattern).rule === "string"
+	);
+}
+
+/**
+ * Merge a threshold into a domain's failure_patterns, preserving every rule
+ * the editor does not manage (advanced rules are still hand-written SQL).
+ * `days === null` removes the numeric rule entirely, which drops the domain
+ * out of "In brief". An existing rule keeps its name — a journal-cadence
+ * domain does not silently become an activity-cadence one.
+ */
+export function withCadenceThresholdDays(
+	failurePatterns: unknown,
+	days: number | null,
+): FailurePattern[] {
+	const existing = Array.isArray(failurePatterns) ? failurePatterns.filter(isFailurePattern) : [];
+	const others = existing.filter((p) => !CADENCE_RULES.includes(p.rule));
+	if (days === null) return others;
+	const previous = existing.find((p) => CADENCE_RULES.includes(p.rule));
+	return [...others, { ...previous, rule: previous?.rule ?? CADENCE_RULES[0], value: days }];
+}
+
+/** Read-merge-write of the primary cadence rule. */
+export async function setDomainCadence(
+	sb: SupabaseClient,
+	id: string,
+	days: number | null,
+): Promise<void> {
+	await assertNotSystem(sb, id, "given a cadence");
+	const domain = await getDomain(sb, id);
+	if (!domain) throw new ServiceError(`Domain ${id} not found`, "NOT_FOUND");
+	unwrap(
+		await sb
+			.from("stewardship_domains")
+			.update({ failure_patterns: withCadenceThresholdDays(domain.failure_patterns, days) })
+			.eq("id", id),
+	);
+}

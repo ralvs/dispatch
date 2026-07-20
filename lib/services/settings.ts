@@ -1,8 +1,8 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cache } from "react";
-import { DEFAULT_TIMEZONE, todayInTz } from "@/lib/dates";
-import { unwrap } from "@/lib/services/errors";
+import { DEFAULT_TIMEZONE, isValidTimezone, todayInTz } from "@/lib/dates";
+import { ServiceError, unwrap } from "@/lib/services/errors";
 
 /**
  * App timezone from the app_settings singleton. React-cached so one request
@@ -22,6 +22,14 @@ export async function todayForRequest(sb: SupabaseClient): Promise<string> {
 	return todayInTz(await getAppTimezone(sb));
 }
 
+/**
+ * Rejects an unknown zone here rather than at the form, so no caller can put
+ * a value in app_settings that lib/dates.ts would later throw on — every day
+ * boundary in the app reads this row.
+ */
 export async function updateAppTimezone(sb: SupabaseClient, timezone: string): Promise<void> {
+	if (!isValidTimezone(timezone)) {
+		throw new ServiceError(`Unknown timezone: ${timezone}`, "INVALID");
+	}
 	unwrap(await sb.from("app_settings").update({ timezone }).eq("id", true));
 }

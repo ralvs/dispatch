@@ -1,9 +1,11 @@
 import { PushToggle } from "@/components/push-toggle";
 import { requireOwnerPage } from "@/lib/auth";
+import { cadenceThresholdDays } from "@/lib/services/briefing";
 import { listDomains } from "@/lib/services/domains";
 import { getAppTimezone } from "@/lib/services/settings";
 import { DomainForm } from "./domain-form";
 import { DomainRowItem } from "./domain-row";
+import { TimezoneForm } from "./timezone-form";
 
 export default async function SettingsPage() {
 	const { sb } = await requireOwnerPage();
@@ -32,7 +34,12 @@ export default async function SettingsPage() {
 				) : (
 					<ul className="mt-2">
 						{active.map((d) => (
-							<DomainRowItem key={d.id} domain={d} tz={tz} />
+							<DomainRowItem
+								key={d.id}
+								domain={d}
+								tz={tz}
+								cadenceDays={cadenceThresholdDays(d.failure_patterns)}
+							/>
 						))}
 					</ul>
 				)}
@@ -45,7 +52,12 @@ export default async function SettingsPage() {
 					</h2>
 					<ul className="mt-2">
 						{archived.map((d) => (
-							<DomainRowItem key={d.id} domain={d} tz={tz} />
+							<DomainRowItem
+								key={d.id}
+								domain={d}
+								tz={tz}
+								cadenceDays={cadenceThresholdDays(d.failure_patterns)}
+							/>
 						))}
 					</ul>
 				</section>
@@ -62,7 +74,7 @@ export default async function SettingsPage() {
 
 			<section className="mt-8" aria-label="App">
 				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">App</h2>
-				<p className="mt-2 font-mono text-meta text-ink-4">Timezone: {tz}</p>
+				<TimezoneForm current={tz} />
 			</section>
 		</div>
 	);

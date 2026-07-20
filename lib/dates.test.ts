@@ -5,6 +5,7 @@ import {
 	formatDateline,
 	instantFromLocal,
 	isoWeek,
+	isValidTimezone,
 	shiftDay,
 	startOfWeek,
 	todayInTz,
@@ -72,5 +73,19 @@ describe("isoWeek / formatDateline", () => {
 	it("throws on an invalid date", () => {
 		expect(() => isoWeek("not-a-date")).toThrow();
 		expect(() => formatDateline("not-a-date")).toThrow();
+	});
+});
+
+describe("isValidTimezone", () => {
+	it("accepts IANA zone names", () => {
+		expect(isValidTimezone(SP)).toBe(true);
+		expect(isValidTimezone("UTC")).toBe(true);
+		expect(isValidTimezone("Europe/Lisbon")).toBe(true);
+	});
+
+	it("rejects typos, abbreviations, and empty input", () => {
+		expect(isValidTimezone("America/Sao_Paolo")).toBe(false);
+		expect(isValidTimezone("BRT")).toBe(false);
+		expect(isValidTimezone("")).toBe(false);
 	});
 });

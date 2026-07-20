@@ -1,10 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
+import { cadenceThresholdDays } from "@/lib/services/briefing";
 import {
 	archiveDomain,
 	createDomain,
 	markDomainShipped,
 	updateDomain,
+	withCadenceThresholdDays,
 } from "@/lib/services/domains";
 import { ServiceError } from "@/lib/services/errors";
 
@@ -97,5 +99,52 @@ describe("markDomainShipped", () => {
 		const { sb } = stubSupabase({ id: "inbox", is_system: true });
 
 		await expect(markDomainShipped(sb, "inbox")).rejects.toThrow(ServiceError);
+	});
+});
+
+describe("withCadenceThresholdDays", () => {
+	it("writes a rule onto a domain that had none", () => {
+		expect(withCadenceThresholdDays([], 7)).toEqual([{ rule: "no_activity_days", value: 7 }]);
+	});
+
+	it("replaces the value but keeps the existing rule name", () => {
+		expect(withCadenceThresholdDays([{ rule: "days_since_journal", value: 14 }], 3)).toEqual([
+			{ rule: "days_since_journal", value: 3 },
+		]);
+	});
+
+	it("leaves rules the editor does not manage alone", () => {
+		const patterns = [
+			{ rule: "no_open_tasks_days", value: 30 },
+			{ rule: "no_activity_days", value: 7 },
+		];
+		expect(withCadenceThresholdDays(patterns, 10)).toEqual([
+			{ rule: "no_open_tasks_days", value: 30 },
+			{ rule: "no_activity_days", value: 10 },
+		]);
+	});
+
+	it("removes the numeric rule when cleared, keeping the rest", () => {
+		const patterns = [
+			{ rule: "no_open_tasks_days", value: 30 },
+			{ rule: "no_activity_days", value: 7 },
+		];
+		expect(withCadenceThresholdDays(patterns, null)).toEqual([
+			{ rule: "no_open_tasks_days", value: 30 },
+		]);
+	});
+
+	it("survives a malformed failure_patterns value", () => {
+		expect(withCadenceThresholdDays(null, 5)).toEqual([{ rule: "no_activity_days", value: 5 }]);
+		expect(withCadenceThresholdDays([1, "x", null], 5)).toEqual([
+			{ rule: "no_activity_days", value: 5 },
+		]);
+	});
+
+	it("round-trips through the reader that decides In brief", () => {
+		expect(cadenceThresholdDays(withCadenceThresholdDays([], 9))).toBe(9);
+		expect(
+			cadenceThresholdDays(withCadenceThresholdDays([{ rule: "no_activity_days" }], null)),
+		).toBe(null);
 	});
 });

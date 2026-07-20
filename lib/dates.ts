@@ -10,9 +10,18 @@
 // Every function takes the timezone explicitly — pure and testable. The
 // timezone value comes from app_settings via lib/services/settings.ts.
 
-import { DateTime } from "luxon";
+import { DateTime, IANAZone } from "luxon";
 
 export const DEFAULT_TIMEZONE = "America/Sao_Paulo";
+
+/**
+ * Whether this runtime recognises the string as an IANA zone. The gate on the
+ * settings editor: every day boundary in the app is derived from this value,
+ * so a typo must never reach app_settings.
+ */
+export function isValidTimezone(tz: string): boolean {
+	return IANAZone.isValidZone(tz);
+}
 
 /** Today's calendar date (YYYY-MM-DD) in the app timezone. */
 export function todayInTz(tz: string, nowMs: number = Date.now()): string {
