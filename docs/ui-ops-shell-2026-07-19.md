@@ -27,7 +27,7 @@ autonomous/external actions write `notifications`.
 | # | Item | Status |
 |---|------|--------|
 | 0 | ADR-0014 | done (doc only) |
-| 1 | Nav tiers + collapsible Library + mobile More | pending |
+| 1 | Nav tiers + collapsible Library + mobile More | done |
 | 2 | Task triage → `/triage` | done |
 | 3 | `buildDaySchedule` pure helper + tests | pending |
 | 4 | Today: cadence, alerts, day schedule, mobile order | pending |
