@@ -93,14 +93,13 @@ export type BriefingView = {
 	inboxCount: number;
 	needsReviewCount: number;
 	ingestUnreadCount: number;
-	// doingToday and todayEvents predate daySchedule and still feed the widget
-	// payload (app/api/widget/route.ts) and chat context — keep them until
-	// those callers migrate.
+	// doingToday predates daySchedule and still feeds the widget payload
+	// (app/api/widget/route.ts) and chat context — keep it until those callers
+	// migrate. Today itself reads daySchedule.
 	doingToday: TaskRow[];
 	daySchedule: DaySchedule;
 	routines: { total: number; done: number; remainingNames: string[] };
 	quoteOfDay: QuoteRow | null;
-	todayEvents: CalendarEventRow[];
 	masthead: { isoWeek: number; unreadNotifications: number };
 	anchor: AnchorData;
 	briefLines: BriefLine[];
@@ -559,7 +558,6 @@ export async function getBriefing(
 		daySchedule: buildDaySchedule({ events: todayEvents, openTasks: open, todayIso, tz }),
 		routines: { total: routines.length, done: routinesDone, remainingNames },
 		quoteOfDay: quoteOfDay(quotes, todayIso),
-		todayEvents,
 		masthead: { isoWeek: isoWeek(todayIso), unreadNotifications },
 		anchor: buildAnchor({
 			events: todayEvents,
