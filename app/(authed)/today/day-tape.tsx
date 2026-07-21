@@ -172,8 +172,6 @@ export function DayTape({
 			};
 		});
 
-	if (flags.length === 0) return null;
-
 	const nowMinutes = toMinutes(nowLabel);
 
 	return (
