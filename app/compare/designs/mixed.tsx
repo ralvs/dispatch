@@ -491,49 +491,24 @@ export function MixedDesign({ day }: { day: CompareDay }) {
 				</header>
 
 				{/* ---------------------------------------------------------------- */}
-				{/* Full-width band: the day at a glance                             */}
+				{/* The day at a glance — the anchor sentence carries the counts, so */}
+				{/* there is no separate cadence strip repeating them.               */}
 				{/* ---------------------------------------------------------------- */}
-				<section aria-label="Anchor summary" className="pt-8">
-					<p className="text-eyebrow uppercase text-ink-3">
-						{day.anchor.eventCount === 1 ? "1 event" : `${day.anchor.eventCount} events`} today
-					</p>
-					<p className="mt-2 font-serif text-lg leading-snug">
-						Next up at <span className="tabular-nums">{day.anchor.nextEvent.time}</span>
-						{" — "}
-						{day.anchor.nextEvent.title}.
-					</p>
-					<p className="mt-2 font-mono text-meta text-ink-3">
-						<span className="tabular-nums">{day.anchor.openCount}</span> open{" "}
-						<span aria-hidden="true">·</span>{" "}
-						<span className="tabular-nums text-warning">{day.anchor.overdueCount}</span> overdue
-					</p>
-				</section>
-
-				<div className="mt-14 grid grid-cols-1 gap-10 @3xl:grid-cols-[1.6fr_1fr] @3xl:items-start @3xl:gap-14">
-					<section aria-label="Cadence">
-						<div className="hairline-strong grid grid-cols-2 pb-2 @3xl:grid-cols-3">
-							{day.cadence.map((c) => (
-								<a
-									key={c.key}
-									href={c.href}
-									// Three columns wrap to two rows, so the rules key off the
-									// position in the row, not the list: no left rule at the start
-									// of a row, no top rule on the first row.
-									className="border-line border-t py-3 pr-3 first:border-t-0 @3xl:border-l @3xl:pl-4 @3xl:[&:nth-child(-n+3)]:border-t-0 @3xl:[&:nth-child(3n+1)]:border-l-0"
-								>
-									<span
-										className={
-											c.slip
-												? "block font-serif text-2xl tabular-nums text-warning"
-												: "block font-serif text-2xl tabular-nums"
-										}
-									>
-										{c.big}
-									</span>
-									<span className="mt-1 block text-eyebrow uppercase text-ink-3">{c.label}</span>
-								</a>
-							))}
-						</div>
+				<div className="grid grid-cols-1 gap-10 pt-8 @3xl:grid-cols-[1.6fr_1fr] @3xl:items-start @3xl:gap-14">
+					<section aria-label="Anchor summary">
+						<p className="text-eyebrow uppercase text-ink-3">
+							{day.anchor.eventCount === 1 ? "1 event" : `${day.anchor.eventCount} events`} today
+						</p>
+						<p className="mt-2 font-serif text-lg leading-snug">
+							Next up at <span className="tabular-nums">{day.anchor.nextEvent.time}</span>
+							{" — "}
+							{day.anchor.nextEvent.title}.
+						</p>
+						<p className="mt-2 font-mono text-meta text-ink-3">
+							<span className="tabular-nums">{day.anchor.openCount}</span> open{" "}
+							<span aria-hidden="true">·</span>{" "}
+							<span className="tabular-nums text-warning">{day.anchor.overdueCount}</span> overdue
+						</p>
 					</section>
 
 					<section aria-label="Alerts awaiting decision">
@@ -610,14 +585,15 @@ export function MixedDesign({ day }: { day: CompareDay }) {
 				</section>
 
 				{/* ---------------------------------------------------------------- */}
-				{/* Two columns: the working half of the day                         */}
+				{/* The schedule owns the full width: the two timed bands read down  */}
+				{/* the left, everything open with no hour on it sits to the right.  */}
 				{/* ---------------------------------------------------------------- */}
-				<div className="mt-14 grid grid-cols-1 gap-14 @3xl:grid-cols-[1.6fr_1fr] @3xl:items-start @3xl:gap-14">
-					<div className="min-w-0">
-						<section aria-label="Day schedule">
-							<h2 className="hairline-strong pb-2 text-eyebrow uppercase text-ink-2">Schedule</h2>
+				<section aria-label="Day schedule" className="mt-14">
+					<h2 className="hairline-strong pb-2 text-eyebrow uppercase text-ink-2">Schedule</h2>
 
-							<div className="mt-6">
+					<div className="mt-6 grid grid-cols-1 gap-10 @3xl:grid-cols-[1.6fr_1fr] @3xl:items-start @3xl:gap-14">
+						<div className="min-w-0">
+							<div>
 								<h3 className="flex items-center gap-1.5 text-eyebrow uppercase text-ink-3">
 									<IconCalendar />
 									All day
@@ -694,8 +670,10 @@ export function MixedDesign({ day }: { day: CompareDay }) {
 									})}
 								</ul>
 							</div>
+						</div>
 
-							<div className="mt-9">
+						<div className="min-w-0">
+							<div>
 								<h3 className="flex items-center gap-1.5 text-eyebrow uppercase text-ink-3">
 									<IconInbox />
 									Open
@@ -733,9 +711,16 @@ export function MixedDesign({ day }: { day: CompareDay }) {
 									})}
 								</ul>
 							</div>
-						</section>
+						</div>
+					</div>
+				</section>
 
-						<section aria-label="In brief" className="mt-14">
+				{/* ---------------------------------------------------------------- */}
+				{/* The rest: reference on the left, the standing lists on the right  */}
+				{/* ---------------------------------------------------------------- */}
+				<div className="mt-14 grid grid-cols-1 gap-14 @3xl:grid-cols-[1.6fr_1fr] @3xl:items-start @3xl:gap-14">
+					<div className="min-w-0">
+						<section aria-label="In brief">
 							{/* Reference only — no interaction lives here, so it stays quiet:
 							 * one line per domain, the meter reduced to a hairline rule. */}
 							<h2 className="hairline-strong pb-2 text-eyebrow uppercase text-ink-2">In brief</h2>
@@ -771,6 +756,50 @@ export function MixedDesign({ day }: { day: CompareDay }) {
 									);
 								})}
 							</ul>
+						</section>
+
+						<section aria-label="Quotes" className="mt-14">
+							<h2 className="hairline-strong flex items-center gap-2 pb-2 text-eyebrow uppercase text-ink-2">
+								<IconQuote className="text-ink-3" />
+								Quotes
+							</h2>
+							<div className="mt-4">
+								<p className="text-eyebrow uppercase text-ink-3">Resurfaced</p>
+								<blockquote className="mt-2 font-serif text-base italic leading-snug">
+									&ldquo;{day.resurfaced.text}&rdquo;
+								</blockquote>
+								<p className="mt-2 font-mono text-meta text-ink-3">
+									{day.resurfaced.author}
+									{day.resurfaced.reference ? ` · ${day.resurfaced.reference}` : ""}
+								</p>
+								<div className="mt-2.5 flex items-center gap-4">
+									<button
+										type="button"
+										className="font-mono text-meta uppercase tracking-wide text-accent-ink hover:text-accent"
+									>
+										Next
+									</button>
+									<button
+										type="button"
+										className="font-mono text-meta uppercase tracking-wide text-accent-ink hover:text-accent"
+									>
+										Reset
+									</button>
+									<span className="font-mono text-meta text-ink-4">
+										skipped {day.resurfaced.skips}×
+									</span>
+								</div>
+							</div>
+							<div className="hairline mt-6 pt-6">
+								<p className="text-eyebrow uppercase text-ink-3">Latest</p>
+								<blockquote className="mt-2 font-serif text-sm italic leading-snug">
+									&ldquo;{day.latestQuote.text}&rdquo;
+								</blockquote>
+								<p className="mt-2 font-mono text-meta text-ink-3">
+									{day.latestQuote.author}
+									{day.latestQuote.reference ? ` · ${day.latestQuote.reference}` : ""}
+								</p>
+							</div>
 						</section>
 					</div>
 
@@ -846,50 +875,6 @@ export function MixedDesign({ day }: { day: CompareDay }) {
 									</li>
 								))}
 							</ul>
-						</section>
-
-						<section aria-label="Quotes" className="mt-14">
-							<h2 className="hairline-strong flex items-center gap-2 pb-2 text-eyebrow uppercase text-ink-2">
-								<IconQuote className="text-ink-3" />
-								Quotes
-							</h2>
-							<div className="mt-4">
-								<p className="text-eyebrow uppercase text-ink-3">Resurfaced</p>
-								<blockquote className="mt-2 font-serif text-base italic leading-snug">
-									&ldquo;{day.resurfaced.text}&rdquo;
-								</blockquote>
-								<p className="mt-2 font-mono text-meta text-ink-3">
-									{day.resurfaced.author}
-									{day.resurfaced.reference ? ` · ${day.resurfaced.reference}` : ""}
-								</p>
-								<div className="mt-2.5 flex items-center gap-4">
-									<button
-										type="button"
-										className="font-mono text-meta uppercase tracking-wide text-accent-ink hover:text-accent"
-									>
-										Next
-									</button>
-									<button
-										type="button"
-										className="font-mono text-meta uppercase tracking-wide text-accent-ink hover:text-accent"
-									>
-										Reset
-									</button>
-									<span className="font-mono text-meta text-ink-4">
-										skipped {day.resurfaced.skips}×
-									</span>
-								</div>
-							</div>
-							<div className="hairline mt-6 pt-6">
-								<p className="text-eyebrow uppercase text-ink-3">Latest</p>
-								<blockquote className="mt-2 font-serif text-sm italic leading-snug">
-									&ldquo;{day.latestQuote.text}&rdquo;
-								</blockquote>
-								<p className="mt-2 font-mono text-meta text-ink-3">
-									{day.latestQuote.author}
-									{day.latestQuote.reference ? ` · ${day.latestQuote.reference}` : ""}
-								</p>
-							</div>
 						</section>
 					</aside>
 				</div>

@@ -27,7 +27,7 @@ const DESIGNS = [
 	{
 		id: "mixed",
 		name: "Mixed",
-		note: "Round 5 — Ledger's dateline header, awaiting decision moved up beside the counts, no wordmark",
+		note: "Round 6 — no counts strip, and the schedule spans the full width with Open on the right",
 		Component: MixedDesign,
 	},
 ] as const;
