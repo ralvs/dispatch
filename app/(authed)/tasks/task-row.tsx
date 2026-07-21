@@ -25,11 +25,14 @@ export function TaskRowItem({
 	todayIso,
 	timeLabel,
 	domains = [],
+	manageable = true,
 }: {
 	task: TaskRow;
 	todayIso: string;
 	timeLabel?: string | null;
 	domains?: TaskDomainOption[];
+	/** Edit/delete only make sense on the Tasks page — Today is read-mostly. */
+	manageable?: boolean;
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
@@ -37,7 +40,7 @@ export function TaskRowItem({
 	const overdue = isOverdue(task, todayIso);
 	const starred = isTop3Today(task, todayIso);
 	const scheduled = timeLabel !== undefined;
-	const canEdit = domains.length > 0;
+	const canEdit = manageable && domains.length > 0;
 
 	function save(formData: FormData) {
 		startTransition(async () => {
@@ -212,7 +215,7 @@ export function TaskRowItem({
 				>
 					{starred ? "★" : "☆"}
 				</button>
-				{canEdit ? (
+				{canEdit && (
 					<button
 						type="button"
 						aria-label={`Edit task "${task.title}"`}
@@ -222,16 +225,18 @@ export function TaskRowItem({
 					>
 						Edit
 					</button>
-				) : null}
-				<button
-					type="button"
-					aria-label={`Delete task "${task.title}"`}
-					disabled={pending}
-					onClick={remove}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
-				>
-					Delete
-				</button>
+				)}
+				{manageable && (
+					<button
+						type="button"
+						aria-label={`Delete task "${task.title}"`}
+						disabled={pending}
+						onClick={remove}
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+					>
+						Delete
+					</button>
+				)}
 			</div>
 		</li>
 	);

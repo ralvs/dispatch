@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { DaySchedule as DayScheduleData } from "@/lib/services/briefing";
 import { isTop3Today } from "@/lib/task-predicates";
-import { type TaskDomainOption, TaskRowItem } from "../tasks/task-row";
+import { TaskRowItem } from "../tasks/task-row";
 import { ScheduleRow } from "./timeline-row";
 
 const TOP3_SLOTS = 3;
@@ -26,13 +26,11 @@ export function DaySchedule({
 	todayIso,
 	openCount,
 	overdueCount,
-	domains,
 }: {
 	schedule: DayScheduleData;
 	todayIso: string;
 	openCount: number;
 	overdueCount: number;
-	domains: TaskDomainOption[];
 }) {
 	const { allDay, timeline, open } = schedule;
 	const empty = allDay.length === 0 && timeline.length === 0 && open.length === 0;
@@ -66,7 +64,7 @@ export function DaySchedule({
 						{allDay.length > 0 && (
 							<Band title="All day">
 								{allDay.map((item) => (
-									<ScheduleRow key={item.key} item={item} todayIso={todayIso} domains={domains} />
+									<ScheduleRow key={item.key} item={item} todayIso={todayIso} />
 								))}
 							</Band>
 						)}
@@ -74,7 +72,7 @@ export function DaySchedule({
 						{timeline.length > 0 && (
 							<Band title="Timeline">
 								{timeline.map((item) => (
-									<ScheduleRow key={item.key} item={item} todayIso={todayIso} domains={domains} />
+									<ScheduleRow key={item.key} item={item} todayIso={todayIso} />
 								))}
 							</Band>
 						)}
@@ -84,7 +82,7 @@ export function DaySchedule({
 						<Band title="Open">
 							{open.length > 0 ? (
 								open.map((task) => (
-									<TaskRowItem key={task.id} task={task} todayIso={todayIso} domains={domains} />
+									<TaskRowItem key={task.id} task={task} todayIso={todayIso} manageable={false} />
 								))
 							) : (
 								<li className="py-2 font-serif italic text-ink-3">

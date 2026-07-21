@@ -1,5 +1,5 @@
 import type { DayScheduleItem } from "@/lib/services/briefing";
-import { type TaskDomainOption, TaskRowItem } from "../tasks/task-row";
+import { TaskRowItem } from "../tasks/task-row";
 
 function IconCalendar({ className }: { className?: string }) {
 	return (
@@ -47,18 +47,10 @@ function EventRow({ item }: { item: Extract<DayScheduleItem, { kind: "event" }> 
  * wherever they appear — `timeLabel` is what puts it on the clock
  * (null = all-day band).
  */
-export function ScheduleRow({
-	item,
-	todayIso,
-	domains,
-}: {
-	item: DayScheduleItem;
-	todayIso: string;
-	domains: TaskDomainOption[];
-}) {
+export function ScheduleRow({ item, todayIso }: { item: DayScheduleItem; todayIso: string }) {
 	if (item.kind === "task") {
 		return (
-			<TaskRowItem task={item.task} todayIso={todayIso} timeLabel={item.time} domains={domains} />
+			<TaskRowItem task={item.task} todayIso={todayIso} timeLabel={item.time} manageable={false} />
 		);
 	}
 	return <EventRow item={item} />;
