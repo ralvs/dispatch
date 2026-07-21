@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CurrentDesign } from "./designs/current";
 import { LedgerDesign } from "./designs/ledger";
+import { MixedDesign } from "./designs/mixed";
 import { DAY } from "./mock";
 
 // Temporary bake-off surface. Round 4: two finalists — the shipped Today page
@@ -23,6 +24,12 @@ const DESIGNS = [
 		note: "Ruled ledger structure — full-width day tape up top, two columns for the working half",
 		Component: LedgerDesign,
 	},
+	{
+		id: "mixed",
+		name: "Mixed",
+		note: "Round 5 — Ledger's dateline header, awaiting decision moved up beside the counts, no wordmark",
+		Component: MixedDesign,
+	},
 ] as const;
 
 const WIDTHS = { phone: 402, desktop: 1180 } as const;
@@ -30,6 +37,20 @@ const WIDTHS = { phone: 402, desktop: 1180 } as const;
 export default function ComparePage() {
 	const [active, setActive] = useState<string>(DESIGNS[0].id);
 	const [viewport, setViewport] = useState<keyof typeof WIDTHS>("phone");
+
+	// 1/2/3 switch designs — the whole point of this page is flipping between
+	// them fast. Ignored while typing into one of the designs' own controls.
+	useEffect(() => {
+		function onKey(e: KeyboardEvent) {
+			if (e.metaKey || e.ctrlKey || e.altKey) return;
+			const el = e.target as HTMLElement | null;
+			if (el?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el?.tagName ?? "")) return;
+			const design = DESIGNS[Number(e.key) - 1];
+			if (design) setActive(design.id);
+		}
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, []);
 
 	const current = DESIGNS.find((d) => d.id === active) ?? DESIGNS[0];
 	const { Component } = current;
@@ -39,7 +60,7 @@ export default function ComparePage() {
 			<header className="sticky top-0 z-10 border-b border-neutral-300 bg-neutral-100/90 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/90">
 				<div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-6 gap-y-3 px-5 py-3">
 					<span className="font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-500">
-						Today · {DESIGNS.length} directions
+						Today · {DESIGNS.length} directions · press 1–{DESIGNS.length}
 					</span>
 
 					<nav className="flex flex-wrap gap-1" aria-label="Design directions">
@@ -49,6 +70,8 @@ export default function ComparePage() {
 								type="button"
 								onClick={() => setActive(d.id)}
 								aria-current={d.id === active}
+								aria-keyshortcuts={String(i + 1)}
+								title={`Press ${i + 1}`}
 								className={`rounded-md px-3 py-1.5 text-sm transition ${
 									d.id === active
 										? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
