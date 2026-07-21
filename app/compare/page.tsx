@@ -1,34 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import { CurrentDesign } from "./designs/current";
 import { LedgerDesign } from "./designs/ledger";
-import { LedgerNoirDesign } from "./designs/ledger-noir";
-import { NightdeskDesign } from "./designs/nightdesk";
 import { DAY } from "./mock";
 
-// Temporary bake-off surface. Round 3: "Ledger" is the candidate — Ledger
-// Noir's structure re-expressed in the app's real design system, with
-// Nightdesk's two-column split. The other two stay as reference. Delete the
-// route once the direction ships.
+// Temporary bake-off surface. Round 4: two finalists — the shipped Today page
+// given room to breathe, and Ledger, which keeps the ruled structure and the
+// day tape. Both carry the same gadgets on the same tokens. Delete the route
+// once the direction ships.
 
 const DESIGNS = [
 	{
+		id: "current",
+		name: "Current",
+		note: "The shipped Today page, with all the Ledger gadgets and far more air between sections",
+		Component: CurrentDesign,
+	},
+	{
 		id: "ledger",
 		name: "Ledger",
-		note: "The candidate — Ledger Noir on the app's own tokens: real checkboxes, icons, day tape, two columns",
+		note: "Ruled ledger structure — full-width day tape up top, two columns for the working half",
 		Component: LedgerDesign,
-	},
-	{
-		id: "ledger-noir",
-		name: "Ledger Noir",
-		note: "Round-2 winner, kept for reference — Swiss ruled ledger on a slate-blue night ground",
-		Component: LedgerNoirDesign,
-	},
-	{
-		id: "nightdesk",
-		name: "Nightdesk",
-		note: "Reference for the two-column editorial layout — the newspaper's night edition",
-		Component: NightdeskDesign,
 	},
 ] as const;
 

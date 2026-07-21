@@ -203,26 +203,6 @@ function IconQuote({ className }: IconProps) {
 	);
 }
 
-function IconMic({ className }: IconProps) {
-	return (
-		<svg
-			viewBox="0 0 16 16"
-			width="16"
-			height="16"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.5"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			className={className}
-			aria-hidden="true"
-		>
-			<rect x="6" y="1.7" width="4" height="7" rx="2" />
-			<path d="M4 7.5a4 4 0 0 0 8 0M8 11.5V14M6 14h4" />
-		</svg>
-	);
-}
-
 function IconArrowRight({ className }: IconProps) {
 	return (
 		<svg
@@ -317,8 +297,8 @@ function tapePct(minutes: number): number {
 const TAPE_CSS = `
 .dzl3-tape {
 	position: relative;
-	padding-top: 46px;
-	padding-bottom: 34px;
+	padding-top: 64px;
+	padding-bottom: 52px;
 }
 
 .dzl3-axis {
@@ -348,16 +328,18 @@ const TAPE_CSS = `
 
 .dzl3-now {
 	position: absolute;
-	top: -28px;
+	top: -46px;
 	width: 2px;
-	height: 38px;
+	height: 56px;
+	z-index: 0;
 	background: var(--accent);
 	transform: translateX(-1px);
 }
 
 .dzl3-now-label {
 	position: absolute;
-	top: -42px;
+	top: -60px;
+	z-index: 2;
 	transform: translateX(-50%);
 	font-family: var(--font-mono);
 	font-size: 10px;
@@ -406,6 +388,9 @@ const TAPE_CSS = `
 
 .dzl3-flag-label {
 	position: absolute;
+	z-index: 1;
+	background: var(--bg);
+	padding: 0 3px;
 	transform: translateX(-50%);
 	font-family: var(--font-mono);
 	font-size: 9px;
@@ -418,7 +403,7 @@ const TAPE_CSS = `
 }
 
 .dzl3-flag-label.tier-down {
-	top: 18px;
+	top: 32px;
 }
 
 .dzl3-flag-title {
@@ -427,8 +412,8 @@ const TAPE_CSS = `
 
 @container (min-width: 48rem) {
 	.dzl3-tape {
-		padding-top: 42px;
-		padding-bottom: 52px;
+		padding-top: 64px;
+		padding-bottom: 58px;
 	}
 
 	.dzl3-flag-title {
@@ -505,109 +490,106 @@ export function LedgerDesign({ day }: { day: CompareDay }) {
 					</div>
 				</header>
 
-				<div className="grid grid-cols-1 gap-14 @3xl:grid-cols-[1.6fr_1fr] @3xl:items-start @3xl:gap-14">
-					{/* ------------------------------------------------------------ */}
-					{/* Main reading column                                          */}
-					{/* ------------------------------------------------------------ */}
-					<div className="min-w-0">
-						<section aria-label="Anchor summary" className="pt-8">
-							<p className="text-eyebrow uppercase text-ink-3">
-								{day.anchor.eventCount === 1 ? "1 event" : `${day.anchor.eventCount} events`} today
-							</p>
-							<p className="mt-2 font-serif text-lg leading-snug">
-								Next up at <span className="tabular-nums">{day.anchor.nextEvent.time}</span>
-								{" — "}
-								{day.anchor.nextEvent.title}.
-							</p>
-							<p className="mt-2 font-mono text-meta text-ink-3">
-								<span className="tabular-nums">{day.anchor.openCount}</span> open{" "}
-								<span aria-hidden="true">·</span>{" "}
-								<span className="tabular-nums text-warning">{day.anchor.overdueCount}</span> overdue
-							</p>
-						</section>
+				{/* ---------------------------------------------------------------- */}
+				{/* Full-width band: the day at a glance                             */}
+				{/* ---------------------------------------------------------------- */}
+				<section aria-label="Anchor summary" className="pt-8">
+					<p className="text-eyebrow uppercase text-ink-3">
+						{day.anchor.eventCount === 1 ? "1 event" : `${day.anchor.eventCount} events`} today
+					</p>
+					<p className="mt-2 font-serif text-lg leading-snug">
+						Next up at <span className="tabular-nums">{day.anchor.nextEvent.time}</span>
+						{" — "}
+						{day.anchor.nextEvent.title}.
+					</p>
+					<p className="mt-2 font-mono text-meta text-ink-3">
+						<span className="tabular-nums">{day.anchor.openCount}</span> open{" "}
+						<span aria-hidden="true">·</span>{" "}
+						<span className="tabular-nums text-warning">{day.anchor.overdueCount}</span> overdue
+					</p>
+				</section>
 
-						<section aria-label="Cadence" className="mt-14">
-							<div className="hairline-strong grid grid-cols-2 pb-2 @3xl:grid-cols-5">
-								{day.cadence.map((c) => (
-									<a
-										key={c.key}
-										href={c.href}
-										className="border-line border-t py-3 pr-3 first:border-t-0 @3xl:border-t-0 @3xl:border-l @3xl:pl-4 @3xl:first:border-l-0"
-									>
-										<span
-											className={
-												c.slip
-													? "block font-serif text-2xl tabular-nums text-warning"
-													: "block font-serif text-2xl tabular-nums"
-											}
-										>
-											{c.big}
-										</span>
-										<span className="mt-1 block text-eyebrow uppercase text-ink-3">{c.label}</span>
-									</a>
-								))}
-							</div>
-						</section>
+				<section aria-label="Cadence" className="mt-14">
+					<div className="hairline-strong grid grid-cols-2 pb-2 @3xl:grid-cols-5">
+						{day.cadence.map((c) => (
+							<a
+								key={c.key}
+								href={c.href}
+								className="border-line border-t py-3 pr-3 first:border-t-0 @3xl:border-t-0 @3xl:border-l @3xl:pl-4 @3xl:first:border-l-0"
+							>
+								<span
+									className={
+										c.slip
+											? "block font-serif text-2xl tabular-nums text-warning"
+											: "block font-serif text-2xl tabular-nums"
+									}
+								>
+									{c.big}
+								</span>
+								<span className="mt-1 block text-eyebrow uppercase text-ink-3">{c.label}</span>
+							</a>
+						))}
+					</div>
+				</section>
 
-						<section aria-label="Day tape" className="mt-14">
-							<h2 className="hairline-strong flex items-center gap-2 pb-2 text-eyebrow uppercase text-ink-2">
-								<IconClock className="text-ink-3" />
-								Day tape
-							</h2>
-							<div className="dzl3-tape mt-2">
-								<div className="dzl3-axis">
-									{TAPE_TICKS.map((h) => (
-										<div key={h} className="dzl3-tick" style={{ left: `${tapePct(h * 60)}%` }} />
-									))}
-									{TAPE_TICKS.map((h) => (
-										<div
-											key={`l-${h}`}
-											className="dzl3-tick-label"
-											style={{ left: `${tapePct(h * 60)}%` }}
-										>
-											{String(h).padStart(2, "0")}:00
-										</div>
-									))}
-									{timelineFlags.map((item) => {
-										const left = tapePct(toMinutes(item.time));
-										const isDone = checked[item.key];
-										const dotClass = isDone
-											? "dzl3-flag-dot is-done"
-											: item.top3
-												? "dzl3-flag-dot is-top3"
-												: "dzl3-flag-dot";
-										return (
-											<div key={item.key}>
-												<div
-													className={`dzl3-flag-stem ${item.tier}`}
-													style={{ left: `${left}%` }}
-												/>
-												<div className={dotClass} style={{ left: `${left}%` }} />
-												<div
-													className={`dzl3-flag-label ${item.tier}`}
-													style={{ left: `${left}%` }}
-												>
-													{item.time}
-													{item.top3 && !isDone && (
-														<IconStar
-															filled
-															className="ml-0.5 inline h-2.5 w-2.5 align-middle text-warning"
-														/>
-													)}
-													<span className="dzl3-flag-title"> · {item.title}</span>
-												</div>
-											</div>
-										);
-									})}
-									<div className="dzl3-now" style={{ left: `${tapePct(nowMinutes)}%` }} />
-									<div className="dzl3-now-label" style={{ left: `${tapePct(nowMinutes)}%` }}>
-										now {day.nowLabel}
-									</div>
+				<section aria-label="Day tape" className="mt-14">
+					<h2 className="hairline-strong flex items-center gap-2 pb-2 text-eyebrow uppercase text-ink-2">
+						<IconClock className="text-ink-3" />
+						Day tape
+					</h2>
+					<div className="dzl3-tape mt-2">
+						<div className="dzl3-axis">
+							{TAPE_TICKS.map((h) => (
+								<div key={h} className="dzl3-tick" style={{ left: `${tapePct(h * 60)}%` }} />
+							))}
+							{TAPE_TICKS.map((h) => (
+								<div
+									key={`l-${h}`}
+									className="dzl3-tick-label"
+									style={{ left: `${tapePct(h * 60)}%` }}
+								>
+									{String(h).padStart(2, "0")}:00
 								</div>
+							))}
+							{timelineFlags.map((item) => {
+								const left = tapePct(toMinutes(item.time));
+								const isDone = checked[item.key];
+								const dotClass = isDone
+									? "dzl3-flag-dot is-done"
+									: item.top3
+										? "dzl3-flag-dot is-top3"
+										: "dzl3-flag-dot";
+								return (
+									<div key={item.key}>
+										<div className={`dzl3-flag-stem ${item.tier}`} style={{ left: `${left}%` }} />
+										<div className={dotClass} style={{ left: `${left}%` }} />
+										<div className={`dzl3-flag-label ${item.tier}`} style={{ left: `${left}%` }}>
+											{item.time}
+											{item.top3 && !isDone && (
+												<IconStar
+													filled
+													className="ml-0.5 inline h-2.5 w-2.5 align-middle text-warning"
+												/>
+											)}
+											<span className="dzl3-flag-title"> · {item.title}</span>
+										</div>
+									</div>
+								);
+							})}
+							<div className="dzl3-now" style={{ left: `${tapePct(nowMinutes)}%` }} />
+							<div className="dzl3-now-label" style={{ left: `${tapePct(nowMinutes)}%` }}>
+								now {day.nowLabel}
 							</div>
-						</section>
+						</div>
+					</div>
+				</section>
 
-						<section aria-label="Day schedule" className="mt-14">
+				{/* ---------------------------------------------------------------- */}
+				{/* Two columns: the working half of the day                         */}
+				{/* ---------------------------------------------------------------- */}
+				<div className="mt-14 grid grid-cols-1 gap-14 @3xl:grid-cols-[1.6fr_1fr] @3xl:items-start @3xl:gap-14">
+					<div className="min-w-0">
+						<section aria-label="Day schedule">
 							<h2 className="hairline-strong pb-2 text-eyebrow uppercase text-ink-2">Schedule</h2>
 
 							<div className="mt-6">
@@ -729,39 +711,36 @@ export function LedgerDesign({ day }: { day: CompareDay }) {
 						</section>
 
 						<section aria-label="In brief" className="mt-14">
+							{/* Reference only — no interaction lives here, so it stays quiet:
+							 * one line per domain, the meter reduced to a hairline rule. */}
 							<h2 className="hairline-strong pb-2 text-eyebrow uppercase text-ink-2">In brief</h2>
 							<ul>
 								{day.brief.map((b) => {
 									const over = b.daysSince >= b.thresholdDays;
 									const fillPct = Math.min((b.daysSince / (b.thresholdDays * 1.4)) * 100, 100);
 									return (
-										<li key={b.key} className="hairline py-4">
-											<a href={b.href} className="group block">
-												<div className="flex items-baseline justify-between gap-3">
-													<span className="font-serif text-base">{b.name}</span>
+										<li key={b.key} className="hairline">
+											<a href={b.href} className="group flex items-baseline gap-3 py-2.5">
+												<span
+													className={
+														over
+															? "w-7 shrink-0 font-mono text-meta tabular-nums text-warning"
+															: "w-7 shrink-0 font-mono text-meta tabular-nums text-ink-2"
+													}
+												>
+													{b.daysSince}d
+												</span>
+												<span className="w-16 shrink-0 text-meta text-ink-2">{b.name}</span>
+												<span className="min-w-0 flex-1 truncate text-meta text-ink-3">
+													{b.nextAction}
+												</span>
+												<span className="hidden h-px w-12 shrink-0 self-center bg-surface-2 @3xl:block">
 													<span
-														className={
-															over
-																? "whitespace-nowrap font-mono text-lg tabular-nums text-warning"
-																: "whitespace-nowrap font-mono text-lg tabular-nums"
-														}
-													>
-														{b.daysSince}
-														<span className="ml-1.5 font-sans text-meta font-normal text-ink-3">
-															{b.unit}
-														</span>
-													</span>
-												</div>
-												<div className="mt-2.5 h-1 w-full bg-surface-2">
-													<div
-														className={over ? "h-full bg-warning" : "h-full bg-ink-4"}
+														className={over ? "block h-px bg-warning" : "block h-px bg-ink-4"}
 														style={{ width: `${fillPct}%` }}
 													/>
-												</div>
-												<div className="mt-2.5 flex items-center gap-1.5 text-ink-2">
-													<span>{b.nextAction}</span>
-													<IconArrowRight className="shrink-0 text-ink-3 transition-transform group-hover:translate-x-0.5" />
-												</div>
+												</span>
+												<IconArrowRight className="shrink-0 self-center text-ink-4 transition-transform group-hover:translate-x-0.5" />
 											</a>
 										</li>
 									);
@@ -773,7 +752,7 @@ export function LedgerDesign({ day }: { day: CompareDay }) {
 					{/* ------------------------------------------------------------ */}
 					{/* Secondary rail                                               */}
 					{/* ------------------------------------------------------------ */}
-					<aside className="min-w-0 pt-8">
+					<aside className="min-w-0">
 						<section aria-label="Alerts awaiting decision">
 							<h2 className="hairline-strong flex items-center gap-2 pb-2 text-eyebrow uppercase text-ink-2">
 								<IconAlertTriangle className="text-warning" />
@@ -906,28 +885,6 @@ export function LedgerDesign({ day }: { day: CompareDay }) {
 									{day.latestQuote.reference ? ` · ${day.latestQuote.reference}` : ""}
 								</p>
 							</div>
-						</section>
-
-						<section aria-label="Capture" className="mt-14">
-							<h2 className="hairline-strong flex items-center gap-2 pb-2 text-eyebrow uppercase text-ink-2">
-								<IconMic className="text-ink-3" />
-								Capture
-							</h2>
-							<div className="mt-4 flex flex-wrap gap-2">
-								{day.capture.map((c) => (
-									<button
-										key={c}
-										type="button"
-										className="rounded-full border border-line px-3.5 py-1.5 text-meta text-ink-2 hover:border-line-strong"
-									>
-										{c}
-									</button>
-								))}
-							</div>
-							<p className="mt-4 flex items-center gap-1.5 text-meta text-ink-3">
-								<IconMic className="shrink-0" />
-								Hold the mic to capture a thought, task, or note.
-							</p>
 						</section>
 					</aside>
 				</div>
