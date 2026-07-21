@@ -8,7 +8,7 @@ const TOP3_SLOTS = 3;
 
 function Band({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
-		<div className="mt-4">
+		<div className="mt-8">
 			<h3 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">{title}</h3>
 			<ul className="mt-1">{children}</ul>
 		</div>
@@ -16,10 +16,10 @@ function Band({ title, children }: { title: string; children: React.ReactNode })
 }
 
 /**
- * "When is my day" in one place (ADR-0014), replacing the flat events card
- * sitting beside a separate doing card: an all-day band, a timeline where
+ * "When is my day" in one place (ADR-0014): an all-day band, a timeline where
  * timed events and timed tasks share one clock, and everything open that has
- * no hour attached to it.
+ * no hour attached to it — all day and timeline read down the left, open
+ * sits in its own column on the right so it doesn't compete with the clock.
  */
 export function DaySchedule({
 	schedule,
@@ -43,7 +43,7 @@ export function DaySchedule({
 	const slotsOpen = TOP3_SLOTS - starred;
 
 	return (
-		<section className="mt-7" aria-label="Day schedule">
+		<section className="mt-14" aria-label="Day schedule">
 			<div className="flex items-baseline justify-between">
 				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
 					The day · {openCount} open
@@ -59,37 +59,41 @@ export function DaySchedule({
 					Nothing on the clock. Star tasks or set due dates to shape the day.
 				</p>
 			) : (
-				<>
-					{allDay.length > 0 && (
-						<Band title="All day">
-							{allDay.map((item) => (
-								<ScheduleRow key={item.key} item={item} todayIso={todayIso} />
-							))}
-						</Band>
-					)}
+				<div className="mt-6 grid grid-cols-1 gap-10 lg:grid-cols-[1.6fr_1fr] lg:items-start lg:gap-14">
+					<div className="min-w-0">
+						{allDay.length > 0 && (
+							<Band title="All day">
+								{allDay.map((item) => (
+									<ScheduleRow key={item.key} item={item} todayIso={todayIso} />
+								))}
+							</Band>
+						)}
 
-					{timeline.length > 0 && (
-						<Band title="Timeline">
-							{timeline.map((item) => (
-								<ScheduleRow key={item.key} item={item} todayIso={todayIso} />
-							))}
-						</Band>
-					)}
+						{timeline.length > 0 && (
+							<Band title="Timeline">
+								{timeline.map((item) => (
+									<ScheduleRow key={item.key} item={item} todayIso={todayIso} />
+								))}
+							</Band>
+						)}
+					</div>
 
-					{open.length > 0 && (
-						<Band title="Open">
-							{open.map((task) => (
-								<TaskRowItem key={task.id} task={task} todayIso={todayIso} />
-							))}
-						</Band>
-					)}
+					<div className="min-w-0">
+						{open.length > 0 && (
+							<Band title="Open">
+								{open.map((task) => (
+									<TaskRowItem key={task.id} task={task} todayIso={todayIso} />
+								))}
+							</Band>
+						)}
+					</div>
+				</div>
+			)}
 
-					{slotsOpen > 0 && (
-						<p className="mt-3 font-mono text-meta text-ink-4">
-							{slotsOpen} Top 3 slot{slotsOpen === 1 ? "" : "s"} open · tap ☆ on a row to pin
-						</p>
-					)}
-				</>
+			{!empty && slotsOpen > 0 && (
+				<p className="mt-3 font-mono text-meta text-ink-4">
+					{slotsOpen} Top 3 slot{slotsOpen === 1 ? "" : "s"} open · tap ☆ on a row to pin
+				</p>
 			)}
 		</section>
 	);

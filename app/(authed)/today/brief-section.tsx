@@ -2,7 +2,10 @@ import Link from "next/link";
 import type { BriefLine } from "@/lib/services/briefing";
 import { CadenceBar } from "./cadence-bar";
 
-/** "In brief": one row per domain at or past its cadence. Facts only. */
+/**
+ * "In brief": one quiet line per domain at or past its cadence. It carries
+ * no interaction of its own, so it stays compact — reference, not a feature.
+ */
 export function BriefSection({ lines }: { lines: BriefLine[] }) {
 	return (
 		<section aria-label="In brief">
@@ -14,31 +17,27 @@ export function BriefSection({ lines }: { lines: BriefLine[] }) {
 			) : (
 				<ul>
 					{lines.map((line) => (
-						<li key={line.key} className="border-b border-line">
-							<Link href={line.href} className="block py-4">
-								<div className="flex items-start justify-between gap-4">
-									<span className="font-serif text-lg font-medium text-ink">{line.name}</span>
-									<span className="text-right">
-										<span
-											className={`block font-serif text-[34px] leading-none tabular-nums ${
-												line.slipping ? "text-accent-slip" : "text-ink"
-											}`}
-										>
-											{line.daysSince}
-										</span>
-										<span className="text-[11px] text-ink-3">{line.unit}</span>
+						<li key={line.key} className="hairline">
+							<Link href={line.href} className="flex items-center gap-4 py-3">
+								<span className="w-20 shrink-0 truncate font-serif text-sm text-ink">
+									{line.name}
+								</span>
+								<span
+									className={`shrink-0 whitespace-nowrap font-serif text-lg leading-none tabular-nums ${
+										line.slipping ? "text-accent-slip" : "text-ink"
+									}`}
+								>
+									{line.daysSince}
+									<span className="ml-1 font-sans text-meta font-normal text-ink-3">
+										{line.unit}
 									</span>
-								</div>
-								<CadenceBar daysSince={line.daysSince} thresholdDays={line.thresholdDays} />
-								<p className="mt-3">
-									<span className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-										Next
-									</span>
-									<span className="ml-3 text-[13px] text-ink-2">{line.nextAction}</span>
-								</p>
-								<p className="mt-1 font-mono text-eyebrow uppercase tracking-widest text-accent">
-									Open {line.name} →
-								</p>
+								</span>
+								<span className="min-w-[4rem] flex-1">
+									<CadenceBar daysSince={line.daysSince} thresholdDays={line.thresholdDays} />
+								</span>
+								<span className="hidden min-w-0 flex-[1.4] truncate text-meta text-ink-2 lg:block">
+									{line.nextAction}
+								</span>
 							</Link>
 						</li>
 					))}
