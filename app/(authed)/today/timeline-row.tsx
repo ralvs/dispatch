@@ -1,5 +1,5 @@
 import type { DayScheduleItem } from "@/lib/services/briefing";
-import { TaskRowItem } from "../tasks/task-row";
+import { type TaskDomainOption, TaskRowItem } from "../tasks/task-row";
 
 function IconCalendar({ className }: { className?: string }) {
 	return (
@@ -29,9 +29,7 @@ function EventRow({ item }: { item: Extract<DayScheduleItem, { kind: "event" }> 
 
 	return (
 		<li className="hairline flex items-baseline gap-3 py-2.5">
-			<span className="w-12 shrink-0 font-mono text-meta tabular-nums text-ink-3">
-				{time ?? "—"}
-			</span>
+			<span className="w-12 shrink-0 font-mono text-meta tabular-nums text-ink-3">{time}</span>
 			<IconCalendar className="h-4 w-4 shrink-0 self-center text-ink-3" />
 			<div className="min-w-0 flex-1">
 				<p className="truncate text-sm text-ink">{event.title}</p>
@@ -43,12 +41,23 @@ function EventRow({ item }: { item: Extract<DayScheduleItem, { kind: "event" }> 
 
 /**
  * One row of a schedule band. Events carry their own chrome; tasks reuse the
- * Tasks-page row so complete and top-3 behave identically wherever they
- * appear — `timeLabel` is what puts it on the clock (null = all-day band).
+ * Tasks-page row so complete, edit, delete, and top-3 behave identically
+ * wherever they appear — `timeLabel` is what puts it on the clock
+ * (null = all-day band).
  */
-export function ScheduleRow({ item, todayIso }: { item: DayScheduleItem; todayIso: string }) {
+export function ScheduleRow({
+	item,
+	todayIso,
+	domains,
+}: {
+	item: DayScheduleItem;
+	todayIso: string;
+	domains: TaskDomainOption[];
+}) {
 	if (item.kind === "task") {
-		return <TaskRowItem task={item.task} todayIso={todayIso} timeLabel={item.time} />;
+		return (
+			<TaskRowItem task={item.task} todayIso={todayIso} timeLabel={item.time} domains={domains} />
+		);
 	}
 	return <EventRow item={item} />;
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { DaySchedule as DayScheduleData } from "@/lib/services/briefing";
 import { isTop3Today } from "@/lib/task-predicates";
-import { TaskRowItem } from "../tasks/task-row";
+import { type TaskDomainOption, TaskRowItem } from "../tasks/task-row";
 import { ScheduleRow } from "./timeline-row";
 
 const TOP3_SLOTS = 3;
@@ -26,11 +26,13 @@ export function DaySchedule({
 	todayIso,
 	openCount,
 	overdueCount,
+	domains,
 }: {
 	schedule: DayScheduleData;
 	todayIso: string;
 	openCount: number;
 	overdueCount: number;
+	domains: TaskDomainOption[];
 }) {
 	const { allDay, timeline, open } = schedule;
 	const empty = allDay.length === 0 && timeline.length === 0 && open.length === 0;
@@ -64,7 +66,7 @@ export function DaySchedule({
 						{allDay.length > 0 && (
 							<Band title="All day">
 								{allDay.map((item) => (
-									<ScheduleRow key={item.key} item={item} todayIso={todayIso} />
+									<ScheduleRow key={item.key} item={item} todayIso={todayIso} domains={domains} />
 								))}
 							</Band>
 						)}
@@ -72,7 +74,7 @@ export function DaySchedule({
 						{timeline.length > 0 && (
 							<Band title="Timeline">
 								{timeline.map((item) => (
-									<ScheduleRow key={item.key} item={item} todayIso={todayIso} />
+									<ScheduleRow key={item.key} item={item} todayIso={todayIso} domains={domains} />
 								))}
 							</Band>
 						)}
@@ -81,7 +83,9 @@ export function DaySchedule({
 					<div className="min-w-0">
 						<Band title="Open">
 							{open.length > 0 ? (
-								open.map((task) => <TaskRowItem key={task.id} task={task} todayIso={todayIso} />)
+								open.map((task) => (
+									<TaskRowItem key={task.id} task={task} todayIso={todayIso} domains={domains} />
+								))
 							) : (
 								<li className="py-2 font-serif italic text-ink-3">
 									Nothing pinned. Star a task to work on it today.

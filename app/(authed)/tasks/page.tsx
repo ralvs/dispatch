@@ -43,7 +43,7 @@ export default async function TasksPage() {
 				) : (
 					<ul>
 						{openTasks.map((t) => (
-							<TaskRowItem key={t.id} task={t} todayIso={todayIso} />
+							<TaskRowItem key={t.id} task={t} todayIso={todayIso} domains={domains} />
 						))}
 					</ul>
 				)}
@@ -56,7 +56,7 @@ export default async function TasksPage() {
 					</h2>
 					<ul className="mt-2">
 						{recentDone.map((t) => (
-							<TaskRowItem key={t.id} task={t} todayIso={todayIso} />
+							<TaskRowItem key={t.id} task={t} todayIso={todayIso} domains={domains} />
 						))}
 					</ul>
 				</section>

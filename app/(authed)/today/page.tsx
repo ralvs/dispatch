@@ -1,6 +1,7 @@
 import { requireOwnerPage } from "@/lib/auth";
 import { formatInstant, todayInTz } from "@/lib/dates";
 import { getBriefing } from "@/lib/services/briefing";
+import { listDomains } from "@/lib/services/domains";
 import { getAppTimezone } from "@/lib/services/settings";
 import { AlertsRow } from "./alerts-row";
 import { AnchorLine } from "./anchor-line";
@@ -17,7 +18,7 @@ export default async function TodayPage() {
 	const { sb } = await requireOwnerPage();
 	const tz = await getAppTimezone(sb);
 	const todayIso = todayInTz(tz);
-	const briefing = await getBriefing(sb, tz, todayIso);
+	const [briefing, domains] = await Promise.all([getBriefing(sb, tz, todayIso), listDomains(sb)]);
 	const nowLabel = formatInstant(new Date().toISOString(), tz, "HH:mm");
 
 	const showLatestQuote =
@@ -47,6 +48,7 @@ export default async function TodayPage() {
 				todayIso={todayIso}
 				openCount={briefing.anchor.openCount}
 				overdueCount={briefing.anchor.overdueCount}
+				domains={domains}
 			/>
 
 			<div className="mt-14 grid grid-cols-1 gap-14 lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-x-10">

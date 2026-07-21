@@ -12,6 +12,7 @@ import {
 	reopenTask,
 	toggleTop3,
 	triageTask,
+	updateTask,
 } from "@/lib/services/tasks";
 
 function revalidateTaskViews() {
@@ -30,6 +31,21 @@ export async function createTaskAction(formData: FormData) {
 		due_time: parsed.due_time || null,
 		priority: parsed.priority,
 		domain_id: parsed.domain_id || null,
+		recurrence_rule: parsed.recurrence_rule || null,
+	});
+	revalidateTaskViews();
+}
+
+export async function updateTaskAction(id: string, formData: FormData) {
+	const { sb } = await requireOwnerPage();
+	const parsed = CreateTaskFormSchema.parse(Object.fromEntries(formData));
+	await updateTask(sb, z.uuid().parse(id), {
+		title: parsed.title,
+		notes: parsed.notes || null,
+		due_date: parsed.due_date || null,
+		due_time: parsed.due_time || null,
+		priority: parsed.priority,
+		domain_id: parsed.domain_id || undefined,
 		recurrence_rule: parsed.recurrence_rule || null,
 	});
 	revalidateTaskViews();
