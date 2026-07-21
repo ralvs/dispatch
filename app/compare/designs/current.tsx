@@ -339,64 +339,54 @@ export function CurrentDesign({ day }: { day: CompareDay }) {
 					</p>
 				</header>
 
-				{/* Anchor line — anchor-line.tsx */}
-				<p className="mt-12 text-xs text-ink-2">
-					<span>
-						{day.anchor.eventCount} event{day.anchor.eventCount === 1 ? "" : "s"} today
-						{" — next "}
-						{day.anchor.nextEvent.time} {day.anchor.nextEvent.title}
-						{". "}
-					</span>
-					<a href="/tasks" className="hover:underline">
-						{day.anchor.openCount} task{day.anchor.openCount === 1 ? "" : "s"} open
-						{day.anchor.overdueCount > 0 && (
-							<>
-								{" · "}
-								<span className="text-accent">{day.anchor.overdueCount} overdue</span>
-							</>
-						)}
-						.
-					</a>
-				</p>
+				{/* The day at a glance: the anchor sentence already carries the
+				 * counts, so it stands alone rather than repeating them as a
+				 * strip of big numbers — Awaiting decision fills the row beside
+				 * it instead of sitting further down the page. */}
+				<div className="mt-12 grid grid-cols-1 gap-10 @3xl:grid-cols-[1.6fr_1fr] @3xl:items-start @3xl:gap-14">
+					<section aria-label="Anchor summary">
+						<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+							{day.anchor.eventCount} event{day.anchor.eventCount === 1 ? "" : "s"} today
+						</p>
+						<p className="mt-2 font-serif text-lg leading-snug text-ink">
+							Next up at <span className="tabular-nums">{day.anchor.nextEvent.time}</span>
+							{" — "}
+							{day.anchor.nextEvent.title}.
+						</p>
+						<p className="mt-2 font-mono text-meta text-ink-3">
+							<a href="/tasks" className="hover:underline">
+								<span className="tabular-nums">{day.anchor.openCount}</span> open
+								{day.anchor.overdueCount > 0 && (
+									<>
+										{" · "}
+										<span className="text-accent">{day.anchor.overdueCount} overdue</span>
+									</>
+								)}
+							</a>
+						</p>
+					</section>
 
-				{/* Cadence strip — cadence-strip.tsx */}
-				<section className="mt-12" aria-label="Cadence">
-					<ul className="flex flex-wrap items-baseline gap-x-8 gap-y-4">
-						{day.cadence.map((c) => (
-							<li key={c.key}>
-								<a href={c.href} className="block hover:opacity-80">
-									<span
-										className={`block font-serif text-[30px] leading-none tabular-nums ${
-											c.slip ? "text-accent-slip" : "text-ink"
-										}`}
-									>
-										{c.big}
-									</span>
-									<span className="mt-1.5 block font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-										{c.label}
-									</span>
-								</a>
-							</li>
-						))}
-					</ul>
-				</section>
-
-				{/* Alerts row — alerts-row.tsx */}
-				<section className="mt-12" aria-label="Alerts">
-					<ul className="flex flex-wrap gap-2">
-						{day.alerts.map((a) => (
-							<li key={a.key}>
-								<a
-									href={a.href}
-									className="flex items-baseline gap-1.5 rounded-full border border-line px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-accent hover:text-ink"
-								>
-									<span className="text-accent tabular-nums">{a.count}</span>
-									{a.label}
-								</a>
-							</li>
-						))}
-					</ul>
-				</section>
+					<section aria-label="Alerts awaiting decision">
+						<h2 className="hairline-strong pb-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+							Awaiting decision
+						</h2>
+						<ul>
+							{day.alerts.map((a) => (
+								<li key={a.key} className="hairline">
+									<a href={a.href} className="flex items-center justify-between gap-3 py-3">
+										<span className="flex items-center gap-2">
+											<span className="font-mono tabular-nums text-accent">{a.count}</span>
+											<span className="text-ink-2">{a.label}</span>
+										</span>
+										<span aria-hidden="true" className="text-ink-4">
+											→
+										</span>
+									</a>
+								</li>
+							))}
+						</ul>
+					</section>
+				</div>
 
 				{/* Day tape — full width, ported from ledger.tsx */}
 				<section aria-label="Day tape" className="mt-14">
@@ -457,52 +447,58 @@ export function CurrentDesign({ day }: { day: CompareDay }) {
 						</a>
 					</div>
 
-					{day.schedule.allDay.length > 0 && (
-						<Band title="All day">
-							{day.schedule.allDay.map((item) =>
-								item.kind === "task" ? (
-									<TaskRow
-										key={item.key}
-										item={item}
-										checked={checked[item.key]}
-										onToggle={() => toggle(item.key)}
-									/>
-								) : (
-									<EventRow key={item.key} item={item} />
-								),
+					<div className="mt-6 grid grid-cols-1 gap-10 @3xl:grid-cols-[1.6fr_1fr] @3xl:items-start @3xl:gap-14">
+						<div className="min-w-0">
+							{day.schedule.allDay.length > 0 && (
+								<Band title="All day">
+									{day.schedule.allDay.map((item) =>
+										item.kind === "task" ? (
+											<TaskRow
+												key={item.key}
+												item={item}
+												checked={checked[item.key]}
+												onToggle={() => toggle(item.key)}
+											/>
+										) : (
+											<EventRow key={item.key} item={item} />
+										),
+									)}
+								</Band>
 							)}
-						</Band>
-					)}
 
-					{day.schedule.timeline.length > 0 && (
-						<Band title="Timeline">
-							{day.schedule.timeline.map((item) =>
-								item.kind === "task" ? (
-									<TaskRow
-										key={item.key}
-										item={item}
-										checked={checked[item.key]}
-										onToggle={() => toggle(item.key)}
-									/>
-								) : (
-									<EventRow key={item.key} item={item} />
-								),
+							{day.schedule.timeline.length > 0 && (
+								<Band title="Timeline">
+									{day.schedule.timeline.map((item) =>
+										item.kind === "task" ? (
+											<TaskRow
+												key={item.key}
+												item={item}
+												checked={checked[item.key]}
+												onToggle={() => toggle(item.key)}
+											/>
+										) : (
+											<EventRow key={item.key} item={item} />
+										),
+									)}
+								</Band>
 							)}
-						</Band>
-					)}
+						</div>
 
-					{day.schedule.open.length > 0 && (
-						<Band title="Open">
-							{day.schedule.open.map((item) => (
-								<TaskRow
-									key={item.key}
-									item={item}
-									checked={checked[item.key]}
-									onToggle={() => toggle(item.key)}
-								/>
-							))}
-						</Band>
-					)}
+						<div className="min-w-0">
+							{day.schedule.open.length > 0 && (
+								<Band title="Open">
+									{day.schedule.open.map((item) => (
+										<TaskRow
+											key={item.key}
+											item={item}
+											checked={checked[item.key]}
+											onToggle={() => toggle(item.key)}
+										/>
+									))}
+								</Band>
+							)}
+						</div>
+					</div>
 				</section>
 
 				<div className="mt-14 grid grid-cols-1 gap-14 @3xl:grid-cols-[1.5fr_1fr] @3xl:items-start @3xl:gap-x-10">

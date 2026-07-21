@@ -15,7 +15,7 @@ const DESIGNS = [
 	{
 		id: "current",
 		name: "Current",
-		note: "The shipped Today page, with all the Ledger gadgets and far more air between sections",
+		note: "Round 6 — Awaiting decision moved up beside the anchor sentence, Open on the right of the schedule",
 		Component: CurrentDesign,
 	},
 	{
