@@ -258,19 +258,82 @@ function TaskRow({
 	);
 }
 
+function IconCalendar({ className }: { className?: string }) {
+	return (
+		<svg
+			viewBox="0 0 16 16"
+			width="16"
+			height="16"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			className={className}
+			aria-hidden="true"
+		>
+			<rect x="2.5" y="3.5" width="11" height="10" rx="0.5" />
+			<path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" />
+		</svg>
+	);
+}
+
+function IconBell({ className }: { className?: string }) {
+	return (
+		<svg
+			viewBox="0 0 16 16"
+			width="16"
+			height="16"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			className={className}
+			aria-hidden="true"
+		>
+			<path d="M4 6a4 4 0 0 1 8 0c0 3 1 4 1 4H3s1-1 1-4Z" />
+			<path d="M6.5 12.5a1.5 1.5 0 0 0 3 0" />
+		</svg>
+	);
+}
+
+function IconMessage({ className }: { className?: string }) {
+	return (
+		<svg
+			viewBox="0 0 16 16"
+			width="16"
+			height="16"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			className={className}
+			aria-hidden="true"
+		>
+			<path d="M2 3.5h12v7H6l-2.5 2.5V10.5H2Z" />
+		</svg>
+	);
+}
+
+// The calendar icon is what says "this is an event, not a task" — it takes
+// the checkbox's column so events and tasks line up in the same band.
 function EventRow({ item }: { item: { title: string; meta: string; time?: string } }) {
+	const scheduled = item.time !== undefined;
+
 	return (
 		<li className="hairline flex items-baseline gap-3 py-3">
-			<span className="w-12 shrink-0 font-mono text-meta tabular-nums text-ink-3">
-				{item.time ?? "—"}
-			</span>
+			{scheduled && (
+				<span className="w-12 shrink-0 font-mono text-meta tabular-nums text-ink-3">
+					{item.time}
+				</span>
+			)}
+			<IconCalendar className="shrink-0 self-center text-ink-3" />
 			<div className="min-w-0 flex-1">
 				<p className="truncate text-sm text-ink">{item.title}</p>
 				{item.meta && <p className="mt-0.5 truncate font-mono text-meta text-ink-4">{item.meta}</p>}
 			</div>
-			<span className="shrink-0 self-center font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-				Event
-			</span>
 		</li>
 	);
 }
@@ -298,6 +361,9 @@ export function CurrentDesign({ day }: { day: CompareDay }) {
 	const routinesDone = routineRows.filter((r) => checked[r.id]).length;
 	const nowMinutes = toMinutes(day.nowLabel);
 
+	const [, dayNum, monthAbbr] = day.dateline.split(" ");
+	const weekdayAbbr = day.weekday.slice(0, 3).toUpperCase();
+
 	const timelineFlags = day.schedule.timeline.map((item, i) => ({
 		...item,
 		tier: i % 2 === 0 ? "tier-up" : "tier-down",
@@ -309,41 +375,47 @@ export function CurrentDesign({ day }: { day: CompareDay }) {
 		<div className="dzcur bg-bg text-ink">
 			<style>{TAPE_CSS}</style>
 			<div className="mx-auto max-w-[1180px] px-4 py-10 @3xl:px-10">
-				{/* Masthead — masthead.tsx */}
+				{/* Masthead — masthead.tsx, dateline condensed to one line and the
+				 * notification/ask actions carrying icons instead of a dot + arrow. */}
 				<header className="hairline-strong pb-5">
 					<div className="flex items-baseline justify-between">
 						<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-							{day.dateline}
+							{weekdayAbbr} · {monthAbbr.toUpperCase()} {dayNum} · WEEK {day.isoWeek}
 						</p>
-						<div className="flex items-baseline gap-4">
+						<div className="flex items-center gap-4">
 							{day.unreadNotifications > 0 && (
 								<a
 									href="/notifications"
-									className="flex items-baseline gap-1.5 font-mono text-meta text-ink-3 hover:text-ink-2"
+									className="flex items-center gap-1.5 font-mono text-meta text-ink-3 hover:text-ink-2"
 								>
-									<span aria-hidden className="inline-block h-1.5 w-1.5 self-center bg-accent" />
+									<IconBell />
 									{day.unreadNotifications}
+									<span
+										aria-hidden
+										className="inline-block h-1.5 w-1.5 self-center rounded-full bg-accent"
+									/>
 									<span className="sr-only"> unread notifications</span>
 								</a>
 							)}
-							<a href="/chat" className="font-mono text-meta text-ink-3 hover:text-ink-2">
-								Ask →
+							<a
+								href="/chat"
+								className="flex items-center gap-1.5 font-mono text-meta text-accent-ink hover:text-accent"
+							>
+								<IconMessage />
+								Ask
 							</a>
 						</div>
 					</div>
 					<h1 className="display-tight gradient-text-mesh mt-1 w-fit font-serif text-4xl">
 						Dispatch
 					</h1>
-					<p className="mt-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-						{day.weekday}
-					</p>
 				</header>
 
 				{/* The day at a glance: the anchor sentence already carries the
 				 * counts, so it stands alone rather than repeating them as a
 				 * strip of big numbers — Awaiting decision fills the row beside
 				 * it instead of sitting further down the page. */}
-				<div className="mt-12 grid grid-cols-1 gap-10 @3xl:grid-cols-[1.6fr_1fr] @3xl:items-start @3xl:gap-14">
+				<div className="mt-12 grid grid-cols-1 gap-10 @3xl:grid-cols-[1.6fr_1fr] @3xl:items-center @3xl:gap-14">
 					<section aria-label="Anchor summary">
 						<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
 							{day.anchor.eventCount} event{day.anchor.eventCount === 1 ? "" : "s"} today
