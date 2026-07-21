@@ -163,7 +163,7 @@ export function TaskRowItem({
 		>
 			{scheduled && (
 				<span className="w-12 shrink-0 font-mono text-meta tabular-nums text-ink-3">
-					{timeLabel ?? "—"}
+					{timeLabel}
 				</span>
 			)}
 			<input
