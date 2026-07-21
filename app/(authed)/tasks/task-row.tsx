@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { formatDueLabel } from "@/lib/dates";
 import { RECURRENCE_GLYPH } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/services/tasks";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
@@ -63,7 +64,7 @@ export function TaskRowItem({
 					{!scheduled && task.due_date && (
 						<span className={overdue ? "text-accent-slip" : ""}>
 							{" · "}
-							{task.due_date}
+							{formatDueLabel(task.due_date, todayIso)}
 							{task.due_time ? ` ${task.due_time.slice(0, 5)}` : ""}
 						</span>
 					)}

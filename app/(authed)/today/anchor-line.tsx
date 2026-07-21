@@ -4,8 +4,6 @@ import type { AnchorData } from "@/lib/services/briefing";
 
 /** The day at a glance: event count, the next one up, and open/overdue tasks. */
 export function AnchorLine({ anchor, tz }: { anchor: AnchorData; tz: string }) {
-	if (anchor.eventCount === 0 && anchor.openCount === 0) return null;
-
 	return (
 		<div>
 			{anchor.eventCount > 0 && (
@@ -13,7 +11,7 @@ export function AnchorLine({ anchor, tz }: { anchor: AnchorData; tz: string }) {
 					{anchor.eventCount} event{anchor.eventCount === 1 ? "" : "s"} today
 				</p>
 			)}
-			{anchor.nextEvent && (
+			{anchor.nextEvent ? (
 				<p className="mt-2 font-serif text-lg leading-snug text-ink">
 					Next up at{" "}
 					<span className="tabular-nums">
@@ -22,6 +20,8 @@ export function AnchorLine({ anchor, tz }: { anchor: AnchorData; tz: string }) {
 					{" — "}
 					{anchor.nextEvent.title}.
 				</p>
+			) : (
+				<p className="mt-2 font-serif text-lg leading-snug text-ink">You are free.</p>
 			)}
 			{anchor.openCount > 0 && (
 				<p className="mt-2 font-mono text-meta text-ink-3">

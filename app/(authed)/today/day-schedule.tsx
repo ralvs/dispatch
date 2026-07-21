@@ -79,21 +79,22 @@ export function DaySchedule({
 					</div>
 
 					<div className="min-w-0">
-						{open.length > 0 && (
-							<Band title="Open">
-								{open.map((task) => (
-									<TaskRowItem key={task.id} task={task} todayIso={todayIso} />
-								))}
-							</Band>
+						<Band title="Open">
+							{open.length > 0 ? (
+								open.map((task) => <TaskRowItem key={task.id} task={task} todayIso={todayIso} />)
+							) : (
+								<li className="py-2 font-serif italic text-ink-3">
+									Nothing pinned. Star a task to work on it today.
+								</li>
+							)}
+						</Band>
+						{slotsOpen > 0 && (
+							<p className="mt-2 font-mono text-meta text-ink-4">
+								{slotsOpen} Top 3 slot{slotsOpen === 1 ? "" : "s"} open · tap ☆ on a row to pin
+							</p>
 						)}
 					</div>
 				</div>
-			)}
-
-			{!empty && slotsOpen > 0 && (
-				<p className="mt-3 font-mono text-meta text-ink-4">
-					{slotsOpen} Top 3 slot{slotsOpen === 1 ? "" : "s"} open · tap ☆ on a row to pin
-				</p>
 			)}
 		</section>
 	);

@@ -101,3 +101,13 @@ export function formatDay(dateIso: string, tz: string, format = "cccc, d LLLL yy
 export function formatInstant(utcIso: string, tz: string, format = "d LLL, HH:mm"): string {
 	return DateTime.fromISO(utcIso, { zone: "utc" }).setZone(tz).toFormat(format);
 }
+
+/** Relative due-date label for task rows: `overdue 3d`, `due today`, `due in 2d`. */
+export function formatDueLabel(dueDateIso: string, todayIso: string): string {
+	const due = DateTime.fromISO(dueDateIso, { zone: "utc" });
+	const today = DateTime.fromISO(todayIso, { zone: "utc" });
+	const days = Math.round(due.diff(today, "days").days);
+	if (days === 0) return "due today";
+	if (days < 0) return `overdue ${-days}d`;
+	return `due in ${days}d`;
+}
