@@ -161,7 +161,7 @@ export function TaskRowItem({
 			className={`hairline flex items-baseline gap-3 py-2.5 ${pending ? "opacity-50" : ""}`}
 			data-task-id={task.id}
 		>
-			{scheduled && (
+			{scheduled && timeLabel && (
 				<span className="w-12 shrink-0 font-mono text-meta tabular-nums text-ink-3">
 					{timeLabel}
 				</span>

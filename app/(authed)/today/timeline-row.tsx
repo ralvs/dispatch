@@ -29,7 +29,9 @@ function EventRow({ item }: { item: Extract<DayScheduleItem, { kind: "event" }> 
 
 	return (
 		<li className="hairline flex items-baseline gap-3 py-2.5">
-			<span className="w-12 shrink-0 font-mono text-meta tabular-nums text-ink-3">{time}</span>
+			{time && (
+				<span className="w-12 shrink-0 font-mono text-meta tabular-nums text-ink-3">{time}</span>
+			)}
 			<IconCalendar className="h-4 w-4 shrink-0 self-center text-ink-3" />
 			<div className="min-w-0 flex-1">
 				<p className="truncate text-sm text-ink">{event.title}</p>
