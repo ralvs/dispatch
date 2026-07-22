@@ -1,11 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GoogleCalendarConnection } from "@/lib/google/client";
-import type { GoogleRemoteEvent } from "@/lib/google/map-event";
 import { ServiceError } from "@/lib/services/errors";
 import { syncGoogleCalendar } from "@/lib/services/google-calendar";
 
-// Fixed "now" so the ±7d window is deterministic across tests.
 const NOW_MS = Date.parse("2026-07-21T12:00:00.000Z");
+
+const ICS_ONE_EVENT = [
+	"BEGIN:VCALENDAR",
+	"VERSION:2.0",
+	"BEGIN:VEVENT",
+	"UID:work-evt-1@google.com",
+	"DTSTART:20260721T150000Z",
+	"DTEND:20260721T160000Z",
+	"SUMMARY:Eng sync",
+	"END:VEVENT",
+	"END:VCALENDAR",
+].join("\r\n");
 
 type StubOpts = {
 	existingRows?: { caldav_uid: string; caldav_etag: string; start_at: string }[];
@@ -76,22 +86,12 @@ function stubSupabase(opts: StubOpts = {}) {
 	return { sb: sb as never, upserts, deleteFilters };
 }
 
-function timedEvent(overrides: Partial<GoogleRemoteEvent> = {}): GoogleRemoteEvent {
-	return {
-		id: "gcal-1",
-		etag: "etag-1",
-		status: "confirmed",
-		summary: "Eng sync",
-		start: { dateTime: "2026-07-21T15:00:00.000Z" },
-		end: { dateTime: "2026-07-21T16:00:00.000Z" },
-		...overrides,
-	};
-}
-
 function fakeConn(overrides: Partial<GoogleCalendarConnection> = {}): GoogleCalendarConnection {
 	return {
-		listCalendars: vi.fn(async () => [{ id: "primary", summary: "Work" }]),
-		listEventsInWindow: vi.fn(async () => [timedEvent()]),
+		listFeeds: () => [
+			{ name: "Work", url: "https://calendar.google.com/calendar/ical/x/private-y/basic.ics" },
+		],
+		fetchFeed: vi.fn(async () => ({ etag: "etag-1", data: ICS_ONE_EVENT })),
 		...overrides,
 	};
 }
@@ -101,7 +101,7 @@ describe("syncGoogleCalendar", () => {
 		vi.clearAllMocks();
 	});
 
-	it("upserts mapped events on source+caldav_uid", async () => {
+	it("upserts parsed ICS events on source+caldav_uid", async () => {
 		const { sb, upserts } = stubSupabase();
 		const conn = fakeConn();
 
@@ -110,19 +110,20 @@ describe("syncGoogleCalendar", () => {
 		expect(result.pulled).toBe(1);
 		const eventUpsert = upserts.find((u) => u.table === "calendar_events");
 		expect(eventUpsert?.row).toMatchObject({
-			caldav_uid: "gcal-1",
+			caldav_uid: "work-evt-1@google.com",
 			calendar_name: "Work",
 			title: "Eng sync",
 			source: "google",
+			caldav_etag: "etag-1",
 		});
 		expect(eventUpsert?.opts).toMatchObject({ onConflict: "source,caldav_uid" });
 	});
 
-	it("skips upsert when etag and start are unchanged", async () => {
+	it("skips upsert when feed etag and start are unchanged", async () => {
 		const { sb, upserts } = stubSupabase({
 			existingRows: [
 				{
-					caldav_uid: "gcal-1",
+					caldav_uid: "work-evt-1@google.com",
 					caldav_etag: "etag-1",
 					start_at: "2026-07-21T15:00:00.000Z",
 				},
@@ -136,63 +137,49 @@ describe("syncGoogleCalendar", () => {
 		expect(upserts.find((u) => u.table === "calendar_events")).toBeUndefined();
 	});
 
-	it("does not upsert cancelled events (they leave via set-difference)", async () => {
+	it("updates google_sync_state with counts", async () => {
 		const { sb, upserts } = stubSupabase();
-		const conn = fakeConn({
-			listEventsInWindow: vi.fn(async () => [timedEvent({ status: "cancelled" })]),
-		});
-
-		const result = await syncGoogleCalendar(sb, conn, { nowMs: NOW_MS });
-
-		expect(result.pulled).toBe(0);
-		expect(upserts.find((u) => u.table === "calendar_events")).toBeUndefined();
-	});
-
-	it("updates google_sync_state with pulled/removed counts", async () => {
-		const { sb, upserts } = stubSupabase();
-		const conn = fakeConn();
-
-		await syncGoogleCalendar(sb, conn, { nowMs: NOW_MS });
-
-		const stateUpsert = upserts.find((u) => u.table === "google_sync_state");
-		expect(stateUpsert?.row).toMatchObject({
-			id: true,
+		await syncGoogleCalendar(sb, fakeConn(), { nowMs: NOW_MS });
+		expect(upserts.find((u) => u.table === "google_sync_state")?.row).toMatchObject({
 			last_result: { pulled: 1, removed: 1 },
 		});
 	});
 
 	it("deletes only in-window google rows not seen this sync", async () => {
 		const { sb, deleteFilters } = stubSupabase();
-		const conn = fakeConn();
-
-		await syncGoogleCalendar(sb, conn, { nowMs: NOW_MS });
-
+		await syncGoogleCalendar(sb, fakeConn(), { nowMs: NOW_MS });
 		expect(deleteFilters[0]).toMatchObject({ "eq:source": "google" });
-		expect(deleteFilters[0]["not:caldav_uid:in"]).toContain("gcal-1");
+		expect(deleteFilters[0]["not:caldav_uid:in"]).toContain("work-evt-1@google.com");
 	});
 
-	it("throws without deleting when every calendar fetch fails", async () => {
+	it("throws without deleting when every feed fails", async () => {
 		const { sb, upserts } = stubSupabase();
 		const conn = fakeConn({
-			listEventsInWindow: vi.fn(async () => {
+			fetchFeed: vi.fn(async () => {
 				throw new Error("network");
 			}),
 		});
-
 		await expect(syncGoogleCalendar(sb, conn, { nowMs: NOW_MS })).rejects.toBeInstanceOf(
 			ServiceError,
 		);
 		expect(upserts.find((u) => u.table === "google_sync_state")).toBeUndefined();
 	});
 
-	it("skips set-difference delete when no events were seen", async () => {
+	it("throws when no feeds are configured", async () => {
+		const { sb } = stubSupabase();
+		const conn = fakeConn({ listFeeds: () => [] });
+		await expect(syncGoogleCalendar(sb, conn, { nowMs: NOW_MS })).rejects.toBeInstanceOf(
+			ServiceError,
+		);
+	});
+
+	it("skips set-difference when no events were seen", async () => {
 		const { sb, deleteFilters } = stubSupabase();
+		const emptyIcs = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nEND:VCALENDAR";
 		const conn = fakeConn({
-			listEventsInWindow: vi.fn(async () => []),
+			fetchFeed: vi.fn(async () => ({ etag: "e", data: emptyIcs })),
 		});
-
 		const result = await syncGoogleCalendar(sb, conn, { nowMs: NOW_MS });
-
 		expect(result.removed).toBe(0);
 		expect(deleteFilters).toHaveLength(0);
 	});

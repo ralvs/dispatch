@@ -1,16 +1,15 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { parseCalendarObject } from "@/lib/caldav/ical";
 import { CALENDAR_SYNC_WINDOW_MS } from "@/lib/constants";
 import { nowUtc } from "@/lib/dates";
 import type { GoogleCalendarConnection } from "@/lib/google/client";
-import { mapGoogleEvent } from "@/lib/google/map-event";
 import { ServiceError, unwrap } from "@/lib/services/errors";
 
 // ─────────────────────────────────────────────────────────────────────────
-// Google Calendar pull-only sync (docs/adr/0018). ±7 days from every
-// calendar the token can see. Cancellations: windowed set-difference on
-// source='google' (cancelled remote events are never upserted). Never
-// writes back to Google.
+// Google Calendar pull-only via secret ICS feeds (docs/adr/0018). Reuses
+// the CalDAV ICS parser. ±7 days, set-difference on source='google'.
+// Never writes back to Google. No OAuth / GCP.
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Postgres text-array literal for a `.not(col, "in", …)` filter. */
@@ -29,7 +28,10 @@ export async function syncGoogleCalendar(
 	const window = { startUtc: windowStartUtc, endUtc: windowEndUtc };
 	const syncedAt = nowUtc(nowMs);
 
-	const calendars = await conn.listCalendars();
+	const feeds = conn.listFeeds();
+	if (feeds.length === 0) {
+		throw new ServiceError("No Google ICS feeds configured", null);
+	}
 
 	const existingRows = (unwrap(
 		await sb
@@ -45,26 +47,26 @@ export async function syncGoogleCalendar(
 	let anySucceeded = false;
 	const seenUids = new Set<string>();
 
-	for (const calendar of calendars) {
-		let remoteEvents: Awaited<ReturnType<GoogleCalendarConnection["listEventsInWindow"]>>;
+	for (const feed of feeds) {
+		let object: Awaited<ReturnType<GoogleCalendarConnection["fetchFeed"]>>;
 		try {
-			remoteEvents = await conn.listEventsInWindow(calendar.id, window);
+			object = await conn.fetchFeed(feed.url);
 		} catch {
-			// One calendar failed; keep going with the others.
+			// One feed failed; keep going with the others.
 			continue;
 		}
 		anySucceeded = true;
 
-		for (const remote of remoteEvents) {
-			const mapped = mapGoogleEvent(remote);
-			if (!mapped) continue;
-
-			seenUids.add(mapped.uid);
-			const known = knownByUid.get(mapped.uid);
+		const parsedEvents = parseCalendarObject(object.data, window);
+		for (const parsed of parsedEvents) {
+			seenUids.add(parsed.uid);
+			const known = knownByUid.get(parsed.uid);
+			// Feed-level etag: when the ICS body is unchanged, skip unless the
+			// resolved start moved (RRULE window slide — same rule as CalDAV).
 			if (
 				known &&
-				known.caldav_etag === mapped.etag &&
-				Date.parse(known.start_at) === Date.parse(mapped.startUtc)
+				known.caldav_etag === object.etag &&
+				Date.parse(known.start_at) === Date.parse(parsed.startUtc)
 			) {
 				continue;
 			}
@@ -72,17 +74,17 @@ export async function syncGoogleCalendar(
 			unwrap(
 				await sb.from("calendar_events").upsert(
 					{
-						caldav_uid: mapped.uid,
-						caldav_etag: mapped.etag,
-						caldav_href: mapped.href,
-						calendar_name: calendar.summary,
-						title: mapped.title,
-						description: mapped.description,
-						start_at: mapped.startUtc,
-						end_at: mapped.endUtc,
-						all_day: mapped.allDay,
-						location: mapped.location,
-						attendees: mapped.attendees,
+						caldav_uid: parsed.uid,
+						caldav_etag: object.etag,
+						caldav_href: feed.url,
+						calendar_name: feed.name,
+						title: parsed.title,
+						description: parsed.description,
+						start_at: parsed.startUtc,
+						end_at: parsed.endUtc,
+						all_day: parsed.allDay,
+						location: parsed.location,
+						attendees: parsed.attendees,
 						source: "google",
 						synced_at: syncedAt,
 					},
@@ -94,7 +96,7 @@ export async function syncGoogleCalendar(
 	}
 
 	if (!anySucceeded) {
-		throw new ServiceError("All Google Calendar fetches failed", null);
+		throw new ServiceError("All Google ICS feed fetches failed", null);
 	}
 
 	let removed = 0;

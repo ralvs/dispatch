@@ -8,8 +8,8 @@ import { recordNotification } from "@/lib/services/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // ─────────────────────────────────────────────────────────────────────────
-// Google Calendar pull cron (docs/adr/0018) — cron-job.org behind CRON_SECRET.
-// calendar.readonly only. A no-op run writes no ledger row.
+// Google ICS feed pull cron (docs/adr/0018) — cron-job.org behind CRON_SECRET.
+// Secret iCal URLs only; no OAuth. A no-op run writes no ledger row.
 // ─────────────────────────────────────────────────────────────────────────
 
 async function runGcalSync(request: Request) {
@@ -26,7 +26,7 @@ async function runGcalSync(request: Request) {
 	const sb = createAdminClient();
 
 	try {
-		const conn = await createGoogleCalendarClient();
+		const conn = createGoogleCalendarClient();
 		const result = await syncGoogleCalendar(sb, conn);
 
 		if (result.pulled + result.removed > 0) {
