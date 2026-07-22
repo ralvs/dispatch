@@ -74,3 +74,13 @@ export async function updateTimezoneAction(formData: FormData) {
 	// Every page derives its day boundary from this one value.
 	afterMutation("settings.timezone");
 }
+
+export async function disconnectGoogleCalendar() {
+	await requireOwnerPage();
+	// google_sync_state is service-role only.
+	const { clearGoogleConnection } = await import("@/lib/services/google-auth");
+	const { createAdminClient } = await import("@/lib/supabase/admin");
+	const { redirect } = await import("next/navigation");
+	await clearGoogleConnection(createAdminClient());
+	redirect("/settings?gcal=disconnected");
+}

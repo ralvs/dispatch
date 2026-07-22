@@ -1,18 +1,16 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { parseCalendarObject } from "@/lib/caldav/ical";
 import { CALENDAR_SYNC_WINDOW_MS } from "@/lib/constants";
 import { nowUtc } from "@/lib/dates";
 import type { GoogleCalendarConnection } from "@/lib/google/client";
+import { mapGoogleEvent } from "@/lib/google/map-event";
 import { ServiceError, unwrap } from "@/lib/services/errors";
 
 // ─────────────────────────────────────────────────────────────────────────
-// Google Calendar pull-only via secret ICS feeds (docs/adr/0018). Reuses
-// the CalDAV ICS parser. ±7 days, set-difference on source='google'.
-// Never writes back to Google. No OAuth / GCP.
+// Google Calendar pull-only via Calendar API (docs/adr/0018). ±7 days from
+// every calendar the token can see. Never writes back to Google.
 // ─────────────────────────────────────────────────────────────────────────
 
-/** Postgres text-array literal for a `.not(col, "in", …)` filter. */
 function inListLiteral(values: Iterable<string>): string {
 	return `(${[...values].map((v) => `"${v.replace(/"/g, '\\"')}"`).join(",")})`;
 }
@@ -28,10 +26,7 @@ export async function syncGoogleCalendar(
 	const window = { startUtc: windowStartUtc, endUtc: windowEndUtc };
 	const syncedAt = nowUtc(nowMs);
 
-	const feeds = conn.listFeeds();
-	if (feeds.length === 0) {
-		throw new ServiceError("No Google ICS feeds configured", null);
-	}
+	const calendars = await conn.listCalendars();
 
 	const existingRows = (unwrap(
 		await sb
@@ -47,26 +42,25 @@ export async function syncGoogleCalendar(
 	let anySucceeded = false;
 	const seenUids = new Set<string>();
 
-	for (const feed of feeds) {
-		let object: Awaited<ReturnType<GoogleCalendarConnection["fetchFeed"]>>;
+	for (const calendar of calendars) {
+		let remoteEvents: Awaited<ReturnType<GoogleCalendarConnection["listEventsInWindow"]>>;
 		try {
-			object = await conn.fetchFeed(feed.url);
+			remoteEvents = await conn.listEventsInWindow(calendar.id, window);
 		} catch {
-			// One feed failed; keep going with the others.
 			continue;
 		}
 		anySucceeded = true;
 
-		const parsedEvents = parseCalendarObject(object.data, window);
-		for (const parsed of parsedEvents) {
-			seenUids.add(parsed.uid);
-			const known = knownByUid.get(parsed.uid);
-			// Feed-level etag: when the ICS body is unchanged, skip unless the
-			// resolved start moved (RRULE window slide — same rule as CalDAV).
+		for (const remote of remoteEvents) {
+			const mapped = mapGoogleEvent(remote);
+			if (!mapped) continue;
+
+			seenUids.add(mapped.uid);
+			const known = knownByUid.get(mapped.uid);
 			if (
 				known &&
-				known.caldav_etag === object.etag &&
-				Date.parse(known.start_at) === Date.parse(parsed.startUtc)
+				known.caldav_etag === mapped.etag &&
+				Date.parse(known.start_at) === Date.parse(mapped.startUtc)
 			) {
 				continue;
 			}
@@ -74,17 +68,17 @@ export async function syncGoogleCalendar(
 			unwrap(
 				await sb.from("calendar_events").upsert(
 					{
-						caldav_uid: parsed.uid,
-						caldav_etag: object.etag,
-						caldav_href: feed.url,
-						calendar_name: feed.name,
-						title: parsed.title,
-						description: parsed.description,
-						start_at: parsed.startUtc,
-						end_at: parsed.endUtc,
-						all_day: parsed.allDay,
-						location: parsed.location,
-						attendees: parsed.attendees,
+						caldav_uid: mapped.uid,
+						caldav_etag: mapped.etag,
+						caldav_href: mapped.href,
+						calendar_name: calendar.summary,
+						title: mapped.title,
+						description: mapped.description,
+						start_at: mapped.startUtc,
+						end_at: mapped.endUtc,
+						all_day: mapped.allDay,
+						location: mapped.location,
+						attendees: mapped.attendees,
 						source: "google",
 						synced_at: syncedAt,
 					},
@@ -96,7 +90,7 @@ export async function syncGoogleCalendar(
 	}
 
 	if (!anySucceeded) {
-		throw new ServiceError("All Google ICS feed fetches failed", null);
+		throw new ServiceError("All Google Calendar fetches failed", null);
 	}
 
 	let removed = 0;
@@ -114,13 +108,25 @@ export async function syncGoogleCalendar(
 		removed = ((deleted as unknown[] | null) ?? []).length;
 	}
 
+	// Preserve refresh_token / account_email — only touch sync result fields.
+	const existing = await sb
+		.from("google_sync_state")
+		.select("refresh_token, account_email, connected_at")
+		.eq("id", true)
+		.maybeSingle();
+
 	unwrap(
-		await sb
-			.from("google_sync_state")
-			.upsert(
-				{ id: true, last_synced_at: syncedAt, last_result: { pulled, removed } },
-				{ onConflict: "id" },
-			),
+		await sb.from("google_sync_state").upsert(
+			{
+				id: true,
+				last_synced_at: syncedAt,
+				last_result: { pulled, removed },
+				refresh_token: existing.data?.refresh_token ?? null,
+				account_email: existing.data?.account_email ?? null,
+				connected_at: existing.data?.connected_at ?? null,
+			},
+			{ onConflict: "id" },
+		),
 	);
 
 	return { pulled, removed };

@@ -1,17 +1,28 @@
 import { PushToggle } from "@/components/push-toggle";
 import { requireOwnerPage } from "@/lib/auth";
+import { isGoogleOAuthConfigured } from "@/lib/env";
 import { cadenceThresholdDays } from "@/lib/services/briefing";
 import { listDomains } from "@/lib/services/domains";
+import { getGoogleConnectionStatus } from "@/lib/services/google-auth";
 import { getAppTimezone } from "@/lib/services/settings";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { DomainForm } from "./domain-form";
 import { DomainRowItem } from "./domain-row";
+import { GoogleCalendarCard } from "./google-calendar-card";
 import { TimezoneForm } from "./timezone-form";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+	searchParams,
+}: {
+	searchParams: Promise<{ gcal?: string; reason?: string }>;
+}) {
 	const { sb } = await requireOwnerPage();
-	const [domains, tz] = await Promise.all([
+	const params = await searchParams;
+	const [domains, tz, gcal] = await Promise.all([
 		listDomains(sb, { includeArchived: true }),
 		getAppTimezone(sb),
+		// Token row is service-role only — admin after requireOwner is fine.
+		getGoogleConnectionStatus(createAdminClient()),
 	]);
 	const active = domains.filter((d) => d.active);
 	const archived = domains.filter((d) => !d.active);
@@ -70,6 +81,20 @@ export default async function SettingsPage() {
 				<div className="mt-2 border-b border-line pb-4">
 					<PushToggle />
 				</div>
+			</section>
+
+			<section className="mt-8" aria-label="Integrations">
+				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
+					Integrations
+				</h2>
+				<GoogleCalendarCard
+					oauthConfigured={isGoogleOAuthConfigured()}
+					connected={gcal.connected}
+					accountEmail={gcal.accountEmail}
+					lastSyncedAt={gcal.lastSyncedAt}
+					statusQuery={params.gcal ?? null}
+					statusReason={params.reason ?? null}
+				/>
 			</section>
 
 			<section className="mt-8" aria-label="App">

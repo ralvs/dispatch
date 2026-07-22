@@ -117,19 +117,28 @@ export type Database = {
 			};
 			google_sync_state: {
 				Row: {
+					account_email: string | null;
+					connected_at: string | null;
 					id: boolean;
 					last_result: Json | null;
 					last_synced_at: string | null;
+					refresh_token: string | null;
 				};
 				Insert: {
+					account_email?: string | null;
+					connected_at?: string | null;
 					id?: boolean;
 					last_result?: Json | null;
 					last_synced_at?: string | null;
+					refresh_token?: string | null;
 				};
 				Update: {
+					account_email?: string | null;
+					connected_at?: string | null;
 					id?: boolean;
 					last_result?: Json | null;
 					last_synced_at?: string | null;
+					refresh_token?: string | null;
 				};
 				Relationships: [];
 			};

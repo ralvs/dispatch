@@ -1,52 +1,51 @@
-# Google Calendar pull-only via secret ICS feeds
+# Google Calendar pull-only via browser OAuth
 
 Dispatch pulls events from **both** iCloud CalDAV (personal) and Google
 Calendar (Engine work). Google is **read-only**: never create, update, or
-delete remote Google events. Access is via each calendar’s **secret iCal
-address** (HTTPS GET of a private `.ics` URL) — **no Google Cloud project,
-no OAuth app, no Calendar API**.
+delete remote Google events. Access is **browser OAuth** with scope
+**`calendar.readonly` only** — no Gmail, Drive, or other Google APIs.
 
 ## Why
 
-ADR-0006 chose iCloud CalDAV because the owner lives on Apple Calendar.
-Work events live on Google Workspace (`renan.alves@engine.com`) and never
-appear in that pull. The owner has no GCP access on the employer domain;
-Apple Calendar already uses a Google login for the same account. Secret ICS
-URLs are the supported “subscribe without OAuth client” path Google exposes
-in calendar settings (same family of feed Outlook/others use).
+ADR-0006 chose iCloud CalDAV for Apple-primary personal calendars. Work
+events live on Google Workspace (`renan.alves@engine.com`). Secret ICS
+URLs and public ICS feeds are unreliable on this Workspace (public 404,
+secret address often unavailable). Browser OAuth is the same class of
+flow Apple Calendar uses: user signs in, grants calendar read, app stores
+a refresh token.
 
-Calendar-only HTTP GET of an ICS body matches employer policy: calendar is
-permitted; email is not. No Gmail scope exists to request.
+The owner has **no employer GCP**. A **personal** Google Cloud project
+hosts the OAuth client (client id/secret in env). At connect time the
+owner signs in as the **Engine** account and consents only to calendar
+read. Employer policy: calendar permitted; email forbidden — we never
+request mail scopes.
 
 ## Auth / config
 
-Env only — one feed list, no tokens:
+| Piece | Where |
+|-------|--------|
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Env (personal GCP Web client) |
+| Redirect URIs | `{origin}/api/google/oauth/callback` (localhost + prod) |
+| Refresh token | `google_sync_state.refresh_token` (service-role only) |
+| Connect / disconnect | Settings → Integrations |
 
-```
-GOOGLE_CALENDAR_ICS_FEEDS=Work|https://calendar.google.com/calendar/ical/…/private-…/basic.ics
-```
+Flow:
 
-Multiple feeds: semicolon-separated `Name|url` pairs. Names become
-`calendar_events.calendar_name`. Obtain each URL from Google Calendar →
-Settings for that calendar → Integrate calendar → **Secret address in iCal
-format**. Treat the URL as a secret (full read of that calendar).
+1. Owner opens Settings → **Connect Google Calendar**
+2. `/api/google/oauth/start` (requireOwner) → Google consent (`calendar.readonly`, offline)
+3. Callback exchanges code, stores refresh token + primary calendar id label
+4. Cron `/api/cron/gcal` refreshes access token and pulls ±7 days from all calendars
 
 ## Sync shape
 
-- Cron: `/api/cron/gcal` behind `CRON_SECRET` (parallel to `/api/cron/caldav`)
-- Fetch each ICS URL; parse with the shared CalDAV ICS parser (`lib/caldav/ical.ts`)
-- Window: ±7 days (first intersecting occurrence per RRULE series — same as CalDAV)
-- Identity: `source='google'` + `caldav_uid` = iCal UID; unique on
-  `(source, caldav_uid)` so providers cannot overwrite each other
-- Change skip: HTTP `ETag` (or body hash) + resolved `start_at`
+- Calendar API v3: `calendarList` + `events.list` (`singleEvents=true`)
+- Identity: `source='google'` + Google event id; unique `(source, caldav_uid)`
 - Cancellations: windowed set-difference on `source='google'`
-- State: `google_sync_state` singleton; ledger `gcal.synced` only when
-  pulled+removed > 0
+- Ledger: `gcal.synced` only when pulled+removed > 0
 
 ## Non-goals
 
 - Push or edit on Google
-- Google Calendar API / OAuth / GCP
-- Any non-calendar Google surface
-- Cross-provider dedup of dual invites (two rows OK for v1)
-- Auto-discovery of every calendar on the account (owner pastes the feeds they want)
+- Any non-calendar Google scope
+- ICS secret-URL path (superseded)
+- Cross-provider dedup of dual invites

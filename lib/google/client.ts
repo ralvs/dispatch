@@ -1,47 +1,92 @@
 import "server-only";
-import { createHash } from "node:crypto";
-import { env } from "@/lib/env";
-import { type GoogleIcsFeed, parseGoogleIcsFeeds } from "@/lib/google/feeds";
+import type { GoogleRemoteEvent } from "@/lib/google/map-event";
+import { refreshAccessToken } from "@/lib/google/oauth";
 
 // ─────────────────────────────────────────────────────────────────────────
-// Google Calendar via secret ICS URLs (docs/adr/0018). No GCP / OAuth —
-// owner pastes private iCal addresses from calendar settings. Network edge
-// only; sync service is tested against GoogleCalendarConnection.
+// Google Calendar API v3 client (docs/adr/0018). Network edge only.
+// Scope: calendar.readonly. No email or other Google APIs.
 // ─────────────────────────────────────────────────────────────────────────
 
-export type GoogleIcsObject = { etag: string; data: string };
+const CAL_BASE = "https://www.googleapis.com/calendar/v3";
 
-/** Exactly what the sync service needs from Google ICS feeds. */
 export type GoogleCalendarConnection = {
-	listFeeds(): GoogleIcsFeed[];
-	fetchFeed(url: string): Promise<GoogleIcsObject>;
+	listCalendars(): Promise<{ id: string; summary: string }[]>;
+	listEventsInWindow(
+		calendarId: string,
+		window: { startUtc: string; endUtc: string },
+	): Promise<GoogleRemoteEvent[]>;
 };
 
-function contentHash(body: string): string {
-	return createHash("sha256").update(body).digest("hex").slice(0, 32);
+async function googleGet<T>(accessToken: string, url: string): Promise<T> {
+	const res = await fetch(url, {
+		headers: { Authorization: `Bearer ${accessToken}` },
+	});
+	if (!res.ok) {
+		const body = await res.text().catch(() => "");
+		throw new Error(`Google Calendar API ${res.status}: ${body.slice(0, 200)}`);
+	}
+	return (await res.json()) as T;
 }
 
-export function createGoogleCalendarClient(): GoogleCalendarConnection {
-	const feeds = parseGoogleIcsFeeds(env().GOOGLE_CALENDAR_ICS_FEEDS);
+export async function createGoogleCalendarClient(
+	refreshToken: string,
+): Promise<GoogleCalendarConnection> {
+	const accessToken = await refreshAccessToken(refreshToken);
 
 	return {
-		listFeeds() {
-			return feeds;
+		async listCalendars() {
+			type ListRes = {
+				items?: { id?: string; summary?: string }[];
+				nextPageToken?: string;
+			};
+			const calendars: { id: string; summary: string }[] = [];
+			let pageToken: string | undefined;
+			do {
+				const params = new URLSearchParams({ minAccessRole: "reader" });
+				if (pageToken) params.set("pageToken", pageToken);
+				const data = await googleGet<ListRes>(
+					accessToken,
+					`${CAL_BASE}/users/me/calendarList?${params}`,
+				);
+				for (const item of data.items ?? []) {
+					if (!item.id) continue;
+					calendars.push({
+						id: item.id,
+						summary: item.summary?.trim() || item.id,
+					});
+				}
+				pageToken = data.nextPageToken;
+			} while (pageToken);
+			return calendars;
 		},
 
-		async fetchFeed(url) {
-			const res = await fetch(url, {
-				headers: { Accept: "text/calendar, text/plain, */*" },
-				// Secret URLs are long-lived; no cookies / auth headers.
-				redirect: "follow",
-			});
-			if (!res.ok) {
-				throw new Error(`Google ICS fetch failed: ${res.status} ${url.slice(0, 60)}`);
-			}
-			const data = await res.text();
-			const headerEtag = res.headers.get("etag")?.trim();
-			const etag = headerEtag && headerEtag.length > 0 ? headerEtag : contentHash(data);
-			return { etag, data };
+		async listEventsInWindow(calendarId, window) {
+			type ListRes = {
+				items?: GoogleRemoteEvent[];
+				nextPageToken?: string;
+			};
+			const events: GoogleRemoteEvent[] = [];
+			let pageToken: string | undefined;
+			do {
+				const params = new URLSearchParams({
+					timeMin: window.startUtc,
+					timeMax: window.endUtc,
+					singleEvents: "true",
+					orderBy: "startTime",
+					showDeleted: "true",
+					maxResults: "2500",
+				});
+				if (pageToken) params.set("pageToken", pageToken);
+				const data = await googleGet<ListRes>(
+					accessToken,
+					`${CAL_BASE}/calendars/${encodeURIComponent(calendarId)}/events?${params}`,
+				);
+				for (const item of data.items ?? []) {
+					if (item?.id) events.push(item);
+				}
+				pageToken = data.nextPageToken;
+			} while (pageToken);
+			return events;
 		},
 	};
 }

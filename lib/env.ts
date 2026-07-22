@@ -29,9 +29,10 @@ const EnvSchema = z.object({
 	ICLOUD_APP_PASSWORD: z.string().optional(),
 	ICLOUD_CALENDAR_NAME: z.string().optional(),
 
-	// Google Calendar pull-only via secret ICS feeds (docs/adr/0018).
-	// Format: Name|https://…/basic.ics;Name2|https://…  (no OAuth / GCP)
-	GOOGLE_CALENDAR_ICS_FEEDS: z.string().optional(),
+	// Google Calendar OAuth app (docs/adr/0018) — personal GCP project is fine.
+	// Refresh token lives in google_sync_state after Settings → Connect.
+	GOOGLE_CLIENT_ID: z.string().optional(),
+	GOOGLE_CLIENT_SECRET: z.string().optional(),
 
 	// Web Push (Phase 7)
 	NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
@@ -72,7 +73,9 @@ export const isAiConfigured = () => Boolean(env().AI_GATEWAY_API_KEY);
 export const isCaldavConfigured = () =>
 	Boolean(env().ICLOUD_USERNAME && env().ICLOUD_APP_PASSWORD && env().ICLOUD_CALENDAR_NAME);
 
-export const isGoogleCalendarConfigured = () => Boolean(env().GOOGLE_CALENDAR_ICS_FEEDS?.trim());
+/** OAuth client credentials present (Connect button can work). */
+export const isGoogleOAuthConfigured = () =>
+	Boolean(env().GOOGLE_CLIENT_ID && env().GOOGLE_CLIENT_SECRET);
 
 export const isPushConfigured = () =>
 	Boolean(env().NEXT_PUBLIC_VAPID_PUBLIC_KEY && env().VAPID_PRIVATE_KEY);
