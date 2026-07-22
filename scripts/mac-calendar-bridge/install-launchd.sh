@@ -41,6 +41,7 @@ set +a
 : "${DISPATCH_BRIDGE_CALENDAR_TITLES:?set in $ENV_FILE}"
 
 mkdir -p "$LOG_DIR"
+mkdir -p "$(dirname "$PLIST")"
 
 cat >"$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
