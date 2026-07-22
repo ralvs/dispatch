@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { runAction } from "@/lib/client/toast";
 import { formatDueLabel } from "@/lib/dates";
-import { RECURRENCE_GLYPH, RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
+import { RECURRENCE_GLYPH } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/services/tasks";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
 import { updateTaskAction } from "./actions";
+import { type TaskDomainOption, TaskFormFields } from "./task-fields";
 
-export type TaskDomainOption = { id: string; name: string; is_system: boolean };
+export type { TaskDomainOption };
 
 /** Parent-owned intents (optimistic list applies, then server action). */
 export type TaskRowHandlers = {
@@ -28,6 +30,7 @@ export function TaskRowItem({
 	timeLabel,
 	domains = [],
 	manageable = true,
+	initialEditing = false,
 	handlers,
 }: {
 	task: TaskRow;
@@ -36,15 +39,23 @@ export function TaskRowItem({
 	domains?: TaskDomainOption[];
 	/** Edit/delete only make sense on the Tasks page — Today is read-mostly. */
 	manageable?: boolean;
+	/** Open the edit form on mount (deep-link from Today via `?edit=`). */
+	initialEditing?: boolean;
 	handlers: TaskRowHandlers;
 }) {
 	const [pending, startTransition] = useTransition();
-	const [editing, setEditing] = useState(false);
+	const [editing, setEditing] = useState(initialEditing);
+	const formWrapRef = useRef<HTMLLIElement>(null);
 	const done = task.status === "done";
 	const overdue = isOverdue(task, todayIso);
 	const starred = isTop3Today(task, todayIso);
 	const scheduled = timeLabel !== undefined;
 	const canEdit = manageable && domains.length > 0;
+
+	useEffect(() => {
+		if (!initialEditing || !editing) return;
+		formWrapRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+	}, [initialEditing, editing]);
 
 	function save(formData: FormData) {
 		// Edit waits for the server (no optimistic multi-field patch).
@@ -64,89 +75,31 @@ export function TaskRowItem({
 	}
 
 	if (editing && canEdit) {
-		const dueTime = task.due_time ? task.due_time.slice(0, 5) : "";
 		return (
-			<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`} data-task-id={task.id}>
-				<form action={save} className="space-y-3">
-					<input
-						name="title"
-						required
-						defaultValue={task.title}
-						aria-label="Task title"
-						className="w-full border-b border-line bg-transparent pb-2 font-serif text-lg text-ink outline-none"
+			<li
+				ref={formWrapRef}
+				className={`hairline py-3 ${pending ? "opacity-50" : ""}`}
+				data-task-id={task.id}
+			>
+				{/* Indented narrower card so the edit surface reads as nested under the list. */}
+				<form
+					action={save}
+					className="ml-7 space-y-2.5 border-l-2 border-line-strong py-1 pl-3 sm:ml-10 sm:pl-4"
+				>
+					<TaskFormFields
+						domains={domains}
+						showNotes
+						defaults={{
+							title: task.title,
+							notes: task.notes,
+							due_date: task.due_date,
+							due_time: task.due_time,
+							domain_id: task.domain_id,
+							priority: task.priority,
+							recurrence_rule: task.recurrence_rule,
+						}}
 					/>
-					<label className="block">
-						<span className="font-mono text-eyebrow uppercase text-ink-3">Notes</span>
-						<textarea
-							name="notes"
-							rows={2}
-							defaultValue={task.notes ?? ""}
-							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-						/>
-					</label>
-					<div className="grid grid-cols-2 gap-3">
-						<label className="block">
-							<span className="font-mono text-eyebrow uppercase text-ink-3">Due date</span>
-							<input
-								type="date"
-								name="due_date"
-								defaultValue={task.due_date ?? ""}
-								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-							/>
-						</label>
-						<label className="block">
-							<span className="font-mono text-eyebrow uppercase text-ink-3">Time</span>
-							<input
-								type="time"
-								name="due_time"
-								defaultValue={dueTime}
-								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-							/>
-						</label>
-						<label className="block">
-							<span className="font-mono text-eyebrow uppercase text-ink-3">Domain</span>
-							<select
-								name="domain_id"
-								defaultValue={task.domain_id}
-								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-							>
-								{domains.map((d) => (
-									<option key={d.id} value={d.id}>
-										{d.name}
-									</option>
-								))}
-							</select>
-						</label>
-						<label className="block">
-							<span className="font-mono text-eyebrow uppercase text-ink-3">Priority</span>
-							<select
-								name="priority"
-								defaultValue={String(task.priority)}
-								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-							>
-								<option value="1">P1 — critical</option>
-								<option value="2">P2</option>
-								<option value="3">P3</option>
-								<option value="4">P4 — someday</option>
-							</select>
-						</label>
-						<label className="col-span-2 block">
-							<span className="font-mono text-eyebrow uppercase text-ink-3">Repeats</span>
-							<select
-								name="recurrence_rule"
-								defaultValue={task.recurrence_rule ?? ""}
-								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-							>
-								<option value="">Never</option>
-								{RECURRENCE_PATTERNS.map((p) => (
-									<option key={p} value={p}>
-										{RECURRENCE_LABELS[p]}
-									</option>
-								))}
-							</select>
-						</label>
-					</div>
-					<div className="flex gap-2">
+					<div className="flex flex-wrap items-center gap-2 pt-0.5">
 						<button
 							type="submit"
 							disabled={pending}
@@ -162,11 +115,26 @@ export function TaskRowItem({
 						>
 							Cancel
 						</button>
+						{handlers.onDelete && (
+							<button
+								type="button"
+								disabled={pending}
+								onClick={remove}
+								aria-label={`Delete task "${task.title}"`}
+								className="ml-auto rounded-md border border-line px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+							>
+								Delete
+							</button>
+						)}
 					</div>
 				</form>
 			</li>
 		);
 	}
+
+	const titleClass = `text-left text-sm ${
+		done ? "text-ink-4 line-through" : "text-ink"
+	} ${canEdit || !manageable ? "hover:text-accent-ink" : ""}`;
 
 	return (
 		<li className="hairline flex items-center gap-3 py-2.5" data-task-id={task.id}>
@@ -185,10 +153,28 @@ export function TaskRowItem({
 				}`}
 			/>
 			<div className="min-w-0 flex-1">
-				<p className={`text-sm ${done ? "text-ink-4 line-through" : "text-ink"}`}>
-					{task.title}
+				<p className="flex min-w-0 items-baseline gap-1.5">
+					{canEdit ? (
+						<button
+							type="button"
+							onClick={() => setEditing(true)}
+							className={`${titleClass} max-w-full truncate`}
+							aria-label={`Edit task "${task.title}"`}
+						>
+							{task.title}
+						</button>
+					) : (
+						// Today (and other read-mostly surfaces): jump to Tasks with this row open.
+						<Link
+							href={`/tasks?edit=${task.id}`}
+							className={`${titleClass} max-w-full truncate`}
+							aria-label={`Open task "${task.title}" for editing`}
+						>
+							{task.title}
+						</Link>
+					)}
 					{task.recurrence_rule && (
-						<span className="ml-1.5 text-ink-4" title={task.recurrence_rule}>
+						<span className="shrink-0 text-ink-4" title={task.recurrence_rule}>
 							{RECURRENCE_GLYPH}
 						</span>
 					)}
@@ -218,27 +204,6 @@ export function TaskRowItem({
 				>
 					{starred ? "★" : "☆"}
 				</button>
-				{canEdit && (
-					<button
-						type="button"
-						aria-label={`Edit task "${task.title}"`}
-						disabled={pending}
-						onClick={() => setEditing(true)}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
-					>
-						Edit
-					</button>
-				)}
-				{manageable && handlers.onDelete && (
-					<button
-						type="button"
-						aria-label={`Delete task "${task.title}"`}
-						onClick={remove}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
-					>
-						Delete
-					</button>
-				)}
 			</div>
 		</li>
 	);
