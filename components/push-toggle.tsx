@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toastError } from "@/lib/client/toast";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Web Push subscribe/unsubscribe toggle (ADR-0005). Single-user app: there's
@@ -75,6 +76,8 @@ export function PushToggle() {
 			});
 
 			setStatus("subscribed");
+		} catch {
+			toastError("Couldn't enable push notifications.");
 		} finally {
 			setBusy(false);
 		}
@@ -94,6 +97,8 @@ export function PushToggle() {
 				});
 			}
 			setStatus("unsubscribed");
+		} catch {
+			toastError("Couldn't disable push notifications.");
 		} finally {
 			setBusy(false);
 		}

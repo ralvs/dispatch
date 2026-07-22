@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
+import { AppToaster } from "@/components/app-toaster";
 import { SwRegister } from "@/components/sw-register";
 import "./globals.css";
 
@@ -43,6 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 		<html lang="en" data-theme={theme} className={`${geist.variable} ${geistMono.variable}`}>
 			<body>
 				{children}
+				<AppToaster />
 				<SwRegister />
 			</body>
 		</html>

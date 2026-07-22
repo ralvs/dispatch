@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { markNotificationAction } from "@/app/(authed)/notifications/actions";
+import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import type { NotificationRow as Row } from "@/lib/services/notifications";
 
@@ -38,7 +39,14 @@ export function NotificationRow({ notification, tz }: { notification: Row; tz: s
 					<button
 						type="button"
 						disabled={pending}
-						onClick={() => startTransition(() => markNotificationAction(notification.id, "read"))}
+						onClick={() =>
+							startTransition(async () => {
+								await runAction(
+									() => markNotificationAction(notification.id, "read"),
+									"Couldn't update notification.",
+								);
+							})
+						}
 						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 					>
 						Mark read
@@ -48,7 +56,12 @@ export function NotificationRow({ notification, tz }: { notification: Row; tz: s
 					type="button"
 					disabled={pending}
 					onClick={() =>
-						startTransition(() => markNotificationAction(notification.id, "dismissed"))
+						startTransition(async () => {
+							await runAction(
+								() => markNotificationAction(notification.id, "dismissed"),
+								"Couldn't update notification.",
+							);
+						})
 					}
 					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 				>

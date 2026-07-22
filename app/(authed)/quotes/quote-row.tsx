@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { runAction } from "@/lib/client/toast";
 import type { QuoteAnnotationRow, QuoteRow } from "@/lib/services/quotes";
 import { createAnnotationAction, deleteQuoteAction, listAnnotationsAction } from "./actions";
 
@@ -13,7 +14,10 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 	function toggleExpand() {
 		if (!expanded && annotations === null) {
 			startTransition(async () => {
-				setAnnotations(await listAnnotationsAction(quote.id));
+				const ok = await runAction(async () => {
+					setAnnotations(await listAnnotationsAction(quote.id));
+				}, "Couldn't load annotations.");
+				if (!ok) return;
 			});
 		}
 		setExpanded((e) => !e);
@@ -24,9 +28,12 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 		const fd = new FormData();
 		fd.set("body", annotationBody);
 		startTransition(async () => {
-			await createAnnotationAction(quote.id, fd);
-			setAnnotations(await listAnnotationsAction(quote.id));
-			setAnnotationBody("");
+			const ok = await runAction(async () => {
+				await createAnnotationAction(quote.id, fd);
+				setAnnotations(await listAnnotationsAction(quote.id));
+				setAnnotationBody("");
+			}, "Couldn't add annotation.");
+			if (!ok) return;
 		});
 	}
 
@@ -53,7 +60,11 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 					type="button"
 					aria-label={`Delete quote "${quote.text.slice(0, 20)}"`}
 					disabled={pending}
-					onClick={() => startTransition(() => deleteQuoteAction(quote.id))}
+					onClick={() =>
+						startTransition(async () => {
+							await runAction(() => deleteQuoteAction(quote.id), "Couldn't delete quote.");
+						})
+					}
 					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 				>
 					Delete

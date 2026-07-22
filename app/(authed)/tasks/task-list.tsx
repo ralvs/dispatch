@@ -1,6 +1,7 @@
 "use client";
 
 import { useOptimistic, useTransition } from "react";
+import { runAction } from "@/lib/client/toast";
 import { INBOX_DOMAIN_ID } from "@/lib/constants";
 import type { TaskRow } from "@/lib/services/tasks";
 import {
@@ -73,13 +74,8 @@ export function TaskList({
 	function run(intent: TaskIntent, action: () => Promise<void>) {
 		startTransition(async () => {
 			dispatchOptimistic(intent);
-			try {
-				await action();
-			} catch {
-				// useOptimistic rolls back when the transition ends without a
-				// matching RSC refresh; rethrow so the console still sees it.
-				throw new Error("Task update failed");
-			}
+			// On failure optimistic state rolls back when the transition ends.
+			await runAction(action, "Couldn't update that task. Try again.");
 		});
 	}
 
@@ -108,7 +104,12 @@ export function TaskList({
 		return new Promise((resolve, reject) => {
 			startTransition(() => {
 				dispatchOptimistic({ type: "create", task: optimistic });
-				createTaskAction(formData).then(resolve).catch(reject);
+				createTaskAction(formData)
+					.then(resolve)
+					.catch((err) => {
+						// Collapsible form also toasts; keep reject so form stays open.
+						reject(err);
+					});
 			});
 		});
 	}

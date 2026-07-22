@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { triageTaskAction } from "@/app/(authed)/tasks/actions";
+import { runAction } from "@/lib/client/toast";
 import type { TaskRow } from "@/lib/services/tasks";
 
 type DomainOption = { id: string; name: string; is_system: boolean };
@@ -19,7 +20,11 @@ export function TriageRow({ task, domains }: { task: TaskRow; domains: DomainOpt
 						key={d.id}
 						type="button"
 						disabled={pending}
-						onClick={() => startTransition(() => triageTaskAction(task.id, d.id))}
+						onClick={() =>
+							startTransition(async () => {
+								await runAction(() => triageTaskAction(task.id, d.id), "Couldn't triage task.");
+							})
+						}
 						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 					>
 						{d.name}

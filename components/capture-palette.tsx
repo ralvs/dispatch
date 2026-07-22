@@ -12,6 +12,7 @@ import { OPEN_CAPTURE_EVENT, openCapturePalette } from "@/lib/capture/palette-bu
 import { deriveReceipt } from "@/lib/capture/receipt";
 import { isOpenShortcut, isSubmitShortcut } from "@/lib/capture/shortcuts";
 import { isBlank } from "@/lib/capture/submission";
+import { toastError } from "@/lib/client/toast";
 import { readCaptureIntent } from "@/lib/pwa/capture-intent";
 import type { CapturedRecord } from "@/lib/services/capture";
 
@@ -58,7 +59,13 @@ export function CapturePalette() {
 					const record: CapturedRecord = await captureText({ text, via: "text" });
 					dispatch({ type: "SUBMIT_OK", seq, receipt: deriveReceipt(record) });
 				} catch {
-					dispatch({ type: "SUBMIT_ERR", seq, offline: !navigator.onLine });
+					const offline = !navigator.onLine;
+					dispatch({ type: "SUBMIT_ERR", seq, offline });
+					toastError(
+						offline
+							? "Offline — draft kept. Reconnect and retry."
+							: "Couldn't capture. Your text is kept — try again.",
+					);
 				}
 			});
 		},

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useOptimistic, useTransition } from "react";
+import { runAction } from "@/lib/client/toast";
 import type { DaySchedule as DayScheduleData, DayScheduleItem } from "@/lib/services/briefing";
 import type { TaskRow } from "@/lib/services/tasks";
 import {
@@ -114,7 +115,7 @@ export function DaySchedule({
 	function run(intent: TaskIntent, action: () => Promise<void>) {
 		startTransition(async () => {
 			dispatchOptimistic(intent);
-			await action();
+			await runAction(action, "Couldn't update that task. Try again.");
 		});
 	}
 

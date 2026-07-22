@@ -8,6 +8,7 @@ import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Markdown, type MarkdownStorage } from "tiptap-markdown";
+import { runAction } from "@/lib/client/toast";
 import { createDebouncedSave } from "@/lib/debounced-save";
 import type { NoteListRow } from "@/lib/services/notes";
 import { deleteNoteAction, resolveNeedsReviewAction, saveNoteAction } from "../actions";
@@ -75,8 +76,17 @@ export function NoteEditor({ note }: { note: NoteListRow }) {
 		lastSavedRef.current = key;
 		if (mountedRef.current) setSaveState("saving");
 		startTransition(async () => {
-			await saveNoteAction(note.id, { title: title.trim() === "" ? null : title, body });
+			const ok = await runAction(
+				() => saveNoteAction(note.id, { title: title.trim() === "" ? null : title, body }),
+				"Couldn't save note.",
+			);
 			if (!mountedRef.current) return;
+			if (!ok) {
+				// Allow retry of the same content.
+				lastSavedRef.current = "";
+				setSaveState("idle");
+				return;
+			}
 			setSaveState("saved");
 			clearTimeout(savedIndicatorTimer.current);
 			savedIndicatorTimer.current = setTimeout(() => setSaveState("idle"), 1500);
@@ -152,7 +162,14 @@ export function NoteEditor({ note }: { note: NoteListRow }) {
 						type="button"
 						aria-label="Resolve needs-review flag"
 						disabled={pending}
-						onClick={() => startTransition(() => resolveNeedsReviewAction(note.id))}
+						onClick={() =>
+							startTransition(async () => {
+								await runAction(
+									() => resolveNeedsReviewAction(note.id),
+									"Couldn't resolve review flag.",
+								);
+							})
+						}
 						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 					>
 						Resolve
@@ -162,7 +179,11 @@ export function NoteEditor({ note }: { note: NoteListRow }) {
 					type="button"
 					aria-label="Delete note"
 					disabled={pending}
-					onClick={() => startTransition(() => deleteNoteAction(note.id))}
+					onClick={() =>
+						startTransition(async () => {
+							await runAction(() => deleteNoteAction(note.id), "Couldn't delete note.");
+						})
+					}
 					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 				>
 					Delete

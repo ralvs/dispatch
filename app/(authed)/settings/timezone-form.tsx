@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { runAction } from "@/lib/client/toast";
 import { updateTimezoneAction } from "./actions";
 
 // A short list beats a 400-entry IANA dropdown for a single-owner app. The
@@ -22,7 +23,11 @@ export function TimezoneForm({ current }: { current: string }) {
 
 	return (
 		<form
-			action={(formData) => startTransition(() => updateTimezoneAction(formData))}
+			action={(formData) =>
+				startTransition(async () => {
+					await runAction(() => updateTimezoneAction(formData), "Couldn't update timezone.");
+				})
+			}
 			className="mt-2 flex flex-wrap items-center gap-2"
 		>
 			<label className="flex items-center gap-2">

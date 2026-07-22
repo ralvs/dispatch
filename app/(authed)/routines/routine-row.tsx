@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { runAction } from "@/lib/client/toast";
 import type { RoutineStats } from "@/lib/routine-stats";
 import { TIME_OF_DAY_LABELS } from "@/lib/schemas/routine";
 import type { RoutineRow } from "@/lib/services/routines";
@@ -18,14 +19,21 @@ export function RoutineRowItem({
 	const [pending, startTransition] = useTransition();
 
 	function toggle() {
-		startTransition(() => toggleCompletionAction(routine.id, stats.done_today));
+		startTransition(async () => {
+			await runAction(
+				async () => toggleCompletionAction(routine.id, stats.done_today),
+				"Couldn't update routine.",
+			);
+		});
 	}
 
 	function remove() {
 		if (!window.confirm(`Delete "${routine.name}"? Its completion history will be lost too.`)) {
 			return;
 		}
-		startTransition(() => deleteRoutineAction(routine.id));
+		startTransition(async () => {
+			await runAction(async () => deleteRoutineAction(routine.id), "Couldn't update routine.");
+		});
 	}
 
 	return (

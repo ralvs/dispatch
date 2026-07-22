@@ -9,12 +9,12 @@
 // dance, extracted once.
 
 import { type ReactNode, useRef, useState, useTransition } from "react";
+import { toastError } from "@/lib/client/toast";
 
 // The transition-wrapped choreography, pulled out of the hook so it's
 // testable without a DOM: submit the action, then reset and collapse — in
-// that order, and only after the action settles. No error handling beyond
-// what existed before (a rejected action leaves the form open and un-reset,
-// same as every form did today).
+// that order, and only after the action settles. On reject: leave form open
+// and un-reset (caller/UI toast via useCollapsibleForm).
 export async function runCollapsibleSubmit(
 	action: (formData: FormData) => Promise<unknown>,
 	formData: FormData,
@@ -34,26 +34,28 @@ export type CollapsibleFormState = {
 };
 
 /**
- * Today's exact choreography: submit -> await the action -> reset the form ->
- * close. Do not add error handling here — none of the 15 forms that used this
- * by hand had any, and a rejected action should surface the same way it does
- * today (form stays open, un-reset, whatever the action itself does with the
- * error).
+ * Submit → await action → reset → close. On failure: form stays open,
+ * toast surfaces the error (failure-only; no success toast).
  */
 export function useCollapsibleForm(
 	action: (formData: FormData) => Promise<unknown>,
+	errorMessage = "Couldn't save. Try again.",
 ): CollapsibleFormState {
 	const formRef = useRef<HTMLFormElement>(null);
 	const [open, setOpen] = useState(false);
 	const [pending, startTransition] = useTransition();
 
 	function submit(formData: FormData) {
-		startTransition(() =>
-			runCollapsibleSubmit(action, formData, {
-				reset: () => formRef.current?.reset(),
-				close: () => setOpen(false),
-			}),
-		);
+		startTransition(async () => {
+			try {
+				await runCollapsibleSubmit(action, formData, {
+					reset: () => formRef.current?.reset(),
+					close: () => setOpen(false),
+				});
+			} catch {
+				toastError(errorMessage);
+			}
+		});
 	}
 
 	return { open, setOpen, formRef, pending, submit };

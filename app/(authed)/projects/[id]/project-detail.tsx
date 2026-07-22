@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { runAction } from "@/lib/client/toast";
 import type { DomainRow } from "@/lib/services/domains";
 import type { MilestoneRow, ProjectRow } from "@/lib/services/projects";
 import { milestoneProgress } from "@/lib/services/projects-shared";
@@ -45,8 +46,11 @@ export function ProjectDetail({
 
 	function saveDetails(formData: FormData) {
 		startTransition(async () => {
-			await updateProjectAction(project.id, formData);
-			setEditing(false);
+			const ok = await runAction(
+				() => updateProjectAction(project.id, formData),
+				"Couldn't save project.",
+			);
+			if (ok) setEditing(false);
 		});
 	}
 
@@ -247,7 +251,14 @@ export function ProjectDetail({
 									type="button"
 									aria-label={`Mark ${project.name} done`}
 									disabled={pending}
-									onClick={() => startTransition(() => completeProjectAction(project.id))}
+									onClick={() =>
+										startTransition(async () => {
+											await runAction(
+												() => completeProjectAction(project.id),
+												"Couldn't complete project.",
+											);
+										})
+									}
 									className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 								>
 									Mark done
@@ -258,7 +269,14 @@ export function ProjectDetail({
 									type="button"
 									aria-label={`Archive ${project.name}`}
 									disabled={pending}
-									onClick={() => startTransition(() => archiveProjectAction(project.id))}
+									onClick={() =>
+										startTransition(async () => {
+											await runAction(
+												() => archiveProjectAction(project.id),
+												"Couldn't archive project.",
+											);
+										})
+									}
 									className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 								>
 									Archive
@@ -288,7 +306,11 @@ function MilestonesSection({
 
 	function submit(formData: FormData) {
 		startTransition(async () => {
-			await createMilestoneAction(projectId, formData);
+			const ok = await runAction(
+				() => createMilestoneAction(projectId, formData),
+				"Couldn't add milestone.",
+			);
+			if (!ok) return;
 			formRef.current?.reset();
 			setOpen(false);
 		});
@@ -319,11 +341,15 @@ function MilestonesSection({
 								type="checkbox"
 								checked={m.status === "done"}
 								disabled={pending}
-								onChange={(e) =>
-									startTransition(() =>
-										toggleMilestoneAction(projectId, m.id, e.currentTarget.checked),
-									)
-								}
+								onChange={(e) => {
+									const done = e.currentTarget.checked;
+									startTransition(async () => {
+										await runAction(
+											() => toggleMilestoneAction(projectId, m.id, done),
+											"Couldn't update milestone.",
+										);
+									});
+								}}
 								aria-label={`Mark milestone "${m.title}" ${m.status === "done" ? "open" : "done"}`}
 							/>
 							<span
@@ -337,7 +363,14 @@ function MilestonesSection({
 							type="button"
 							aria-label={`Delete milestone "${m.title}"`}
 							disabled={pending}
-							onClick={() => startTransition(() => deleteMilestoneAction(projectId, m.id))}
+							onClick={() =>
+								startTransition(async () => {
+									await runAction(
+										() => deleteMilestoneAction(projectId, m.id),
+										"Couldn't delete milestone.",
+									);
+								})
+							}
 							className="shrink-0 font-mono text-meta text-ink-4 hover:text-accent-slip"
 						>
 							Delete

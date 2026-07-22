@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import type { PersonFactRow, PersonInteractionRow, PersonRow } from "@/lib/services/people";
 import {
@@ -56,8 +57,11 @@ export function PersonDetail({
 
 	function saveDetails(formData: FormData) {
 		startTransition(async () => {
-			await updatePersonAction(person.id, formData);
-			setEditing(false);
+			const ok = await runAction(
+				() => updatePersonAction(person.id, formData),
+				"Couldn't save person.",
+			);
+			if (ok) setEditing(false);
 		});
 	}
 
@@ -189,7 +193,11 @@ export function PersonDetail({
 								type="button"
 								aria-label={`Delete ${person.name}`}
 								disabled={pending}
-								onClick={() => startTransition(() => deletePersonAction(person.id))}
+								onClick={() =>
+									startTransition(async () => {
+										await runAction(() => deletePersonAction(person.id), "Couldn't delete person.");
+									})
+								}
 								className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 							>
 								Delete
@@ -212,7 +220,8 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 
 	function submit(formData: FormData) {
 		startTransition(async () => {
-			await createFactAction(personId, formData);
+			const ok = await runAction(() => createFactAction(personId, formData), "Couldn't add fact.");
+			if (!ok) return;
 			formRef.current?.reset();
 			setOpen(false);
 		});
@@ -235,7 +244,11 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 							type="button"
 							aria-label={`Delete fact "${f.fact_value}"`}
 							disabled={pending}
-							onClick={() => startTransition(() => deleteFactAction(personId, f.id))}
+							onClick={() =>
+								startTransition(async () => {
+									await runAction(() => deleteFactAction(personId, f.id), "Couldn't delete fact.");
+								})
+							}
 							className="shrink-0 font-mono text-meta text-ink-4 hover:text-accent-slip"
 						>
 							Delete
@@ -326,7 +339,11 @@ function InteractionsSection({
 
 	function submit(formData: FormData) {
 		startTransition(async () => {
-			await createInteractionAction(personId, formData);
+			const ok = await runAction(
+				() => createInteractionAction(personId, formData),
+				"Couldn't add interaction.",
+			);
+			if (!ok) return;
 			formRef.current?.reset();
 			setOpen(false);
 		});
@@ -348,7 +365,14 @@ function InteractionsSection({
 							type="button"
 							aria-label="Delete interaction"
 							disabled={pending}
-							onClick={() => startTransition(() => deleteInteractionAction(personId, i.id))}
+							onClick={() =>
+								startTransition(async () => {
+									await runAction(
+										() => deleteInteractionAction(personId, i.id),
+										"Couldn't delete interaction.",
+									);
+								})
+							}
 							className="shrink-0 font-mono text-meta text-ink-4 hover:text-accent-slip"
 						>
 							Delete

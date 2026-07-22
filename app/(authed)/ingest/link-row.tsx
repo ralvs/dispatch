@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { setLinkStatusAction } from "@/app/(authed)/ingest/actions";
+import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import type { IngestLinkRow } from "@/lib/services/ingest-links";
 
@@ -19,7 +20,9 @@ export function LinkRowItem({ link, tz }: { link: IngestLinkRow; tz: string }) {
 	const [pending, startTransition] = useTransition();
 	const unread = link.status === "unread";
 	const mark = (status: "unread" | "read" | "dismissed") =>
-		startTransition(() => setLinkStatusAction(link.id, status));
+		startTransition(async () => {
+			await runAction(async () => setLinkStatusAction(link.id, status), "Couldn't update link.");
+		});
 
 	return (
 		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>

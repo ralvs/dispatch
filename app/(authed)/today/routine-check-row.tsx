@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { runAction } from "@/lib/client/toast";
 import type { RoutineBucketRow } from "@/lib/services/briefing";
 import { toggleCompletionAction } from "../routines/actions";
 
@@ -18,7 +19,14 @@ export function RoutineCheckRow({ row }: { row: RoutineBucketRow }) {
 				checked={row.done}
 				aria-label={row.done ? `Undo "${row.name}"` : `Complete "${row.name}"`}
 				disabled={pending}
-				onChange={() => startTransition(() => toggleCompletionAction(row.id, row.done))}
+				onChange={() =>
+					startTransition(async () => {
+						await runAction(
+							() => toggleCompletionAction(row.id, row.done),
+							"Couldn't update routine.",
+						);
+					})
+				}
 				className={`h-4 w-4 shrink-0 appearance-none self-center border ${
 					row.done ? "border-ink-4 bg-ink-4" : "border-line-strong hover:border-ink-3"
 				}`}

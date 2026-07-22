@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import type { DomainRow as DomainRowType } from "@/lib/services/domains";
 import {
@@ -28,8 +29,11 @@ export function DomainRowItem({
 
 	function saveDetails(formData: FormData) {
 		startTransition(async () => {
-			await updateDomainAction(domain.id, formData);
-			setEditing(false);
+			const ok = await runAction(
+				() => updateDomainAction(domain.id, formData),
+				"Couldn't save domain.",
+			);
+			if (ok) setEditing(false);
 		});
 	}
 
@@ -158,7 +162,14 @@ export function DomainRowItem({
 						type="button"
 						aria-label={`Mark ${domain.name} shipped`}
 						disabled={pending}
-						onClick={() => startTransition(() => markDomainShippedAction(domain.id))}
+						onClick={() =>
+							startTransition(async () => {
+								await runAction(
+									() => markDomainShippedAction(domain.id),
+									"Couldn't mark domain shipped.",
+								);
+							})
+						}
 						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 					>
 						Mark shipped
@@ -168,7 +179,11 @@ export function DomainRowItem({
 							type="button"
 							aria-label={`Archive ${domain.name}`}
 							disabled={pending}
-							onClick={() => startTransition(() => archiveDomainAction(domain.id))}
+							onClick={() =>
+								startTransition(async () => {
+									await runAction(() => archiveDomainAction(domain.id), "Couldn't archive domain.");
+								})
+							}
 							className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 						>
 							Archive
@@ -178,7 +193,14 @@ export function DomainRowItem({
 							type="button"
 							aria-label={`Reactivate ${domain.name}`}
 							disabled={pending}
-							onClick={() => startTransition(() => reactivateDomainAction(domain.id))}
+							onClick={() =>
+								startTransition(async () => {
+									await runAction(
+										() => reactivateDomainAction(domain.id),
+										"Couldn't reactivate domain.",
+									);
+								})
+							}
 							className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 						>
 							Reactivate

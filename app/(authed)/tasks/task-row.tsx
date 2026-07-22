@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { runAction } from "@/lib/client/toast";
 import { formatDueLabel } from "@/lib/dates";
 import { RECURRENCE_GLYPH, RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/services/tasks";
@@ -48,8 +49,11 @@ export function TaskRowItem({
 	function save(formData: FormData) {
 		// Edit waits for the server (no optimistic multi-field patch).
 		startTransition(async () => {
-			await updateTaskAction(task.id, formData);
-			setEditing(false);
+			const ok = await runAction(
+				() => updateTaskAction(task.id, formData),
+				"Couldn't save task. Try again.",
+			);
+			if (ok) setEditing(false);
 		});
 	}
 

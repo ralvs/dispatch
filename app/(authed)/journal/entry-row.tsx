@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { runAction } from "@/lib/client/toast";
 import type { JournalEntryRow } from "@/lib/services/journal";
 import { deleteEntryAction } from "./actions";
 
@@ -20,7 +21,11 @@ export function EntryRowItem({ entry }: { entry: JournalEntryRow }) {
 					type="button"
 					aria-label={`Delete journal entry from ${entry.entry_date}`}
 					disabled={pending}
-					onClick={() => startTransition(() => deleteEntryAction(entry.id))}
+					onClick={() =>
+						startTransition(async () => {
+							await runAction(async () => deleteEntryAction(entry.id), "Couldn't delete entry.");
+						})
+					}
 					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 				>
 					Delete

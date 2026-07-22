@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useTransition } from "react";
+import { runAction } from "@/lib/client/toast";
 import type { QuoteRow } from "@/lib/services/quotes";
 import { resetResurfacedAction, skipResurfacedQuoteAction } from "./actions";
 
@@ -16,6 +20,8 @@ export function ResurfacedQuote({
 	skips: number;
 	hasQuotes: boolean;
 }) {
+	const [pending, startTransition] = useTransition();
+
 	if (!hasQuotes) return null;
 
 	return (
@@ -47,19 +53,36 @@ export function ResurfacedQuote({
 						<Link href="/quotes" className="text-ink-3 hover:text-ink-2">
 							Open in Quotes →
 						</Link>
-						<form action={skipResurfacedQuoteAction.bind(null, quote.id)} className="inline">
-							<button type="submit" className="text-ink-3 hover:text-ink-2">
-								Next →
-							</button>
-						</form>
+						<button
+							type="button"
+							disabled={pending}
+							onClick={() =>
+								startTransition(async () => {
+									await runAction(
+										() => skipResurfacedQuoteAction(quote.id),
+										"Couldn't skip quote.",
+									);
+								})
+							}
+							className="text-ink-3 hover:text-ink-2 disabled:opacity-50"
+						>
+							Next →
+						</button>
 					</>
 				)}
 				{skips > 0 && (
-					<form action={resetResurfacedAction} className="inline">
-						<button type="submit" className="text-ink-4 hover:text-ink-2">
-							Reset
-						</button>
-					</form>
+					<button
+						type="button"
+						disabled={pending}
+						onClick={() =>
+							startTransition(async () => {
+								await runAction(() => resetResurfacedAction(), "Couldn't reset skips.");
+							})
+						}
+						className="text-ink-4 hover:text-ink-2 disabled:opacity-50"
+					>
+						Reset
+					</button>
 				)}
 			</div>
 		</section>
