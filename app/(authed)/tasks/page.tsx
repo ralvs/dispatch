@@ -6,8 +6,13 @@ import { getAppTimezone } from "@/lib/services/settings";
 import { listRecentDone, listTasks } from "@/lib/services/tasks";
 import { TaskList } from "./task-list";
 
-export default async function TasksPage() {
+export default async function TasksPage({
+	searchParams,
+}: {
+	searchParams: Promise<{ edit?: string }>;
+}) {
 	const { sb } = await requireOwnerPage();
+	const { edit: editTaskId } = await searchParams;
 	const [tz, openTasks, doneTasks, domains] = await Promise.all([
 		getAppTimezone(sb),
 		listTasks(sb, { status: "open" }),
@@ -29,7 +34,13 @@ export default async function TasksPage() {
 				)}
 			</header>
 
-			<TaskList openTasks={openTasks} doneTasks={doneTasks} todayIso={todayIso} domains={domains} />
+			<TaskList
+				openTasks={openTasks}
+				doneTasks={doneTasks}
+				todayIso={todayIso}
+				domains={domains}
+				editTaskId={editTaskId ?? null}
+			/>
 		</div>
 	);
 }

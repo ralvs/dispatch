@@ -1,6 +1,7 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useOptimistic, useTransition } from "react";
 import { runAction } from "@/lib/client/toast";
 import { INBOX_DOMAIN_ID } from "@/lib/constants";
 import type { TaskRow } from "@/lib/services/tasks";
@@ -17,8 +18,9 @@ import {
 	reopenTaskAction,
 	toggleTop3Action,
 } from "./actions";
+import type { TaskDomainOption } from "./task-fields";
 import { TaskForm } from "./task-form";
-import { type TaskDomainOption, TaskRowItem } from "./task-row";
+import { TaskRowItem } from "./task-row";
 
 function optimisticTaskFromForm(formData: FormData, domains: TaskDomainOption[]): TaskRow {
 	const title = String(formData.get("title") ?? "").trim() || "Untitled";
@@ -57,12 +59,16 @@ export function TaskList({
 	doneTasks,
 	todayIso,
 	domains,
+	editTaskId,
 }: {
 	openTasks: TaskRow[];
 	doneTasks: TaskRow[];
 	todayIso: string;
 	domains: TaskDomainOption[];
+	/** From `?edit=` — opens that row's form and cleans the URL. */
+	editTaskId?: string | null;
 }) {
+	const router = useRouter();
 	const [, startTransition] = useTransition();
 	const seed: TaskLists = { open: openTasks, done: doneTasks };
 	const ctx: ApplyContext = { todayIso };
@@ -70,6 +76,12 @@ export function TaskList({
 	const [lists, dispatchOptimistic] = useOptimistic(seed, (current, intent: TaskIntent) =>
 		applyTaskLists(current, intent, ctx),
 	);
+
+	// Drop the deep-link query so a refresh doesn't re-force the form open.
+	useEffect(() => {
+		if (!editTaskId) return;
+		router.replace("/tasks", { scroll: false });
+	}, [editTaskId, router]);
 
 	function run(intent: TaskIntent, action: () => Promise<void>) {
 		startTransition(async () => {
@@ -133,6 +145,7 @@ export function TaskList({
 								task={t}
 								todayIso={todayIso}
 								domains={domains}
+								initialEditing={editTaskId === t.id}
 								handlers={handlersFor(t)}
 							/>
 						))}
@@ -152,6 +165,7 @@ export function TaskList({
 								task={t}
 								todayIso={todayIso}
 								domains={domains}
+								initialEditing={editTaskId === t.id}
 								handlers={handlersFor(t)}
 							/>
 						))}
