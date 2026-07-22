@@ -50,12 +50,25 @@ export type CaptureEffect =
 
 export type CaptureTransition = { state: CaptureState; effects: CaptureEffect[] };
 
+/** Shown immediately on submit (A-lite progressive UX) until the SA settles. */
+export const RECORDING_RECEIPT: CaptureReceipt = {
+	tone: "recorded_only",
+	title: "Recorded",
+	lines: ["Your words are safe.", "Filing them now…"],
+};
+
 // Shared by a fresh SUBMIT and the ONLINE retry: bump the sequence, move to
-// "submitting", and emit the SUBMIT effect with the freshly bumped seq.
+// "submitting", show a provisional receipt, and emit the SUBMIT effect.
 function beginSubmit(state: CaptureState): CaptureTransition {
 	const seq = state.seq + 1;
 	return {
-		state: { ...state, seq, status: "submitting" },
+		state: {
+			...state,
+			seq,
+			status: "submitting",
+			receipt: RECORDING_RECEIPT,
+			offlineError: false,
+		},
 		effects: [{ type: "SUBMIT", text: state.text, seq }],
 	};
 }
@@ -113,7 +126,13 @@ export function captureMachine(state: CaptureState, event: CaptureEvent): Captur
 		case "SUBMIT_ERR": {
 			if (isStaleSubmission(event.seq, state.seq)) return { state, effects: [] };
 			return {
-				state: { ...state, status: "error", offlineError: event.offline },
+				state: {
+					...state,
+					status: "error",
+					offlineError: event.offline,
+					// Drop provisional receipt so the form + error show again.
+					receipt: null,
+				},
 				effects: [],
 			};
 		}

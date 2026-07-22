@@ -2,12 +2,17 @@
 
 import { CollapsibleForm, useCollapsibleForm } from "@/components/collapsible-form";
 import { RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
-import { createTaskAction } from "./actions";
 
 type DomainOption = { id: string; name: string; is_system: boolean };
 
-export function TaskForm({ domains }: { domains: DomainOption[] }) {
-	const form = useCollapsibleForm(createTaskAction);
+export function TaskForm({
+	domains,
+	action,
+}: {
+	domains: DomainOption[];
+	action: (formData: FormData) => Promise<unknown>;
+}) {
+	const form = useCollapsibleForm(action);
 
 	return (
 		<CollapsibleForm

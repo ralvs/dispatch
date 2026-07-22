@@ -5,15 +5,16 @@ import { formatDueLabel } from "@/lib/dates";
 import { RECURRENCE_GLYPH, RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/services/tasks";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
-import {
-	completeTaskAction,
-	deleteTaskAction,
-	reopenTaskAction,
-	toggleTop3Action,
-	updateTaskAction,
-} from "./actions";
+import { updateTaskAction } from "./actions";
 
 export type TaskDomainOption = { id: string; name: string; is_system: boolean };
+
+/** Parent-owned intents (optimistic list applies, then server action). */
+export type TaskRowHandlers = {
+	onToggleDone: () => void;
+	onToggleTop3: () => void;
+	onDelete?: () => void;
+};
 
 /**
  * Passing `timeLabel` places the row inside one of Today's schedule bands: it
@@ -26,6 +27,7 @@ export function TaskRowItem({
 	timeLabel,
 	domains = [],
 	manageable = true,
+	handlers,
 }: {
 	task: TaskRow;
 	todayIso: string;
@@ -33,6 +35,7 @@ export function TaskRowItem({
 	domains?: TaskDomainOption[];
 	/** Edit/delete only make sense on the Tasks page — Today is read-mostly. */
 	manageable?: boolean;
+	handlers: TaskRowHandlers;
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
@@ -43,6 +46,7 @@ export function TaskRowItem({
 	const canEdit = manageable && domains.length > 0;
 
 	function save(formData: FormData) {
+		// Edit waits for the server (no optimistic multi-field patch).
 		startTransition(async () => {
 			await updateTaskAction(task.id, formData);
 			setEditing(false);
@@ -50,8 +54,9 @@ export function TaskRowItem({
 	}
 
 	function remove() {
+		if (!handlers.onDelete) return;
 		if (!window.confirm(`Delete "${task.title}"?`)) return;
-		startTransition(() => deleteTaskAction(task.id));
+		handlers.onDelete();
 	}
 
 	if (editing && canEdit) {
@@ -160,10 +165,7 @@ export function TaskRowItem({
 	}
 
 	return (
-		<li
-			className={`hairline flex items-baseline gap-3 py-2.5 ${pending ? "opacity-50" : ""}`}
-			data-task-id={task.id}
-		>
+		<li className="hairline flex items-baseline gap-3 py-2.5" data-task-id={task.id}>
 			{scheduled && timeLabel && (
 				<span className="w-12 shrink-0 font-mono text-meta tabular-nums text-ink-3">
 					{timeLabel}
@@ -173,10 +175,7 @@ export function TaskRowItem({
 				type="checkbox"
 				checked={done}
 				aria-label={done ? `Reopen "${task.title}"` : `Complete "${task.title}"`}
-				disabled={pending}
-				onChange={() =>
-					startTransition(() => (done ? reopenTaskAction(task.id) : completeTaskAction(task.id)))
-				}
+				onChange={handlers.onToggleDone}
 				className={`h-4 w-4 shrink-0 appearance-none self-center border ${
 					done ? "border-ink-4 bg-ink-4" : "border-line-strong hover:border-ink-3"
 				}`}
@@ -207,8 +206,8 @@ export function TaskRowItem({
 					type="button"
 					aria-label={starred ? "Remove from today's top 3" : "Pin to today's top 3"}
 					aria-pressed={starred}
-					disabled={pending || done}
-					onClick={() => startTransition(() => toggleTop3Action(task.id))}
+					disabled={done}
+					onClick={handlers.onToggleTop3}
 					className={`text-base leading-none ${
 						starred ? "text-accent" : "text-ink-4 hover:text-ink-2"
 					} ${done ? "invisible" : ""}`}
@@ -226,11 +225,10 @@ export function TaskRowItem({
 						Edit
 					</button>
 				)}
-				{manageable && (
+				{manageable && handlers.onDelete && (
 					<button
 						type="button"
 						aria-label={`Delete task "${task.title}"`}
-						disabled={pending}
 						onClick={remove}
 						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 					>

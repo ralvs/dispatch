@@ -180,6 +180,9 @@ export function CapturePalette() {
 	}
 
 	const pending = state.status === "submitting";
+	// A-lite: provisional receipt on submit, final receipt on settle.
+	const showReceipt =
+		state.receipt !== null && (state.status === "done" || state.status === "submitting");
 
 	return (
 		<>
@@ -230,7 +233,7 @@ export function CapturePalette() {
 							</button>
 						</div>
 
-						{state.status === "done" && state.receipt ? (
+						{showReceipt && state.receipt ? (
 							<div role="status" aria-live="polite">
 								<p
 									ref={receiptHeadingRef}
@@ -246,22 +249,28 @@ export function CapturePalette() {
 										<li key={line}>{line}</li>
 									))}
 								</ul>
-								<div className="mt-4 flex gap-2">
-									<button
-										type="button"
-										onClick={captureAnother}
-										className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg"
-									>
-										Capture another
-									</button>
-									<button
-										type="button"
-										onClick={closePalette}
-										className="px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
-									>
-										Done
-									</button>
-								</div>
+								{state.status === "done" ? (
+									<div className="mt-4 flex gap-2">
+										<button
+											type="button"
+											onClick={captureAnother}
+											className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg"
+										>
+											Capture another
+										</button>
+										<button
+											type="button"
+											onClick={closePalette}
+											className="px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
+										>
+											Done
+										</button>
+									</div>
+								) : (
+									<p className="mt-4 font-mono text-meta uppercase tracking-widest text-ink-4">
+										Working…
+									</p>
+								)}
 							</div>
 						) : (
 							<div>

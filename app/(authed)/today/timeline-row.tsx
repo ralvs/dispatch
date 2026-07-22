@@ -1,5 +1,5 @@
 import type { DayScheduleItem } from "@/lib/services/briefing";
-import { TaskRowItem } from "../tasks/task-row";
+import { type TaskRowHandlers, TaskRowItem } from "../tasks/task-row";
 
 function IconCalendar({ className }: { className?: string }) {
 	return (
@@ -43,14 +43,27 @@ function EventRow({ item }: { item: Extract<DayScheduleItem, { kind: "event" }> 
 
 /**
  * One row of a schedule band. Events carry their own chrome; tasks reuse the
- * Tasks-page row so complete, edit, delete, and top-3 behave identically
- * wherever they appear — `timeLabel` is what puts it on the clock
- * (null = all-day band).
+ * Tasks-page row so complete and top-3 behave identically wherever they appear.
  */
-export function ScheduleRow({ item, todayIso }: { item: DayScheduleItem; todayIso: string }) {
+export function ScheduleRow({
+	item,
+	todayIso,
+	handlers,
+}: {
+	item: DayScheduleItem;
+	todayIso: string;
+	handlers?: TaskRowHandlers;
+}) {
 	if (item.kind === "task") {
+		if (!handlers) return null;
 		return (
-			<TaskRowItem task={item.task} todayIso={todayIso} timeLabel={item.time} manageable={false} />
+			<TaskRowItem
+				task={item.task}
+				todayIso={todayIso}
+				timeLabel={item.time}
+				manageable={false}
+				handlers={handlers}
+			/>
 		);
 	}
 	return <EventRow item={item} />;

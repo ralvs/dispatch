@@ -18,6 +18,7 @@ describe("captureMachine", () => {
 			t = captureMachine(t.state, { type: "SUBMIT" });
 			const staleSeq = t.state.seq;
 			expect(t.state.status).toBe("submitting");
+			expect(t.state.receipt?.title).toBe("Recorded");
 			expect(t.effects).toEqual([{ type: "SUBMIT", text: "first draft", seq: staleSeq }]);
 
 			// Close (invalidates the in-flight submit) and reopen with a new draft.
@@ -71,6 +72,7 @@ describe("captureMachine", () => {
 			t = captureMachine(t.state, { type: "SUBMIT_ERR", seq, offline: true });
 			expect(t.state.status).toBe("error");
 			expect(t.state.offlineError).toBe(true);
+			expect(t.state.receipt).toBeNull();
 			expect(t.state.text).toBe("draft");
 			expect(t.effects).toEqual([]);
 		});
