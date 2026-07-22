@@ -178,8 +178,7 @@ export function TaskRowItem({
 				}`}
 			/>
 			<div className="min-w-0 flex-1">
-				<p className="flex min-w-0 items-center gap-1.5">
-					<PriorityBadge priority={task.priority} className={done ? "opacity-50" : undefined} />
+				<p className="flex min-w-0 items-baseline gap-1.5">
 					{canEdit ? (
 						<button
 							type="button"
@@ -205,16 +204,19 @@ export function TaskRowItem({
 						</span>
 					)}
 				</p>
-				<p className="mt-0.5 font-mono text-meta text-ink-4">
-					{task.domain?.name ?? "—"}
-					{task.project?.name ? ` · ${task.project.name}` : ""}
-					{!scheduled && task.due_date && (
-						<span className={overdue ? "text-accent-slip" : ""}>
-							{" · "}
-							{formatDueLabel(task.due_date, todayIso)}
-							{task.due_time ? ` ${task.due_time.slice(0, 5)}` : ""}
-						</span>
-					)}
+				<p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-meta text-ink-4">
+					<PriorityBadge priority={task.priority} className={done ? "opacity-50" : undefined} />
+					<span>
+						{task.domain?.name ?? "—"}
+						{task.project?.name ? ` · ${task.project.name}` : ""}
+						{!scheduled && task.due_date && (
+							<span className={overdue ? "text-accent-slip" : ""}>
+								{" · "}
+								{formatDueLabel(task.due_date, todayIso)}
+								{task.due_time ? ` ${task.due_time.slice(0, 5)}` : ""}
+							</span>
+						)}
+					</span>
 				</p>
 			</div>
 			<div className="flex shrink-0 items-center gap-1 self-center">
