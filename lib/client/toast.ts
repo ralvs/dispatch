@@ -1,5 +1,6 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
 import { toast } from "sonner";
 
 /** Failure-only surface. Do not use for success. */
@@ -12,6 +13,9 @@ export function toastError(message = "Something went wrong. Try again."): void {
 /**
  * Run a server action / async mutation; toast on failure.
  * Returns true on success so callers can gate follow-up UI (close form, etc.).
+ *
+ * Rethrows Next.js control-flow errors (`redirect`, `notFound`, …) so actions
+ * that navigate after a successful mutation aren't reported as failures.
  */
 export async function runAction(
 	action: () => Promise<unknown>,
@@ -20,7 +24,8 @@ export async function runAction(
 	try {
 		await action();
 		return true;
-	} catch {
+	} catch (error) {
+		unstable_rethrow(error);
 		toastError(message);
 		return false;
 	}

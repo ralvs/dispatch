@@ -8,6 +8,7 @@
 // for the collapsed trigger and the open card's footer. This module is that
 // dance, extracted once.
 
+import { unstable_rethrow } from "next/navigation";
 import { type ReactNode, useRef, useState, useTransition } from "react";
 import { toastError } from "@/lib/client/toast";
 
@@ -52,7 +53,8 @@ export function useCollapsibleForm(
 					reset: () => formRef.current?.reset(),
 					close: () => setOpen(false),
 				});
-			} catch {
+			} catch (error) {
+				unstable_rethrow(error);
 				toastError(errorMessage);
 			}
 		});
