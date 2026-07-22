@@ -31,7 +31,7 @@ syncBridgeEvents → calendar_events source='google'
 - Identity: unique `(source, caldav_uid)` with `source='google'`
 - Cancellations: windowed set-difference on `source='google'`
 - Allowlist of calendar **titles** on the Mac so iCloud calendars are not double-imported
-- Ledger: `gcal.synced` only when pulled+removed > 0
+- Ledger: silent on success (bridge runs every 15m); `gcal.sync_failed` + push only on error
 
 ## Config
 
