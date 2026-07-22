@@ -1,11 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { instantFromLocal } from "@/lib/dates";
 import { decodeForm } from "@/lib/form-decode";
+import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import {
 	CreatePersonFactSchema,
 	CreatePersonInteractionSchema,
@@ -22,8 +22,7 @@ import {
 import { getAppTimezone } from "@/lib/services/settings";
 
 function revalidatePersonViews(id: string) {
-	revalidatePath("/people");
-	revalidatePath(`/people/${id}`);
+	afterMutation("people.write", { id });
 }
 
 export async function updatePersonAction(id: string, formData: FormData) {
@@ -37,7 +36,7 @@ export async function updatePersonAction(id: string, formData: FormData) {
 export async function deletePersonAction(id: string) {
 	const { sb } = await requireOwnerPage();
 	await deletePerson(sb, z.uuid().parse(id));
-	revalidatePath("/people");
+	afterMutation("people.write");
 	redirect("/people");
 }
 

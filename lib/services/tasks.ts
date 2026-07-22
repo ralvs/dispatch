@@ -39,6 +39,19 @@ export async function listInboxTasks(sb: SupabaseClient): Promise<TaskRow[]> {
 	return listTasks(sb, { status: "open", domainId: INBOX_DOMAIN_ID });
 }
 
+/** Recently completed tasks only — Tasks page strip, not full history. */
+export async function listRecentDone(sb: SupabaseClient, limit = 10): Promise<TaskRow[]> {
+	const data = unwrap(
+		await sb
+			.from("tasks")
+			.select(TASK_SELECT)
+			.eq("status", "done")
+			.order("completed_at", { ascending: false, nullsFirst: false })
+			.limit(limit),
+	);
+	return (data ?? []).map(flatten);
+}
+
 /**
  * Most recent completion instant per domain, from the latest done tasks.
  * One bounded query, reduced in JS — 500 rows comfortably covers every
@@ -64,6 +77,25 @@ export async function lastCompletedByDomain(sb: SupabaseClient): Promise<Record<
 export async function getTask(sb: SupabaseClient, id: string): Promise<TaskRow | null> {
 	const data = unwrap(await sb.from("tasks").select(TASK_SELECT).eq("id", id).maybeSingle());
 	return data ? flatten(data) : null;
+}
+
+/** Minimal columns for complete/top3 — avoids joined domain/project on the hot path. */
+type TaskHotRow = {
+	id: string;
+	recurrence_rule: string | null;
+	due_date: string | null;
+	top3_for_date: string | null;
+};
+
+async function getTaskHot(sb: SupabaseClient, id: string): Promise<TaskHotRow | null> {
+	const data = unwrap(
+		await sb
+			.from("tasks")
+			.select("id, recurrence_rule, due_date, top3_for_date")
+			.eq("id", id)
+			.maybeSingle(),
+	);
+	return (data as TaskHotRow | null) ?? null;
 }
 
 export async function createTask(
@@ -122,7 +154,7 @@ export async function completeTask(
 	id: string,
 	todayIso: string,
 ): Promise<{ rolled: boolean }> {
-	const task = await getTask(sb, id);
+	const task = await getTaskHot(sb, id);
 	if (!task) throw new Error("Task not found");
 
 	if (task.recurrence_rule && isRecurrencePattern(task.recurrence_rule)) {
@@ -149,7 +181,7 @@ export async function deleteTask(sb: SupabaseClient, id: string): Promise<void> 
 
 /** Star / unstar a task as one of today's top 3. */
 export async function toggleTop3(sb: SupabaseClient, id: string, todayIso: string): Promise<void> {
-	const task = await getTask(sb, id);
+	const task = await getTaskHot(sb, id);
 	if (!task) throw new Error("Task not found");
 	const next = task.top3_for_date === todayIso ? null : todayIso;
 	unwrap(await sb.from("tasks").update({ top3_for_date: next }).eq("id", id));

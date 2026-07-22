@@ -1,8 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { CreateTaskFormSchema } from "@/lib/schemas/task";
 import { todayForRequest } from "@/lib/services/settings";
 import {
@@ -14,12 +14,6 @@ import {
 	triageTask,
 	updateTask,
 } from "@/lib/services/tasks";
-
-function revalidateTaskViews() {
-	revalidatePath("/tasks");
-	revalidatePath("/triage");
-	revalidatePath("/today");
-}
 
 export async function createTaskAction(formData: FormData) {
 	const { sb } = await requireOwnerPage();
@@ -33,7 +27,7 @@ export async function createTaskAction(formData: FormData) {
 		domain_id: parsed.domain_id || null,
 		recurrence_rule: parsed.recurrence_rule || null,
 	});
-	revalidateTaskViews();
+	afterMutation("task.write");
 }
 
 export async function updateTaskAction(id: string, formData: FormData) {
@@ -48,35 +42,35 @@ export async function updateTaskAction(id: string, formData: FormData) {
 		domain_id: parsed.domain_id || undefined,
 		recurrence_rule: parsed.recurrence_rule || null,
 	});
-	revalidateTaskViews();
+	afterMutation("task.write");
 }
 
 export async function completeTaskAction(id: string) {
 	const { sb } = await requireOwnerPage();
 	await completeTask(sb, z.uuid().parse(id), await todayForRequest(sb));
-	revalidateTaskViews();
+	afterMutation("task.write");
 }
 
 export async function reopenTaskAction(id: string) {
 	const { sb } = await requireOwnerPage();
 	await reopenTask(sb, z.uuid().parse(id));
-	revalidateTaskViews();
+	afterMutation("task.write");
 }
 
 export async function deleteTaskAction(id: string) {
 	const { sb } = await requireOwnerPage();
 	await deleteTask(sb, z.uuid().parse(id));
-	revalidateTaskViews();
+	afterMutation("task.write");
 }
 
 export async function toggleTop3Action(id: string) {
 	const { sb } = await requireOwnerPage();
 	await toggleTop3(sb, z.uuid().parse(id), await todayForRequest(sb));
-	revalidateTaskViews();
+	afterMutation("task.write");
 }
 
 export async function triageTaskAction(id: string, domainId: string) {
 	const { sb } = await requireOwnerPage();
 	await triageTask(sb, z.uuid().parse(id), z.uuid().parse(domainId));
-	revalidateTaskViews();
+	afterMutation("task.triage");
 }

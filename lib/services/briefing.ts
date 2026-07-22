@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { INBOX_DOMAIN_ID } from "@/lib/constants";
 import { dateOfInstant, formatInstant, instantFromLocal, isoWeek, shiftDay } from "@/lib/dates";
 import { computeRoutineStats, type RoutineStats } from "@/lib/routine-stats";
 import { type CalendarEventRow, listEventsOn } from "@/lib/services/calendar";
@@ -23,12 +24,7 @@ import {
 	listRoutines,
 	type RoutineRow,
 } from "@/lib/services/routines";
-import {
-	lastCompletedByDomain,
-	listInboxTasks,
-	listTasks,
-	type TaskRow,
-} from "@/lib/services/tasks";
+import { lastCompletedByDomain, listTasks, type TaskRow } from "@/lib/services/tasks";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -490,20 +486,48 @@ export function summarizeProjects(
 /** How far back completion history must reach for meaningful streaks. */
 const STREAK_HISTORY_DAYS = 60;
 
-export async function getBriefing(
+/**
+ * Hot segment: open tasks + calendar events for the day schedule.
+ * Task writes only need this segment to feel current (soft split).
+ */
+async function loadDayScheduleInputs(
 	sb: SupabaseClient,
 	tz: string,
 	todayIso: string,
-	nowMs: number = Date.now(),
-): Promise<BriefingView> {
+): Promise<{ open: TaskRow[]; todayEvents: CalendarEventRow[] }> {
+	const [open, todayEvents] = await Promise.all([
+		listTasks(sb, { status: "open" }),
+		listEventsOn(sb, todayIso, tz),
+	]);
+	return { open, todayEvents };
+}
+
+/**
+ * Cold segment: quotes, projects, routine history, alerts, domains cadence.
+ * Unchanged by a single task checkbox in the common case.
+ */
+async function loadBriefingChrome(
+	sb: SupabaseClient,
+	todayIso: string,
+): Promise<{
+	routines: RoutineRow[];
+	completionsToday: CompletionRow[];
+	needsReview: number;
+	quotes: QuoteRow[];
+	domains: DomainRow[];
+	lastTouchByDomain: Record<string, string>;
+	unreadNotifications: number;
+	skippedQuoteIds: string[];
+	completionHistory: CompletionRow[];
+	activeProjects: ProjectRow[];
+	ingestUnread: number;
+	milestonesByProject: Record<string, MilestoneRow[]>;
+}> {
 	const [
-		open,
-		inbox,
 		routines,
 		completionsToday,
 		needsReview,
 		quotes,
-		todayEvents,
 		domains,
 		lastTouchByDomain,
 		unreadNotifications,
@@ -512,13 +536,10 @@ export async function getBriefing(
 		activeProjects,
 		ingestUnread,
 	] = await Promise.all([
-		listTasks(sb, { status: "open" }),
-		listInboxTasks(sb),
 		listRoutines(sb),
 		listCompletionsOn(sb, todayIso),
 		countNeedsReview(sb),
 		listQuotes(sb),
-		listEventsOn(sb, todayIso, tz),
 		listDomains(sb),
 		lastCompletedByDomain(sb),
 		unreadCount(sb),
@@ -533,8 +554,54 @@ export async function getBriefing(
 		activeProjects.map((p) => p.id),
 	);
 
+	return {
+		routines,
+		completionsToday,
+		needsReview,
+		quotes,
+		domains,
+		lastTouchByDomain,
+		unreadNotifications,
+		skippedQuoteIds,
+		completionHistory,
+		activeProjects,
+		ingestUnread,
+		milestonesByProject,
+	};
+}
+
+export async function getBriefing(
+	sb: SupabaseClient,
+	tz: string,
+	todayIso: string,
+	nowMs: number = Date.now(),
+): Promise<BriefingView> {
+	// Soft split: schedule inputs vs chrome load in parallel; callers still
+	// see one getBriefing interface. Inbox count is derived from open tasks
+	// (no second listInboxTasks query).
+	const [{ open, todayEvents }, chrome] = await Promise.all([
+		loadDayScheduleInputs(sb, tz, todayIso),
+		loadBriefingChrome(sb, todayIso),
+	]);
+
+	const {
+		routines,
+		completionsToday,
+		needsReview,
+		quotes,
+		domains,
+		lastTouchByDomain,
+		unreadNotifications,
+		skippedQuoteIds,
+		completionHistory,
+		activeProjects,
+		ingestUnread,
+		milestonesByProject,
+	} = chrome;
+
 	const overdue = open.filter((t) => isOverdue(t, todayIso));
 	const dueToday = open.filter((t) => t.due_date === todayIso);
+	const inboxCount = open.filter((t) => t.domain_id === INBOX_DOMAIN_ID).length;
 
 	const completedRoutineIds = new Set(completionsToday.map((c) => c.routine_id));
 	const routinesDone = routines.filter((r) => completedRoutineIds.has(r.id)).length;
@@ -553,7 +620,7 @@ export async function getBriefing(
 
 	return {
 		cadence,
-		inboxCount: inbox.length,
+		inboxCount,
 		needsReviewCount: needsReview,
 		ingestUnreadCount: ingestUnread,
 		doingToday: assembleDoingToday(open, todayIso),

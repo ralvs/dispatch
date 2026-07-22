@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
+import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { CreateMilestoneSchema } from "@/lib/schemas/milestone";
 import { UpdateProjectSchema } from "@/lib/schemas/project";
 import {
@@ -16,8 +16,7 @@ import {
 } from "@/lib/services/projects";
 
 function revalidateProjectViews(id: string) {
-	revalidatePath("/projects");
-	revalidatePath(`/projects/${id}`);
+	afterMutation("projects.detail", { id });
 }
 
 export async function updateProjectAction(id: string, formData: FormData) {

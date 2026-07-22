@@ -1,15 +1,15 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
+import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { CreateJournalEntrySchema } from "@/lib/schemas/journal";
 import { createEntry, deleteEntry } from "@/lib/services/journal";
 import { todayForRequest } from "@/lib/services/settings";
 
 function revalidateJournalViews() {
-	revalidatePath("/journal");
+	afterMutation("journal.write");
 }
 
 function tagsFromForm(raw: FormDataEntryValue | null): string[] | undefined {

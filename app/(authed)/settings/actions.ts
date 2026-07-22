@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
+import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { CreateDomainSchema, UpdateDomainSchema } from "@/lib/schemas/domain";
 import {
 	archiveDomain,
@@ -16,9 +16,7 @@ import {
 import { updateAppTimezone } from "@/lib/services/settings";
 
 function revalidateDomainViews() {
-	revalidatePath("/settings");
-	// A cadence change moves lines in and out of Today's "In brief".
-	revalidatePath("/today");
+	afterMutation("settings.domain");
 }
 
 export async function createDomainAction(formData: FormData) {
@@ -74,5 +72,5 @@ export async function updateTimezoneAction(formData: FormData) {
 	const { sb } = await requireOwnerPage();
 	await updateAppTimezone(sb, z.string().min(1).parse(formData.get("timezone")));
 	// Every page derives its day boundary from this one value.
-	revalidatePath("/", "layout");
+	afterMutation("settings.timezone");
 }

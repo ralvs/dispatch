@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 
 // Theme preference is UX state, not auth state — a cookie write here doesn't
 // violate the proxy-is-sole-cookie-writer rule (that rule covers session
@@ -9,5 +9,5 @@ import { cookies } from "next/headers";
 export async function setTheme(theme: "dark" | "light") {
 	const store = await cookies();
 	store.set("theme", theme, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
-	revalidatePath("/", "layout");
+	afterMutation("theme");
 }

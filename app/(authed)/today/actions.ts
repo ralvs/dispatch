@@ -1,8 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { clearSkipsToday, recordQuoteSkip } from "@/lib/services/resurfacing";
 import { todayForRequest } from "@/lib/services/settings";
 
@@ -10,12 +10,12 @@ import { todayForRequest } from "@/lib/services/settings";
 export async function skipResurfacedQuoteAction(quoteId: string) {
 	const { sb } = await requireOwnerPage();
 	await recordQuoteSkip(sb, z.uuid().parse(quoteId), await todayForRequest(sb));
-	revalidatePath("/today");
+	afterMutation("today.only");
 }
 
 /** "Reset" on the Resurfaced card: forget today's skips. */
 export async function resetResurfacedAction() {
 	const { sb } = await requireOwnerPage();
 	await clearSkipsToday(sb, await todayForRequest(sb));
-	revalidatePath("/today");
+	afterMutation("today.only");
 }

@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
+import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { CreateQuoteAnnotationSchema, CreateQuoteSchema } from "@/lib/schemas/quote";
 import {
 	createAnnotation,
@@ -14,7 +14,7 @@ import {
 } from "@/lib/services/quotes";
 
 function revalidateQuoteViews() {
-	revalidatePath("/quotes");
+	afterMutation("quotes.write");
 }
 
 function tagsFromForm(raw: FormDataEntryValue | null): string[] | undefined {

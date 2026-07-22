@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { requireOwnerPage } from "@/lib/auth";
+import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { CaptureRequestSchema } from "@/lib/schemas/capture";
 import { type CapturedRecord, capture } from "@/lib/services/capture";
 
@@ -13,6 +13,9 @@ import { type CapturedRecord, capture } from "@/lib/services/capture";
  *
  * The raw text is validated then handed to capture(), which persists it before
  * doing anything else, so a parse/execute failure never loses the input.
+ *
+ * UI shows a provisional "Recorded" receipt immediately (capture machine);
+ * this SA still runs the full pipeline and revalidates on settle.
  */
 export async function captureText(input: {
 	text: string;
@@ -28,10 +31,6 @@ export async function captureText(input: {
 		clientTime: parsed.client_time,
 	});
 
-	// A capture can create tasks and/or notes; refresh the views that surface
-	// them, matching tasks/actions.ts.
-	revalidatePath("/tasks");
-	revalidatePath("/triage");
-	revalidatePath("/today");
+	afterMutation("capture.settled");
 	return record;
 }

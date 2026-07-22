@@ -4,6 +4,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
+import { cache } from "react";
 import { env } from "@/lib/env";
 
 /**
@@ -51,29 +52,34 @@ export function isOwner(user: User | null): user is User {
  * every session-authed handler, before parsing the body. Returns the same
  * RLS client used to authenticate, so callers never construct their own.
  *
+ * Request-scoped via React cache() so layout + page + nested loaders share
+ * one auth.getUser hop per request.
+ *
  *   const auth = await requireOwner();
  *   if (auth instanceof NextResponse) return auth;
  *   const { user, sb } = auth;
  */
-export async function requireOwner(): Promise<{ user: User; sb: SupabaseClient } | NextResponse> {
-	const { user, sb } = await currentUserAndClient();
-	if (!isOwner(user)) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	}
-	return { user, sb };
-}
+export const requireOwner = cache(
+	async (): Promise<{ user: User; sb: SupabaseClient } | NextResponse> => {
+		const { user, sb } = await currentUserAndClient();
+		if (!isOwner(user)) {
+			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+		}
+		return { user, sb };
+	},
+);
 
 /**
  * The same boundary for pages, layouts, and server actions — redirects to
- * /sign-in instead of returning JSON.
+ * /sign-in instead of returning JSON. Also request-scoped via cache().
  *
  *   const { user, sb } = await requireOwnerPage();
  */
-export async function requireOwnerPage(): Promise<{ user: User; sb: SupabaseClient }> {
+export const requireOwnerPage = cache(async (): Promise<{ user: User; sb: SupabaseClient }> => {
 	const { user, sb } = await currentUserAndClient();
 	if (!isOwner(user)) redirect("/sign-in");
 	return { user, sb };
-}
+});
 
 /**
  * Wraps a route handler with the requireOwner() check so handlers never see

@@ -1,14 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { createNote, deleteNote, resolveNeedsReview, updateNote } from "@/lib/services/notes";
 
 function revalidateNoteViews(id?: string) {
-	revalidatePath("/notes");
-	if (id) revalidatePath(`/notes/${id}`);
+	afterMutation("notes.write", id ? { id } : undefined);
 }
 
 /**

@@ -1,14 +1,14 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
+import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { CreatePersonSchema } from "@/lib/schemas/person";
 import { createPerson, deletePerson } from "@/lib/services/people";
 
 function revalidatePeopleViews() {
-	revalidatePath("/people");
+	afterMutation("people.write");
 }
 
 export async function createPersonAction(formData: FormData) {

@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
+import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { CreateRoutineSchema } from "@/lib/schemas/routine";
 import {
 	archiveRoutine,
@@ -14,9 +14,7 @@ import {
 import { todayForRequest } from "@/lib/services/settings";
 
 function revalidateRoutineViews() {
-	revalidatePath("/routines");
-	// The Today rail renders routine state too (docs: Briefing redesign).
-	revalidatePath("/today");
+	afterMutation("routine.write");
 }
 
 export async function createRoutineAction(formData: FormData) {
