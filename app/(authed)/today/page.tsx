@@ -1,3 +1,4 @@
+import { SoftRefresh } from "@/components/soft-refresh";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatInstant, todayInTz } from "@/lib/dates";
 import { getBriefing } from "@/lib/services/briefing";
@@ -26,6 +27,8 @@ export default async function TodayPage() {
 
 	return (
 		<div>
+			{/* Keep the day tape "now", past events, and counts honest without a full reload. */}
+			<SoftRefresh />
 			<Masthead todayIso={todayIso} unreadNotifications={briefing.masthead.unreadNotifications} />
 
 			{/* The day at a glance: the anchor sentence already carries the

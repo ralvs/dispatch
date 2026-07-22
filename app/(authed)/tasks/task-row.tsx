@@ -169,9 +169,9 @@ export function TaskRowItem({
 	}
 
 	return (
-		<li className="hairline flex items-baseline gap-3 py-2.5" data-task-id={task.id}>
+		<li className="hairline flex items-center gap-3 py-2.5" data-task-id={task.id}>
 			{scheduled && timeLabel && (
-				<span className="w-12 shrink-0 font-mono text-meta tabular-nums text-ink-3">
+				<span className="w-12 shrink-0 self-center font-mono text-meta tabular-nums leading-none text-ink-3">
 					{timeLabel}
 				</span>
 			)}

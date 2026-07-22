@@ -35,12 +35,12 @@ function EventRow({
 
 	return (
 		<li
-			className={`hairline flex items-baseline gap-3 py-2.5 ${past ? "opacity-50" : ""}`}
+			className={`hairline flex items-center gap-3 py-2.5 ${past ? "opacity-50" : ""}`}
 			aria-label={past ? `${event.title} (past)` : undefined}
 		>
 			{time && (
 				<span
-					className={`w-12 shrink-0 font-mono text-meta tabular-nums ${
+					className={`w-12 shrink-0 self-center font-mono text-meta tabular-nums leading-none ${
 						past ? "text-ink-4" : "text-ink-3"
 					}`}
 				>
