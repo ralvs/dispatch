@@ -1,32 +1,19 @@
-"use client";
-
-import { useTransition } from "react";
-import { runAction } from "@/lib/client/toast";
 import type { RoutineBucketRow } from "@/lib/services/briefing";
-import { toggleCompletionAction } from "../routines/actions";
 
-export function RoutineCheckRow({ row }: { row: RoutineBucketRow }) {
-	const [pending, startTransition] = useTransition();
-
+export function RoutineCheckRow({
+	row,
+	onToggle,
+}: {
+	row: RoutineBucketRow;
+	onToggle: () => void;
+}) {
 	return (
-		<li
-			className={`flex items-baseline gap-3 border-b border-line py-2 ${
-				pending ? "opacity-50" : ""
-			}`}
-		>
+		<li className="flex items-baseline gap-3 border-b border-line py-2">
 			<input
 				type="checkbox"
 				checked={row.done}
 				aria-label={row.done ? `Undo "${row.name}"` : `Complete "${row.name}"`}
-				disabled={pending}
-				onChange={() =>
-					startTransition(async () => {
-						await runAction(
-							() => toggleCompletionAction(row.id, row.done),
-							"Couldn't update routine.",
-						);
-					})
-				}
+				onChange={onToggle}
 				className={`h-4 w-4 shrink-0 appearance-none self-center border ${
 					row.done ? "border-ink-4 bg-ink-4" : "border-line-strong hover:border-ink-3"
 				}`}

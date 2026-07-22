@@ -23,18 +23,35 @@ function IconCalendar({ className }: { className?: string }) {
 
 // The calendar icon is what says "this is an event, not a task" — it sits in
 // the checkbox's column so events and tasks line up in the same band.
-function EventRow({ item }: { item: Extract<DayScheduleItem, { kind: "event" }> }) {
+function EventRow({
+	item,
+	past,
+}: {
+	item: Extract<DayScheduleItem, { kind: "event" }>;
+	past: boolean;
+}) {
 	const { event, time } = item;
 	const meta = [event.calendar_name, event.location].filter(Boolean).join(" · ");
 
 	return (
-		<li className="hairline flex items-baseline gap-3 py-2.5">
+		<li
+			className={`hairline flex items-baseline gap-3 py-2.5 ${past ? "opacity-50" : ""}`}
+			aria-label={past ? `${event.title} (past)` : undefined}
+		>
 			{time && (
-				<span className="w-12 shrink-0 font-mono text-meta tabular-nums text-ink-3">{time}</span>
+				<span
+					className={`w-12 shrink-0 font-mono text-meta tabular-nums ${
+						past ? "text-ink-4" : "text-ink-3"
+					}`}
+				>
+					{time}
+				</span>
 			)}
-			<IconCalendar className="h-4 w-4 shrink-0 self-center text-ink-3" />
+			<IconCalendar
+				className={`h-4 w-4 shrink-0 self-center ${past ? "text-ink-4" : "text-ink-3"}`}
+			/>
 			<div className="min-w-0 flex-1">
-				<p className="truncate text-sm text-ink">{event.title}</p>
+				<p className={`truncate text-sm ${past ? "text-ink-4" : "text-ink"}`}>{event.title}</p>
 				{meta && <p className="mt-0.5 truncate font-mono text-meta text-ink-4">{meta}</p>}
 			</div>
 		</li>
@@ -49,10 +66,13 @@ export function ScheduleRow({
 	item,
 	todayIso,
 	handlers,
+	nowUtcIso,
 }: {
 	item: DayScheduleItem;
 	todayIso: string;
 	handlers?: TaskRowHandlers;
+	/** Used to gray out timed events that have already ended. */
+	nowUtcIso?: string;
 }) {
 	if (item.kind === "task") {
 		if (!handlers) return null;
@@ -66,5 +86,6 @@ export function ScheduleRow({
 			/>
 		);
 	}
-	return <EventRow item={item} />;
+	const past = Boolean(nowUtcIso && item.event.end_at < nowUtcIso);
+	return <EventRow item={item} past={past} />;
 }

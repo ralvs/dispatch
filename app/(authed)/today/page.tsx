@@ -18,7 +18,8 @@ export default async function TodayPage() {
 	const tz = await getAppTimezone(sb);
 	const todayIso = todayInTz(tz);
 	const briefing = await getBriefing(sb, tz, todayIso);
-	const nowLabel = formatInstant(new Date().toISOString(), tz, "HH:mm");
+	const nowUtcIso = new Date().toISOString();
+	const nowLabel = formatInstant(nowUtcIso, tz, "HH:mm");
 
 	const showLatestQuote =
 		briefing.latestQuote !== null && briefing.latestQuote.id !== briefing.resurfaced?.id;
@@ -47,6 +48,7 @@ export default async function TodayPage() {
 				todayIso={todayIso}
 				openCount={briefing.anchor.openCount}
 				overdueCount={briefing.anchor.overdueCount}
+				nowUtcIso={nowUtcIso}
 			/>
 
 			<div className="mt-14 grid grid-cols-1 gap-14 lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-x-10">

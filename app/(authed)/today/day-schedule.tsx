@@ -86,11 +86,14 @@ export function DaySchedule({
 	todayIso,
 	openCount,
 	overdueCount,
+	nowUtcIso,
 }: {
 	schedule: DayScheduleData;
 	todayIso: string;
 	openCount: number;
 	overdueCount: number;
+	/** Wall-clock "now" as UTC ISO — grays out timed events that have ended. */
+	nowUtcIso: string;
 }) {
 	const [, startTransition] = useTransition();
 	const seed = useMemo(() => collectOpenTasks(schedule), [schedule]);
@@ -161,6 +164,7 @@ export function DaySchedule({
 										key={item.key}
 										item={item}
 										todayIso={todayIso}
+										nowUtcIso={nowUtcIso}
 										handlers={item.kind === "task" ? handlersFor(item.task) : undefined}
 									/>
 								))}
@@ -174,6 +178,7 @@ export function DaySchedule({
 										key={item.key}
 										item={item}
 										todayIso={todayIso}
+										nowUtcIso={nowUtcIso}
 										handlers={item.kind === "task" ? handlersFor(item.task) : undefined}
 									/>
 								))}

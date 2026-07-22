@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useOptimistic, useTransition } from "react";
 import { runAction } from "@/lib/client/toast";
 import type { RoutineStats } from "@/lib/routine-stats";
 import { TIME_OF_DAY_LABELS } from "@/lib/schemas/routine";
@@ -17,11 +17,17 @@ export function RoutineRowItem({
 	recentDays: Array<{ date: string; done: boolean; isToday: boolean }>;
 }) {
 	const [pending, startTransition] = useTransition();
+	const [doneToday, setDoneToday] = useOptimistic(
+		stats.done_today,
+		(_current, next: boolean) => next,
+	);
 
 	function toggle() {
+		const currentlyDone = doneToday;
 		startTransition(async () => {
+			setDoneToday(!currentlyDone);
 			await runAction(
-				async () => toggleCompletionAction(routine.id, stats.done_today),
+				async () => toggleCompletionAction(routine.id, currentlyDone),
 				"Couldn't update routine.",
 			);
 		});
@@ -37,7 +43,7 @@ export function RoutineRowItem({
 	}
 
 	return (
-		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>
+		<li className="hairline py-3">
 			<div className="flex items-start justify-between gap-3">
 				<div>
 					<p className="font-serif text-base text-ink">{routine.name}</p>
@@ -49,28 +55,27 @@ export function RoutineRowItem({
 				<div className="flex shrink-0 gap-2">
 					<button
 						type="button"
-						aria-pressed={stats.done_today}
+						aria-pressed={doneToday}
 						aria-label={
-							stats.done_today
+							doneToday
 								? `Mark "${routine.name}" not done today`
 								: `Mark "${routine.name}" done today`
 						}
-						disabled={pending}
 						onClick={toggle}
 						className={`border px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest ${
-							stats.done_today
+							doneToday
 								? "border-ink bg-ink text-bg"
 								: "border-line text-ink-3 hover:border-line-strong hover:text-ink"
 						}`}
 					>
-						{stats.done_today ? "Done" : "Mark done"}
+						{doneToday ? "Done" : "Mark done"}
 					</button>
 					<button
 						type="button"
 						aria-label={`Delete routine "${routine.name}"`}
 						disabled={pending}
 						onClick={remove}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip disabled:opacity-50"
 					>
 						Delete
 					</button>
@@ -81,7 +86,9 @@ export function RoutineRowItem({
 					<span
 						key={d.date}
 						title={d.date}
-						className={`h-3 w-3 ${d.done ? "bg-ink" : "bg-line"} ${d.isToday ? "ring-1 ring-accent-slip" : ""}`}
+						className={`h-3 w-3 ${
+							d.isToday ? (doneToday ? "bg-ink" : "bg-line") : d.done ? "bg-ink" : "bg-line"
+						} ${d.isToday ? "ring-1 ring-accent-slip" : ""}`}
 					/>
 				))}
 			</div>
