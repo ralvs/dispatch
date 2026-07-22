@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState, useTransition } from "react";
 import { runAction } from "@/lib/client/toast";
 import { formatDueLabel } from "@/lib/dates";
 import { RECURRENCE_GLYPH } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/services/tasks";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
 import { updateTaskAction } from "./actions";
-import { type TaskDomainOption, TaskFormFields } from "./task-fields";
+import { PriorityBadge, type TaskDomainOption, TaskFormFields } from "./task-fields";
 
 export type { TaskDomainOption };
 
@@ -46,6 +46,7 @@ export function TaskRowItem({
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(initialEditing);
 	const formWrapRef = useRef<HTMLLIElement>(null);
+	const formRef = useRef<HTMLFormElement>(null);
 	const done = task.status === "done";
 	const overdue = isOverdue(task, todayIso);
 	const starred = isTop3Today(task, todayIso);
@@ -55,6 +56,10 @@ export function TaskRowItem({
 	useEffect(() => {
 		if (!initialEditing || !editing) return;
 		formWrapRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+		// Focus title so typing / Esc / Enter are immediately available.
+		const title = formRef.current?.querySelector<HTMLInputElement>('input[name="title"]');
+		title?.focus();
+		title?.select();
 	}, [initialEditing, editing]);
 
 	function save(formData: FormData) {
@@ -74,6 +79,24 @@ export function TaskRowItem({
 		handlers.onDelete();
 	}
 
+	function onFormKeyDown(e: KeyboardEvent<HTMLFormElement>) {
+		if (e.key === "Escape") {
+			e.preventDefault();
+			setEditing(false);
+			return;
+		}
+		// Enter saves from single-line fields; leave textarea for newlines.
+		if (e.key === "Enter" && !(e.target instanceof HTMLTextAreaElement)) {
+			// Native submit already fires for text inputs; skip buttons/selects
+			// that use Enter for their own activation.
+			if (e.target instanceof HTMLButtonElement || e.target instanceof HTMLSelectElement) {
+				return;
+			}
+			e.preventDefault();
+			formRef.current?.requestSubmit();
+		}
+	}
+
 	if (editing && canEdit) {
 		return (
 			<li
@@ -81,10 +104,12 @@ export function TaskRowItem({
 				className={`hairline py-3 ${pending ? "opacity-50" : ""}`}
 				data-task-id={task.id}
 			>
-				{/* Indented narrower card so the edit surface reads as nested under the list. */}
+				{/* Symmetric indent so the edit surface is narrower than list rows. */}
 				<form
+					ref={formRef}
 					action={save}
-					className="ml-7 space-y-2.5 border-l-2 border-line-strong py-1 pl-3 sm:ml-10 sm:pl-4"
+					onKeyDown={onFormKeyDown}
+					className="mx-6 space-y-2.5 border-x border-line-strong px-3 py-1 sm:mx-10 sm:px-4"
 				>
 					<TaskFormFields
 						domains={domains}
@@ -153,12 +178,13 @@ export function TaskRowItem({
 				}`}
 			/>
 			<div className="min-w-0 flex-1">
-				<p className="flex min-w-0 items-baseline gap-1.5">
+				<p className="flex min-w-0 items-center gap-1.5">
+					<PriorityBadge priority={task.priority} className={done ? "opacity-50" : undefined} />
 					{canEdit ? (
 						<button
 							type="button"
 							onClick={() => setEditing(true)}
-							className={`${titleClass} max-w-full truncate`}
+							className={`${titleClass} min-w-0 truncate`}
 							aria-label={`Edit task "${task.title}"`}
 						>
 							{task.title}
@@ -167,7 +193,7 @@ export function TaskRowItem({
 						// Today (and other read-mostly surfaces): jump to Tasks with this row open.
 						<Link
 							href={`/tasks?edit=${task.id}`}
-							className={`${titleClass} max-w-full truncate`}
+							className={`${titleClass} min-w-0 truncate`}
 							aria-label={`Open task "${task.title}" for editing`}
 						>
 							{task.title}
