@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useOptimistic, useTransition } from "react";
 import { runAction } from "@/lib/client/toast";
 import type { DaySchedule as DayScheduleData, DayScheduleItem } from "@/lib/services/briefing";
@@ -136,20 +135,12 @@ export function DaySchedule({
 
 	return (
 		<section className="mt-14" aria-label="Day schedule">
-			<div className="flex items-baseline justify-between">
-				{/* Counts live on the anchor line above — keep this chrome quiet. */}
-				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">The day</h2>
-				<Link href="/tasks" className="font-mono text-meta text-ink-4 hover:text-ink-2">
-					All tasks →
-				</Link>
-			</div>
-
 			{empty ? (
 				<p className="py-8 text-center font-serif italic text-ink-3">
 					Nothing on the clock. Star tasks or set due dates to shape the day.
 				</p>
 			) : (
-				<div className="mt-6 grid grid-cols-1 gap-10 lg:grid-cols-[1.6fr_1fr] lg:items-start lg:gap-14">
+				<div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.6fr_1fr] lg:items-start lg:gap-14">
 					<div className="min-w-0">
 						{allDay.length > 0 && (
 							<Band title="All day">
