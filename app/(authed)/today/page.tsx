@@ -46,13 +46,7 @@ export default async function TodayPage() {
 
 			<DayTape timeline={briefing.daySchedule.timeline} todayIso={todayIso} nowLabel={nowLabel} />
 
-			<DaySchedule
-				schedule={briefing.daySchedule}
-				todayIso={todayIso}
-				openCount={briefing.anchor.openCount}
-				overdueCount={briefing.anchor.overdueCount}
-				nowUtcIso={nowUtcIso}
-			/>
+			<DaySchedule schedule={briefing.daySchedule} todayIso={todayIso} nowUtcIso={nowUtcIso} />
 
 			<div className="mt-14 grid grid-cols-1 gap-14 lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-x-10">
 				<div className="min-w-0">

@@ -84,14 +84,10 @@ function projectSchedule(schedule: DayScheduleData, open: TaskRow[]): DaySchedul
 export function DaySchedule({
 	schedule,
 	todayIso,
-	openCount,
-	overdueCount,
 	nowUtcIso,
 }: {
 	schedule: DayScheduleData;
 	todayIso: string;
-	openCount: number;
-	overdueCount: number;
 	/** Wall-clock "now" as UTC ISO — grays out timed events that have ended. */
 	nowUtcIso: string;
 }) {
@@ -141,10 +137,8 @@ export function DaySchedule({
 	return (
 		<section className="mt-14" aria-label="Day schedule">
 			<div className="flex items-baseline justify-between">
-				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-					The day · {openCount} open
-					{overdueCount > 0 && <span className="text-accent"> · {overdueCount} overdue</span>}
-				</h2>
+				{/* Counts live on the anchor line above — keep this chrome quiet. */}
+				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">The day</h2>
 				<Link href="/tasks" className="font-mono text-meta text-ink-4 hover:text-ink-2">
 					All tasks →
 				</Link>
