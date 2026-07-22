@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-// Calendar events — synced from iCloud CalDAV (docs/adr/0006) or created here.
-// Mirrors the 0001 SQL table; source strings match the DB CHECK constraint.
+// Calendar events — iCloud CalDAV (ADR-0006), Google pull (ADR-0018), or created here.
+// Mirrors the SQL table; source strings match the DB CHECK constraint.
 
-export const CalendarEventSourceSchema = z.enum(["caldav", "created_here"]);
+export const CalendarEventSourceSchema = z.enum(["caldav", "google", "created_here"]);
 export type CalendarEventSource = z.infer<typeof CalendarEventSourceSchema>;
 
 // ─── Row shape actually returned by the calendar service ────────────────

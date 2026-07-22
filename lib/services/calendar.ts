@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CaldavConnection } from "@/lib/caldav/client";
 import { parseCalendarObject } from "@/lib/caldav/ical";
+import { CALENDAR_SYNC_WINDOW_MS } from "@/lib/constants";
 import { dayWindowUtc, nowUtc } from "@/lib/dates";
 import { env } from "@/lib/env";
 import { type CalendarEventRow, EVENT_SELECT } from "@/lib/schemas/calendar";
@@ -14,11 +15,10 @@ import { ServiceError, unwrap } from "@/lib/services/errors";
 // named `ICLOUD_CALENDAR_NAME`. Cancellation detection is a windowed
 // set-difference on `caldav_uid` — CalDAV has no tombstones, so a caldav
 // row that falls inside the window but wasn't seen on this sync is gone.
+// Identity is unique on (source, caldav_uid) after docs/adr/0018.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type { CalendarEventRow };
-
-const WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** Postgres text-array literal for a `.not(col, "in", …)` filter, quoted per value. */
 function inListLiteral(values: Iterable<string>): string {
@@ -31,8 +31,8 @@ export async function syncCalendar(
 	opts: { nowMs?: number } = {},
 ): Promise<{ pulled: number; removed: number }> {
 	const nowMs = opts.nowMs ?? Date.now();
-	const windowStartUtc = new Date(nowMs - WINDOW_MS).toISOString();
-	const windowEndUtc = new Date(nowMs + WINDOW_MS).toISOString();
+	const windowStartUtc = new Date(nowMs - CALENDAR_SYNC_WINDOW_MS).toISOString();
+	const windowEndUtc = new Date(nowMs + CALENDAR_SYNC_WINDOW_MS).toISOString();
 	const window = { startUtc: windowStartUtc, endUtc: windowEndUtc };
 	const syncedAt = nowUtc(nowMs);
 
@@ -96,7 +96,7 @@ export async function syncCalendar(
 							source: "caldav",
 							synced_at: syncedAt,
 						},
-						{ onConflict: "caldav_uid" },
+						{ onConflict: "source,caldav_uid" },
 					),
 				);
 				pulled++;

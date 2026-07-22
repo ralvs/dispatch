@@ -115,6 +115,24 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			google_sync_state: {
+				Row: {
+					id: boolean;
+					last_result: Json | null;
+					last_synced_at: string | null;
+				};
+				Insert: {
+					id?: boolean;
+					last_result?: Json | null;
+					last_synced_at?: string | null;
+				};
+				Update: {
+					id?: boolean;
+					last_result?: Json | null;
+					last_synced_at?: string | null;
+				};
+				Relationships: [];
+			};
 			calendar_events: {
 				Row: {
 					all_day: boolean;

@@ -141,7 +141,7 @@ describe("syncCalendar", () => {
 			title: "Dentist",
 			source: "caldav",
 		});
-		expect(eventUpsert?.opts).toMatchObject({ onConflict: "caldav_uid" });
+		expect(eventUpsert?.opts).toMatchObject({ onConflict: "source,caldav_uid" });
 	});
 
 	it("skips the upsert (and the count) for an event with unchanged etag and start", async () => {
