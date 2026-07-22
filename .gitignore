@@ -28,3 +28,6 @@ supabase/.branches/
 .vercel
 .env*
 .codex/
+
+# Mac EventKit bridge binary (build with scripts/mac-calendar-bridge/build.sh)
+scripts/mac-calendar-bridge/calendar-bridge

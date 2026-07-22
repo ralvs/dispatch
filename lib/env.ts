@@ -23,16 +23,13 @@ const EnvSchema = z.object({
 	INGEST_WEBHOOK_SECRET: z.string().min(20).optional(),
 	CRON_SECRET: z.string().min(20).optional(),
 	WIDGET_SECRET: z.string().min(20).optional(),
+	// Mac EventKit bridge → POST /api/calendar/bridge (docs/adr/0018)
+	CALENDAR_BRIDGE_SECRET: z.string().min(20).optional(),
 
 	// iCloud CalDAV (Phase 7)
 	ICLOUD_USERNAME: z.string().optional(),
 	ICLOUD_APP_PASSWORD: z.string().optional(),
 	ICLOUD_CALENDAR_NAME: z.string().optional(),
-
-	// Google Calendar OAuth app (docs/adr/0018) — personal GCP project is fine.
-	// Refresh token lives in google_sync_state after Settings → Connect.
-	GOOGLE_CLIENT_ID: z.string().optional(),
-	GOOGLE_CLIENT_SECRET: z.string().optional(),
 
 	// Web Push (Phase 7)
 	NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
@@ -73,9 +70,7 @@ export const isAiConfigured = () => Boolean(env().AI_GATEWAY_API_KEY);
 export const isCaldavConfigured = () =>
 	Boolean(env().ICLOUD_USERNAME && env().ICLOUD_APP_PASSWORD && env().ICLOUD_CALENDAR_NAME);
 
-/** OAuth client credentials present (Connect button can work). */
-export const isGoogleOAuthConfigured = () =>
-	Boolean(env().GOOGLE_CLIENT_ID && env().GOOGLE_CLIENT_SECRET);
+export const isCalendarBridgeConfigured = () => Boolean(env().CALENDAR_BRIDGE_SECRET);
 
 export const isPushConfigured = () =>
 	Boolean(env().NEXT_PUBLIC_VAPID_PUBLIC_KEY && env().VAPID_PRIVATE_KEY);

@@ -1,51 +1,49 @@
-# Google Calendar pull-only via browser OAuth
+# Work Google calendars via Mac EventKit bridge
 
-Dispatch pulls events from **both** iCloud CalDAV (personal) and Google
-Calendar (Engine work). Google is **read-only**: never create, update, or
-delete remote Google events. Access is **browser OAuth** with scope
-**`calendar.readonly` only** — no Gmail, Drive, or other Google APIs.
+Dispatch pulls personal calendars from **iCloud CalDAV** (ADR-0006) and work
+(Engine Google) calendars via a **local Mac bridge**: EventKit reads calendars
+already synced into Apple Calendar and POSTs them to a secret-authed endpoint.
 
-## Why
+## Why not Google OAuth / Calendar API
 
-ADR-0006 chose iCloud CalDAV for Apple-primary personal calendars. Work
-events live on Google Workspace (`renan.alves@engine.com`). Secret ICS
-URLs and public ICS feeds are unreliable on this Workspace (public 404,
-secret address often unavailable). Browser OAuth is the same class of
-flow Apple Calendar uses: user signs in, grants calendar read, app stores
-a refresh token.
+Browser OAuth with a personal GCP client was attempted. The Engine Workspace
+admin blocks unapproved third-party apps at consent (`access_denied` /
+admin policy). Secret ICS URLs and public ICS feeds are unavailable or 404.
 
-The owner has **no employer GCP**. A **personal** Google Cloud project
-hosts the OAuth client (client id/secret in env). At connect time the
-owner signs in as the **Engine** account and consents only to calendar
-read. Employer policy: calendar permitted; email forbidden — we never
-request mail scopes.
+Apple Calendar on the owner’s Mac **is** allowed to sync the work Google
+account. EventKit therefore sees Engine events without a second Google login.
 
-## Auth / config
+## Architecture
+
+```
+macOS Calendar (Engine Google, already synced)
+        │ EventKit
+        ▼
+scripts/mac-calendar-bridge (Swift, launchd every 15m)
+        │ POST /api/calendar/bridge
+        │ Authorization: Bearer CALENDAR_BRIDGE_SECRET
+        ▼
+syncBridgeEvents → calendar_events source='google'
+```
+
+- Pull-only into Dispatch; no writes back to Google or Apple Calendar
+- Window: ±7 days (bridge-controlled; body carries `window_start` / `window_end`)
+- Identity: unique `(source, caldav_uid)` with `source='google'`
+- Cancellations: windowed set-difference on `source='google'`
+- Allowlist of calendar **titles** on the Mac so iCloud calendars are not double-imported
+- Ledger: `gcal.synced` only when pulled+removed > 0
+
+## Config
 
 | Piece | Where |
 |-------|--------|
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Env (personal GCP Web client) |
-| Redirect URIs | `{origin}/api/google/oauth/callback` (localhost + prod) |
-| Refresh token | `google_sync_state.refresh_token` (service-role only) |
-| Connect / disconnect | Settings → Integrations |
-
-Flow:
-
-1. Owner opens Settings → **Connect Google Calendar**
-2. `/api/google/oauth/start` (requireOwner) → Google consent (`calendar.readonly`, offline)
-3. Callback exchanges code, stores refresh token + primary calendar id label
-4. Cron `/api/cron/gcal` refreshes access token and pulls ±7 days from all calendars
-
-## Sync shape
-
-- Calendar API v3: `calendarList` + `events.list` (`singleEvents=true`)
-- Identity: `source='google'` + Google event id; unique `(source, caldav_uid)`
-- Cancellations: windowed set-difference on `source='google'`
-- Ledger: `gcal.synced` only when pulled+removed > 0
+| `CALENDAR_BRIDGE_SECRET` | Vercel + Mac bridge env (min 20 chars) |
+| `DISPATCH_BASE_URL` | Mac bridge (e.g. `https://dispatch…`) |
+| `DISPATCH_BRIDGE_CALENDAR_TITLES` | Mac bridge; comma-separated Apple Calendar titles |
 
 ## Non-goals
 
-- Push or edit on Google
-- Any non-calendar Google scope
-- ICS secret-URL path (superseded)
-- Cross-provider dedup of dual invites
+- Google OAuth / GCP / Calendar API
+- Pushing events to Google
+- Running the bridge on any machine other than the owner’s Mac
+- Auto-discovering every calendar (explicit title allowlist required)
