@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CurrentDesign } from "./designs/current";
+import { JaredTasksDesign, JaredTodayDesign } from "./designs/jared";
 import { LedgerDesign } from "./designs/ledger";
 import { MixedDesign } from "./designs/mixed";
 import { DAY } from "./mock";
@@ -29,6 +30,18 @@ const DESIGNS = [
 		name: "Mixed",
 		note: "Round 6 — no counts strip, and the schedule spans the full width with Open on the right",
 		Component: MixedDesign,
+	},
+	{
+		id: "jared",
+		name: "Jared · Today",
+		note: "The reference implementation (jerad-ops) verbatim — warm-linen editorial newspaper, Newsreader serif, rust accent. This is the UI Dispatch drifted from (ADR-0013).",
+		Component: JaredTodayDesign,
+	},
+	{
+		id: "jared-tasks",
+		name: "Jared · Tasks",
+		note: "Jared's /tasks list in the same editorial system — filter tabs, priority dots, collapsible Completed today.",
+		Component: JaredTasksDesign,
 	},
 ] as const;
 
