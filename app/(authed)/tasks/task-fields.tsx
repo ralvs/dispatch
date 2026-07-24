@@ -1,19 +1,65 @@
 "use client";
 
+import { useState } from "react";
+import { shiftDay } from "@/lib/dates";
 import { RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
 
 export type TaskDomainOption = { id: string; name: string; is_system: boolean };
 
+/**
+ * Native date/time inputs paint the browser's own `mm/dd/yyyy` / `--:-- --`
+ * skeleton at full ink weight, so an empty field shouts as loudly as a filled
+ * one and the picker glyph sits there at full brightness. CSS has no "this
+ * date input is empty" selector, so emptiness is tracked in React and handed
+ * to the stylesheet as `data-empty` — an untouched field then reads like every
+ * other placeholder in the app instead of like an answer.
+ */
+const FIELD_CSS = `
+.tf-native::-webkit-calendar-picker-indicator {
+	opacity: 0.4;
+	cursor: pointer;
+	transition: opacity 120ms ease;
+}
+
+.tf-native:hover::-webkit-calendar-picker-indicator,
+.tf-native:focus::-webkit-calendar-picker-indicator {
+	opacity: 0.85;
+}
+
+/* The colour has to be set on each sub-field: setting it on the container
+   pseudo-element alone does not cascade into them. */
+.tf-native[data-empty="true"]::-webkit-datetime-edit,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-text,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-day-field,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-month-field,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-year-field,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-hour-field,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-minute-field,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-ampm-field {
+	color: var(--ink-4);
+}
+`;
+
 /** Label always stacks above its control (block, not inline beside). */
 const FIELD_LABEL = "block font-mono text-eyebrow uppercase text-ink-3";
+/** One height, one radius, one focus treatment for every control in the row. */
 const CONTROL =
-	"mt-1 block rounded-md border border-line bg-surface px-2 py-1 text-sm text-ink outline-none focus:border-line-strong";
+	"h-9 rounded-md border border-line bg-surface px-2.5 text-sm text-ink outline-none transition-colors hover:border-line-strong focus:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent";
+/**
+ * Borderless on purpose: five bordered boxes in a row (date, time, and three
+ * shortcuts) read as five equal controls. The shortcuts are a shortcut to the
+ * field beside them, so they keep the hit area and drop the chrome.
+ */
+const CHIP =
+	"h-9 rounded-md px-2 font-mono text-eyebrow uppercase text-ink-3 transition-colors hover:bg-surface hover:text-ink";
+const CHIP_ON = "bg-accent-bg text-accent-ink hover:bg-accent-bg hover:text-accent-ink";
 
-/** Compact date input — fixed width so the browser control never crops. */
-const DATE_CONTROL = `${CONTROL} w-[10.75rem]`;
-/** Compact time input — fixed width so HH:MM stays fully visible. */
-const TIME_CONTROL = `${CONTROL} w-[7.25rem]`;
-const SELECT_CONTROL = `${CONTROL} max-w-[11rem] w-full`;
+/** What a due date actually gets set to, nine times out of ten. */
+const RELATIVE_DAYS = [
+	{ label: "Today", days: 0 },
+	{ label: "Tomorrow", days: 1 },
+	{ label: "+1 week", days: 7 },
+] as const;
 
 export const PRIORITIES = [
 	{ value: 1, label: "P1", title: "Critical" },
@@ -22,12 +68,17 @@ export const PRIORITIES = [
 	{ value: 4, label: "P4", title: "Someday" },
 ] as const;
 
-/** Full class strings required so Tailwind can see peer-checked variants. */
+/**
+ * Only the chosen priority carries colour — an unselected scale in four
+ * colours shouts before an answer exists — and selection is marked by a rule
+ * in that colour rather than a filled cell, which reads as disabled at P4.
+ * Full class strings so Tailwind can see the peer-checked variants.
+ */
 const PRIORITY_CELL: Record<number, string> = {
-	1: "text-error peer-checked:bg-error peer-checked:text-bg hover:bg-error/10 peer-checked:hover:bg-error peer-checked:hover:text-bg",
-	2: "text-warning peer-checked:bg-warning peer-checked:text-bg hover:bg-warning/10 peer-checked:hover:bg-warning peer-checked:hover:text-bg",
-	3: "text-accent-ink peer-checked:bg-accent peer-checked:text-bg hover:bg-accent-bg peer-checked:hover:bg-accent peer-checked:hover:text-bg",
-	4: "text-ink-4 peer-checked:bg-ink-4 peer-checked:text-bg hover:bg-surface-2 peer-checked:hover:bg-ink-4 peer-checked:hover:text-bg",
+	1: "peer-checked:text-error",
+	2: "peer-checked:text-warning",
+	3: "peer-checked:text-accent-ink",
+	4: "peer-checked:text-ink-2",
 };
 
 const PRIORITY_BADGE: Record<number, string> = {
@@ -79,68 +130,101 @@ export type TaskFieldDefaults = {
 };
 
 /**
- * Shared title + optional notes + the five compact meta controls used by both
- * create and edit. Meta fields use intrinsic widths so they stop stretching
- * across the row; notes stay full-width for real writing room.
+ * The title line on its own — a display-weight field with a hairline under it.
+ * Empty, the placeholder drops to normal weight so it reads as instruction
+ * rather than as a heading someone already wrote.
  */
-export function TaskFormFields({
+export function TaskTitleField({
+	defaultValue = "",
+	placeholder = "What needs doing?",
+}: {
+	defaultValue?: string;
+	placeholder?: string;
+}) {
+	return (
+		<input
+			name="title"
+			required
+			defaultValue={defaultValue}
+			placeholder={placeholder}
+			aria-label="Task title"
+			className="w-full border-b border-line bg-transparent pb-1.5 font-serif text-base text-ink outline-none placeholder:font-normal placeholder:text-ink-4"
+		/>
+	);
+}
+
+/**
+ * When the task is due, where it files, whether it repeats, how much it
+ * matters — four groups on one horizontal rhythm, every control the same
+ * height. Due date and time share a group because they answer one question;
+ * the relative chips are the fast path, the date field the exact one.
+ */
+export function TaskMetaFields({
 	domains,
+	todayIso,
 	defaults = {},
-	titlePlaceholder = "What needs doing?",
-	showNotes = false,
 }: {
 	domains: TaskDomainOption[];
+	/** App-timezone today (docs/adr/0002) — never `new Date()` in the browser. */
+	todayIso: string;
 	defaults?: TaskFieldDefaults;
-	titlePlaceholder?: string;
-	showNotes?: boolean;
 }) {
-	const dueTime = defaults.due_time ? defaults.due_time.slice(0, 5) : "";
-	const priority = defaults.priority ?? 4;
+	const [due, setDue] = useState(defaults.due_date ?? "");
+	const [time, setTime] = useState(defaults.due_time ? defaults.due_time.slice(0, 5) : "");
 
 	return (
-		<>
-			<input
-				name="title"
-				required
-				defaultValue={defaults.title ?? ""}
-				placeholder={titlePlaceholder}
-				aria-label="Task title"
-				className="w-full border-b border-line bg-transparent pb-1.5 font-serif text-base text-ink outline-none placeholder:text-ink-4"
-			/>
+		// Two deliberate rows rather than one that happens to wrap: "when" is
+		// wide (a date, a time, three shortcuts), "where/how often/how much"
+		// are three narrow answers that line up under it.
+		<div className="space-y-4">
+			<style>{FIELD_CSS}</style>
 
-			{showNotes && (
-				<label className="block">
-					<span className={FIELD_LABEL}>Notes</span>
-					<textarea
-						name="notes"
-						rows={2}
-						defaultValue={defaults.notes ?? ""}
-						className={`${CONTROL} w-full py-1.5`}
-					/>
-				</label>
-			)}
-
-			{/* items-start keeps every label band on one horizontal rhythm (all labels on top). */}
-			<div className="flex flex-wrap items-start gap-x-3 gap-y-2">
-				<label className="block">
-					<span className={FIELD_LABEL}>Due</span>
+			<div className="min-w-0">
+				<span className={FIELD_LABEL}>Due</span>
+				<div className="mt-1 flex flex-wrap items-center gap-1.5">
 					<input
 						type="date"
 						name="due_date"
-						defaultValue={defaults.due_date ?? ""}
-						className={DATE_CONTROL}
+						value={due}
+						data-empty={due === ""}
+						onChange={(event) => setDue(event.target.value)}
+						aria-label="Due date"
+						className={`tf-native ${CONTROL} w-[9.5rem]`}
 					/>
-				</label>
-				<label className="block">
-					<span className={FIELD_LABEL}>Time</span>
-					<input type="time" name="due_time" defaultValue={dueTime} className={TIME_CONTROL} />
-				</label>
+					<input
+						type="time"
+						name="due_time"
+						value={time}
+						data-empty={time === ""}
+						onChange={(event) => setTime(event.target.value)}
+						aria-label="Due time"
+						className={`tf-native ${CONTROL} w-[7.5rem]`}
+					/>
+					{RELATIVE_DAYS.map(({ label, days }) => {
+						const target = shiftDay(todayIso, days);
+						const on = due === target;
+						return (
+							<button
+								key={label}
+								type="button"
+								aria-pressed={on}
+								onClick={() => setDue(on ? "" : target)}
+								className={`${CHIP} ${on ? CHIP_ON : ""}`}
+							>
+								{label}
+							</button>
+						);
+					})}
+				</div>
+			</div>
+
+			<div className="flex flex-wrap items-start gap-x-6 gap-y-4">
 				<label className="block min-w-0">
 					<span className={FIELD_LABEL}>Domain</span>
 					<select
 						name="domain_id"
 						defaultValue={defaults.domain_id ?? domains[0]?.id}
-						className={SELECT_CONTROL}
+						className={`${CONTROL} mt-1 block w-[11rem] max-w-full`}
 					>
 						{domains.map((d) => (
 							<option key={d.id} value={d.id}>
@@ -149,12 +233,13 @@ export function TaskFormFields({
 						))}
 					</select>
 				</label>
+
 				<label className="block min-w-0">
 					<span className={FIELD_LABEL}>Repeats</span>
 					<select
 						name="recurrence_rule"
 						defaultValue={defaults.recurrence_rule ?? ""}
-						className={SELECT_CONTROL}
+						className={`${CONTROL} mt-1 block w-[11rem] max-w-full`}
 					>
 						<option value="">Never</option>
 						{RECURRENCE_PATTERNS.map((p) => (
@@ -164,19 +249,59 @@ export function TaskFormFields({
 						))}
 					</select>
 				</label>
-				<PriorityPicker defaultValue={priority} />
+
+				<PriorityPicker defaultValue={defaults.priority ?? 4} />
 			</div>
+		</div>
+	);
+}
+
+/**
+ * Title + optional notes + the meta row — the full surface, used by the edit
+ * form on a task row. The create path composes the pieces itself, so the
+ * capture line never renders a second title field.
+ */
+export function TaskFormFields({
+	domains,
+	todayIso,
+	defaults = {},
+	titlePlaceholder = "What needs doing?",
+	showNotes = false,
+}: {
+	domains: TaskDomainOption[];
+	todayIso: string;
+	defaults?: TaskFieldDefaults;
+	titlePlaceholder?: string;
+	showNotes?: boolean;
+}) {
+	return (
+		<>
+			<TaskTitleField defaultValue={defaults.title ?? ""} placeholder={titlePlaceholder} />
+
+			{showNotes && (
+				<label className="block">
+					<span className={FIELD_LABEL}>Notes</span>
+					<textarea
+						name="notes"
+						rows={2}
+						defaultValue={defaults.notes ?? ""}
+						className={`${CONTROL} mt-1 block h-auto w-full py-1.5`}
+					/>
+				</label>
+			)}
+
+			<TaskMetaFields domains={domains} todayIso={todayIso} defaults={defaults} />
 		</>
 	);
 }
 
-/** Segmented priority control — radio group styled as compact colored buttons. */
+/** Segmented priority control — radio group, colour reserved for the answer. */
 export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) {
 	return (
 		<fieldset className="block min-w-0">
 			<legend className={FIELD_LABEL}>Priority</legend>
 			<div
-				className="mt-1 inline-flex overflow-hidden rounded-md border border-line"
+				className="mt-1 inline-flex h-9 overflow-hidden rounded-md border border-line"
 				role="radiogroup"
 				aria-label="Priority"
 			>
@@ -194,7 +319,7 @@ export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) 
 							className="peer sr-only"
 						/>
 						<span
-							className={`block px-2.5 py-1 font-mono text-meta tabular-nums transition-colors peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-[-2px] peer-focus-visible:outline-accent ${PRIORITY_CELL[p.value]}`}
+							className={`flex h-full items-center px-3 font-mono text-meta tabular-nums text-ink-3 transition-colors hover:text-ink peer-checked:shadow-[inset_0_-2px_0_currentColor] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-[-2px] peer-focus-visible:outline-accent ${PRIORITY_CELL[p.value]}`}
 						>
 							{p.label}
 						</span>
