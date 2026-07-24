@@ -25,7 +25,7 @@ import {
 	type RoutineRow,
 } from "@/lib/services/routines";
 import { lastCompletedByDomain, listTasks, type TaskRow } from "@/lib/services/tasks";
-import { isOverdue, isTop3Today } from "@/lib/task-predicates";
+import { isDueToday, isOverdue, isTop3Today } from "@/lib/task-predicates";
 
 // ─────────────────────────────────────────────────────────────────────────
 // The Today page's editorial briefing. getBriefing assembles a single read
@@ -53,6 +53,8 @@ export type BriefLine = {
 	unit: string;
 	nextAction: string;
 	href: string;
+	/** Formatted display date of the last touch, or null when never touched. */
+	lastTouched: string | null;
 };
 
 export type AnchorData = {
@@ -69,6 +71,7 @@ export type RoutineBucketRow = {
 	streak: number;
 	specificTime: string | null;
 	reminderEnabled: boolean;
+	missed: boolean;
 };
 
 export type RoutineBucket = {
@@ -419,7 +422,8 @@ export function deriveBriefLines(
 		const touches = [domain.last_shipped_at, lastTouchByDomain[domain.id]].filter(
 			(t): t is string => typeof t === "string",
 		);
-		const lastTouch = touches.length > 0 ? touches.sort().at(-1) : domain.created_at;
+		const touched = touches.length > 0 ? touches.sort().at(-1) : null;
+		const lastTouch = touched ?? domain.created_at;
 		if (!lastTouch) continue;
 
 		const daysSince = Math.max(0, daysBetween(dateOfInstant(lastTouch, tz), todayIso));
@@ -437,21 +441,47 @@ export function deriveBriefLines(
 			// Deep-link the row so "Mark shipped" / cadence edit are one scroll away
 			// rather than dumping the owner at the top of Settings.
 			href: `/settings#domain-${domain.id}`,
+			lastTouched: touched ? formatInstant(touched, tz, "d LLL") : null,
 		});
 	}
 	return lines.sort((a, b) => b.daysSince / b.thresholdDays - a.daysSince / a.thresholdDays);
 }
 
 /**
- * Routines grouped for the rail: fixed bucket order, empty buckets dropped,
- * each row carrying done-today and current streak (computeRoutineStats over
- * the recent completion history the fetcher provides).
+ * Clock-derived "missed" flag: a routine with a specific time whose time has
+ * already passed today and isn't done. Purely a display signal — no DB write,
+ * no cron (routines.last_missed_sent_date has no producer and stays that way).
+ * Defensive like taskDueInstant: a malformed time degrades to false instead
+ * of throwing.
  */
-export function bucketRoutines(
-	routines: RoutineRow[],
-	completions: CompletionRow[],
+function isRoutineMissed(
+	specificTime: string | null,
+	done: boolean,
 	todayIso: string,
-): RoutineBucket[] {
+	tz: string,
+	nowMs: number,
+): boolean {
+	if (done || specificTime === null || !TIME_RE.test(specificTime)) return false;
+	try {
+		return Date.parse(instantFromLocal(todayIso, specificTime, tz)) <= nowMs;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Routines grouped for the rail: fixed bucket order, empty buckets dropped,
+ * each row carrying done-today, current streak (computeRoutineStats over the
+ * recent completion history the fetcher provides), and whether it's missed.
+ */
+export function bucketRoutines(input: {
+	routines: RoutineRow[];
+	completions: CompletionRow[];
+	todayIso: string;
+	tz: string;
+	nowMs: number;
+}): RoutineBucket[] {
+	const { routines, completions, todayIso, tz, nowMs } = input;
 	const datesByRoutine = new Map<string, string[]>();
 	for (const c of completions) {
 		const dates = datesByRoutine.get(c.routine_id);
@@ -474,6 +504,7 @@ export function bucketRoutines(
 						streak: stats.current_streak,
 						specificTime: r.specific_time,
 						reminderEnabled: r.reminder_enabled,
+						missed: isRoutineMissed(r.specific_time, stats.done_today, todayIso, tz, nowMs),
 					};
 				}),
 		}))
@@ -614,7 +645,7 @@ export async function getBriefing(
 	} = chrome;
 
 	const overdue = open.filter((t) => isOverdue(t, todayIso));
-	const dueToday = open.filter((t) => t.due_date === todayIso);
+	const dueToday = open.filter((t) => isDueToday(t, todayIso));
 	const inboxCount = open.filter((t) => t.domain_id === INBOX_DOMAIN_ID).length;
 
 	const completedRoutineIds = new Set(completionsToday.map((c) => c.routine_id));
@@ -649,7 +680,13 @@ export async function getBriefing(
 			nowUtcIso: new Date(nowMs).toISOString(),
 		}),
 		briefLines: deriveBriefLines(domains, lastTouchByDomain, todayIso, tz),
-		routineBuckets: bucketRoutines(routines, completionHistory, todayIso),
+		routineBuckets: bucketRoutines({
+			routines,
+			completions: completionHistory,
+			todayIso,
+			tz,
+			nowMs,
+		}),
 		resurfaced,
 		resurfacedSkips: skippedQuoteIds.length,
 		latestQuote,

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { isCurrentlyDoneRecurring, nextDueDate, periodStart } from "./recurrence";
+import {
+	isCurrentlyDoneRecurring,
+	nextDueDate,
+	periodStart,
+	RECURRENCE_LABELS,
+	RECURRENCE_PATTERNS,
+	recurrenceLabel,
+} from "./recurrence";
 
 describe("nextDueDate", () => {
 	it("steps each pattern forward from the due date", () => {
@@ -61,6 +68,20 @@ describe("periodStart", () => {
 		expect(periodStart("monthly", tue)).toBe(Date.parse("2026-07-01T00:00:00Z"));
 		expect(periodStart("yearly", tue)).toBe(Date.parse("2026-01-01T00:00:00Z"));
 		expect(periodStart("semiannually", tue)).toBe(Date.parse("2026-07-01T00:00:00Z"));
+	});
+});
+
+describe("recurrenceLabel", () => {
+	it("returns the human label for every known pattern", () => {
+		for (const pattern of RECURRENCE_PATTERNS) {
+			expect(recurrenceLabel(pattern)).toBe(RECURRENCE_LABELS[pattern]);
+		}
+	});
+
+	it("returns null for null, undefined, and unknown strings", () => {
+		expect(recurrenceLabel(null)).toBeNull();
+		expect(recurrenceLabel(undefined)).toBeNull();
+		expect(recurrenceLabel("fortnightly")).toBeNull();
 	});
 });
 

@@ -88,6 +88,7 @@ export function TaskList({
 	domains,
 	editTaskId,
 	taskNoteIds,
+	tz,
 }: {
 	openTasks: TaskRow[];
 	doneTasks: TaskRow[];
@@ -97,6 +98,8 @@ export function TaskList({
 	editTaskId?: string | null;
 	/** task id -> linked note id, for the linked-note glyph on rows. */
 	taskNoteIds?: Record<string, string>;
+	/** App timezone — threaded to rows so "Recently done" can show a completion time. */
+	tz: string;
 }) {
 	const router = useRouter();
 	const [, startTransition] = useTransition();
@@ -254,6 +257,7 @@ export function TaskList({
 								domains={domains}
 								initialEditing={editTaskId === t.id}
 								handlers={handlersFor(t)}
+								tz={tz}
 							/>
 						))}
 					</ul>

@@ -12,6 +12,11 @@ export function isOverdue(task: Pick<TaskRow, "status" | "due_date">, todayIso: 
 	return task.status !== "done" && task.due_date !== null && task.due_date < todayIso;
 }
 
+/** A task is due today if it's still open and its due date is exactly today. */
+export function isDueToday(task: Pick<TaskRow, "status" | "due_date">, todayIso: string): boolean {
+	return task.status !== "done" && task.due_date === todayIso;
+}
+
 /** A task is starred for "today's top 3" if it's pinned to today's date. */
 export function isTop3Today(task: Pick<TaskRow, "top3_for_date">, todayIso: string): boolean {
 	return task.top3_for_date === todayIso;
