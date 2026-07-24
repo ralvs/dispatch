@@ -19,9 +19,8 @@ import {
 	reopenTaskAction,
 	toggleTop3Action,
 } from "./actions";
-import { QuickAdd } from "./quick-add";
+import { CaptureBar } from "./capture-bar";
 import type { TaskDomainOption } from "./task-fields";
-import { TaskForm } from "./task-form";
 import { TaskRowItem } from "./task-row";
 
 /** Raw text, Inbox defaults — the parsed row swaps in on revalidation. */
@@ -171,12 +170,14 @@ export function TaskList({
 
 	return (
 		<>
-			<section className="mt-6">
-				<QuickAdd onSubmit={onQuickAdd} />
-				<TaskForm domains={domains} action={onCreate} />
-			</section>
+			<CaptureBar
+				domains={domains}
+				todayIso={todayIso}
+				onQuickAdd={onQuickAdd}
+				onCreate={onCreate}
+			/>
 
-			<section className="mt-6" aria-label="Open tasks">
+			<section className="mt-8" aria-label="Open tasks">
 				{lists.open.length === 0 ? (
 					<p className="py-8 text-center font-serif italic text-ink-3">
 						Nothing on the docket. Capture something.

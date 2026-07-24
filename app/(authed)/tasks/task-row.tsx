@@ -116,6 +116,7 @@ export function TaskRowItem({
 				>
 					<TaskFormFields
 						domains={domains}
+						todayIso={todayIso}
 						showNotes
 						defaults={{
 							title: task.title,
