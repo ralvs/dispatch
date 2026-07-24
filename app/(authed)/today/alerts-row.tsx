@@ -24,7 +24,7 @@ export function AlertsRow({
 
 	return (
 		<section aria-label="Alerts awaiting decision">
-			<ul className="flex flex-wrap gap-2">
+			<ul className="flex flex-wrap gap-2 lg:justify-end">
 				{alerts.map((alert) => (
 					<li key={alert.key}>
 						<Link

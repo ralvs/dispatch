@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import {
 	listNotifications,
+	markAllNotifications,
 	markNotification,
 	recordNotification,
 	unreadCount,
@@ -30,6 +31,10 @@ function stubSupabase(results: Record<string, StubResult>) {
 		builder.select = () => builder;
 		builder.eq = (col: string, value: unknown) => {
 			calls.push({ table, op: "eq", payload: { col, value } });
+			return builder;
+		};
+		builder.neq = (col: string, value: unknown) => {
+			calls.push({ table, op: "neq", payload: { col, value } });
 			return builder;
 		};
 		builder.order = record("order");
@@ -93,6 +98,24 @@ describe("read surface", () => {
 	it("unreadCount returns the exact head count", async () => {
 		const { sb } = stubSupabase({ notifications: { count: 3, error: null } });
 		expect(await unreadCount(sb)).toBe(3);
+	});
+
+	it("markAllNotifications marks only unread rows as read", async () => {
+		const { sb, calls } = stubSupabase({ notifications: { data: null, error: null } });
+		await markAllNotifications(sb, "read");
+		expect(calls).toEqual([
+			{ table: "notifications", op: "update", payload: { status: "read" } },
+			{ table: "notifications", op: "eq", payload: { col: "status", value: "unread" } },
+		]);
+	});
+
+	it("markAllNotifications dismisses everything not already dismissed", async () => {
+		const { sb, calls } = stubSupabase({ notifications: { data: null, error: null } });
+		await markAllNotifications(sb, "dismissed");
+		expect(calls).toEqual([
+			{ table: "notifications", op: "update", payload: { status: "dismissed" } },
+			{ table: "notifications", op: "neq", payload: { col: "status", value: "dismissed" } },
+		]);
 	});
 
 	it("markNotification updates status by id", async () => {
