@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { RECURRENCE_PATTERNS } from "@/lib/recurrence";
 import { NoteSourceTypeSchema } from "@/lib/schemas/note";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -24,19 +25,31 @@ import { NoteSourceTypeSchema } from "@/lib/schemas/note";
 export const CaptureTranscriptSourceSchema = z.enum(["voice", "text"]);
 export type CaptureTranscriptSource = z.infer<typeof CaptureTranscriptSourceSchema>;
 
+export const CreateTaskActionSchema = z.object({
+	action: z.literal("create_task"),
+	title: z.string().min(1),
+	notes: z.string().min(1).optional(),
+	due_date: z.string().date().optional(),
+	// 24-hour HH:mm with valid ranges, so a malformed time fails schema-parse
+	// (→ typed failed → degrade) rather than reaching the executor.
+	due_time: z
+		.string()
+		.regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+		.optional(),
+	priority: z.number().int().min(1).max(4).optional(),
+	// Constrained to the enum so the LLM can never violate the DB check
+	// constraint (docs/adr/0019). Unrepresentable cadences ("every 3 weeks")
+	// are omitted by the parser; the phrase survives in `notes` instead.
+	recurrence_rule: z.enum(RECURRENCE_PATTERNS).optional(),
+	// Names copied verbatim from the routing lists injected into the prompt —
+	// never ids (docs/adr/0019 D1). Resolved server-side; no match → Inbox.
+	domain: z.string().min(1).optional(),
+	project: z.string().min(1).optional(),
+});
+export type CreateTaskAction = z.infer<typeof CreateTaskActionSchema>;
+
 export const CaptureActionSchema = z.discriminatedUnion("action", [
-	z.object({
-		action: z.literal("create_task"),
-		title: z.string().min(1),
-		due_date: z.string().date().optional(),
-		// 24-hour HH:mm with valid ranges, so a malformed time fails schema-parse
-		// (→ typed failed → degrade) rather than reaching the executor.
-		due_time: z
-			.string()
-			.regex(/^([01]\d|2[0-3]):[0-5]\d$/)
-			.optional(),
-		priority: z.number().int().min(1).max(4).optional(),
-	}),
+	CreateTaskActionSchema,
 	z.object({
 		action: z.literal("create_note"),
 		body: z.string().min(1),

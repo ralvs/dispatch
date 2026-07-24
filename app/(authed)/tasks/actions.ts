@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { CreateTaskFormSchema } from "@/lib/schemas/task";
+import { quickAddTask } from "@/lib/services/capture/quick-add";
 import { todayForRequest } from "@/lib/services/settings";
 import {
 	completeTask,
@@ -27,6 +28,13 @@ export async function createTaskAction(formData: FormData) {
 		domain_id: parsed.domain_id || null,
 		recurrence_rule: parsed.recurrence_rule || null,
 	});
+	afterMutation("task.write");
+}
+
+export async function quickAddTaskAction({ text }: { text: string }) {
+	const { sb } = await requireOwnerPage();
+	const parsed = z.object({ text: z.string().trim().min(1).max(1000) }).parse({ text });
+	await quickAddTask(sb, parsed.text);
 	afterMutation("task.write");
 }
 

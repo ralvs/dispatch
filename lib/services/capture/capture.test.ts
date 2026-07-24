@@ -60,7 +60,22 @@ describe("capture", () => {
 			capturedId: "cap-1",
 			transcript: "ligar pro médico",
 			tz: "America/Sao_Paulo",
+			routing: { domains: [], projects: [] },
 		});
+	});
+
+	it("still executes when the routing-list fetch throws (guarded, degrades to no routing)", async () => {
+		(parse as Mock).mockResolvedValue({
+			ok: true,
+			actions: [{ action: "create_task", title: "x" }],
+		});
+		(runActions as Mock).mockResolvedValue([
+			{ action: "create_task", ok: true, entity: { table: "tasks", id: "task-1" } },
+		]);
+
+		const record = await capture(sb, RAW);
+
+		expect(record.outcome.kind).toBe("executed");
 	});
 
 	it("degrades a parser failure to a needs_review note linked to the capture", async () => {

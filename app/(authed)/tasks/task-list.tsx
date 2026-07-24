@@ -15,12 +15,37 @@ import {
 	completeTaskAction,
 	createTaskAction,
 	deleteTaskAction,
+	quickAddTaskAction,
 	reopenTaskAction,
 	toggleTop3Action,
 } from "./actions";
+import { QuickAdd } from "./quick-add";
 import type { TaskDomainOption } from "./task-fields";
 import { TaskForm } from "./task-form";
 import { TaskRowItem } from "./task-row";
+
+/** Raw text, Inbox defaults — the parsed row swaps in on revalidation. */
+function optimisticTaskFromText(text: string): TaskRow {
+	const now = new Date().toISOString();
+	return {
+		id: crypto.randomUUID(),
+		title: text,
+		notes: null,
+		status: "open",
+		due_date: null,
+		due_time: null,
+		priority: 4,
+		project_id: null,
+		domain_id: INBOX_DOMAIN_ID,
+		recurrence_rule: null,
+		top3_for_date: null,
+		source: "manual",
+		created_at: now,
+		completed_at: null,
+		domain: { id: INBOX_DOMAIN_ID, name: "Inbox" },
+		project: null,
+	};
+}
 
 function optimisticTaskFromForm(formData: FormData, domains: TaskDomainOption[]): TaskRow {
 	const title = String(formData.get("title") ?? "").trim() || "Untitled";
@@ -129,9 +154,25 @@ export function TaskList({
 		});
 	}
 
+	function onQuickAdd(text: string): Promise<void> {
+		const optimistic = optimisticTaskFromText(text);
+		// Mirrors onCreate — same shared transition, same rollback-on-reject.
+		return new Promise((resolve, reject) => {
+			startTransition(() => {
+				dispatchOptimistic({ type: "create", task: optimistic });
+				quickAddTaskAction({ text })
+					.then(resolve)
+					.catch((err) => {
+						reject(err);
+					});
+			});
+		});
+	}
+
 	return (
 		<>
 			<section className="mt-6">
+				<QuickAdd onSubmit={onQuickAdd} />
 				<TaskForm domains={domains} action={onCreate} />
 			</section>
 

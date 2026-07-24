@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { todayInTz } from "@/lib/dates";
 import type { CaptureAction } from "@/lib/schemas/capture";
 import type { ActionResult } from "@/lib/services/capture";
+import { type RoutingLists, resolveTaskRouting } from "@/lib/services/capture/resolve";
 import { createEntry } from "@/lib/services/journal";
 import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
 import { createQuote } from "@/lib/services/quotes";
@@ -24,7 +25,20 @@ export type Provenance = {
 	// App timezone (iron rule #1) — used to resolve "today" for date-only
 	// fields (e.g. journal entry_date) instead of raw `new Date()` math.
 	tz: string;
+	// Routing candidates for create_task's domain/project names (docs/adr/0019
+	// D2) — fetched once in process(), never re-queried per action.
+	routing: RoutingLists;
 };
+
+/** Appends unresolved routing mentions to task notes, e.g. `[capture: unresolved project "X"]`. */
+export function withUnresolvedNotes(
+	notes: string | undefined,
+	unresolved: string[],
+): string | null {
+	if (unresolved.length === 0) return notes ?? null;
+	const suffix = unresolved.map((u) => `[capture: unresolved ${u}]`).join(" ");
+	return notes ? `${notes}\n${suffix}` : suffix;
+}
 
 async function degrade(
 	sb: SupabaseClient,
@@ -57,11 +71,16 @@ async function runOne(
 	try {
 		switch (action.action) {
 			case "create_task": {
+				const routing = resolveTaskRouting(action, prov.routing);
 				const task = await createTask(sb, {
 					title: action.title,
+					notes: withUnresolvedNotes(action.notes, routing.unresolved),
 					due_date: action.due_date ?? null,
 					due_time: action.due_time ?? null,
 					priority: action.priority,
+					domain_id: routing.domain_id,
+					project_id: routing.project_id,
+					recurrence_rule: action.recurrence_rule ?? null,
 					source: "manual",
 				});
 				return { action: "create_task", ok: true, entity: { table: "tasks", id: task.id } };
