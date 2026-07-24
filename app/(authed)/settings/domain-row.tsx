@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ColorDot } from "@/components/color-dot";
+import { ColorSwatchPicker } from "@/components/color-swatch-picker";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import type { DomainRow as DomainRowType } from "@/lib/services/domains";
@@ -96,6 +98,7 @@ export function DomainRowItem({
 							Surfaces in "In brief" from 75% of this, slipping past it.
 						</span>
 					</label>
+					<ColorSwatchPicker name="color" defaultValue={domain.color} />
 					<div className="flex gap-2 pt-1">
 						<button
 							type="submit"
@@ -123,7 +126,10 @@ export function DomainRowItem({
 			className={`hairline scroll-mt-24 py-3 ${pending ? "opacity-50" : ""}`}
 		>
 			<div className="flex items-baseline justify-between gap-3">
-				<span className="font-serif text-base text-ink">{domain.name}</span>
+				<span className="flex items-center gap-1.5">
+					<ColorDot color={domain.color} />
+					<span className="font-serif text-base text-ink">{domain.name}</span>
+				</span>
 				{domain.is_system && (
 					<span className="shrink-0 rounded-md border border-line px-1.5 py-0.5 font-mono text-meta uppercase tracking-widest text-ink-3">
 						System

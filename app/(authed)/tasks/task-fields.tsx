@@ -4,7 +4,12 @@ import { useState } from "react";
 import { shiftDay } from "@/lib/dates";
 import { RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
 
-export type TaskDomainOption = { id: string; name: string; is_system: boolean };
+export type TaskDomainOption = {
+	id: string;
+	name: string;
+	is_system: boolean;
+	color: string | null;
+};
 
 /**
  * Native date/time inputs paint the browser's own `mm/dd/yyyy` / `--:-- --`
@@ -221,6 +226,8 @@ export function TaskMetaFields({
 			<div className="flex flex-wrap items-start gap-x-6 gap-y-4">
 				<label className="block min-w-0">
 					<span className={FIELD_LABEL}>Domain</span>
+					{/* No color dot on <option> — styling native option elements is
+					    unreliable cross-browser, so this stays a plain name list. */}
 					<select
 						name="domain_id"
 						defaultValue={defaults.domain_id ?? domains[0]?.id}

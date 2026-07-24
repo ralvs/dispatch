@@ -1,7 +1,15 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
 	"files": {
-		"includes": ["**", "!.next", "!node_modules", "!.vercel", "!.claude", "!.codex"]
+		"includes": [
+			"**",
+			"!.next",
+			"!node_modules",
+			"!.vercel",
+			"!.claude",
+			"!.codex",
+			"!supabase/.temp"
+		]
 	},
 	"assist": {
 		"actions": {

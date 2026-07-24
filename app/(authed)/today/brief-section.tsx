@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ColorDot } from "@/components/color-dot";
 import type { BriefLine } from "@/lib/services/briefing";
 import { CadenceBar } from "./cadence-bar";
 
@@ -19,7 +20,8 @@ export function BriefSection({ lines }: { lines: BriefLine[] }) {
 					{lines.map((line) => (
 						<li key={line.key} className="hairline">
 							<Link href={line.href} className="flex items-center gap-4 py-3">
-								<span className="w-20 shrink-0 truncate font-serif text-sm text-ink">
+								<span className="flex w-20 shrink-0 items-center gap-1.5 truncate font-serif text-sm text-ink">
+									<ColorDot color={line.color} />
 									{line.name}
 								</span>
 								<span

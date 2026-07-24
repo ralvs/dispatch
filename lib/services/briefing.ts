@@ -46,6 +46,7 @@ export type CadenceLine = {
 export type BriefLine = {
 	key: string;
 	name: string;
+	color: string | null;
 	daysSince: number;
 	thresholdDays: number;
 	slipping: boolean;
@@ -427,6 +428,7 @@ export function deriveBriefLines(
 		lines.push({
 			key: domain.id,
 			name: domain.name,
+			color: domain.color,
 			daysSince,
 			thresholdDays,
 			slipping: daysSince > thresholdDays,

@@ -1,6 +1,7 @@
 "use client";
 
 import { CollapsibleForm, useCollapsibleForm } from "@/components/collapsible-form";
+import { ColorSwatchPicker } from "@/components/color-swatch-picker";
 import { createDomainAction } from "./actions";
 
 export function DomainForm() {
@@ -46,6 +47,7 @@ export function DomainForm() {
 					className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
 				/>
 			</label>
+			<ColorSwatchPicker name="color" />
 		</CollapsibleForm>
 	);
 }

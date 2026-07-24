@@ -42,7 +42,7 @@ function optimisticTaskFromText(text: string): TaskRow {
 		source: "manual",
 		created_at: now,
 		completed_at: null,
-		domain: { id: INBOX_DOMAIN_ID, name: "Inbox" },
+		domain: { id: INBOX_DOMAIN_ID, name: "Inbox", color: null },
 		project: null,
 	};
 }
@@ -74,7 +74,9 @@ function optimisticTaskFromForm(formData: FormData, domains: TaskDomainOption[])
 		source: "manual",
 		created_at: now,
 		completed_at: null,
-		domain: domain ? { id: domain.id, name: domain.name } : { id: domainId, name: "Inbox" },
+		domain: domain
+			? { id: domain.id, name: domain.name, color: domain.color ?? null }
+			: { id: domainId, name: "Inbox", color: null },
 		project: null,
 	};
 }

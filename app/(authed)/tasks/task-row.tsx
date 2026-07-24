@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { type KeyboardEvent, useEffect, useRef, useState, useTransition } from "react";
+import { ColorDot } from "@/components/color-dot";
 import { runAction } from "@/lib/client/toast";
 import { formatDueLabel } from "@/lib/dates";
 import { RECURRENCE_GLYPH } from "@/lib/recurrence";
@@ -211,7 +212,10 @@ export function TaskRowItem({
 				<p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-meta text-ink-4">
 					<PriorityBadge priority={task.priority} className={done ? "opacity-50" : undefined} />
 					<span>
-						{task.domain?.name ?? "—"}
+						<span className="inline-flex items-center gap-1">
+							<ColorDot color={task.domain?.color} />
+							{task.domain?.name ?? "—"}
+						</span>
 						{task.project?.name ? ` · ${task.project.name}` : ""}
 						{!scheduled && task.due_date && (
 							<span className={overdue ? "text-accent-slip" : ""}>

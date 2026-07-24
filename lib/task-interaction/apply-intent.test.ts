@@ -18,7 +18,7 @@ function task(partial: Partial<TaskRow> & Pick<TaskRow, "id" | "title">): TaskRo
 		source: "manual",
 		created_at: "2026-07-01T12:00:00.000Z",
 		completed_at: null,
-		domain: { id: "domain-1", name: "Engine" },
+		domain: { id: "domain-1", name: "Engine", color: null },
 		project: null,
 		...partial,
 	};

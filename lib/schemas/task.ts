@@ -36,6 +36,7 @@ export const TaskSchema = z.object({
 		.object({
 			id: z.string().uuid(),
 			name: z.string(),
+			color: z.string().nullable(),
 		})
 		.nullable()
 		.optional(),
@@ -114,7 +115,10 @@ export const TaskRowSchema = z.object({
 	source: z.string(),
 	created_at: z.string(),
 	completed_at: z.string().nullable(),
-	domain: z.object({ id: z.string().uuid(), name: z.string() }).nullable().optional(),
+	domain: z
+		.object({ id: z.string().uuid(), name: z.string(), color: z.string().nullable() })
+		.nullable()
+		.optional(),
 	project: z.object({ id: z.string().uuid(), name: z.string() }).nullable().optional(),
 });
 export type TaskRow = z.infer<typeof TaskRowSchema>;
@@ -122,7 +126,7 @@ export type TaskRow = z.infer<typeof TaskRowSchema>;
 // Plain columns select as-is; joins need PostgREST's embedded-resource
 // syntax. Keep this map in sync with any relation added to TaskRowSchema.
 const TASK_JOIN_SELECTS: Record<string, string> = {
-	domain: "domain:stewardship_domains(id, name)",
+	domain: "domain:stewardship_domains(id, name, color)",
 	project: "project:projects(id, name)",
 };
 
