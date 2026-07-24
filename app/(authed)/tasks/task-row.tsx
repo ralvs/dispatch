@@ -32,6 +32,7 @@ export function TaskRowItem({
 	manageable = true,
 	initialEditing = false,
 	handlers,
+	noteId,
 }: {
 	task: TaskRow;
 	todayIso: string;
@@ -42,6 +43,8 @@ export function TaskRowItem({
 	/** Open the edit form on mount (deep-link from Today via `?edit=`). */
 	initialEditing?: boolean;
 	handlers: TaskRowHandlers;
+	/** Linked note id, if any — renders a quiet glyph in the meta line. */
+	noteId?: string;
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(initialEditing);
@@ -217,6 +220,16 @@ export function TaskRowItem({
 							</span>
 						)}
 					</span>
+					{noteId && (
+						<Link
+							href={`/notes/${noteId}`}
+							aria-label="View linked note"
+							onClick={(e) => e.stopPropagation()}
+							className="text-ink-4 hover:text-ink"
+						>
+							¶
+						</Link>
+					)}
 				</p>
 			</div>
 			<div className="flex shrink-0 items-center gap-1 self-center">

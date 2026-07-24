@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireOwnerPage } from "@/lib/auth";
 import { todayInTz } from "@/lib/dates";
 import { listDomains } from "@/lib/services/domains";
+import { listNoteIdsForTargets } from "@/lib/services/note-links";
 import { getAppTimezone } from "@/lib/services/settings";
 import { listRecentDone, listTasks } from "@/lib/services/tasks";
 import { TaskList } from "./task-list";
@@ -21,6 +22,13 @@ export default async function TasksPage({
 	]);
 	const todayIso = todayInTz(tz);
 	const inboxCount = openTasks.filter((t) => t.domain?.name === "Inbox").length;
+	const taskNoteIds = Object.fromEntries(
+		await listNoteIdsForTargets(
+			sb,
+			"task",
+			openTasks.map((t) => t.id),
+		),
+	);
 
 	return (
 		<div>
@@ -40,6 +48,7 @@ export default async function TasksPage({
 				todayIso={todayIso}
 				domains={domains}
 				editTaskId={editTaskId ?? null}
+				taskNoteIds={taskNoteIds}
 			/>
 		</div>
 	);

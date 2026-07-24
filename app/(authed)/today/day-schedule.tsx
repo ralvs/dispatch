@@ -84,11 +84,14 @@ export function DaySchedule({
 	schedule,
 	todayIso,
 	nowUtcIso,
+	eventNoteIds,
 }: {
 	schedule: DayScheduleData;
 	todayIso: string;
 	/** Wall-clock "now" as UTC ISO — grays out timed events that have ended. */
 	nowUtcIso: string;
+	/** event id -> linked note id, for the meeting-note affordance on event rows. */
+	eventNoteIds?: Record<string, string>;
 }) {
 	const [, startTransition] = useTransition();
 	const seed = useMemo(() => collectOpenTasks(schedule), [schedule]);
@@ -151,6 +154,7 @@ export function DaySchedule({
 										todayIso={todayIso}
 										nowUtcIso={nowUtcIso}
 										handlers={item.kind === "task" ? handlersFor(item.task) : undefined}
+										noteId={item.kind === "event" ? eventNoteIds?.[item.event.id] : undefined}
 									/>
 								))}
 							</Band>
@@ -165,6 +169,7 @@ export function DaySchedule({
 										todayIso={todayIso}
 										nowUtcIso={nowUtcIso}
 										handlers={item.kind === "task" ? handlersFor(item.task) : undefined}
+										noteId={item.kind === "event" ? eventNoteIds?.[item.event.id] : undefined}
 									/>
 								))}
 							</Band>

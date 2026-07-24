@@ -1,5 +1,11 @@
+"use client";
+
+import Link from "next/link";
+import { useTransition } from "react";
+import { runAction } from "@/lib/client/toast";
 import type { DayScheduleItem } from "@/lib/services/briefing";
 import { type TaskRowHandlers, TaskRowItem } from "../tasks/task-row";
+import { createMeetingNoteForEventAction } from "./actions";
 
 function IconCalendar({ className }: { className?: string }) {
 	return (
@@ -21,14 +27,53 @@ function IconCalendar({ className }: { className?: string }) {
 	);
 }
 
+/** Quiet link/create affordance for an event's meeting note — mirrors the
+ * mono metadata styling used elsewhere in Today. */
+function MeetingNoteGlyph({ eventId, noteId }: { eventId: string; noteId?: string }) {
+	const [pending, startTransition] = useTransition();
+
+	if (noteId) {
+		return (
+			<Link
+				href={`/notes/${noteId}`}
+				aria-label="View meeting note"
+				className="shrink-0 self-center font-mono text-meta text-ink-4 hover:text-ink"
+			>
+				¶
+			</Link>
+		);
+	}
+
+	return (
+		<button
+			type="button"
+			aria-label="Create meeting note"
+			disabled={pending}
+			onClick={() => {
+				startTransition(async () => {
+					await runAction(
+						() => createMeetingNoteForEventAction(eventId),
+						"Couldn't create a note for this event. Try again.",
+					);
+				});
+			}}
+			className="shrink-0 self-center font-mono text-meta text-ink-4 hover:text-ink disabled:opacity-50"
+		>
+			¶
+		</button>
+	);
+}
+
 // The calendar icon is what says "this is an event, not a task" — it sits in
 // the checkbox's column so events and tasks line up in the same band.
 function EventRow({
 	item,
 	past,
+	noteId,
 }: {
 	item: Extract<DayScheduleItem, { kind: "event" }>;
 	past: boolean;
+	noteId?: string;
 }) {
 	const { event, time } = item;
 	const meta = [event.calendar_name, event.location].filter(Boolean).join(" · ");
@@ -54,6 +99,7 @@ function EventRow({
 				<p className={`truncate text-sm ${past ? "text-ink-4" : "text-ink"}`}>{event.title}</p>
 				{meta && <p className="mt-0.5 truncate font-mono text-meta text-ink-4">{meta}</p>}
 			</div>
+			<MeetingNoteGlyph eventId={event.id} noteId={noteId} />
 		</li>
 	);
 }
@@ -67,12 +113,15 @@ export function ScheduleRow({
 	todayIso,
 	handlers,
 	nowUtcIso,
+	noteId,
 }: {
 	item: DayScheduleItem;
 	todayIso: string;
 	handlers?: TaskRowHandlers;
 	/** Used to gray out timed events that have already ended. */
 	nowUtcIso?: string;
+	/** Event rows only: the linked meeting note's id, if any. */
+	noteId?: string;
 }) {
 	if (item.kind === "task") {
 		if (!handlers) return null;
@@ -87,5 +136,5 @@ export function ScheduleRow({
 		);
 	}
 	const past = Boolean(nowUtcIso && item.event.end_at < nowUtcIso);
-	return <EventRow item={item} past={past} />;
+	return <EventRow item={item} past={past} noteId={noteId} />;
 }

@@ -60,6 +60,7 @@ export function TaskList({
 	todayIso,
 	domains,
 	editTaskId,
+	taskNoteIds,
 }: {
 	openTasks: TaskRow[];
 	doneTasks: TaskRow[];
@@ -67,6 +68,8 @@ export function TaskList({
 	domains: TaskDomainOption[];
 	/** From `?edit=` — opens that row's form and cleans the URL. */
 	editTaskId?: string | null;
+	/** task id -> linked note id, for the linked-note glyph on rows. */
+	taskNoteIds?: Record<string, string>;
 }) {
 	const router = useRouter();
 	const [, startTransition] = useTransition();
@@ -147,6 +150,7 @@ export function TaskList({
 								domains={domains}
 								initialEditing={editTaskId === t.id}
 								handlers={handlersFor(t)}
+								noteId={taskNoteIds?.[t.id]}
 							/>
 						))}
 					</ul>

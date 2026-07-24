@@ -157,6 +157,13 @@ export async function listEventsOn(
 	return (data ?? []) as unknown as CalendarEventRow[];
 }
 
+export async function getEvent(sb: SupabaseClient, id: string): Promise<CalendarEventRow | null> {
+	const data = unwrap(
+		await sb.from("calendar_events").select(EVENT_SELECT).eq("id", id).maybeSingle(),
+	);
+	return (data as unknown as CalendarEventRow | null) ?? null;
+}
+
 /** Escapes ilike wildcards so a search term is matched literally. */
 function escapeLike(q: string): string {
 	return q.replace(/[%_\\]/g, (m) => `\\${m}`);
