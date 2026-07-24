@@ -168,11 +168,15 @@ const TAPE_CSS = `
 .dt-flag-label {
 	position: absolute;
 	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
 	background: var(--bg);
 	padding: 0 3px;
 	transform: translateX(-50%);
 	font-family: var(--font-mono);
 	font-size: 9px;
+	line-height: 1.4;
 	color: var(--ink-3);
 	white-space: nowrap;
 }
@@ -191,19 +195,17 @@ const TAPE_CSS = `
 
 @media (min-width: 48rem) {
 	.dt-tape {
-		padding-top: 64px;
-		padding-bottom: 58px;
+		padding-top: 72px;
+		/* Two-line flags (title over time) hang lower than the old single line. */
+		padding-bottom: 72px;
 	}
 
 	.dt-flag-title {
-		display: inline;
-		color: var(--ink-2);
-	}
-
-	.dt-flag-label {
+		display: block;
 		max-width: 150px;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		color: var(--ink-2);
 	}
 }
 `;
@@ -275,9 +277,11 @@ export function DayTape({
 								<div className={`dt-flag-stem ${item.tier}`} style={{ left: `${left}%` }} />
 								<div className={dotClass} style={{ left: `${left}%` }} />
 								<div className={`dt-flag-label ${item.tier}`} style={{ left: `${left}%` }}>
-									{item.time}
-									{item.top3 && !item.done && <span className="text-warning"> ★</span>}
-									<span className="dt-flag-title"> · {item.title}</span>
+									<span className="dt-flag-title">{item.title}</span>
+									<span>
+										{item.time}
+										{item.top3 && !item.done && <span className="text-warning"> ★</span>}
+									</span>
 								</div>
 							</div>
 						);
