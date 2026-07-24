@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { syncWikilinks } from "@/lib/services/note-links";
 import { createNote, deleteNote, resolveNeedsReview, updateNote } from "@/lib/services/notes";
+import { extractWikilinkIds } from "@/lib/wikilinks";
 
 function revalidateNoteViews(id?: string) {
 	afterMutation("notes.write", id ? { id } : undefined);
@@ -32,10 +34,12 @@ const SaveNoteSchema = z.object({
 export async function saveNoteAction(id: string, input: { title: string | null; body: string }) {
 	const { sb } = await requireOwnerPage();
 	const parsed = SaveNoteSchema.parse(input);
-	await updateNote(sb, z.uuid().parse(id), {
+	const noteId = z.uuid().parse(id);
+	await updateNote(sb, noteId, {
 		title: parsed.title !== null && parsed.title.trim() !== "" ? parsed.title : null,
 		body: parsed.body,
 	});
+	await syncWikilinks(sb, noteId, extractWikilinkIds(parsed.body));
 	revalidateNoteViews(id);
 }
 

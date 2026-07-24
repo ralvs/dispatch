@@ -25,6 +25,7 @@
 		"@tiptap/pm": "^3.28.0",
 		"@tiptap/react": "^3.28.0",
 		"@tiptap/starter-kit": "^3.28.0",
+		"@tiptap/suggestion": "^3.28.0",
 		"ai": "^7.0.26",
 		"ical.js": "^2.2.1",
 		"luxon": "^3.7.2",

@@ -6,12 +6,15 @@ import TaskList from "@tiptap/extension-task-list";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Markdown, type MarkdownStorage } from "tiptap-markdown";
 import { runAction } from "@/lib/client/toast";
 import { createDebouncedSave } from "@/lib/debounced-save";
 import type { NoteListRow } from "@/lib/services/notes";
 import { deleteNoteAction, resolveNeedsReviewAction, saveNoteAction } from "../actions";
+import { Wikilink } from "./wikilink-extension";
+import { createWikilinkSuggestionExtension, type WikilinkCandidate } from "./wikilink-suggestion";
 
 // Markdown has no syntax for an empty paragraph, so blank lines between blocks
 // were dropped on save — and two different lists left adjacent in the stored
@@ -59,7 +62,14 @@ type SaveState = "idle" | "saving" | "saved";
 // always editable, markdown shortcuts format as you type, and saving is
 // autosave — debounced 2s, flushed on blur/unmount. The stored body stays
 // plain markdown text, verbatim (iron rule #5).
-export function NoteEditor({ note }: { note: NoteListRow }) {
+export function NoteEditor({
+	note,
+	noteTitles,
+}: {
+	note: NoteListRow;
+	noteTitles: WikilinkCandidate[];
+}) {
+	const router = useRouter();
 	const [pending, startTransition] = useTransition();
 	const [saveState, setSaveState] = useState<SaveState>("idle");
 	const titleRef = useRef(note.title ?? "");
@@ -114,6 +124,8 @@ export function NoteEditor({ note }: { note: NoteListRow }) {
 			ParagraphKeepBlank,
 			TaskList,
 			TaskItem.configure({ nested: true }),
+			Wikilink,
+			createWikilinkSuggestionExtension(noteTitles, note.id),
 			Markdown.configure({ html: false }),
 		],
 		content: note.body,
@@ -121,6 +133,11 @@ export function NoteEditor({ note }: { note: NoteListRow }) {
 			attributes: {
 				"aria-label": "Note body",
 				class: "min-h-64 whitespace-pre-wrap text-sm text-ink outline-none",
+			},
+			handleClickOn: (_view, _pos, node) => {
+				if (node.type.name !== "wikilink") return false;
+				router.push(`/notes/${node.attrs.id}`);
+				return true;
 			},
 		},
 		onUpdate: ({ editor }) => {

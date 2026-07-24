@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
-import { getNote } from "@/lib/services/notes";
+import { getNote, listNoteTitles } from "@/lib/services/notes";
 import { NoteEditor } from "./note-editor";
 
 export default async function NotePage({ params }: { params: Promise<{ id: string }> }) {
@@ -11,7 +11,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 	if (!parsedId.success) notFound();
 
 	const { sb } = await requireOwnerPage();
-	const note = await getNote(sb, parsedId.data);
+	const [note, noteTitles] = await Promise.all([getNote(sb, parsedId.data), listNoteTitles(sb)]);
 	if (!note) notFound();
 
 	return (
@@ -24,7 +24,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 					← Notes
 				</Link>
 			</nav>
-			<NoteEditor note={note} />
+			<NoteEditor note={note} noteTitles={noteTitles} />
 		</div>
 	);
 }
