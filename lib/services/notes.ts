@@ -112,6 +112,16 @@ export async function deleteNote(sb: SupabaseClient, id: string): Promise<void> 
 	unwrap(await sb.from("notes").delete().eq("id", id));
 }
 
+/** Minimal id/title/body projection for wikilink resolution — all notes, no filtering. */
+export async function listNoteTitles(
+	sb: SupabaseClient,
+): Promise<Array<{ id: string; title: string | null; body: string }>> {
+	const data = unwrap(
+		await sb.from("notes").select("id, title, body").order("created_at", { ascending: false }),
+	);
+	return (data ?? []) as unknown as Array<{ id: string; title: string | null; body: string }>;
+}
+
 export async function countNeedsReview(sb: SupabaseClient): Promise<number> {
 	return unwrapCount(
 		await sb.from("notes").select("*", { count: "exact", head: true }).eq("needs_review", true),

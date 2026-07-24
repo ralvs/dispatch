@@ -1,19 +1,10 @@
 import Link from "next/link";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatInstant } from "@/lib/dates";
+import { displayTitle } from "@/lib/note-display";
 import { listNotes, type NoteListRow } from "@/lib/services/notes";
 import { getAppTimezone } from "@/lib/services/settings";
 import { createBlankNoteAction } from "./actions";
-
-// Mem/Apple Notes-style index: titles only, newest first; the body is edited
-// on the note's own page (docs/adr/0012). Untitled notes fall back to their
-// first body line.
-function displayTitle(note: NoteListRow): string {
-	const title = note.title?.trim();
-	if (title) return title;
-	const firstLine = note.body.split("\n")[0]?.trim();
-	return firstLine || "Untitled";
-}
 
 function NoteLinkRow({ note, tz }: { note: NoteListRow; tz: string }) {
 	return (
