@@ -2,10 +2,11 @@
 
 import { useTransition } from "react";
 import { triageTaskAction } from "@/app/(authed)/tasks/actions";
+import { ColorDot } from "@/components/color-dot";
 import { runAction } from "@/lib/client/toast";
 import type { TaskRow } from "@/lib/services/tasks";
 
-type DomainOption = { id: string; name: string; is_system: boolean };
+type DomainOption = { id: string; name: string; is_system: boolean; color: string | null };
 
 export function TriageRow({ task, domains }: { task: TaskRow; domains: DomainOption[] }) {
 	const [pending, startTransition] = useTransition();
@@ -25,8 +26,9 @@ export function TriageRow({ task, domains }: { task: TaskRow; domains: DomainOpt
 								await runAction(() => triageTaskAction(task.id, d.id), "Couldn't triage task.");
 							})
 						}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+						className="inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 					>
+						<ColorDot color={d.color} />
 						{d.name}
 					</button>
 				))}

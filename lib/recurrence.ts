@@ -33,6 +33,11 @@ export function isRecurrencePattern(s: unknown): s is RecurrencePattern {
 	return typeof s === "string" && (RECURRENCE_PATTERNS as readonly string[]).includes(s);
 }
 
+/** Human label for a stored rule string, or null when it isn't a known pattern. */
+export function recurrenceLabel(rule: string | null | undefined): string | null {
+	return isRecurrencePattern(rule) ? RECURRENCE_LABELS[rule] : null;
+}
+
 // ─── Date math ────────────────────────────────────────────────────────
 //
 // All dates round-trip as YYYY-MM-DD strings — that's the wire format

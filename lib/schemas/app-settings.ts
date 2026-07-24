@@ -14,14 +14,27 @@ const TimezoneSchema = z
 	.min(1)
 	.regex(/^[A-Za-z_]+(?:\/[A-Za-z_+-]+){0,2}$/, "Must be an IANA timezone string.");
 
+// Whole minutes before the due instant a reminder fires. 0 = at the due
+// time itself. Capped at 2 days — beyond that isn't a "reminder" anymore.
+const ReminderOffsetMinutesSchema = z.coerce.number().int().min(0).max(2880);
+
+// Wall-clock HH:MM (or HH:MM:SS, matching how Postgres `time` round-trips).
+const ReminderAnchorTimeSchema = z
+	.string()
+	.regex(/^\d{2}:\d{2}(:\d{2})?$/, "Must be a wall-clock time (HH:MM).");
+
 export const AppSettingsSchema = z.object({
 	id: z.literal(true),
 	timezone: TimezoneSchema,
+	reminder_offset_minutes: ReminderOffsetMinutesSchema,
+	reminder_anchor_time: ReminderAnchorTimeSchema,
 	updated_at: z.string().datetime({ offset: true }),
 });
 
 export const UpdateAppSettingsSchema = z.object({
 	timezone: TimezoneSchema.optional(),
+	reminder_offset_minutes: ReminderOffsetMinutesSchema.optional(),
+	reminder_anchor_time: ReminderAnchorTimeSchema.optional(),
 });
 
 export type AppSettings = z.infer<typeof AppSettingsSchema>;

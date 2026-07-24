@@ -167,6 +167,8 @@ describe("assembleDoingToday", () => {
 });
 
 const SP = "America/Sao_Paulo";
+// Midday in SP (UTC-3) on TODAY — a stable "now" for missed-routine checks.
+const NOW_MS = Date.parse(`${TODAY}T15:00:00.000Z`);
 
 function domain(overrides: Partial<DomainRow> & { id: string; name: string }): DomainRow {
 	return {
@@ -177,6 +179,7 @@ function domain(overrides: Partial<DomainRow> & { id: string; name: string }): D
 		active: true,
 		is_system: false,
 		last_shipped_at: null,
+		color: null,
 		created_at: "2026-01-01T00:00:00.000Z",
 		updated_at: "2026-01-01T00:00:00.000Z",
 		...overrides,
@@ -339,6 +342,26 @@ describe("deriveBriefLines", () => {
 		const lines = deriveBriefLines([d], {}, TODAY, SP);
 		expect(lines[0].href).toBe("/settings#domain-abc-123");
 	});
+
+	it("sets lastTouched for a domain with a real touch", () => {
+		const d = domain({ id: "d1", name: "Touched", last_shipped_at: "2026-06-01T12:00:00.000Z" });
+		const lines = deriveBriefLines([d], {}, TODAY, SP);
+		expect(lines[0].lastTouched).not.toBeNull();
+		expect(typeof lines[0].lastTouched).toBe("string");
+	});
+
+	it("leaves lastTouched null for a domain that was never touched, while daysSince still runs off created_at", () => {
+		const d = domain({
+			id: "d1",
+			name: "NeverTouched",
+			last_shipped_at: null,
+			created_at: "2026-06-01T12:00:00.000Z",
+		});
+		const lines = deriveBriefLines([d], {}, TODAY, SP);
+		expect(lines).toHaveLength(1);
+		expect(lines[0].lastTouched).toBeNull();
+		expect(lines[0].daysSince).toBeGreaterThan(0);
+	});
 });
 
 describe("bucketRoutines", () => {
@@ -348,7 +371,13 @@ describe("bucketRoutines", () => {
 			routine({ id: "r2", name: "Run", time_of_day: "morning" }),
 			routine({ id: "r3", name: "Stretch", time_of_day: "morning" }),
 		];
-		const buckets = bucketRoutines(routines, [], TODAY);
+		const buckets = bucketRoutines({
+			routines,
+			completions: [],
+			todayIso: TODAY,
+			tz: SP,
+			nowMs: NOW_MS,
+		});
 		expect(buckets.map((b) => b.bucket)).toEqual(["morning", "evening"]);
 		expect(buckets[0].rows.map((r) => r.name)).toEqual(["Run", "Stretch"]);
 	});
@@ -360,15 +389,92 @@ describe("bucketRoutines", () => {
 			completion("r1", "2026-07-14"),
 			completion("r1", TODAY),
 		];
-		const [bucket] = bucketRoutines(routines, completions, TODAY);
+		const [bucket] = bucketRoutines({
+			routines,
+			completions,
+			todayIso: TODAY,
+			tz: SP,
+			nowMs: NOW_MS,
+		});
 		expect(bucket.rows[0]).toMatchObject({ done: true, streak: 3 });
 	});
 
 	it("keeps yesterday's streak alive when today is not done yet", () => {
 		const routines = [routine({ id: "r1", name: "Run" })];
 		const completions = [completion("r1", "2026-07-13"), completion("r1", "2026-07-14")];
-		const [bucket] = bucketRoutines(routines, completions, TODAY);
+		const [bucket] = bucketRoutines({
+			routines,
+			completions,
+			todayIso: TODAY,
+			tz: SP,
+			nowMs: NOW_MS,
+		});
 		expect(bucket.rows[0]).toMatchObject({ done: false, streak: 2 });
+	});
+
+	it("flags a routine as missed when its time has passed and it's not done", () => {
+		// NOW_MS is 12:00 SP; 09:00 has already passed.
+		const routines = [routine({ id: "r1", name: "Run", specific_time: "09:00:00" })];
+		const [bucket] = bucketRoutines({
+			routines,
+			completions: [],
+			todayIso: TODAY,
+			tz: SP,
+			nowMs: NOW_MS,
+		});
+		expect(bucket.rows[0].missed).toBe(true);
+	});
+
+	it("is not missed when its time hasn't arrived yet", () => {
+		const routines = [routine({ id: "r1", name: "Run", specific_time: "18:00:00" })];
+		const [bucket] = bucketRoutines({
+			routines,
+			completions: [],
+			todayIso: TODAY,
+			tz: SP,
+			nowMs: NOW_MS,
+		});
+		expect(bucket.rows[0].missed).toBe(false);
+	});
+
+	it("is not missed once done, even past its time", () => {
+		const routines = [routine({ id: "r1", name: "Run", specific_time: "09:00:00" })];
+		const completions = [completion("r1", TODAY)];
+		const [bucket] = bucketRoutines({
+			routines,
+			completions,
+			todayIso: TODAY,
+			tz: SP,
+			nowMs: NOW_MS,
+		});
+		expect(bucket.rows[0].missed).toBe(false);
+	});
+
+	it("is not missed when there is no specific time", () => {
+		const routines = [routine({ id: "r1", name: "Run", specific_time: null })];
+		const [bucket] = bucketRoutines({
+			routines,
+			completions: [],
+			todayIso: TODAY,
+			tz: SP,
+			nowMs: NOW_MS,
+		});
+		expect(bucket.rows[0].missed).toBe(false);
+	});
+
+	it("degrades to not-missed for a malformed time, without throwing", () => {
+		const routines = [routine({ id: "r1", name: "Run", specific_time: "25:99" })];
+		expect(() =>
+			bucketRoutines({ routines, completions: [], todayIso: TODAY, tz: SP, nowMs: NOW_MS }),
+		).not.toThrow();
+		const [bucket] = bucketRoutines({
+			routines,
+			completions: [],
+			todayIso: TODAY,
+			tz: SP,
+			nowMs: NOW_MS,
+		});
+		expect(bucket.rows[0].missed).toBe(false);
 	});
 });
 

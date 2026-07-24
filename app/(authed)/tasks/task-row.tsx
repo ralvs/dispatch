@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { type KeyboardEvent, useEffect, useRef, useState, useTransition } from "react";
+import { ColorDot } from "@/components/color-dot";
 import { runAction } from "@/lib/client/toast";
-import { formatDueLabel } from "@/lib/dates";
-import { RECURRENCE_GLYPH } from "@/lib/recurrence";
+import { formatDueLabel, formatInstant } from "@/lib/dates";
+import { RECURRENCE_GLYPH, recurrenceLabel } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/services/tasks";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
 import { updateTaskAction } from "./actions";
@@ -33,6 +34,7 @@ export function TaskRowItem({
 	initialEditing = false,
 	handlers,
 	noteId,
+	tz,
 }: {
 	task: TaskRow;
 	todayIso: string;
@@ -45,6 +47,12 @@ export function TaskRowItem({
 	handlers: TaskRowHandlers;
 	/** Linked note id, if any — renders a quiet glyph in the meta line. */
 	noteId?: string;
+	/**
+	 * Optional on purpose: only "Recently done" (Tasks page) needs it to show a
+	 * completion time. Today's call sites never pass it because completed tasks
+	 * are filtered out of every band before they'd reach this component.
+	 */
+	tz?: string;
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(initialEditing);
@@ -202,16 +210,14 @@ export function TaskRowItem({
 							{task.title}
 						</Link>
 					)}
-					{task.recurrence_rule && (
-						<span className="shrink-0 text-ink-4" title={task.recurrence_rule}>
-							{RECURRENCE_GLYPH}
-						</span>
-					)}
 				</p>
 				<p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-meta text-ink-4">
 					<PriorityBadge priority={task.priority} className={done ? "opacity-50" : undefined} />
 					<span>
-						{task.domain?.name ?? "—"}
+						<span className="inline-flex items-center gap-1">
+							<ColorDot color={task.domain?.color} />
+							{task.domain?.name ?? "—"}
+						</span>
 						{task.project?.name ? ` · ${task.project.name}` : ""}
 						{!scheduled && task.due_date && (
 							<span className={overdue ? "text-accent-slip" : ""}>
@@ -219,6 +225,15 @@ export function TaskRowItem({
 								{formatDueLabel(task.due_date, todayIso)}
 								{task.due_time ? ` ${task.due_time.slice(0, 5)}` : ""}
 							</span>
+						)}
+						{recurrenceLabel(task.recurrence_rule) && (
+							<span>
+								{" · "}
+								{RECURRENCE_GLYPH} {recurrenceLabel(task.recurrence_rule)}
+							</span>
+						)}
+						{done && task.completed_at && tz && (
+							<span>{` · ${formatInstant(task.completed_at, tz, "HH:mm")}`}</span>
 						)}
 					</span>
 					{noteId && (

@@ -6,7 +6,9 @@ import {
 	instantFromLocal,
 	isoWeek,
 	isValidTimezone,
+	isWallClockTime,
 	shiftDay,
+	shiftMinutes,
 	startOfWeek,
 	todayInTz,
 } from "./dates";
@@ -73,6 +75,41 @@ describe("isoWeek / formatDateline", () => {
 	it("throws on an invalid date", () => {
 		expect(() => isoWeek("not-a-date")).toThrow();
 		expect(() => formatDateline("not-a-date")).toThrow();
+	});
+});
+
+describe("shiftMinutes", () => {
+	it("shifts forward", () => {
+		expect(shiftMinutes("2026-07-14T12:00:00.000Z", 30)).toBe("2026-07-14T12:30:00.000Z");
+	});
+
+	it("shifts backward", () => {
+		expect(shiftMinutes("2026-07-14T12:00:00.000Z", -30)).toBe("2026-07-14T11:30:00.000Z");
+	});
+
+	it("crosses a UTC day boundary", () => {
+		expect(shiftMinutes("2026-07-14T00:10:00.000Z", -20)).toBe("2026-07-13T23:50:00.000Z");
+	});
+});
+
+describe("isWallClockTime", () => {
+	it("accepts HH:MM and HH:MM:SS", () => {
+		expect(isWallClockTime("09:00")).toBe(true);
+		expect(isWallClockTime("09:00:00")).toBe(true);
+	});
+
+	// A Postgres `time` written from an expression rather than a literal comes
+	// back with a fraction. Rejecting it is silent — the caller falls back to a
+	// default anchor and the reminder fires at the wrong hour.
+	it("accepts the fractional seconds a Postgres time column can return", () => {
+		expect(isWallClockTime("17:20:07.87081")).toBe(true);
+	});
+
+	it("rejects malformed or missing values", () => {
+		expect(isWallClockTime("9:00")).toBe(false);
+		expect(isWallClockTime("sometime")).toBe(false);
+		expect(isWallClockTime("")).toBe(false);
+		expect(isWallClockTime(null)).toBe(false);
 	});
 });
 

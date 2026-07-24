@@ -34,6 +34,14 @@ export function RoutineCheckRow({
 					🔥 {row.streak}
 				</span>
 			)}
+			{row.missed && !row.done && (
+				<span
+					className="font-mono text-meta text-accent-slip"
+					title="Past its time and still unchecked"
+				>
+					⚠ missed
+				</span>
+			)}
 		</li>
 	);
 }

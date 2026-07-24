@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { HexColorSchema } from "@/lib/schemas/color";
 
 export const ProjectStatusSchema = z.enum(["active", "paused", "done", "archived"]);
 export const ProjectTypeSchema = z.enum(["client", "internal", "content"]);
@@ -10,22 +11,6 @@ export type EngagementType = z.infer<typeof EngagementTypeSchema>;
 // since they have no client.
 export const ProjectKindSchema = z.enum(["project", "area"]);
 export type ProjectKind = z.infer<typeof ProjectKindSchema>;
-
-// Curated palette. Picked to read well on the warm linen background
-// (#F6F2EA). Keep this list short — paradox of choice — and stable so
-// every project picker shows the same swatches in the same order.
-export const PROJECT_COLOR_PALETTE = [
-	"#B8442B", // rust (matches our accent)
-	"#3F5B47", // pine
-	"#3A4663", // indigo
-	"#C9A063", // ochre
-	"#7A2E36", // burgundy
-	"#3F6968", // teal
-	"#7A6A8E", // lavender
-	"#7A726B", // stone
-] as const;
-
-const HexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 
 export const ProjectSchema = z.object({
 	id: z.string().uuid(),

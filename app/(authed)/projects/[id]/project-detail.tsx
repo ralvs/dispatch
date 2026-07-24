@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { ColorDot } from "@/components/color-dot";
 import { runAction } from "@/lib/client/toast";
 import type { DomainRow } from "@/lib/services/domains";
 import type { MilestoneRow, ProjectRow } from "@/lib/services/projects";
@@ -42,7 +43,7 @@ export function ProjectDetail({
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
-	const domainName = domains.find((d) => d.id === project.domain_id)?.name;
+	const domain = domains.find((d) => d.id === project.domain_id);
 
 	function saveDetails(formData: FormData) {
 		startTransition(async () => {
@@ -59,18 +60,18 @@ export function ProjectDetail({
 			<header className="hairline-strong pb-4">
 				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Project</p>
 				<h1 className="mt-1 flex items-center gap-2 font-serif text-3xl text-ink">
-					{project.color && (
-						<span
-							aria-hidden="true"
-							className="inline-block size-3 rounded-full"
-							style={{ backgroundColor: project.color }}
-						/>
-					)}
+					<ColorDot color={project.color} />
 					{project.name}
 				</h1>
-				<p className="mt-1 font-mono text-eyebrow uppercase tracking-widest text-ink-4">
+				<p className="mt-1 flex items-center gap-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-4">
 					{project.status}
-					{domainName ? ` · ${domainName}` : ""}
+					{domain && (
+						<>
+							{" · "}
+							<ColorDot color={domain.color} />
+							{domain.name}
+						</>
+					)}
 				</p>
 			</header>
 

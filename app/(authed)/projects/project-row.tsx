@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ColorDot } from "@/components/color-dot";
 import type { ProjectRow } from "@/lib/services/projects";
 
 export function ProjectRowItem({ project }: { project: ProjectRow }) {
@@ -6,13 +7,7 @@ export function ProjectRowItem({ project }: { project: ProjectRow }) {
 		<li className="hairline py-3">
 			<Link href={`/projects/${project.id}`} className="flex items-baseline justify-between gap-3">
 				<span className="flex items-center gap-2">
-					{project.color && (
-						<span
-							aria-hidden="true"
-							className="inline-block size-2.5 rounded-full"
-							style={{ backgroundColor: project.color }}
-						/>
-					)}
+					<ColorDot color={project.color} />
 					<span className="font-serif text-base text-ink">{project.name}</span>
 				</span>
 				{project.type && (

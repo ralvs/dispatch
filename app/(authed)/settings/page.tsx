@@ -2,16 +2,18 @@ import { PushToggle } from "@/components/push-toggle";
 import { requireOwnerPage } from "@/lib/auth";
 import { cadenceThresholdDays } from "@/lib/services/briefing";
 import { listDomains } from "@/lib/services/domains";
-import { getAppTimezone } from "@/lib/services/settings";
+import { getAppTimezone, getReminderSettings } from "@/lib/services/settings";
 import { DomainForm } from "./domain-form";
 import { DomainRowItem } from "./domain-row";
+import { ReminderForm } from "./reminder-form";
 import { TimezoneForm } from "./timezone-form";
 
 export default async function SettingsPage() {
 	const { sb } = await requireOwnerPage();
-	const [domains, tz] = await Promise.all([
+	const [domains, tz, reminderSettings] = await Promise.all([
 		listDomains(sb, { includeArchived: true }),
 		getAppTimezone(sb),
+		getReminderSettings(sb),
 	]);
 	const active = domains.filter((d) => d.active);
 	const archived = domains.filter((d) => !d.active);
@@ -75,6 +77,10 @@ export default async function SettingsPage() {
 			<section className="mt-8" aria-label="App">
 				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">App</h2>
 				<TimezoneForm current={tz} />
+				<ReminderForm
+					offsetMinutes={reminderSettings.offsetMinutes}
+					anchorTime={reminderSettings.anchorTime}
+				/>
 			</section>
 		</div>
 	);

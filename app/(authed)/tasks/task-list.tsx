@@ -42,7 +42,7 @@ function optimisticTaskFromText(text: string): TaskRow {
 		source: "manual",
 		created_at: now,
 		completed_at: null,
-		domain: { id: INBOX_DOMAIN_ID, name: "Inbox" },
+		domain: { id: INBOX_DOMAIN_ID, name: "Inbox", color: null },
 		project: null,
 	};
 }
@@ -74,7 +74,9 @@ function optimisticTaskFromForm(formData: FormData, domains: TaskDomainOption[])
 		source: "manual",
 		created_at: now,
 		completed_at: null,
-		domain: domain ? { id: domain.id, name: domain.name } : { id: domainId, name: "Inbox" },
+		domain: domain
+			? { id: domain.id, name: domain.name, color: domain.color ?? null }
+			: { id: domainId, name: "Inbox", color: null },
 		project: null,
 	};
 }
@@ -86,6 +88,7 @@ export function TaskList({
 	domains,
 	editTaskId,
 	taskNoteIds,
+	tz,
 }: {
 	openTasks: TaskRow[];
 	doneTasks: TaskRow[];
@@ -95,6 +98,8 @@ export function TaskList({
 	editTaskId?: string | null;
 	/** task id -> linked note id, for the linked-note glyph on rows. */
 	taskNoteIds?: Record<string, string>;
+	/** App timezone — threaded to rows so "Recently done" can show a completion time. */
+	tz: string;
 }) {
 	const router = useRouter();
 	const [, startTransition] = useTransition();
@@ -252,6 +257,7 @@ export function TaskList({
 								domains={domains}
 								initialEditing={editTaskId === t.id}
 								handlers={handlersFor(t)}
+								tz={tz}
 							/>
 						))}
 					</ul>

@@ -16,6 +16,7 @@ export type MutationKind =
 	| "notification.write"
 	| "settings.domain"
 	| "settings.timezone"
+	| "settings.reminders"
 	| "theme"
 	| "today.only"
 	| "notes.write"
@@ -58,6 +59,9 @@ export function afterMutation(kind: MutationKind, detail?: { id?: string }): voi
 		case "settings.timezone":
 		case "theme":
 			revalidatePath("/", "layout");
+			return;
+		case "settings.reminders":
+			revalidatePath("/settings");
 			return;
 		case "today.only":
 			revalidatePath("/today");
