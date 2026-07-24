@@ -14,7 +14,15 @@ import { createQuote } from "@/lib/services/quotes";
 import { createTask } from "@/lib/services/tasks";
 
 const sb = {} as SupabaseClient;
-const PROV = { capturedId: "cap-1", transcript: "verbatim text", tz: "America/Sao_Paulo" };
+const PROV = {
+	capturedId: "cap-1",
+	transcript: "verbatim text",
+	tz: "America/Sao_Paulo",
+	routing: {
+		domains: [{ id: "dom-home", name: "Home" }],
+		projects: [{ id: "proj-reviews", name: "Reviews", domain_id: "dom-home" }],
+	},
+};
 
 beforeEach(() => {
 	vi.clearAllMocks();
@@ -68,6 +76,68 @@ describe("runActions", () => {
 		expect(createNeedsReviewNote).toHaveBeenCalledWith(
 			sb,
 			expect.objectContaining({ proposed_kind: "create_project", origin_capture_id: "cap-1" }),
+		);
+	});
+
+	it("resolves domain/project routing for create_task", async () => {
+		(createTask as Mock).mockResolvedValue({ id: "task-1" });
+
+		const actions: CaptureAction[] = [
+			{ action: "create_task", title: "ship it", project: "Reviews" },
+		];
+
+		await runActions(sb, actions, PROV);
+
+		expect(createTask).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({
+				title: "ship it",
+				domain_id: "dom-home",
+				project_id: "proj-reviews",
+				notes: null,
+			}),
+		);
+	});
+
+	it("falls back to Inbox and appends an unresolved mention when routing misses", async () => {
+		(createTask as Mock).mockResolvedValue({ id: "task-1" });
+
+		const actions: CaptureAction[] = [
+			{ action: "create_task", title: "ship it", project: "Ghost project", notes: "context" },
+		];
+
+		await runActions(sb, actions, PROV);
+
+		expect(createTask).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({
+				domain_id: null,
+				project_id: null,
+				notes: 'context\n[capture: unresolved project "Ghost project"]',
+			}),
+		);
+	});
+
+	it("passes recurrence_rule and notes through to createTask", async () => {
+		(createTask as Mock).mockResolvedValue({ id: "task-1" });
+
+		const actions: CaptureAction[] = [
+			{
+				action: "create_task",
+				title: "water plants",
+				notes: "front porch pots",
+				recurrence_rule: "weekly",
+			},
+		];
+
+		await runActions(sb, actions, PROV);
+
+		expect(createTask).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({
+				notes: "front porch pots",
+				recurrence_rule: "weekly",
+			}),
 		);
 	});
 

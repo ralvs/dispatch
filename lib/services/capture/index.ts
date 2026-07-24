@@ -4,6 +4,7 @@ import { parse } from "@/lib/ai/parser";
 import { nowUtc, todayInTz } from "@/lib/dates";
 import type { CaptureAction } from "@/lib/schemas/capture";
 import { runActions } from "@/lib/services/capture/executor";
+import { fetchRoutingLists } from "@/lib/services/capture/resolve";
 import { markParsed, persistRaw } from "@/lib/services/capture/store";
 import { createNeedsReviewNote } from "@/lib/services/notes";
 import { getAppTimezone } from "@/lib/services/settings";
@@ -85,7 +86,14 @@ async function process(
 ): Promise<CapturedRecord> {
 	// Parse (typed fallback). Relative dates resolve against the app tz.
 	const tz = await getAppTimezone(sb);
-	const parsed = await parse(raw.text, { tz, todayIso: todayInTz(tz), nowUtc: nowUtc() });
+	const routing = await fetchRoutingLists(sb);
+	const parsed = await parse(raw.text, {
+		tz,
+		todayIso: todayInTz(tz),
+		nowUtc: nowUtc(),
+		domains: routing.domains.map((d) => d.name),
+		projects: routing.projects.map((p) => p.name),
+	});
 
 	// A hard parser failure degrades the whole capture to one needs_review note,
 	// storing the transcript verbatim (no model in the loop).
@@ -111,7 +119,7 @@ async function process(
 	const actions: CaptureAction[] = parsed.ok
 		? parsed.actions
 		: [{ action: "create_note", body: raw.text, source_type: "own_thought" }];
-	const results = await runActions(sb, actions, { capturedId, transcript: raw.text, tz });
+	const results = await runActions(sb, actions, { capturedId, transcript: raw.text, tz, routing });
 
 	// Terminal marker (best-effort — markParsed never throws).
 	await markParsed(sb, capturedId);
