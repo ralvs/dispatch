@@ -92,16 +92,26 @@ export async function syncWikilinks(
 
 	const missingTargets = validIds.filter((id) => !existingByTarget.has(id));
 	if (missingTargets.length > 0) {
-		unwrap(
-			await sb.from("note_links").insert(
-				missingTargets.map((target_note_id) => ({
-					note_id: noteId,
-					target_type: "note" as const,
-					target_note_id,
-					kind: "wikilink" as const,
-				})),
-			),
-		);
+		// Two overlapping autosaves can compute the same missing targets; the
+		// unique (note_id, target_type, target_note_id, kind) edge index makes
+		// this insert idempotent-in-effect, so a 23505 here means the desired
+		// row already exists and is safe to swallow.
+		try {
+			unwrap(
+				await sb.from("note_links").insert(
+					missingTargets.map((target_note_id) => ({
+						note_id: noteId,
+						target_type: "note" as const,
+						target_note_id,
+						kind: "wikilink" as const,
+					})),
+				),
+			);
+		} catch (err) {
+			if (!(err instanceof ServiceError && err.code === "23505")) {
+				throw err;
+			}
+		}
 	}
 }
 

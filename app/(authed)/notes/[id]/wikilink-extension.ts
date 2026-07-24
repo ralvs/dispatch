@@ -112,6 +112,10 @@ export const Wikilink = Node.create({
 								const [full, id, rawLabel] = match;
 								if (!id || rawLabel === undefined) return false;
 
+								// Silent mode is a lookahead check (e.g. state.skipToken balancing
+								// pairs) — it must still report the match and advance state.pos,
+								// but must not push tokens, mirroring markdown-it's own autolink
+								// rule.
 								if (!silent) {
 									const token = state.push("wikilink", "a", 0);
 									token.attrSet("id", id);
