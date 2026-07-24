@@ -152,3 +152,19 @@ export async function markNotification(
 ): Promise<void> {
 	unwrap(await sb.from("notifications").update({ status }).eq("id", id));
 }
+
+/**
+ * Flip the whole ledger at once — the "mark all read" / "dismiss all"
+ * affordance, so clearing a backlog isn't one click per row.
+ *
+ * Scoped to rows that aren't already past the target state: marking all read
+ * touches only `unread` (a dismissed row is never resurrected into `read`),
+ * while dismissing takes everything still visible.
+ */
+export async function markAllNotifications(
+	sb: SupabaseClient,
+	status: "read" | "dismissed",
+): Promise<void> {
+	const q = sb.from("notifications").update({ status });
+	unwrap(await (status === "read" ? q.eq("status", "unread") : q.neq("status", "dismissed")));
+}

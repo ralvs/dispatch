@@ -1,6 +1,7 @@
 import { requireOwnerPage } from "@/lib/auth";
 import { listNotifications, unreadCount } from "@/lib/services/notifications";
 import { getAppTimezone } from "@/lib/services/settings";
+import { BulkActions } from "./bulk-actions";
 import { NotificationRow } from "./notification-row";
 
 export default async function NotificationsPage() {
@@ -22,6 +23,7 @@ export default async function NotificationsPage() {
 						? "Every autonomous action, on the record. All read."
 						: `Every autonomous action, on the record. ${unread} unread.`}
 				</p>
+				<BulkActions unread={unread} visible={visible.length} />
 			</header>
 
 			{visible.length === 0 ? (
