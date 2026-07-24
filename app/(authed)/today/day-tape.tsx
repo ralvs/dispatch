@@ -185,8 +185,14 @@ const TAPE_CSS = `
 	bottom: 18px;
 }
 
+/*
+ * Below the axis the pair mirrors: the time stays the line nearest the ruler
+ * (so a flag's time always sits beside its dot) and the title moves outward.
+ * Reversed visually only — the DOM keeps title-then-time reading order.
+ */
 .dt-flag-label.tier-down {
 	top: 32px;
+	flex-direction: column-reverse;
 }
 
 .dt-flag-title {
