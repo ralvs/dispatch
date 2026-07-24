@@ -242,6 +242,13 @@ export type DayScheduleItem =
 export type DaySchedule = {
 	allDay: DayScheduleItem[];
 	timeline: DayScheduleItem[];
+	/**
+	 * Everything starred for today, whatever else it is. A starred task that
+	 * also carries a due time deliberately appears here AND on the timeline:
+	 * the timeline answers "when", this band answers "what matters". Dropping a
+	 * task from it for having a clock time would misreport the day.
+	 */
+	top3: TaskRow[];
 	open: TaskRow[];
 };
 
@@ -319,10 +326,14 @@ export function buildDaySchedule(input: {
 		[...allDay, ...timeline].filter((i) => i.kind === "task").map((i) => i.task.id),
 	);
 	const unplaced = openTasks.filter((t) => !placed.has(t.id));
-	const top3 = unplaced.filter((t) => isTop3Today(t, todayIso));
-	// Same reach as assembleDoingToday: starred first, then anything whose due
-	// date has already arrived (overdue included — it is not on today's spine
-	// but it is certainly open).
+	// Top 3 reaches across every band — a starred task that landed on the
+	// timeline still belongs to the day's shortlist. Never capped: the 3-slot
+	// rule bounds it in practice, and silently hiding a fourth star would be
+	// worse than showing it.
+	const top3 = openTasks.filter((t) => isTop3Today(t, todayIso));
+	// Open is what is left over: anything unplaced whose due date has already
+	// arrived (overdue included — not on today's spine, but certainly open).
+	// Starred rows are excluded because the band above already carries them.
 	const arrived = unplaced.filter(
 		(t) => !isTop3Today(t, todayIso) && t.due_date !== null && t.due_date <= todayIso,
 	);
@@ -330,7 +341,8 @@ export function buildDaySchedule(input: {
 	return {
 		allDay: allDay.sort(compareItems),
 		timeline: timeline.sort(compareItems),
-		open: [...top3, ...arrived].slice(0, OPEN_CAP),
+		top3,
+		open: arrived.slice(0, OPEN_CAP),
 	};
 }
 

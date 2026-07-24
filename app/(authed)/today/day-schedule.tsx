@@ -9,12 +9,10 @@ import {
 	applyOpenTaskList,
 	type TaskIntent,
 } from "@/lib/task-interaction/apply-intent";
-import { isTop3Today } from "@/lib/task-predicates";
+import { isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
 import { completeTaskAction, reopenTaskAction, toggleTop3Action } from "../tasks/actions";
 import { TaskRowItem } from "../tasks/task-row";
 import { ScheduleRow } from "./timeline-row";
-
-const TOP3_SLOTS = 3;
 
 function Band({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
@@ -33,13 +31,20 @@ function collectOpenTasks(schedule: DayScheduleData): TaskRow[] {
 	for (const item of schedule.timeline) {
 		if (item.kind === "task") byId.set(item.task.id, item.task);
 	}
+	for (const task of schedule.top3) {
+		byId.set(task.id, task);
+	}
 	for (const task of schedule.open) {
 		byId.set(task.id, task);
 	}
 	return [...byId.values()];
 }
 
-function projectSchedule(schedule: DayScheduleData, open: TaskRow[]): DayScheduleData {
+function projectSchedule(
+	schedule: DayScheduleData,
+	open: TaskRow[],
+	todayIso: string,
+): DayScheduleData {
 	const byId = new Map(open.map((t) => [t.id, t]));
 
 	function mapItems(items: DayScheduleItem[]): DayScheduleItem[] {
@@ -56,17 +61,23 @@ function projectSchedule(schedule: DayScheduleData, open: TaskRow[]): DaySchedul
 		return out;
 	}
 
+	// Top 3 re-derives from the optimistic list rather than from schedule.top3,
+	// so tapping ☆ on any band moves the row into (or out of) the shortlist
+	// immediately instead of waiting for the briefing RSC round-trip.
+	const top3 = open.filter((t) => t.status === "open" && isTop3Today(t, todayIso));
+
+	// Open carries the leftovers only — a row promoted to Top 3 leaves this band
+	// in the same tick it joins that one, so it never shows up twice.
 	const openBand: TaskRow[] = [];
 	for (const t of schedule.open) {
 		const next = byId.get(t.id);
-		if (next && next.status === "open") openBand.push(next);
+		if (next && next.status === "open" && !isTop3Today(next, todayIso)) openBand.push(next);
 	}
 
-	// Tasks that became top-3 and weren't in open band: leave band structure
-	// to RSC reconcile; star still updates in place on any band they're in.
 	return {
 		allDay: mapItems(schedule.allDay),
 		timeline: mapItems(schedule.timeline),
+		top3,
 		open: openBand,
 	};
 }
@@ -101,17 +112,16 @@ export function DaySchedule({
 		applyOpenTaskList(current, intent, ctx),
 	);
 
-	const projected = useMemo(() => projectSchedule(schedule, openTasks), [schedule, openTasks]);
+	const projected = useMemo(
+		() => projectSchedule(schedule, openTasks, todayIso),
+		[schedule, openTasks, todayIso],
+	);
 
-	const { allDay, timeline, open } = projected;
-	const empty = allDay.length === 0 && timeline.length === 0 && open.length === 0;
+	const { allDay, timeline, top3, open } = projected;
+	const empty =
+		allDay.length === 0 && timeline.length === 0 && top3.length === 0 && open.length === 0;
 
-	const starred = [
-		...allDay.filter((i) => i.kind === "task" && isTop3Today(i.task, todayIso)),
-		...timeline.filter((i) => i.kind === "task" && isTop3Today(i.task, todayIso)),
-		...open.filter((t) => isTop3Today(t, todayIso)),
-	].length;
-	const slotsOpen = TOP3_SLOTS - starred;
+	const slotsOpen = TOP3_SLOTS - top3.length;
 
 	function run(intent: TaskIntent, action: () => Promise<void>) {
 		startTransition(async () => {
@@ -177,9 +187,9 @@ export function DaySchedule({
 					</div>
 
 					<div className="min-w-0">
-						<Band title="Open">
-							{open.length > 0 ? (
-								open.map((task) => (
+						<Band title="Top 3">
+							{top3.length > 0 ? (
+								top3.map((task) => (
 									<TaskRowItem
 										key={task.id}
 										task={task}
@@ -198,6 +208,20 @@ export function DaySchedule({
 							<p className="mt-2 font-mono text-meta text-ink-4">
 								{slotsOpen} Top 3 slot{slotsOpen === 1 ? "" : "s"} open · tap ☆ on a row to pin
 							</p>
+						)}
+
+						{open.length > 0 && (
+							<Band title="Open">
+								{open.map((task) => (
+									<TaskRowItem
+										key={task.id}
+										task={task}
+										todayIso={todayIso}
+										manageable={false}
+										handlers={handlersFor(task)}
+									/>
+								))}
+							</Band>
 						)}
 					</div>
 				</div>

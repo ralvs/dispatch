@@ -480,7 +480,7 @@ describe("buildDaySchedule", () => {
 		expect(day.timeline.map((i) => i.key)).toEqual(["event:spillover", "event:morning"]);
 	});
 
-	it("orders the open band starred-first, then whatever is already due", () => {
+	it("lifts starred tasks into Top 3 and leaves the rest in open", () => {
 		const day = schedule(
 			[],
 			[
@@ -489,25 +489,47 @@ describe("buildDaySchedule", () => {
 				task({ id: "star", top3_for_date: TODAY }),
 			],
 		);
-		expect(day.open.map((t) => t.id)).toEqual(["star", "old"]);
+		expect(day.top3.map((t) => t.id)).toEqual(["star"]);
+		// "later" isn't due yet, so it stays off the day entirely.
+		expect(day.open.map((t) => t.id)).toEqual(["old"]);
 	});
 
 	it("never repeats a task that already has a place on the day", () => {
+		const timed = task({ id: "t1", due_date: TODAY, due_time: "09:00" });
+		const day = schedule([], [timed]);
+		expect(day.timeline).toHaveLength(1);
+		expect(day.open).toEqual([]);
+		expect(day.top3).toEqual([]);
+	});
+
+	// Deliberate overlap: the timeline answers "when", Top 3 answers "what
+	// matters". A shortlist that dropped a task for having a clock time would
+	// misreport the day.
+	it("keeps a starred timed task on the timeline AND in Top 3", () => {
 		const timed = task({ id: "t1", due_date: TODAY, due_time: "09:00", top3_for_date: TODAY });
 		const day = schedule([], [timed]);
 		expect(day.timeline).toHaveLength(1);
+		expect(day.top3.map((t) => t.id)).toEqual(["t1"]);
 		expect(day.open).toEqual([]);
 	});
 
 	it("caps the open band at 10", () => {
-		const tasks = Array.from({ length: 15 }, (_, i) => task({ id: `t${i}`, top3_for_date: TODAY }));
+		const tasks = Array.from({ length: 15 }, (_, i) =>
+			task({ id: `t${i}`, due_date: "2026-07-01" }),
+		);
 		expect(schedule([], tasks).open).toHaveLength(10);
+	});
+
+	it("never caps Top 3 — a fourth star is surfaced, not hidden", () => {
+		const tasks = Array.from({ length: 4 }, (_, i) => task({ id: `t${i}`, top3_for_date: TODAY }));
+		expect(schedule([], tasks).top3).toHaveLength(4);
 	});
 
 	it("leaves a task due on another day off every band", () => {
 		const day = schedule([], [task({ id: "t1", due_date: "2026-07-16", due_time: "09:00" })]);
 		expect(day.allDay).toEqual([]);
 		expect(day.timeline).toEqual([]);
+		expect(day.top3).toEqual([]);
 		expect(day.open).toEqual([]);
 	});
 });

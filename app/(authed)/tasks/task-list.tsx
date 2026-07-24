@@ -11,6 +11,7 @@ import {
 	type TaskIntent,
 	type TaskLists,
 } from "@/lib/task-interaction/apply-intent";
+import { isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
 import {
 	completeTaskAction,
 	createTaskAction,
@@ -137,6 +138,13 @@ export function TaskList({
 		};
 	}
 
+	// Starring used to be near-invisible here: listTasks never orders by it, so a
+	// pinned row stayed exactly where it was. Split the open list so the day's
+	// shortlist has somewhere to live.
+	const top3 = lists.open.filter((t) => isTop3Today(t, todayIso));
+	const rest = lists.open.filter((t) => !isTop3Today(t, todayIso));
+	const slotsOpen = TOP3_SLOTS - top3.length;
+
 	function onCreate(formData: FormData): Promise<void> {
 		const optimistic = optimisticTaskFromForm(formData, domains);
 		// useOptimistic must run inside a transition owned here (not only the form's).
@@ -177,14 +185,45 @@ export function TaskList({
 				onCreate={onCreate}
 			/>
 
+			{/* Top 3 is split here in the client, not on the server, so tapping ☆
+			 * moves a row between the two groups on the same tick the star flips —
+			 * both read from the one optimistic list. */}
+			{top3.length > 0 && (
+				<section className="mt-8" aria-label="Today's top 3">
+					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+						Top 3 · today
+					</h2>
+					<ul className="mt-2">
+						{top3.map((t) => (
+							<TaskRowItem
+								key={t.id}
+								task={t}
+								todayIso={todayIso}
+								domains={domains}
+								initialEditing={editTaskId === t.id}
+								handlers={handlersFor(t)}
+								noteId={taskNoteIds?.[t.id]}
+							/>
+						))}
+					</ul>
+					{slotsOpen > 0 && (
+						<p className="mt-2 font-mono text-meta text-ink-4">
+							{slotsOpen} slot{slotsOpen === 1 ? "" : "s"} open · tap ☆ on a row to pin
+						</p>
+					)}
+				</section>
+			)}
+
 			<section className="mt-8" aria-label="Open tasks">
 				{lists.open.length === 0 ? (
 					<p className="py-8 text-center font-serif italic text-ink-3">
 						Nothing on the docket. Capture something.
 					</p>
 				) : (
+					// Everything open may already be starred, in which case the band
+					// above carries the lot and this one renders nothing at all.
 					<ul>
-						{lists.open.map((t) => (
+						{rest.map((t) => (
 							<TaskRowItem
 								key={t.id}
 								task={t}

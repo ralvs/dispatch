@@ -16,3 +16,10 @@ export function isOverdue(task: Pick<TaskRow, "status" | "due_date">, todayIso: 
 export function isTop3Today(task: Pick<TaskRow, "top3_for_date">, todayIso: string): boolean {
 	return task.top3_for_date === todayIso;
 }
+
+/**
+ * How many tasks the day's shortlist holds. Lives here rather than in each
+ * surface so Today and the Tasks page can never disagree about how many slots
+ * are open — the same reason the predicates above were extracted.
+ */
+export const TOP3_SLOTS = 3;
