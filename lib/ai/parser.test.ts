@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
-import { parse } from "@/lib/ai/parser";
+import { parse, parseTaskCapture } from "@/lib/ai/parser";
 
 vi.mock("@/lib/ai/gateway", () => ({
 	isAiConfigured: vi.fn(),
@@ -95,6 +95,49 @@ describe("parse", () => {
 		const { system } = (generateObject as Mock).mock.calls[0][0];
 		expect(system).toContain("KNOWN DOMAINS: Home");
 		expect(system).toContain("KNOWN PROJECTS: Reviews");
+	});
+});
+
+describe("parseTaskCapture", () => {
+	it("returns unavailable when the gateway is not configured", async () => {
+		(isAiConfigured as Mock).mockReturnValue(false);
+
+		const result = await parseTaskCapture("pagar aluguel", CTX);
+
+		expect(result).toEqual({ ok: false, reason: "unavailable", raw: "pagar aluguel" });
+		expect(generateObject).not.toHaveBeenCalled();
+	});
+
+	it("returns failed when the model call throws", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockRejectedValue(new Error("boom"));
+
+		const result = await parseTaskCapture("blah", CTX);
+
+		expect(result).toEqual({ ok: false, reason: "failed", raw: "blah" });
+	});
+
+	it("returns empty when the model finds no task", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { task: null } });
+
+		const result = await parseTaskCapture("hmm", CTX);
+
+		expect(result).toEqual({ ok: false, reason: "empty", raw: "hmm" });
+	});
+
+	it("returns the parsed task on success", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({
+			object: { task: { action: "create_task", title: "pagar aluguel" } },
+		});
+
+		const result = await parseTaskCapture("pagar aluguel", CTX);
+
+		expect(result).toEqual({
+			ok: true,
+			task: { action: "create_task", title: "pagar aluguel" },
+		});
 	});
 });
 

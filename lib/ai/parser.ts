@@ -2,7 +2,12 @@ import "server-only";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { isAiConfigured, parserModel } from "@/lib/ai/gateway";
-import { type CaptureAction, CaptureActionsSchema } from "@/lib/schemas/capture";
+import {
+	type CaptureAction,
+	CaptureActionsSchema,
+	type CreateTaskAction,
+	CreateTaskActionSchema,
+} from "@/lib/schemas/capture";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Text -> actions seam. Turns one capture text into v1 capture actions via the
@@ -108,6 +113,51 @@ export async function parse(text: string, ctx: ParseContext): Promise<ParseResul
 	} catch {
 		// Model error OR output that failed CaptureActionsSchema (unknown verb,
 		// malformed action). Degrade — the raw text is never lost.
+		return { ok: false, reason: "failed", raw: text };
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Task-only parse for the /tasks quick-add input (Part B). Same no-throw,
+// typed-fallback contract as parse() above, narrowed to a single task.
+// ─────────────────────────────────────────────────────────────────────────
+
+export type ParseTaskResult =
+	| { ok: true; task: CreateTaskAction }
+	| { ok: false; reason: "unavailable" | "failed" | "empty"; raw: string };
+
+function taskCaptureSystemPrompt(ctx: ParseContext): string {
+	return [
+		"You convert ONE spoken or typed utterance into a single task, or null if",
+		"the utterance describes nothing actionable.",
+		"Output shape: { title, notes?, due_date?, due_time?, priority?,",
+		"  recurrence_rule?, domain?, project? }.",
+		"title is required — the task itself, verbatim in the language spoken",
+		"(pt-BR or English). NEVER translate.",
+		"priority is 1 (highest) to 4. due_date is YYYY-MM-DD, due_time is HH:mm.",
+		...recurrenceRules(),
+		"",
+		`Resolve relative dates against NOW=${ctx.nowUtc}, TODAY=${ctx.todayIso},`,
+		`timezone ${ctx.tz}. Output due_date as YYYY-MM-DD and due_time as HH:mm.`,
+		...routingBlock(ctx),
+		"",
+		'Return a JSON object of the form {"task": { ... }} or {"task": null}.',
+	].join("\n");
+}
+
+export async function parseTaskCapture(text: string, ctx: ParseContext): Promise<ParseTaskResult> {
+	try {
+		if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
+
+		const { object } = await generateObject({
+			model: parserModel(),
+			schema: z.object({ task: CreateTaskActionSchema.nullable() }),
+			system: taskCaptureSystemPrompt(ctx),
+			prompt: text,
+		});
+		if (!object.task) return { ok: false, reason: "empty", raw: text };
+		return { ok: true, task: object.task };
+	} catch {
 		return { ok: false, reason: "failed", raw: text };
 	}
 }

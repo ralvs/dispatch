@@ -31,7 +31,10 @@ export type Provenance = {
 };
 
 /** Appends unresolved routing mentions to task notes, e.g. `[capture: unresolved project "X"]`. */
-function withUnresolvedNotes(notes: string | undefined, unresolved: string[]): string | null {
+export function withUnresolvedNotes(
+	notes: string | undefined,
+	unresolved: string[],
+): string | null {
 	if (unresolved.length === 0) return notes ?? null;
 	const suffix = unresolved.map((u) => `[capture: unresolved ${u}]`).join(" ");
 	return notes ? `${notes}\n${suffix}` : suffix;
