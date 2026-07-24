@@ -3,9 +3,13 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { formatInstant } from "@/lib/dates";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
-import { syncWikilinks } from "@/lib/services/note-links";
+import { searchEventsByTitle } from "@/lib/services/calendar";
+import { createManualLink, deleteLink, syncWikilinks } from "@/lib/services/note-links";
 import { createNote, deleteNote, resolveNeedsReview, updateNote } from "@/lib/services/notes";
+import { getAppTimezone } from "@/lib/services/settings";
+import { searchTasksByTitle } from "@/lib/services/tasks";
 import { extractWikilinkIds } from "@/lib/wikilinks";
 
 function revalidateNoteViews(id?: string) {
@@ -54,4 +58,52 @@ export async function deleteNoteAction(id: string) {
 	await deleteNote(sb, z.uuid().parse(id));
 	revalidateNoteViews();
 	redirect("/notes");
+}
+
+const LinkTargetTypeSchema = z.enum(["task", "event"]);
+
+export async function attachLinkAction(
+	noteId: string,
+	targetType: "task" | "event",
+	targetId: string,
+) {
+	const { sb } = await requireOwnerPage();
+	const id = z.uuid().parse(noteId);
+	const type = LinkTargetTypeSchema.parse(targetType);
+	const target = z.uuid().parse(targetId);
+	await createManualLink(sb, { note_id: id, target_type: type, target_id: target });
+	revalidateNoteViews(id);
+}
+
+export async function detachLinkAction(noteId: string, linkId: string) {
+	const { sb } = await requireOwnerPage();
+	const id = z.uuid().parse(noteId);
+	await deleteLink(sb, z.uuid().parse(linkId));
+	revalidateNoteViews(id);
+}
+
+/** Read-only: powers the link-picker's search dropdown. No afterMutation. */
+export async function searchLinkTargetsAction(
+	targetType: "task" | "event",
+	q: string,
+): Promise<Array<{ id: string; label: string }>> {
+	const { sb } = await requireOwnerPage();
+	const type = LinkTargetTypeSchema.parse(targetType);
+	const query = q.trim();
+	if (query === "") return [];
+
+	if (type === "task") {
+		const tasks = await searchTasksByTitle(sb, query);
+		return tasks.map((t) => ({
+			id: t.id,
+			label: t.status === "done" ? `${t.title} · done` : t.title,
+		}));
+	}
+
+	const tz = await getAppTimezone(sb);
+	const events = await searchEventsByTitle(sb, query);
+	return events.map((e) => ({
+		id: e.id,
+		label: `${e.title} · ${formatInstant(e.start_at, tz)}`,
+	}));
 }

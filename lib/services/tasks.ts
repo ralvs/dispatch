@@ -79,6 +79,36 @@ export async function getTask(sb: SupabaseClient, id: string): Promise<TaskRow |
 	return data ? flatten(data) : null;
 }
 
+/** Escapes ilike wildcards so a search term is matched literally. */
+function escapeLike(q: string): string {
+	return q.replace(/[%_\\]/g, (m) => `\\${m}`);
+}
+
+export type TaskSearchResult = {
+	id: string;
+	title: string;
+	status: "open" | "done";
+	due_date: string | null;
+};
+
+/** Title search for the note link picker — open tasks first, then most recent. */
+export async function searchTasksByTitle(
+	sb: SupabaseClient,
+	q: string,
+	limit = 8,
+): Promise<TaskSearchResult[]> {
+	const data = unwrap(
+		await sb
+			.from("tasks")
+			.select("id, title, status, due_date")
+			.ilike("title", `%${escapeLike(q)}%`)
+			.order("status", { ascending: false })
+			.order("created_at", { ascending: false })
+			.limit(limit),
+	);
+	return (data ?? []) as unknown as TaskSearchResult[];
+}
+
 /** Minimal columns for complete/top3 — avoids joined domain/project on the hot path. */
 type TaskHotRow = {
 	id: string;

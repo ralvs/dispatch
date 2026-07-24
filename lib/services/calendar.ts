@@ -157,6 +157,34 @@ export async function listEventsOn(
 	return (data ?? []) as unknown as CalendarEventRow[];
 }
 
+/** Escapes ilike wildcards so a search term is matched literally. */
+function escapeLike(q: string): string {
+	return q.replace(/[%_\\]/g, (m) => `\\${m}`);
+}
+
+export type EventSearchResult = {
+	id: string;
+	title: string;
+	start_at: string;
+};
+
+/** Title search for the note link picker — most recent first. */
+export async function searchEventsByTitle(
+	sb: SupabaseClient,
+	q: string,
+	limit = 8,
+): Promise<EventSearchResult[]> {
+	const data = unwrap(
+		await sb
+			.from("calendar_events")
+			.select("id, title, start_at")
+			.ilike("title", `%${escapeLike(q)}%`)
+			.order("start_at", { ascending: false })
+			.limit(limit),
+	);
+	return (data ?? []) as unknown as EventSearchResult[];
+}
+
 export type CreateEventHereInput = {
 	title: string;
 	startUtc: string;
