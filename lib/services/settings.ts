@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cache } from "react";
 import { DEFAULT_TIMEZONE, isValidTimezone, todayInTz } from "@/lib/dates";
+import { UpdateAppSettingsSchema } from "@/lib/schemas/app-settings";
 import { ServiceError, unwrap } from "@/lib/services/errors";
 
 /**
@@ -32,4 +33,43 @@ export async function updateAppTimezone(sb: SupabaseClient, timezone: string): P
 		throw new ServiceError(`Unknown timezone: ${timezone}`, "INVALID");
 	}
 	unwrap(await sb.from("app_settings").update({ timezone }).eq("id", true));
+}
+
+/**
+ * Global reminder configuration from the app_settings singleton (reminders
+ * are configured once, never per task — docs/adr/0021). React-cached like
+ * getAppTimezone. Defaults cover both a missing row and a pre-migration
+ * row missing the columns.
+ */
+export const getReminderSettings = cache(
+	async (sb: SupabaseClient): Promise<{ offsetMinutes: number; anchorTime: string }> => {
+		const { data } = await sb
+			.from("app_settings")
+			.select("reminder_offset_minutes, reminder_anchor_time")
+			.eq("id", true)
+			.maybeSingle();
+		return {
+			offsetMinutes: data?.reminder_offset_minutes ?? 0,
+			anchorTime: data?.reminder_anchor_time ?? "09:00",
+		};
+	},
+);
+
+export async function updateReminderSettings(
+	sb: SupabaseClient,
+	input: { offsetMinutes: number; anchorTime: string },
+): Promise<void> {
+	const parsed = UpdateAppSettingsSchema.parse({
+		reminder_offset_minutes: input.offsetMinutes,
+		reminder_anchor_time: input.anchorTime,
+	});
+	unwrap(
+		await sb
+			.from("app_settings")
+			.update({
+				reminder_offset_minutes: parsed.reminder_offset_minutes,
+				reminder_anchor_time: parsed.reminder_anchor_time,
+			})
+			.eq("id", true),
+	);
 }

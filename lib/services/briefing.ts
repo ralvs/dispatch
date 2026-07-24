@@ -1,7 +1,14 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { INBOX_DOMAIN_ID } from "@/lib/constants";
-import { dateOfInstant, formatInstant, instantFromLocal, isoWeek, shiftDay } from "@/lib/dates";
+import {
+	dateOfInstant,
+	formatInstant,
+	instantFromLocal,
+	isoWeek,
+	isWallClockTime,
+	shiftDay,
+} from "@/lib/dates";
 import { computeRoutineStats, type RoutineStats } from "@/lib/routine-stats";
 import { type CalendarEventRow, listEventsOn } from "@/lib/services/calendar";
 import { type DomainRow, listDomains } from "@/lib/services/domains";
@@ -259,16 +266,13 @@ export type DaySchedule = {
 /** Cap on the open/unscheduled band — same ceiling assembleDoingToday used. */
 const OPEN_CAP = 10;
 
-/** Postgres `time` arrives as HH:MM:SS; hand-entered values may be HH:MM. */
-const TIME_RE = /^\d{2}:\d{2}(:\d{2})?$/;
-
 /**
  * A task's due time as a UTC instant, or null when it has no usable one.
  * Defensive rather than throwing: a malformed time demotes the task to the
  * all-day band instead of taking the whole briefing down with it.
  */
 function taskDueInstant(task: TaskRow, todayIso: string, tz: string): string | null {
-	if (task.due_time === null || !TIME_RE.test(task.due_time)) return null;
+	if (task.due_time === null || !isWallClockTime(task.due_time)) return null;
 	try {
 		return instantFromLocal(todayIso, task.due_time, tz);
 	} catch {
@@ -461,7 +465,7 @@ function isRoutineMissed(
 	tz: string,
 	nowMs: number,
 ): boolean {
-	if (done || specificTime === null || !TIME_RE.test(specificTime)) return false;
+	if (done || specificTime === null || !isWallClockTime(specificTime)) return false;
 	try {
 		return Date.parse(instantFromLocal(todayIso, specificTime, tz)) <= nowMs;
 	} catch {

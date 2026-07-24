@@ -33,3 +33,13 @@ bun run check                # biome + tsc + vitest
 _Grows per phase — sections for Supabase provisioning, cron-job.org schedules,
 iCloud app-specific password, VAPID keys, the Ingest shortcut, and PWA install
 land with their features._
+
+### cron-job.org schedules
+
+Both hit `Authorization: Bearer $CRON_SECRET`; cron-job.org defaults to `GET`
+and both routes also accept `POST`.
+
+| Endpoint | Frequency | Purpose |
+| --- | --- | --- |
+| `/api/cron/sweep` | as configured | Reconciles stuck `captured_data` rows to `needs_review` notes (docs/adr/0008). |
+| `/api/cron/reminders` | every 5 minutes | Fires due-task reminders per the global offset/anchor in Settings (docs/adr/0021). |

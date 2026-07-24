@@ -79,6 +79,28 @@ export function instantFromLocal(dateIso: string, time: string, tz: string): str
 	return iso;
 }
 
+/** Shift a UTC instant by N minutes (positive or negative). DST-safe by construction — instant math, not wall-clock math. */
+export function shiftMinutes(utcIso: string, minutes: number): string {
+	const dt = DateTime.fromISO(utcIso, { zone: "utc" }).plus({ minutes });
+	const iso = dt.toISO();
+	if (!iso) throw new Error(`Invalid instant: ${utcIso}`);
+	return iso;
+}
+
+// Postgres `time` columns arrive `HH:MM:SS`; hand-entered/form values may be
+// `HH:MM`. Shared here so every wall-clock-time validator agrees.
+// Fractional seconds are accepted because a Postgres `time` column may carry
+// them (any value written as an expression rather than a plain literal). They
+// used to fail this test, and a rejected time is not loud — it silently falls
+// back to a default anchor, so the reminder fires at the wrong hour instead of
+// erroring. Luxon parses the fraction fine.
+const TIME_RE = /^\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/;
+
+/** Whether a value looks like a wall-clock time string (`HH:MM`, `HH:MM:SS`, or with a fraction). */
+export function isWallClockTime(s: unknown): boolean {
+	return typeof s === "string" && TIME_RE.test(s);
+}
+
 /** ISO week number of a calendar date (pure string math, no timezone needed). */
 export function isoWeek(dateIso: string): number {
 	const dt = DateTime.fromISO(dateIso, { zone: "utc" });

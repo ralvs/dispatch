@@ -13,7 +13,7 @@ import {
 	setDomainCadence,
 	updateDomain,
 } from "@/lib/services/domains";
-import { updateAppTimezone } from "@/lib/services/settings";
+import { updateAppTimezone, updateReminderSettings } from "@/lib/services/settings";
 
 function revalidateDomainViews() {
 	afterMutation("settings.domain");
@@ -73,4 +73,17 @@ export async function updateTimezoneAction(formData: FormData) {
 	await updateAppTimezone(sb, z.string().min(1).parse(formData.get("timezone")));
 	// Every page derives its day boundary from this one value.
 	afterMutation("settings.timezone");
+}
+
+export async function updateReminderSettingsAction(formData: FormData) {
+	const { sb } = await requireOwnerPage();
+	const offsetMinutes = z.coerce
+		.number()
+		.int()
+		.min(0)
+		.max(2880)
+		.parse(formData.get("reminder_offset_minutes"));
+	const anchorTime = z.string().min(1).parse(formData.get("reminder_anchor_time"));
+	await updateReminderSettings(sb, { offsetMinutes, anchorTime });
+	afterMutation("settings.reminders");
 }
