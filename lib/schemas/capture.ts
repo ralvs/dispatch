@@ -6,8 +6,8 @@ import { NoteSourceTypeSchema } from "@/lib/schemas/note";
 // Capture v1 contract (docs/adr/0008).
 //
 // Supersedes the 15-variant lib/schemas/voice.ts draft. v1 speaks only the
-// verbs the executor can actually fulfil today — tasks, notes, quotes,
-// and journal entries. Everything else the reference
+// verbs the executor can actually fulfil today — tasks, events, notes,
+// quotes, and journal entries. Everything else the reference
 // vocabulary added (projects, people, inventory, …) is deferred; the growth
 // path is: add a service + an executor case + a variant here. The full
 // reference vocabulary is recorded in the ADR and the reference impl stays
@@ -48,8 +48,30 @@ export const CreateTaskActionSchema = z.object({
 });
 export type CreateTaskAction = z.infer<typeof CreateTaskActionSchema>;
 
+// A wall-clock time in the app timezone; the executor converts to UTC via
+// instantFromLocal (iron rule #1). Same range guard as due_time, so a
+// malformed time fails schema-parse rather than reaching CalDAV.
+const WallClockTimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+
+export const CreateEventActionSchema = z.object({
+	action: z.literal("create_event"),
+	title: z.string().min(1),
+	start_date: z.string().date(),
+	start_time: WallClockTimeSchema,
+	// end_time is REQUIRED: the model picks the duration from context (a lunch
+	// runs an hour, a standup fifteen minutes), because a fixed server-side
+	// default would be wrong more often than the model is (docs/adr/0023).
+	// end_date is only needed for an event crossing midnight.
+	end_date: z.string().date().optional(),
+	end_time: WallClockTimeSchema,
+	location: z.string().min(1).optional(),
+	description: z.string().min(1).optional(),
+});
+export type CreateEventAction = z.infer<typeof CreateEventActionSchema>;
+
 export const CaptureActionSchema = z.discriminatedUnion("action", [
 	CreateTaskActionSchema,
+	CreateEventActionSchema,
 	z.object({
 		action: z.literal("create_note"),
 		body: z.string().min(1),

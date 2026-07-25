@@ -7,9 +7,16 @@ vi.mock("@/lib/services/tasks", () => ({ createTask: vi.fn() }));
 vi.mock("@/lib/services/notes", () => ({ createNote: vi.fn(), createNeedsReviewNote: vi.fn() }));
 vi.mock("@/lib/services/quotes", () => ({ createQuote: vi.fn() }));
 vi.mock("@/lib/services/journal", () => ({ createEntry: vi.fn() }));
+vi.mock("@/lib/services/calendar", () => ({ createEventHere: vi.fn() }));
+vi.mock("@/lib/caldav/client", () => ({ createCaldavClient: vi.fn(async () => ({})) }));
+vi.mock("@/lib/services/notifications", () => ({ recordNotification: vi.fn() }));
+vi.mock("@/lib/env", () => ({ isCaldavConfigured: vi.fn(() => true) }));
 
+import { isCaldavConfigured } from "@/lib/env";
+import { createEventHere } from "@/lib/services/calendar";
 import { createEntry } from "@/lib/services/journal";
 import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
+import { recordNotification } from "@/lib/services/notifications";
 import { createQuote } from "@/lib/services/quotes";
 import { createTask } from "@/lib/services/tasks";
 
@@ -206,6 +213,101 @@ describe("runActions", () => {
 			ok: false,
 			noteId: "review-4",
 		});
+		expect(createNeedsReviewNote).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({ body: "verbatim text", origin_capture_id: "cap-1" }),
+		);
+	});
+});
+
+describe("create_event", () => {
+	const LUNCH: CaptureAction = {
+		action: "create_event",
+		title: "Almoço com a Ana",
+		start_date: "2026-07-30",
+		start_time: "12:00",
+		end_time: "13:00",
+		location: "Vila Madalena",
+	};
+
+	it("converts the app-timezone wall clock to UTC instants", async () => {
+		(createEventHere as Mock).mockResolvedValue({ id: "evt-1", title: "Almoço com a Ana" });
+
+		const results = await runActions(sb, [LUNCH], PROV);
+
+		// America/Sao_Paulo is UTC-3, so noon local is 15:00Z.
+		expect(createEventHere).toHaveBeenCalledWith(
+			sb,
+			expect.anything(),
+			expect.objectContaining({
+				title: "Almoço com a Ana",
+				startUtc: "2026-07-30T15:00:00.000Z",
+				endUtc: "2026-07-30T16:00:00.000Z",
+				location: "Vila Madalena",
+			}),
+		);
+		expect(results[0]).toEqual({
+			action: "create_event",
+			ok: true,
+			entity: { table: "calendar_events", id: "evt-1" },
+		});
+	});
+
+	it("writes a ledger row for the external calendar write", async () => {
+		(createEventHere as Mock).mockResolvedValue({ id: "evt-2", title: "Standup" });
+
+		await runActions(sb, [LUNCH], PROV);
+
+		expect(recordNotification).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({ type: "capture.event", source_ref: "evt-2" }),
+		);
+	});
+
+	it("still resolves when only the ledger row fails", async () => {
+		(createEventHere as Mock).mockResolvedValue({ id: "evt-3", title: "Call" });
+		(recordNotification as Mock).mockRejectedValue(new Error("ledger down"));
+
+		const results = await runActions(sb, [LUNCH], PROV);
+
+		expect(results[0]).toMatchObject({ ok: true, entity: { id: "evt-3" } });
+		expect(createNeedsReviewNote).not.toHaveBeenCalled();
+	});
+
+	it("degrades to a needs_review note when CalDAV is not configured", async () => {
+		(isCaldavConfigured as Mock).mockReturnValueOnce(false);
+		(createNeedsReviewNote as Mock).mockResolvedValue({ id: "review-5" });
+
+		const results = await runActions(sb, [LUNCH], PROV);
+
+		expect(createEventHere).not.toHaveBeenCalled();
+		expect(results[0]).toMatchObject({
+			action: "create_event",
+			ok: false,
+			noteId: "review-5",
+		});
+	});
+
+	it("degrades rather than pushing an event that ends before it starts", async () => {
+		(createNeedsReviewNote as Mock).mockResolvedValue({ id: "review-6" });
+
+		const results = await runActions(
+			sb,
+			[{ ...LUNCH, start_time: "14:00", end_time: "13:00" }],
+			PROV,
+		);
+
+		expect(createEventHere).not.toHaveBeenCalled();
+		expect(results[0]).toMatchObject({ action: "create_event", ok: false, noteId: "review-6" });
+	});
+
+	it("degrades when the CalDAV push itself fails, keeping the transcript", async () => {
+		(createEventHere as Mock).mockRejectedValue(new Error("iCloud unreachable"));
+		(createNeedsReviewNote as Mock).mockResolvedValue({ id: "review-7" });
+
+		const results = await runActions(sb, [LUNCH], PROV);
+
+		expect(results[0]).toMatchObject({ action: "create_event", ok: false, noteId: "review-7" });
 		expect(createNeedsReviewNote).toHaveBeenCalledWith(
 			sb,
 			expect.objectContaining({ body: "verbatim text", origin_capture_id: "cap-1" }),
