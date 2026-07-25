@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { bearerToken, isAuthorized, secretsMatch } from "@/lib/secret-auth";
 
 const req = (auth?: string) =>
-	new Request("https://example.test/api/ingest", {
+	new Request("https://example.test/api/capture", {
 		headers: auth ? { authorization: auth } : {},
 	});
 

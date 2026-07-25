@@ -1,59 +1,59 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-	type CreateIngestLinkInput,
-	INGEST_LINK_SELECT,
-	type IngestLinkRow,
-	type IngestLinkStatus,
-} from "@/lib/schemas/ingest-link";
+	type CreateLinkInput,
+	LINK_SELECT,
+	type LinkRow,
+	type LinkStatus,
+} from "@/lib/schemas/link";
 import { unwrap, unwrapCount } from "@/lib/services/errors";
 
 // ─────────────────────────────────────────────────────────────────────────
-// Link Ingest (docs/adr/0014) — the reading list at /ingest.
+// The link reading list at /links (docs/adr/0014, renamed in docs/adr/0022).
 //
 // Two clients, one service, per iron rule #3: pages and server actions pass
-// an RLS-scoped `sb`, the secret-authed link API passes a service-role one.
-// Nothing here runs the capture parser; a URL is stored as it arrived.
+// an RLS-scoped `sb`, the secret-authed capture API passes a service-role one.
+// Nothing here runs the capture parser; a URL is stored as it arrived. Title
+// and description are fetched by the caller (lib/links/metadata.ts), not here.
+//
+// `ingest_links` is the legacy table name and is deliberately not renamed
+// (docs/adr/0022) — the word "ingest" survives in Postgres and nowhere else.
 // ─────────────────────────────────────────────────────────────────────────
 
-export type { CreateIngestLinkInput, IngestLinkRow, IngestLinkStatus };
+const TABLE = "ingest_links";
+
+export type { CreateLinkInput, LinkRow, LinkStatus };
 
 /** Newest first, optionally narrowed to one read state. */
 export async function listLinks(
 	sb: SupabaseClient,
-	opts: { status?: IngestLinkStatus; limit?: number } = {},
-): Promise<IngestLinkRow[]> {
-	let q = sb
-		.from("ingest_links")
-		.select(INGEST_LINK_SELECT)
-		.order("created_at", { ascending: false });
+	opts: { status?: LinkStatus; limit?: number } = {},
+): Promise<LinkRow[]> {
+	let q = sb.from(TABLE).select(LINK_SELECT).order("created_at", { ascending: false });
 	if (opts.status) q = q.eq("status", opts.status);
 	if (opts.limit != null) q = q.limit(opts.limit);
 	const data = unwrap(await q);
-	return (data ?? []) as unknown as IngestLinkRow[];
+	return (data ?? []) as unknown as LinkRow[];
 }
 
 /**
- * Store a shared link. Title and description are whatever the sender knew —
- * both optional, and neither is fetched or inferred here.
+ * Store a shared link. Title and description are whatever the caller resolved
+ * — both optional, and neither is fetched or inferred here.
  */
-export async function createLink(
-	sb: SupabaseClient,
-	input: CreateIngestLinkInput,
-): Promise<IngestLinkRow> {
+export async function createLink(sb: SupabaseClient, input: CreateLinkInput): Promise<LinkRow> {
 	const data = unwrap(
 		await sb
-			.from("ingest_links")
+			.from(TABLE)
 			.insert({
 				url: input.url,
 				title: input.title ?? null,
 				description: input.description ?? null,
 				source: input.source ?? null,
 			})
-			.select(INGEST_LINK_SELECT)
+			.select(LINK_SELECT)
 			.single(),
 	);
-	return data as unknown as IngestLinkRow;
+	return data as unknown as LinkRow;
 }
 
 /**
@@ -63,17 +63,14 @@ export async function createLink(
 export async function setLinkStatus(
 	sb: SupabaseClient,
 	id: string,
-	status: IngestLinkStatus,
+	status: LinkStatus,
 ): Promise<void> {
-	unwrap(await sb.from("ingest_links").update({ status }).eq("id", id));
+	unwrap(await sb.from(TABLE).update({ status }).eq("id", id));
 }
 
 /** The Today alerts badge. */
 export async function unreadLinkCount(sb: SupabaseClient): Promise<number> {
 	return unwrapCount(
-		await sb
-			.from("ingest_links")
-			.select("*", { count: "exact", head: true })
-			.eq("status", "unread"),
+		await sb.from(TABLE).select("*", { count: "exact", head: true }).eq("status", "unread"),
 	);
 }

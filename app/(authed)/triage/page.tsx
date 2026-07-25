@@ -4,7 +4,7 @@ import { listInboxTasks } from "@/lib/services/tasks";
 import { TriageRow } from "./triage-row";
 
 // Routing unassigned tasks out of the system Inbox domain (ADR-0014). Not the
-// link reading list — that is Ingest at /ingest.
+// link reading list — that is Links at /links.
 export default async function TriagePage() {
 	const { sb } = await requireOwnerPage();
 	const [tasks, domains] = await Promise.all([listInboxTasks(sb), listDomains(sb)]);

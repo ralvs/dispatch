@@ -73,7 +73,7 @@ Shared or API-posted **URLs** stored with title, description, and link, then
 marked read. Primary nav label **Ingest** at **`/ingest`**; rows live in
 `ingest_links` with a `unread`/`read`/`dismissed` status, written through
 `lib/services/ingest-links.ts`. External senders POST to **`/api/links`**
-(shared `INGEST_WEBHOOK_SECRET`, service-role insert, `ingest.link` ledger
+(shared `CAPTURE_WEBHOOK_SECRET`, service-role insert, `ingest.link` ledger
 row). Distinct from task **triage**, from the system **Inbox domain**, and from
 text capture `POST /api/ingest` — that path runs the LLM parser, this one never
 does. See ADR-0014.

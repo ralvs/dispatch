@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
-import { CreateIngestLinkSchema } from "@/lib/schemas/ingest-link";
-import { createLink, listLinks, setLinkStatus, unreadLinkCount } from "@/lib/services/ingest-links";
+import { CreateLinkSchema } from "@/lib/schemas/link";
+import { createLink, listLinks, setLinkStatus, unreadLinkCount } from "@/lib/services/links";
 
 type StubResult = { data?: unknown; error?: unknown; count?: number };
 
@@ -38,19 +38,19 @@ function stubSupabase(results: Record<string, StubResult>) {
 	return { sb: { from } as unknown as SupabaseClient, calls };
 }
 
-describe("CreateIngestLinkSchema", () => {
+describe("CreateLinkSchema", () => {
 	it("accepts a bare url with no metadata", () => {
-		expect(CreateIngestLinkSchema.parse({ url: "https://example.com/post" }).url).toBe(
+		expect(CreateLinkSchema.parse({ url: "https://example.com/post" }).url).toBe(
 			"https://example.com/post",
 		);
 	});
 
 	it("rejects a javascript: payload even though it parses as a URL", () => {
-		expect(CreateIngestLinkSchema.safeParse({ url: "javascript:alert(1)" }).success).toBe(false);
+		expect(CreateLinkSchema.safeParse({ url: "javascript:alert(1)" }).success).toBe(false);
 	});
 
 	it("rejects anything that is not a URL at all", () => {
-		expect(CreateIngestLinkSchema.safeParse({ url: "not a link" }).success).toBe(false);
+		expect(CreateLinkSchema.safeParse({ url: "not a link" }).success).toBe(false);
 	});
 });
 

@@ -12,7 +12,7 @@ import {
 import { computeRoutineStats, type RoutineStats } from "@/lib/routine-stats";
 import { type CalendarEventRow, listEventsOn } from "@/lib/services/calendar";
 import { type DomainRow, listDomains } from "@/lib/services/domains";
-import { unreadLinkCount } from "@/lib/services/ingest-links";
+import { unreadLinkCount } from "@/lib/services/links";
 import { countNeedsReview } from "@/lib/services/notes";
 import { unreadCount } from "@/lib/services/notifications";
 import {
@@ -99,7 +99,7 @@ export type BriefingView = {
 	// could not place, links not yet read.
 	inboxCount: number;
 	needsReviewCount: number;
-	ingestUnreadCount: number;
+	linksUnreadCount: number;
 	// doingToday predates daySchedule and still feeds the widget payload
 	// (app/api/widget/route.ts) and chat context — keep it until those callers
 	// migrate. Today itself reads daySchedule.
@@ -569,7 +569,7 @@ async function loadBriefingChrome(
 	skippedQuoteIds: string[];
 	completionHistory: CompletionRow[];
 	activeProjects: ProjectRow[];
-	ingestUnread: number;
+	linksUnread: number;
 	milestonesByProject: Record<string, MilestoneRow[]>;
 }> {
 	const [
@@ -583,7 +583,7 @@ async function loadBriefingChrome(
 		skippedQuoteIds,
 		completionHistory,
 		activeProjects,
-		ingestUnread,
+		linksUnread,
 	] = await Promise.all([
 		listRoutines(sb),
 		listCompletionsOn(sb, todayIso),
@@ -614,7 +614,7 @@ async function loadBriefingChrome(
 		skippedQuoteIds,
 		completionHistory,
 		activeProjects,
-		ingestUnread,
+		linksUnread,
 		milestonesByProject,
 	};
 }
@@ -644,7 +644,7 @@ export async function getBriefing(
 		skippedQuoteIds,
 		completionHistory,
 		activeProjects,
-		ingestUnread,
+		linksUnread,
 		milestonesByProject,
 	} = chrome;
 
@@ -671,7 +671,7 @@ export async function getBriefing(
 		cadence,
 		inboxCount,
 		needsReviewCount: needsReview,
-		ingestUnreadCount: ingestUnread,
+		linksUnreadCount: linksUnread,
 		doingToday: assembleDoingToday(open, todayIso),
 		daySchedule: buildDaySchedule({ events: todayEvents, openTasks: open, todayIso, tz }),
 		routines: { total: routines.length, done: routinesDone, remainingNames },

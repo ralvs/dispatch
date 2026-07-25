@@ -33,7 +33,7 @@ export const DAY = {
 	alerts: [
 		{ key: "triage", count: 5, label: "awaiting triage", href: "/triage" },
 		{ key: "review", count: 2, label: "need review", href: "/notes" },
-		{ key: "ingest", count: 7, label: "unread links", href: "/ingest" },
+		{ key: "links", count: 7, label: "unread links", href: "/links" },
 	],
 
 	schedule: {
@@ -87,7 +87,7 @@ export const DAY = {
 				key: "t-4",
 				kind: "task" as const,
 				time: "16:00",
-				title: "Draft the ingest ADR",
+				title: "Draft the capture ADR",
 				meta: "Dispatch · Top 3",
 				top3: true,
 				done: false,

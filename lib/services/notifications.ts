@@ -14,7 +14,7 @@ import { sendPushToAll } from "@/lib/services/push";
 // "every autonomous/external action writes a `notifications` row."
 //
 // `recordNotification` is the one sanctioned write path: every autonomous/
-// external caller (cron/ingest/CalDAV) is expected to route its ledger row
+// external caller (cron/capture/CalDAV) is expected to route its ledger row
 // through it instead of a raw client, so "did the thing, forgot the row"
 // isn't reachable through this module. It does not *prevent* a caller who
 // holds a SupabaseClient from bypassing it (see Known limits) — it's the
@@ -109,7 +109,7 @@ export async function recordNotification(
 	// Web-push delivery (ADR-0005). `sb` is RLS-scoped on session paths (server
 	// actions/route handlers via requireOwner()), and push_subscriptions has RLS
 	// enabled with no policies — so that select silently returns zero rows there.
-	// Only a service-role `sb` (cron/ingest/autonomous callers) actually pushes.
+	// Only a service-role `sb` (cron/capture/autonomous callers) actually pushes.
 	await pushNotification(sb, entry);
 	return notification;
 }

@@ -12,7 +12,7 @@ export type MutationKind =
 	| "task.triage"
 	| "capture.settled"
 	| "routine.write"
-	| "ingest.write"
+	| "links.write"
 	| "notification.write"
 	| "settings.domain"
 	| "settings.timezone"
@@ -44,8 +44,8 @@ export function afterMutation(kind: MutationKind, detail?: { id?: string }): voi
 			revalidatePath("/routines");
 			revalidatePath("/today");
 			return;
-		case "ingest.write":
-			revalidatePath("/ingest");
+		case "links.write":
+			revalidatePath("/links");
 			revalidatePath("/today");
 			return;
 		case "notification.write":
