@@ -67,16 +67,17 @@ Each row has a free-text `type`, a human `title`/`body`, an optional
 which is reachable from any other). Web-push delivery (ADR-0005) is planned: it
 will surface this same ledger to the phone.
 
-## ingest (link list)
+## links (reading list)
 
 Shared or API-posted **URLs** stored with title, description, and link, then
-marked read. Primary nav label **Ingest** at **`/ingest`**; rows live in
-`ingest_links` with a `unread`/`read`/`dismissed` status, written through
-`lib/services/ingest-links.ts`. External senders POST to **`/api/links`**
-(shared `CAPTURE_WEBHOOK_SECRET`, service-role insert, `ingest.link` ledger
-row). Distinct from task **triage**, from the system **Inbox domain**, and from
-text capture `POST /api/ingest` — that path runs the LLM parser, this one never
-does. See ADR-0014.
+marked read. Primary nav label **Links** at **`/links`**; rows live in
+`ingest_links` — the legacy table name, deliberately not migrated — with an
+`unread`/`read`/`dismissed` status, written through `lib/services/links.ts`.
+Title and description are fetched from the page by `lib/links/metadata.ts`,
+best-effort. External senders POST to **`/api/capture`**, which routes a bare
+URL here and everything else to the parser (`capture.link` ledger row).
+Distinct from task **triage** and from the system **Inbox domain**. See
+ADR-0014 and ADR-0022.
 
 ## day schedule
 
