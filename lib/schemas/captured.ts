@@ -25,9 +25,9 @@ export const CapturedDataSchema = z.object({
 	created_at: z.string().datetime({ offset: true }),
 });
 
-// Payload accepted at POST /api/ingest. Loose by design — anything with
+// Payload accepted at POST /api/capture. Loose by design — anything with
 // a `type` and `payload` is recorded; the consumer decides how to display.
-export const IngestRequestSchema = z.object({
+export const CaptureIngressSchema = z.object({
 	source: CaptureSourceSchema.default("webhook"),
 	type: z.string().min(1),
 	payload: z.record(z.string(), z.unknown()),

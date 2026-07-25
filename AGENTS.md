@@ -18,7 +18,7 @@ Renan Alves (renan@alves.id).
 
 ```
 app/            routes (App Router; (authed)/ group behind sign-in)
-app/api/        external HTTP surfaces only (ingest, cron, widget, capture, chat)
+app/api/        external HTTP surfaces only (capture, cron, calendar, widget, push, chat)
 components/     shared client components
 lib/            env, dates, schemas, constants, supabase clients, ai, services
 lib/services/   all business logic; every fn takes SupabaseClient as 1st arg
@@ -37,7 +37,7 @@ supabase/       migrations + config
    redirects page loads. External endpoints use `lib/secret-auth.ts`
    (timing-safe). There is no unauthenticated surface.
 3. **Services take `sb` as the first argument** so the same function runs
-   RLS-scoped (pages/actions) or service-role (cron/ingest).
+   RLS-scoped (pages/actions) or service-role (cron/capture).
 4. **Never lose a capture.** The capture pipeline degrades to a `needs_review`
    note rather than dropping input. AI calls return typed fallbacks, never
    throw into the capture path. Capture is text-only (docs/adr/0017).

@@ -8,16 +8,16 @@ import Link from "next/link";
 export function AlertsRow({
 	triage,
 	needsReview,
-	ingestUnread,
+	linksUnread,
 }: {
 	triage: number;
 	needsReview: number;
-	ingestUnread: number;
+	linksUnread: number;
 }) {
 	const alerts = [
 		{ key: "triage", count: triage, label: "awaiting triage", href: "/triage" },
 		{ key: "review", count: needsReview, label: "need review", href: "/notes" },
-		{ key: "ingest", count: ingestUnread, label: "unread links", href: "/ingest" },
+		{ key: "links", count: linksUnread, label: "unread links", href: "/links" },
 	].filter((a) => a.count > 0);
 
 	if (alerts.length === 0) return null;

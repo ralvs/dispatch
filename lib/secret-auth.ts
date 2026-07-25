@@ -2,7 +2,7 @@ import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
 
 // ─────────────────────────────────────────────────────────────────────────
-// Shared-secret auth for the external HTTP surfaces (ingest, cron, widget —
+// Shared-secret auth for the external HTTP surfaces (capture, cron, widget —
 // iron rule #2). Each surface has its own secret in env(); callers present it
 // as `Authorization: Bearer <secret>`. Comparison is constant-time over
 // fixed-length digests so neither length nor content leaks through timing.

@@ -1,11 +1,11 @@
 import { requireOwnerPage } from "@/lib/auth";
-import { listLinks } from "@/lib/services/ingest-links";
+import { listLinks } from "@/lib/services/links";
 import { getAppTimezone } from "@/lib/services/settings";
 import { LinkRowItem } from "./link-row";
 
-// The link reading list (ADR-0014). Not task triage — that is /triage — and
-// not the text-capture webhook that shares the word.
-export default async function IngestPage() {
+// The link reading list (ADR-0014, renamed from /ingest in ADR-0022). Not task
+// triage — that is /triage.
+export default async function LinksPage() {
 	const { sb } = await requireOwnerPage();
 	const [links, tz] = await Promise.all([listLinks(sb, { limit: 200 }), getAppTimezone(sb)]);
 
@@ -15,7 +15,7 @@ export default async function IngestPage() {
 	return (
 		<div>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Ingest</p>
+				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Links</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">The reading pile</h1>
 				<p className="mt-1 text-meta text-ink-3">
 					{unread.length === 0

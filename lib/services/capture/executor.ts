@@ -1,11 +1,15 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { todayInTz } from "@/lib/dates";
-import type { CaptureAction } from "@/lib/schemas/capture";
+import { createCaldavClient } from "@/lib/caldav/client";
+import { instantFromLocal, todayInTz } from "@/lib/dates";
+import { isCaldavConfigured } from "@/lib/env";
+import type { CaptureAction, CreateEventAction } from "@/lib/schemas/capture";
+import { createEventHere } from "@/lib/services/calendar";
 import type { ActionResult } from "@/lib/services/capture";
 import { type RoutingLists, resolveTaskRouting } from "@/lib/services/capture/resolve";
 import { createEntry } from "@/lib/services/journal";
 import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
+import { recordNotification } from "@/lib/services/notifications";
 import { createQuote } from "@/lib/services/quotes";
 import { createTask } from "@/lib/services/tasks";
 
@@ -63,6 +67,58 @@ async function degrade(
 	return { action, ok: false, reason, noteId };
 }
 
+/**
+ * The one capture action that leaves the building: it writes a VEVENT to the
+ * iCloud calendar named by ICLOUD_CALENDAR_NAME before the local mirror row
+ * exists (docs/adr/0006's single push target, docs/adr/0023).
+ *
+ * Throws on every failure — no CalDAV credentials, no such calendar, a
+ * network error, or an end that precedes its start — so runOne's catch turns
+ * it into a needs_review note holding the verbatim transcript. A capture that
+ * cannot reach iCloud must still be recoverable by hand.
+ */
+async function runCreateEvent(
+	sb: SupabaseClient,
+	action: CreateEventAction,
+	prov: Provenance,
+): Promise<ActionResult> {
+	if (!isCaldavConfigured()) {
+		throw new Error("iCloud CalDAV is not configured; event not created");
+	}
+
+	// Wall-clock in the app timezone → UTC instants (iron rule #1). The model
+	// answers in the timezone the prompt gave it; nothing here does date math.
+	const startUtc = instantFromLocal(action.start_date, action.start_time, prov.tz);
+	const endUtc = instantFromLocal(action.end_date ?? action.start_date, action.end_time, prov.tz);
+	if (Date.parse(endUtc) <= Date.parse(startUtc)) {
+		throw new Error(`Event ends at or before it starts (${action.start_time}–${action.end_time})`);
+	}
+
+	const event = await createEventHere(sb, await createCaldavClient(), {
+		title: action.title,
+		startUtc,
+		endUtc,
+		description: action.description,
+		location: action.location,
+	});
+
+	// An external write, so it owes a ledger row (iron rule #6) — best-effort,
+	// per ADR-0015: the event is already on the calendar and losing the row
+	// must not undo it.
+	try {
+		await recordNotification(sb, {
+			type: "capture.event",
+			title: "Event added to calendar",
+			body: `${event.title} — ${action.start_date} ${action.start_time}`,
+			source_ref: event.id,
+		});
+	} catch {
+		// Ledger only. The VEVENT and its mirror row both exist.
+	}
+
+	return { action: "create_event", ok: true, entity: { table: "calendar_events", id: event.id } };
+}
+
 async function runOne(
 	sb: SupabaseClient,
 	action: CaptureAction,
@@ -85,6 +141,8 @@ async function runOne(
 				});
 				return { action: "create_task", ok: true, entity: { table: "tasks", id: task.id } };
 			}
+			case "create_event":
+				return await runCreateEvent(sb, action, prov);
 			case "create_note": {
 				const note = await createNote(sb, {
 					body: action.body,

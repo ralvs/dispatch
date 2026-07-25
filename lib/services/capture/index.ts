@@ -44,7 +44,7 @@ export type ActionResult =
 			action: string;
 			ok: true;
 			entity: {
-				table: "tasks" | "notes" | "quotes" | "journal_entries";
+				table: "tasks" | "calendar_events" | "notes" | "quotes" | "journal_entries";
 				id: string;
 			};
 	  }

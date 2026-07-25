@@ -1,13 +1,13 @@
 "use client";
 
 import { useTransition } from "react";
-import { setLinkStatusAction } from "@/app/(authed)/ingest/actions";
+import { setLinkStatusAction } from "@/app/(authed)/links/actions";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
-import type { IngestLinkRow } from "@/lib/services/ingest-links";
+import type { LinkRow } from "@/lib/services/links";
 
 /** The link's own words when it has them, otherwise the host it points at. */
-function displayTitle(link: IngestLinkRow): string {
+function displayTitle(link: LinkRow): string {
 	if (link.title) return link.title;
 	try {
 		return new URL(link.url).hostname.replace(/^www\./, "");
@@ -16,7 +16,7 @@ function displayTitle(link: IngestLinkRow): string {
 	}
 }
 
-export function LinkRowItem({ link, tz }: { link: IngestLinkRow; tz: string }) {
+export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
 	const [pending, startTransition] = useTransition();
 	const unread = link.status === "unread";
 	const mark = (status: "unread" | "read" | "dismissed") =>

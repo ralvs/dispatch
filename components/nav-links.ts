@@ -17,10 +17,10 @@ export type NavItem = {
 const TODAY: NavItem = { key: "today", label: "Today", href: "/today", aliases: ["/calendar"] };
 const TASKS: NavItem = { key: "tasks", label: "Tasks", href: "/tasks", aliases: ["/triage"] };
 const NOTES: NavItem = { key: "notes", label: "Notes", href: "/notes" };
-const INGEST: NavItem = { key: "ingest", label: "Ingest", href: "/ingest" };
+const LINKS: NavItem = { key: "links", label: "Links", href: "/links" };
 const CHAT: NavItem = { key: "chat", label: "Chat", href: "/chat" };
 
-export const DAILY: NavItem[] = [TODAY, TASKS, NOTES, INGEST, CHAT];
+export const DAILY: NavItem[] = [TODAY, TASKS, NOTES, LINKS, CHAT];
 
 export const LIBRARY: NavItem[] = [
 	{ key: "projects", label: "Projects", href: "/projects" },
@@ -49,7 +49,7 @@ export const TABS: NavItem[] = [
 	TODAY,
 	TASKS,
 	NOTES,
-	INGEST,
+	LINKS,
 	{
 		key: "more",
 		label: "More",

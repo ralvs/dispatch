@@ -20,7 +20,7 @@ const EnvSchema = z.object({
 	CHAT_MODEL: z.string().default("anthropic/claude-sonnet-5"),
 
 	// External-surface secrets (Phase 7)
-	INGEST_WEBHOOK_SECRET: z.string().min(20).optional(),
+	CAPTURE_WEBHOOK_SECRET: z.string().min(20).optional(),
 	CRON_SECRET: z.string().min(20).optional(),
 	WIDGET_SECRET: z.string().min(20).optional(),
 	// Mac EventKit bridge → POST /api/calendar/bridge (docs/adr/0018)

@@ -46,7 +46,7 @@ export default async function TodayPage() {
 				<AlertsRow
 					triage={briefing.inboxCount}
 					needsReview={briefing.needsReviewCount}
-					ingestUnread={briefing.ingestUnreadCount}
+					linksUnread={briefing.linksUnreadCount}
 				/>
 			</div>
 
