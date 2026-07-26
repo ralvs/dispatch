@@ -50,4 +50,41 @@ describe("parseMetadata", () => {
 		const html = `<head><meta name="description" content="d"></head><body><title>Not this</title></body>`;
 		expect(parseMetadata(html).title).toBeNull();
 	});
+
+	describe("article headline vs. page title", () => {
+		it("drops the masthead declared by og:site_name", () => {
+			const html = `<head><meta property="og:site_name" content="The Verge"><title>How the deal fell apart — The Verge</title></head>`;
+			expect(parseMetadata(html).title).toBe("How the deal fell apart");
+		});
+
+		it("drops a masthead that only matches the host", () => {
+			const html = "<head><title>How the deal fell apart | Reuters</title></head>";
+			expect(parseMetadata(html, "www.reuters.com").title).toBe("How the deal fell apart");
+		});
+
+		it("trims the brand off og:title as well", () => {
+			const html = `<head><meta property="og:title" content="A quiet week in review | Stratechery"></head>`;
+			expect(parseMetadata(html, "stratechery.com").title).toBe("A quiet week in review");
+		});
+
+		it("keeps a dash that is part of the headline", () => {
+			const html = "<head><title>Rust 2.0 — what changed and why</title></head>";
+			expect(parseMetadata(html, "example.com").title).toBe("Rust 2.0 — what changed and why");
+		});
+
+		it("finds the brand under a subdomain", () => {
+			const html = "<head><title>Neuromancer - Wikipedia</title></head>";
+			expect(parseMetadata(html, "en.wikipedia.org").title).toBe("Neuromancer");
+		});
+
+		it("leaves a tail that is not the site alone", () => {
+			const html = "<head><title>Y Combinator | Hacker News</title></head>";
+			expect(parseMetadata(html, "news.ycombinator.com").title).toBe("Y Combinator | Hacker News");
+		});
+
+		it("keeps the whole title when stripping would leave a stub", () => {
+			const html = "<head><title>Home | Reuters</title></head>";
+			expect(parseMetadata(html, "reuters.com").title).toBe("Home | Reuters");
+		});
+	});
 });

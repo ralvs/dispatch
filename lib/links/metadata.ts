@@ -64,15 +64,69 @@ function metaContent(html: string, key: string): string | undefined {
 	);
 }
 
-export function parseMetadata(html: string): LinkMetadata {
+// Separators publishers hang their masthead off: "Headline — The Verge".
+const SITE_SUFFIX = /\s+[|–—·•:«»~-]\s+([^|–—·•:~]+)$/;
+
+/** "Wired" and "WIRED" and "wired" are the same masthead as far as this goes. */
+function brand(s: string): string {
+	return s
+		.toLowerCase()
+		.replace(/^the\s+/, "")
+		.replace(/[^a-z0-9]/g, "");
+}
+
+// Suffixes that are never the brand: the last label, plus the "co" in "co.uk".
+const PUBLIC_SUFFIX = new Set(["co", "com", "org", "net", "gov", "edu", "ac"]);
+
+/**
+ * Brand candidates hiding in a hostname — "en.wikipedia.org" answers to
+ * "Wikipedia". Approximate on purpose; a wrong candidate simply fails to match
+ * the title's tail and nothing gets stripped.
+ */
+function hostBrands(host: string): string[] {
+	const labels = host.toLowerCase().split(".").slice(0, -1);
+	if (labels.length > 1 && PUBLIC_SUFFIX.has(labels[labels.length - 1] ?? "")) labels.pop();
+	return labels.filter((label) => label !== "www" && label.length >= 3);
+}
+
+/**
+ * Drops the publication name a `<title>` carries so the article's own headline
+ * survives: "How the deal fell apart | Reuters" → "How the deal fell apart".
+ * Only fires when the tail actually matches the site's declared name or host,
+ * so a title that merely contains a dash keeps both halves.
+ */
+function stripSiteSuffix(title: string, sites: string[]): string {
+	const tail = title.match(SITE_SUFFIX);
+	if (!tail?.[1]) return title;
+
+	const candidate = brand(tail[1]);
+	if (candidate.length === 0) return title;
+	if (!sites.some((site) => brand(site) === candidate)) return title;
+
+	const head = title.slice(0, title.length - tail[0].length).trim();
+	// A headline shorter than this is likelier a section label than the article.
+	return head.length >= 5 ? head : title;
+}
+
+export function parseMetadata(html: string, host?: string): LinkMetadata {
 	// Only the head can carry the metadata, and stopping there keeps the
 	// regexes off megabytes of body markup.
 	const head = html.split(/<\/head>/i)[0] ?? html;
 
-	const title =
+	const sites = [
+		clean(metaContent(head, "og:site_name"), TITLE_MAX),
+		clean(metaContent(head, "application-name"), TITLE_MAX),
+		...(host ? hostBrands(host) : []),
+	].filter((s): s is string => s !== null);
+
+	// og:title is the headline the publisher declares; <title> is the page's,
+	// masthead and all. Both get trimmed — plenty of sites append the brand to
+	// og:title too, and the guard in stripSiteSuffix keeps that from overreaching.
+	const rawTitle =
 		clean(metaContent(head, "og:title"), TITLE_MAX) ??
 		clean(metaContent(head, "twitter:title"), TITLE_MAX) ??
 		clean(head.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1], TITLE_MAX);
+	const title = rawTitle === null ? null : stripSiteSuffix(rawTitle, sites);
 
 	const description =
 		clean(metaContent(head, "og:description"), DESCRIPTION_MAX) ??
@@ -80,6 +134,58 @@ export function parseMetadata(html: string): LinkMetadata {
 		clean(metaContent(head, "description"), DESCRIPTION_MAX);
 
 	return { title, description };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// oEmbed providers. YouTube serves a JS shell to a plain GET: no og:title, no
+// usable <title>, so a shared video landed on /links as a bare "youtube.com".
+// Its oEmbed endpoint is keyless, answers for watch/shorts/live/youtu.be alike,
+// and returns the video's own title plus the channel — which is what the owner
+// meant when they shared the link.
+// ─────────────────────────────────────────────────────────────────────────
+
+const YOUTUBE_HOSTS = new Set([
+	"youtube.com",
+	"www.youtube.com",
+	"m.youtube.com",
+	"music.youtube.com",
+	"youtu.be",
+	"www.youtu.be",
+]);
+
+function oembedEndpoint(parsed: URL): string | null {
+	if (!YOUTUBE_HOSTS.has(parsed.hostname.toLowerCase())) return null;
+	return `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(parsed.toString())}`;
+}
+
+/**
+ * Asks the provider directly. Returns null — not empty metadata — when the
+ * endpoint declines, so the caller still gets its shot at the HTML head.
+ */
+async function fetchOembed(endpoint: string): Promise<LinkMetadata | null> {
+	try {
+		const response = await fetch(endpoint, {
+			redirect: "follow",
+			signal: AbortSignal.timeout(TIMEOUT_MS),
+			headers: { accept: "application/json" },
+		});
+		// 401/404 here means private, deleted, or not a video URL after all.
+		if (!response.ok) return null;
+
+		const body: unknown = await response.json();
+		if (typeof body !== "object" || body === null) return null;
+		const { title, author_name } = body as { title?: unknown; author_name?: unknown };
+
+		const cleanTitle = typeof title === "string" ? clean(title, TITLE_MAX) : null;
+		if (!cleanTitle) return null;
+
+		return {
+			title: cleanTitle,
+			description: typeof author_name === "string" ? clean(author_name, DESCRIPTION_MAX) : null,
+		};
+	} catch {
+		return null;
+	}
 }
 
 /** Reads at most MAX_BYTES of the body, so a giant or endless page cannot hang us. */
@@ -117,6 +223,13 @@ export async function fetchLinkMetadata(url: string): Promise<LinkMetadata> {
 		const parsed = new URL(url);
 		if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return empty;
 
+		// A provider that answers about itself beats scraping its shell.
+		const endpoint = oembedEndpoint(parsed);
+		if (endpoint) {
+			const oembed = await fetchOembed(endpoint);
+			if (oembed) return oembed;
+		}
+
 		const response = await fetch(parsed, {
 			redirect: "follow",
 			signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -128,7 +241,9 @@ export async function fetchLinkMetadata(url: string): Promise<LinkMetadata> {
 		const contentType = response.headers.get("content-type") ?? "";
 		if (!/text\/html|application\/xhtml\+xml/i.test(contentType)) return empty;
 
-		return parseMetadata(await readCapped(response));
+		// The final host after redirects — that is whose masthead the title carries.
+		const host = URL.parse(response.url)?.hostname ?? parsed.hostname;
+		return parseMetadata(await readCapped(response), host);
 	} catch {
 		// DNS failure, TLS error, timeout, malformed URL — all the same here.
 		return empty;
