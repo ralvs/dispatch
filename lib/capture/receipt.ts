@@ -24,12 +24,15 @@ function plural(n: number, singular: string): string {
 	return `${n} ${singular}${n === 1 ? "" : "s"}`;
 }
 
-// The degrade reasons carry a slightly different reassurance.
+// The degrade reasons carry a slightly different reassurance. Both point at
+// Notes: a degraded capture becomes a needs_review NOTE holding the verbatim
+// text (docs/adr/0008), never a task in the Inbox — which is what this copy
+// used to claim.
 function reviewLines(reason: string): string[] {
 	if (reason === "parser_unavailable") {
-		return ["Automatic sorting is offline right now.", "Saved to your Inbox to file by hand."];
+		return ["Automatic sorting is offline right now.", "Kept in Notes, word for word."];
 	}
-	return ["We couldn't file this automatically.", "Saved to your Inbox to sort out."];
+	return ["We couldn't file this automatically.", "Kept in Notes to sort out."];
 }
 
 export function deriveReceipt(record: CapturedRecord): CaptureReceipt {

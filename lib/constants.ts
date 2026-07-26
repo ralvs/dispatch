@@ -3,9 +3,12 @@
 // constants so we don't pay a runtime lookup for routing decisions.
 //
 // If the seed ever needs to recreate these rows (DB rebuild, dev seed),
-// the same UUIDs must be used — see supabase/migrations/0001_schema.sql.
+// the same UUIDs must be used — see the seed section of
+// supabase/migrations/20260714194155_schema.sql.
 
-// Catch-all domain for tasks captured without an explicit destination.
+// Where a task lands when it is captured without a stated destination — the
+// /inbox queue (docs/adr/0024). Set by createTask's default and nothing else:
+// assignDomain refuses it as a target, so filing out is one-way.
 export const INBOX_DOMAIN_ID = "acf035ee-b247-4c96-a07e-5946bc2b2e91";
 
 /** Rolling window for calendar pull syncs (iCloud CalDAV + Google). */

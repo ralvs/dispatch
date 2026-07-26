@@ -12,10 +12,10 @@ export type NavItem = {
 // rest to /more.
 
 // /calendar stays an alias — Today is the v1 calendar surface and the route is
-// reserved for a dedicated page later (ADR-0014). /triage is task triage, so
-// it belongs to Tasks, not to Today.
+// reserved for a dedicated page later (ADR-0014). /inbox is unassigned tasks,
+// so it belongs to Tasks, not to Today.
 const TODAY: NavItem = { key: "today", label: "Today", href: "/today", aliases: ["/calendar"] };
-const TASKS: NavItem = { key: "tasks", label: "Tasks", href: "/tasks", aliases: ["/triage"] };
+const TASKS: NavItem = { key: "tasks", label: "Tasks", href: "/tasks", aliases: ["/inbox"] };
 const NOTES: NavItem = { key: "notes", label: "Notes", href: "/notes" };
 const LINKS: NavItem = { key: "links", label: "Links", href: "/links" };
 const CHAT: NavItem = { key: "chat", label: "Chat", href: "/chat" };

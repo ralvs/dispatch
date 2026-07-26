@@ -52,7 +52,9 @@ async function assertNotSystem(sb: SupabaseClient, id: string, action: string): 
 	const domain = await getDomain(sb, id);
 	if (!domain) throw new ServiceError(`Domain ${id} not found`, "NOT_FOUND");
 	if (domain.is_system) {
-		throw new ServiceError(`The system Inbox domain cannot be ${action}`, "FORBIDDEN");
+		// Interpolated, not hardcoded to "Inbox": is_system is the categorical
+		// test throughout, so a second system row must not get a wrong message.
+		throw new ServiceError(`The system ${domain.name} domain cannot be ${action}`, "FORBIDDEN");
 	}
 }
 

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
-import { completeTask } from "@/lib/services/tasks";
+import { INBOX_DOMAIN_ID } from "@/lib/constants";
+import { assignDomain, completeTask, createTask, listInboxTasks } from "@/lib/services/tasks";
 
 const TODAY = "2026-07-15";
 
@@ -60,5 +61,99 @@ describe("completeTask", () => {
 		expect(updatePatches).toHaveLength(1);
 		expect(updatePatches[0]).toMatchObject({ status: "done" });
 		expect(updatePatches[0].completed_at).toEqual(expect.any(String));
+	});
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// The Inbox queue (docs/adr/0024). Until this file, nothing covered the one
+// path every unrouted capture takes.
+// ─────────────────────────────────────────────────────────────────────────
+
+// Same chainable/thenable double the other service tests use (cf.
+// lib/services/links.test.ts): every builder method returns the builder,
+// awaiting it resolves the configured result, and each terminal call is
+// recorded so wiring can be asserted without a database.
+function stubBuilder(result: { data?: unknown; error?: unknown }) {
+	const calls: Array<{ op: string; payload: unknown }> = [];
+
+	const from = vi.fn(() => {
+		// biome-ignore lint/suspicious/noExplicitAny: hand-rolled test double
+		const builder: any = {};
+		const record = (op: string) => (payload: unknown) => {
+			calls.push({ op, payload });
+			return builder;
+		};
+		builder.insert = record("insert");
+		builder.update = record("update");
+		builder.select = () => builder;
+		builder.order = record("order");
+		builder.limit = record("limit");
+		builder.eq = (col: string, value: unknown) => {
+			calls.push({ op: "eq", payload: { col, value } });
+			return builder;
+		};
+		builder.single = async () => result;
+		// biome-ignore lint/suspicious/noThenProperty: intentional thenable test double
+		builder.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
+			Promise.resolve(result).then(resolve, reject);
+		return builder;
+	});
+
+	return { sb: { from } as unknown as SupabaseClient, calls };
+}
+
+describe("listInboxTasks", () => {
+	it("narrows to open tasks in the Inbox domain", async () => {
+		const { sb, calls } = stubBuilder({ data: [], error: null });
+
+		await listInboxTasks(sb);
+
+		expect(calls).toContainEqual({ op: "eq", payload: { col: "status", value: "open" } });
+		expect(calls).toContainEqual({
+			op: "eq",
+			payload: { col: "domain_id", value: INBOX_DOMAIN_ID },
+		});
+	});
+});
+
+describe("createTask", () => {
+	it("drops a task with no stated domain into the Inbox", async () => {
+		const { sb, calls } = stubBuilder({ data: { id: "task-1" }, error: null });
+
+		await createTask(sb, { title: "ligar pro médico" });
+
+		expect(calls[0]).toMatchObject({
+			op: "insert",
+			payload: { domain_id: INBOX_DOMAIN_ID, source: "manual" },
+		});
+	});
+
+	it("leaves a stated domain alone", async () => {
+		const { sb, calls } = stubBuilder({ data: { id: "task-1" }, error: null });
+
+		await createTask(sb, { title: "ship it", domain_id: "dom-code" });
+
+		expect(calls[0]).toMatchObject({ op: "insert", payload: { domain_id: "dom-code" } });
+	});
+});
+
+describe("assignDomain", () => {
+	it("files a task to a real domain", async () => {
+		const { sb, calls } = stubBuilder({ data: null, error: null });
+
+		await assignDomain(sb, "task-1", "dom-code");
+
+		expect(calls).toContainEqual({ op: "update", payload: { domain_id: "dom-code" } });
+	});
+
+	// The one-way rule. The pickers hide the option, but this is what enforces
+	// it — a task must never be filed back into the queue that exists to empty.
+	it("refuses to move a task back to the Inbox", async () => {
+		const { sb, calls } = stubBuilder({ data: null, error: null });
+
+		await expect(assignDomain(sb, "task-1", INBOX_DOMAIN_ID)).rejects.toThrow(
+			/cannot be moved back to the Inbox/,
+		);
+		expect(calls).toHaveLength(0);
 	});
 });

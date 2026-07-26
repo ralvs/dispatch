@@ -3,8 +3,7 @@ import { listLinks } from "@/lib/services/links";
 import { getAppTimezone } from "@/lib/services/settings";
 import { LinkRowItem } from "./link-row";
 
-// The link reading list (ADR-0014, renamed from /ingest in ADR-0022). Not task
-// triage — that is /triage.
+// The link reading list (ADR-0014, renamed from /ingest in ADR-0022).
 export default async function LinksPage() {
 	const { sb } = await requireOwnerPage();
 	const [links, tz] = await Promise.all([listLinks(sb, { limit: 200 }), getAppTimezone(sb)]);

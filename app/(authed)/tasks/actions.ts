@@ -7,12 +7,12 @@ import { CreateTaskFormSchema } from "@/lib/schemas/task";
 import { quickAddTask } from "@/lib/services/capture/quick-add";
 import { todayForRequest } from "@/lib/services/settings";
 import {
+	assignDomain,
 	completeTask,
 	createTask,
 	deleteTask,
 	reopenTask,
 	toggleTop3,
-	triageTask,
 	updateTask,
 } from "@/lib/services/tasks";
 
@@ -77,8 +77,8 @@ export async function toggleTop3Action(id: string) {
 	afterMutation("task.write");
 }
 
-export async function triageTaskAction(id: string, domainId: string) {
+export async function assignDomainAction(id: string, domainId: string) {
 	const { sb } = await requireOwnerPage();
-	await triageTask(sb, z.uuid().parse(id), z.uuid().parse(domainId));
-	afterMutation("task.triage");
+	await assignDomain(sb, z.uuid().parse(id), z.uuid().parse(domainId));
+	afterMutation("task.assign");
 }

@@ -85,7 +85,7 @@ export function renderChatContext(snapshot: ChatSnapshot): string {
 			[
 				"## Briefing",
 				`Cadence: ${cadence}`,
-				`Inbox: ${b.inboxCount} awaiting triage`,
+				`Inbox: ${b.inboxCount} unfiled`,
 				`Doing today: ${b.doingToday.length ? b.doingToday.map((t) => t.title).join(", ") : "nothing pinned"}`,
 				`Routines: ${routines}`,
 				`Quote of the day: ${quote}`,

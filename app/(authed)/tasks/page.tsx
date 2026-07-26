@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireOwnerPage } from "@/lib/auth";
+import { INBOX_DOMAIN_ID } from "@/lib/constants";
 import { todayInTz } from "@/lib/dates";
 import { listDomains } from "@/lib/services/domains";
 import { listNoteIdsForTargets } from "@/lib/services/note-links";
@@ -22,7 +23,7 @@ export default async function TasksPage({
 		listDomains(sb),
 	]);
 	const todayIso = todayInTz(tz);
-	const inboxCount = openTasks.filter((t) => t.domain?.name === "Inbox").length;
+	const inboxCount = openTasks.filter((t) => t.domain_id === INBOX_DOMAIN_ID).length;
 	const overdueCount = openTasks.filter((t) => isOverdue(t, todayIso)).length;
 	const dueTodayCount = openTasks.filter((t) => isDueToday(t, todayIso)).length;
 	const taskNoteIds = Object.fromEntries(
@@ -46,8 +47,8 @@ export default async function TasksPage({
 					· {dueTodayCount} today
 				</p>
 				{inboxCount > 0 && (
-					<Link href="/triage" className="mt-2 inline-block text-meta text-accent-ink">
-						{inboxCount} in the Inbox domain awaiting triage →
+					<Link href="/inbox" className="mt-2 inline-block text-meta text-accent-ink">
+						{inboxCount} in the inbox →
 					</Link>
 				)}
 			</header>

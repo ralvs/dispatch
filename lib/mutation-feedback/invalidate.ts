@@ -9,7 +9,7 @@ import { revalidatePath } from "next/cache";
  */
 export type MutationKind =
 	| "task.write"
-	| "task.triage"
+	| "task.assign"
 	| "capture.settled"
 	| "routine.write"
 	| "links.write"
@@ -28,7 +28,7 @@ export type MutationKind =
 
 function taskViews() {
 	revalidatePath("/tasks");
-	revalidatePath("/triage");
+	revalidatePath("/inbox");
 	// Day schedule + briefing chrome until tagged soft-split fully caches chrome.
 	revalidatePath("/today");
 }
@@ -36,7 +36,7 @@ function taskViews() {
 export function afterMutation(kind: MutationKind, detail?: { id?: string }): void {
 	switch (kind) {
 		case "task.write":
-		case "task.triage":
+		case "task.assign":
 		case "capture.settled":
 			taskViews();
 			return;

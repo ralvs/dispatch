@@ -233,11 +233,17 @@ export function TaskMetaFields({
 						defaultValue={defaults.domain_id ?? domains[0]?.id}
 						className={`${CONTROL} mt-1 block w-[11rem] max-w-full`}
 					>
-						{domains.map((d) => (
-							<option key={d.id} value={d.id}>
-								{d.name}
-							</option>
-						))}
+						{/* The Inbox is never offered as a destination — filing out of it is
+						    one-way (docs/adr/0024). It stays listed only when it is this
+						    task's current value, so editing an inbox task doesn't silently
+						    reassign it to whichever domain sorts first. */}
+						{domains
+							.filter((d) => !d.is_system || d.id === defaults.domain_id)
+							.map((d) => (
+								<option key={d.id} value={d.id}>
+									{d.name}
+								</option>
+							))}
 					</select>
 				</label>
 
