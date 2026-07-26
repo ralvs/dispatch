@@ -44,7 +44,7 @@ export default async function TodayPage() {
 			<div className="mt-12 grid grid-cols-1 gap-10 lg:grid-cols-[1.6fr_1fr] lg:items-center lg:gap-14">
 				<AnchorLine anchor={briefing.anchor} tz={tz} />
 				<AlertsRow
-					triage={briefing.inboxCount}
+					inbox={briefing.inboxCount}
 					needsReview={briefing.needsReviewCount}
 					linksUnread={briefing.linksUnreadCount}
 				/>

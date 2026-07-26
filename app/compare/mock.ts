@@ -31,7 +31,7 @@ export const DAY = {
 
 	// Things waiting on a decision.
 	alerts: [
-		{ key: "triage", count: 5, label: "awaiting triage", href: "/triage" },
+		{ key: "inbox", count: 5, label: "in the inbox", href: "/inbox" },
 		{ key: "review", count: 2, label: "need review", href: "/notes" },
 		{ key: "links", count: 7, label: "unread links", href: "/links" },
 	],

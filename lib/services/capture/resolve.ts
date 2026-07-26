@@ -9,7 +9,7 @@ import { listProjects } from "@/lib/services/projects";
 // The parser is only ever given names (never ids — hallucinated-UUID risk),
 // so this is exact, case- and diacritic-insensitive matching only. No fuzzy
 // match (deferred per ADR-0016's match.ts). A miss never fails the capture:
-// the caller falls back to Inbox and records the miss for triage.
+// the caller falls back to the Inbox and records the miss for filing there.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type RoutingLists = {

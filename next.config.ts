@@ -11,10 +11,10 @@ const nextConfig: NextConfig = {
 	},
 	async redirects() {
 		return [
-			// Task triage moved to /triage (ADR-0014). /inbox is not the link
-			// reading list — that is Ingest at /ingest — so send old bookmarks
-			// to the page they actually meant.
-			{ source: "/inbox", destination: "/triage", permanent: true },
+			// The unassigned-task queue is /inbox again (docs/adr/0024). It briefly
+			// lived at /triage under ADR-0014, when the link reading list was
+			// competing for the word "inbox"; that list is /links now.
+			{ source: "/triage", destination: "/inbox", permanent: true },
 		];
 	},
 };

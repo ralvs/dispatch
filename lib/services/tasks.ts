@@ -4,7 +4,7 @@ import { INBOX_DOMAIN_ID } from "@/lib/constants";
 import { nowUtc } from "@/lib/dates";
 import { isRecurrencePattern, nextDueDate } from "@/lib/recurrence";
 import { TASK_SELECT, type TaskRow } from "@/lib/schemas/task";
-import { unwrap } from "@/lib/services/errors";
+import { ServiceError, unwrap } from "@/lib/services/errors";
 
 export type { TaskRow } from "@/lib/schemas/task";
 
@@ -35,6 +35,7 @@ export async function listTasks(
 	return (data ?? []).map(flatten);
 }
 
+/** The /inbox queue: open tasks that were captured without a domain. */
 export async function listInboxTasks(sb: SupabaseClient): Promise<TaskRow[]> {
 	return listTasks(sb, { status: "open", domainId: INBOX_DOMAIN_ID });
 }
@@ -147,7 +148,8 @@ export async function createTask(
 			.from("tasks")
 			.insert({
 				...input,
-				// Tasks without a destination land in the Inbox for triage.
+				// A task without a stated destination lands in the Inbox (/inbox),
+				// which is the only way a task ever gets that domain.
 				domain_id: input.domain_id ?? INBOX_DOMAIN_ID,
 				source: input.source ?? "manual",
 			})
@@ -217,7 +219,19 @@ export async function toggleTop3(sb: SupabaseClient, id: string, todayIso: strin
 	unwrap(await sb.from("tasks").update({ top3_for_date: next }).eq("id", id));
 }
 
-/** Inbox triage: give a task a real home. */
-export async function triageTask(sb: SupabaseClient, id: string, domainId: string): Promise<void> {
+/**
+ * Give a task a domain — the one way out of the Inbox, and one-way by design
+ * (docs/adr/0024). Only `createTask`'s default may ever set the Inbox domain,
+ * so a task cannot be filed back into the queue that exists to empty it. The
+ * UI hides the option; this is what enforces it.
+ */
+export async function assignDomain(
+	sb: SupabaseClient,
+	id: string,
+	domainId: string,
+): Promise<void> {
+	if (domainId === INBOX_DOMAIN_ID) {
+		throw new ServiceError("A task cannot be moved back to the Inbox", "INVALID");
+	}
 	unwrap(await sb.from("tasks").update({ domain_id: domainId }).eq("id", id));
 }

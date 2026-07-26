@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 // The link reading list behind /links (docs/adr/0014, renamed in docs/adr/0022).
-// The word "ingest" used to name three unrelated things; it is gone now. Task
-// triage lives at /triage, the system Inbox is a stewardship domain, and
+// The word "ingest" used to name three unrelated things; it is gone now, and
+// so is "triage" (docs/adr/0024). Unfiled tasks are the Inbox at /inbox;
 // free-text capture is POST /api/capture → captured_data.
 //
 // The `ingest_links` TABLE keeps its name — renaming it would be a migration

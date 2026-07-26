@@ -6,16 +6,16 @@ import Link from "next/link";
  * and links still unread.
  */
 export function AlertsRow({
-	triage,
+	inbox,
 	needsReview,
 	linksUnread,
 }: {
-	triage: number;
+	inbox: number;
 	needsReview: number;
 	linksUnread: number;
 }) {
 	const alerts = [
-		{ key: "triage", count: triage, label: "awaiting triage", href: "/triage" },
+		{ key: "inbox", count: inbox, label: "in the inbox", href: "/inbox" },
 		{ key: "review", count: needsReview, label: "need review", href: "/notes" },
 		{ key: "links", count: linksUnread, label: "unread links", href: "/links" },
 	].filter((a) => a.count > 0);
