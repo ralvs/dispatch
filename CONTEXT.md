@@ -14,13 +14,14 @@ dropping the input. The raw firehose lands in `captured_data`; parsed text
 turns into one or more actions (`lib/schemas/capture.ts`, `docs/adr/0008`).
 Dispatch does not transcribe audio (docs/adr/0017).
 
-## triage
+## inbox
 
-Giving an unassigned **task** a real home. A task captured without a destination
-lands in the system **Inbox domain** (`INBOX_DOMAIN_ID`); triage reassigns it
-to a stewardship domain (`triageTask` in `lib/services/tasks.ts`). UI route is
-**`/triage`** (moved from `/inbox` per ADR-0014; `/inbox` permanently redirects).
-Today's alerts row surfaces the awaiting-triage count.
+Where a **task** waits when it was captured without a domain. `createTask`'s
+default is the only thing that ever puts one there (`INBOX_DOMAIN_ID`);
+`assignDomain` gives it a real home and **refuses the Inbox as a target**, so
+filing is one-way. UI route is **`/inbox`**; `/triage` — the name this queue
+carried between ADR-0014 and ADR-0024 — permanently redirects. Today's alerts
+row surfaces the count. The word "triage" is retired (docs/adr/0024).
 
 ## top-3
 
@@ -34,7 +35,8 @@ due/overdue ones.
 
 A long-lived area of life Renan is responsible for — the seven seeded domains
 are Engine, Health, Family, Spirituality, Finance, Code, Travel, plus the
-system **Inbox** (`stewardship_domains`). Each carries a `fruit_definition`
+system **Inbox** (`stewardship_domains`), which is flagged `is_system` and
+carries none of the semantics below. Each carries a `fruit_definition`
 (what "tended well" looks like) and `failure_patterns` (e.g. "no activity for N
 days") that the observations cron reads to flag neglect. Every task belongs to
 exactly one domain.
@@ -76,8 +78,8 @@ marked read. Primary nav label **Links** at **`/links`**; rows live in
 Title and description are fetched from the page by `lib/links/metadata.ts`,
 best-effort. External senders POST to **`/api/capture`**, which routes a bare
 URL here and everything else to the parser (`capture.link` ledger row).
-Distinct from task **triage** and from the system **Inbox domain**. See
-ADR-0014 and ADR-0022.
+A reading list of links, not the unfiled-task **inbox** at `/inbox`. See
+ADR-0014, ADR-0022 and ADR-0024.
 
 ## day schedule
 
