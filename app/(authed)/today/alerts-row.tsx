@@ -24,7 +24,9 @@ export function AlertsRow({
 
 	return (
 		<section aria-label="Alerts awaiting decision">
-			<ul className="flex flex-wrap gap-2 lg:justify-end">
+			{/* One chip per line, right-aligned: a stack reads as a short list of
+			    outstanding decisions rather than a row of tags. */}
+			<ul className="flex flex-col items-end gap-2">
 				{alerts.map((alert) => (
 					<li key={alert.key}>
 						<Link
