@@ -3,9 +3,14 @@ import { type NextRequest, NextResponse } from "next/server";
 
 /**
  * UX + session upkeep only — never the security boundary (docs/adr/0003).
- * The one job that must live here: refreshing expired tokens, because this is
- * the single writer of rotated refresh-token cookies. Authorization stays in
- * requireOwner()/requireOwnerPage() inside handlers and layouts.
+ * Refreshes expired tokens on the way in so the downstream render sees a live
+ * session. Authorization stays in requireOwner()/requireOwnerPage() inside
+ * handlers and layouts.
+ *
+ * This is NOT a single writer, and code here must not assume it is: middleware
+ * runs once per request, and a page load fans out into many concurrent ones.
+ * The browser-side SessionKeeper is what keeps the token fresh ahead of that
+ * fan-out so this path rarely has to rotate anything (docs/adr/0025).
  */
 export async function proxy(request: NextRequest) {
 	// setAll rebuilds this response so refreshed cookies reach BOTH the

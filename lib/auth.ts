@@ -12,8 +12,13 @@ import { env } from "@/lib/env";
  * Private to this module so an RLS client can never be constructed without
  * going through the owner check below.
  *
- * The proxy owns token refresh; setAll here is a deliberate no-op so a second
- * writer never races refresh-token rotation.
+ * The proxy is still the primary refresher, but setAll must not be a no-op
+ * (docs/adr/0025). auth-js rotates the refresh token from inside getUser()
+ * whenever the stored access token is within its expiry margin — the network
+ * call to /token happens, and the old refresh token is revoked, whether or not
+ * we keep the result. Dropping the rotated token on the floor leaves the
+ * browser holding a credential Supabase has already revoked, and the next
+ * request signs the user out. So: persist wherever the platform lets us.
  */
 async function createRlsClient(): Promise<SupabaseClient> {
 	const cookieStore = await cookies();
@@ -27,7 +32,18 @@ async function createRlsClient(): Promise<SupabaseClient> {
 			getAll() {
 				return cookieStore.getAll();
 			},
-			setAll() {},
+			setAll(cookiesToSet) {
+				try {
+					for (const { name, value, options } of cookiesToSet) {
+						cookieStore.set(name, value, options);
+					}
+				} catch {
+					// Server Component render — the cookie store is read-only here and
+					// set() throws. The proxy refreshed on the way in and forwarded the
+					// fresh cookies on `request`, so a rotation this deep into a render
+					// is the rare case, not the norm.
+				}
+			},
 		},
 	});
 }
