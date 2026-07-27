@@ -141,6 +141,36 @@ describe("parseTaskCapture", () => {
 	});
 });
 
+// The two prompts share their date-resolution and task-field copy through
+// fragment builders; these assert the fragments actually reach both prompts.
+describe("shared prompt fragments", () => {
+	const systemFor = async (entry: typeof parse | typeof parseTaskCapture) => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [], task: null } });
+		await entry("hmm", CTX);
+		return (generateObject as Mock).mock.calls[0][0].system as string;
+	};
+
+	it.each([
+		["parse", parse],
+		["parseTaskCapture", parseTaskCapture],
+	])("%s resolves relative dates against the app timezone", async (_name, entry) => {
+		const system = await systemFor(entry);
+		expect(system).toContain("NOW=2026-07-15T12:00:00Z");
+		expect(system).toContain("TODAY=2026-07-15");
+		expect(system).toContain("timezone America/Sao_Paulo");
+	});
+
+	it.each([
+		["parse", parse],
+		["parseTaskCapture", parseTaskCapture],
+	])("%s states the task field formats", async (_name, entry) => {
+		const system = await systemFor(entry);
+		expect(system).toContain("priority is 1 (highest) to 4.");
+		expect(system).toContain("due_date is YYYY-MM-DD, due_time is HH:mm.");
+	});
+});
+
 describe("CreateTaskActionSchema", () => {
 	it("accepts notes, recurrence_rule, domain, and project", () => {
 		const result = CreateTaskActionSchema.safeParse({

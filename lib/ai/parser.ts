@@ -35,8 +35,27 @@ export type ParseResult =
 	| { ok: true; actions: CaptureAction[] }
 	| { ok: false; reason: "unavailable" | "failed" | "empty"; raw: string };
 
-// Recurrence + routing prompt fragments, factored out so parseTaskCapture
-// (task-only quick-add, Phase 3) can share them without duplicating copy.
+// ── Shared prompt fragments ────────────────────────────────────────────
+//
+// The two prompts below are NOT variants of one another — systemPrompt asks
+// for an array of mixed actions, taskCaptureSystemPrompt for a single task or
+// null — so only the copy they genuinely share lives here. Anything a change
+// to one prompt should not silently make to the other stays inline.
+
+// The task field formats. Indentation is the caller's, since systemPrompt
+// nests this under its create_task bullet and taskCaptureSystemPrompt does not.
+const TASK_FIELD_FORMATS =
+	"priority is 1 (highest) to 4. due_date is YYYY-MM-DD, due_time is HH:mm.";
+
+// Relative dates resolve against the app timezone, never the model's guess at
+// "now" (iron rule #1) — both prompts state it identically.
+function dateResolution(ctx: ParseContext): string[] {
+	return [
+		`Resolve relative dates against NOW=${ctx.nowUtc}, TODAY=${ctx.todayIso},`,
+		`timezone ${ctx.tz}. Output due_date as YYYY-MM-DD and due_time as HH:mm.`,
+	];
+}
+
 function recurrenceRules(): string[] {
 	return [
 		"  recurrence_rule is set ONLY when the user states repetition (e.g.",
@@ -69,7 +88,7 @@ function systemPrompt(ctx: ParseContext): string {
 		"Allowed actions ONLY:",
 		"- create_task { title, notes?, due_date?, due_time?, priority?,",
 		"  recurrence_rule?, domain?, project? } — something to do.",
-		"  priority is 1 (highest) to 4. due_date is YYYY-MM-DD, due_time is HH:mm.",
+		`  ${TASK_FIELD_FORMATS}`,
 		...recurrenceRules(),
 		"- create_event { title, start_date, start_time, end_date?, end_time,",
 		"  location?, description? } — something happening AT a time, with other",
@@ -97,8 +116,7 @@ function systemPrompt(ctx: ParseContext): string {
 		"NEVER translate. Copy every free-text field (title, body, reason) verbatim",
 		"in the language spoken.",
 		"",
-		`Resolve relative dates against NOW=${ctx.nowUtc}, TODAY=${ctx.todayIso},`,
-		`timezone ${ctx.tz}. Output due_date as YYYY-MM-DD and due_time as HH:mm.`,
+		...dateResolution(ctx),
 		...routingBlock(ctx),
 		"",
 		'Return a JSON object of the form {"actions": [ ...actions... ]}.',
@@ -143,11 +161,10 @@ function taskCaptureSystemPrompt(ctx: ParseContext): string {
 		"  recurrence_rule?, domain?, project? }.",
 		"title is required — the task itself, verbatim in the language spoken",
 		"(pt-BR or English). NEVER translate.",
-		"priority is 1 (highest) to 4. due_date is YYYY-MM-DD, due_time is HH:mm.",
+		TASK_FIELD_FORMATS,
 		...recurrenceRules(),
 		"",
-		`Resolve relative dates against NOW=${ctx.nowUtc}, TODAY=${ctx.todayIso},`,
-		`timezone ${ctx.tz}. Output due_date as YYYY-MM-DD and due_time as HH:mm.`,
+		...dateResolution(ctx),
 		...routingBlock(ctx),
 		"",
 		'Return a JSON object of the form {"task": { ... }} or {"task": null}.',
