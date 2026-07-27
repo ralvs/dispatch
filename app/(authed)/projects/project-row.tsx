@@ -16,9 +16,13 @@ export function ProjectRowItem({ project }: { project: ProjectRow }) {
 					</span>
 				)}
 			</Link>
-			{project.target_date && (
-				<p className="mt-0.5 text-meta text-ink-4">Target {project.target_date}</p>
-			)}
+			<p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-meta text-ink-4">
+				<span className="inline-flex items-center gap-1">
+					<ColorDot color={project.domain?.color} />
+					{project.domain?.name ?? "—"}
+				</span>
+				{project.target_date && ` · Target ${project.target_date}`}
+			</p>
 		</li>
 	);
 }

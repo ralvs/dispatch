@@ -63,7 +63,9 @@ export const UpdateProjectSchema = CreateProjectSchema.partial().extend({
 //
 // Mirrors exactly the columns PROJECT_SELECT reads
 // (lib/services/projects.ts). PROJECT_SELECT is derived from this schema's
-// keys. No joins for this entity.
+// keys, so a field added here automatically flows into the query — keep the
+// domain join listed last, since it maps to PostgREST embedded-resource
+// syntax rather than a plain column name (cf. TaskRowSchema/TASK_SELECT).
 export const ProjectRowSchema = z.object({
 	id: z.string().uuid(),
 	name: z.string(),
@@ -82,7 +84,20 @@ export const ProjectRowSchema = z.object({
 	kind: ProjectKindSchema,
 	created_at: z.string(),
 	updated_at: z.string(),
+	domain: z
+		.object({ id: z.string().uuid(), name: z.string(), color: z.string().nullable() })
+		.nullable()
+		.optional(),
 });
 export type ProjectRow = z.infer<typeof ProjectRowSchema>;
 
-export const PROJECT_SELECT = Object.keys(ProjectRowSchema.shape).join(", ");
+// Plain columns select as-is; the domain relation needs PostgREST's
+// embedded-resource syntax. Keep this map in sync with any relation added
+// to ProjectRowSchema.
+const PROJECT_JOIN_SELECTS: Record<string, string> = {
+	domain: "domain:stewardship_domains(id, name, color)",
+};
+
+export const PROJECT_SELECT = Object.keys(ProjectRowSchema.shape)
+	.map((key) => PROJECT_JOIN_SELECTS[key] ?? key)
+	.join(", ");
