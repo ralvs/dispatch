@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
+import { nowUtc } from "@/lib/dates";
 import {
 	type CreateNoteSchema,
 	NOTE_LIST_SELECT,
@@ -84,7 +85,11 @@ export async function listNotes(
 	sb: SupabaseClient,
 	filters: { needsReview?: boolean } = {},
 ): Promise<NoteListRow[]> {
-	let q = sb.from("notes").select(NOTE_LIST_SELECT).order("created_at", { ascending: false });
+	let q = sb
+		.from("notes")
+		.select(NOTE_LIST_SELECT)
+		.order("pinned_at", { ascending: false, nullsFirst: false })
+		.order("created_at", { ascending: false });
 	if (filters.needsReview !== undefined) q = q.eq("needs_review", filters.needsReview);
 	const data = unwrap(await q);
 	return (data ?? []) as unknown as NoteListRow[];
@@ -101,6 +106,15 @@ export async function updateNote(
 	patch: z.infer<typeof UpdateNoteSchema>,
 ): Promise<void> {
 	unwrap(await sb.from("notes").update(patch).eq("id", id));
+}
+
+/** Flips a note pinned<->unpinned. The timestamp (not a bool) fixes pin order — most-recently-pinned first. */
+export async function togglePin(sb: SupabaseClient, id: string): Promise<void> {
+	const data = unwrap(await sb.from("notes").select("pinned_at").eq("id", id).maybeSingle());
+	const row = data as { pinned_at: string | null } | null;
+	if (!row) throw new Error("Note not found");
+	const next = row.pinned_at ? null : nowUtc();
+	unwrap(await sb.from("notes").update({ pinned_at: next }).eq("id", id));
 }
 
 /** Resolve the never-lose safety net (iron rule #4) without touching the body. */

@@ -26,3 +26,14 @@ The old page mounted one always-editable TipTap instance per note, which
 doesn't scale past a handful of notes and buries any single note in a wall
 of editors. The owner's habit (Mem, Apple Notes) is list-then-open. Storage
 shape is untouched — this changes where editing happens, not what is stored.
+
+## Amendment: pinned notes
+
+`/notes` grew a third section, **Pinned**, between Needs review and All
+notes: a `pinned_at timestamptz` column on `notes`, toggled from a star
+button on each row. A timestamp rather than a boolean, so pin order is
+stable (most-recently-pinned first) — the same choice `tasks.top3_for_date`
+made for the same reason. Pinned notes are excluded from All notes so they
+appear once, not twice. The star button sits as a sibling of the row's
+`<Link>`, not nested inside it — nested interactive elements are invalid
+HTML and break keyboard navigation.

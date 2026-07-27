@@ -7,6 +7,7 @@ import {
 	deleteNote,
 	listNotes,
 	resolveNeedsReview,
+	togglePin,
 } from "@/lib/services/notes";
 
 // Stub covering the one shape these functions use:
@@ -106,23 +107,26 @@ function stubMutationSupabase() {
 }
 
 // Minimal chainable stub mirroring the read path: .from().select().order()
-// and an optional trailing .eq() when a needsReview filter is applied. Both
-// the .order() result and the .eq() result are awaitable directly, matching
-// how listNotes conditionally chains .eq() before awaiting the query.
+// (pinned_at) .order() (created_at) and an optional trailing .eq() when a
+// needsReview filter is applied. Both the second .order() result and the
+// .eq() result are awaitable directly, matching how listNotes conditionally
+// chains .eq() before awaiting the query.
 function stubListSupabase() {
 	const eqCalls: Array<[string, unknown]> = [];
 	const result = Promise.resolve({ data: [], error: null });
 	const sb = {
 		from: vi.fn(() => ({
 			select: vi.fn(() => ({
-				order: vi.fn(() =>
-					Object.assign(Promise.resolve({ data: [], error: null }), {
-						eq: vi.fn((col: string, val: unknown) => {
-							eqCalls.push([col, val]);
-							return result;
+				order: vi.fn(() => ({
+					order: vi.fn(() =>
+						Object.assign(Promise.resolve({ data: [], error: null }), {
+							eq: vi.fn((col: string, val: unknown) => {
+								eqCalls.push([col, val]);
+								return result;
+							}),
 						}),
-					}),
-				),
+					),
+				})),
 			})),
 		})),
 	} as unknown as SupabaseClient;
@@ -172,6 +176,52 @@ describe("deleteNote", () => {
 		await deleteNote(sb, "note-1");
 
 		expect(wasDeleted()).toBe(true);
+	});
+});
+
+// Chainable stub covering togglePin's two call shapes: .from().select().eq()
+// .maybeSingle() (the read) and .from().update().eq() (the mutation).
+// Mirrors lib/services/tasks.test.ts's stubSupabase for completeTask.
+function stubToggleSupabase(row: Record<string, unknown> | null) {
+	const updatePatches: Array<Record<string, unknown>> = [];
+	const sb = {
+		from: vi.fn(() => ({
+			select: vi.fn(() => ({
+				eq: vi.fn(() => ({
+					maybeSingle: vi.fn(async () => ({ data: row, error: null })),
+				})),
+			})),
+			update: vi.fn((patch: Record<string, unknown>) => {
+				updatePatches.push(patch);
+				return { eq: vi.fn(async () => ({ data: null, error: null })) };
+			}),
+		})),
+	} as unknown as SupabaseClient;
+	return { sb, updatePatches };
+}
+
+describe("togglePin", () => {
+	it("pins an unpinned note by stamping pinned_at", async () => {
+		const { sb, updatePatches } = stubToggleSupabase({ pinned_at: null });
+
+		await togglePin(sb, "note-1");
+
+		expect(updatePatches).toHaveLength(1);
+		expect(updatePatches[0].pinned_at).toEqual(expect.any(String));
+	});
+
+	it("unpins a pinned note by clearing pinned_at", async () => {
+		const { sb, updatePatches } = stubToggleSupabase({ pinned_at: "2026-07-01T00:00:00Z" });
+
+		await togglePin(sb, "note-1");
+
+		expect(updatePatches).toEqual([{ pinned_at: null }]);
+	});
+
+	it("throws when the note does not exist", async () => {
+		const { sb } = stubToggleSupabase(null);
+
+		await expect(togglePin(sb, "missing")).rejects.toThrow("Note not found");
 	});
 });
 
