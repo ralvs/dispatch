@@ -54,6 +54,11 @@ export function CaptureBar({
 			<div className="flex items-center gap-4 border-b border-line-strong pb-2 transition-colors focus-within:border-ink-3">
 				<input
 					type="text"
+					// Named so it reaches formData: with Details open the submit goes
+					// through onCreate(formData), and this field is the only title
+					// the detailed form has. Quick-add reads `title` from state and
+					// ignores formData, so the name matters to exactly one path.
+					name="title"
 					value={text}
 					disabled={pending}
 					onChange={(event) => setText(event.target.value)}
