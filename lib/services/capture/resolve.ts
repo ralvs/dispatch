@@ -1,8 +1,11 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { ParseContext } from "@/lib/ai/parser";
+import { nowUtc, todayInTz } from "@/lib/dates";
 import type { CreateTaskAction } from "@/lib/schemas/capture";
 import { listDomains } from "@/lib/services/domains";
 import { listProjects } from "@/lib/services/projects";
+import { getAppTimezone } from "@/lib/services/settings";
 import type { createTask } from "@/lib/services/tasks";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -124,4 +127,32 @@ export async function fetchRoutingLists(sb: SupabaseClient): Promise<RoutingList
 	} catch {
 		return { domains: [], projects: [] };
 	}
+}
+
+/**
+ * Everything a parse needs from the database, assembled once: the app timezone
+ * (iron rule #1 — relative dates resolve against it, never against the server
+ * clock) and the routing candidates the prompt injects.
+ *
+ * Returns `tz` and `routing` alongside the ParseContext because callers need
+ * them after parsing — capture() to build Provenance, quickAddTask() to map
+ * the parsed task. Inherits fetchRoutingLists's guard: a routing hiccup yields
+ * empty lists, never a failed capture.
+ */
+export async function loadCaptureContext(
+	sb: SupabaseClient,
+): Promise<{ tz: string; routing: RoutingLists; ctx: ParseContext }> {
+	const tz = await getAppTimezone(sb);
+	const routing = await fetchRoutingLists(sb);
+	return {
+		tz,
+		routing,
+		ctx: {
+			tz,
+			todayIso: todayInTz(tz),
+			nowUtc: nowUtc(),
+			domains: routing.domains.map((d) => d.name),
+			projects: routing.projects.map((p) => p.name),
+		},
+	};
 }

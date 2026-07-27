@@ -1,13 +1,11 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parse } from "@/lib/ai/parser";
-import { nowUtc, todayInTz } from "@/lib/dates";
 import type { CaptureAction } from "@/lib/schemas/capture";
 import { runActions } from "@/lib/services/capture/executor";
-import { fetchRoutingLists } from "@/lib/services/capture/resolve";
+import { loadCaptureContext } from "@/lib/services/capture/resolve";
 import { markParsed, persistRaw } from "@/lib/services/capture/store";
 import { createNeedsReviewNote } from "@/lib/services/notes";
-import { getAppTimezone } from "@/lib/services/settings";
 
 // ─────────────────────────────────────────────────────────────────────────
 // The capture module (docs/adr/0008). One deep function, capture(sb, raw),
@@ -85,15 +83,8 @@ async function process(
 	raw: CaptureInput,
 ): Promise<CapturedRecord> {
 	// Parse (typed fallback). Relative dates resolve against the app tz.
-	const tz = await getAppTimezone(sb);
-	const routing = await fetchRoutingLists(sb);
-	const parsed = await parse(raw.text, {
-		tz,
-		todayIso: todayInTz(tz),
-		nowUtc: nowUtc(),
-		domains: routing.domains.map((d) => d.name),
-		projects: routing.projects.map((p) => p.name),
-	});
+	const { tz, routing, ctx } = await loadCaptureContext(sb);
+	const parsed = await parse(raw.text, ctx);
 
 	// A hard parser failure degrades the whole capture to one needs_review note,
 	// storing the transcript verbatim (no model in the loop).

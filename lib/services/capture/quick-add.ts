@@ -1,9 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parseTaskCapture } from "@/lib/ai/parser";
-import { nowUtc, todayInTz } from "@/lib/dates";
-import { fetchRoutingLists, taskInputFromAction } from "@/lib/services/capture/resolve";
-import { getAppTimezone } from "@/lib/services/settings";
+import { loadCaptureContext, taskInputFromAction } from "@/lib/services/capture/resolve";
 import { createTask, type TaskRow } from "@/lib/services/tasks";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -21,15 +19,8 @@ export async function quickAddTask(
 	sb: SupabaseClient,
 	text: string,
 ): Promise<{ task: TaskRow; parsed: boolean }> {
-	const tz = await getAppTimezone(sb);
-	const routing = await fetchRoutingLists(sb);
-	const parsed = await parseTaskCapture(text, {
-		tz,
-		todayIso: todayInTz(tz),
-		nowUtc: nowUtc(),
-		domains: routing.domains.map((d) => d.name),
-		projects: routing.projects.map((p) => p.name),
-	});
+	const { routing, ctx } = await loadCaptureContext(sb);
+	const parsed = await parseTaskCapture(text, ctx);
 
 	if (!parsed.ok) {
 		const task = await createTask(sb, { title: text.trim(), source: "manual" });
