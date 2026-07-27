@@ -1,4 +1,4 @@
--- docs/adr/0025: "unfiled" is domain_id IS NULL.
+-- docs/adr/0027: "unfiled" is domain_id IS NULL.
 --
 -- The Inbox was a seeded stewardship_domains row that carried none of a
 -- domain's semantics (no fruit_definition, no expected_cadence, no

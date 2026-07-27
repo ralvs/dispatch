@@ -158,7 +158,7 @@ export async function createTask(
 			.insert({
 				...input,
 				// A task without a stated destination is unfiled — no domain at all,
-				// which is what the /inbox queue selects on (docs/adr/0025). Stated
+				// which is what the /inbox queue selects on (docs/adr/0027). Stated
 				// explicitly rather than left to the column default so the write says
 				// what it means.
 				domain_id: input.domain_id ?? null,
@@ -232,7 +232,7 @@ export async function toggleTop3(sb: SupabaseClient, id: string, todayIso: strin
 
 /**
  * Give a task a domain — the one way out of the inbox, and still one-way
- * (docs/adr/0024 §3, carried into docs/adr/0025). Un-filing would mean writing
+ * (docs/adr/0024 §3, carried into docs/adr/0027). Un-filing would mean writing
  * NULL back, and no write path does: this signature takes a domain id, and
  * `updateTask`'s patch types `domain_id` as a plain string, so "leave it alone"
  * is the only thing an empty domain field can mean. That is now structural

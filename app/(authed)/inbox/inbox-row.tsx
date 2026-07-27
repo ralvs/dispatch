@@ -12,7 +12,7 @@ export function InboxRow({ task, domains }: { task: TaskRow; domains: DomainOpti
 	const [pending, startTransition] = useTransition();
 	// Every domain is a valid destination now — the inbox is the absence of one,
 	// so there is nothing to filter out. Filing stays one-way because no write
-	// path sets domain_id back to null (docs/adr/0025).
+	// path sets domain_id back to null (docs/adr/0027).
 
 	return (
 		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>

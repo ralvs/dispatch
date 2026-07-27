@@ -23,7 +23,7 @@ export const TaskSchema = z.object({
 	due_time: nullableString(),
 	priority: z.number().int().min(1).max(4),
 	project_id: z.string().uuid().nullable().optional(),
-	// null means unfiled — the /inbox queue (docs/adr/0025).
+	// null means unfiled — the /inbox queue (docs/adr/0027).
 	domain_id: z.string().uuid().nullable(),
 	parent_task_id: z.string().uuid().nullable().optional(),
 	recurrence_rule: z.enum(RECURRENCE_PATTERNS).nullable().optional(),

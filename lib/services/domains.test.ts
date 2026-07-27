@@ -11,7 +11,7 @@ import {
 
 // Stub covering .from().insert().select().single() and .from().update().eq().
 // These writers used to read the row back first, to refuse the system Inbox
-// domain; that domain no longer exists (docs/adr/0025) and they now write
+// domain; that domain no longer exists (docs/adr/0027) and they now write
 // straight through.
 function stubSupabase() {
 	const inserts: Array<Record<string, unknown>> = [];

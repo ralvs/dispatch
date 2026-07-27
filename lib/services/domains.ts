@@ -10,7 +10,7 @@ import { ServiceError, unwrap } from "@/lib/services/errors";
 // docs/adr/0007: domains gain full CRUD here (the reference implementation
 // was seed-only). Every row is a real domain and every row is editable —
 // the Inbox pseudo-domain that used to need protecting from rename and
-// archive is gone, replaced by a null domain_id (docs/adr/0025).
+// archive is gone, replaced by a null domain_id (docs/adr/0027).
 
 export type { DomainRow };
 

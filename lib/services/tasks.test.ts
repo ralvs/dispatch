@@ -64,7 +64,7 @@ describe("completeTask", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
-// The inbox queue (docs/adr/0024, docs/adr/0025). Until this file, nothing
+// The inbox queue (docs/adr/0024, docs/adr/0027). Until this file, nothing
 // covered the one path every unrouted capture takes.
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -150,7 +150,7 @@ describe("assignDomain", () => {
 
 	// The round trip the /inbox page performs: captured with no domain, then
 	// filed. One-way filing is structural now — there is no argument to either
-	// call that would put the task back (docs/adr/0025) — so what is worth
+	// call that would put the task back (docs/adr/0027) — so what is worth
 	// covering is that the two halves agree on null as the starting state.
 	it("takes a task from unfiled to filed", async () => {
 		const { sb, calls } = stubBuilder({ data: { id: "task-1" }, error: null });

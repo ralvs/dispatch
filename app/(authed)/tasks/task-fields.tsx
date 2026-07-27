@@ -236,7 +236,7 @@ export function TaskMetaFields({
 						{/* "Unfiled" is offered only when it is already the answer — on the
 						    create form (undefined) or for a task sitting in the inbox (null).
 						    A filed task never sees it, which is what keeps filing one-way
-						    (docs/adr/0025). It also has to be listed in the inbox case, or
+						    (docs/adr/0027). It also has to be listed in the inbox case, or
 						    the <select> would drop its own value and silently reassign the
 						    task to whichever domain sorts first. */}
 						{defaults.domain_id == null && <option value="">Unfiled</option>}
