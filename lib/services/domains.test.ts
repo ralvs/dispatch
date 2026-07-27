@@ -8,11 +8,12 @@ import {
 	updateDomain,
 	withCadenceThresholdDays,
 } from "@/lib/services/domains";
-import { ServiceError } from "@/lib/services/errors";
 
-// Stub covering .from().insert().select().single(), .from().update().eq(),
-// and .from().select().eq().maybeSingle() (used by the is_system guard).
-function stubSupabase(domain: Record<string, unknown> | null) {
+// Stub covering .from().insert().select().single() and .from().update().eq().
+// These writers used to read the row back first, to refuse the system Inbox
+// domain; that domain no longer exists (docs/adr/0025) and they now write
+// straight through.
+function stubSupabase() {
 	const inserts: Array<Record<string, unknown>> = [];
 	const updates: Array<Record<string, unknown>> = [];
 
@@ -32,11 +33,6 @@ function stubSupabase(domain: Record<string, unknown> | null) {
 					eq: vi.fn(async () => ({ data: null, error: null })),
 				};
 			}),
-			select: vi.fn(() => ({
-				eq: vi.fn(() => ({
-					maybeSingle: vi.fn(async () => ({ data: domain, error: null })),
-				})),
-			})),
 		})),
 	} as unknown as SupabaseClient;
 
@@ -45,7 +41,7 @@ function stubSupabase(domain: Record<string, unknown> | null) {
 
 describe("createDomain", () => {
 	it("stores the given fields", async () => {
-		const { sb, inserts } = stubSupabase(null);
+		const { sb, inserts } = stubSupabase();
 
 		const domain = await createDomain(sb, { name: "Health" });
 
@@ -55,50 +51,32 @@ describe("createDomain", () => {
 });
 
 describe("updateDomain", () => {
-	it("updates a normal domain", async () => {
-		const { sb, updates } = stubSupabase({ id: "domain-1", is_system: false });
+	it("updates a domain", async () => {
+		const { sb, updates } = stubSupabase();
 
 		await updateDomain(sb, "domain-1", { name: "Health & Fitness" });
 
 		expect(updates[0]).toMatchObject({ name: "Health & Fitness" });
 	});
-
-	it("rejects editing the system Inbox domain", async () => {
-		const { sb } = stubSupabase({ id: "inbox", is_system: true });
-
-		await expect(updateDomain(sb, "inbox", { name: "Renamed" })).rejects.toThrow(ServiceError);
-	});
 });
 
 describe("archiveDomain", () => {
-	it("sets active=false on a normal domain", async () => {
-		const { sb, updates } = stubSupabase({ id: "domain-1", is_system: false });
+	it("sets active=false", async () => {
+		const { sb, updates } = stubSupabase();
 
 		await archiveDomain(sb, "domain-1");
 
 		expect(updates[0]).toMatchObject({ active: false });
 	});
-
-	it("rejects archiving the system Inbox domain", async () => {
-		const { sb } = stubSupabase({ id: "inbox", is_system: true });
-
-		await expect(archiveDomain(sb, "inbox")).rejects.toThrow(ServiceError);
-	});
 });
 
 describe("markDomainShipped", () => {
 	it("stamps last_shipped_at with a timestamp", async () => {
-		const { sb, updates } = stubSupabase({ id: "domain-1", is_system: false });
+		const { sb, updates } = stubSupabase();
 
 		await markDomainShipped(sb, "domain-1");
 
 		expect(typeof updates[0].last_shipped_at).toBe("string");
-	});
-
-	it("rejects stamping the system Inbox domain", async () => {
-		const { sb } = stubSupabase({ id: "inbox", is_system: true });
-
-		await expect(markDomainShipped(sb, "inbox")).rejects.toThrow(ServiceError);
 	});
 });
 

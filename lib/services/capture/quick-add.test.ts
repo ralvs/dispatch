@@ -25,7 +25,7 @@ beforeEach(() => {
 
 describe("quickAddTask", () => {
 	it("creates the routed, parsed task when parsing succeeds", async () => {
-		(listDomains as Mock).mockResolvedValue([{ id: "dom-home", name: "Casa", is_system: false }]);
+		(listDomains as Mock).mockResolvedValue([{ id: "dom-home", name: "Casa", active: true }]);
 		(parseTaskCapture as Mock).mockResolvedValue({
 			ok: true,
 			task: {

@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
-import { INBOX_DOMAIN_ID } from "@/lib/constants";
 import { assignDomain, completeTask, createTask, listInboxTasks } from "@/lib/services/tasks";
 
 const TODAY = "2026-07-15";
@@ -65,8 +64,8 @@ describe("completeTask", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
-// The Inbox queue (docs/adr/0024). Until this file, nothing covered the one
-// path every unrouted capture takes.
+// The inbox queue (docs/adr/0024, docs/adr/0025). Until this file, nothing
+// covered the one path every unrouted capture takes.
 // ─────────────────────────────────────────────────────────────────────────
 
 // Same chainable/thenable double the other service tests use (cf.
@@ -92,6 +91,10 @@ function stubBuilder(result: { data?: unknown; error?: unknown }) {
 			calls.push({ op: "eq", payload: { col, value } });
 			return builder;
 		};
+		builder.is = (col: string, value: unknown) => {
+			calls.push({ op: "is", payload: { col, value } });
+			return builder;
+		};
 		builder.single = async () => result;
 		// biome-ignore lint/suspicious/noThenProperty: intentional thenable test double
 		builder.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
@@ -103,28 +106,27 @@ function stubBuilder(result: { data?: unknown; error?: unknown }) {
 }
 
 describe("listInboxTasks", () => {
-	it("narrows to open tasks in the Inbox domain", async () => {
+	it("narrows to open tasks with no domain at all", async () => {
 		const { sb, calls } = stubBuilder({ data: [], error: null });
 
 		await listInboxTasks(sb);
 
 		expect(calls).toContainEqual({ op: "eq", payload: { col: "status", value: "open" } });
-		expect(calls).toContainEqual({
-			op: "eq",
-			payload: { col: "domain_id", value: INBOX_DOMAIN_ID },
-		});
+		// `is`, not `eq` — an unfiled task is one whose domain_id is NULL, and
+		// `eq(domain_id, null)` would match nothing in Postgres.
+		expect(calls).toContainEqual({ op: "is", payload: { col: "domain_id", value: null } });
 	});
 });
 
 describe("createTask", () => {
-	it("drops a task with no stated domain into the Inbox", async () => {
+	it("leaves a task with no stated domain unfiled", async () => {
 		const { sb, calls } = stubBuilder({ data: { id: "task-1" }, error: null });
 
 		await createTask(sb, { title: "ligar pro médico" });
 
 		expect(calls[0]).toMatchObject({
 			op: "insert",
-			payload: { domain_id: INBOX_DOMAIN_ID, source: "manual" },
+			payload: { domain_id: null, source: "manual" },
 		});
 	});
 
@@ -146,14 +148,17 @@ describe("assignDomain", () => {
 		expect(calls).toContainEqual({ op: "update", payload: { domain_id: "dom-code" } });
 	});
 
-	// The one-way rule. The pickers hide the option, but this is what enforces
-	// it — a task must never be filed back into the queue that exists to empty.
-	it("refuses to move a task back to the Inbox", async () => {
-		const { sb, calls } = stubBuilder({ data: null, error: null });
+	// The round trip the /inbox page performs: captured with no domain, then
+	// filed. One-way filing is structural now — there is no argument to either
+	// call that would put the task back (docs/adr/0025) — so what is worth
+	// covering is that the two halves agree on null as the starting state.
+	it("takes a task from unfiled to filed", async () => {
+		const { sb, calls } = stubBuilder({ data: { id: "task-1" }, error: null });
 
-		await expect(assignDomain(sb, "task-1", INBOX_DOMAIN_ID)).rejects.toThrow(
-			/cannot be moved back to the Inbox/,
-		);
-		expect(calls).toHaveLength(0);
+		await createTask(sb, { title: "comprar café" });
+		await assignDomain(sb, "task-1", "dom-home");
+
+		expect(calls[0]).toMatchObject({ op: "insert", payload: { domain_id: null } });
+		expect(calls).toContainEqual({ op: "update", payload: { domain_id: "dom-home" } });
 	});
 });

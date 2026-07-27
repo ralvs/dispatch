@@ -136,10 +136,10 @@ describe("taskInputFromAction", () => {
 });
 
 describe("fetchRoutingLists", () => {
-	it("maps non-system domains and active projects", async () => {
+	it("maps domains down to id/name and keeps active projects", async () => {
 		(listDomains as Mock).mockResolvedValue([
-			{ id: "dom-home", name: "Home", is_system: false },
-			{ id: "dom-inbox", name: "Inbox", is_system: true },
+			{ id: "dom-home", name: "Home", active: true, color: null },
+			{ id: "dom-work", name: "Work", active: true, color: "#abc" },
 		]);
 		(listProjects as Mock).mockResolvedValue([
 			{ id: "proj-reviews", name: "Reviews", domain_id: "dom-work" },
@@ -148,7 +148,10 @@ describe("fetchRoutingLists", () => {
 		const result = await fetchRoutingLists(sb);
 
 		expect(result).toEqual({
-			domains: [{ id: "dom-home", name: "Home" }],
+			domains: [
+				{ id: "dom-home", name: "Home" },
+				{ id: "dom-work", name: "Work" },
+			],
 			projects: [{ id: "proj-reviews", name: "Reviews", domain_id: "dom-work" }],
 		});
 		expect(listProjects).toHaveBeenCalledWith(sb, { status: "active" });

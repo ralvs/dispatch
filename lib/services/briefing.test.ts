@@ -177,7 +177,6 @@ function domain(overrides: Partial<DomainRow> & { id: string; name: string }): D
 		failure_patterns: [{ rule: "no_activity_days", value: 7 }],
 		expected_cadence: "Weekly minimum",
 		active: true,
-		is_system: false,
 		last_shipped_at: null,
 		color: null,
 		created_at: "2026-01-01T00:00:00.000Z",
@@ -317,11 +316,8 @@ describe("deriveBriefLines", () => {
 		expect(lines).toHaveLength(0); // touched yesterday — nowhere near threshold
 	});
 
-	it("skips system domains and domains without a numeric rule", () => {
-		const domains = [
-			domain({ id: "inbox", name: "Inbox", is_system: true }),
-			domain({ id: "prose", name: "Prose", failure_patterns: "check in weekly" }),
-		];
+	it("skips domains without a numeric rule", () => {
+		const domains = [domain({ id: "prose", name: "Prose", failure_patterns: "check in weekly" })];
 		expect(deriveBriefLines(domains, {}, TODAY, SP)).toHaveLength(0);
 	});
 
