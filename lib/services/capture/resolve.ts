@@ -9,11 +9,20 @@ import { getAppTimezone } from "@/lib/services/settings";
 import type { createTask } from "@/lib/services/tasks";
 
 // ─────────────────────────────────────────────────────────────────────────
-// Pure, db-free name → id resolution for capture routing (docs/adr/0019 D1).
-// The parser is only ever given names (never ids — hallucinated-UUID risk),
-// so this is exact, case- and diacritic-insensitive matching only. No fuzzy
-// match (deferred per ADR-0016's match.ts). A miss never fails the capture:
-// the caller falls back to the Inbox and records the miss for filing there.
+// What both write paths need around a parse — the capture pipeline
+// (docs/adr/0008) and the /tasks quick-add (docs/adr/0019 D3), which stay
+// separate orchestrations sharing only what is below. Two halves:
+//
+//   Pure (no sb): name → id routing resolution, and the create_task →
+//   createTask mapping built on it.
+//   DB-backed (sb first, iron rule #3): the routing lists and the parse
+//   context assembled from them.
+//
+// Routing is name-based because the parser is only ever given names (never
+// ids — hallucinated-UUID risk), so matching is exact, case- and
+// diacritic-insensitive only. No fuzzy match (deferred per ADR-0016's
+// match.ts). A miss never fails the capture: it falls back to the Inbox and
+// records the miss for filing there.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type RoutingLists = {
