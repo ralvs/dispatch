@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CreateTaskAction } from "@/lib/schemas/capture";
 import { listDomains } from "@/lib/services/domains";
 import { listProjects } from "@/lib/services/projects";
+import type { createTask } from "@/lib/services/tasks";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Pure, db-free name → id resolution for capture routing (docs/adr/0019 D1).
@@ -65,6 +66,44 @@ export function resolveTaskRouting(action: CreateTaskAction, lists: RoutingLists
 	}
 
 	return { domain_id, project_id, unresolved };
+}
+
+/** Appends unresolved routing mentions to task notes, e.g. `[capture: unresolved project "X"]`. */
+export function withUnresolvedNotes(
+	notes: string | undefined,
+	unresolved: string[],
+): string | null {
+	if (unresolved.length === 0) return notes ?? null;
+	const suffix = unresolved.map((u) => `[capture: unresolved ${u}]`).join(" ");
+	return notes ? `${notes}\n${suffix}` : suffix;
+}
+
+/**
+ * The single create_task → createTask mapping, shared by both write paths: the
+ * capture executor (docs/adr/0008) and the /tasks quick-add orchestrator
+ * (docs/adr/0019 D3). Those two stay deliberately separate orchestrations —
+ * only this argument mapping is common, so a field added to
+ * CreateTaskActionSchema reaches both paths from one edit.
+ *
+ * Pure: no `sb`, no I/O. Routing is resolved here because neither caller needs
+ * the TaskRouting for anything but this payload.
+ */
+export function taskInputFromAction(
+	action: CreateTaskAction,
+	lists: RoutingLists,
+): Parameters<typeof createTask>[1] {
+	const routing = resolveTaskRouting(action, lists);
+	return {
+		title: action.title,
+		notes: withUnresolvedNotes(action.notes, routing.unresolved),
+		due_date: action.due_date ?? null,
+		due_time: action.due_time ?? null,
+		priority: action.priority,
+		domain_id: routing.domain_id,
+		project_id: routing.project_id,
+		recurrence_rule: action.recurrence_rule ?? null,
+		source: "manual",
+	};
 }
 
 /**

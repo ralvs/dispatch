@@ -2,8 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parseTaskCapture } from "@/lib/ai/parser";
 import { nowUtc, todayInTz } from "@/lib/dates";
-import { withUnresolvedNotes } from "@/lib/services/capture/executor";
-import { fetchRoutingLists, resolveTaskRouting } from "@/lib/services/capture/resolve";
+import { fetchRoutingLists, taskInputFromAction } from "@/lib/services/capture/resolve";
 import { getAppTimezone } from "@/lib/services/settings";
 import { createTask, type TaskRow } from "@/lib/services/tasks";
 
@@ -37,19 +36,6 @@ export async function quickAddTask(
 		return { task, parsed: false };
 	}
 
-	const result = resolveTaskRouting(parsed.task, routing);
-	const notes = withUnresolvedNotes(parsed.task.notes, result.unresolved);
-
-	const task = await createTask(sb, {
-		title: parsed.task.title,
-		notes,
-		due_date: parsed.task.due_date ?? null,
-		due_time: parsed.task.due_time ?? null,
-		priority: parsed.task.priority,
-		domain_id: result.domain_id,
-		project_id: result.project_id,
-		recurrence_rule: parsed.task.recurrence_rule ?? null,
-		source: "manual",
-	});
+	const task = await createTask(sb, taskInputFromAction(parsed.task, routing));
 	return { task, parsed: true };
 }

@@ -5,6 +5,7 @@ import {
 	fetchRoutingLists,
 	type RoutingLists,
 	resolveTaskRouting,
+	taskInputFromAction,
 } from "@/lib/services/capture/resolve";
 
 vi.mock("@/lib/services/domains", () => ({ listDomains: vi.fn() }));
@@ -69,6 +70,68 @@ describe("resolveTaskRouting", () => {
 	it("finds no match against empty lists", () => {
 		const result = resolveTaskRouting(task({ domain: "Home" }), { domains: [], projects: [] });
 		expect(result.unresolved).toEqual(['domain "Home"']);
+	});
+});
+
+describe("taskInputFromAction", () => {
+	it("maps every field of a fully specified action", () => {
+		const input = taskInputFromAction(
+			task({
+				title: "revisar o PR",
+				notes: "antes da daily",
+				due_date: "2026-07-30",
+				due_time: "09:15",
+				priority: 2,
+				recurrence_rule: "weekly",
+				project: "Reviews",
+			}),
+			LISTS,
+		);
+
+		expect(input).toEqual({
+			title: "revisar o PR",
+			notes: "antes da daily",
+			due_date: "2026-07-30",
+			due_time: "09:15",
+			priority: 2,
+			domain_id: "dom-work",
+			project_id: "proj-reviews",
+			recurrence_rule: "weekly",
+			source: "manual",
+		});
+	});
+
+	it("nulls the omitted optional fields rather than leaving them undefined", () => {
+		const input = taskInputFromAction(task(), LISTS);
+
+		expect(input).toEqual({
+			title: "water plants",
+			notes: null,
+			due_date: null,
+			due_time: null,
+			priority: undefined,
+			domain_id: null,
+			project_id: null,
+			recurrence_rule: null,
+			source: "manual",
+		});
+	});
+
+	it("folds unresolved routing mentions into the notes", () => {
+		const input = taskInputFromAction(
+			task({ notes: "detalhe", domain: "Nope", project: "Also nope" }),
+			LISTS,
+		);
+
+		expect(input.notes).toBe(
+			'detalhe\n[capture: unresolved project "Also nope"] [capture: unresolved domain "Nope"]',
+		);
+		expect(input.domain_id).toBeNull();
+	});
+
+	it("makes the unresolved mentions the whole note when the action had none", () => {
+		const input = taskInputFromAction(task({ domain: "Nope" }), LISTS);
+		expect(input.notes).toBe('[capture: unresolved domain "Nope"]');
 	});
 });
 
