@@ -241,9 +241,9 @@ export function TaskRowItem({
 							href={`/notes/${noteId}`}
 							aria-label="View linked note"
 							onClick={(e) => e.stopPropagation()}
-							className="text-ink-4 hover:text-ink"
+							className="inline-flex shrink-0 items-center gap-1 rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 hover:border-line-strong hover:text-ink"
 						>
-							¶
+							<span aria-hidden="true">¶</span> Note
 						</Link>
 					)}
 				</p>

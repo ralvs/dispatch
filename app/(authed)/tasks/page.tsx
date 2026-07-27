@@ -3,6 +3,7 @@ import { requireOwnerPage } from "@/lib/auth";
 import { todayInTz } from "@/lib/dates";
 import { listDomains } from "@/lib/services/domains";
 import { listNoteIdsForTargets } from "@/lib/services/note-links";
+import { listProjects } from "@/lib/services/projects";
 import { getAppTimezone } from "@/lib/services/settings";
 import { listRecentDone, listTasks } from "@/lib/services/tasks";
 import { isDueToday, isOverdue } from "@/lib/task-predicates";
@@ -11,15 +12,23 @@ import { TaskList } from "./task-list";
 export default async function TasksPage({
 	searchParams,
 }: {
-	searchParams: Promise<{ edit?: string }>;
+	searchParams: Promise<{ edit?: string; status?: string; project?: string; domain?: string }>;
 }) {
 	const { sb } = await requireOwnerPage();
-	const { edit: editTaskId } = await searchParams;
-	const [tz, openTasks, doneTasks, domains] = await Promise.all([
+	const {
+		edit: editTaskId,
+		status: initialStatus,
+		project: initialProjectId,
+		domain: initialDomainId,
+	} = await searchParams;
+	const [tz, openTasks, doneTasks, domains, projects] = await Promise.all([
 		getAppTimezone(sb),
 		listTasks(sb, { status: "open" }),
-		listRecentDone(sb, 10),
+		// Bumped from 10: the Done filter needs something to page through, not
+		// just the header strip's recent handful.
+		listRecentDone(sb, 100),
 		listDomains(sb),
+		listProjects(sb),
 	]);
 	const todayIso = todayInTz(tz);
 	const inboxCount = openTasks.filter((t) => t.domain_id === null).length;
@@ -29,7 +38,7 @@ export default async function TasksPage({
 		await listNoteIdsForTargets(
 			sb,
 			"task",
-			openTasks.map((t) => t.id),
+			[...openTasks, ...doneTasks].map((t) => t.id),
 		),
 	);
 
@@ -57,7 +66,11 @@ export default async function TasksPage({
 				doneTasks={doneTasks}
 				todayIso={todayIso}
 				domains={domains}
+				projects={projects}
 				editTaskId={editTaskId ?? null}
+				initialStatus={initialStatus}
+				initialProjectId={initialProjectId}
+				initialDomainId={initialDomainId}
 				taskNoteIds={taskNoteIds}
 				tz={tz}
 			/>
