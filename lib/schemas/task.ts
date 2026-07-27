@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { RECURRENCE_PATTERNS } from "@/lib/recurrence";
+import { WallClockTimeSchema } from "@/lib/schemas/time";
 
 export const TaskStatusSchema = z.enum(["open", "done"]);
 export const TaskSourceSchema = z.enum(["manual", "voice", "email", "observation", "import"]);
@@ -77,17 +78,14 @@ export const UpdateTaskSchema = CreateTaskSchema.partial().extend({
 //
 // FormData only ever produces strings, so empty/unset fields arrive as ""
 // rather than being omitted — every optional field needs `.or(z.literal(""))`
-// and priority needs z.coerce. Shares the recurrence vocabulary with
-// CreateTaskSchema (RECURRENCE_PATTERNS) rather than redeclaring it.
+// and priority needs z.coerce. Shares its leaves with the capture-side schema —
+// RECURRENCE_PATTERNS, WallClockTimeSchema — rather than redeclaring them, so
+// the two paths cannot drift on what a valid time or cadence is.
 export const CreateTaskFormSchema = z.object({
 	title: z.string().trim().min(1).max(500),
 	notes: z.string().trim().max(5000).optional(),
 	due_date: z.iso.date().optional().or(z.literal("")),
-	due_time: z
-		.string()
-		.regex(/^\d{2}:\d{2}$/)
-		.optional()
-		.or(z.literal("")),
+	due_time: WallClockTimeSchema.optional().or(z.literal("")),
 	priority: z.coerce.number().int().min(1).max(4).default(4),
 	domain_id: z.uuid().optional().or(z.literal("")),
 	recurrence_rule: z.enum(RECURRENCE_PATTERNS).optional().or(z.literal("")),

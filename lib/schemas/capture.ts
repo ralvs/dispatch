@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { RECURRENCE_PATTERNS } from "@/lib/recurrence";
 import { NoteSourceTypeSchema } from "@/lib/schemas/note";
+import { WallClockTimeSchema } from "@/lib/schemas/time";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Capture v1 contract (docs/adr/0008).
@@ -30,12 +31,9 @@ export const CreateTaskActionSchema = z.object({
 	title: z.string().min(1),
 	notes: z.string().min(1).optional(),
 	due_date: z.string().date().optional(),
-	// 24-hour HH:mm with valid ranges, so a malformed time fails schema-parse
-	// (→ typed failed → degrade) rather than reaching the executor.
-	due_time: z
-		.string()
-		.regex(/^([01]\d|2[0-3]):[0-5]\d$/)
-		.optional(),
+	// Range-guarded (lib/schemas/time.ts), so a malformed time fails
+	// schema-parse (→ typed failed → degrade) rather than reaching the executor.
+	due_time: WallClockTimeSchema.optional(),
 	priority: z.number().int().min(1).max(4).optional(),
 	// Constrained to the enum so the LLM can never violate the DB check
 	// constraint (docs/adr/0019). Unrepresentable cadences ("every 3 weeks")
@@ -48,11 +46,9 @@ export const CreateTaskActionSchema = z.object({
 });
 export type CreateTaskAction = z.infer<typeof CreateTaskActionSchema>;
 
-// A wall-clock time in the app timezone; the executor converts to UTC via
-// instantFromLocal (iron rule #1). Same range guard as due_time, so a
+// Event times are wall-clock in the app timezone too; the executor converts to
+// UTC via instantFromLocal (iron rule #1). Same guard as due_time, so a
 // malformed time fails schema-parse rather than reaching CalDAV.
-const WallClockTimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
-
 export const CreateEventActionSchema = z.object({
 	action: z.literal("create_event"),
 	title: z.string().min(1),
