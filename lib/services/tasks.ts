@@ -184,7 +184,14 @@ export async function updateTask(
 		recurrence_rule: string | null;
 	}>,
 ): Promise<void> {
-	unwrap(await sb.from("tasks").update(patch).eq("id", id));
+	// due_time may only be set alongside a due_date (DB check constraint).
+	// UpdateTaskSchema is `.partial()`, so a patch that nulls due_date while
+	// leaving due_time untouched (or stale) can't be caught by Zod — it only
+	// becomes invalid once merged into the row it's patching. Coerce rather
+	// than reject: clearing the date silently clears whatever time no longer
+	// has a date to sit on, whether or not the caller also touched due_time.
+	const nextPatch = patch.due_date === null ? { ...patch, due_time: null } : patch;
+	unwrap(await sb.from("tasks").update(nextPatch).eq("id", id));
 }
 
 /**

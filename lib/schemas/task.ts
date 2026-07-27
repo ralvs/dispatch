@@ -52,7 +52,10 @@ export const TaskSchema = z.object({
 		.optional(),
 });
 
-export const CreateTaskSchema = z.object({
+// Base shape, kept separate from CreateTaskSchema so UpdateTaskSchema can
+// still call `.partial()` on it — `.refine()` below returns a ZodEffects,
+// which has no `.partial()`.
+const taskWriteShape = z.object({
 	title: z.string().min(1),
 	notes: nullableString(),
 	due_date: nullableDate(),
@@ -71,7 +74,18 @@ export const CreateTaskSchema = z.object({
 	top3_for_date: nullableDate(),
 });
 
-export const UpdateTaskSchema = CreateTaskSchema.partial().extend({
+export const CreateTaskSchema = taskWriteShape
+	// A time with no date to put it on is meaningless (matches the DB check
+	// constraint — see the migration that added it). UpdateTaskSchema below
+	// is `.partial()`, so this refine only catches the create path; a patch
+	// that nulls due_date alone is coerced in updateTask against the merged
+	// row instead, since a `.partial()` schema can't see the existing row.
+	.refine((v) => !(v.due_time && !v.due_date), {
+		message: "due_time requires due_date",
+		path: ["due_time"],
+	});
+
+export const UpdateTaskSchema = taskWriteShape.partial().extend({
 	status: TaskStatusSchema.optional(),
 });
 

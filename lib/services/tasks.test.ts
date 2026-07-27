@@ -1,6 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
-import { assignDomain, completeTask, createTask, listInboxTasks } from "@/lib/services/tasks";
+import {
+	assignDomain,
+	completeTask,
+	createTask,
+	listInboxTasks,
+	updateTask,
+} from "@/lib/services/tasks";
 
 const TODAY = "2026-07-15";
 
@@ -60,6 +66,75 @@ describe("completeTask", () => {
 		expect(updatePatches).toHaveLength(1);
 		expect(updatePatches[0]).toMatchObject({ status: "done" });
 		expect(updatePatches[0].completed_at).toEqual(expect.any(String));
+	});
+
+	// A recurring "daily 09:00" task keeps its 09:00 across every roll —
+	// getTaskHot doesn't even select due_time, and the update patch below only
+	// ever writes due_date, so there is nothing in this path that could touch it.
+	it("preserves due_time when rolling a recurring task forward", async () => {
+		const { sb, updatePatches } = stubSupabase({
+			id: "task-3",
+			recurrence_rule: "daily",
+			due_date: "2026-07-10",
+			due_time: "09:00:00",
+		});
+
+		const result = await completeTask(sb, "task-3", TODAY);
+
+		expect(result).toEqual({ rolled: true });
+		expect(updatePatches).toHaveLength(1);
+		expect(updatePatches[0]).toHaveProperty("due_date");
+		expect(updatePatches[0]).not.toHaveProperty("due_time");
+	});
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// due_time may only be set alongside a due_date (DB check constraint added
+// alongside this test). UpdateTaskSchema is `.partial()`, so a patch that
+// clears due_date while leaving due_time untouched has to be coerced here,
+// not caught by Zod.
+// ─────────────────────────────────────────────────────────────────────────
+
+describe("updateTask", () => {
+	it("nulls due_time when a patch clears due_date", async () => {
+		const { sb, calls } = stubBuilder({ data: null, error: null });
+
+		await updateTask(sb, "task-1", { due_date: null });
+
+		expect(calls).toContainEqual({
+			op: "update",
+			payload: { due_date: null, due_time: null },
+		});
+	});
+
+	it("nulls due_time even when the same patch also sets a due_time", async () => {
+		const { sb, calls } = stubBuilder({ data: null, error: null });
+
+		await updateTask(sb, "task-1", { due_date: null, due_time: "09:00" });
+
+		expect(calls).toContainEqual({
+			op: "update",
+			payload: { due_date: null, due_time: null },
+		});
+	});
+
+	it("leaves due_time untouched when due_date isn't part of the patch", async () => {
+		const { sb, calls } = stubBuilder({ data: null, error: null });
+
+		await updateTask(sb, "task-1", { title: "renamed" });
+
+		expect(calls).toContainEqual({ op: "update", payload: { title: "renamed" } });
+	});
+
+	it("leaves an explicit due_date alone", async () => {
+		const { sb, calls } = stubBuilder({ data: null, error: null });
+
+		await updateTask(sb, "task-1", { due_date: "2026-08-01", due_time: "09:00" });
+
+		expect(calls).toContainEqual({
+			op: "update",
+			payload: { due_date: "2026-08-01", due_time: "09:00" },
+		});
 	});
 });
 
