@@ -21,7 +21,7 @@ import {
 } from "./actions";
 import { CaptureBar } from "./capture-bar";
 import type { TaskDomainOption } from "./task-fields";
-import { type TaskFilterOption, TaskFilters, type TaskStatusFilter } from "./task-filters";
+import { type TaskFilterOption, TaskFilters, type TaskStatusFilter, UNFILED } from "./task-filters";
 import { TaskRowItem } from "./task-row";
 
 function isTaskStatusFilter(value: string | undefined): value is TaskStatusFilter {
@@ -176,9 +176,17 @@ export function TaskList({
 	}
 
 	// Project/Domain AND together and apply across whichever status is showing.
+	// UNFILED narrows to rows where the column is null (docs/adr/0027); "" is
+	// the no-narrow case and has to stay distinct from it.
 	function matchesFilters(t: TaskRow): boolean {
-		if (projectId && t.project_id !== projectId) return false;
-		if (domainId && t.domain_id !== domainId) return false;
+		if (projectId === UNFILED) {
+			if (t.project_id !== null) return false;
+		} else if (projectId && t.project_id !== projectId) return false;
+
+		if (domainId === UNFILED) {
+			if (t.domain_id !== null) return false;
+		} else if (domainId && t.domain_id !== domainId) return false;
+
 		return true;
 	}
 

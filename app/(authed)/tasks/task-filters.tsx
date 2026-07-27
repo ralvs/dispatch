@@ -12,6 +12,14 @@ export const TASK_STATUS_FILTERS: { value: TaskStatusFilter; label: string }[] =
 
 export type TaskFilterOption = { id: string; name: string };
 
+/**
+ * Sentinel for "this column is null" — distinct from "" which means no narrow
+ * at all. Since ADR-0027 an unfiled task carries `domain_id: null` rather than
+ * a pseudo-domain row, so without this the unfiled queue is unreachable from
+ * the filters. `project_id` has always been nullable and gets the same treatment.
+ */
+export const UNFILED = "none";
+
 const FIELD_LABEL = "block font-mono text-eyebrow uppercase text-ink-3";
 
 /**
@@ -79,6 +87,7 @@ export function TaskFilters({
 					className={`${CONTROL} mt-1 block w-[11rem] max-w-full`}
 				>
 					<option value="">All projects</option>
+					<option value={UNFILED}>No project</option>
 					{projects.map((p) => (
 						<option key={p.id} value={p.id}>
 							{p.name}
@@ -96,6 +105,7 @@ export function TaskFilters({
 					className={`${CONTROL} mt-1 block w-[11rem] max-w-full`}
 				>
 					<option value="">All domains</option>
+					<option value={UNFILED}>Unfiled</option>
 					{domains.map((d) => (
 						<option key={d.id} value={d.id}>
 							{d.name}
