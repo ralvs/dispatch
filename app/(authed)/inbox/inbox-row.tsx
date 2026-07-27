@@ -6,19 +6,19 @@ import { ColorDot } from "@/components/color-dot";
 import { runAction } from "@/lib/client/toast";
 import type { TaskRow } from "@/lib/services/tasks";
 
-type DomainOption = { id: string; name: string; is_system: boolean; color: string | null };
+type DomainOption = { id: string; name: string; color: string | null };
 
 export function InboxRow({ task, domains }: { task: TaskRow; domains: DomainOption[] }) {
 	const [pending, startTransition] = useTransition();
-	// The Inbox is never a destination — filing out of it is one-way, enforced
-	// in assignDomain (docs/adr/0024). This filter is only the visible half.
-	const targets = domains.filter((d) => !d.is_system);
+	// Every domain is a valid destination now — the inbox is the absence of one,
+	// so there is nothing to filter out. Filing stays one-way because no write
+	// path sets domain_id back to null (docs/adr/0025).
 
 	return (
 		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>
 			<p className="text-sm text-ink">{task.title}</p>
 			<div className="mt-2 flex flex-wrap gap-1.5">
-				{targets.map((d) => (
+				{domains.map((d) => (
 					<button
 						key={d.id}
 						type="button"

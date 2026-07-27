@@ -108,15 +108,11 @@ export function ProjectDetail({
 									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 								>
 									<option value="">Unassigned</option>
-									{/* Same rule as the create form; the current value survives the
-									    filter so an existing project can't be silently rehomed. */}
-									{domains
-										.filter((d) => !d.is_system || d.id === project.domain_id)
-										.map((d) => (
-											<option key={d.id} value={d.id}>
-												{d.name}
-											</option>
-										))}
+									{domains.map((d) => (
+										<option key={d.id} value={d.id}>
+											{d.name}
+										</option>
+									))}
 								</select>
 							</label>
 							<label className="block">

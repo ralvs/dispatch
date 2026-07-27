@@ -7,7 +7,6 @@ import { RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
 export type TaskDomainOption = {
 	id: string;
 	name: string;
-	is_system: boolean;
 	color: string | null;
 };
 
@@ -129,7 +128,8 @@ export type TaskFieldDefaults = {
 	notes?: string | null;
 	due_date?: string | null;
 	due_time?: string | null;
-	domain_id?: string;
+	/** null = the task is unfiled; undefined = no task yet (create form). */
+	domain_id?: string | null;
 	priority?: number;
 	recurrence_rule?: string | null;
 };
@@ -230,20 +230,21 @@ export function TaskMetaFields({
 					    unreliable cross-browser, so this stays a plain name list. */}
 					<select
 						name="domain_id"
-						defaultValue={defaults.domain_id ?? domains[0]?.id}
+						defaultValue={defaults.domain_id ?? ""}
 						className={`${CONTROL} mt-1 block w-[11rem] max-w-full`}
 					>
-						{/* The Inbox is never offered as a destination — filing out of it is
-						    one-way (docs/adr/0024). It stays listed only when it is this
-						    task's current value, so editing an inbox task doesn't silently
-						    reassign it to whichever domain sorts first. */}
-						{domains
-							.filter((d) => !d.is_system || d.id === defaults.domain_id)
-							.map((d) => (
-								<option key={d.id} value={d.id}>
-									{d.name}
-								</option>
-							))}
+						{/* "Unfiled" is offered only when it is already the answer — on the
+						    create form (undefined) or for a task sitting in the inbox (null).
+						    A filed task never sees it, which is what keeps filing one-way
+						    (docs/adr/0025). It also has to be listed in the inbox case, or
+						    the <select> would drop its own value and silently reassign the
+						    task to whichever domain sorts first. */}
+						{defaults.domain_id == null && <option value="">Unfiled</option>}
+						{domains.map((d) => (
+							<option key={d.id} value={d.id}>
+								{d.name}
+							</option>
+						))}
 					</select>
 				</label>
 

@@ -56,15 +56,11 @@ export function ProjectForm({ domains }: { domains: DomainRow[] }) {
 						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
 					>
 						<option value="">Unassigned</option>
-						{/* The Inbox is a task-capture holding pen, not a home for a
-						    project — and "Unassigned" already covers not choosing. */}
-						{domains
-							.filter((d) => !d.is_system)
-							.map((d) => (
-								<option key={d.id} value={d.id}>
-									{d.name}
-								</option>
-							))}
+						{domains.map((d) => (
+							<option key={d.id} value={d.id}>
+								{d.name}
+							</option>
+						))}
 					</select>
 				</label>
 				<label className="block">

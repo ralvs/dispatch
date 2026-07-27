@@ -125,17 +125,10 @@ export function DomainRowItem({
 			id={`domain-${domain.id}`}
 			className={`hairline scroll-mt-24 py-3 ${pending ? "opacity-50" : ""}`}
 		>
-			<div className="flex items-baseline justify-between gap-3">
-				<span className="flex items-center gap-1.5">
-					<ColorDot color={domain.color} />
-					<span className="font-serif text-base text-ink">{domain.name}</span>
-				</span>
-				{domain.is_system && (
-					<span className="shrink-0 rounded-md border border-line px-1.5 py-0.5 font-mono text-meta uppercase tracking-widest text-ink-3">
-						System
-					</span>
-				)}
-			</div>
+			<span className="flex items-center gap-1.5">
+				<ColorDot color={domain.color} />
+				<span className="font-serif text-base text-ink">{domain.name}</span>
+			</span>
 			{domain.description && <p className="mt-0.5 text-sm text-ink-3">{domain.description}</p>}
 			{domain.fruit_definition && (
 				<p className="mt-0.5 text-meta text-ink-4">Fruit: {domain.fruit_definition}</p>
@@ -143,77 +136,73 @@ export function DomainRowItem({
 			{domain.expected_cadence && (
 				<p className="mt-0.5 text-meta text-ink-4">Cadence: {domain.expected_cadence}</p>
 			)}
-			{!domain.is_system && (
-				<p className="mt-0.5 text-meta text-ink-4">
-					{cadenceDays === null
-						? "Flags after: never — no cadence rule"
-						: `Flags after: ${cadenceDays} day${cadenceDays === 1 ? "" : "s"}`}
-				</p>
-			)}
+			<p className="mt-0.5 text-meta text-ink-4">
+				{cadenceDays === null
+					? "Flags after: never — no cadence rule"
+					: `Flags after: ${cadenceDays} day${cadenceDays === 1 ? "" : "s"}`}
+			</p>
 			<p className="mt-0.5 font-mono text-meta text-ink-4">
 				Last shipped: {domain.last_shipped_at ? formatInstant(domain.last_shipped_at, tz) : "never"}
 			</p>
 
-			{!domain.is_system && (
-				<div className="mt-2 flex flex-wrap gap-2">
+			<div className="mt-2 flex flex-wrap gap-2">
+				<button
+					type="button"
+					aria-label={`Edit ${domain.name}`}
+					onClick={() => setEditing(true)}
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+				>
+					Edit
+				</button>
+				<button
+					type="button"
+					aria-label={`Mark ${domain.name} shipped`}
+					disabled={pending}
+					onClick={() =>
+						startTransition(async () => {
+							await runAction(
+								() => markDomainShippedAction(domain.id),
+								"Couldn't mark domain shipped.",
+							);
+						})
+					}
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+				>
+					Mark shipped
+				</button>
+				{domain.active ? (
 					<button
 						type="button"
-						aria-label={`Edit ${domain.name}`}
-						onClick={() => setEditing(true)}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+						aria-label={`Archive ${domain.name}`}
+						disabled={pending}
+						onClick={() =>
+							startTransition(async () => {
+								await runAction(() => archiveDomainAction(domain.id), "Couldn't archive domain.");
+							})
+						}
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
 					>
-						Edit
+						Archive
 					</button>
+				) : (
 					<button
 						type="button"
-						aria-label={`Mark ${domain.name} shipped`}
+						aria-label={`Reactivate ${domain.name}`}
 						disabled={pending}
 						onClick={() =>
 							startTransition(async () => {
 								await runAction(
-									() => markDomainShippedAction(domain.id),
-									"Couldn't mark domain shipped.",
+									() => reactivateDomainAction(domain.id),
+									"Couldn't reactivate domain.",
 								);
 							})
 						}
 						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
 					>
-						Mark shipped
+						Reactivate
 					</button>
-					{domain.active ? (
-						<button
-							type="button"
-							aria-label={`Archive ${domain.name}`}
-							disabled={pending}
-							onClick={() =>
-								startTransition(async () => {
-									await runAction(() => archiveDomainAction(domain.id), "Couldn't archive domain.");
-								})
-							}
-							className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
-						>
-							Archive
-						</button>
-					) : (
-						<button
-							type="button"
-							aria-label={`Reactivate ${domain.name}`}
-							disabled={pending}
-							onClick={() =>
-								startTransition(async () => {
-									await runAction(
-										() => reactivateDomainAction(domain.id),
-										"Couldn't reactivate domain.",
-									);
-								})
-							}
-							className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
-						>
-							Reactivate
-						</button>
-					)}
-				</div>
-			)}
+				)}
+			</div>
 		</li>
 	);
 }

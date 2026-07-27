@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useTransition } from "react";
 import { runAction } from "@/lib/client/toast";
-import { INBOX_DOMAIN_ID } from "@/lib/constants";
 import type { TaskRow } from "@/lib/services/tasks";
 import {
 	type ApplyContext,
@@ -24,7 +23,7 @@ import { CaptureBar } from "./capture-bar";
 import type { TaskDomainOption } from "./task-fields";
 import { TaskRowItem } from "./task-row";
 
-/** A new task as the client can know it: Inbox defaults, no server round-trip. */
+/** A new task as the client can know it: unfiled, no server round-trip. */
 function optimisticTask(overrides: Partial<TaskRow> = {}): TaskRow {
 	return {
 		id: crypto.randomUUID(),
@@ -35,13 +34,13 @@ function optimisticTask(overrides: Partial<TaskRow> = {}): TaskRow {
 		due_time: null,
 		priority: 4,
 		project_id: null,
-		domain_id: INBOX_DOMAIN_ID,
+		domain_id: null,
 		recurrence_rule: null,
 		top3_for_date: null,
 		source: "manual",
 		created_at: new Date().toISOString(),
 		completed_at: null,
-		domain: { id: INBOX_DOMAIN_ID, name: "Inbox", color: null },
+		domain: null,
 		project: null,
 		...overrides,
 	};
@@ -53,7 +52,7 @@ function optimisticTaskFromText(text: string): TaskRow {
 }
 
 function optimisticTaskFromForm(formData: FormData, domains: TaskDomainOption[]): TaskRow {
-	const domainId = String(formData.get("domain_id") ?? "") || INBOX_DOMAIN_ID;
+	const domainId = String(formData.get("domain_id") ?? "") || null;
 	const domain = domains.find((d) => d.id === domainId);
 	const priorityRaw = Number(formData.get("priority"));
 
@@ -65,9 +64,7 @@ function optimisticTaskFromForm(formData: FormData, domains: TaskDomainOption[])
 		priority: Number.isFinite(priorityRaw) ? priorityRaw : 4,
 		domain_id: domainId,
 		recurrence_rule: String(formData.get("recurrence_rule") ?? "") || null,
-		domain: domain
-			? { id: domain.id, name: domain.name, color: domain.color ?? null }
-			: { id: domainId, name: "Inbox", color: null },
+		domain: domain ? { id: domain.id, name: domain.name, color: domain.color ?? null } : null,
 	});
 }
 
