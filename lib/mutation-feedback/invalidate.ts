@@ -57,8 +57,17 @@ export function afterMutation(kind: MutationKind, detail?: { id?: string }): voi
 			revalidatePath("/today");
 			return;
 		case "settings.timezone":
-		case "theme":
+			// Timezone genuinely reshapes every page (day boundaries, dates,
+			// briefing) — the app-wide invalidation is warranted here.
 			revalidatePath("/", "layout");
+			return;
+		case "theme":
+			// Nothing to revalidate. Theme is a cookie plus `data-theme` on
+			// <html>, which only the ROOT layout renders — so revalidating any
+			// route below it repaints nothing, and revalidating app-wide would
+			// discard every route's prefetch cache (undoing loading.tsx) for a
+			// change that isn't a data change at all. ThemeToggle sets the
+			// attribute directly; the cookie is only read on the next SSR.
 			return;
 		case "settings.reminders":
 			revalidatePath("/settings");
