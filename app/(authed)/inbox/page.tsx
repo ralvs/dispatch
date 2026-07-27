@@ -1,5 +1,6 @@
 import { requireOwnerPage } from "@/lib/auth";
 import { listDomains } from "@/lib/services/domains";
+import { listNoteIdsForTargets } from "@/lib/services/note-links";
 import { listInboxTasks } from "@/lib/services/tasks";
 import { InboxRow } from "./inbox-row";
 
@@ -8,6 +9,13 @@ import { InboxRow } from "./inbox-row";
 export default async function InboxPage() {
 	const { sb } = await requireOwnerPage();
 	const [tasks, domains] = await Promise.all([listInboxTasks(sb), listDomains(sb)]);
+	const taskNoteIds = Object.fromEntries(
+		await listNoteIdsForTargets(
+			sb,
+			"task",
+			tasks.map((t) => t.id),
+		),
+	);
 
 	return (
 		<div>
@@ -26,7 +34,7 @@ export default async function InboxPage() {
 			) : (
 				<ul className="mt-4">
 					{tasks.map((t) => (
-						<InboxRow key={t.id} task={t} domains={domains} />
+						<InboxRow key={t.id} task={t} domains={domains} noteId={taskNoteIds[t.id]} />
 					))}
 				</ul>
 			)}
