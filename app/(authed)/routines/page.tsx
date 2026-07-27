@@ -1,7 +1,7 @@
 import { requireOwnerPage } from "@/lib/auth";
 import { shiftDay, todayInTz } from "@/lib/dates";
 import { computeRoutineStats, recentDaysGrid } from "@/lib/routine-stats";
-import { listCompletions, listRoutines } from "@/lib/services/routines";
+import { listCompletionsForRoutines, listRoutines } from "@/lib/services/routines";
 import { getAppTimezone } from "@/lib/services/settings";
 import { RoutineForm } from "./routine-form";
 import { RoutineRowItem } from "./routine-row";
@@ -13,8 +13,10 @@ export default async function RoutinesPage() {
 	const sinceIso = shiftDay(todayIso, -35);
 
 	const routines = await listRoutines(sb);
-	const completionsByRoutine = await Promise.all(
-		routines.map((r) => listCompletions(sb, r.id, sinceIso)),
+	const completionsByRoutine = await listCompletionsForRoutines(
+		sb,
+		routines.map((r) => r.id),
+		sinceIso,
 	);
 
 	return (
@@ -35,8 +37,8 @@ export default async function RoutinesPage() {
 					</p>
 				) : (
 					<ul className="mt-2">
-						{routines.map((routine, i) => {
-							const dates = completionsByRoutine[i].map((c) => c.completed_date);
+						{routines.map((routine) => {
+							const dates = (completionsByRoutine[routine.id] ?? []).map((c) => c.completed_date);
 							const stats = computeRoutineStats(dates, todayIso);
 							const recentDays = recentDaysGrid(dates, todayIso, 30);
 							return (
