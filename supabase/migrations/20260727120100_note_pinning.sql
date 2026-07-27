@@ -6,4 +6,4 @@
 -- among other pinned notes (most-recently-pinned first).
 alter table notes add column if not exists pinned_at timestamptz;
 
-create index if not exists notes_pinned_at_idx on notes (pinned_at) where pinned_at is not null;
+create index if not exists idx_notes_pinned on notes (pinned_at desc) where pinned_at is not null;
