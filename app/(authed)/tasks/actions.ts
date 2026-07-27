@@ -47,6 +47,9 @@ export async function updateTaskAction(id: string, formData: FormData) {
 		due_date: parsed.due_date || null,
 		due_time: parsed.due_time || null,
 		priority: parsed.priority,
+		// `undefined`, not `null` — an empty domain field means "leave the task's
+		// domain alone", where null would reset it to Inbox. The create path above
+		// wants the opposite, which is why the two mappings stay separate.
 		domain_id: parsed.domain_id || undefined,
 		recurrence_rule: parsed.recurrence_rule || null,
 	});

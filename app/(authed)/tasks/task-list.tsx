@@ -24,12 +24,11 @@ import { CaptureBar } from "./capture-bar";
 import type { TaskDomainOption } from "./task-fields";
 import { TaskRowItem } from "./task-row";
 
-/** Raw text, Inbox defaults — the parsed row swaps in on revalidation. */
-function optimisticTaskFromText(text: string): TaskRow {
-	const now = new Date().toISOString();
+/** A new task as the client can know it: Inbox defaults, no server round-trip. */
+function optimisticTask(overrides: Partial<TaskRow> = {}): TaskRow {
 	return {
 		id: crypto.randomUUID(),
-		title: text,
+		title: "Untitled",
 		notes: null,
 		status: "open",
 		due_date: null,
@@ -40,45 +39,36 @@ function optimisticTaskFromText(text: string): TaskRow {
 		recurrence_rule: null,
 		top3_for_date: null,
 		source: "manual",
-		created_at: now,
+		created_at: new Date().toISOString(),
 		completed_at: null,
 		domain: { id: INBOX_DOMAIN_ID, name: "Inbox", color: null },
 		project: null,
+		...overrides,
 	};
 }
 
+/** Raw text — everything else defaults; the parsed row swaps in on revalidation. */
+function optimisticTaskFromText(text: string): TaskRow {
+	return optimisticTask({ title: text });
+}
+
 function optimisticTaskFromForm(formData: FormData, domains: TaskDomainOption[]): TaskRow {
-	const title = String(formData.get("title") ?? "").trim() || "Untitled";
 	const domainId = String(formData.get("domain_id") ?? "") || INBOX_DOMAIN_ID;
 	const domain = domains.find((d) => d.id === domainId);
-	const dueDate = String(formData.get("due_date") ?? "") || null;
-	const dueTime = String(formData.get("due_time") ?? "") || null;
 	const priorityRaw = Number(formData.get("priority"));
-	const priority = Number.isFinite(priorityRaw) ? priorityRaw : 4;
-	const recurrence = String(formData.get("recurrence_rule") ?? "") || null;
-	const notes = String(formData.get("notes") ?? "") || null;
-	const now = new Date().toISOString();
 
-	return {
-		id: crypto.randomUUID(),
-		title,
-		notes,
-		status: "open",
-		due_date: dueDate,
-		due_time: dueTime,
-		priority,
-		project_id: null,
+	return optimisticTask({
+		title: String(formData.get("title") ?? "").trim() || "Untitled",
+		notes: String(formData.get("notes") ?? "") || null,
+		due_date: String(formData.get("due_date") ?? "") || null,
+		due_time: String(formData.get("due_time") ?? "") || null,
+		priority: Number.isFinite(priorityRaw) ? priorityRaw : 4,
 		domain_id: domainId,
-		recurrence_rule: recurrence,
-		top3_for_date: null,
-		source: "manual",
-		created_at: now,
-		completed_at: null,
+		recurrence_rule: String(formData.get("recurrence_rule") ?? "") || null,
 		domain: domain
 			? { id: domain.id, name: domain.name, color: domain.color ?? null }
 			: { id: domainId, name: "Inbox", color: null },
-		project: null,
-	};
+	});
 }
 
 export function TaskList({
