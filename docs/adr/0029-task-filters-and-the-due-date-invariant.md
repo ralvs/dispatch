@@ -75,10 +75,17 @@ exclusive; Project and Domain AND together.
 The server reads the initial filter from `searchParams`, so `/tasks?project=<id>`
 deep-links from a project page. Every change after that is client state with
 `history.replaceState`. Filtering server-side would have meant a round trip per
-filter change — precisely the latency ADR-0026 was written to remove — and the
+filter change — precisely the latency ADR-0028 was written to remove — and the
 data is already fully loaded in the client component. Overdue reuses the
 existing `isOverdue` predicate rather than growing a second definition of the
 word.
+
+Both the Project and Domain dropdowns carry an explicit null option ("No
+project" / "Unfiled") behind an `UNFILED` sentinel, kept distinct from `""`
+meaning "no narrow". ADR-0027 made an unfiled task one with `domain_id: null`
+rather than a pseudo-domain row, so without the sentinel the unfiled queue —
+the thing `/inbox` exists to drain — would be the one view the filters could
+not reach.
 
 `listRecentDone`'s limit goes from 10 to 100 so the Done filter has something to
 show. Still one query.
