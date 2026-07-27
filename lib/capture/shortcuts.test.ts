@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isOpenShortcut, isSubmitShortcut } from "@/lib/capture/shortcuts";
+import { isOpenShortcut, isSubmitShortcut, navShortcutIndex } from "@/lib/capture/shortcuts";
 
 describe("isOpenShortcut", () => {
 	it("matches Cmd+J", () => {
@@ -31,5 +31,51 @@ describe("isSubmitShortcut", () => {
 
 	it("ignores a bare Enter", () => {
 		expect(isSubmitShortcut({ key: "Enter", metaKey: false, ctrlKey: false })).toBe(false);
+	});
+});
+
+describe("navShortcutIndex", () => {
+	it("matches Option+1 through Option+5 by event.code", () => {
+		for (let i = 1; i <= 5; i++) {
+			expect(
+				navShortcutIndex({ code: `Digit${i}`, altKey: true, metaKey: false, ctrlKey: false }),
+			).toBe(i - 1);
+		}
+	});
+
+	it("matches on macOS even though Option+1 produces the character ¡, not 1", () => {
+		// event.key would be "¡" here, but navShortcutIndex never looks at key —
+		// it matches event.code, which stays "Digit1" regardless of what
+		// character the OS composes for the modified keypress.
+		expect(navShortcutIndex({ code: "Digit1", altKey: true, metaKey: false, ctrlKey: false })).toBe(
+			0,
+		);
+	});
+
+	it("ignores digits without Alt/Option", () => {
+		expect(
+			navShortcutIndex({ code: "Digit1", altKey: false, metaKey: false, ctrlKey: false }),
+		).toBeNull();
+	});
+
+	it("ignores Alt+digit combined with Cmd or Ctrl", () => {
+		expect(
+			navShortcutIndex({ code: "Digit1", altKey: true, metaKey: true, ctrlKey: false }),
+		).toBeNull();
+		expect(
+			navShortcutIndex({ code: "Digit1", altKey: true, metaKey: false, ctrlKey: true }),
+		).toBeNull();
+	});
+
+	it("ignores codes outside Digit1-5", () => {
+		expect(
+			navShortcutIndex({ code: "Digit6", altKey: true, metaKey: false, ctrlKey: false }),
+		).toBeNull();
+		expect(
+			navShortcutIndex({ code: "Digit0", altKey: true, metaKey: false, ctrlKey: false }),
+		).toBeNull();
+		expect(
+			navShortcutIndex({ code: "KeyJ", altKey: true, metaKey: false, ctrlKey: false }),
+		).toBeNull();
 	});
 });

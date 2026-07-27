@@ -65,6 +65,10 @@ export function DesktopRail({ email, theme }: { email: string; theme: "dark" | "
 				</span>
 			</button>
 
+			<p className="mt-2 font-mono text-meta text-ink-4">
+				<span aria-hidden="true">⌥1–5</span> jump to a tab
+			</p>
+
 			<nav aria-label="Primary" className="mt-10 flex-1 overflow-y-auto">
 				{DAILY.map((t) => (
 					<RailLink key={t.key} item={t} pathname={pathname} />
