@@ -1,6 +1,5 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { INBOX_DOMAIN_ID } from "@/lib/constants";
 import {
 	dateOfInstant,
 	formatInstant,
@@ -419,7 +418,6 @@ export function deriveBriefLines(
 ): BriefLine[] {
 	const lines: BriefLine[] = [];
 	for (const domain of domains) {
-		if (domain.is_system) continue;
 		const thresholdDays = cadenceThresholdDays(domain.failure_patterns);
 		if (thresholdDays === null) continue;
 
@@ -650,7 +648,7 @@ export async function getBriefing(
 
 	const overdue = open.filter((t) => isOverdue(t, todayIso));
 	const dueToday = open.filter((t) => isDueToday(t, todayIso));
-	const inboxCount = open.filter((t) => t.domain_id === INBOX_DOMAIN_ID).length;
+	const inboxCount = open.filter((t) => t.domain_id === null).length;
 
 	const completedRoutineIds = new Set(completionsToday.map((c) => c.routine_id));
 	const routinesDone = routines.filter((r) => completedRoutineIds.has(r.id)).length;

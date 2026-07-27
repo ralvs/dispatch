@@ -1,10 +1,9 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { INBOX_DOMAIN_ID } from "@/lib/constants";
 import { nowUtc } from "@/lib/dates";
 import { isRecurrencePattern, nextDueDate } from "@/lib/recurrence";
 import { TASK_SELECT, type TaskRow } from "@/lib/schemas/task";
-import { ServiceError, unwrap } from "@/lib/services/errors";
+import { unwrap } from "@/lib/services/errors";
 
 export type { TaskRow } from "@/lib/schemas/task";
 
@@ -20,7 +19,13 @@ function flatten(row: any): TaskRow {
 
 export async function listTasks(
 	sb: SupabaseClient,
-	filters: { status?: "open" | "done"; domainId?: string; projectId?: string } = {},
+	filters: {
+		status?: "open" | "done";
+		domainId?: string;
+		/** Tasks with no domain at all — the inbox. Distinct from domainId. */
+		unfiled?: boolean;
+		projectId?: string;
+	} = {},
 ): Promise<TaskRow[]> {
 	let q = sb
 		.from("tasks")
@@ -30,6 +35,7 @@ export async function listTasks(
 		.order("created_at", { ascending: false });
 	if (filters.status) q = q.eq("status", filters.status);
 	if (filters.domainId) q = q.eq("domain_id", filters.domainId);
+	if (filters.unfiled) q = q.is("domain_id", null);
 	if (filters.projectId) q = q.eq("project_id", filters.projectId);
 	const data = unwrap(await q);
 	return (data ?? []).map(flatten);
@@ -37,7 +43,7 @@ export async function listTasks(
 
 /** The /inbox queue: open tasks that were captured without a domain. */
 export async function listInboxTasks(sb: SupabaseClient): Promise<TaskRow[]> {
-	return listTasks(sb, { status: "open", domainId: INBOX_DOMAIN_ID });
+	return listTasks(sb, { status: "open", unfiled: true });
 }
 
 /** Recently completed tasks only — Tasks page strip, not full history. */
@@ -65,6 +71,9 @@ export async function lastCompletedByDomain(sb: SupabaseClient): Promise<Record<
 			.select("domain_id, completed_at")
 			.eq("status", "done")
 			.not("completed_at", "is", null)
+			// Unfiled tasks have no domain to attribute the completion to; letting
+			// them through would key the cadence map on null.
+			.not("domain_id", "is", null)
 			.order("completed_at", { ascending: false })
 			.limit(500),
 	);
@@ -148,9 +157,11 @@ export async function createTask(
 			.from("tasks")
 			.insert({
 				...input,
-				// A task without a stated destination lands in the Inbox (/inbox),
-				// which is the only way a task ever gets that domain.
-				domain_id: input.domain_id ?? INBOX_DOMAIN_ID,
+				// A task without a stated destination is unfiled — no domain at all,
+				// which is what the /inbox queue selects on (docs/adr/0025). Stated
+				// explicitly rather than left to the column default so the write says
+				// what it means.
+				domain_id: input.domain_id ?? null,
 				source: input.source ?? "manual",
 			})
 			.select(TASK_SELECT)
@@ -220,18 +231,17 @@ export async function toggleTop3(sb: SupabaseClient, id: string, todayIso: strin
 }
 
 /**
- * Give a task a domain — the one way out of the Inbox, and one-way by design
- * (docs/adr/0024). Only `createTask`'s default may ever set the Inbox domain,
- * so a task cannot be filed back into the queue that exists to empty it. The
- * UI hides the option; this is what enforces it.
+ * Give a task a domain — the one way out of the inbox, and still one-way
+ * (docs/adr/0024 §3, carried into docs/adr/0025). Un-filing would mean writing
+ * NULL back, and no write path does: this signature takes a domain id, and
+ * `updateTask`'s patch types `domain_id` as a plain string, so "leave it alone"
+ * is the only thing an empty domain field can mean. That is now structural
+ * rather than a runtime guard.
  */
 export async function assignDomain(
 	sb: SupabaseClient,
 	id: string,
 	domainId: string,
 ): Promise<void> {
-	if (domainId === INBOX_DOMAIN_ID) {
-		throw new ServiceError("A task cannot be moved back to the Inbox", "INVALID");
-	}
 	unwrap(await sb.from("tasks").update({ domain_id: domainId }).eq("id", id));
 }

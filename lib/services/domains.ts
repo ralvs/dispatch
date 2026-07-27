@@ -8,9 +8,9 @@ import { ServiceError, unwrap } from "@/lib/services/errors";
 
 // ─── Stewardship domains ───────────────────────────────────────────────
 // docs/adr/0007: domains gain full CRUD here (the reference implementation
-// was seed-only). The system Inbox domain (`is_system=true`) is a fixed
-// catch-all — never renamable, never archivable. That's enforced here, not
-// just hidden in the UI, so a stray direct call can't slip past it.
+// was seed-only). Every row is a real domain and every row is editable —
+// the Inbox pseudo-domain that used to need protecting from rename and
+// archive is gone, replaced by a null domain_id (docs/adr/0025).
 
 export type { DomainRow };
 
@@ -48,39 +48,25 @@ export async function createDomain(
 	return data as unknown as DomainRow;
 }
 
-async function assertNotSystem(sb: SupabaseClient, id: string, action: string): Promise<void> {
-	const domain = await getDomain(sb, id);
-	if (!domain) throw new ServiceError(`Domain ${id} not found`, "NOT_FOUND");
-	if (domain.is_system) {
-		// Interpolated, not hardcoded to "Inbox": is_system is the categorical
-		// test throughout, so a second system row must not get a wrong message.
-		throw new ServiceError(`The system ${domain.name} domain cannot be ${action}`, "FORBIDDEN");
-	}
-}
-
 export async function updateDomain(
 	sb: SupabaseClient,
 	id: string,
 	patch: UpdateDomainInput,
 ): Promise<void> {
-	await assertNotSystem(sb, id, "edited");
 	unwrap(await sb.from("stewardship_domains").update(patch).eq("id", id));
 }
 
 /** Soft-removes the domain from active views without deleting it. */
 export async function archiveDomain(sb: SupabaseClient, id: string): Promise<void> {
-	await assertNotSystem(sb, id, "archived");
 	unwrap(await sb.from("stewardship_domains").update({ active: false }).eq("id", id));
 }
 
 export async function reactivateDomain(sb: SupabaseClient, id: string): Promise<void> {
-	await assertNotSystem(sb, id, "reactivated");
 	unwrap(await sb.from("stewardship_domains").update({ active: true }).eq("id", id));
 }
 
 /** Stamps last_shipped_at = now(). ADR 0007's manual "I shipped something" marker. */
 export async function markDomainShipped(sb: SupabaseClient, id: string): Promise<void> {
-	await assertNotSystem(sb, id, "marked shipped");
 	unwrap(await sb.from("stewardship_domains").update({ last_shipped_at: nowUtc() }).eq("id", id));
 }
 
@@ -127,7 +113,6 @@ export async function setDomainCadence(
 	id: string,
 	days: number | null,
 ): Promise<void> {
-	await assertNotSystem(sb, id, "given a cadence");
 	const domain = await getDomain(sb, id);
 	if (!domain) throw new ServiceError(`Domain ${id} not found`, "NOT_FOUND");
 	unwrap(

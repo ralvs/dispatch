@@ -21,8 +21,8 @@ import type { createTask } from "@/lib/services/tasks";
 // Routing is name-based because the parser is only ever given names (never
 // ids — hallucinated-UUID risk), so matching is exact, case- and
 // diacritic-insensitive only. No fuzzy match (deferred per ADR-0016's
-// match.ts). A miss never fails the capture: it falls back to the Inbox and
-// records the miss for filing there.
+// match.ts). A miss never fails the capture: the task is left unfiled (no
+// domain at all) and the miss is recorded for filing from /inbox.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type RoutingLists = {
@@ -130,7 +130,7 @@ export async function fetchRoutingLists(sb: SupabaseClient): Promise<RoutingList
 			listProjects(sb, { status: "active" }),
 		]);
 		return {
-			domains: domains.filter((d) => !d.is_system).map((d) => ({ id: d.id, name: d.name })),
+			domains: domains.map((d) => ({ id: d.id, name: d.name })),
 			projects: projects.map((p) => ({ id: p.id, name: p.name, domain_id: p.domain_id })),
 		};
 	} catch {

@@ -16,9 +16,6 @@ export const DomainSchema = z.object({
 	failure_patterns: z.array(FailurePatternSchema).default([]),
 	expected_cadence: z.string().nullable().optional(),
 	active: z.boolean(),
-	// Added by migration 0026. System domains (currently just Inbox) are
-	// protected from rename/deactivate and excluded from slippage detection.
-	is_system: z.boolean().default(false),
 	// Added by migration 0027. Manual "I shipped something" timestamp for
 	// domains whose work lives off-dashboard (Substack, social, etc.). The
 	// cadence helper's days_since_publish rule reads MAX of this and the
@@ -32,9 +29,9 @@ export const DomainSchema = z.object({
 	updated_at: z.string().datetime({ offset: true }),
 });
 
-// Create-time shape used by the "new domain" form. is_system/active/
-// last_shipped_at are not settable on create — is_system is DB-seeded only,
-// new domains are always active, and last_shipped_at starts unset.
+// Create-time shape used by the "new domain" form. active/last_shipped_at are
+// not settable on create — new domains are always active, and last_shipped_at
+// starts unset.
 export const CreateDomainSchema = z.object({
 	name: z.string().min(1),
 	description: z.string().nullable().optional(),
@@ -76,7 +73,6 @@ export const DomainRowSchema = z.object({
 	failure_patterns: z.unknown(),
 	expected_cadence: z.string().nullable(),
 	active: z.boolean(),
-	is_system: z.boolean(),
 	last_shipped_at: z.string().nullable(),
 	color: z.string().nullable(),
 	created_at: z.string(),
