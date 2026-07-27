@@ -1094,7 +1094,6 @@ export type Database = {
 					failure_patterns: Json;
 					fruit_definition: string | null;
 					id: string;
-					is_system: boolean;
 					last_shipped_at: string | null;
 					name: string;
 					updated_at: string;
@@ -1107,7 +1106,6 @@ export type Database = {
 					failure_patterns?: Json;
 					fruit_definition?: string | null;
 					id?: string;
-					is_system?: boolean;
 					last_shipped_at?: string | null;
 					name: string;
 					updated_at?: string;
@@ -1120,7 +1118,6 @@ export type Database = {
 					failure_patterns?: Json;
 					fruit_definition?: string | null;
 					id?: string;
-					is_system?: boolean;
 					last_shipped_at?: string | null;
 					name?: string;
 					updated_at?: string;
@@ -1131,7 +1128,7 @@ export type Database = {
 				Row: {
 					completed_at: string | null;
 					created_at: string;
-					domain_id: string;
+					domain_id: string | null;
 					due_date: string | null;
 					due_time: string | null;
 					id: string;
@@ -1151,7 +1148,7 @@ export type Database = {
 				Insert: {
 					completed_at?: string | null;
 					created_at?: string;
-					domain_id: string;
+					domain_id?: string | null;
 					due_date?: string | null;
 					due_time?: string | null;
 					id?: string;
@@ -1171,7 +1168,7 @@ export type Database = {
 				Update: {
 					completed_at?: string | null;
 					created_at?: string;
-					domain_id?: string;
+					domain_id?: string | null;
 					due_date?: string | null;
 					due_time?: string | null;
 					id?: string;
