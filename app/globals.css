@@ -92,7 +92,10 @@ body {
 	color: var(--ink);
 	font-family: var(--font-sans);
 	-webkit-font-smoothing: antialiased;
-	padding-top: env(safe-area-inset-top);
+	/* Top safe-area inset is applied inside the h-[100dvh] shell
+	 * (app/(authed)/layout.tsx) instead of here. Adding it to body pushes the
+	 * document past 100dvh on an installed iOS PWA (viewportFit: "cover"),
+	 * which reintroduces document scroll and pushes BottomTabBar off-screen. */
 }
 
 /* Display type: Geist 600 with the system's tight negative tracking. The

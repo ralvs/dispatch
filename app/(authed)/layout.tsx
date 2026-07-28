@@ -11,7 +11,7 @@ export default async function AuthedLayout({ children }: { children: React.React
 	const theme = (await cookies()).get("theme")?.value === "light" ? "light" : "dark";
 
 	return (
-		<div className="flex h-[100dvh] flex-col">
+		<div className="flex h-[100dvh] flex-col pt-[env(safe-area-inset-top)]">
 			<SessionKeeper />
 			<DesktopRail email={user.email ?? ""} theme={theme} />
 			<div className="relative flex flex-1 flex-col overflow-hidden">
