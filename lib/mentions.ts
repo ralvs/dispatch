@@ -10,8 +10,12 @@
 
 const UUID_SOURCE = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
 
-/** Matches `@[uuid|Name]`. Name is anything but `]`, `|`, or a newline. */
-const MENTION_TOKEN_RE = new RegExp(`@\\[(${UUID_SOURCE})\\|([^\\]|\\n]+)\\]`, "g");
+/**
+ * Matches `@[uuid|Name]`. Name is anything but `]`, `|`, or a newline.
+ * Exported (mirroring `WIKILINK_RE` in lib/wikilinks.ts) so the note editor's
+ * `Mention` TipTap node can parse the same token at the markdown-it level.
+ */
+export const MENTION_TOKEN_RE = new RegExp(`@\\[(${UUID_SOURCE})\\|([^\\]|\\n]+)\\]`, "g");
 
 // Word character for the "preceded by a word char" email guard — unicode
 // letters/numbers/underscore, so accented names count as word chars too.

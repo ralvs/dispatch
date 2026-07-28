@@ -7,6 +7,7 @@ import { displayTitle } from "@/lib/note-display";
 import { unwrap } from "@/lib/services/errors";
 import { listBacklinks, listLinksForNote } from "@/lib/services/note-links";
 import { getNote, listNoteTitles } from "@/lib/services/notes";
+import { listMentionCandidates } from "@/lib/services/people";
 import { getAppTimezone } from "@/lib/services/settings";
 import { detachLinkAction } from "../actions";
 import { LinkPicker } from "./link-picker";
@@ -41,12 +42,13 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 	if (!parsedId.success) notFound();
 
 	const { sb } = await requireOwnerPage();
-	const [note, noteTitles, backlinks, links, tz] = await Promise.all([
+	const [note, noteTitles, backlinks, links, tz, people] = await Promise.all([
 		getNote(sb, parsedId.data),
 		listNoteTitles(sb),
 		listBacklinks(sb, parsedId.data),
 		listLinksForNote(sb, parsedId.data),
 		getAppTimezone(sb),
+		listMentionCandidates(sb),
 	]);
 	if (!note) notFound();
 
@@ -73,7 +75,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 					← Notes
 				</Link>
 			</nav>
-			<NoteEditor note={note} noteTitles={noteTitles} />
+			<NoteEditor note={note} noteTitles={noteTitles} people={people} />
 
 			{backlinks.length > 0 && (
 				<section className="mt-8" aria-label="Backlinks">

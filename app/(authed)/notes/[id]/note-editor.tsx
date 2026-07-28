@@ -11,8 +11,11 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Markdown, type MarkdownStorage } from "tiptap-markdown";
 import { runAction } from "@/lib/client/toast";
 import { createDebouncedSave } from "@/lib/debounced-save";
+import type { MentionCandidate } from "@/lib/mentions";
 import type { NoteListRow } from "@/lib/services/notes";
 import { deleteNoteAction, resolveNeedsReviewAction, saveNoteAction } from "../actions";
+import { Mention } from "./mention-extension";
+import { createMentionSuggestionExtension } from "./mention-suggestion";
 import { Wikilink } from "./wikilink-extension";
 import { createWikilinkSuggestionExtension, type WikilinkCandidate } from "./wikilink-suggestion";
 
@@ -65,9 +68,12 @@ type SaveState = "idle" | "saving" | "saved";
 export function NoteEditor({
 	note,
 	noteTitles,
+	people = [],
 }: {
 	note: NoteListRow;
 	noteTitles: WikilinkCandidate[];
+	/** @mention candidates (docs/adr/0030) for the `@` autocomplete. */
+	people?: MentionCandidate[];
 }) {
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
@@ -126,6 +132,8 @@ export function NoteEditor({
 			TaskItem.configure({ nested: true }),
 			Wikilink,
 			createWikilinkSuggestionExtension(noteTitles, note.id),
+			Mention,
+			createMentionSuggestionExtension(people),
 			Markdown.configure({ html: false }),
 		],
 		content: note.body,
@@ -135,9 +143,15 @@ export function NoteEditor({
 				class: "min-h-64 whitespace-pre-wrap text-sm text-ink outline-none",
 			},
 			handleClickOn: (_view, _pos, node) => {
-				if (node.type.name !== "wikilink") return false;
-				router.push(`/notes/${node.attrs.id}`);
-				return true;
+				if (node.type.name === "wikilink") {
+					router.push(`/notes/${node.attrs.id}`);
+					return true;
+				}
+				if (node.type.name === "mention") {
+					router.push(`/people/${node.attrs.id}`);
+					return true;
+				}
+				return false;
 			},
 		},
 		onUpdate: ({ editor }) => {
