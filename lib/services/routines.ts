@@ -100,7 +100,17 @@ export async function listCompletionsForRoutines(
 	sinceIso?: string,
 ): Promise<Record<string, CompletionRow[]>> {
 	if (routineIds.length === 0) return {};
-	let q = sb.from("routine_completions").select(COMPLETION_SELECT).in("routine_id", routineIds);
+	// PostgREST caps unbounded selects at 1000 rows. The only caller
+	// (routines/page.tsx) asks for a 35-day window; sized generously above
+	// that (40 days) so a fully-completed set of routines can't silently lose
+	// rows to the implicit cap — with enough routines the cap is still
+	// reachable, but only deliberately, via this explicit number.
+	const windowDays = 40;
+	let q = sb
+		.from("routine_completions")
+		.select(COMPLETION_SELECT)
+		.in("routine_id", routineIds)
+		.limit(routineIds.length * windowDays);
 	if (sinceIso) q = q.gte("completed_date", sinceIso);
 	q = q.order("completed_date", { ascending: true });
 	const data = unwrap(await q);
