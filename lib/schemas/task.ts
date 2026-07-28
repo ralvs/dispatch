@@ -52,29 +52,6 @@ export const TaskSchema = z.object({
 		.optional(),
 });
 
-export const CreateTaskSchema = z.object({
-	title: z.string().min(1),
-	notes: nullableString(),
-	due_date: nullableDate(),
-	due_time: nullableString(),
-	priority: z.number().int().min(1).max(4).default(4),
-	project_id: z.string().uuid().nullable().optional(),
-	// domain_id is optional at the schema level so frictionless capture works
-	// (no domain picked → the task stays unfiled). When project_id is set,
-	// the server overwrites domain_id with the project's domain. When both
-	// are passed explicitly and mismatched, the server returns 400.
-	domain_id: z.string().uuid().nullable().optional(),
-	parent_task_id: z.string().uuid().nullable().optional(),
-	recurrence_rule: z.enum(RECURRENCE_PATTERNS).nullable().optional(),
-	reminder_offsets: z.array(z.number()).optional(),
-	source: TaskSourceSchema.default("manual"),
-	top3_for_date: nullableDate(),
-});
-
-export const UpdateTaskSchema = CreateTaskSchema.partial().extend({
-	status: TaskStatusSchema.optional(),
-});
-
 // ─── FormData-facing schema (app/(authed)/tasks/actions.ts) ────────────
 //
 // FormData only ever produces strings, so empty/unset fields arrive as ""
@@ -82,15 +59,24 @@ export const UpdateTaskSchema = CreateTaskSchema.partial().extend({
 // and priority needs z.coerce. Shares its leaves with the capture-side schema —
 // RECURRENCE_PATTERNS, WallClockTimeSchema — rather than redeclaring them, so
 // the two paths cannot drift on what a valid time or cadence is.
-export const CreateTaskFormSchema = z.object({
-	title: z.string().trim().min(1).max(500),
-	notes: z.string().trim().max(5000).optional(),
-	due_date: z.iso.date().optional().or(z.literal("")),
-	due_time: WallClockTimeSchema.optional().or(z.literal("")),
-	priority: z.coerce.number().int().min(1).max(4).default(4),
-	domain_id: z.uuid().optional().or(z.literal("")),
-	recurrence_rule: z.enum(RECURRENCE_PATTERNS).optional().or(z.literal("")),
-});
+export const CreateTaskFormSchema = z
+	.object({
+		title: z.string().trim().min(1).max(500),
+		notes: z.string().trim().max(5000).optional(),
+		due_date: z.iso.date().optional().or(z.literal("")),
+		due_time: WallClockTimeSchema.optional().or(z.literal("")),
+		priority: z.coerce.number().int().min(1).max(4).default(4),
+		domain_id: z.uuid().optional().or(z.literal("")),
+		recurrence_rule: z.enum(RECURRENCE_PATTERNS).optional().or(z.literal("")),
+	})
+	// A time with no date to put it on is meaningless (matches the DB check
+	// constraint — see the migration that added it). Report it as a form
+	// validation error rather than letting it reach the service, where it
+	// would otherwise be silently coerced away.
+	.refine((v) => !(v.due_time && !v.due_date), {
+		message: "due_time requires due_date",
+		path: ["due_time"],
+	});
 
 // ─── Row shape actually returned by the tasks service ──────────────────
 //

@@ -200,8 +200,7 @@ export function CapturePalette() {
 					type="button"
 					aria-label="Capture a thought"
 					onClick={() => openCapturePalette()}
-					style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
-					className="fixed right-5 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-line-strong bg-accent font-serif text-2xl leading-none text-bg shadow-lg lg:hidden"
+					className="absolute bottom-5 right-5 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-line-strong bg-accent font-serif text-2xl leading-none text-bg shadow-lg lg:hidden"
 				>
 					<span aria-hidden="true">+</span>
 				</button>

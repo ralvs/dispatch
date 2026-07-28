@@ -81,6 +81,7 @@ export const CreateNoteSchema = z.object({
 
 export const UpdateNoteSchema = CreateNoteSchema.partial().extend({
 	resurface_weight: z.number().min(0).optional(),
+	pinned_at: z.string().datetime({ offset: true }).nullable().optional(),
 });
 
 // ─── Row shapes actually returned by the notes service ──────────────────
@@ -111,6 +112,7 @@ export const NoteListRowSchema = NoteRowSchema.extend({
 	related_project_id: z.string().uuid().nullable(),
 	related_person_id: z.string().uuid().nullable(),
 	related_quote_id: z.string().uuid().nullable(),
+	pinned_at: z.string().nullable(),
 });
 export type NoteListRow = z.infer<typeof NoteListRowSchema>;
 

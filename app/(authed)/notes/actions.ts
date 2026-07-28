@@ -4,10 +4,18 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatInstant } from "@/lib/dates";
+import { extractMentionMatches } from "@/lib/mentions";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { searchEventsByTitle } from "@/lib/services/calendar";
+import { syncMentions } from "@/lib/services/mentions";
 import { createManualLink, deleteLink, syncWikilinks } from "@/lib/services/note-links";
-import { createNote, deleteNote, resolveNeedsReview, updateNote } from "@/lib/services/notes";
+import {
+	createNote,
+	deleteNote,
+	resolveNeedsReview,
+	togglePin,
+	updateNote,
+} from "@/lib/services/notes";
 import { getAppTimezone } from "@/lib/services/settings";
 import { searchTasksByTitle } from "@/lib/services/tasks";
 import { extractWikilinkIds } from "@/lib/wikilinks";
@@ -44,12 +52,19 @@ export async function saveNoteAction(id: string, input: { title: string | null; 
 		body: parsed.body,
 	});
 	await syncWikilinks(sb, noteId, extractWikilinkIds(parsed.body));
+	await syncMentions(sb, { type: "note", id: noteId }, extractMentionMatches(parsed.body));
 	revalidateNoteViews(id);
 }
 
 export async function resolveNeedsReviewAction(id: string) {
 	const { sb } = await requireOwnerPage();
 	await resolveNeedsReview(sb, z.uuid().parse(id));
+	revalidateNoteViews(id);
+}
+
+export async function togglePinAction(id: string) {
+	const { sb } = await requireOwnerPage();
+	await togglePin(sb, z.uuid().parse(id));
 	revalidateNoteViews(id);
 }
 

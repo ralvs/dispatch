@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { MentionTextInput } from "@/components/mention-input";
 import { runAction } from "@/lib/client/toast";
+import type { MentionCandidate } from "@/lib/mentions";
 import { type TaskDomainOption, TaskMetaFields } from "./task-fields";
 
 /**
@@ -17,6 +19,7 @@ export function CaptureBar({
 	todayIso,
 	onQuickAdd,
 	onCreate,
+	people = [],
 }: {
 	domains: TaskDomainOption[];
 	todayIso: string;
@@ -24,6 +27,8 @@ export function CaptureBar({
 	onQuickAdd: (text: string) => Promise<void>;
 	/** Title + meta, no parsing. Used when Details is open. */
 	onCreate: (formData: FormData) => Promise<void>;
+	/** @mention candidates (docs/adr/0030) for the title field's autocomplete. */
+	people?: MentionCandidate[];
 }) {
 	const formRef = useRef<HTMLFormElement>(null);
 	const [text, setText] = useState("");
@@ -52,7 +57,7 @@ export function CaptureBar({
 			className={`mt-8 ${pending ? "pointer-events-none opacity-50" : ""}`}
 		>
 			<div className="flex items-center gap-4 border-b border-line-strong pb-2 transition-colors focus-within:border-ink-3">
-				<input
+				<MentionTextInput
 					type="text"
 					// Named so it reaches formData: with Details open the submit goes
 					// through onCreate(formData), and this field is the only title
@@ -61,10 +66,13 @@ export function CaptureBar({
 					name="title"
 					value={text}
 					disabled={pending}
-					onChange={(event) => setText(event.target.value)}
+					onValueChange={setText}
+					people={people}
 					onKeyDown={(event) => {
 						// Explicit rather than relying on implicit form submission,
-						// which browsers only guarantee for a lone text input.
+						// which browsers only guarantee for a lone text input. The
+						// mention dropdown consumes Enter itself when a suggestion
+						// is open, so this only fires on a plain Enter.
 						if (event.key === "Enter") {
 							event.preventDefault();
 							formRef.current?.requestSubmit();

@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
+import type { MentionCandidate } from "@/lib/mentions";
 import {
 	type CreatePersonFactSchema,
 	type CreatePersonInteractionSchema,
@@ -54,6 +55,12 @@ export async function updatePerson(
 /** Cascades to facts/interactions via FK (on delete cascade). */
 export async function deletePerson(sb: SupabaseClient, id: string): Promise<void> {
 	unwrap(await sb.from("people").delete().eq("id", id));
+}
+
+/** id + name only — what lib/mentions.ts's buildMentionIndex needs, nothing more. */
+export async function listMentionCandidates(sb: SupabaseClient): Promise<MentionCandidate[]> {
+	const data = unwrap(await sb.from("people").select("id, name"));
+	return (data ?? []) as unknown as MentionCandidate[];
 }
 
 // ─── Person facts ──────────────────────────────────────────────────────

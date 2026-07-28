@@ -89,6 +89,39 @@ export async function listCompletions(
 	return (data ?? []) as unknown as CompletionRow[];
 }
 
+/**
+ * Completions for a batch of routines since a calendar date, grouped by
+ * routine id. One query instead of one-per-routine (the routines page used
+ * to fan out listCompletions per row).
+ */
+export async function listCompletionsForRoutines(
+	sb: SupabaseClient,
+	routineIds: string[],
+	sinceIso?: string,
+): Promise<Record<string, CompletionRow[]>> {
+	if (routineIds.length === 0) return {};
+	// PostgREST caps unbounded selects at 1000 rows. The only caller
+	// (routines/page.tsx) asks for a 35-day window; sized generously above
+	// that (40 days) so a fully-completed set of routines can't silently lose
+	// rows to the implicit cap — with enough routines the cap is still
+	// reachable, but only deliberately, via this explicit number.
+	const windowDays = 40;
+	let q = sb
+		.from("routine_completions")
+		.select(COMPLETION_SELECT)
+		.in("routine_id", routineIds)
+		.limit(routineIds.length * windowDays);
+	if (sinceIso) q = q.gte("completed_date", sinceIso);
+	q = q.order("completed_date", { ascending: true });
+	const data = unwrap(await q);
+	const byRoutine: Record<string, CompletionRow[]> = {};
+	for (const row of (data ?? []) as unknown as CompletionRow[]) {
+		if (!byRoutine[row.routine_id]) byRoutine[row.routine_id] = [];
+		byRoutine[row.routine_id].push(row);
+	}
+	return byRoutine;
+}
+
 /** All completions since a calendar date, across routines — streak math input. */
 export async function listCompletionsSince(
 	sb: SupabaseClient,

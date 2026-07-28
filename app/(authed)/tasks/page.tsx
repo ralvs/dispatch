@@ -2,7 +2,10 @@ import Link from "next/link";
 import { requireOwnerPage } from "@/lib/auth";
 import { todayInTz } from "@/lib/dates";
 import { listDomains } from "@/lib/services/domains";
+import { listMentionsForSources } from "@/lib/services/mentions";
 import { listNoteIdsForTargets } from "@/lib/services/note-links";
+import { listMentionCandidates } from "@/lib/services/people";
+import { listProjects } from "@/lib/services/projects";
 import { getAppTimezone } from "@/lib/services/settings";
 import { listRecentDone, listTasks } from "@/lib/services/tasks";
 import { isDueToday, isOverdue } from "@/lib/task-predicates";
@@ -11,27 +14,41 @@ import { TaskList } from "./task-list";
 export default async function TasksPage({
 	searchParams,
 }: {
-	searchParams: Promise<{ edit?: string }>;
+	searchParams: Promise<{ edit?: string; status?: string; project?: string; domain?: string }>;
 }) {
 	const { sb } = await requireOwnerPage();
-	const { edit: editTaskId } = await searchParams;
-	const [tz, openTasks, doneTasks, domains] = await Promise.all([
+	const {
+		edit: editTaskId,
+		status: initialStatus,
+		project: initialProjectId,
+		domain: initialDomainId,
+	} = await searchParams;
+	const [tz, openTasks, doneTasks, domains, projects, people] = await Promise.all([
 		getAppTimezone(sb),
 		listTasks(sb, { status: "open" }),
-		listRecentDone(sb, 10),
+		// Bumped from 10: the Done filter needs something to page through, not
+		// just the header strip's recent handful.
+		listRecentDone(sb, 100),
 		listDomains(sb),
+		listProjects(sb),
+		listMentionCandidates(sb),
 	]);
 	const todayIso = todayInTz(tz);
 	const inboxCount = openTasks.filter((t) => t.domain_id === null).length;
 	const overdueCount = openTasks.filter((t) => isOverdue(t, todayIso)).length;
 	const dueTodayCount = openTasks.filter((t) => isDueToday(t, todayIso)).length;
-	const taskNoteIds = Object.fromEntries(
-		await listNoteIdsForTargets(
-			sb,
-			"task",
-			openTasks.map((t) => t.id),
+	const allTaskIds = [...openTasks, ...doneTasks].map((t) => t.id);
+	const [taskNoteIds, taskMentions] = await Promise.all([
+		listNoteIdsForTargets(sb, "task", allTaskIds).then((rows) => Object.fromEntries(rows)),
+		listMentionsForSources(sb, "task", allTaskIds).then((map) =>
+			Object.fromEntries(
+				[...map.entries()].map(([id, persons]) => [
+					id,
+					persons.map((p) => ({ id: p.id, name: p.name })),
+				]),
+			),
 		),
-	);
+	]);
 
 	return (
 		<div>
@@ -57,9 +74,15 @@ export default async function TasksPage({
 				doneTasks={doneTasks}
 				todayIso={todayIso}
 				domains={domains}
+				projects={projects}
 				editTaskId={editTaskId ?? null}
+				initialStatus={initialStatus}
+				initialProjectId={initialProjectId}
+				initialDomainId={initialDomainId}
 				taskNoteIds={taskNoteIds}
 				tz={tz}
+				people={people}
+				taskMentions={taskMentions}
 			/>
 		</div>
 	);

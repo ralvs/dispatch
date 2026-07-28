@@ -152,11 +152,18 @@ export async function createTask(
 		source?: string;
 	},
 ): Promise<TaskRow> {
+	// due_time may only be set alongside a due_date (DB check constraint).
+	// This is the one chokepoint every write path (form, capture) funnels
+	// through, so it can enforce the invariant defensively — mirrors the
+	// coercion in updateTask below rather than rejecting: a time with no
+	// date to sit on is silently dropped instead of degrading the capture.
+	const due_time = input.due_date ? input.due_time : null;
 	const data = unwrap(
 		await sb
 			.from("tasks")
 			.insert({
 				...input,
+				due_time,
 				// A task without a stated destination is unfiled — no domain at all,
 				// which is what the /inbox queue selects on (docs/adr/0027). Stated
 				// explicitly rather than left to the column default so the write says
@@ -184,7 +191,14 @@ export async function updateTask(
 		recurrence_rule: string | null;
 	}>,
 ): Promise<void> {
-	unwrap(await sb.from("tasks").update(patch).eq("id", id));
+	// due_time may only be set alongside a due_date (DB check constraint).
+	// UpdateTaskSchema is `.partial()`, so a patch that nulls due_date while
+	// leaving due_time untouched (or stale) can't be caught by Zod — it only
+	// becomes invalid once merged into the row it's patching. Coerce rather
+	// than reject: clearing the date silently clears whatever time no longer
+	// has a date to sit on, whether or not the caller also touched due_time.
+	const nextPatch = patch.due_date === null ? { ...patch, due_time: null } : patch;
+	unwrap(await sb.from("tasks").update(nextPatch).eq("id", id));
 }
 
 /**

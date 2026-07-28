@@ -9,9 +9,13 @@ vi.mock("@/lib/services/settings", () => ({
 	getAppTimezone: vi.fn(async () => "America/Sao_Paulo"),
 }));
 vi.mock("@/lib/services/tasks", () => ({ createTask: vi.fn() }));
+vi.mock("@/lib/services/mentions", () => ({ syncMentions: vi.fn() }));
+vi.mock("@/lib/services/people", () => ({ listMentionCandidates: vi.fn(async () => []) }));
 
 import { parseTaskCapture } from "@/lib/ai/parser";
 import { listDomains } from "@/lib/services/domains";
+import { syncMentions } from "@/lib/services/mentions";
+import { listMentionCandidates } from "@/lib/services/people";
 import { listProjects } from "@/lib/services/projects";
 import { createTask } from "@/lib/services/tasks";
 
@@ -21,6 +25,7 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	(listDomains as Mock).mockResolvedValue([]);
 	(listProjects as Mock).mockResolvedValue([]);
+	(listMentionCandidates as Mock).mockResolvedValue([]);
 });
 
 describe("quickAddTask", () => {
@@ -92,6 +97,23 @@ describe("quickAddTask", () => {
 				notes: '[capture: unresolved project "Ghost project"]',
 			}),
 		);
+	});
+
+	it("never lets a mention-sync failure fail the capture (iron rule #4)", async () => {
+		(parseTaskCapture as Mock).mockResolvedValue({
+			ok: true,
+			task: { action: "create_task", title: "call @Ana" },
+		});
+		(createTask as Mock).mockResolvedValue({ id: "task-5", title: "call @Ana", notes: null });
+		(listMentionCandidates as Mock).mockRejectedValue(new Error("db down"));
+		(syncMentions as Mock).mockRejectedValue(new Error("should never be reached"));
+
+		const result = await quickAddTask(sb, "call @Ana");
+
+		expect(result).toEqual({
+			task: { id: "task-5", title: "call @Ana", notes: null },
+			parsed: true,
+		});
 	});
 
 	it("still parses (unrouted) when the routing-list fetch throws — guarded", async () => {

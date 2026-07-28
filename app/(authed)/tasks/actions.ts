@@ -2,9 +2,12 @@
 
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { buildMentionIndex, extractMentions } from "@/lib/mentions";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { CreateTaskFormSchema } from "@/lib/schemas/task";
 import { quickAddTask } from "@/lib/services/capture/quick-add";
+import { syncMentions } from "@/lib/services/mentions";
+import { listMentionCandidates } from "@/lib/services/people";
 import { todayForRequest } from "@/lib/services/settings";
 import {
 	assignDomain,
@@ -16,10 +19,23 @@ import {
 	updateTask,
 } from "@/lib/services/tasks";
 
+/** Re-parses a task's plain-text `@Name` mentions and reconciles them (docs/adr/0030). */
+async function syncTaskMentions(
+	sb: Awaited<ReturnType<typeof requireOwnerPage>>["sb"],
+	taskId: string,
+	title: string,
+	notes: string | null,
+) {
+	const candidates = await listMentionCandidates(sb);
+	const index = buildMentionIndex(candidates);
+	const matches = extractMentions(`${title}\n${notes ?? ""}`, index);
+	await syncMentions(sb, { type: "task", id: taskId }, matches);
+}
+
 export async function createTaskAction(formData: FormData) {
 	const { sb } = await requireOwnerPage();
 	const parsed = CreateTaskFormSchema.parse(Object.fromEntries(formData));
-	await createTask(sb, {
+	const task = await createTask(sb, {
 		title: parsed.title,
 		notes: parsed.notes || null,
 		due_date: parsed.due_date || null,
@@ -28,6 +44,7 @@ export async function createTaskAction(formData: FormData) {
 		domain_id: parsed.domain_id || null,
 		recurrence_rule: parsed.recurrence_rule || null,
 	});
+	await syncTaskMentions(sb, task.id, parsed.title, parsed.notes || null);
 	afterMutation("task.write");
 }
 
@@ -53,6 +70,7 @@ export async function updateTaskAction(id: string, formData: FormData) {
 		domain_id: parsed.domain_id || undefined,
 		recurrence_rule: parsed.recurrence_rule || null,
 	});
+	await syncTaskMentions(sb, id, parsed.title, parsed.notes || null);
 	afterMutation("task.write");
 }
 

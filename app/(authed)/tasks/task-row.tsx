@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { type KeyboardEvent, useEffect, useRef, useState, useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
+import { MentionChip } from "@/components/mention-chip";
 import { runAction } from "@/lib/client/toast";
 import { formatDueLabel, formatInstant } from "@/lib/dates";
+import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_GLYPH, recurrenceLabel } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/services/tasks";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
@@ -35,6 +37,8 @@ export function TaskRowItem({
 	handlers,
 	noteId,
 	tz,
+	people = [],
+	mentions,
 }: {
 	task: TaskRow;
 	todayIso: string;
@@ -53,6 +57,10 @@ export function TaskRowItem({
 	 * are filtered out of every band before they'd reach this component.
 	 */
 	tz?: string;
+	/** @mention candidates (docs/adr/0030) for the edit form's title/notes autocomplete. */
+	people?: MentionCandidate[];
+	/** People already mentioned in this task — rendered as chips in the meta line. */
+	mentions?: { id: string; name: string }[];
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(initialEditing);
@@ -126,6 +134,7 @@ export function TaskRowItem({
 						domains={domains}
 						todayIso={todayIso}
 						showNotes
+						people={people}
 						defaults={{
 							title: task.title,
 							notes: task.notes,
@@ -241,11 +250,14 @@ export function TaskRowItem({
 							href={`/notes/${noteId}`}
 							aria-label="View linked note"
 							onClick={(e) => e.stopPropagation()}
-							className="text-ink-4 hover:text-ink"
+							className="inline-flex shrink-0 items-center gap-1 rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 hover:border-line-strong hover:text-ink"
 						>
-							¶
+							<span aria-hidden="true">¶</span> Note
 						</Link>
 					)}
+					{mentions?.map((person) => (
+						<MentionChip key={person.id} id={person.id} name={person.name} />
+					))}
 				</p>
 			</div>
 			<div className="flex shrink-0 items-center gap-1 self-center">

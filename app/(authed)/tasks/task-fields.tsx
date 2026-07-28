@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import { MentionTextarea, MentionTextInput } from "@/components/mention-input";
 import { shiftDay } from "@/lib/dates";
+import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
 
 export type TaskDomainOption = {
@@ -46,17 +48,24 @@ const FIELD_CSS = `
 
 /** Label always stacks above its control (block, not inline beside). */
 const FIELD_LABEL = "block font-mono text-eyebrow uppercase text-ink-3";
-/** One height, one radius, one focus treatment for every control in the row. */
-const CONTROL =
+/**
+ * One height, one radius, one focus treatment for every control in the row.
+ * Exported so other surfaces in this directory (task-list filters) share the
+ * same idiom instead of redeclaring it.
+ */
+export const CONTROL =
 	"h-9 rounded-md border border-line bg-surface px-2.5 text-sm text-ink outline-none transition-colors hover:border-line-strong focus:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent";
 /**
  * Borderless on purpose: five bordered boxes in a row (date, time, and three
  * shortcuts) read as five equal controls. The shortcuts are a shortcut to the
  * field beside them, so they keep the hit area and drop the chrome.
  */
-const CHIP =
+export const CHIP =
 	"h-9 rounded-md px-2 font-mono text-eyebrow uppercase text-ink-3 transition-colors hover:bg-surface hover:text-ink";
-const CHIP_ON = "bg-accent-bg text-accent-ink hover:bg-accent-bg hover:text-accent-ink";
+export const CHIP_ON = "bg-accent-bg text-accent-ink hover:bg-accent-bg hover:text-accent-ink";
+/** Reset is an action, not a relative day — visually subordinate to the chips beside it. */
+const CHIP_RESET =
+	"h-9 rounded-md px-2 font-mono text-eyebrow uppercase text-ink-4 transition-colors hover:bg-surface hover:text-accent-slip disabled:pointer-events-none disabled:opacity-0";
 
 /** What a due date actually gets set to, nine times out of ten. */
 const RELATIVE_DAYS = [
@@ -142,15 +151,21 @@ export type TaskFieldDefaults = {
 export function TaskTitleField({
 	defaultValue = "",
 	placeholder = "What needs doing?",
+	people = [],
 }: {
 	defaultValue?: string;
 	placeholder?: string;
+	/** @mention candidates (docs/adr/0030) — empty disables the autocomplete but never the field. */
+	people?: MentionCandidate[];
 }) {
+	const [value, setValue] = useState(defaultValue);
 	return (
-		<input
+		<MentionTextInput
 			name="title"
 			required
-			defaultValue={defaultValue}
+			value={value}
+			onValueChange={setValue}
+			people={people}
 			placeholder={placeholder}
 			aria-label="Task title"
 			className="w-full border-b border-line bg-transparent pb-1.5 font-serif text-base text-ink outline-none placeholder:font-normal placeholder:text-ink-4"
@@ -176,6 +191,16 @@ export function TaskMetaFields({
 }) {
 	const [due, setDue] = useState(defaults.due_date ?? "");
 	const [time, setTime] = useState(defaults.due_time ? defaults.due_time.slice(0, 5) : "");
+	// Uncontrolled elsewhere in this file, but Reset has to clear it too, so it
+	// needs to be React state here rather than a defaultValue-only <select>.
+	const [recurrence, setRecurrence] = useState(defaults.recurrence_rule ?? "");
+
+	function resetSchedule() {
+		setDue("");
+		setTime("");
+		setRecurrence("");
+	}
+	const scheduleIsEmpty = due === "" && time === "" && recurrence === "";
 
 	return (
 		// Two deliberate rows rather than one that happens to wrap: "when" is
@@ -192,7 +217,13 @@ export function TaskMetaFields({
 						name="due_date"
 						value={due}
 						data-empty={due === ""}
-						onChange={(event) => setDue(event.target.value)}
+						onChange={(event) => {
+							const next = event.target.value;
+							setDue(next);
+							// A time with no date to sit on is meaningless (DB check
+							// constraint) — clear it in the same gesture that clears the date.
+							if (next === "") setTime("");
+						}}
 						aria-label="Due date"
 						className={`tf-native ${CONTROL} w-[9.5rem]`}
 					/>
@@ -201,9 +232,10 @@ export function TaskMetaFields({
 						name="due_time"
 						value={time}
 						data-empty={time === ""}
+						disabled={due === ""}
 						onChange={(event) => setTime(event.target.value)}
 						aria-label="Due time"
-						className={`tf-native ${CONTROL} w-[7.5rem]`}
+						className={`tf-native ${CONTROL} w-[7.5rem] disabled:cursor-not-allowed disabled:opacity-40`}
 					/>
 					{RELATIVE_DAYS.map(({ label, days }) => {
 						const target = shiftDay(todayIso, days);
@@ -220,6 +252,18 @@ export function TaskMetaFields({
 							</button>
 						);
 					})}
+					{/* Not a relative day like the chips above — an action that clears
+					    date, time, and recurrence together ("no dates at all"). Hidden
+					    once there is nothing left to reset. */}
+					<button
+						type="button"
+						onClick={resetSchedule}
+						disabled={scheduleIsEmpty}
+						aria-label="Clear due date, time, and recurrence"
+						className={CHIP_RESET}
+					>
+						Reset
+					</button>
 				</div>
 			</div>
 
@@ -252,7 +296,8 @@ export function TaskMetaFields({
 					<span className={FIELD_LABEL}>Repeats</span>
 					<select
 						name="recurrence_rule"
-						defaultValue={defaults.recurrence_rule ?? ""}
+						value={recurrence}
+						onChange={(event) => setRecurrence(event.target.value)}
 						className={`${CONTROL} mt-1 block w-[11rem] max-w-full`}
 					>
 						<option value="">Never</option>
@@ -281,31 +326,55 @@ export function TaskFormFields({
 	defaults = {},
 	titlePlaceholder = "What needs doing?",
 	showNotes = false,
+	people = [],
 }: {
 	domains: TaskDomainOption[];
 	todayIso: string;
 	defaults?: TaskFieldDefaults;
 	titlePlaceholder?: string;
 	showNotes?: boolean;
+	/** @mention candidates (docs/adr/0030), threaded to both title and notes. */
+	people?: MentionCandidate[];
 }) {
 	return (
 		<>
-			<TaskTitleField defaultValue={defaults.title ?? ""} placeholder={titlePlaceholder} />
+			<TaskTitleField
+				defaultValue={defaults.title ?? ""}
+				placeholder={titlePlaceholder}
+				people={people}
+			/>
 
-			{showNotes && (
-				<label className="block">
-					<span className={FIELD_LABEL}>Notes</span>
-					<textarea
-						name="notes"
-						rows={2}
-						defaultValue={defaults.notes ?? ""}
-						className={`${CONTROL} mt-1 block h-auto w-full py-1.5`}
-					/>
-				</label>
-			)}
+			{showNotes && <TaskNotesField defaultValue={defaults.notes ?? ""} people={people} />}
 
 			<TaskMetaFields domains={domains} todayIso={todayIso} defaults={defaults} />
 		</>
+	);
+}
+
+function TaskNotesField({
+	defaultValue,
+	people,
+}: {
+	defaultValue: string;
+	people: MentionCandidate[];
+}) {
+	const [value, setValue] = useState(defaultValue);
+	const labelId = useId();
+	return (
+		<div className="block">
+			<span id={labelId} className={FIELD_LABEL}>
+				Notes
+			</span>
+			<MentionTextarea
+				name="notes"
+				rows={2}
+				value={value}
+				onValueChange={setValue}
+				people={people}
+				aria-labelledby={labelId}
+				className={`${CONTROL} mt-1 block h-auto w-full py-1.5`}
+			/>
+		</div>
 	);
 }
 

@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
+import { displayTitle } from "@/lib/note-display";
 import type { PersonFactRow, PersonInteractionRow, PersonRow } from "@/lib/services/people";
 import {
 	createFactAction,
@@ -46,11 +48,17 @@ export function PersonDetail({
 	facts,
 	interactions,
 	tz,
+	mentionedTasks,
+	mentionedNotes,
 }: {
 	person: PersonRow;
 	facts: PersonFactRow[];
 	interactions: PersonInteractionRow[];
 	tz: string;
+	/** Tasks whose title/notes mention this person (docs/adr/0030 §5). */
+	mentionedTasks: { id: string; title: string; status: string }[];
+	/** Notes whose body mentions this person. */
+	mentionedNotes: { id: string; title: string | null; body: string }[];
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
@@ -207,9 +215,50 @@ export function PersonDetail({
 				)}
 			</section>
 
+			<MentionedInSection tasks={mentionedTasks} notes={mentionedNotes} />
 			<FactsSection personId={person.id} facts={facts} />
 			<InteractionsSection personId={person.id} interactions={interactions} tz={tz} />
 		</div>
+	);
+}
+
+/** The payoff of docs/adr/0030: every task and note that mentions this person, in one place. */
+function MentionedInSection({
+	tasks,
+	notes,
+}: {
+	tasks: { id: string; title: string; status: string }[];
+	notes: { id: string; title: string | null; body: string }[];
+}) {
+	if (tasks.length === 0 && notes.length === 0) return null;
+
+	return (
+		<section className="mt-8" aria-label="Mentioned in">
+			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Mentioned in</h2>
+			<ul className="mt-2">
+				{tasks.map((task) => (
+					<li key={`task-${task.id}`} className="hairline py-2">
+						<Link
+							href={`/tasks?edit=${task.id}`}
+							className="truncate font-serif text-sm text-ink hover:text-accent"
+						>
+							{task.title}
+							{task.status === "done" ? " · done" : ""}
+						</Link>
+					</li>
+				))}
+				{notes.map((note) => (
+					<li key={`note-${note.id}`} className="hairline py-2">
+						<Link
+							href={`/notes/${note.id}`}
+							className="truncate font-serif text-sm text-ink hover:text-accent"
+						>
+							{displayTitle(note)}
+						</Link>
+					</li>
+				))}
+			</ul>
+		</section>
 	);
 }
 
