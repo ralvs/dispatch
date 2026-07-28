@@ -31,7 +31,25 @@ export async function BriefingBody({
 	const eventIds = [...briefing.daySchedule.allDay, ...briefing.daySchedule.timeline]
 		.filter((item) => item.kind === "event")
 		.map((item) => item.event.id);
-	const eventNoteIds = Object.fromEntries(await listNoteIdsForTargets(sb, "event", eventIds));
+
+	// Every task Today can render a row for: the scheduled bands (all day +
+	// timeline), Top 3, and Open — deduped into one id list so the note-link
+	// lookup below stays a single batched call.
+	const scheduledTaskIds = [...briefing.daySchedule.allDay, ...briefing.daySchedule.timeline]
+		.filter((item) => item.kind === "task")
+		.map((item) => item.task.id);
+	const taskIds = [
+		...new Set([
+			...scheduledTaskIds,
+			...briefing.daySchedule.top3.map((task) => task.id),
+			...briefing.daySchedule.open.map((task) => task.id),
+		]),
+	];
+
+	const [eventNoteIds, taskNoteIds] = await Promise.all([
+		listNoteIdsForTargets(sb, "event", eventIds).then((map) => Object.fromEntries(map)),
+		listNoteIdsForTargets(sb, "task", taskIds).then((map) => Object.fromEntries(map)),
+	]);
 
 	const showLatestQuote =
 		briefing.latestQuote !== null && briefing.latestQuote.id !== briefing.resurfaced?.id;
@@ -59,6 +77,7 @@ export async function BriefingBody({
 				nowUtcIso={nowUtcIso}
 				nowLabel={nowLabel}
 				eventNoteIds={eventNoteIds}
+				taskNoteIds={taskNoteIds}
 			/>
 
 			<div className="mt-14 grid grid-cols-1 gap-14 lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-x-10">

@@ -12,12 +12,14 @@ export function DayScheduleSection({
 	nowUtcIso,
 	nowLabel,
 	eventNoteIds,
+	taskNoteIds,
 }: {
 	schedule: DayScheduleView;
 	todayIso: string;
 	nowUtcIso: string;
 	nowLabel: string;
 	eventNoteIds?: Record<string, string>;
+	taskNoteIds?: Record<string, string>;
 }) {
 	return (
 		<>
@@ -27,6 +29,7 @@ export function DayScheduleSection({
 				todayIso={todayIso}
 				nowUtcIso={nowUtcIso}
 				eventNoteIds={eventNoteIds}
+				taskNoteIds={taskNoteIds}
 			/>
 		</>
 	);

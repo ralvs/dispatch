@@ -96,6 +96,7 @@ export function DaySchedule({
 	todayIso,
 	nowUtcIso,
 	eventNoteIds,
+	taskNoteIds,
 }: {
 	schedule: DayScheduleData;
 	todayIso: string;
@@ -103,6 +104,8 @@ export function DaySchedule({
 	nowUtcIso: string;
 	/** event id -> linked note id, for the meeting-note affordance on event rows. */
 	eventNoteIds?: Record<string, string>;
+	/** task id -> linked note id, for the "¶ Note" chip on task rows. */
+	taskNoteIds?: Record<string, string>;
 }) {
 	const [, startTransition] = useTransition();
 	const seed = useMemo(() => collectOpenTasks(schedule), [schedule]);
@@ -164,7 +167,11 @@ export function DaySchedule({
 										todayIso={todayIso}
 										nowUtcIso={nowUtcIso}
 										handlers={item.kind === "task" ? handlersFor(item.task) : undefined}
-										noteId={item.kind === "event" ? eventNoteIds?.[item.event.id] : undefined}
+										noteId={
+											item.kind === "event"
+												? eventNoteIds?.[item.event.id]
+												: taskNoteIds?.[item.task.id]
+										}
 									/>
 								))}
 							</Band>
@@ -179,7 +186,11 @@ export function DaySchedule({
 										todayIso={todayIso}
 										nowUtcIso={nowUtcIso}
 										handlers={item.kind === "task" ? handlersFor(item.task) : undefined}
-										noteId={item.kind === "event" ? eventNoteIds?.[item.event.id] : undefined}
+										noteId={
+											item.kind === "event"
+												? eventNoteIds?.[item.event.id]
+												: taskNoteIds?.[item.task.id]
+										}
 									/>
 								))}
 							</Band>
@@ -196,6 +207,7 @@ export function DaySchedule({
 										todayIso={todayIso}
 										manageable={false}
 										handlers={handlersFor(task)}
+										noteId={taskNoteIds?.[task.id]}
 									/>
 								))
 							) : (
@@ -219,6 +231,7 @@ export function DaySchedule({
 										todayIso={todayIso}
 										manageable={false}
 										handlers={handlersFor(task)}
+										noteId={taskNoteIds?.[task.id]}
 									/>
 								))}
 							</Band>

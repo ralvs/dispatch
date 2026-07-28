@@ -37,9 +37,9 @@ function MeetingNoteGlyph({ eventId, noteId }: { eventId: string; noteId?: strin
 			<Link
 				href={`/notes/${noteId}`}
 				aria-label="View meeting note"
-				className="shrink-0 self-center font-mono text-meta text-ink-4 hover:text-ink"
+				className="inline-flex shrink-0 items-center gap-1 self-center rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 hover:border-line-strong hover:text-ink"
 			>
-				¶
+				<span aria-hidden="true">¶</span> Note
 			</Link>
 		);
 	}
@@ -57,9 +57,9 @@ function MeetingNoteGlyph({ eventId, noteId }: { eventId: string; noteId?: strin
 					);
 				});
 			}}
-			className="shrink-0 self-center font-mono text-meta text-ink-4 hover:text-ink disabled:opacity-50"
+			className="inline-flex shrink-0 items-center gap-1 self-center rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 hover:border-line-strong hover:text-ink disabled:opacity-50"
 		>
-			¶
+			<span aria-hidden="true">+</span> Note
 		</button>
 	);
 }
@@ -120,7 +120,7 @@ export function ScheduleRow({
 	handlers?: TaskRowHandlers;
 	/** Used to gray out timed events that have already ended. */
 	nowUtcIso?: string;
-	/** Event rows only: the linked meeting note's id, if any. */
+	/** The linked note's id, if any — meeting note for events, linked note for tasks. */
 	noteId?: string;
 }) {
 	if (item.kind === "task") {
@@ -132,6 +132,7 @@ export function ScheduleRow({
 				timeLabel={item.time}
 				manageable={false}
 				handlers={handlers}
+				noteId={noteId}
 			/>
 		);
 	}
