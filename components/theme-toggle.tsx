@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { setTheme } from "@/app/theme-actions";
 import { runAction } from "@/lib/client/toast";
 
@@ -8,6 +8,19 @@ export function ThemeToggle({ current }: { current: "dark" | "light" }) {
 	const [pending, startTransition] = useTransition();
 	const [theme, setLocalTheme] = useState(current);
 	const next = theme === "dark" ? "light" : "dark";
+
+	// `current` is a server prop and goes stale across a client-router-cache
+	// remount (toggle on /more, navigate away, navigate back): the cached RSC
+	// payload still carries the pre-toggle value, so useState would re-seed
+	// wrong. Reconcile to the live DOM value after mount — initializing from
+	// `current` first keeps SSR/hydration consistent, this effect only fixes
+	// up a remount.
+	useEffect(() => {
+		const domTheme = document.documentElement.dataset.theme;
+		if (domTheme === "light" || domTheme === "dark") {
+			setLocalTheme((prev) => (prev === domTheme ? prev : domTheme));
+		}
+	}, []);
 
 	return (
 		<button
