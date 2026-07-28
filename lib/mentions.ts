@@ -67,6 +67,24 @@ export function extractMentionPersonIds(markdown: string): string[] {
 	return ids;
 }
 
+/**
+ * All `@[uuid|Name]` tokens in `markdown` as `{personId, name}` pairs — first
+ * appearance wins per id, matching `extractMentionPersonIds`. Feeds
+ * `syncMentions`, which wants the verbatim `matched_name` alongside each id.
+ */
+export function extractMentionMatches(markdown: string): { personId: string; name: string }[] {
+	const matches: { personId: string; name: string }[] = [];
+	const seen = new Set<string>();
+	for (const match of markdown.matchAll(MENTION_TOKEN_RE)) {
+		const id = match[1];
+		const name = match[2];
+		if (id === undefined || name === undefined || seen.has(id)) continue;
+		seen.add(id);
+		matches.push({ personId: id, name });
+	}
+	return matches;
+}
+
 /** Strips `|`, `[`, `]`, and newlines; collapses whitespace; falls back to "Unknown". */
 function sanitizeMentionName(name: string): string {
 	const cleaned = name

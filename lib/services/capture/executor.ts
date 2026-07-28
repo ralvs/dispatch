@@ -3,15 +3,41 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createCaldavClient } from "@/lib/caldav/client";
 import { instantFromLocal, todayInTz } from "@/lib/dates";
 import { isCaldavConfigured } from "@/lib/env";
+import { buildMentionIndex, extractMentions } from "@/lib/mentions";
 import type { CaptureAction, CreateEventAction } from "@/lib/schemas/capture";
 import { createEventHere } from "@/lib/services/calendar";
 import type { ActionResult } from "@/lib/services/capture";
 import { type RoutingLists, taskInputFromAction } from "@/lib/services/capture/resolve";
 import { createEntry } from "@/lib/services/journal";
+import { syncMentions } from "@/lib/services/mentions";
 import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
 import { recordNotification } from "@/lib/services/notifications";
+import { listMentionCandidates } from "@/lib/services/people";
 import { createQuote } from "@/lib/services/quotes";
 import { createTask } from "@/lib/services/tasks";
+
+/**
+ * Best-effort @mention sync for a just-created task (docs/adr/0030 D4). Runs
+ * inside its own try/catch, separate from runOne's outer one — a task that
+ * was already created successfully must never be degraded to a
+ * needs_review note just because the mention sync afterward threw (iron
+ * rule #4: never lose a capture).
+ */
+async function syncTaskMentionsBestEffort(
+	sb: SupabaseClient,
+	taskId: string,
+	title: string,
+	notes: string | null | undefined,
+) {
+	try {
+		const candidates = await listMentionCandidates(sb);
+		const index = buildMentionIndex(candidates);
+		const matches = extractMentions(`${title}\n${notes ?? ""}`, index);
+		await syncMentions(sb, { type: "task", id: taskId }, matches);
+	} catch {
+		// Swallowed on purpose — never lose a capture over a mention sync.
+	}
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 // Turns parsed capture actions into service calls, one at a time, each fully
@@ -118,6 +144,7 @@ async function runOne(
 		switch (action.action) {
 			case "create_task": {
 				const task = await createTask(sb, taskInputFromAction(action, prov.routing));
+				await syncTaskMentionsBestEffort(sb, task.id, task.title, task.notes);
 				return { action: "create_task", ok: true, entity: { table: "tasks", id: task.id } };
 			}
 			case "create_event":

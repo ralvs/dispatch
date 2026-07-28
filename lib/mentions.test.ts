@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	activeMentionQuery,
 	buildMentionIndex,
+	extractMentionMatches,
 	extractMentionPersonIds,
 	extractMentions,
 	type MentionCandidate,
@@ -124,6 +125,30 @@ describe("extractMentionPersonIds", () => {
 
 	it("returns no matches for empty input", () => {
 		expect(extractMentionPersonIds("")).toEqual([]);
+	});
+});
+
+describe("extractMentionMatches", () => {
+	const ID_A = "11111111-1111-4111-8111-111111111111";
+	const ID_B = "22222222-2222-4222-8222-222222222222";
+
+	it("extracts personId + name pairs", () => {
+		expect(extractMentionMatches(`See @[${ID_A}|Renan Alves] for more.`)).toEqual([
+			{ personId: ID_A, name: "Renan Alves" },
+		]);
+	});
+
+	it("dedupes repeated mentions of the same id, keeping first appearance's name", () => {
+		expect(
+			extractMentionMatches(`@[${ID_A}|Renan] and @[${ID_B}|Ana] and @[${ID_A}|Renan Alves]`),
+		).toEqual([
+			{ personId: ID_A, name: "Renan" },
+			{ personId: ID_B, name: "Ana" },
+		]);
+	});
+
+	it("returns no matches for empty input", () => {
+		expect(extractMentionMatches("")).toEqual([]);
 	});
 });
 

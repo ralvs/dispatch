@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatInstant } from "@/lib/dates";
+import { extractMentionMatches } from "@/lib/mentions";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { searchEventsByTitle } from "@/lib/services/calendar";
+import { syncMentions } from "@/lib/services/mentions";
 import { createManualLink, deleteLink, syncWikilinks } from "@/lib/services/note-links";
 import {
 	createNote,
@@ -50,6 +52,7 @@ export async function saveNoteAction(id: string, input: { title: string | null; 
 		body: parsed.body,
 	});
 	await syncWikilinks(sb, noteId, extractWikilinkIds(parsed.body));
+	await syncMentions(sb, { type: "note", id: noteId }, extractMentionMatches(parsed.body));
 	revalidateNoteViews(id);
 }
 
