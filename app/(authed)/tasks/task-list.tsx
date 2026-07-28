@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
 import { runAction } from "@/lib/client/toast";
+import type { MentionCandidate } from "@/lib/mentions";
 import type { TaskRow } from "@/lib/services/tasks";
 import {
 	type ApplyContext,
@@ -95,6 +96,8 @@ export function TaskList({
 	initialDomainId,
 	taskNoteIds,
 	tz,
+	people = [],
+	taskMentions,
 }: {
 	openTasks: TaskRow[];
 	doneTasks: TaskRow[];
@@ -113,6 +116,10 @@ export function TaskList({
 	taskNoteIds?: Record<string, string>;
 	/** App timezone — threaded to rows so "Recently done" can show a completion time. */
 	tz: string;
+	/** @mention candidates (docs/adr/0030) for the capture bar and edit-form autocomplete. */
+	people?: MentionCandidate[];
+	/** task id -> people already mentioned in it, for the mention chips on rows. */
+	taskMentions?: Record<string, { id: string; name: string }[]>;
 }) {
 	const router = useRouter();
 	const [, startTransition] = useTransition();
@@ -270,6 +277,7 @@ export function TaskList({
 				todayIso={todayIso}
 				onQuickAdd={onQuickAdd}
 				onCreate={onCreate}
+				people={people}
 			/>
 
 			<TaskFilters
@@ -303,6 +311,8 @@ export function TaskList({
 										initialEditing={editTaskId === t.id}
 										handlers={handlersFor(t)}
 										noteId={taskNoteIds?.[t.id]}
+										people={people}
+										mentions={taskMentions?.[t.id]}
 									/>
 								))}
 							</ul>
@@ -332,6 +342,8 @@ export function TaskList({
 										initialEditing={editTaskId === t.id}
 										handlers={handlersFor(t)}
 										noteId={taskNoteIds?.[t.id]}
+										people={people}
+										mentions={taskMentions?.[t.id]}
 									/>
 								))}
 							</ul>
@@ -353,6 +365,8 @@ export function TaskList({
 										initialEditing={editTaskId === t.id}
 										handlers={handlersFor(t)}
 										noteId={taskNoteIds?.[t.id]}
+										people={people}
+										mentions={taskMentions?.[t.id]}
 										tz={tz}
 									/>
 								))}
@@ -377,6 +391,8 @@ export function TaskList({
 									initialEditing={editTaskId === t.id}
 									handlers={handlersFor(t)}
 									noteId={taskNoteIds?.[t.id]}
+									people={people}
+									mentions={taskMentions?.[t.id]}
 									tz={tz}
 								/>
 							))}
@@ -400,6 +416,8 @@ export function TaskList({
 									initialEditing={editTaskId === t.id}
 									handlers={handlersFor(t)}
 									noteId={taskNoteIds?.[t.id]}
+									people={people}
+									mentions={taskMentions?.[t.id]}
 								/>
 							))}
 						</ul>

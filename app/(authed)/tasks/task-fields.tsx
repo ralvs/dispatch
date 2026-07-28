@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import { MentionTextarea, MentionTextInput } from "@/components/mention-input";
 import { shiftDay } from "@/lib/dates";
+import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
 
 export type TaskDomainOption = {
@@ -149,15 +151,21 @@ export type TaskFieldDefaults = {
 export function TaskTitleField({
 	defaultValue = "",
 	placeholder = "What needs doing?",
+	people = [],
 }: {
 	defaultValue?: string;
 	placeholder?: string;
+	/** @mention candidates (docs/adr/0030) — empty disables the autocomplete but never the field. */
+	people?: MentionCandidate[];
 }) {
+	const [value, setValue] = useState(defaultValue);
 	return (
-		<input
+		<MentionTextInput
 			name="title"
 			required
-			defaultValue={defaultValue}
+			value={value}
+			onValueChange={setValue}
+			people={people}
 			placeholder={placeholder}
 			aria-label="Task title"
 			className="w-full border-b border-line bg-transparent pb-1.5 font-serif text-base text-ink outline-none placeholder:font-normal placeholder:text-ink-4"
@@ -318,31 +326,55 @@ export function TaskFormFields({
 	defaults = {},
 	titlePlaceholder = "What needs doing?",
 	showNotes = false,
+	people = [],
 }: {
 	domains: TaskDomainOption[];
 	todayIso: string;
 	defaults?: TaskFieldDefaults;
 	titlePlaceholder?: string;
 	showNotes?: boolean;
+	/** @mention candidates (docs/adr/0030), threaded to both title and notes. */
+	people?: MentionCandidate[];
 }) {
 	return (
 		<>
-			<TaskTitleField defaultValue={defaults.title ?? ""} placeholder={titlePlaceholder} />
+			<TaskTitleField
+				defaultValue={defaults.title ?? ""}
+				placeholder={titlePlaceholder}
+				people={people}
+			/>
 
-			{showNotes && (
-				<label className="block">
-					<span className={FIELD_LABEL}>Notes</span>
-					<textarea
-						name="notes"
-						rows={2}
-						defaultValue={defaults.notes ?? ""}
-						className={`${CONTROL} mt-1 block h-auto w-full py-1.5`}
-					/>
-				</label>
-			)}
+			{showNotes && <TaskNotesField defaultValue={defaults.notes ?? ""} people={people} />}
 
 			<TaskMetaFields domains={domains} todayIso={todayIso} defaults={defaults} />
 		</>
+	);
+}
+
+function TaskNotesField({
+	defaultValue,
+	people,
+}: {
+	defaultValue: string;
+	people: MentionCandidate[];
+}) {
+	const [value, setValue] = useState(defaultValue);
+	const labelId = useId();
+	return (
+		<div className="block">
+			<span id={labelId} className={FIELD_LABEL}>
+				Notes
+			</span>
+			<MentionTextarea
+				name="notes"
+				rows={2}
+				value={value}
+				onValueChange={setValue}
+				people={people}
+				aria-labelledby={labelId}
+				className={`${CONTROL} mt-1 block h-auto w-full py-1.5`}
+			/>
+		</div>
 	);
 }
 

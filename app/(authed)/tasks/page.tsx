@@ -2,7 +2,9 @@ import Link from "next/link";
 import { requireOwnerPage } from "@/lib/auth";
 import { todayInTz } from "@/lib/dates";
 import { listDomains } from "@/lib/services/domains";
+import { listMentionsForSources } from "@/lib/services/mentions";
 import { listNoteIdsForTargets } from "@/lib/services/note-links";
+import { listMentionCandidates } from "@/lib/services/people";
 import { listProjects } from "@/lib/services/projects";
 import { getAppTimezone } from "@/lib/services/settings";
 import { listRecentDone, listTasks } from "@/lib/services/tasks";
@@ -21,7 +23,7 @@ export default async function TasksPage({
 		project: initialProjectId,
 		domain: initialDomainId,
 	} = await searchParams;
-	const [tz, openTasks, doneTasks, domains, projects] = await Promise.all([
+	const [tz, openTasks, doneTasks, domains, projects, people] = await Promise.all([
 		getAppTimezone(sb),
 		listTasks(sb, { status: "open" }),
 		// Bumped from 10: the Done filter needs something to page through, not
@@ -29,18 +31,24 @@ export default async function TasksPage({
 		listRecentDone(sb, 100),
 		listDomains(sb),
 		listProjects(sb),
+		listMentionCandidates(sb),
 	]);
 	const todayIso = todayInTz(tz);
 	const inboxCount = openTasks.filter((t) => t.domain_id === null).length;
 	const overdueCount = openTasks.filter((t) => isOverdue(t, todayIso)).length;
 	const dueTodayCount = openTasks.filter((t) => isDueToday(t, todayIso)).length;
-	const taskNoteIds = Object.fromEntries(
-		await listNoteIdsForTargets(
-			sb,
-			"task",
-			[...openTasks, ...doneTasks].map((t) => t.id),
+	const allTaskIds = [...openTasks, ...doneTasks].map((t) => t.id);
+	const [taskNoteIds, taskMentions] = await Promise.all([
+		listNoteIdsForTargets(sb, "task", allTaskIds).then((rows) => Object.fromEntries(rows)),
+		listMentionsForSources(sb, "task", allTaskIds).then((map) =>
+			Object.fromEntries(
+				[...map.entries()].map(([id, persons]) => [
+					id,
+					persons.map((p) => ({ id: p.id, name: p.name })),
+				]),
+			),
 		),
-	);
+	]);
 
 	return (
 		<div>
@@ -73,6 +81,8 @@ export default async function TasksPage({
 				initialDomainId={initialDomainId}
 				taskNoteIds={taskNoteIds}
 				tz={tz}
+				people={people}
+				taskMentions={taskMentions}
 			/>
 		</div>
 	);
