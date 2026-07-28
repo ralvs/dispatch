@@ -130,7 +130,23 @@ events.reserveCapacity(ekEvents.count)
 for ek in ekEvents {
 	guard let calendar = ek.calendar else { continue }
 	// Prefer stable external identifier when present (Google-backed calendars).
-	let uid = ek.calendarItemExternalIdentifier ?? ek.eventIdentifier ?? ek.calendarItemIdentifier
+	let baseUid = ek.calendarItemExternalIdentifier ?? ek.eventIdentifier ?? ek.calendarItemIdentifier
+	// Every occurrence of a recurring series carries the SAME external
+	// identifier, and identity upstream is (source, caldav_uid) — so sending it
+	// bare collapses the series onto one row: each 15m sync rewrites that row's
+	// start to the last occurrence in the ±7d window, and the occurrences that
+	// already happened vanish from the day. Qualify by occurrence start instead
+	// (EventKit keeps occurrenceDate pinned to the original slot even when a
+	// single occurrence is later moved, so the row survives a reschedule).
+	// Detached occurrences already carry their own /RID= identifier.
+	let uid: String
+	if ek.hasRecurrenceRules, !baseUid.contains("/RID="),
+		let occurrence: Date = ek.occurrenceDate ?? ek.startDate
+	{
+		uid = "\(baseUid)/OCC=\(Int(occurrence.timeIntervalSince1970))"
+	} else {
+		uid = baseUid
+	}
 	let rawTitle = ek.title?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? ""
 	let title = rawTitle.isEmpty ? "(no title)" : rawTitle
 	let etag: String?

@@ -28,7 +28,12 @@ syncBridgeEvents → calendar_events source='google'
 
 - Pull-only into Dispatch; no writes back to Google or Apple Calendar
 - Window: ±7 days (bridge-controlled; body carries `window_start` / `window_end`)
-- Identity: unique `(source, caldav_uid)` with `source='google'`
+- Identity: unique `(source, caldav_uid)` with `source='google'`, **one row per
+  occurrence** — EventKit hands every occurrence of a series the same
+  `calendarItemExternalIdentifier`, so the bridge qualifies it with the
+  occurrence start (`…/OCC=<epoch>`, or the detached `…/RID=` id when EventKit
+  supplies one). Sending the bare series id collapses a recurring meeting onto a
+  single sliding row, and occurrences that already happened disappear from Today.
 - Cancellations: windowed set-difference on `source='google'`
 - Allowlist of calendar **titles** on the Mac so iCloud calendars are not double-imported
 - Ledger: silent on success (bridge runs every 15m); `gcal.sync_failed` + push only on error
