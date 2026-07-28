@@ -8,6 +8,7 @@ import {
 	type MentionCandidate,
 	normalizeName,
 	serializeMention,
+	spliceMention,
 } from "@/lib/mentions";
 
 const RENAN_ALVES: MentionCandidate = { id: "person-renan-alves", name: "Renan Alves" };
@@ -181,5 +182,37 @@ describe("activeMentionQuery", () => {
 	it("closes the query at a newline — an @ on an earlier line doesn't count", () => {
 		const value = "@Renan\nhi there";
 		expect(activeMentionQuery(value, value.length)).toBeNull();
+	});
+});
+
+// ─── spliceMention ─────────────────────────────────────────────────────
+//
+// Both of these are regressions caught in the browser, not by a unit test:
+// the accepted suggestion dropped the "@" (so extractMentions then matched
+// nothing at all), and the dropdown computed against a stale value.
+
+describe("spliceMention", () => {
+	it("keeps the @ so the result is still an extractable mention", () => {
+		const out = spliceMention("ligar @Th", 6, 9, "Thais");
+		expect(out.value).toBe("ligar @Thais ");
+		expect(out.caret).toBe(out.value.length);
+	});
+
+	it("round-trips through extractMentions", () => {
+		const index = buildMentionIndex([{ id: "p1", name: "Thais" }]);
+		const out = spliceMention("ligar @Th", 6, 9, "Thais");
+		expect(extractMentions(out.value, index).map((m) => m.personId)).toEqual(["p1"]);
+	});
+
+	it("preserves text after the caret", () => {
+		const out = spliceMention("ligar @Th amanha", 6, 9, "Thais");
+		expect(out.value).toBe("ligar @Thais  amanha");
+	});
+
+	it("handles a multi-word name", () => {
+		const index = buildMentionIndex([{ id: "p2", name: "Renan Alves" }]);
+		const out = spliceMention("@Re", 0, 3, "Renan Alves");
+		expect(out.value).toBe("@Renan Alves ");
+		expect(extractMentions(out.value, index).map((m) => m.personId)).toEqual(["p2"]);
 	});
 });

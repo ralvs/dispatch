@@ -214,3 +214,24 @@ export function activeMentionQuery(
 
 	return { query: value.slice(at + 1, caret), start: at };
 }
+
+/**
+ * Replaces the in-progress `@query` at `[start, caret)` with the accepted
+ * name, returning the new text and where the caret should land.
+ *
+ * Pure and exported so the "@" survives: `start` is the index OF the "@", so
+ * the replacement has to re-emit it. Writing back a bare name would leave
+ * plain "Thais" in the text, and `extractMentions` only matches an
+ * "@"-prefixed name — the accepted suggestion would record no mention at all.
+ */
+export function spliceMention(
+	value: string,
+	start: number,
+	caret: number,
+	name: string,
+): { value: string; caret: number } {
+	const before = value.slice(0, start);
+	const after = value.slice(caret);
+	const inserted = `@${name} `;
+	return { value: `${before}${inserted}${after}`, caret: before.length + inserted.length };
+}

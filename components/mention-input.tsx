@@ -11,7 +11,12 @@
 // name into the field's value directly.
 
 import { type KeyboardEvent, useRef, useState } from "react";
-import { activeMentionQuery, type MentionCandidate, normalizeName } from "@/lib/mentions";
+import {
+	activeMentionQuery,
+	type MentionCandidate,
+	normalizeName,
+	spliceMention,
+} from "@/lib/mentions";
 
 const MAX_SUGGESTIONS = 8;
 
@@ -39,10 +44,17 @@ function useMentionAutocomplete(
 ) {
 	const [state, setState] = useState<MentionState>(CLOSED);
 
+	// Both helpers read `el.value`, never the `value` prop. `recompute` runs
+	// synchronously inside onChange, one React tick BEFORE the prop catches up,
+	// so the prop is always one keystroke stale there — it would compute the
+	// suggestions for what was typed a moment ago (typing "@Th" offered the
+	// candidates for "@T", and the keystroke before that offered all of them).
+	// The DOM element is the only source that is current in every handler.
 	function recompute(el: FieldEl | null) {
 		if (!el) return;
-		const caret = el.selectionStart ?? value.length;
-		const active = activeMentionQuery(value, caret);
+		const current = el.value;
+		const caret = el.selectionStart ?? current.length;
+		const active = activeMentionQuery(current, caret);
 		if (!active) {
 			setState(CLOSED);
 			return;
@@ -57,16 +69,14 @@ function useMentionAutocomplete(
 
 	function accept(el: FieldEl | null, item: MentionCandidate) {
 		if (!el) return;
-		const caret = el.selectionStart ?? value.length;
-		const before = value.slice(0, state.start);
-		const after = value.slice(caret);
-		const inserted = `${item.name} `;
-		onValueChange(`${before}${inserted}${after}`);
+		const current = el.value;
+		const caret = el.selectionStart ?? current.length;
+		const next = spliceMention(current, state.start, caret, item.name);
+		onValueChange(next.value);
 		setState(CLOSED);
-		const pos = before.length + inserted.length;
 		requestAnimationFrame(() => {
 			el.focus();
-			el.setSelectionRange(pos, pos);
+			el.setSelectionRange(next.caret, next.caret);
 		});
 	}
 
