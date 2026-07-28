@@ -123,11 +123,33 @@ export function TaskList({
 		applyTaskLists(current, intent, ctx),
 	);
 
+	// Ids of tasks created optimistically in this session — always shown
+	// regardless of the active filter, so a capture typed while "Domain: Work"
+	// is active doesn't vanish just because it optimistically has no domain
+	// yet. Once the server round-trip revalidates the real lists, the fake id
+	// simply no longer matches any row, so nothing needs to prune this set.
+	const [sessionCreatedIds] = useState(() => new Set<string>());
+
 	const [status, setStatus] = useState<TaskStatusFilter>(
 		isTaskStatusFilter(initialStatus) ? initialStatus : "open",
 	);
-	const [projectId, setProjectId] = useState(initialProjectId ?? "");
-	const [domainId, setDomainId] = useState(initialDomainId ?? "");
+	// Deep-link ids (?project=, ?domain=) are taken verbatim from the URL and
+	// may point at a project/domain that no longer exists — a stale bookmark,
+	// a deleted project. Validate against what actually loaded before seeding
+	// state; an unmatched id would otherwise render the select as "All" while
+	// silently rejecting every row.
+	const [projectId, setProjectId] = useState(
+		initialProjectId &&
+			(initialProjectId === UNFILED || (projects ?? []).some((p) => p.id === initialProjectId))
+			? initialProjectId
+			: "",
+	);
+	const [domainId, setDomainId] = useState(
+		initialDomainId &&
+			(initialDomainId === UNFILED || domains.some((d) => d.id === initialDomainId))
+			? initialDomainId
+			: "",
+	);
 
 	// Client state is the source of truth from here on; the URL just mirrors
 	// it so the current view stays shareable (history.replaceState, not a
@@ -179,6 +201,8 @@ export function TaskList({
 	// UNFILED narrows to rows where the column is null (docs/adr/0027); "" is
 	// the no-narrow case and has to stay distinct from it.
 	function matchesFilters(t: TaskRow): boolean {
+		if (sessionCreatedIds.has(t.id)) return true;
+
 		if (projectId === UNFILED) {
 			if (t.project_id !== null) return false;
 		} else if (projectId && t.project_id !== projectId) return false;
@@ -201,9 +225,14 @@ export function TaskList({
 	const top3 = status === "open" ? filteredOpen.filter((t) => isTop3Today(t, todayIso)) : [];
 	const rest = status === "open" ? filteredOpen.filter((t) => !isTop3Today(t, todayIso)) : [];
 	const slotsOpen = TOP3_SLOTS - top3.length;
+	// The Open view's "Recently done" band is a glance-strip, not the full
+	// history the Done filter shows — cap it at 10 even though filteredDone
+	// itself now carries up to 100 rows to feed that filter.
+	const recentDoneBand = filteredDone.slice(0, 10);
 
 	function onCreate(formData: FormData): Promise<void> {
 		const optimistic = optimisticTaskFromForm(formData, domains);
+		sessionCreatedIds.add(optimistic.id);
 		// useOptimistic must run inside a transition owned here (not only the form's).
 		return new Promise((resolve, reject) => {
 			startTransition(() => {
@@ -220,6 +249,7 @@ export function TaskList({
 
 	function onQuickAdd(text: string): Promise<void> {
 		const optimistic = optimisticTaskFromText(text);
+		sessionCreatedIds.add(optimistic.id);
 		// Mirrors onCreate — same shared transition, same rollback-on-reject.
 		return new Promise((resolve, reject) => {
 			startTransition(() => {
@@ -308,13 +338,13 @@ export function TaskList({
 						)}
 					</section>
 
-					{filteredDone.length > 0 && (
+					{recentDoneBand.length > 0 && (
 						<section className="mt-10" aria-label="Recently completed">
 							<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
 								Recently done
 							</h2>
 							<ul className="mt-2">
-								{filteredDone.map((t) => (
+								{recentDoneBand.map((t) => (
 									<TaskRowItem
 										key={t.id}
 										task={t}
