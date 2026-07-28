@@ -212,6 +212,35 @@ describe("createTask", () => {
 
 		expect(calls[0]).toMatchObject({ op: "insert", payload: { domain_id: "dom-code" } });
 	});
+
+	// due_time may only be set alongside a due_date (DB check constraint).
+	// createTask is the one chokepoint every write path shares — form and
+	// capture alike — so it coerces defensively, mirroring updateTask.
+	it("nulls due_time when no due_date is given", async () => {
+		const { sb, calls } = stubBuilder({ data: { id: "task-1" }, error: null });
+
+		await createTask(sb, { title: "ligar pro dentista", due_time: "15:00" });
+
+		expect(calls[0]).toMatchObject({
+			op: "insert",
+			payload: { due_time: null },
+		});
+	});
+
+	it("leaves due_time alone when due_date is set", async () => {
+		const { sb, calls } = stubBuilder({ data: { id: "task-1" }, error: null });
+
+		await createTask(sb, {
+			title: "ligar pro dentista",
+			due_date: "2026-08-01",
+			due_time: "15:00",
+		});
+
+		expect(calls[0]).toMatchObject({
+			op: "insert",
+			payload: { due_date: "2026-08-01", due_time: "15:00" },
+		});
+	});
 });
 
 describe("assignDomain", () => {

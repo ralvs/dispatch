@@ -36,12 +36,16 @@ None of these conflict with coupling time to date.
 
 Enforced in three places, for three different reasons. A DB `CHECK` so the
 state is unreachable regardless of who writes. A `.refine()` on
-`CreateTaskSchema` so the error arrives at the form rather than as a constraint
-violation. And a coercion in `updateTask`, because `UpdateTaskSchema` is
-`.partial()` — a patch that nulls only `due_date` is individually valid and
-must be judged against the *merged* row. That last case coerces rather than
-rejects: clearing a date nulls the time in the same update, which is what
-someone clearing a date means.
+`CreateTaskFormSchema` (the FormData boundary parsed in
+`app/(authed)/tasks/actions.ts`) so a form submission reports the error as a
+validation failure rather than a constraint violation. And a coercion in the
+`lib/services/tasks.ts` service itself — both `createTask` and `updateTask` —
+because the service is the one chokepoint every write path shares (form,
+capture, and anything else that calls it directly), and a `.partial()` form
+schema can't see whether `due_date` is null in the merged row anyway. Both
+service functions coerce rather than reject: a `due_time` with no `due_date`
+to sit on is silently dropped, which is what someone clearing (or never
+setting) a date means.
 
 The migration nulls offending rows before adding the constraint. That is a
 no-op against today's data and stays anyway, because a migration that only
