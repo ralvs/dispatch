@@ -136,6 +136,8 @@ export function ScheduleRow({
 			/>
 		);
 	}
-	const past = Boolean(nowUtcIso && item.event.end_at < nowUtcIso);
+	// Compare instants, not strings: Postgres hands back "+00:00" where
+	// toISOString() writes "Z", so the two only sort alike by accident.
+	const past = Boolean(nowUtcIso && Date.parse(item.event.end_at) < Date.parse(nowUtcIso));
 	return <EventRow item={item} past={past} noteId={noteId} />;
 }

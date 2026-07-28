@@ -23,7 +23,12 @@ export function DayScheduleSection({
 }) {
 	return (
 		<>
-			<DayTape timeline={schedule.timeline} todayIso={todayIso} nowLabel={nowLabel} />
+			<DayTape
+				timeline={schedule.timeline}
+				todayIso={todayIso}
+				nowLabel={nowLabel}
+				nowUtcIso={nowUtcIso}
+			/>
 			<DaySchedule
 				schedule={schedule}
 				todayIso={todayIso}

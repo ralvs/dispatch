@@ -165,6 +165,18 @@ const TAPE_CSS = `
 	background: var(--success);
 }
 
+/* An event that has ended stays on the tape — it just stops competing with
+ * what is still ahead. Matches the past-row treatment in timeline-row.tsx. */
+.dt-flag-dot.is-past,
+.dt-flag-stem.is-past {
+	opacity: 0.5;
+}
+
+.dt-flag-label.is-past,
+.dt-flag-label.is-past .dt-flag-title {
+	color: var(--ink-4);
+}
+
 .dt-flag-label {
 	position: absolute;
 	z-index: 1;
@@ -229,10 +241,13 @@ export function DayTape({
 	timeline,
 	todayIso,
 	nowLabel,
+	nowUtcIso,
 }: {
 	timeline: DayScheduleItem[];
 	todayIso: string;
 	nowLabel: string;
+	/** Wall-clock "now" as UTC ISO — dims events that have already ended. */
+	nowUtcIso?: string;
 }) {
 	const flags = timeline
 		.filter((item): item is DayScheduleItem & { time: string } => item.time !== null)
@@ -240,12 +255,18 @@ export function DayTape({
 			const title = item.kind === "task" ? item.task.title : item.event.title;
 			const top3 = item.kind === "task" && isTop3Today(item.task, todayIso);
 			const done = item.kind === "task" && item.task.status === "done";
+			// Only events go quiet once they end — an overdue task is still work
+			// to do, so it keeps its weight.
+			const past = Boolean(
+				item.kind === "event" && nowUtcIso && Date.parse(item.event.end_at) < Date.parse(nowUtcIso),
+			);
 			return {
 				key: item.key,
 				time: item.time,
 				title,
 				top3,
 				done,
+				past,
 				tier: i % 2 === 0 ? "tier-up" : "tier-down",
 			};
 		});
@@ -273,6 +294,7 @@ export function DayTape({
 					))}
 					{flags.map((item) => {
 						const left = pct(toMinutes(item.time));
+						const past = item.past ? " is-past" : "";
 						const dotClass = item.done
 							? "dt-flag-dot is-done"
 							: item.top3
@@ -280,9 +302,9 @@ export function DayTape({
 								: "dt-flag-dot";
 						return (
 							<div key={item.key}>
-								<div className={`dt-flag-stem ${item.tier}`} style={{ left: `${left}%` }} />
-								<div className={dotClass} style={{ left: `${left}%` }} />
-								<div className={`dt-flag-label ${item.tier}`} style={{ left: `${left}%` }}>
+								<div className={`dt-flag-stem ${item.tier}${past}`} style={{ left: `${left}%` }} />
+								<div className={`${dotClass}${past}`} style={{ left: `${left}%` }} />
+								<div className={`dt-flag-label ${item.tier}${past}`} style={{ left: `${left}%` }}>
 									<span className="dt-flag-title">{item.title}</span>
 									<span>
 										{item.time}
