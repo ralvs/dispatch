@@ -7,7 +7,7 @@ import ICAL from "ical.js";
 //
 // RRULE handling: calendar_events.caldav_uid is unique, so a recurring VEVENT
 // can only ever produce ONE row. We return the first occurrence that
-// intersects the window; the frequent re-sync (±7 days, run often) keeps
+// intersects the window; the frequent re-sync (±21 days, run often) keeps
 // that row pointing at whichever occurrence is currently "in view".
 // ─────────────────────────────────────────────────────────────────────────
 

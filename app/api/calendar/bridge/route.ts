@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Mac EventKit bridge ingest (docs/adr/0018). Local launchd agent POSTs a
-// ±7d snapshot from Apple Calendar (Engine Google calendars already synced
+// ±21d snapshot from Apple Calendar (Engine Google calendars already synced
 // there). Secret-authed; never talks to Google OAuth.
 //
 // Quiet on success — a 15m bridge would otherwise spam the ledger/push.

@@ -2,7 +2,7 @@ import EventKit
 import Foundation
 
 // Dispatch Mac calendar bridge (docs/adr/0018).
-// Reads calendars already in Apple Calendar via EventKit and POSTs a ±7 day
+// Reads calendars already in Apple Calendar via EventKit and POSTs a ±21 day
 // snapshot to POST /api/calendar/bridge.
 //
 // Env:
@@ -18,7 +18,9 @@ import Foundation
 // Install launchd (every 15m):
 //   ./install-launchd.sh
 
-let windowDays = 7
+// Keep in step with CALENDAR_SYNC_WINDOW_MS (lib/constants.ts) — Today's day
+// navigation can walk this far back and forward, so the window has to cover it.
+let windowDays = 21
 let iso = ISO8601DateFormatter()
 iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
@@ -134,7 +136,7 @@ for ek in ekEvents {
 	// Every occurrence of a recurring series carries the SAME external
 	// identifier, and identity upstream is (source, caldav_uid) — so sending it
 	// bare collapses the series onto one row: each 15m sync rewrites that row's
-	// start to the last occurrence in the ±7d window, and the occurrences that
+	// start to the last occurrence in the ±21d window, and the occurrences that
 	// already happened vanish from the day. Qualify by occurrence start instead
 	// (EventKit keeps occurrenceDate pinned to the original slot even when a
 	// single occurrence is later moved, so the row survives a reschedule).

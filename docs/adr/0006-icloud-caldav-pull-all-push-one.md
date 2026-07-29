@@ -2,7 +2,7 @@
 
 Google Calendar OAuth is replaced by CalDAV against `caldav.icloud.com`
 (tsdav, Basic auth with an app-specific password — no OAuth flow, no token
-table). Sync pulls VEVENTs ±7 days from ALL calendars on the account (each
+table). Sync pulls VEVENTs ±21 days from ALL calendars on the account (each
 event stores its `calendar_name`); app-created events are pushed only to the
 calendar named by `ICLOUD_CALENDAR_NAME` (a dedicated "Dispatch" calendar).
 Cancellation detection is windowed set-difference on `caldav_uid` — CalDAV

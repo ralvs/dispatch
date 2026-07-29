@@ -10,7 +10,7 @@ import { type CalendarEventRow, EVENT_SELECT } from "@/lib/schemas/calendar";
 import { ServiceError, unwrap } from "@/lib/services/errors";
 
 // ─────────────────────────────────────────────────────────────────────────
-// iCloud CalDAV sync (docs/adr/0006). Pulls VEVENTs ±7 days from every
+// iCloud CalDAV sync (docs/adr/0006). Pulls VEVENTs ±21 days from every
 // calendar on the account; app-created events push only to the calendar
 // named `ICLOUD_CALENDAR_NAME`. Cancellation detection is a windowed
 // set-difference on `caldav_uid` — CalDAV has no tombstones, so a caldav

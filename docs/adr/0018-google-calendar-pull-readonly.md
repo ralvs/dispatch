@@ -27,7 +27,7 @@ syncBridgeEvents → calendar_events source='google'
 ```
 
 - Pull-only into Dispatch; no writes back to Google or Apple Calendar
-- Window: ±7 days (bridge-controlled; body carries `window_start` / `window_end`)
+- Window: ±21 days (bridge-controlled; body carries `window_start` / `window_end`)
 - Identity: unique `(source, caldav_uid)` with `source='google'`, **one row per
   occurrence** — EventKit hands every occurrence of a series the same
   `calendarItemExternalIdentifier`, so the bridge qualifies it with the

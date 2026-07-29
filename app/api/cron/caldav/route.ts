@@ -9,7 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // ─────────────────────────────────────────────────────────────────────────
 // iCloud CalDAV sync cron (docs/adr/0006) — invoked by cron-job.org behind
-// CRON_SECRET. Pulls ±7 days from every calendar on the account and reports
+// CRON_SECRET. Pulls ±21 days from every calendar on the account and reports
 // pulled/removed counts. A run that changed nothing writes no ledger row
 // (iron rule #6 is about actions, not no-op ticks).
 // ─────────────────────────────────────────────────────────────────────────
