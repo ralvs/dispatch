@@ -85,6 +85,36 @@ describe("applyTaskLists", () => {
 		expect(cleared.open[0]?.top3_for_date).toBeNull();
 	});
 
+	// Today's day navigation stars against the day on screen, so the optimistic
+	// patch has to pin to that day — otherwise the row flashes into the shortlist
+	// and back out when the server answers with a different date.
+	it("toggles top-3 for the day on screen when one is given", () => {
+		const other = "2026-07-31";
+		const open = [task({ id: "t", title: "Star me" })];
+		const starred = applyTaskLists(
+			{ open, done: [] },
+			{ type: "toggleTop3", id: "t" },
+			{ todayIso: TODAY, top3DateIso: other },
+		);
+		expect(starred.open[0]?.top3_for_date).toBe(other);
+
+		// Unstarring only clears when it is that same day's star.
+		const cleared = applyTaskLists(
+			starred,
+			{ type: "toggleTop3", id: "t" },
+			{ todayIso: TODAY, top3DateIso: other },
+		);
+		expect(cleared.open[0]?.top3_for_date).toBeNull();
+
+		// A different day's star is replaced, not cleared.
+		const moved = applyTaskLists(
+			starred,
+			{ type: "toggleTop3", id: "t" },
+			{ todayIso: TODAY, top3DateIso: TODAY },
+		);
+		expect(moved.open[0]?.top3_for_date).toBe(TODAY);
+	});
+
 	it("prepends a created task", () => {
 		const open = [task({ id: "old", title: "Old" })];
 		const created = task({ id: "new", title: "New" });

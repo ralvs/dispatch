@@ -5,7 +5,7 @@ import { type KeyboardEvent, useEffect, useRef, useState, useTransition } from "
 import { ColorDot } from "@/components/color-dot";
 import { MentionChip } from "@/components/mention-chip";
 import { runAction } from "@/lib/client/toast";
-import { formatDueLabel, formatInstant } from "@/lib/dates";
+import { formatDay, formatDueLabel, formatInstant } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_GLYPH, recurrenceLabel } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/services/tasks";
@@ -30,6 +30,7 @@ export type TaskRowHandlers = {
 export function TaskRowItem({
 	task,
 	todayIso,
+	starDateIso,
 	timeLabel,
 	domains = [],
 	manageable = true,
@@ -42,6 +43,12 @@ export function TaskRowItem({
 }: {
 	task: TaskRow;
 	todayIso: string;
+	/**
+	 * Which day ☆ reflects and pins to. Defaults to today; Today's day
+	 * navigation passes the day on screen so the star reads as that day's
+	 * shortlist. Overdue and the due label stay anchored to the real today.
+	 */
+	starDateIso?: string;
 	timeLabel?: string | null;
 	domains?: TaskDomainOption[];
 	/** Edit/delete only make sense on the Tasks page — Today is read-mostly. */
@@ -68,7 +75,11 @@ export function TaskRowItem({
 	const formRef = useRef<HTMLFormElement>(null);
 	const done = task.status === "done";
 	const overdue = isOverdue(task, todayIso);
-	const starred = isTop3Today(task, todayIso);
+	const starTarget = starDateIso ?? todayIso;
+	const starred = isTop3Today(task, starTarget);
+	// The star acts on whichever day the surface is showing, so the label has to
+	// say which one — "today's top 3" is a lie on Today's other days.
+	const starDay = starTarget === todayIso ? "today" : formatDay(starTarget, "utc", "cccc d LLLL");
 	const scheduled = timeLabel !== undefined;
 	const canEdit = manageable && domains.length > 0;
 
@@ -263,7 +274,7 @@ export function TaskRowItem({
 			<div className="flex shrink-0 items-center gap-1 self-center">
 				<button
 					type="button"
-					aria-label={starred ? "Remove from today's top 3" : "Pin to today's top 3"}
+					aria-label={`${starred ? "Remove from" : "Pin to"} ${starDay}'s top 3`}
 					aria-pressed={starred}
 					disabled={done}
 					onClick={handlers.onToggleTop3}

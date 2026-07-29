@@ -11,6 +11,12 @@ export type TaskIntent =
 
 export type ApplyContext = {
 	todayIso: string;
+	/**
+	 * Which day a ☆ toggle pins to. Defaults to todayIso. Today's day navigation
+	 * passes the day on screen — the two part company there, and only for the
+	 * star: a completed recurring task still rolls forward from the real today.
+	 */
+	top3DateIso?: string;
 	/** ISO instant for completed_at; defaults to now when omitted. */
 	nowIso?: string;
 };
@@ -50,9 +56,10 @@ export function applyTaskLists(lists: TaskLists, intent: TaskIntent, ctx: ApplyC
 			};
 		}
 		case "toggleTop3": {
+			const target = ctx.top3DateIso ?? ctx.todayIso;
 			const patch = (t: TaskRow): TaskRow => ({
 				...t,
-				top3_for_date: t.top3_for_date === ctx.todayIso ? null : ctx.todayIso,
+				top3_for_date: t.top3_for_date === target ? null : target,
 			});
 			return {
 				open: mapId(lists.open, intent.id, patch),

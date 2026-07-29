@@ -31,3 +31,24 @@ describe("computeTapeRange", () => {
 		expect(endMin).toBeLessThanOrEqual(24 * 60);
 	});
 });
+
+describe("computeTapeRange without a now", () => {
+	it("fits the events alone on a day that is not today", () => {
+		// 14:00–16:00 pads to 13:00–17:00, then widens to the 6h minimum span.
+		const { startMin, endMin } = computeTapeRange([14 * 60, 16 * 60], null);
+		expect(startMin).toBe(12 * 60);
+		expect(endMin).toBe(18 * 60);
+	});
+
+	it("ignores a now that would otherwise stretch the window", () => {
+		const withNow = computeTapeRange([14 * 60], 22 * 60);
+		const withoutNow = computeTapeRange([14 * 60], null);
+		expect(withNow.endMin).toBeGreaterThan(withoutNow.endMin);
+	});
+
+	it("still falls back to a daytime window when the day is empty", () => {
+		const { startMin, endMin } = computeTapeRange([], null);
+		expect(startMin).toBe(8 * 60);
+		expect(endMin).toBe(20 * 60);
+	});
+});

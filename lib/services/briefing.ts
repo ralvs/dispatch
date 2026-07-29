@@ -287,13 +287,19 @@ function compareItems(a: DayScheduleItem, b: DayScheduleItem): number {
 	return titleA < titleB ? -1 : titleA > titleB ? 1 : 0;
 }
 
+/**
+ * `dateIso` is the day being shown, which is today only by default — Today's
+ * day navigation composes the same bands for any date. Every rule below reads
+ * off that date, so "due today", "starred for the day" and "already arrived"
+ * stay true relative to the day on screen rather than to the wall clock.
+ */
 export function buildDaySchedule(input: {
 	events: CalendarEventRow[];
 	openTasks: TaskRow[];
-	todayIso: string;
+	dateIso: string;
 	tz: string;
 }): DaySchedule {
-	const { events, openTasks, todayIso, tz } = input;
+	const { events, openTasks, dateIso, tz } = input;
 
 	const allDay: DayScheduleItem[] = [];
 	const timeline: DayScheduleItem[] = [];
@@ -312,9 +318,9 @@ export function buildDaySchedule(input: {
 		});
 	}
 
-	const dueToday = openTasks.filter((t) => t.due_date === todayIso);
+	const dueToday = openTasks.filter((t) => t.due_date === dateIso);
 	for (const task of dueToday) {
-		const at = taskDueInstant(task, todayIso, tz);
+		const at = taskDueInstant(task, dateIso, tz);
 		if (at === null) {
 			allDay.push({ kind: "task", key: `task:${task.id}`, sortAt: "", time: null, task });
 			continue;
@@ -337,12 +343,12 @@ export function buildDaySchedule(input: {
 	// timeline still belongs to the day's shortlist. Never capped: the 3-slot
 	// rule bounds it in practice, and silently hiding a fourth star would be
 	// worse than showing it.
-	const top3 = openTasks.filter((t) => isTop3Today(t, todayIso));
+	const top3 = openTasks.filter((t) => isTop3Today(t, dateIso));
 	// Open is what is left over: anything unplaced whose due date has already
-	// arrived (overdue included — not on today's spine, but certainly open).
+	// arrived (overdue included — not on the day's spine, but certainly open).
 	// Starred rows are excluded because the band above already carries them.
 	const arrived = unplaced.filter(
-		(t) => !isTop3Today(t, todayIso) && t.due_date !== null && t.due_date <= todayIso,
+		(t) => !isTop3Today(t, dateIso) && t.due_date !== null && t.due_date <= dateIso,
 	);
 
 	return {
@@ -540,13 +546,13 @@ const STREAK_HISTORY_DAYS = 60;
 async function loadDayScheduleInputs(
 	sb: SupabaseClient,
 	tz: string,
-	todayIso: string,
-): Promise<{ open: TaskRow[]; todayEvents: CalendarEventRow[] }> {
-	const [open, todayEvents] = await Promise.all([
+	dateIso: string,
+): Promise<{ open: TaskRow[]; events: CalendarEventRow[] }> {
+	const [open, events] = await Promise.all([
 		listTasks(sb, { status: "open" }),
-		listEventsOn(sb, todayIso, tz),
+		listEventsOn(sb, dateIso, tz),
 	]);
-	return { open, todayEvents };
+	return { open, events };
 }
 
 /**
@@ -617,6 +623,20 @@ async function loadBriefingChrome(
 	};
 }
 
+/**
+ * The day bands for one date, without the ~13-query briefing chrome around
+ * them. Today's day navigation calls this when it walks off today; the default
+ * view keeps reading `getBriefing().daySchedule` and pays for no extra query.
+ */
+export async function getDaySchedule(
+	sb: SupabaseClient,
+	tz: string,
+	dateIso: string,
+): Promise<DaySchedule> {
+	const { open, events } = await loadDayScheduleInputs(sb, tz, dateIso);
+	return buildDaySchedule({ events, openTasks: open, dateIso, tz });
+}
+
 export async function getBriefing(
 	sb: SupabaseClient,
 	tz: string,
@@ -626,7 +646,7 @@ export async function getBriefing(
 	// Soft split: schedule inputs vs chrome load in parallel; callers still
 	// see one getBriefing interface. Inbox count is derived from open tasks
 	// (no second listInboxTasks query).
-	const [{ open, todayEvents }, chrome] = await Promise.all([
+	const [{ open, events: todayEvents }, chrome] = await Promise.all([
 		loadDayScheduleInputs(sb, tz, todayIso),
 		loadBriefingChrome(sb, todayIso),
 	]);
@@ -671,7 +691,12 @@ export async function getBriefing(
 		needsReviewCount: needsReview,
 		linksUnreadCount: linksUnread,
 		doingToday: assembleDoingToday(open, todayIso),
-		daySchedule: buildDaySchedule({ events: todayEvents, openTasks: open, todayIso, tz }),
+		daySchedule: buildDaySchedule({
+			events: todayEvents,
+			openTasks: open,
+			dateIso: todayIso,
+			tz,
+		}),
 		routines: { total: routines.length, done: routinesDone, remainingNames },
 		quoteOfDay: quoteOfDay(quotes, todayIso),
 		masthead: { isoWeek: isoWeek(todayIso), unreadNotifications },

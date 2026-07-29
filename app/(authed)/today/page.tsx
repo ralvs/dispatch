@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { SoftRefresh } from "@/components/soft-refresh";
 import { requireOwnerPage } from "@/lib/auth";
-import { todayInTz } from "@/lib/dates";
+import { parseDateIso, todayInTz } from "@/lib/dates";
 import { getAppTimezone } from "@/lib/services/settings";
 import { BriefingBody } from "./briefing-body";
 
@@ -34,17 +34,27 @@ function BriefingFallback() {
 	);
 }
 
-export default async function TodayPage() {
+export default async function TodayPage({
+	searchParams,
+}: {
+	searchParams: Promise<{ d?: string }>;
+}) {
 	const { sb } = await requireOwnerPage();
 	const tz = await getAppTimezone(sb);
 	const todayIso = todayInTz(tz);
+
+	// `?d=` is the day navigation's only state. Anything unparseable falls back
+	// to today rather than erroring — a hand-edited URL should land somewhere
+	// sensible, not on a crash.
+	const { d } = await searchParams;
+	const selectedIso = parseDateIso(d) ?? todayIso;
 
 	return (
 		<div>
 			{/* Keep the day tape "now", past events, and counts honest without a full reload. */}
 			<SoftRefresh />
-			<Suspense fallback={<BriefingFallback />}>
-				<BriefingBody sb={sb} tz={tz} todayIso={todayIso} />
+			<Suspense key={selectedIso} fallback={<BriefingFallback />}>
+				<BriefingBody sb={sb} tz={tz} todayIso={todayIso} selectedIso={selectedIso} />
 			</Suspense>
 		</div>
 	);

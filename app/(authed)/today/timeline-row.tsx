@@ -110,12 +110,15 @@ function EventRow({
  */
 export function ScheduleRow({
 	item,
+	dateIso,
 	todayIso,
 	handlers,
 	nowUtcIso,
 	noteId,
 }: {
 	item: DayScheduleItem;
+	/** The day on screen — what ☆ reflects and pins to. */
+	dateIso: string;
 	todayIso: string;
 	handlers?: TaskRowHandlers;
 	/** Used to gray out timed events that have already ended. */
@@ -129,6 +132,7 @@ export function ScheduleRow({
 			<TaskRowItem
 				task={item.task}
 				todayIso={todayIso}
+				starDateIso={dateIso}
 				timeLabel={item.time}
 				manageable={false}
 				handlers={handlers}

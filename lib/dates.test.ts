@@ -3,10 +3,12 @@ import {
 	dateOfInstant,
 	dayWindowUtc,
 	formatDateline,
+	formatDayNavLabel,
 	instantFromLocal,
 	isoWeek,
 	isValidTimezone,
 	isWallClockTime,
+	parseDateIso,
 	shiftDay,
 	shiftMinutes,
 	startOfWeek,
@@ -124,5 +126,45 @@ describe("isValidTimezone", () => {
 		expect(isValidTimezone("America/Sao_Paolo")).toBe(false);
 		expect(isValidTimezone("BRT")).toBe(false);
 		expect(isValidTimezone("")).toBe(false);
+	});
+});
+
+describe("parseDateIso", () => {
+	it("accepts a real calendar date", () => {
+		expect(parseDateIso("2026-07-29")).toBe("2026-07-29");
+	});
+
+	it("rejects a day that does not exist even though it parses", () => {
+		// Luxon reads 2026-02-30 as valid-ish input; the round-trip is the gate.
+		expect(parseDateIso("2026-02-30")).toBeNull();
+		expect(parseDateIso("2026-13-01")).toBeNull();
+	});
+
+	it("rejects anything that is not a bare YYYY-MM-DD string", () => {
+		expect(parseDateIso("2026-7-9")).toBeNull();
+		expect(parseDateIso("2026-07-29T10:00:00Z")).toBeNull();
+		expect(parseDateIso("")).toBeNull();
+		expect(parseDateIso(undefined)).toBeNull();
+		expect(parseDateIso(20260729)).toBeNull();
+	});
+});
+
+describe("formatDayNavLabel", () => {
+	const today = "2026-07-29";
+
+	it("names the three days around today in words", () => {
+		expect(formatDayNavLabel(today, today)).toBe("TODAY");
+		expect(formatDayNavLabel("2026-07-28", today)).toBe("YESTERDAY");
+		expect(formatDayNavLabel("2026-07-30", today)).toBe("TOMORROW");
+	});
+
+	it("falls back to a dateline further out", () => {
+		expect(formatDayNavLabel("2026-08-03", today)).toBe("MON · AUG 3");
+		expect(formatDayNavLabel("2026-07-26", today)).toBe("SUN · JUL 26");
+	});
+
+	it("crosses a month boundary without drifting", () => {
+		expect(formatDayNavLabel("2026-08-01", "2026-07-31")).toBe("TOMORROW");
+		expect(formatDayNavLabel("2026-07-31", "2026-08-01")).toBe("YESTERDAY");
 	});
 });

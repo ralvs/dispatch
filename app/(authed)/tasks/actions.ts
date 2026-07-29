@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { parseDateIso } from "@/lib/dates";
 import { buildMentionIndex, extractMentions } from "@/lib/mentions";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { CreateTaskFormSchema } from "@/lib/schemas/task";
@@ -92,9 +93,19 @@ export async function deleteTaskAction(id: string) {
 	afterMutation("task.write");
 }
 
-export async function toggleTop3Action(id: string) {
+/**
+ * `forDateIso` lets Today's day navigation build another day's shortlist —
+ * starring while reading tomorrow pins to tomorrow. Untrusted like any client
+ * argument, so it is parsed rather than trusted, and omitting it keeps the
+ * original behaviour (pin to today).
+ */
+export async function toggleTop3Action(id: string, forDateIso?: string) {
 	const { sb } = await requireOwnerPage();
-	await toggleTop3(sb, z.uuid().parse(id), await todayForRequest(sb));
+	const target = forDateIso === undefined ? null : parseDateIso(forDateIso);
+	if (forDateIso !== undefined && target === null) {
+		throw new Error(`Invalid top-3 date: ${forDateIso}`);
+	}
+	await toggleTop3(sb, z.uuid().parse(id), target ?? (await todayForRequest(sb)));
 	afterMutation("task.write");
 }
 

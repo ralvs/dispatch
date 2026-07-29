@@ -512,7 +512,7 @@ describe("summarizeProjects", () => {
 describe("buildDaySchedule", () => {
 	// SP is UTC-3 year-round (Brazil dropped DST in 2019), so 14:00Z reads 11:00.
 	function schedule(events: CalendarEventRow[], openTasks: TaskRow[]) {
-		return buildDaySchedule({ events, openTasks, todayIso: TODAY, tz: SP });
+		return buildDaySchedule({ events, openTasks, dateIso: TODAY, tz: SP });
 	}
 
 	it("returns three empty bands for an empty day", () => {

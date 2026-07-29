@@ -21,9 +21,10 @@ function toMinutes(time: string): number {
  */
 export function computeTapeRange(
 	itemMinutes: number[],
-	nowMinutes: number,
+	/** Null on any day but today — a past or future tape has no "now" to fit. */
+	nowMinutes: number | null,
 ): { startMin: number; endMin: number; ticks: number[] } {
-	const points = [...itemMinutes, nowMinutes].filter((m) => Number.isFinite(m));
+	const points = [...itemMinutes, nowMinutes ?? Number.NaN].filter((m) => Number.isFinite(m));
 	if (points.length === 0) {
 		return {
 			startMin: DEFAULT_START_MIN,
@@ -239,13 +240,18 @@ function formatTickHour(h: number): string {
 /** A horizontal ruler for the day's timed events and tasks — window fits the day. */
 export function DayTape({
 	timeline,
-	todayIso,
+	dateIso,
 	nowLabel,
 	nowUtcIso,
+	nav,
 }: {
 	timeline: DayScheduleItem[];
-	todayIso: string;
-	nowLabel: string;
+	/** The day this tape draws — today unless the day nav has moved. */
+	dateIso: string;
+	/** Day navigation, rendered in the heading row so one control heads the section. */
+	nav?: React.ReactNode;
+	/** Wall-clock "now" in the app timezone, or null when the tape isn't today's. */
+	nowLabel: string | null;
 	/** Wall-clock "now" as UTC ISO — dims events that have already ended. */
 	nowUtcIso?: string;
 }) {
@@ -253,7 +259,7 @@ export function DayTape({
 		.filter((item): item is DayScheduleItem & { time: string } => item.time !== null)
 		.map((item, i) => {
 			const title = item.kind === "task" ? item.task.title : item.event.title;
-			const top3 = item.kind === "task" && isTop3Today(item.task, todayIso);
+			const top3 = item.kind === "task" && isTop3Today(item.task, dateIso);
 			const done = item.kind === "task" && item.task.status === "done";
 			// Only events go quiet once they end — an overdue task is still work
 			// to do, so it keeps its weight.
@@ -271,7 +277,7 @@ export function DayTape({
 			};
 		});
 
-	const nowMinutes = toMinutes(nowLabel);
+	const nowMinutes = nowLabel === null ? null : toMinutes(nowLabel);
 	const { startMin, endMin, ticks } = computeTapeRange(
 		flags.map((f) => toMinutes(f.time)),
 		nowMinutes,
@@ -280,7 +286,10 @@ export function DayTape({
 
 	return (
 		<section aria-label="Day tape" className="mt-14">
-			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Day tape</h2>
+			<div className="flex items-center justify-between gap-4">
+				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Day tape</h2>
+				{nav}
+			</div>
 			<style>{TAPE_CSS}</style>
 			<div className="dt-tape mt-2">
 				<div className="dt-axis">
@@ -314,10 +323,14 @@ export function DayTape({
 							</div>
 						);
 					})}
-					<div className="dt-now" style={{ left: `${pct(nowMinutes)}%` }} />
-					<div className="dt-now-label" style={{ left: `${pct(nowMinutes)}%` }}>
-						now {nowLabel}
-					</div>
+					{nowMinutes !== null && nowLabel !== null && (
+						<>
+							<div className="dt-now" style={{ left: `${pct(nowMinutes)}%` }} />
+							<div className="dt-now-label" style={{ left: `${pct(nowMinutes)}%` }}>
+								now {nowLabel}
+							</div>
+						</>
+					)}
 				</div>
 			</div>
 		</section>

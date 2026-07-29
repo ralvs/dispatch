@@ -95,6 +95,7 @@ export function shiftMinutes(utcIso: string, minutes: number): string {
 // back to a default anchor, so the reminder fires at the wrong hour instead of
 // erroring. Luxon parses the fraction fine.
 const TIME_RE = /^\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Whether a value looks like a wall-clock time string (`HH:MM`, `HH:MM:SS`, or with a fraction). */
 export function isWallClockTime(s: unknown): boolean {
@@ -113,6 +114,32 @@ export function formatDateline(dateIso: string): string {
 	const dt = DateTime.fromISO(dateIso, { zone: "utc" });
 	if (!dt.isValid) throw new Error(`Invalid date: ${dateIso}`);
 	return `${dt.toFormat("ccc · LLL d").toUpperCase()} · WEEK ${dt.weekNumber}`;
+}
+
+/**
+ * A `YYYY-MM-DD` calendar date from untrusted input (a query string), or null.
+ * Rejects anything that isn't a real day — `2026-02-30` parses as a Luxon
+ * date but is not one, so `isValid` is the gate rather than the shape alone.
+ */
+export function parseDateIso(value: unknown): string | null {
+	if (typeof value !== "string" || !DATE_RE.test(value)) return null;
+	const dt = DateTime.fromISO(value, { zone: "utc" });
+	if (!dt.isValid || dt.toISODate() !== value) return null;
+	return value;
+}
+
+/** Day-navigation label: `TODAY`, `YESTERDAY`, `TOMORROW`, else `WED · JUL 29`. */
+export function formatDayNavLabel(dateIso: string, todayIso: string): string {
+	const days = Math.round(
+		DateTime.fromISO(dateIso, { zone: "utc" }).diff(
+			DateTime.fromISO(todayIso, { zone: "utc" }),
+			"days",
+		).days,
+	);
+	if (days === 0) return "TODAY";
+	if (days === -1) return "YESTERDAY";
+	if (days === 1) return "TOMORROW";
+	return DateTime.fromISO(dateIso, { zone: "utc" }).toFormat("ccc · LLL d").toUpperCase();
 }
 
 /** Editorial display formats used across the UI. */

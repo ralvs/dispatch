@@ -43,7 +43,7 @@ function collectOpenTasks(schedule: DayScheduleData): TaskRow[] {
 function projectSchedule(
 	schedule: DayScheduleData,
 	open: TaskRow[],
-	todayIso: string,
+	dateIso: string,
 ): DayScheduleData {
 	const byId = new Map(open.map((t) => [t.id, t]));
 
@@ -64,14 +64,14 @@ function projectSchedule(
 	// Top 3 re-derives from the optimistic list rather than from schedule.top3,
 	// so tapping ☆ on any band moves the row into (or out of) the shortlist
 	// immediately instead of waiting for the briefing RSC round-trip.
-	const top3 = open.filter((t) => t.status === "open" && isTop3Today(t, todayIso));
+	const top3 = open.filter((t) => t.status === "open" && isTop3Today(t, dateIso));
 
 	// Open carries the leftovers only — a row promoted to Top 3 leaves this band
 	// in the same tick it joins that one, so it never shows up twice.
 	const openBand: TaskRow[] = [];
 	for (const t of schedule.open) {
 		const next = byId.get(t.id);
-		if (next && next.status === "open" && !isTop3Today(next, todayIso)) openBand.push(next);
+		if (next && next.status === "open" && !isTop3Today(next, dateIso)) openBand.push(next);
 	}
 
 	return {
@@ -93,12 +93,23 @@ function projectSchedule(
  */
 export function DaySchedule({
 	schedule,
+	dateIso,
 	todayIso,
 	nowUtcIso,
 	eventNoteIds,
 	taskNoteIds,
 }: {
 	schedule: DayScheduleData;
+	/**
+	 * The day on screen. Bands derive from it — which tasks are starred for the
+	 * day, which have arrived — and ☆ pins to it, so starring while looking at
+	 * tomorrow builds tomorrow's shortlist.
+	 */
+	dateIso: string;
+	/**
+	 * The real calendar today. Only completion needs it: a recurring task rolls
+	 * forward from the wall clock, not from whichever day is being read.
+	 */
 	todayIso: string;
 	/** Wall-clock "now" as UTC ISO — grays out timed events that have ended. */
 	nowUtcIso: string;
@@ -109,15 +120,15 @@ export function DaySchedule({
 }) {
 	const [, startTransition] = useTransition();
 	const seed = useMemo(() => collectOpenTasks(schedule), [schedule]);
-	const ctx: ApplyContext = { todayIso };
+	const ctx: ApplyContext = { todayIso, top3DateIso: dateIso };
 
 	const [openTasks, dispatchOptimistic] = useOptimistic(seed, (current, intent: TaskIntent) =>
 		applyOpenTaskList(current, intent, ctx),
 	);
 
 	const projected = useMemo(
-		() => projectSchedule(schedule, openTasks, todayIso),
-		[schedule, openTasks, todayIso],
+		() => projectSchedule(schedule, openTasks, dateIso),
+		[schedule, openTasks, dateIso],
 	);
 
 	const { allDay, timeline, top3, open } = projected;
@@ -144,7 +155,7 @@ export function DaySchedule({
 				}
 			},
 			onToggleTop3: () => {
-				run({ type: "toggleTop3", id: task.id }, () => toggleTop3Action(task.id));
+				run({ type: "toggleTop3", id: task.id }, () => toggleTop3Action(task.id, dateIso));
 			},
 		};
 	}
@@ -164,6 +175,7 @@ export function DaySchedule({
 									<ScheduleRow
 										key={item.key}
 										item={item}
+										dateIso={dateIso}
 										todayIso={todayIso}
 										nowUtcIso={nowUtcIso}
 										handlers={item.kind === "task" ? handlersFor(item.task) : undefined}
@@ -183,6 +195,7 @@ export function DaySchedule({
 									<ScheduleRow
 										key={item.key}
 										item={item}
+										dateIso={dateIso}
 										todayIso={todayIso}
 										nowUtcIso={nowUtcIso}
 										handlers={item.kind === "task" ? handlersFor(item.task) : undefined}
@@ -205,6 +218,7 @@ export function DaySchedule({
 										key={task.id}
 										task={task}
 										todayIso={todayIso}
+										starDateIso={dateIso}
 										manageable={false}
 										handlers={handlersFor(task)}
 										noteId={taskNoteIds?.[task.id]}
@@ -212,7 +226,8 @@ export function DaySchedule({
 								))
 							) : (
 								<li className="py-2 font-serif italic text-ink-3">
-									Nothing pinned. Star a task to work on it today.
+									Nothing pinned. Star a task to work on it{" "}
+									{dateIso === todayIso ? "today" : "then"}.
 								</li>
 							)}
 						</Band>
@@ -229,6 +244,7 @@ export function DaySchedule({
 										key={task.id}
 										task={task}
 										todayIso={todayIso}
+										starDateIso={dateIso}
 										manageable={false}
 										handlers={handlersFor(task)}
 										noteId={taskNoteIds?.[task.id]}

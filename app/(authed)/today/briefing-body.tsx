@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatInstant } from "@/lib/dates";
-import { getBriefing } from "@/lib/services/briefing";
+import { getBriefing, getDaySchedule } from "@/lib/services/briefing";
 import { listNoteIdsForTargets } from "@/lib/services/note-links";
 import { AlertsRow } from "./alerts-row";
 import { AnchorLine } from "./anchor-line";
@@ -19,30 +19,37 @@ export async function BriefingBody({
 	sb,
 	tz,
 	todayIso,
+	selectedIso,
 }: {
 	sb: SupabaseClient;
 	tz: string;
 	todayIso: string;
+	/** The day the schedule section shows. Everything else on Today is today's. */
+	selectedIso: string;
 }) {
 	const briefing = await getBriefing(sb, tz, todayIso);
 	const nowUtcIso = new Date().toISOString();
-	const nowLabel = formatInstant(nowUtcIso, tz, "HH:mm");
+	const isToday = selectedIso === todayIso;
 
-	const eventIds = [...briefing.daySchedule.allDay, ...briefing.daySchedule.timeline]
+	// The default view already has today's bands from getBriefing; only a day
+	// navigated away pays for the second read.
+	const schedule = isToday ? briefing.daySchedule : await getDaySchedule(sb, tz, selectedIso);
+
+	const eventIds = [...schedule.allDay, ...schedule.timeline]
 		.filter((item) => item.kind === "event")
 		.map((item) => item.event.id);
 
 	// Every task Today can render a row for: the scheduled bands (all day +
 	// timeline), Top 3, and Open — deduped into one id list so the note-link
 	// lookup below stays a single batched call.
-	const scheduledTaskIds = [...briefing.daySchedule.allDay, ...briefing.daySchedule.timeline]
+	const scheduledTaskIds = [...schedule.allDay, ...schedule.timeline]
 		.filter((item) => item.kind === "task")
 		.map((item) => item.task.id);
 	const taskIds = [
 		...new Set([
 			...scheduledTaskIds,
-			...briefing.daySchedule.top3.map((task) => task.id),
-			...briefing.daySchedule.open.map((task) => task.id),
+			...schedule.top3.map((task) => task.id),
+			...schedule.open.map((task) => task.id),
 		]),
 	];
 
@@ -72,10 +79,11 @@ export async function BriefingBody({
 			</div>
 
 			<DayScheduleSection
-				schedule={briefing.daySchedule}
+				schedule={schedule}
+				dateIso={selectedIso}
 				todayIso={todayIso}
 				nowUtcIso={nowUtcIso}
-				nowLabel={nowLabel}
+				nowLabel={isToday ? formatInstant(nowUtcIso, tz, "HH:mm") : null}
 				eventNoteIds={eventNoteIds}
 				taskNoteIds={taskNoteIds}
 			/>
