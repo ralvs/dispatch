@@ -68,6 +68,8 @@ self.addEventListener("push", (event) => {
 	const title = payload.title || "Dispatch";
 	const options = {
 		body: payload.body,
+		icon: "/icons/icon-512.png",
+		badge: "/icons/icon-192.png",
 		data: { url: payload.url ?? "/" },
 	};
 
