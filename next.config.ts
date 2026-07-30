@@ -8,6 +8,13 @@ const nextConfig: NextConfig = {
 		serverActions: {
 			bodySizeLimit: "25mb",
 		},
+		// Dynamic authed routes default to 0s client RSC retention — every tab
+		// revisit re-fetched the full tree. Keep the last payload briefly so
+		// Today ↔ Tasks ↔ Notes feels instant; mutations still revalidatePath.
+		staleTimes: {
+			dynamic: 30,
+			static: 180,
+		},
 	},
 	async redirects() {
 		return [
