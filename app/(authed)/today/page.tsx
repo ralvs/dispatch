@@ -56,7 +56,10 @@ export default async function TodayPage({
 		<div>
 			{/* Keep the day tape "now", past events, and counts honest without a full reload. */}
 			<SoftRefresh />
-			<Suspense key={selectedIso} fallback={<BriefingFallback todayIso={todayIso} />}>
+			{/* No key on selectedIso: day flips are client-owned (schedule
+			 * Server Action) so chrome is not remounted. selectedIso only seeds
+			 * the first paint / SoftRefresh from `?d=`. */}
+			<Suspense fallback={<BriefingFallback todayIso={todayIso} />}>
 				<BriefingBody sb={sb} tz={tz} todayIso={todayIso} selectedIso={selectedIso} />
 			</Suspense>
 		</div>

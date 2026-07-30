@@ -1,13 +1,10 @@
-import Link from "next/link";
+"use client";
+
 import { formatDay, formatDayNavLabel, shiftDay } from "@/lib/dates";
 
-// Today reads a day at a time. The selected date lives in the URL (`?d=`)
-// rather than in client state so the whole schedule — tape, bands and the
-// task column — re-reads from the server as one, and a particular day stays
-// linkable and survives a reload. `?d=<today>` normalizes to a bare /today.
-function hrefFor(dateIso: string, todayIso: string): string {
-	return dateIso === todayIso ? "/today" : `/today?d=${dateIso}`;
-}
+// Day selection is client-owned (DayScheduleSection) so flipping a day only
+// reloads the schedule payload — not the full briefing RSC / loading.tsx.
+// `?d=` still updates via history for shareable URLs and SoftRefresh.
 
 function IconChevron({ direction }: { direction: "left" | "right" }) {
 	return (
@@ -30,20 +27,40 @@ function IconChevron({ direction }: { direction: "left" | "right" }) {
 // The bordered button stays 28×28; a padded, borderless wrapper (below) grows
 // the actual tap target to 44px around it.
 const STEP =
-	"inline-flex h-7 w-7 items-center justify-center rounded border border-line text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70";
+	"inline-flex h-7 w-7 items-center justify-center rounded border border-line text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70 disabled:opacity-40";
 const STEP_HIT_AREA = "-m-[8.5px] inline-flex p-[8.5px]";
 
-export function DayNav({ dateIso, todayIso }: { dateIso: string; todayIso: string }) {
+export function DayNav({
+	dateIso,
+	todayIso,
+	pending,
+	onSelect,
+}: {
+	dateIso: string;
+	todayIso: string;
+	pending?: boolean;
+	onSelect: (dateIso: string) => void;
+}) {
 	const previous = shiftDay(dateIso, -1);
 	const next = shiftDay(dateIso, 1);
 	const isToday = dateIso === todayIso;
 
 	return (
-		<nav className="flex items-center gap-2" aria-label="Day navigation">
+		<nav
+			className="flex items-center gap-2"
+			aria-label="Day navigation"
+			aria-busy={pending || undefined}
+		>
 			<span className={STEP_HIT_AREA}>
-				<Link href={hrefFor(previous, todayIso)} className={STEP} aria-label="Previous day">
+				<button
+					type="button"
+					className={STEP}
+					aria-label="Previous day"
+					disabled={pending}
+					onClick={() => onSelect(previous)}
+				>
 					<IconChevron direction="left" />
-				</Link>
+				</button>
 			</span>
 			<p
 				className="min-w-28 text-center font-mono text-eyebrow uppercase tracking-widest text-ink-2"
@@ -54,19 +71,27 @@ export function DayNav({ dateIso, todayIso }: { dateIso: string; todayIso: strin
 				<span title={formatDay(dateIso, "utc")}>{formatDayNavLabel(dateIso, todayIso)}</span>
 			</p>
 			<span className={STEP_HIT_AREA}>
-				<Link href={hrefFor(next, todayIso)} className={STEP} aria-label="Next day">
+				<button
+					type="button"
+					className={STEP}
+					aria-label="Next day"
+					disabled={pending}
+					onClick={() => onSelect(next)}
+				>
 					<IconChevron direction="right" />
-				</Link>
+				</button>
 			</span>
 			{!isToday && (
 				// Same 28px box as the step buttons beside it, and no extra margin —
 				// the nav's own gap is the only spacing in this row.
-				<Link
-					href="/today"
-					className="inline-flex h-7 items-center rounded border border-line px-2 font-mono text-meta uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
+				<button
+					type="button"
+					disabled={pending}
+					onClick={() => onSelect(todayIso)}
+					className="inline-flex h-7 items-center rounded border border-line px-2 font-mono text-meta uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70 disabled:opacity-40"
 				>
 					Today
-				</Link>
+				</button>
 			)}
 		</nav>
 	);
