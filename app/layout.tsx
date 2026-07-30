@@ -30,11 +30,15 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-	// Matched to the dark theme; the light value ships with the theme toggle.
-	themeColor: "#0A0A0A",
+	// Follows the OS color-scheme preference. The in-app toggle is a
+	// cookie-driven data-theme override applied after hydration, so browser
+	// chrome and canvas can disagree when the user overrides the OS
+	// preference — a known, accepted limitation of a static viewport export.
+	themeColor: [
+		{ media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+		{ media: "(prefers-color-scheme: light)", color: "#fafafa" },
+	],
 	viewportFit: "cover",
-	maximumScale: 1,
-	userScalable: false,
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

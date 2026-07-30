@@ -10,6 +10,10 @@
  * accent/link/active signal, and the develop / preview / ship gradients are
  * the decorative system (masthead, slip overflow).
  * Semantic names only — components never reference raw colors.
+ * --ink-3/--ink-4 are tuned for WCAG AA (4.5:1) rather than matched to
+ * Geist's originals. In dark theme, ink-3 and ink-4 land intentionally
+ * near-identical: a #0a0a0a canvas leaves no room for four muted grays
+ * that all clear AA, so the bottom two rungs of the ladder converge.
  */
 
 :root {
@@ -20,7 +24,7 @@
 	--ink: #ededed;
 	--ink-2: #a1a1a1;
 	--ink-3: #8f8f8f;
-	--ink-4: #525252;
+	--ink-4: #8a8a8a;
 	--line: #232323;
 	--line-strong: #343434;
 	--accent: #0070f3;
@@ -39,8 +43,8 @@
 	--surface-2: #f2f2f2;
 	--ink: #171717;
 	--ink-2: #4d4d4d;
-	--ink-3: #8f8f8f;
-	--ink-4: #a1a1a1;
+	--ink-3: #5f5f5f;
+	--ink-4: #6b6b6b;
 	--line: #ebebeb;
 	--line-strong: #d9d9d9;
 	--accent: #0070f3;
@@ -98,6 +102,14 @@ body {
 	 * which reintroduces document scroll and pushes BottomTabBar off-screen. */
 }
 
+/* Every interactive surface gets a visible keyboard ring by default. Components
+ * may override with their own focus-visible treatment, but nothing may remove
+ * this without replacing it. */
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
 /* Display type: Geist 600 with the system's tight negative tracking. The
  * larger the heading, the tighter — this base tier covers card/list titles;
  * hero-scale text tightens further via .display-tight. */
@@ -138,4 +150,20 @@ body {
 	background-clip: text;
 	-webkit-background-clip: text;
 	color: transparent;
+}
+/* Stops darkened so the wordmark holds contrast on the near-white light canvas
+ * (the dark-theme stops above are near-invisible against #fafafa). */
+[data-theme="light"] .gradient-text-mesh {
+	background-image: linear-gradient(100deg, #0060c0 0%, #00807a 28%, #7928ca 52%, #c4005f 74%, #7d5600 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
 }
