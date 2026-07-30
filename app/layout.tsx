@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { AppToaster } from "@/components/app-toaster";
+import { SessionKeeper } from "@/components/session-keeper";
 import { SwRegister } from "@/components/sw-register";
 import "./globals.css";
 
@@ -47,6 +48,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 	return (
 		<html lang="en" data-theme={theme} className={`${geist.variable} ${geistMono.variable}`}>
 			<body>
+				{/* Root-level: must run on /sign-in too so a cold-start bounce can
+				 * recover a still-valid refresh cookie (docs/adr/0032). */}
+				<SessionKeeper />
 				{children}
 				<AppToaster />
 				<SwRegister />

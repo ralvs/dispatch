@@ -3,7 +3,6 @@ import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { CapturePalette } from "@/components/capture-palette";
 import { DesktopRail } from "@/components/desktop-rail";
 import { NavShortcuts } from "@/components/nav-shortcuts";
-import { SessionKeeper } from "@/components/session-keeper";
 import { requireOwnerPage } from "@/lib/auth";
 
 export default async function AuthedLayout({ children }: { children: React.ReactNode }) {
@@ -18,7 +17,7 @@ export default async function AuthedLayout({ children }: { children: React.React
 			>
 				Skip to content
 			</a>
-			<SessionKeeper />
+			{/* SessionKeeper lives on the root layout so /sign-in can recover too. */}
 			<DesktopRail email={claims.email ?? ""} theme={theme} />
 			<div className="relative flex flex-1 flex-col overflow-hidden">
 				<main

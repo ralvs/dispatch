@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
@@ -27,11 +27,43 @@ function mapSignInError(message: string): string {
 export default function SignInPage() {
 	const router = useRouter();
 	const [serverError, setServerError] = useState<string | null>(null);
+	// True until we know there is no recoverable browser session. Avoids a
+	// flash of the form when cold-start recovery is about to redirect (ADR-0032).
+	const [checkingSession, setCheckingSession] = useState(true);
 	const {
 		register,
 		handleSubmit,
 		formState: { errors, isSubmitting },
 	} = useForm<SignInValues>({ resolver: zodResolver(SignInSchema) });
+
+	useEffect(() => {
+		let cancelled = false;
+		const supabase = createBrowserSupabase();
+
+		// Cold-start path: proxy bounced us here because the *server* couldn't
+		// prove ownership (expired access + concurrent refresh, or a brief
+		// JWKS miss). The refresh cookie often still sits in document.cookie
+		// and is still valid server-side (not revoked). One serial browser
+		// refresh recovers it — password re-entry is the wrong fix.
+		void (async () => {
+			try {
+				const { data, error } = await supabase.auth.getSession();
+				if (cancelled) return;
+				if (!error && data.session) {
+					router.replace("/today");
+					router.refresh();
+					return;
+				}
+			} catch {
+				// Fall through to the form — recovery is best-effort.
+			}
+			if (!cancelled) setCheckingSession(false);
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [router]);
 
 	async function onSubmit(values: SignInValues) {
 		setServerError(null);
@@ -44,6 +76,17 @@ export default function SignInPage() {
 		// Refresh so server components re-render with the new session.
 		router.push("/today");
 		router.refresh();
+	}
+
+	if (checkingSession) {
+		return (
+			<main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6 pb-24">
+				<p className="font-mono text-eyebrow uppercase text-ink-3">Dispatch</p>
+				<p className="mt-4 font-serif text-ink-3" role="status">
+					Checking session…
+				</p>
+			</main>
+		);
 	}
 
 	return (

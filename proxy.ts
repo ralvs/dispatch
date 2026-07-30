@@ -1,6 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+// Mirror lib/supabase/cookie-options.ts — proxy cannot import that module
+// (edge bundle; keep this file free of server-only / zod). Keep the two in
+// lockstep: path, sameSite, maxAge, secure.
+const AUTH_COOKIE_OPTIONS = {
+	path: "/",
+	sameSite: "lax" as const,
+	httpOnly: false,
+	maxAge: 400 * 24 * 60 * 60,
+	secure: process.env.NODE_ENV === "production",
+};
+
 /**
  * UX + session upkeep only — never the security boundary (docs/adr/0003).
  * Refreshes expired tokens on the way in so the downstream render sees a live
@@ -10,7 +21,7 @@ import { type NextRequest, NextResponse } from "next/server";
  * This is NOT a single writer, and code here must not assume it is: middleware
  * runs once per request, and a page load fans out into many concurrent ones.
  * The browser-side SessionKeeper is what keeps the token fresh ahead of that
- * fan-out so this path rarely has to rotate anything (docs/adr/0025).
+ * fan-out so this path rarely has to rotate anything (docs/adr/0025, 0032).
  */
 export async function proxy(request: NextRequest) {
 	// setAll rebuilds this response so refreshed cookies reach BOTH the
@@ -23,17 +34,25 @@ export async function proxy(request: NextRequest) {
 		// biome-ignore lint/style/noNonNullAssertion: same
 		process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
 		{
+			cookieOptions: AUTH_COOKIE_OPTIONS,
 			cookies: {
 				getAll() {
 					return request.cookies.getAll();
 				},
-				setAll(cookiesToSet) {
+				setAll(cookiesToSet, headers) {
 					for (const { name, value } of cookiesToSet) {
 						request.cookies.set(name, value);
 					}
 					response = NextResponse.next({ request });
 					for (const { name, value, options } of cookiesToSet) {
 						response.cookies.set(name, value, options);
+					}
+					// @supabase/ssr requires these on any response that sets auth
+					// cookies so a CDN never caches one user's Set-Cookie for another.
+					if (headers) {
+						for (const [key, value] of Object.entries(headers)) {
+							response.headers.set(key, value);
+						}
 					}
 				},
 			},
@@ -70,6 +89,8 @@ export const config = {
 	matcher: [
 		// Everything except /sign-in, Next internals, and static assets. /api is
 		// deliberately INCLUDED so token refresh happens here, serially.
+		// /sign-in stays out so the recovery client on that page can refresh
+		// without a proxy redirect loop (docs/adr/0032).
 		// TEMPORARY: /compare is the UI bake-off surface — static mock data, no
 		// user content. Remove this exemption together with app/compare/.
 		"/((?!_next/static|_next/image|favicon.ico|sign-in|compare|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",

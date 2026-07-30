@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import { cache } from "react";
 import { env } from "@/lib/env";
+import { AUTH_COOKIE_OPTIONS } from "@/lib/supabase/cookie-options";
 
 /**
  * What a passed guard hands back: the verified claims of the request's access
@@ -37,6 +38,7 @@ async function createRlsClient(): Promise<SupabaseClient> {
 	}
 
 	return createServerClient(e.NEXT_PUBLIC_SUPABASE_URL, e.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
+		cookieOptions: AUTH_COOKIE_OPTIONS,
 		cookies: {
 			getAll() {
 				return cookieStore.getAll();
