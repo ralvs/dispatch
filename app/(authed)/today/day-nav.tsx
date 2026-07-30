@@ -59,9 +59,11 @@ export function DayNav({ dateIso, todayIso }: { dateIso: string; todayIso: strin
 				</Link>
 			</span>
 			{!isToday && (
+				// Same 28px box as the step buttons beside it, and no extra margin —
+				// the nav's own gap is the only spacing in this row.
 				<Link
 					href="/today"
-					className="ml-1 rounded border border-line px-2 py-1 font-mono text-meta uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="inline-flex h-7 items-center rounded border border-line px-2 font-mono text-meta uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					Today
 				</Link>

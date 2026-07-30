@@ -28,9 +28,11 @@ export function NotificationRow({ notification, tz }: { notification: Row; tz: s
 			{notification.body && <p className="mt-1 text-meta text-ink-3">{notification.body}</p>}
 			<div className="mt-2 flex items-baseline gap-3">
 				{notification.source_url && (
+					// Borderless on purpose — it is a link out, not a row action — but it
+					// keeps the buttons' box so every control on this row shares a height.
 					<a
 						href={notification.source_url}
-						className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
+						className="rounded-md border border-transparent px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink active:opacity-70"
 					>
 						Open →
 					</a>

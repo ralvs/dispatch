@@ -17,7 +17,7 @@ function BriefingFallback({ todayIso }: { todayIso: string }) {
 			<header className="hairline-strong pb-5">
 				<div className="flex items-baseline justify-between">
 					<h1 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-						Today — {formatDateline(todayIso)}
+						{formatDateline(todayIso)}
 					</h1>
 				</div>
 				<p className="display-tight gradient-text-mesh mt-1 w-fit font-serif text-4xl">Dispatch</p>

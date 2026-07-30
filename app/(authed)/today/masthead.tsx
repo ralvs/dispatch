@@ -50,10 +50,10 @@ export function Masthead({
 	return (
 		<header className="hairline-strong pb-5">
 			<div className="flex items-baseline justify-between">
-				{/* This is the page's only h1 — it has to name the page, not just carry
-				 * the date. The wordmark below stays a brand moment, not a heading. */}
+				{/* This is the page's only h1 — the dateline names the day this page
+				 * is. The wordmark below stays a brand moment, not a heading. */}
 				<h1 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-					Today — {formatDateline(todayIso)}
+					{formatDateline(todayIso)}
 				</h1>
 				<div className="flex items-center gap-4">
 					{unreadNotifications > 0 && (
