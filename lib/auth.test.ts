@@ -1,6 +1,7 @@
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { JwtPayload } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { OwnerAuth } from "@/lib/auth";
 
 // lib/env.ts caches its parsed result in a module-level variable, and
 // lib/auth.ts reads OWNER_USER_ID through it — reset modules and re-import
@@ -13,8 +14,8 @@ async function importIsOwner() {
 const OWNER_ID = "84585218-bf6f-4077-b124-2c14db7f0b07";
 const OTHER_ID = "4e167810-cae1-489d-9616-23ece10e1fea";
 
-function fakeUser(id: string): User {
-	return { id } as User;
+function fakeClaims(sub: string): JwtPayload {
+	return { sub, email: "renan@alves.id" } as JwtPayload;
 }
 
 describe("isOwner", () => {
@@ -26,28 +27,34 @@ describe("isOwner", () => {
 		vi.unstubAllEnvs();
 	});
 
-	it("fails closed when OWNER_USER_ID is unset, even for a user that would otherwise match", async () => {
+	it("fails closed when OWNER_USER_ID is unset, even for a claim that would otherwise match", async () => {
 		vi.stubEnv("OWNER_USER_ID", "");
 		const isOwner = await importIsOwner();
-		expect(isOwner(fakeUser(OWNER_ID))).toBe(false);
+		expect(isOwner(fakeClaims(OWNER_ID))).toBe(false);
 	});
 
-	it("is false when there is no user", async () => {
+	it("is false when there are no claims", async () => {
 		vi.stubEnv("OWNER_USER_ID", OWNER_ID);
 		const isOwner = await importIsOwner();
 		expect(isOwner(null)).toBe(false);
 	});
 
-	it("is true when the user id matches OWNER_USER_ID", async () => {
+	it("is false when claims are present but sub is absent", async () => {
 		vi.stubEnv("OWNER_USER_ID", OWNER_ID);
 		const isOwner = await importIsOwner();
-		expect(isOwner(fakeUser(OWNER_ID))).toBe(true);
+		expect(isOwner({} as JwtPayload)).toBe(false);
 	});
 
-	it("is false when the user id does not match OWNER_USER_ID", async () => {
+	it("is true when claims.sub matches OWNER_USER_ID", async () => {
 		vi.stubEnv("OWNER_USER_ID", OWNER_ID);
 		const isOwner = await importIsOwner();
-		expect(isOwner(fakeUser(OTHER_ID))).toBe(false);
+		expect(isOwner(fakeClaims(OWNER_ID))).toBe(true);
+	});
+
+	it("is false when claims.sub does not match OWNER_USER_ID", async () => {
+		vi.stubEnv("OWNER_USER_ID", OWNER_ID);
+		const isOwner = await importIsOwner();
+		expect(isOwner(fakeClaims(OTHER_ID))).toBe(false);
 	});
 });
 
@@ -59,9 +66,9 @@ vi.mock("next/headers", () => ({
 	cookies: vi.fn(async () => ({ getAll: () => [] })),
 }));
 
-const getUser = vi.fn();
+const getClaims = vi.fn();
 vi.mock("@supabase/ssr", () => ({
-	createServerClient: vi.fn(() => ({ auth: { getUser } })),
+	createServerClient: vi.fn(() => ({ auth: { getClaims } })),
 }));
 
 async function importOwnerRoute() {
@@ -78,12 +85,12 @@ describe("ownerRoute", () => {
 
 	afterEach(() => {
 		vi.unstubAllEnvs();
-		getUser.mockReset();
+		getClaims.mockReset();
 	});
 
-	it("invokes the handler with the authorized user and client", async () => {
+	it("invokes the handler with the authorized claims and client", async () => {
 		vi.stubEnv("OWNER_USER_ID", OWNER_ID);
-		getUser.mockResolvedValue({ data: { user: fakeUser(OWNER_ID) } });
+		getClaims.mockResolvedValue({ data: { claims: fakeClaims(OWNER_ID) }, error: null });
 		const ownerRoute = await importOwnerRoute();
 
 		const handler = vi.fn().mockResolvedValue(new NextResponse(null, { status: 200 }));
@@ -93,24 +100,72 @@ describe("ownerRoute", () => {
 		const response = await route(request);
 
 		expect(handler).toHaveBeenCalledTimes(1);
-		const [calledRequest, auth] = handler.mock.calls[0] as [
-			Request,
-			{ user: User; sb: SupabaseClient },
-		];
+		const [calledRequest, auth] = handler.mock.calls[0] as [Request, OwnerAuth];
 		expect(calledRequest).toBe(request);
-		expect(auth.user.id).toBe(OWNER_ID);
+		expect(auth.claims.sub).toBe(OWNER_ID);
 		expect(response.status).toBe(200);
 	});
 
-	it("returns the auth failure response without calling the handler", async () => {
+	it("returns 401 without calling the handler when sub is not the owner", async () => {
 		vi.stubEnv("OWNER_USER_ID", OWNER_ID);
-		getUser.mockResolvedValue({ data: { user: fakeUser(OTHER_ID) } });
+		getClaims.mockResolvedValue({ data: { claims: fakeClaims(OTHER_ID) }, error: null });
 		const ownerRoute = await importOwnerRoute();
 
 		const handler = vi.fn();
 		const route = ownerRoute(handler);
 
 		const response = await route(new Request("https://example.com"));
+
+		expect(handler).not.toHaveBeenCalled();
+		expect(response.status).toBe(401);
+	});
+
+	it("returns 401 when getClaims has no session", async () => {
+		vi.stubEnv("OWNER_USER_ID", OWNER_ID);
+		getClaims.mockResolvedValue({ data: null, error: null });
+		const ownerRoute = await importOwnerRoute();
+
+		const handler = vi.fn();
+		const response = await ownerRoute(handler)(new Request("https://example.com"));
+
+		expect(handler).not.toHaveBeenCalled();
+		expect(response.status).toBe(401);
+	});
+
+	it("returns 401 when getClaims reports a verification error", async () => {
+		vi.stubEnv("OWNER_USER_ID", OWNER_ID);
+		getClaims.mockResolvedValue({
+			data: null,
+			error: { name: "AuthError", message: "JWKS unreachable" },
+		});
+		const ownerRoute = await importOwnerRoute();
+
+		const handler = vi.fn();
+		const response = await ownerRoute(handler)(new Request("https://example.com"));
+
+		expect(handler).not.toHaveBeenCalled();
+		expect(response.status).toBe(401);
+	});
+
+	it("returns 401 when claims are present but sub is absent", async () => {
+		vi.stubEnv("OWNER_USER_ID", OWNER_ID);
+		getClaims.mockResolvedValue({ data: { claims: {} }, error: null });
+		const ownerRoute = await importOwnerRoute();
+
+		const handler = vi.fn();
+		const response = await ownerRoute(handler)(new Request("https://example.com"));
+
+		expect(handler).not.toHaveBeenCalled();
+		expect(response.status).toBe(401);
+	});
+
+	it("returns 401 when OWNER_USER_ID is unset even with a valid owner claim", async () => {
+		vi.stubEnv("OWNER_USER_ID", "");
+		getClaims.mockResolvedValue({ data: { claims: fakeClaims(OWNER_ID) }, error: null });
+		const ownerRoute = await importOwnerRoute();
+
+		const handler = vi.fn();
+		const response = await ownerRoute(handler)(new Request("https://example.com"));
 
 		expect(handler).not.toHaveBeenCalled();
 		expect(response.status).toBe(401);

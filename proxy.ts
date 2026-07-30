@@ -40,17 +40,18 @@ export async function proxy(request: NextRequest) {
 		},
 	);
 
-	// Nothing may run between client creation and getUser(): this call
-	// refreshes the token and triggers setAll above.
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
+	// Nothing may run between client creation and getClaims(): called with no
+	// jwt argument it loads the stored session first, so a token inside its
+	// expiry margin still refreshes here and triggers setAll above — the same
+	// rotation getUser() did. Handing it a token explicitly would skip that
+	// (docs/adr/0031).
+	const { data } = await supabase.auth.getClaims();
 
 	const { pathname } = request.nextUrl;
 	const isApi = pathname.startsWith("/api");
 	// Fail closed if the env var is unset.
 	const ownerId = process.env.OWNER_USER_ID;
-	const isOwner = !!ownerId && user?.id === ownerId;
+	const isOwner = !!ownerId && data?.claims.sub === ownerId;
 
 	// Redirect only page navigations; API requests fall through so callers get
 	// JSON 401 from requireOwner() (or secret-auth) instead of an HTML redirect.

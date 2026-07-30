@@ -7,7 +7,7 @@ import { SessionKeeper } from "@/components/session-keeper";
 import { requireOwnerPage } from "@/lib/auth";
 
 export default async function AuthedLayout({ children }: { children: React.ReactNode }) {
-	const { user } = await requireOwnerPage();
+	const { claims } = await requireOwnerPage();
 	const theme = (await cookies()).get("theme")?.value === "light" ? "light" : "dark";
 
 	return (
@@ -19,7 +19,7 @@ export default async function AuthedLayout({ children }: { children: React.React
 				Skip to content
 			</a>
 			<SessionKeeper />
-			<DesktopRail email={user.email ?? ""} theme={theme} />
+			<DesktopRail email={claims.email ?? ""} theme={theme} />
 			<div className="relative flex flex-1 flex-col overflow-hidden">
 				<main
 					id="main"

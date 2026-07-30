@@ -9,7 +9,7 @@ import { requireOwnerPage } from "@/lib/auth";
 // everything else lands here in rail order, plus the rail footer that a phone
 // otherwise never sees.
 export default async function MorePage() {
-	const { user } = await requireOwnerPage();
+	const { claims } = await requireOwnerPage();
 	const theme = (await cookies()).get("theme")?.value === "light" ? "light" : "dark";
 
 	return (
@@ -44,8 +44,8 @@ export default async function MorePage() {
 
 			<section className="mt-8 space-y-3" aria-label="Account">
 				<ThemeToggle current={theme} />
-				<p className="truncate text-meta text-ink-4" title={user.email ?? ""}>
-					{user.email}
+				<p className="truncate text-meta text-ink-4" title={claims.email ?? ""}>
+					{claims.email}
 				</p>
 				<SignOutButton />
 			</section>
