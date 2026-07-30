@@ -51,6 +51,23 @@ export function DayNav({
 			aria-label="Day navigation"
 			aria-busy={pending || undefined}
 		>
+			{/* An invisible same-size placeholder holds this slot on today so the
+			 * arrows/label never shift when the day changes — the real button
+			 * only mounts once there's somewhere for it to go. */}
+			{isToday ? (
+				<span aria-hidden="true" className="inline-flex h-7 items-center px-2 text-meta invisible">
+					Today
+				</span>
+			) : (
+				<button
+					type="button"
+					disabled={pending}
+					onClick={() => onSelect(todayIso)}
+					className="inline-flex h-7 items-center rounded border border-line px-2 font-mono text-meta uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70 disabled:opacity-40"
+				>
+					Today
+				</button>
+			)}
 			<span className={STEP_HIT_AREA}>
 				<button
 					type="button"
@@ -81,18 +98,6 @@ export function DayNav({
 					<IconChevron direction="right" />
 				</button>
 			</span>
-			{!isToday && (
-				// Same 28px box as the step buttons beside it, and no extra margin —
-				// the nav's own gap is the only spacing in this row.
-				<button
-					type="button"
-					disabled={pending}
-					onClick={() => onSelect(todayIso)}
-					className="inline-flex h-7 items-center rounded border border-line px-2 font-mono text-meta uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70 disabled:opacity-40"
-				>
-					Today
-				</button>
-			)}
 		</nav>
 	);
 }

@@ -68,11 +68,20 @@ export function DayScheduleSection({
 	const [pending, startTransition] = useTransition();
 	// Ignore stale action results when the user clicks faster than the network.
 	const requestGen = useRef(0);
+	// Days visited this session, keyed by dateIso — flipping back to a day
+	// already seen (today → tomorrow → today) redraws instantly instead of
+	// re-running the Server Action. SoftRefresh's revalidatePath still
+	// refreshes the entry currently on screen (the effect above), so this
+	// only shortcuts navigation, never shows stale data on the active day.
+	const cache = useRef(new Map<string, DaySchedulePayload>());
 
 	// SoftRefresh / revalidatePath re-renders this tree from the server with a
-	// fresh schedule for the URL day — adopt it without a client fetch.
+	// fresh schedule for the URL day — adopt it without a client fetch, and
+	// refresh this day's cache entry so a later revisit isn't stale.
 	useEffect(() => {
-		setView(fromProps({ schedule, dateIso, nowUtcIso, nowLabel, eventNoteIds, taskNoteIds }));
+		const next = fromProps({ schedule, dateIso, nowUtcIso, nowLabel, eventNoteIds, taskNoteIds });
+		cache.current.set(dateIso, next);
+		setView(next);
 	}, [schedule, dateIso, nowUtcIso, nowLabel, eventNoteIds, taskNoteIds]);
 
 	const selectDay = useCallback(
@@ -82,9 +91,15 @@ export function DayScheduleSection({
 			if (opts?.syncUrl !== false) {
 				window.history.replaceState(window.history.state, "", hrefFor(nextIso, todayIso));
 			}
+			const cached = cache.current.get(nextIso);
+			if (cached) {
+				setView(fromProps(cached));
+				return;
+			}
 			startTransition(async () => {
 				const payload: DaySchedulePayload = await loadDayScheduleAction(nextIso);
 				if (gen !== requestGen.current) return;
+				cache.current.set(nextIso, payload);
 				setView({
 					schedule: payload.schedule,
 					dateIso: payload.dateIso,
