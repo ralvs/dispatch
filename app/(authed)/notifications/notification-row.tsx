@@ -1,17 +1,23 @@
 "use client";
 
-import { useTransition } from "react";
-import { markNotificationAction } from "@/app/(authed)/notifications/actions";
-import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import type { NotificationRow as Row } from "@/lib/services/notifications";
 
-export function NotificationRow({ notification, tz }: { notification: Row; tz: string }) {
-	const [pending, startTransition] = useTransition();
+export function NotificationRow({
+	notification,
+	tz,
+	onMarkRead,
+	onDismiss,
+}: {
+	notification: Row;
+	tz: string;
+	onMarkRead: () => void;
+	onDismiss: () => void;
+}) {
 	const unread = notification.status === "unread";
 
 	return (
-		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>
+		<li className="hairline py-3">
 			<div className="flex items-baseline justify-between gap-4">
 				<p className="flex items-baseline gap-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3">
 					{unread && (
@@ -40,15 +46,7 @@ export function NotificationRow({ notification, tz }: { notification: Row; tz: s
 				{unread && (
 					<button
 						type="button"
-						disabled={pending}
-						onClick={() =>
-							startTransition(async () => {
-								await runAction(
-									() => markNotificationAction(notification.id, "read"),
-									"Couldn't update notification.",
-								);
-							})
-						}
+						onClick={onMarkRead}
 						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 					>
 						Mark read
@@ -56,15 +54,7 @@ export function NotificationRow({ notification, tz }: { notification: Row; tz: s
 				)}
 				<button
 					type="button"
-					disabled={pending}
-					onClick={() =>
-						startTransition(async () => {
-							await runAction(
-								() => markNotificationAction(notification.id, "dismissed"),
-								"Couldn't update notification.",
-							);
-						})
-					}
+					onClick={onDismiss}
 					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					Dismiss

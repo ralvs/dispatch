@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
  * Single seam for "what the UI should re-read after a write."
  * Action modules call afterMutation(kind) instead of listing paths.
  *
- * Path subsets today; cache tags land with the soft briefing split
- * (day-schedule vs chrome) without changing callers.
+ * Prefer the narrowest path set that keeps visible surfaces honest.
+ * Full cache tags (`day-schedule` / `today-chrome`) wait on Cache Components
+ * (`"use cache"`); until then path revalidation is the real invalidator, and
+ * client `staleTimes` + optimistic UI cover perceived lag.
  */
 export type MutationKind =
 	| "task.write"
@@ -29,7 +31,7 @@ export type MutationKind =
 function taskViews() {
 	revalidatePath("/tasks");
 	revalidatePath("/inbox");
-	// Day schedule + briefing chrome until tagged soft-split fully caches chrome.
+	// Schedule bands + inbox/overdue counts on Today.
 	revalidatePath("/today");
 }
 
@@ -46,15 +48,19 @@ export function afterMutation(kind: MutationKind, detail?: { id?: string }): voi
 			return;
 		case "links.write":
 			revalidatePath("/links");
+			// Alerts row unread-links count.
 			revalidatePath("/today");
 			return;
 		case "notification.write":
 			revalidatePath("/notifications");
+			// Masthead unread badge on Today.
 			revalidatePath("/today");
 			return;
 		case "settings.domain":
 			revalidatePath("/settings");
+			// Domain cadence ("In brief") + task domain chips.
 			revalidatePath("/today");
+			revalidatePath("/tasks");
 			return;
 		case "settings.timezone":
 			// Timezone genuinely reshapes every page (day boundaries, dates,
@@ -76,25 +82,35 @@ export function afterMutation(kind: MutationKind, detail?: { id?: string }): voi
 			revalidatePath("/today");
 			return;
 		case "notes.write":
+			// Pin/autosave stay on /notes. Capture/review paths that change the
+			// alerts-row needs-review count go through capture.settled or
+			// today.only when they matter.
 			revalidatePath("/notes");
 			if (detail?.id) revalidatePath(`/notes/${detail.id}`);
 			return;
 		case "quotes.write":
 			revalidatePath("/quotes");
+			// Resurfaced / latest quote cards on Today.
+			revalidatePath("/today");
 			return;
 		case "journal.write":
+			// Journal is not surfaced on Today.
 			revalidatePath("/journal");
 			return;
 		case "people.write":
+			// People are not part of the Today briefing chrome.
 			revalidatePath("/people");
 			if (detail?.id) revalidatePath(`/people/${detail.id}`);
 			return;
 		case "projects.write":
 			revalidatePath("/projects");
+			// Active projects card on Today.
+			revalidatePath("/today");
 			return;
 		case "projects.detail":
 			revalidatePath("/projects");
 			if (detail?.id) revalidatePath(`/projects/${detail.id}`);
+			revalidatePath("/today");
 			return;
 	}
 }
