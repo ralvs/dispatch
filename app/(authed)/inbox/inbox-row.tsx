@@ -1,39 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useTransition } from "react";
-import { assignDomainAction, deleteTaskAction } from "@/app/(authed)/tasks/actions";
-import { ColorDot } from "@/components/color-dot";
-import { runAction } from "@/lib/client/toast";
+import type { ReactNode } from "react";
 import type { TaskRow } from "@/lib/services/tasks";
-
-type DomainOption = { id: string; name: string; color: string | null };
 
 export function InboxRow({
 	task,
-	domains,
 	noteId,
+	domainButtons,
+	onDelete,
 }: {
 	task: TaskRow;
-	domains: DomainOption[];
 	/** Linked note id, if any — renders the same quiet chip the Tasks list uses. */
 	noteId?: string;
+	domainButtons: ReactNode;
+	onDelete: () => void;
 }) {
-	const [pending, startTransition] = useTransition();
-	// Every domain is a valid destination now — the inbox is the absence of one,
-	// so there is nothing to filter out. Filing stays one-way because no write
-	// path sets domain_id back to null (docs/adr/0027).
-
-	function remove() {
-		// Matches the confirm treatment task-row.tsx uses for the same action.
-		if (!window.confirm(`Delete "${task.title}"?`)) return;
-		startTransition(async () => {
-			await runAction(() => deleteTaskAction(task.id), "Couldn't delete task.");
-		});
-	}
-
 	return (
-		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>
+		<li className="hairline py-3">
 			<p className="flex min-w-0 items-center gap-1.5 font-serif text-base text-ink">
 				<span className="min-w-0 truncate">{task.title}</span>
 				{noteId && (
@@ -50,29 +34,10 @@ export function InboxRow({
 				)}
 			</p>
 			<div className="mt-2 flex flex-wrap items-center gap-1.5">
-				{domains.map((d) => (
-					<button
-						key={d.id}
-						type="button"
-						disabled={pending}
-						// Without this the accessible name is the bare domain name, which
-						// reads as an unattached list of words to a screen reader.
-						aria-label={`Move ${task.title} to ${d.name}`}
-						onClick={() =>
-							startTransition(async () => {
-								await runAction(() => assignDomainAction(task.id, d.id), "Couldn't file task.");
-							})
-						}
-						className="inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
-					>
-						<ColorDot color={d.color} />
-						{d.name}
-					</button>
-				))}
+				{domainButtons}
 				<button
 					type="button"
-					disabled={pending}
-					onClick={remove}
+					onClick={onDelete}
 					aria-label={`Delete task "${task.title}"`}
 					className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error active:opacity-70"
 				>
