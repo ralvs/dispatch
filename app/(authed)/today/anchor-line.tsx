@@ -30,7 +30,7 @@ export function AnchorLine({ anchor, tz }: { anchor: AnchorData; tz: string }) {
 						{anchor.overdueCount > 0 && (
 							<>
 								{" · "}
-								<span className="text-accent">{anchor.overdueCount} overdue</span>
+								<span className="text-accent-slip">{anchor.overdueCount} overdue</span>
 							</>
 						)}
 					</Link>

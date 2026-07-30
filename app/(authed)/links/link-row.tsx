@@ -55,7 +55,7 @@ export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
 					type="button"
 					disabled={pending}
 					onClick={() => mark(unread ? "read" : "unread")}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					{unread ? "Mark read" : "Mark unread"}
 				</button>
@@ -64,7 +64,7 @@ export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
 						type="button"
 						disabled={pending}
 						onClick={() => mark("dismissed")}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 					>
 						Dismiss
 					</button>

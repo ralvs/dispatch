@@ -2,16 +2,7 @@
 
 import { CollapsibleForm, useCollapsibleForm } from "@/components/collapsible-form";
 import { createPersonAction } from "./actions";
-
-const RELATIONSHIP_TYPES = [
-	{ value: "", label: "Unspecified" },
-	{ value: "client", label: "Client" },
-	{ value: "family", label: "Family" },
-	{ value: "friend", label: "Friend" },
-	{ value: "team", label: "Team" },
-	{ value: "vendor", label: "Vendor" },
-	{ value: "other", label: "Other" },
-];
+import { RELATIONSHIP_TYPES } from "./constants";
 
 export function PersonForm() {
 	const form = useCollapsibleForm(createPersonAction);
@@ -28,7 +19,7 @@ export function PersonForm() {
 				required
 				placeholder="Name"
 				aria-label="Person name"
-				className="w-full border-b border-line bg-transparent pb-2 font-serif text-lg text-ink outline-none placeholder:text-ink-4"
+				className="w-full border-b border-line bg-transparent pb-2 font-serif text-lg text-ink placeholder:text-ink-4"
 			/>
 			<div className="grid grid-cols-2 gap-3">
 				<label className="block">

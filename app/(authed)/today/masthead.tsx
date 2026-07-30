@@ -50,9 +50,11 @@ export function Masthead({
 	return (
 		<header className="hairline-strong pb-5">
 			<div className="flex items-baseline justify-between">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-					{formatDateline(todayIso)}
-				</p>
+				{/* This is the page's only h1 — it has to name the page, not just carry
+				 * the date. The wordmark below stays a brand moment, not a heading. */}
+				<h1 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+					Today — {formatDateline(todayIso)}
+				</h1>
 				<div className="flex items-center gap-4">
 					{unreadNotifications > 0 && (
 						<Link
@@ -77,7 +79,7 @@ export function Masthead({
 					</Link>
 				</div>
 			</div>
-			<h1 className="display-tight gradient-text-mesh mt-1 w-fit font-serif text-4xl">Dispatch</h1>
+			<p className="display-tight gradient-text-mesh mt-1 w-fit font-serif text-4xl">Dispatch</p>
 		</header>
 	);
 }

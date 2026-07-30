@@ -47,7 +47,7 @@ export function NotificationRow({ notification, tz }: { notification: Row; tz: s
 								);
 							})
 						}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 					>
 						Mark read
 					</button>
@@ -63,7 +63,7 @@ export function NotificationRow({ notification, tz }: { notification: Row; tz: s
 							);
 						})
 					}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					Dismiss
 				</button>

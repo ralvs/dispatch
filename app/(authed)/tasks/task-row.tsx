@@ -160,7 +160,7 @@ export function TaskRowItem({
 						<button
 							type="submit"
 							disabled={pending}
-							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg active:opacity-70 disabled:opacity-50"
 						>
 							{pending ? "Saving…" : "Save"}
 						</button>
@@ -168,7 +168,7 @@ export function TaskRowItem({
 							type="button"
 							disabled={pending}
 							onClick={() => setEditing(false)}
-							className="rounded-md border border-line px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+							className="rounded-md border border-line px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 						>
 							Cancel
 						</button>
@@ -178,7 +178,7 @@ export function TaskRowItem({
 								disabled={pending}
 								onClick={remove}
 								aria-label={`Delete task "${task.title}"`}
-								className="ml-auto rounded-md border border-line px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+								className="ml-auto rounded-md border border-line px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error active:opacity-70"
 							>
 								Delete
 							</button>
@@ -189,7 +189,7 @@ export function TaskRowItem({
 		);
 	}
 
-	const titleClass = `text-left text-sm ${
+	const titleClass = `relative block max-w-full text-left font-serif text-base after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] active:opacity-70 ${
 		done ? "text-ink-4 line-through" : "text-ink"
 	} ${canEdit || !manageable ? "hover:text-accent-ink" : ""}`;
 
@@ -200,36 +200,48 @@ export function TaskRowItem({
 					{timeLabel}
 				</span>
 			)}
-			<input
-				type="checkbox"
-				checked={done}
-				aria-label={done ? `Reopen "${task.title}"` : `Complete "${task.title}"`}
-				onChange={handlers.onToggleDone}
-				className={`h-4 w-4 shrink-0 appearance-none self-center border ${
-					done ? "border-ink-4 bg-ink-4" : "border-line-strong hover:border-ink-3"
-				}`}
-			/>
+			{/* Native checkbox can't take generated content, so the tappable area
+			    comes from a label wrapper (padding pulled back in with a matching
+			    negative margin so it doesn't disturb the row's flex gap). */}
+			<label className="relative -m-3.5 flex shrink-0 cursor-pointer self-center p-3.5 active:opacity-70">
+				<input
+					type="checkbox"
+					checked={done}
+					aria-label={done ? `Reopen "${task.title}"` : `Complete "${task.title}"`}
+					onChange={handlers.onToggleDone}
+					className={`h-4 w-4 appearance-none border ${
+						done ? "border-ink-4 bg-ink-4" : "border-line-strong hover:border-ink-3"
+					}`}
+				/>
+			</label>
 			<div className="min-w-0 flex-1">
 				<p className="flex min-w-0 items-baseline gap-1.5">
-					{canEdit ? (
-						<button
-							type="button"
-							onClick={() => setEditing(true)}
-							className={`${titleClass} min-w-0 truncate`}
-							aria-label={`Edit task "${task.title}"`}
-						>
-							{task.title}
-						</button>
-					) : (
-						// Today (and other read-mostly surfaces): jump to Tasks with this row open.
-						<Link
-							href={`/tasks?edit=${task.id}`}
-							className={`${titleClass} min-w-0 truncate`}
-							aria-label={`Open task "${task.title}" for editing`}
-						>
-							{task.title}
-						</Link>
-					)}
+					{/* The hit-target expansion lives on the control itself (button/link),
+					    not this wrapper — a pseudo-element only extends the hit area of
+					    its own element, so putting it here would just swallow the click.
+					    Truncation moves to the inner span so the control isn't an
+					    overflow-hidden clipping container that would clip the after:. */}
+					<span className="min-w-0">
+						{canEdit ? (
+							<button
+								type="button"
+								onClick={() => setEditing(true)}
+								className={titleClass}
+								aria-label={`Edit task "${task.title}"`}
+							>
+								<span className="block truncate">{task.title}</span>
+							</button>
+						) : (
+							// Today (and other read-mostly surfaces): jump to Tasks with this row open.
+							<Link
+								href={`/tasks?edit=${task.id}`}
+								className={titleClass}
+								aria-label={`Open task "${task.title}" for editing`}
+							>
+								<span className="block truncate">{task.title}</span>
+							</Link>
+						)}
+					</span>
 				</p>
 				<p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-meta text-ink-4">
 					<PriorityBadge priority={task.priority} className={done ? "opacity-50" : undefined} />
@@ -242,6 +254,9 @@ export function TaskRowItem({
 						{!scheduled && task.due_date && (
 							<span className={overdue ? "text-accent-slip" : ""}>
 								{" · "}
+								{/* Overdue is never color-only — a text label carries the
+								    signal the same way PriorityBadge pairs color with P1–P4. */}
+								{overdue && "Overdue "}
 								{formatDueLabel(task.due_date, todayIso)}
 								{task.due_time ? ` ${task.due_time.slice(0, 5)}` : ""}
 							</span>
@@ -261,7 +276,10 @@ export function TaskRowItem({
 							href={`/notes/${noteId}`}
 							aria-label="View linked note"
 							onClick={(e) => e.stopPropagation()}
-							className="inline-flex shrink-0 items-center gap-1 rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 hover:border-line-strong hover:text-ink"
+							// Vertical reach kept smaller than the ideal 44px: this chip sits
+							// in a flex-wrap meta row with no row-gap, so a full expansion
+							// would overlap whatever wraps onto the line below it.
+							className="relative inline-flex shrink-0 items-center gap-1 rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 after:absolute after:-inset-y-3 after:-inset-x-1 after:content-[''] hover:border-line-strong hover:text-ink active:opacity-70"
 						>
 							<span aria-hidden="true">¶</span> Note
 						</Link>
@@ -278,7 +296,7 @@ export function TaskRowItem({
 					aria-pressed={starred}
 					disabled={done}
 					onClick={handlers.onToggleTop3}
-					className={`text-base leading-none ${
+					className={`relative text-base leading-none after:absolute after:-inset-3.5 after:content-[''] active:opacity-70 ${
 						starred ? "text-accent" : "text-ink-4 hover:text-ink-2"
 					} ${done ? "invisible" : ""}`}
 				>

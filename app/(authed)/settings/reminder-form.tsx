@@ -58,7 +58,7 @@ export function ReminderForm({
 			<button
 				type="submit"
 				disabled={pending}
-				className="rounded-md border border-line px-2 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink disabled:opacity-50"
+				className="rounded-md border border-line px-2 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink disabled:opacity-50 active:opacity-70"
 			>
 				{pending ? "Saving…" : "Save"}
 			</button>

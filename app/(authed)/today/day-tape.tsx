@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { DayScheduleItem } from "@/lib/services/briefing";
 import { isTop3Today } from "@/lib/task-predicates";
 
@@ -78,11 +79,71 @@ function tapePct(minutes: number, startMin: number, endMin: number): number {
 	return ((clamped - startMin) / span) * 100;
 }
 
+/** A notional tape width used only to turn `left%` into a comparable px
+ * space for collision math below — never for actual layout. Picking a fixed
+ * number (rather than reading the real DOM width) keeps lane assignment a
+ * pure function of the day's data, so server and client always agree. */
+const ASSUMED_TAPE_WIDTH_PX = 600;
+/** Rough per-character width for the tape's 9px mono labels. An estimate
+ * from character count avoids a DOM measurement pass, which would have to
+ * run after mount and could disagree with the server-rendered layout. */
+const CHAR_WIDTH_PX = 5.4;
+/** Matches `.dt-flag-label { padding: 0 3px }`. */
+const LABEL_H_PADDING_PX = 6;
+/** Space between two labels' boxes before they count as colliding. */
+const LANE_GUTTER_PX = 5;
+/** Vertical distance between stacked lanes. */
+const LANE_HEIGHT_PX = 22;
+/** Matches `.dt-flag-title { max-width: 150px }` at the ≥48rem breakpoint —
+ * the widest a title line ever gets, so lane assignment (which can't see the
+ * viewport) stays safe at the size where titles actually render. */
+const MAX_TITLE_WIDTH_PX = 150;
+
+/** Estimated half-width (px, in the assumed tape space) of a flag's label —
+ * the wider of its title line and its time line, since the two stack. */
+function estimateHalfWidthPx(title: string, timeGlyphChars: number): number {
+	const titleWidth = Math.min(title.length * CHAR_WIDTH_PX, MAX_TITLE_WIDTH_PX);
+	const timeWidth = timeGlyphChars * CHAR_WIDTH_PX;
+	return Math.max(titleWidth, timeWidth) / 2 + LABEL_H_PADDING_PX;
+}
+
+/**
+ * Greedy interval coloring: sorted left-to-right, each label drops into the
+ * first lane whose last-placed label doesn't overlap it, or opens a new lane.
+ * Deterministic in input order, so it renders identically on server and
+ * client. Returns a lane index per input (same order as `items`) plus the
+ * deepest lane used.
+ */
+function assignLanes(items: { leftPx: number; halfWidthPx: number }[]): {
+	lanes: number[];
+	maxLane: number;
+} {
+	const order = items.map((item, i) => ({ ...item, i })).sort((a, b) => a.leftPx - b.leftPx);
+	const laneRightEdge: number[] = [];
+	const lanes = new Array(items.length).fill(0);
+	for (const item of order) {
+		const left = item.leftPx - item.halfWidthPx - LANE_GUTTER_PX;
+		const right = item.leftPx + item.halfWidthPx + LANE_GUTTER_PX;
+		let lane = laneRightEdge.findIndex((edge) => edge <= left);
+		if (lane === -1) {
+			lane = laneRightEdge.length;
+			laneRightEdge.push(right);
+		} else {
+			laneRightEdge[lane] = right;
+		}
+		lanes[item.i] = lane;
+	}
+	return { lanes, maxLane: Math.max(0, laneRightEdge.length - 1) };
+}
+
 const TAPE_CSS = `
 .dt-tape {
 	position: relative;
-	padding-top: 64px;
-	padding-bottom: 52px;
+	/* --dt-lanes-up/down (set inline, per render) is the deepest collision
+	 * lane on each side beyond the first — 0 when nothing collides, so this
+	 * reduces to the original fixed padding in the common case. */
+	padding-top: calc(64px + var(--dt-lanes-up, 0) * 22px);
+	padding-bottom: calc(52px + var(--dt-lanes-down, 0) * 22px);
 }
 
 .dt-axis {
@@ -108,6 +169,7 @@ const TAPE_CSS = `
 	letter-spacing: 0.04em;
 	color: var(--ink-3);
 	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
 }
 
 .dt-now {
@@ -192,6 +254,7 @@ const TAPE_CSS = `
 	line-height: 1.4;
 	color: var(--ink-3);
 	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
 }
 
 .dt-flag-label.tier-up {
@@ -214,9 +277,9 @@ const TAPE_CSS = `
 
 @media (min-width: 48rem) {
 	.dt-tape {
-		padding-top: 72px;
+		padding-top: calc(72px + var(--dt-lanes-up, 0) * 22px);
 		/* Two-line flags (title over time) hang lower than the old single line. */
-		padding-bottom: 72px;
+		padding-bottom: calc(72px + var(--dt-lanes-down, 0) * 22px);
 	}
 
 	.dt-flag-title {
@@ -284,14 +347,55 @@ export function DayTape({
 	);
 	const pct = (m: number) => tapePct(m, startMin, endMin);
 
+	// Lanes are assigned per tier: tier-up and tier-down labels sit on
+	// opposite sides of the axis and never compete with each other, only with
+	// their own side. Each tier's deepest lane grows that side's padding.
+	const upItems = flags
+		.map((f, i) => ({ f, i }))
+		.filter(({ f }) => f.tier === "tier-up")
+		.map(({ f, i }) => ({
+			leftPx: (pct(toMinutes(f.time)) / 100) * ASSUMED_TAPE_WIDTH_PX,
+			halfWidthPx: estimateHalfWidthPx(f.title, f.time.length + (f.top3 || f.done ? 2 : 0)),
+			i,
+		}));
+	const downItems = flags
+		.map((f, i) => ({ f, i }))
+		.filter(({ f }) => f.tier === "tier-down")
+		.map(({ f, i }) => ({
+			leftPx: (pct(toMinutes(f.time)) / 100) * ASSUMED_TAPE_WIDTH_PX,
+			halfWidthPx: estimateHalfWidthPx(f.title, f.time.length + (f.top3 || f.done ? 2 : 0)),
+			i,
+		}));
+	const upLanes = assignLanes(upItems);
+	const downLanes = assignLanes(downItems);
+	const lanesByIndex = new Map<number, number>();
+	upItems.forEach((item, order) => {
+		lanesByIndex.set(item.i, upLanes.lanes[order]);
+	});
+	downItems.forEach((item, order) => {
+		lanesByIndex.set(item.i, downLanes.lanes[order]);
+	});
+
+	// Extra reserve beyond the CSS defaults' single lane, funneled in as a
+	// custom property so both breakpoints' padding rules can add it via calc().
+	const tapeStyle = {
+		"--dt-lanes-up": upLanes.maxLane,
+		"--dt-lanes-down": downLanes.maxLane,
+	} as CSSProperties;
+
 	return (
-		<section aria-label="Day tape" className="mt-14">
+		// The heading + day nav stay real, accessible controls — only the ruler
+		// below is hidden (see the aria-hidden div): the same events are already
+		// exposed accessibly as real <ul>/<li> rows by DaySchedule on this page,
+		// so a screen reader should skip the redundant visual duplicate but not
+		// the actual "change day" navigation that happens to live in this section.
+		<section className="mt-14">
 			<div className="flex items-center justify-between gap-4">
 				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Day tape</h2>
 				{nav}
 			</div>
 			<style>{TAPE_CSS}</style>
-			<div className="dt-tape mt-2">
+			<div className="dt-tape mt-2" style={tapeStyle} aria-hidden="true">
 				<div className="dt-axis">
 					{ticks.map((h) => (
 						<div key={h} className="dt-tick" style={{ left: `${pct(h * 60)}%` }} />
@@ -301,7 +405,7 @@ export function DayTape({
 							{formatTickHour(h)}
 						</div>
 					))}
-					{flags.map((item) => {
+					{flags.map((item, i) => {
 						const left = pct(toMinutes(item.time));
 						const past = item.past ? " is-past" : "";
 						const dotClass = item.done
@@ -309,15 +413,26 @@ export function DayTape({
 							: item.top3
 								? "dt-flag-dot is-top3"
 								: "dt-flag-dot";
+						// Deeper lanes push the label further from the axis — "down" on
+						// the tier-up side means further up, so the offset still adds.
+						const lane = lanesByIndex.get(i) ?? 0;
+						const laneOffset = lane * LANE_HEIGHT_PX;
+						const labelStyle =
+							item.tier === "tier-up"
+								? { left: `${left}%`, bottom: `${18 + laneOffset}px` }
+								: { left: `${left}%`, top: `${32 + laneOffset}px` };
 						return (
 							<div key={item.key}>
 								<div className={`dt-flag-stem ${item.tier}${past}`} style={{ left: `${left}%` }} />
 								<div className={`${dotClass}${past}`} style={{ left: `${left}%` }} />
-								<div className={`dt-flag-label ${item.tier}${past}`} style={{ left: `${left}%` }}>
+								<div className={`dt-flag-label ${item.tier}${past}`} style={labelStyle}>
 									<span className="dt-flag-title">{item.title}</span>
 									<span>
 										{item.time}
 										{item.top3 && !item.done && <span className="text-warning"> ★</span>}
+										{/* Color alone (the dot) isn't enough to say "done" — pair it with a glyph,
+										 * matching the ★ precedent above and task-fields.tsx's color+label rule. */}
+										{item.done && <span className="text-success"> ✓</span>}
 									</span>
 								</div>
 							</div>

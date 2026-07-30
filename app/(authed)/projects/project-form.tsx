@@ -3,23 +3,7 @@
 import { CollapsibleForm, useCollapsibleForm } from "@/components/collapsible-form";
 import type { DomainRow } from "@/lib/services/domains";
 import { createProjectAction } from "./actions";
-
-const PROJECT_TYPES = [
-	{ value: "", label: "Unspecified" },
-	{ value: "client", label: "Client" },
-	{ value: "internal", label: "Internal" },
-	{ value: "content", label: "Content" },
-];
-
-const KINDS = [
-	{ value: "project", label: "Project" },
-	{ value: "area", label: "Area" },
-];
-
-const ENGAGEMENT_TYPES = [
-	{ value: "project", label: "Project" },
-	{ value: "retainer", label: "Retainer" },
-];
+import { ENGAGEMENT_TYPES, KINDS, PROJECT_TYPES } from "./constants";
 
 export function ProjectForm({ domains }: { domains: DomainRow[] }) {
 	const form = useCollapsibleForm(createProjectAction);
@@ -36,7 +20,7 @@ export function ProjectForm({ domains }: { domains: DomainRow[] }) {
 				required
 				placeholder="Project name"
 				aria-label="Project name"
-				className="w-full border-b border-line bg-transparent pb-2 font-serif text-lg text-ink outline-none placeholder:text-ink-4"
+				className="w-full border-b border-line bg-transparent pb-2 font-serif text-lg text-ink placeholder:text-ink-4"
 			/>
 			<label className="block">
 				<span className="font-mono text-eyebrow uppercase text-ink-3">Description</span>

@@ -103,14 +103,14 @@ export function DomainRowItem({
 						<button
 							type="submit"
 							disabled={pending}
-							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50 active:opacity-70"
 						>
 							Save
 						</button>
 						<button
 							type="button"
 							onClick={() => setEditing(false)}
-							className="px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3"
+							className="px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 active:opacity-70"
 						>
 							Cancel
 						</button>
@@ -125,9 +125,9 @@ export function DomainRowItem({
 			id={`domain-${domain.id}`}
 			className={`hairline scroll-mt-24 py-3 ${pending ? "opacity-50" : ""}`}
 		>
-			<span className="flex items-center gap-1.5">
+			<span className="flex min-w-0 items-center gap-1.5">
 				<ColorDot color={domain.color} />
-				<span className="font-serif text-base text-ink">{domain.name}</span>
+				<span className="min-w-0 truncate font-serif text-base text-ink">{domain.name}</span>
 			</span>
 			{domain.description && <p className="mt-0.5 text-sm text-ink-3">{domain.description}</p>}
 			{domain.fruit_definition && (
@@ -150,7 +150,7 @@ export function DomainRowItem({
 					type="button"
 					aria-label={`Edit ${domain.name}`}
 					onClick={() => setEditing(true)}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					Edit
 				</button>
@@ -166,7 +166,7 @@ export function DomainRowItem({
 							);
 						})
 					}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					Mark shipped
 				</button>
@@ -180,7 +180,7 @@ export function DomainRowItem({
 								await runAction(() => archiveDomainAction(domain.id), "Couldn't archive domain.");
 							})
 						}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error active:opacity-70"
 					>
 						Archive
 					</button>
@@ -197,7 +197,7 @@ export function DomainRowItem({
 								);
 							})
 						}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 					>
 						Reactivate
 					</button>

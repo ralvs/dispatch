@@ -78,7 +78,7 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 					type="button"
 					disabled={pending}
 					onClick={() => toggle("task")}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					{LABELS.task}
 				</button>
@@ -86,7 +86,7 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 					type="button"
 					disabled={pending}
 					onClick={() => toggle("event")}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					{LABELS.event}
 				</button>
@@ -102,7 +102,7 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 							if (e.key === "Escape") close();
 						}}
 						placeholder="Search by title…"
-						className="w-full rounded-md border border-line bg-transparent px-2 py-1 text-sm text-ink outline-none placeholder:text-ink-4"
+						className="w-full rounded-md border border-line bg-transparent px-2 py-1 text-sm text-ink placeholder:text-ink-4"
 					/>
 					{results.length > 0 && (
 						<ul className="mt-1 border border-line">
@@ -111,7 +111,7 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 									<button
 										type="button"
 										onClick={() => attach(r.id)}
-										className="block w-full truncate px-2 py-1.5 text-left text-sm text-ink hover:bg-surface"
+										className="block w-full truncate px-2 py-1.5 text-left text-sm text-ink hover:bg-surface active:opacity-70"
 									>
 										{r.label}
 									</button>

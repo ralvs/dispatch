@@ -271,7 +271,11 @@ export function TaskList({
 	}
 
 	return (
-		<>
+		// Rows are a title plus a meta line — they don't want the shell's full
+		// lg:max-w-6xl reading width, so the list column caps itself here rather
+		// than stretching (a task row at 1150px puts 700+px of dead space between
+		// a title and its controls).
+		<div className="lg:max-w-2xl">
 			<CaptureBar
 				domains={domains}
 				todayIso={todayIso}
@@ -325,6 +329,7 @@ export function TaskList({
 					)}
 
 					<section className="mt-8" aria-label="Open tasks">
+						<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Open</h2>
 						{filteredOpen.length === 0 ? (
 							<p className="py-8 text-center font-serif italic text-ink-3">
 								Nothing on the docket. Capture something.
@@ -332,7 +337,7 @@ export function TaskList({
 						) : (
 							// Everything open may already be starred, in which case the band
 							// above carries the lot and this one renders nothing at all.
-							<ul>
+							<ul className="mt-2">
 								{rest.map((t) => (
 									<TaskRowItem
 										key={t.id}
@@ -378,10 +383,11 @@ export function TaskList({
 
 			{status === "done" && (
 				<section className="mt-8" aria-label="Done tasks">
+					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Done</h2>
 					{filteredDone.length === 0 ? (
 						<p className="py-8 text-center font-serif italic text-ink-3">Nothing done yet.</p>
 					) : (
-						<ul>
+						<ul className="mt-2">
 							{filteredDone.map((t) => (
 								<TaskRowItem
 									key={t.id}
@@ -403,10 +409,11 @@ export function TaskList({
 
 			{status === "overdue" && (
 				<section className="mt-8" aria-label="Overdue tasks">
+					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Overdue</h2>
 					{overdueTasks.length === 0 ? (
 						<p className="py-8 text-center font-serif italic text-ink-3">Nothing overdue.</p>
 					) : (
-						<ul>
+						<ul className="mt-2">
 							{overdueTasks.map((t) => (
 								<TaskRowItem
 									key={t.id}
@@ -424,6 +431,6 @@ export function TaskList({
 					)}
 				</section>
 			)}
-		</>
+		</div>
 	);
 }

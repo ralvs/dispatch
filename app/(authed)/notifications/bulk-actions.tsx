@@ -5,7 +5,7 @@ import { markAllNotificationsAction } from "@/app/(authed)/notifications/actions
 import { runAction } from "@/lib/client/toast";
 
 const BUTTON =
-	"rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink disabled:opacity-50";
+	"rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink disabled:opacity-50 active:opacity-70";
 
 /**
  * Ledger-wide read-state controls, so clearing a backlog isn't one click per

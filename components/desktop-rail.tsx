@@ -21,7 +21,7 @@ function RailLink({ item, pathname }: { item: NavItem; pathname: string }) {
 		<Link
 			href={item.href}
 			aria-current={active ? "page" : undefined}
-			className={`block py-1.5 font-serif text-lg leading-tight ${
+			className={`block py-1.5 font-serif text-lg leading-tight transition-opacity active:opacity-70 ${
 				active ? "text-accent" : "text-ink-2 hover:text-ink"
 			}`}
 		>
@@ -36,7 +36,7 @@ function SystemLink({ item, pathname }: { item: NavItem; pathname: string }) {
 		<Link
 			href={item.href}
 			aria-current={active ? "page" : undefined}
-			className={`block py-1.5 font-mono text-meta uppercase tracking-widest ${
+			className={`block py-1.5 font-mono text-meta uppercase tracking-widest transition-opacity active:opacity-70 ${
 				active ? "text-accent" : "text-ink-3 hover:text-ink"
 			}`}
 		>
@@ -57,7 +57,7 @@ export function DesktopRail({ email, theme }: { email: string; theme: "dark" | "
 			<button
 				type="button"
 				onClick={() => openCapturePalette()}
-				className="mt-8 flex items-center justify-between rounded-md border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-accent hover:text-ink"
+				className="mt-8 flex items-center justify-between rounded-md border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:border-accent hover:text-ink active:opacity-70"
 			>
 				<span>+ Capture</span>
 				<span aria-hidden="true" className="text-ink-4">

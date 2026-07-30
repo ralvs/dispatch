@@ -18,6 +18,15 @@ export function ChatThread() {
 		setInput("");
 	}
 
+	const lastMessage = messages.at(-1);
+	const lastMessageText =
+		lastMessage?.role === "assistant"
+			? lastMessage.parts
+					.filter((p) => p.type === "text")
+					.map((p) => p.text)
+					.join("")
+			: "";
+
 	return (
 		<div className="mt-6">
 			<ul className="space-y-4">
@@ -31,7 +40,7 @@ export function ChatThread() {
 									className={
 										message.role === "user"
 											? "text-right font-mono text-sm text-ink-2"
-											: "font-serif text-base text-ink"
+											: "max-w-prose font-serif text-base text-ink"
 									}
 								>
 									{part.text}
@@ -42,7 +51,18 @@ export function ChatThread() {
 				))}
 			</ul>
 
-			{status === "streaming" && <p className="mt-3 font-mono text-meta text-ink-4">…</p>}
+			{/* Announce the streaming/settled transition, not each token — a
+			    live region that updated per-chunk would be unusable with a
+			    screen reader. `status` flips announce "Answering…", and the
+			    assistant's finished text is announced once it settles. */}
+			<div aria-live="polite" className="sr-only">
+				{status === "streaming" ? "Answering…" : status === "ready" ? lastMessageText : ""}
+			</div>
+			{status === "streaming" && (
+				<p aria-hidden="true" className="mt-3 font-mono text-meta text-ink-4">
+					…
+				</p>
+			)}
 
 			<form onSubmit={handleSubmit} className="hairline mt-6 flex items-center gap-2 py-3">
 				<label htmlFor="chat-input" className="sr-only">
@@ -59,7 +79,7 @@ export function ChatThread() {
 				<button
 					type="submit"
 					aria-label="Send"
-					className="rounded-md border border-line-strong px-3 py-1.5 font-mono text-meta uppercase tracking-widest text-ink-2 hover:text-ink"
+					className="rounded-md border border-line-strong px-3 py-1.5 font-mono text-meta uppercase tracking-widest text-ink-2 hover:text-ink active:opacity-70"
 				>
 					Send
 				</button>

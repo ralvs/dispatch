@@ -132,7 +132,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 										<button
 											type="submit"
 											aria-label="Remove link"
-											className="shrink-0 font-mono text-eyebrow text-ink-4 hover:text-accent-slip"
+											className="shrink-0 font-mono text-eyebrow text-ink-4 hover:text-accent-slip active:opacity-70"
 										>
 											×
 										</button>

@@ -39,7 +39,9 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 
 	return (
 		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>
-			<blockquote className="font-serif text-base italic text-ink">“{quote.text}”</blockquote>
+			<blockquote className="max-w-prose break-words font-serif text-base italic text-ink">
+				“{quote.text}”
+			</blockquote>
 			<p className="mt-1 font-mono text-meta text-ink-4">
 				{quote.source_author ?? quote.source_type ?? "—"}
 				{annotations !== null
@@ -52,7 +54,7 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 					aria-label={expanded ? "Collapse annotations" : "Expand annotations"}
 					aria-pressed={expanded}
 					onClick={toggleExpand}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					{expanded ? "Hide" : "Annotations"}
 				</button>
@@ -65,7 +67,7 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 							await runAction(() => deleteQuoteAction(quote.id), "Couldn't delete quote.");
 						})
 					}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error active:opacity-70"
 				>
 					Delete
 				</button>
@@ -90,7 +92,7 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 							type="button"
 							disabled={pending}
 							onClick={addAnnotation}
-							className="shrink-0 rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+							className="shrink-0 rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50 active:opacity-70"
 						>
 							Add
 						</button>

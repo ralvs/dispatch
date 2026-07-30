@@ -168,7 +168,7 @@ export function TaskTitleField({
 			people={people}
 			placeholder={placeholder}
 			aria-label="Task title"
-			className="w-full border-b border-line bg-transparent pb-1.5 font-serif text-base text-ink outline-none placeholder:font-normal placeholder:text-ink-4"
+			className="w-full border-b border-line bg-transparent pb-1.5 font-serif text-base text-ink placeholder:font-normal placeholder:text-ink-4"
 		/>
 	);
 }

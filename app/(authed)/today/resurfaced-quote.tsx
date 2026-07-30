@@ -32,7 +32,7 @@ export function ResurfacedQuote({
 			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Resurfaced</h2>
 			{quote ? (
 				<>
-					<blockquote className="mt-3 font-serif text-[19px] italic leading-snug text-ink">
+					<blockquote className="mt-3 font-serif text-lg italic leading-snug text-ink">
 						“{quote.text}”
 					</blockquote>
 					{(quote.source_author || quote.source_reference) && (
@@ -64,7 +64,7 @@ export function ResurfacedQuote({
 									);
 								})
 							}
-							className="text-ink-3 hover:text-ink-2 disabled:opacity-50"
+							className="text-ink-3 hover:text-ink-2 active:opacity-70 disabled:opacity-50"
 						>
 							Next →
 						</button>
@@ -79,7 +79,7 @@ export function ResurfacedQuote({
 								await runAction(() => resetResurfacedAction(), "Couldn't reset skips.");
 							})
 						}
-						className="text-ink-4 hover:text-ink-2 disabled:opacity-50"
+						className="text-ink-4 hover:text-ink-2 active:opacity-70 disabled:opacity-50"
 					>
 						Reset
 					</button>

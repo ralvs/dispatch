@@ -39,7 +39,7 @@ export function ThemeToggle({ current }: { current: "dark" | "light" }) {
 					await runAction(() => setTheme(next), "Couldn't switch theme.");
 				});
 			}}
-			className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
+			className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:text-ink active:opacity-70"
 		>
 			{theme === "dark" ? "◐ Light" : "◑ Dark"}
 		</button>

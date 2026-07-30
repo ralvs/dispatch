@@ -64,12 +64,13 @@ export function useCollapsibleForm(
 }
 
 const TRIGGER_CLASS =
-	"w-full rounded-md border border-line px-4 py-2.5 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink";
+	"w-full rounded-md border border-line px-4 py-2.5 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:border-line-strong hover:text-ink active:opacity-70";
 const CARD_CLASS = "space-y-3 rounded-xl border border-line-strong bg-surface p-4";
 const FOOTER_CLASS = "flex gap-2 pt-1";
 const SUBMIT_CLASS =
-	"rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50";
-const CANCEL_CLASS = "px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3";
+	"rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70 disabled:opacity-50";
+const CANCEL_CLASS =
+	"px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity active:opacity-70";
 
 /**
  * The collapsed "+ New …" trigger. Byte-identical across every form that used

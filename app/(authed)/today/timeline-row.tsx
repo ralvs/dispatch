@@ -32,35 +32,40 @@ function IconCalendar({ className }: { className?: string }) {
 function MeetingNoteGlyph({ eventId, noteId }: { eventId: string; noteId?: string }) {
 	const [pending, startTransition] = useTransition();
 
+	// The chip stays visually tiny; the padded wrapper grows its hit area to 44px.
 	if (noteId) {
 		return (
-			<Link
-				href={`/notes/${noteId}`}
-				aria-label="View meeting note"
-				className="inline-flex shrink-0 items-center gap-1 self-center rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 hover:border-line-strong hover:text-ink"
-			>
-				<span aria-hidden="true">¶</span> Note
-			</Link>
+			<span className="-m-2.5 inline-flex shrink-0 items-center self-center p-2.5">
+				<Link
+					href={`/notes/${noteId}`}
+					aria-label="View meeting note"
+					className="inline-flex items-center gap-1 rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
+				>
+					<span aria-hidden="true">¶</span> Note
+				</Link>
+			</span>
 		);
 	}
 
 	return (
-		<button
-			type="button"
-			aria-label="Create meeting note"
-			disabled={pending}
-			onClick={() => {
-				startTransition(async () => {
-					await runAction(
-						() => createMeetingNoteForEventAction(eventId),
-						"Couldn't create a note for this event. Try again.",
-					);
-				});
-			}}
-			className="inline-flex shrink-0 items-center gap-1 self-center rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 hover:border-line-strong hover:text-ink disabled:opacity-50"
-		>
-			<span aria-hidden="true">+</span> Note
-		</button>
+		<span className="-m-2.5 inline-flex shrink-0 items-center self-center p-2.5">
+			<button
+				type="button"
+				aria-label="Create meeting note"
+				disabled={pending}
+				onClick={() => {
+					startTransition(async () => {
+						await runAction(
+							() => createMeetingNoteForEventAction(eventId),
+							"Couldn't create a note for this event. Try again.",
+						);
+					});
+				}}
+				className="inline-flex items-center gap-1 rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 hover:border-line-strong hover:text-ink disabled:opacity-50 active:opacity-70"
+			>
+				<span aria-hidden="true">+</span> Note
+			</button>
+		</span>
 	);
 }
 

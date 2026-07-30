@@ -21,7 +21,7 @@ export function SignOutButton() {
 		<button
 			type="button"
 			onClick={signOut}
-			className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-accent"
+			className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:text-accent active:opacity-70"
 		>
 			Sign out
 		</button>

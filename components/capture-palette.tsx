@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { captureText } from "@/app/(authed)/capture/actions";
 import {
 	type CaptureEffect,
@@ -31,6 +32,7 @@ export function CapturePalette() {
 	});
 	const [, startTransition] = useTransition();
 
+	const overlayRef = useRef<HTMLDivElement>(null);
 	const dialogRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const receiptHeadingRef = useRef<HTMLParagraphElement>(null);
@@ -142,6 +144,33 @@ export function CapturePalette() {
 		}
 	}, [state.open]);
 
+	// Lock background scroll and `inert` everything outside the dialog while
+	// it's open — otherwise the app shell stays scrollable, clickable, and
+	// reachable by screen readers behind the modal. Body children are used
+	// (rather than a named shell element) since the palette itself is
+	// portalled to `document.body`, so its own overlay is always excluded.
+	// Live regions (the Sonner toast container, or anything else marked
+	// aria-live/status/alert) are also excluded so toasts raised while the
+	// palette is open stay visible and clickable to assistive tech. This is
+	// the single owner of both scroll-lock and inert — cleaned up on close
+	// and on unmount so a stray dismiss path can never leave the shell stuck.
+	useEffect(() => {
+		if (!state.open) return;
+		const previousOverflow = document.body.style.overflow;
+		document.body.style.overflow = "hidden";
+		const siblings = Array.from(document.body.children).filter(
+			(el): el is HTMLElement =>
+				el instanceof HTMLElement &&
+				el !== overlayRef.current &&
+				!el.matches('[data-sonner-toaster], [aria-live], [role="status"], [role="alert"]'),
+		);
+		for (const el of siblings) el.setAttribute("inert", "");
+		return () => {
+			document.body.style.overflow = previousOverflow;
+			for (const el of siblings) el.removeAttribute("inert");
+		};
+	}, [state.open]);
+
 	// While an error is showing and the browser was offline for it, retry once
 	// automatically as soon as connectivity returns; ONLINE is a no-op in the
 	// machine for every other status.
@@ -200,126 +229,136 @@ export function CapturePalette() {
 					type="button"
 					aria-label="Capture a thought"
 					onClick={() => openCapturePalette()}
-					className="absolute bottom-5 right-5 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-line-strong bg-accent font-serif text-2xl leading-none text-bg shadow-lg lg:hidden"
+					className="absolute bottom-5 right-5 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-line-strong bg-accent font-serif text-2xl leading-none text-bg shadow-lg transition-opacity active:opacity-70 lg:hidden"
 				>
 					<span aria-hidden="true">+</span>
 				</button>
 			)}
 
-			{state.open ? (
-				// biome-ignore lint/a11y/noStaticElementInteractions: backdrop is a click-to-dismiss convenience; Escape and the close button are the keyboard paths.
-				<div
-					className="fixed inset-0 z-50 flex items-start justify-center bg-bg/80 px-4 pt-[12vh] backdrop-blur-sm"
-					onClick={closePalette}
-					role="presentation"
-				>
-					<div
-						ref={dialogRef}
-						role="dialog"
-						aria-modal="true"
-						aria-labelledby={titleId}
-						onClick={(event) => event.stopPropagation()}
-						onKeyDown={onDialogKeyDown}
-						className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-xl border border-line-strong bg-surface p-5 shadow-xl"
-					>
-						<div className="mb-3 flex items-center justify-between">
-							<h2
-								id={titleId}
-								className="font-mono text-eyebrow uppercase tracking-widest text-ink-3"
+			{state.open
+				? createPortal(
+						// biome-ignore lint/a11y/noStaticElementInteractions: backdrop is a click-to-dismiss convenience; Escape and the close button are the keyboard paths.
+						<div
+							ref={overlayRef}
+							className="fixed inset-0 z-50 flex items-start justify-center bg-bg/80 px-4 pt-[12vh] backdrop-blur-sm"
+							onClick={closePalette}
+							role="presentation"
+						>
+							<div
+								ref={dialogRef}
+								role="dialog"
+								aria-modal="true"
+								aria-labelledby={titleId}
+								onClick={(event) => event.stopPropagation()}
+								onKeyDown={onDialogKeyDown}
+								className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-xl border border-line-strong bg-surface p-5 shadow-xl"
 							>
-								Capture
-							</h2>
-							<button
-								type="button"
-								aria-label="Close capture palette"
-								onClick={closePalette}
-								className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
-							>
-								Esc
-							</button>
-						</div>
-
-						{showReceipt && state.receipt ? (
-							<div role="status" aria-live="polite">
-								<p
-									ref={receiptHeadingRef}
-									tabIndex={-1}
-									className={`font-serif text-lg outline-none ${
-										state.receipt.tone === "needs_review" ? "text-accent" : "text-ink"
-									}`}
-								>
-									{state.receipt.title}
-								</p>
-								<ul className="mt-1 space-y-0.5 text-sm text-ink-2">
-									{state.receipt.lines.map((line) => (
-										<li key={line}>{line}</li>
-									))}
-								</ul>
-								{state.status === "done" ? (
-									<div className="mt-4 flex gap-2">
-										<button
-											type="button"
-											onClick={captureAnother}
-											className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg"
-										>
-											Capture another
-										</button>
-										<button
-											type="button"
-											onClick={closePalette}
-											className="px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
-										>
-											Done
-										</button>
-									</div>
-								) : (
-									<p className="mt-4 font-mono text-meta uppercase tracking-widest text-ink-4">
-										Working…
-									</p>
-								)}
-							</div>
-						) : (
-							<div>
-								<textarea
-									ref={textareaRef}
-									value={state.text}
-									disabled={pending}
-									onChange={(event) => dispatch({ type: "TEXT_CHANGED", text: event.target.value })}
-									onKeyDown={(event) => {
-										if (isSubmitShortcut(event)) {
-											event.preventDefault();
-											submit();
-										}
-									}}
-									rows={3}
-									placeholder="What's on your mind?"
-									aria-label="Capture text"
-									className="w-full resize-none border-b border-line bg-transparent pb-2 font-serif text-lg text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 placeholder:text-ink-4"
-								/>
-
-								{state.status === "error" ? (
-									<p className="mt-2 text-sm text-error">
-										{state.offlineError
-											? "Offline — draft kept."
-											: "Couldn't save — your text is kept. Check your connection and retry."}
-									</p>
-								) : null}
-
-								<div className="mt-4 flex items-center justify-end">
+								<div className="mb-3 flex items-center justify-between">
+									<h2
+										id={titleId}
+										className="font-mono text-eyebrow uppercase tracking-widest text-ink-3"
+									>
+										Capture
+									</h2>
 									<button
 										type="button"
-										onClick={submit}
-										disabled={pending || isBlank(state.text)}
-										className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+										aria-label="Close capture palette"
+										onClick={closePalette}
+										className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:text-ink active:opacity-70"
 									>
-										{state.status === "error" ? "Retry" : pending ? "Capturing…" : "Capture"}
+										Esc
 									</button>
 								</div>
+
+								{showReceipt && state.receipt ? (
+									<div role="status" aria-live="polite">
+										<p
+											ref={receiptHeadingRef}
+											tabIndex={-1}
+											className={`font-serif text-lg ${
+												state.receipt.tone === "needs_review" ? "text-accent" : "text-ink"
+											}`}
+										>
+											{state.receipt.title}
+										</p>
+										<ul className="mt-1 space-y-0.5 text-sm text-ink-2">
+											{state.receipt.lines.map((line) => (
+												<li key={line}>{line}</li>
+											))}
+										</ul>
+										{state.status === "done" ? (
+											<div className="mt-4 flex gap-2">
+												<button
+													type="button"
+													onClick={captureAnother}
+													className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70"
+												>
+													Capture another
+												</button>
+												<button
+													type="button"
+													onClick={closePalette}
+													className="px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:text-ink active:opacity-70"
+												>
+													Done
+												</button>
+											</div>
+										) : (
+											<p className="mt-4 font-mono text-meta uppercase tracking-widest text-ink-4">
+												Working…
+											</p>
+										)}
+									</div>
+								) : (
+									<div>
+										<textarea
+											ref={textareaRef}
+											value={state.text}
+											disabled={pending}
+											onChange={(event) =>
+												dispatch({ type: "TEXT_CHANGED", text: event.target.value })
+											}
+											onKeyDown={(event) => {
+												if (isSubmitShortcut(event)) {
+													event.preventDefault();
+													submit();
+												}
+											}}
+											rows={3}
+											placeholder="What's on your mind?"
+											aria-label="Capture text"
+											className="w-full resize-none border-b border-line bg-transparent pb-2 font-serif text-lg text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 placeholder:text-ink-4"
+										/>
+
+										{/* role="status" so an error is announced too — this used to
+										    live outside the live region and was silently dropped. */}
+										<div role="status" aria-live="polite">
+											{state.status === "error" ? (
+												<p className="mt-2 text-sm text-error">
+													{state.offlineError
+														? "Offline — draft kept."
+														: "Couldn't save — your text is kept. Check your connection and retry."}
+												</p>
+											) : null}
+										</div>
+
+										<div className="mt-4 flex items-center justify-end">
+											<button
+												type="button"
+												onClick={submit}
+												disabled={pending || isBlank(state.text)}
+												className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70 disabled:opacity-50"
+											>
+												{state.status === "error" ? "Retry" : pending ? "Capturing…" : "Capture"}
+											</button>
+										</div>
+									</div>
+								)}
 							</div>
-						)}
-					</div>
-				</div>
-			) : null}
+						</div>,
+						document.body,
+					)
+				: null}
 		</>
 	);
 }

@@ -18,8 +18,11 @@ export function ColorSwatchPicker({
 	return (
 		<fieldset className="block min-w-0">
 			<legend className="font-mono text-eyebrow uppercase text-ink-3">Color</legend>
-			<div className="mt-1 flex flex-wrap items-center gap-1.5">
-				<label className="relative cursor-pointer" title="None">
+			<div className="mt-1 flex flex-wrap items-center">
+				<label
+					className="relative flex size-11 cursor-pointer items-center justify-center"
+					title="None"
+				>
 					<input
 						type="radio"
 						name={name}
@@ -33,7 +36,11 @@ export function ColorSwatchPicker({
 					</span>
 				</label>
 				{COLOR_PALETTE.map((color) => (
-					<label key={color} className="relative cursor-pointer" title={color}>
+					<label
+						key={color}
+						className="relative flex size-11 cursor-pointer items-center justify-center"
+						title={color}
+					>
 						<input
 							type="radio"
 							name={name}

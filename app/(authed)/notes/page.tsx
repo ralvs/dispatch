@@ -23,7 +23,7 @@ function NoteLinkRow({ note, tz }: { note: NoteListRow; tz: string }) {
 					type="submit"
 					aria-label={pinned ? "Unpin note" : "Pin note"}
 					aria-pressed={pinned}
-					className={`px-2 font-mono text-meta ${pinned ? "text-accent" : "text-ink-4 hover:text-ink"}`}
+					className={`px-2 font-mono text-meta active:opacity-70 ${pinned ? "text-accent" : "text-ink-4 hover:text-ink"}`}
 				>
 					{pinned ? "★" : "☆"}
 				</button>
@@ -52,7 +52,7 @@ export default async function NotesPage() {
 				<form action={createBlankNoteAction}>
 					<button
 						type="submit"
-						className="rounded-md border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-accent hover:text-ink"
+						className="rounded-md border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-accent hover:text-ink active:opacity-70"
 					>
 						+ New note
 					</button>

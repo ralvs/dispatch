@@ -7,6 +7,15 @@ import type { DomainRow } from "@/lib/services/domains";
 import type { MilestoneRow, ProjectRow } from "@/lib/services/projects";
 import { milestoneProgress } from "@/lib/services/projects-shared";
 import {
+	ENGAGEMENT_TYPES,
+	engagementTypeLabel,
+	KINDS,
+	kindLabel,
+	PROJECT_TYPES,
+	projectTypeLabel,
+	statusLabel,
+} from "../constants";
+import {
 	archiveProjectAction,
 	completeProjectAction,
 	createMilestoneAction,
@@ -14,23 +23,6 @@ import {
 	toggleMilestoneAction,
 	updateProjectAction,
 } from "./actions";
-
-const PROJECT_TYPES = [
-	{ value: "", label: "Unspecified" },
-	{ value: "client", label: "Client" },
-	{ value: "internal", label: "Internal" },
-	{ value: "content", label: "Content" },
-];
-
-const KINDS = [
-	{ value: "project", label: "Project" },
-	{ value: "area", label: "Area" },
-];
-
-const ENGAGEMENT_TYPES = [
-	{ value: "project", label: "Project" },
-	{ value: "retainer", label: "Retainer" },
-];
 
 export function ProjectDetail({
 	project,
@@ -64,7 +56,7 @@ export function ProjectDetail({
 					{project.name}
 				</h1>
 				<p className="mt-1 flex items-center gap-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-					{project.status}
+					{statusLabel(project.status)}
 					{domain && (
 						<>
 							{" · "}
@@ -191,14 +183,14 @@ export function ProjectDetail({
 							<button
 								type="submit"
 								disabled={pending}
-								className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+								className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50 active:opacity-70"
 							>
 								Save
 							</button>
 							<button
 								type="button"
 								onClick={() => setEditing(false)}
-								className="px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3"
+								className="px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 active:opacity-70"
 							>
 								Cancel
 							</button>
@@ -209,15 +201,15 @@ export function ProjectDetail({
 						<dl className="grid grid-cols-2 gap-2 text-sm text-ink">
 							<div>
 								<dt className="font-mono text-eyebrow uppercase text-ink-3">Type</dt>
-								<dd>{project.type ?? "—"}</dd>
+								<dd>{project.type ? projectTypeLabel(project.type) : "—"}</dd>
 							</div>
 							<div>
 								<dt className="font-mono text-eyebrow uppercase text-ink-3">Kind</dt>
-								<dd>{project.kind}</dd>
+								<dd>{kindLabel(project.kind)}</dd>
 							</div>
 							<div>
 								<dt className="font-mono text-eyebrow uppercase text-ink-3">Engagement</dt>
-								<dd>{project.engagement_type}</dd>
+								<dd>{engagementTypeLabel(project.engagement_type)}</dd>
 							</div>
 							<div>
 								<dt className="font-mono text-eyebrow uppercase text-ink-3">Quoted hours</dt>
@@ -243,7 +235,7 @@ export function ProjectDetail({
 								type="button"
 								aria-label={`Edit ${project.name}`}
 								onClick={() => setEditing(true)}
-								className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+								className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 							>
 								Edit
 							</button>
@@ -260,7 +252,7 @@ export function ProjectDetail({
 											);
 										})
 									}
-									className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+									className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 								>
 									Mark done
 								</button>
@@ -278,7 +270,7 @@ export function ProjectDetail({
 											);
 										})
 									}
-									className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+									className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error active:opacity-70"
 								>
 									Archive
 								</button>
@@ -337,29 +329,35 @@ function MilestonesSection({
 			<ul className="mt-3">
 				{milestones.map((m) => (
 					<li key={m.id} className="hairline flex items-center justify-between gap-3 py-2">
-						<label className="flex items-center gap-2">
-							<input
-								type="checkbox"
-								checked={m.status === "done"}
-								disabled={pending}
-								onChange={(e) => {
-									const done = e.currentTarget.checked;
-									startTransition(async () => {
-										await runAction(
-											() => toggleMilestoneAction(projectId, m.id, done),
-											"Couldn't update milestone.",
-										);
-									});
-								}}
-								aria-label={`Mark milestone "${m.title}" ${m.status === "done" ? "open" : "done"}`}
-							/>
+						<div className="flex items-center gap-2">
+							{/* Native checkbox can't grow past its own box, so the tappable
+							    area comes from a label wrapper (padding pulled back in with
+							    a matching negative margin so it doesn't disturb the row's
+							    flex gap) — mirrors tasks/task-row.tsx. */}
+							<label className="relative -m-3.5 flex cursor-pointer p-3.5 active:opacity-70">
+								<input
+									type="checkbox"
+									checked={m.status === "done"}
+									disabled={pending}
+									onChange={(e) => {
+										const done = e.currentTarget.checked;
+										startTransition(async () => {
+											await runAction(
+												() => toggleMilestoneAction(projectId, m.id, done),
+												"Couldn't update milestone.",
+											);
+										});
+									}}
+									aria-label={`Mark milestone "${m.title}" ${m.status === "done" ? "open" : "done"}`}
+								/>
+							</label>
 							<span
 								className={`text-sm ${m.status === "done" ? "text-ink-4 line-through" : "text-ink"}`}
 							>
 								{m.title}
 							</span>
 							<span className="font-mono text-meta text-ink-4">w{m.weight}</span>
-						</label>
+						</div>
 						<button
 							type="button"
 							aria-label={`Delete milestone "${m.title}"`}
@@ -372,7 +370,7 @@ function MilestonesSection({
 									);
 								})
 							}
-							className="shrink-0 font-mono text-meta text-ink-4 hover:text-accent-slip"
+							className="shrink-0 font-mono text-meta text-ink-4 hover:text-accent-slip active:opacity-70"
 						>
 							Delete
 						</button>
@@ -411,14 +409,14 @@ function MilestonesSection({
 						<button
 							type="submit"
 							disabled={pending}
-							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50 active:opacity-70"
 						>
 							Add
 						</button>
 						<button
 							type="button"
 							onClick={() => setOpen(false)}
-							className="px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3"
+							className="px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 active:opacity-70"
 						>
 							Cancel
 						</button>
@@ -428,7 +426,7 @@ function MilestonesSection({
 				<button
 					type="button"
 					onClick={() => setOpen(true)}
-					className="mt-2 w-full rounded-md border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="mt-2 w-full rounded-md border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					+ Add milestone
 				</button>

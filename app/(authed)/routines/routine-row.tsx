@@ -21,6 +21,10 @@ export function RoutineRowItem({
 		stats.done_today,
 		(_current, next: boolean) => next,
 	);
+	const completedCount = recentDays.reduce(
+		(n, d) => n + (d.isToday ? (doneToday ? 1 : 0) : d.done ? 1 : 0),
+		0,
+	);
 
 	function toggle() {
 		const currentlyDone = doneToday;
@@ -45,8 +49,8 @@ export function RoutineRowItem({
 	return (
 		<li className="hairline py-3">
 			<div className="flex items-start justify-between gap-3">
-				<div>
-					<p className="font-serif text-base text-ink">{routine.name}</p>
+				<div className="min-w-0">
+					<p className="truncate font-serif text-base text-ink">{routine.name}</p>
 					<p className="mt-0.5 font-mono text-meta text-ink-4">
 						{TIME_OF_DAY_LABELS[routine.time_of_day]} · streak {stats.current_streak} · best{" "}
 						{stats.longest_streak} · {stats.completions_7d}/7d
@@ -62,7 +66,7 @@ export function RoutineRowItem({
 								: `Mark "${routine.name}" done today`
 						}
 						onClick={toggle}
-						className={`border px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest ${
+						className={`border px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest active:opacity-70 ${
 							doneToday
 								? "border-ink bg-ink text-bg"
 								: "border-line text-ink-3 hover:border-line-strong hover:text-ink"
@@ -75,22 +79,31 @@ export function RoutineRowItem({
 						aria-label={`Delete routine "${routine.name}"`}
 						disabled={pending}
 						onClick={remove}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip disabled:opacity-50"
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error disabled:opacity-50 active:opacity-70"
 					>
 						Delete
 					</button>
 				</div>
 			</div>
-			<div className="mt-2 flex gap-0.5" role="img" aria-label={`${routine.name} last 30 days`}>
-				{recentDays.map((d) => (
-					<span
-						key={d.date}
-						title={d.date}
-						className={`h-3 w-3 ${
-							d.isToday ? (doneToday ? "bg-ink" : "bg-line") : d.done ? "bg-ink" : "bg-line"
-						} ${d.isToday ? "ring-1 ring-accent-slip" : ""}`}
-					/>
-				))}
+			<div
+				className="mt-2 flex gap-0.5"
+				role="img"
+				aria-label={`${completedCount} of last ${recentDays.length} days completed`}
+			>
+				{recentDays.map((d) => {
+					const done = d.isToday ? doneToday : d.done;
+					return (
+						<span
+							key={d.date}
+							title={d.date}
+							// Filled square vs. outlined square carries done/not-done
+							// without relying on color alone.
+							className={`h-3 w-3 ${
+								done ? "bg-ink" : "border border-line bg-transparent"
+							} ${d.isToday ? "ring-1 ring-accent-slip" : ""}`}
+						/>
+					);
+				})}
 			</div>
 		</li>
 	);

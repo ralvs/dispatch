@@ -38,7 +38,7 @@ export function LibraryNav({
 				onClick={toggle}
 				aria-expanded={open}
 				aria-controls="rail-library"
-				className="flex w-full items-center gap-1.5 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-4 hover:text-ink-2"
+				className="flex w-full items-center gap-1.5 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-4 transition-opacity hover:text-ink-2 active:opacity-70"
 			>
 				<span aria-hidden="true" className={open ? "" : "-rotate-90"}>
 					▾

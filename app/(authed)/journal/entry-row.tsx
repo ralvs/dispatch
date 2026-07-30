@@ -10,7 +10,7 @@ export function EntryRowItem({ entry }: { entry: JournalEntryRow }) {
 
 	return (
 		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>
-			<p className="whitespace-pre-wrap font-serif text-base text-ink">
+			<p className="max-w-prose whitespace-pre-wrap break-words font-serif text-base text-ink">
 				{entry.transcription_text}
 			</p>
 			<div className="mt-2 flex items-center justify-between">
@@ -26,7 +26,7 @@ export function EntryRowItem({ entry }: { entry: JournalEntryRow }) {
 							await runAction(async () => deleteEntryAction(entry.id), "Couldn't delete entry.");
 						})
 					}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error"
 				>
 					Delete
 				</button>

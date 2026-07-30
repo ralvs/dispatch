@@ -10,7 +10,7 @@
 // (`value`/`onValueChange`) so accepting a suggestion can splice the full
 // name into the field's value directly.
 
-import { type KeyboardEvent, useRef, useState } from "react";
+import { type KeyboardEvent, useId, useRef, useState } from "react";
 import {
 	activeMentionQuery,
 	type MentionCandidate,
@@ -115,40 +115,51 @@ function useMentionAutocomplete(
 	return { state, recompute, accept, onKeyDown, close: () => setState(CLOSED) };
 }
 
+/** Builds the id of the option at `index` within the listbox `listId`. */
+function optionId(listId: string, index: number): string {
+	return `${listId}-option-${index}`;
+}
+
 function MentionDropdown({
+	listId,
 	items,
 	selected,
 	onPick,
 }: {
+	listId: string;
 	items: MentionCandidate[];
 	selected: number;
 	onPick: (item: MentionCandidate) => void;
 }) {
 	return (
-		<ul
+		<div
+			id={listId}
+			role="listbox"
 			aria-label="Matching people"
 			className="absolute left-0 top-full z-20 mt-1 min-w-40 max-w-64 rounded-md border border-line bg-surface py-1 shadow-lg"
 		>
 			{items.map((item, index) => (
-				<li key={item.id}>
-					<button
-						type="button"
-						// Prevent the field from blurring before the click's mousedown
-						// resolves — a blur first would close the dropdown and drop
-						// the selection.
-						onMouseDown={(e) => {
-							e.preventDefault();
-							onPick(item);
-						}}
-						className={`block w-full truncate px-3 py-1.5 text-left font-mono text-meta ${
-							index === selected ? "bg-accent-bg text-accent-ink" : "text-ink-2"
-						}`}
-					>
-						{item.name}
-					</button>
-				</li>
+				<button
+					key={item.id}
+					type="button"
+					id={optionId(listId, index)}
+					role="option"
+					aria-selected={index === selected}
+					// Prevent the field from blurring before the click's mousedown
+					// resolves — a blur first would close the dropdown and drop
+					// the selection.
+					onMouseDown={(e) => {
+						e.preventDefault();
+						onPick(item);
+					}}
+					className={`block w-full truncate px-3 py-1.5 text-left font-mono text-meta ${
+						index === selected ? "bg-accent-bg text-accent-ink" : "text-ink-2"
+					}`}
+				>
+					{item.name}
+				</button>
 			))}
-		</ul>
+		</div>
 	);
 }
 
@@ -170,6 +181,7 @@ export function MentionTextInput({
 }: MentionFieldProps &
 	Omit<React.InputHTMLAttributes<HTMLInputElement>, keyof MentionFieldProps | "onChange">) {
 	const ref = useRef<HTMLInputElement>(null);
+	const listId = useId();
 	const { state, recompute, accept, onKeyDown, close } = useMentionAutocomplete(
 		value,
 		people,
@@ -183,6 +195,11 @@ export function MentionTextInput({
 				ref={ref}
 				value={value}
 				className={className}
+				role="combobox"
+				aria-autocomplete="list"
+				aria-expanded={state.open}
+				aria-controls={listId}
+				aria-activedescendant={state.open ? optionId(listId, state.selected) : undefined}
 				onChange={(e) => {
 					onValueChange(e.target.value);
 					recompute(e.target);
@@ -202,6 +219,7 @@ export function MentionTextInput({
 			/>
 			{state.open && (
 				<MentionDropdown
+					listId={listId}
 					items={state.items}
 					selected={state.selected}
 					onPick={(item) => accept(ref.current, item)}
@@ -223,6 +241,7 @@ export function MentionTextarea({
 }: MentionFieldProps &
 	Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, keyof MentionFieldProps | "onChange">) {
 	const ref = useRef<HTMLTextAreaElement>(null);
+	const listId = useId();
 	const { state, recompute, accept, onKeyDown, close } = useMentionAutocomplete(
 		value,
 		people,
@@ -236,6 +255,11 @@ export function MentionTextarea({
 				ref={ref}
 				value={value}
 				className={className}
+				role="combobox"
+				aria-autocomplete="list"
+				aria-expanded={state.open}
+				aria-controls={listId}
+				aria-activedescendant={state.open ? optionId(listId, state.selected) : undefined}
 				onChange={(e) => {
 					onValueChange(e.target.value);
 					recompute(e.target);
@@ -255,6 +279,7 @@ export function MentionTextarea({
 			/>
 			{state.open && (
 				<MentionDropdown
+					listId={listId}
 					items={state.items}
 					selected={state.selected}
 					onPick={(item) => accept(ref.current, item)}

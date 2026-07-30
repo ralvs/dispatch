@@ -7,6 +7,14 @@ import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
 import type { PersonFactRow, PersonInteractionRow, PersonRow } from "@/lib/services/people";
 import {
+	FACT_TYPES,
+	factTypeLabel,
+	INTERACTION_TYPES,
+	interactionTypeLabel,
+	RELATIONSHIP_TYPES,
+	relationshipLabel,
+} from "../constants";
+import {
 	createFactAction,
 	createInteractionAction,
 	deleteFactAction,
@@ -14,34 +22,6 @@ import {
 	deletePersonAction,
 	updatePersonAction,
 } from "./actions";
-
-const RELATIONSHIP_TYPES = [
-	{ value: "", label: "Unspecified" },
-	{ value: "client", label: "Client" },
-	{ value: "family", label: "Family" },
-	{ value: "friend", label: "Friend" },
-	{ value: "team", label: "Team" },
-	{ value: "vendor", label: "Vendor" },
-	{ value: "other", label: "Other" },
-];
-
-const FACT_TYPES = [
-	{ value: "anniversary", label: "Anniversary" },
-	{ value: "birthday", label: "Birthday" },
-	{ value: "kid_name", label: "Kid's name" },
-	{ value: "shared", label: "Shared" },
-	{ value: "follow_up", label: "Follow up" },
-	{ value: "other", label: "Other" },
-];
-
-const INTERACTION_TYPES = [
-	{ value: "email", label: "Email" },
-	{ value: "call", label: "Call" },
-	{ value: "in_person", label: "In person" },
-	{ value: "text", label: "Text" },
-	{ value: "meeting", label: "Meeting" },
-	{ value: "other", label: "Other" },
-];
 
 export function PersonDetail({
 	person,
@@ -149,14 +129,14 @@ export function PersonDetail({
 							<button
 								type="submit"
 								disabled={pending}
-								className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+								className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50 active:opacity-70"
 							>
 								Save
 							</button>
 							<button
 								type="button"
 								onClick={() => setEditing(false)}
-								className="px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3"
+								className="px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 active:opacity-70"
 							>
 								Cancel
 							</button>
@@ -167,7 +147,9 @@ export function PersonDetail({
 						<dl className="grid grid-cols-2 gap-2 text-sm text-ink">
 							<div>
 								<dt className="font-mono text-eyebrow uppercase text-ink-3">Relationship</dt>
-								<dd>{person.relationship_type ?? "—"}</dd>
+								<dd>
+									{person.relationship_type ? relationshipLabel(person.relationship_type) : "—"}
+								</dd>
 							</div>
 							<div>
 								<dt className="font-mono text-eyebrow uppercase text-ink-3">Company</dt>
@@ -193,7 +175,7 @@ export function PersonDetail({
 								type="button"
 								aria-label={`Edit ${person.name}`}
 								onClick={() => setEditing(true)}
-								className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+								className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 							>
 								Edit
 							</button>
@@ -206,7 +188,7 @@ export function PersonDetail({
 										await runAction(() => deletePersonAction(person.id), "Couldn't delete person.");
 									})
 								}
-								className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+								className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error active:opacity-70"
 							>
 								Delete
 							</button>
@@ -285,7 +267,7 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 						<div>
 							<p className="text-sm text-ink">{f.fact_value}</p>
 							<p className="mt-0.5 font-mono text-meta text-ink-4">
-								{f.fact_type}
+								{factTypeLabel(f.fact_type)}
 								{f.date_relevant ? ` · ${f.date_relevant}` : ""}
 							</p>
 						</div>
@@ -298,7 +280,7 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 									await runAction(() => deleteFactAction(personId, f.id), "Couldn't delete fact.");
 								})
 							}
-							className="shrink-0 font-mono text-meta text-ink-4 hover:text-accent-slip"
+							className="shrink-0 font-mono text-meta text-ink-4 hover:text-accent-slip active:opacity-70"
 						>
 							Delete
 						</button>
@@ -347,14 +329,14 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 						<button
 							type="submit"
 							disabled={pending}
-							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50 active:opacity-70"
 						>
 							Add
 						</button>
 						<button
 							type="button"
 							onClick={() => setOpen(false)}
-							className="px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3"
+							className="px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 active:opacity-70"
 						>
 							Cancel
 						</button>
@@ -364,7 +346,7 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 				<button
 					type="button"
 					onClick={() => setOpen(true)}
-					className="mt-2 w-full rounded-md border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="mt-2 w-full rounded-md border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					+ Add fact
 				</button>
@@ -405,9 +387,11 @@ function InteractionsSection({
 				{interactions.map((i) => (
 					<li key={i.id} className="hairline flex items-baseline justify-between gap-3 py-2">
 						<div>
-							<p className="text-sm text-ink">{i.notes ?? i.interaction_type}</p>
+							<p className="text-sm text-ink">
+								{i.notes ?? interactionTypeLabel(i.interaction_type)}
+							</p>
 							<p className="mt-0.5 font-mono text-meta text-ink-4">
-								{i.interaction_type} · {formatInstant(i.occurred_at, tz)}
+								{interactionTypeLabel(i.interaction_type)} · {formatInstant(i.occurred_at, tz)}
 							</p>
 						</div>
 						<button
@@ -422,7 +406,7 @@ function InteractionsSection({
 									);
 								})
 							}
-							className="shrink-0 font-mono text-meta text-ink-4 hover:text-accent-slip"
+							className="shrink-0 font-mono text-meta text-ink-4 hover:text-accent-slip active:opacity-70"
 						>
 							Delete
 						</button>
@@ -481,14 +465,14 @@ function InteractionsSection({
 						<button
 							type="submit"
 							disabled={pending}
-							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50 active:opacity-70"
 						>
 							Log
 						</button>
 						<button
 							type="button"
 							onClick={() => setOpen(false)}
-							className="px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3"
+							className="px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 active:opacity-70"
 						>
 							Cancel
 						</button>
@@ -498,7 +482,7 @@ function InteractionsSection({
 				<button
 					type="button"
 					onClick={() => setOpen(true)}
-					className="mt-2 w-full rounded-md border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+					className="mt-2 w-full rounded-md border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					+ Log interaction
 				</button>

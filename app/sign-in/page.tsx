@@ -13,6 +13,17 @@ const SignInSchema = z.object({
 });
 type SignInValues = z.infer<typeof SignInSchema>;
 
+/** Maps the raw Supabase auth error to house copy — never leak provider wording. */
+function mapSignInError(message: string): string {
+	if (typeof navigator !== "undefined" && !navigator.onLine) {
+		return "You're offline. Check your connection and try again.";
+	}
+	if (/invalid login credentials/i.test(message)) {
+		return "Couldn't sign in. Check your email and password and try again.";
+	}
+	return "Couldn't sign in. Try again.";
+}
+
 export default function SignInPage() {
 	const router = useRouter();
 	const [serverError, setServerError] = useState<string | null>(null);
@@ -27,7 +38,7 @@ export default function SignInPage() {
 		const supabase = createBrowserSupabase();
 		const { error } = await supabase.auth.signInWithPassword(values);
 		if (error) {
-			setServerError(error.message);
+			setServerError(mapSignInError(error.message));
 			return;
 		}
 		// Refresh so server components re-render with the new session.
@@ -50,10 +61,16 @@ export default function SignInPage() {
 						id="email"
 						type="email"
 						autoComplete="email"
-						className="mt-2 w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-line-strong"
+						aria-invalid={errors.email ? "true" : undefined}
+						aria-describedby={errors.email ? "email-error" : undefined}
+						className="mt-2 w-full rounded-md border border-line bg-surface px-3 py-2.5 text-base text-ink focus:border-line-strong"
 						{...register("email")}
 					/>
-					{errors.email && <p className="mt-1 text-meta text-error">{errors.email.message}</p>}
+					{errors.email && (
+						<p id="email-error" role="alert" className="mt-1 text-meta text-error">
+							{errors.email.message}
+						</p>
+					)}
 				</div>
 
 				<div>
@@ -64,22 +81,30 @@ export default function SignInPage() {
 						id="password"
 						type="password"
 						autoComplete="current-password"
-						className="mt-2 w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-line-strong"
+						aria-invalid={errors.password ? "true" : undefined}
+						aria-describedby={errors.password ? "password-error" : undefined}
+						className="mt-2 w-full rounded-md border border-line bg-surface px-3 py-2.5 text-base text-ink focus:border-line-strong"
 						{...register("password")}
 					/>
 					{errors.password && (
-						<p className="mt-1 text-meta text-error">{errors.password.message}</p>
+						<p id="password-error" role="alert" className="mt-1 text-meta text-error">
+							{errors.password.message}
+						</p>
 					)}
 				</div>
 
-				{serverError && <p className="text-meta text-error">{serverError}</p>}
+				{serverError && (
+					<p role="alert" className="text-meta text-error">
+						{serverError}
+					</p>
+				)}
 
 				<button
 					type="submit"
 					disabled={isSubmitting}
-					className="w-full rounded-full bg-ink px-4 py-2.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50"
+					className="w-full rounded-full bg-ink px-4 py-2.5 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70 disabled:opacity-50"
 				>
-					{isSubmitting ? "Signing in…" : "Enter"}
+					{isSubmitting ? "Signing in…" : "Sign in"}
 				</button>
 			</form>
 		</main>

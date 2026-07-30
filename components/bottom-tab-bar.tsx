@@ -20,7 +20,7 @@ export function BottomTabBar() {
 							<Link
 								href={tab.href}
 								aria-current={active ? "page" : undefined}
-								className={`block px-1 py-3 text-center font-mono text-eyebrow uppercase tracking-widest ${
+								className={`block px-1 py-3.5 text-center font-mono text-eyebrow uppercase tracking-widest transition-opacity active:opacity-70 ${
 									active ? "text-accent" : "text-ink-3"
 								}`}
 							>

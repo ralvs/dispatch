@@ -140,7 +140,12 @@ export function NoteEditor({
 		editorProps: {
 			attributes: {
 				"aria-label": "Note body",
-				class: "min-h-64 whitespace-pre-wrap text-sm text-ink outline-none",
+				// The document has a visible text caret and is a large click
+				// target, so it doesn't need the global focus ring — but it does
+				// need *some* focus cue, since a sighted keyboard user tabbing in
+				// otherwise sees nothing change. A subtle background tint stands
+				// in for the ring without boxing the whole editor.
+				class: "min-h-64 whitespace-pre-wrap text-sm text-ink focus:bg-surface",
 			},
 			handleClickOn: (_view, _pos, node) => {
 				if (node.type.name === "wikilink") {
@@ -174,7 +179,7 @@ export function NoteEditor({
 					debouncedRef.current.schedule(e.target.value);
 				}}
 				onBlur={() => debouncedRef.current.flush()}
-				className="w-full border-b border-line bg-transparent pb-2 font-serif text-2xl text-ink outline-none placeholder:text-ink-4"
+				className="w-full border-b border-line bg-transparent pb-2 font-serif text-2xl text-ink placeholder:text-ink-4"
 			/>
 			{/* Preflight strips heading/list styling; restore just enough for the
 			    markdown to read as formatted, matching the app's serif headings. */}
@@ -184,8 +189,12 @@ export function NoteEditor({
 			<p className="mt-3 font-mono text-meta text-ink-4">
 				{note.source_type}
 				{note.tags.length > 0 ? ` · ${note.tags.join(", ")}` : ""}
-				{saveState === "saving" ? " · Saving…" : ""}
-				{saveState === "saved" ? " · Saved" : ""}
+				{/* Autosave status only — kept out of the static text above so the
+				    live region doesn't re-announce the source/tags on every save. */}
+				<span aria-live="polite">
+					{saveState === "saving" ? " · Saving…" : ""}
+					{saveState === "saved" ? " · Saved" : ""}
+				</span>
 			</p>
 			<div className="mt-4 flex gap-2">
 				{note.needs_review && (
@@ -201,7 +210,7 @@ export function NoteEditor({
 								);
 							})
 						}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink"
+						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 					>
 						Resolve
 					</button>
@@ -215,7 +224,7 @@ export function NoteEditor({
 							await runAction(() => deleteNoteAction(note.id), "Couldn't delete note.");
 						})
 					}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-accent-slip hover:border-accent-slip"
+					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error active:opacity-70"
 				>
 					Delete
 				</button>

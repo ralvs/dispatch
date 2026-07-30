@@ -80,7 +80,7 @@ export function CaptureBar({
 					}}
 					placeholder={'Add a task — "pagar aluguel toda segunda 9h"'}
 					aria-label="Task title"
-					className="min-w-0 flex-1 bg-transparent font-serif text-lg text-ink outline-none placeholder:font-normal placeholder:text-ink-4"
+					className="min-w-0 flex-1 bg-transparent font-serif text-lg text-ink placeholder:font-normal placeholder:text-ink-4"
 				/>
 				{title && !detailed && (
 					<span aria-hidden className="shrink-0 font-mono text-meta text-ink-4">
@@ -92,7 +92,7 @@ export function CaptureBar({
 					onClick={() => setDetailed((open) => !open)}
 					aria-expanded={detailed}
 					aria-controls="task-details"
-					className="flex shrink-0 items-center gap-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-colors hover:text-ink"
+					className="relative flex shrink-0 items-center gap-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-colors after:absolute after:-inset-3 after:content-[''] hover:text-ink active:opacity-70"
 				>
 					Details
 					{/* The label stays put and the caret carries the state — a
@@ -113,14 +113,14 @@ export function CaptureBar({
 						<button
 							type="submit"
 							disabled={pending || !title}
-							className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity disabled:opacity-40"
+							className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70 disabled:opacity-40"
 						>
 							{pending ? "Adding…" : "Add task"}
 						</button>
 						<button
 							type="button"
 							onClick={() => setDetailed(false)}
-							className="px-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-colors hover:text-ink"
+							className="relative px-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-colors after:absolute after:-inset-3 after:content-[''] hover:text-ink active:opacity-70"
 						>
 							Cancel
 						</button>

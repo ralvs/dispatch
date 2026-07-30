@@ -42,7 +42,7 @@ function WikilinkMenu({
 							e.preventDefault();
 							onSelect(item);
 						}}
-						className={`block w-full truncate px-3 py-1.5 text-left font-mono text-meta ${
+						className={`block w-full truncate px-3 py-1.5 text-left font-mono text-meta active:opacity-70 ${
 							index === selectedIndex ? "bg-accent-bg text-accent-ink" : "text-ink-2"
 						}`}
 					>

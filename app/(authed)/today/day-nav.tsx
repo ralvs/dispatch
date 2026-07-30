@@ -27,8 +27,11 @@ function IconChevron({ direction }: { direction: "left" | "right" }) {
 	);
 }
 
+// The bordered button stays 28×28; a padded, borderless wrapper (below) grows
+// the actual tap target to 44px around it.
 const STEP =
-	"inline-flex h-7 w-7 items-center justify-center rounded border border-line text-ink-3 hover:border-line-strong hover:text-ink";
+	"inline-flex h-7 w-7 items-center justify-center rounded border border-line text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70";
+const STEP_HIT_AREA = "-m-[8.5px] inline-flex p-[8.5px]";
 
 export function DayNav({ dateIso, todayIso }: { dateIso: string; todayIso: string }) {
 	const previous = shiftDay(dateIso, -1);
@@ -37,9 +40,11 @@ export function DayNav({ dateIso, todayIso }: { dateIso: string; todayIso: strin
 
 	return (
 		<nav className="flex items-center gap-2" aria-label="Day navigation">
-			<Link href={hrefFor(previous, todayIso)} className={STEP} aria-label="Previous day">
-				<IconChevron direction="left" />
-			</Link>
+			<span className={STEP_HIT_AREA}>
+				<Link href={hrefFor(previous, todayIso)} className={STEP} aria-label="Previous day">
+					<IconChevron direction="left" />
+				</Link>
+			</span>
 			<p
 				className="min-w-28 text-center font-mono text-eyebrow uppercase tracking-widest text-ink-2"
 				aria-live="polite"
@@ -48,9 +53,11 @@ export function DayNav({ dateIso, todayIso }: { dateIso: string; todayIso: strin
 				 * screen reader and a hover both get. */}
 				<span title={formatDay(dateIso, "utc")}>{formatDayNavLabel(dateIso, todayIso)}</span>
 			</p>
-			<Link href={hrefFor(next, todayIso)} className={STEP} aria-label="Next day">
-				<IconChevron direction="right" />
-			</Link>
+			<span className={STEP_HIT_AREA}>
+				<Link href={hrefFor(next, todayIso)} className={STEP} aria-label="Next day">
+					<IconChevron direction="right" />
+				</Link>
+			</span>
 			{!isToday && (
 				<Link
 					href="/today"
