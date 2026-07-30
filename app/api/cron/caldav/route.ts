@@ -4,14 +4,13 @@ import { nowUtc } from "@/lib/dates";
 import { env, isCaldavConfigured, isSupabaseConfigured } from "@/lib/env";
 import { isAuthorized } from "@/lib/secret-auth";
 import { syncCalendar } from "@/lib/services/calendar";
-import { recordNotification } from "@/lib/services/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // ─────────────────────────────────────────────────────────────────────────
 // iCloud CalDAV sync cron (docs/adr/0006) — invoked by cron-job.org behind
 // CRON_SECRET. Pulls ±21 days from every calendar on the account and reports
-// pulled/removed counts. A run that changed nothing writes no ledger row
-// (iron rule #6 is about actions, not no-op ticks).
+// pulled/removed counts. Silent on both success and failure — the sync
+// state is durable in caldav_sync_state; nothing here writes a ledger row.
 // ─────────────────────────────────────────────────────────────────────────
 
 async function runCaldavSync(request: Request) {
@@ -30,13 +29,6 @@ async function runCaldavSync(request: Request) {
 	try {
 		const conn = await createCaldavClient();
 		const result = await syncCalendar(sb, conn);
-
-		if (result.pulled + result.removed > 0) {
-			await recordNotification(sb, {
-				type: "caldav.synced",
-				title: `Calendar sync: ${result.pulled} pulled, ${result.removed} removed`,
-			});
-		}
 
 		return NextResponse.json(result);
 	} catch (err) {

@@ -76,8 +76,8 @@ export async function POST(request: Request) {
 		try {
 			await recordNotification(sb, {
 				type: "capture.link",
-				title: `Link via ${source}`,
-				body: link.title ? `${link.title} — ${link.url}` : link.url,
+				title: "Link saved",
+				body: link.title ?? new URL(link.url).hostname,
 				source_ref: link.id,
 				source_url: link.url,
 			});

@@ -246,7 +246,7 @@ describe("reminderMessage", () => {
 
 	it("reads as a sentence for a timed task at the due moment", () => {
 		expect(reminderMessage({ ...base, dueTime: "17:21:00", offsetMinutes: 0 })).toEqual({
-			title: "Reminder: Send the deposit",
+			title: "Send the deposit",
 			body: "Due now, at 17:21.",
 		});
 	});

@@ -42,7 +42,7 @@ export function reminderMessage(input: {
 		: input.offsetMinutes === 0
 			? "Due today."
 			: `Due today — ${formatReminderOffset(input.offsetMinutes).toLowerCase()}.`;
-	return { title: `Reminder: ${input.title}`, body };
+	return { title: input.title, body };
 }
 
 export type ReminderCandidate = {
