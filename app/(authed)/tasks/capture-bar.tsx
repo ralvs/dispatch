@@ -10,7 +10,7 @@ import { type TaskDomainOption, TaskMetaFields } from "./task-fields";
  * The one place a task gets written on /tasks (docs/adr/0020).
  *
  * One field, two depths. Type a sentence and press Enter and it goes through
- * the NL parser ("pagar aluguel toda segunda 9h" → recurring, 09:00). Open
+ * the NL parser ("pay rent every monday 9am" → recurring, 09:00). Open
  * Details and the same text becomes the title verbatim, with the meta row
  * beneath it — so a second title field never appears next to the first.
  */
@@ -78,9 +78,10 @@ export function CaptureBar({
 							formRef.current?.requestSubmit();
 						}
 					}}
-					placeholder={'Add a task — "pagar aluguel toda segunda 9h"'}
+					placeholder={'Add a task — "pay rent every monday 9am"'}
 					aria-label="Task title"
-					className="min-w-0 flex-1 bg-transparent font-serif text-lg text-ink placeholder:font-normal placeholder:text-ink-4"
+					wrapperClassName="min-w-0 flex-1"
+					className="w-full min-w-0 bg-transparent font-serif text-lg text-ink placeholder:font-normal placeholder:text-ink-4"
 				/>
 				{title && !detailed && (
 					<span aria-hidden className="shrink-0 font-mono text-meta text-ink-4">

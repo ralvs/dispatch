@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
 import { runAction } from "@/lib/client/toast";
@@ -11,7 +12,7 @@ import {
 	type TaskIntent,
 	type TaskLists,
 } from "@/lib/task-interaction/apply-intent";
-import { isOverdue, isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
+import { isDueToday, isOverdue, isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
 import {
 	completeTaskAction,
 	createTaskAction,
@@ -22,11 +23,17 @@ import {
 } from "./actions";
 import { CaptureBar } from "./capture-bar";
 import type { TaskDomainOption } from "./task-fields";
-import { type TaskFilterOption, TaskFilters, type TaskStatusFilter, UNFILED } from "./task-filters";
+import {
+	type TaskFilterOption,
+	TaskScopeFilters,
+	type TaskStatusFilter,
+	TaskStatusStrip,
+	UNFILED,
+} from "./task-filters";
 import { TaskRowItem } from "./task-row";
 
 function isTaskStatusFilter(value: string | undefined): value is TaskStatusFilter {
-	return value === "open" || value === "done" || value === "overdue";
+	return value === "open" || value === "overdue" || value === "today";
 }
 
 /** Builds the shareable `?status=&project=&domain=` query string, dropping defaults. */
@@ -98,6 +105,7 @@ export function TaskList({
 	tz,
 	people = [],
 	taskMentions,
+	inboxCount = 0,
 }: {
 	openTasks: TaskRow[];
 	doneTasks: TaskRow[];
@@ -120,6 +128,8 @@ export function TaskList({
 	people?: MentionCandidate[];
 	/** task id -> people already mentioned in it, for the mention chips on rows. */
 	taskMentions?: Record<string, { id: string; name: string }[]>;
+	/** Unfiled open tasks — surfaced as the header's link to /inbox. */
+	inboxCount?: number;
 }) {
 	const router = useRouter();
 	const [, startTransition] = useTransition();
@@ -224,17 +234,17 @@ export function TaskList({
 	const filteredOpen = lists.open.filter(matchesFilters);
 	const filteredDone = lists.done.filter(matchesFilters);
 	const overdueTasks = filteredOpen.filter((t) => isOverdue(t, todayIso));
+	const todayTasks = filteredOpen.filter((t) => isDueToday(t, todayIso));
 
 	// Starring used to be near-invisible here: listTasks never orders by it, so a
 	// pinned row stayed exactly where it was. Split the open list so the day's
-	// shortlist has somewhere to live. Only meaningful on the Open view — Done
-	// and Overdue show a single flat list.
+	// shortlist has somewhere to live. Only meaningful on the Open view —
+	// Overdue and Today show a single flat list.
 	const top3 = status === "open" ? filteredOpen.filter((t) => isTop3Today(t, todayIso)) : [];
 	const rest = status === "open" ? filteredOpen.filter((t) => !isTop3Today(t, todayIso)) : [];
 	const slotsOpen = TOP3_SLOTS - top3.length;
-	// The Open view's "Recently done" band is a glance-strip, not the full
-	// history the Done filter shows — cap it at 10 even though filteredDone
-	// itself now carries up to 100 rows to feed that filter.
+	// The Open view's "Recently done" band is a glance-strip, and since the Done
+	// filter is gone it is the only place completed work shows up.
 	const recentDoneBand = filteredDone.slice(0, 10);
 
 	function onCreate(formData: FormData): Promise<void> {
@@ -271,28 +281,42 @@ export function TaskList({
 	}
 
 	return (
-		// Rows are a title plus a meta line — they don't want the shell's full
-		// lg:max-w-6xl reading width, so the list column caps itself here rather
-		// than stretching (a task row at 1150px puts 700+px of dead space between
-		// a title and its controls).
-		<div className="lg:max-w-2xl">
+		// The whole page lives in here, header included: the count strip is the
+		// status filter now, so it has to read the same client state the list does.
+		<div>
+			<header className="hairline-strong pb-4">
+				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Tasks</p>
+				<h1 className="mt-1 font-serif text-3xl text-ink">The docket</h1>
+				<div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+					<TaskStatusStrip
+						status={status}
+						onStatusChange={setStatus}
+						openCount={filteredOpen.length}
+						overdueCount={overdueTasks.length}
+						todayCount={todayTasks.length}
+					/>
+					<TaskScopeFilters
+						projectId={projectId}
+						onProjectChange={setProjectId}
+						domainId={domainId}
+						onDomainChange={setDomainId}
+						projects={projects ?? []}
+						domains={domains}
+					/>
+				</div>
+				{inboxCount > 0 && (
+					<Link href="/inbox" className="mt-2 inline-block text-meta text-accent-ink">
+						{inboxCount} in the inbox →
+					</Link>
+				)}
+			</header>
+
 			<CaptureBar
 				domains={domains}
 				todayIso={todayIso}
 				onQuickAdd={onQuickAdd}
 				onCreate={onCreate}
 				people={people}
-			/>
-
-			<TaskFilters
-				status={status}
-				onStatusChange={setStatus}
-				projectId={projectId}
-				onProjectChange={setProjectId}
-				domainId={domainId}
-				onDomainChange={setDomainId}
-				projects={projects ?? []}
-				domains={domains}
 			/>
 
 			{status === "open" && (
@@ -381,14 +405,14 @@ export function TaskList({
 				</>
 			)}
 
-			{status === "done" && (
-				<section className="mt-8" aria-label="Done tasks">
-					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Done</h2>
-					{filteredDone.length === 0 ? (
-						<p className="py-8 text-center font-serif italic text-ink-3">Nothing done yet.</p>
+			{status === "today" && (
+				<section className="mt-8" aria-label="Tasks due today">
+					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Today</h2>
+					{todayTasks.length === 0 ? (
+						<p className="py-8 text-center font-serif italic text-ink-3">Nothing due today.</p>
 					) : (
 						<ul className="mt-2">
-							{filteredDone.map((t) => (
+							{todayTasks.map((t) => (
 								<TaskRowItem
 									key={t.id}
 									task={t}
@@ -399,7 +423,6 @@ export function TaskList({
 									noteId={taskNoteIds?.[t.id]}
 									people={people}
 									mentions={taskMentions?.[t.id]}
-									tz={tz}
 								/>
 							))}
 						</ul>

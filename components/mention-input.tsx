@@ -167,6 +167,12 @@ type MentionFieldProps = {
 	value: string;
 	onValueChange: (value: string) => void;
 	people: MentionCandidate[];
+	/**
+	 * The dropdown needs a positioned wrapper around the field, so a caller
+	 * that flexes the field itself has to size that wrapper too — `flex-1` on
+	 * the input alone never reaches the box the flex row is actually laying out.
+	 */
+	wrapperClassName?: string;
 };
 
 export function MentionTextInput({
@@ -174,6 +180,7 @@ export function MentionTextInput({
 	onValueChange,
 	people,
 	className,
+	wrapperClassName,
 	onKeyDown: userOnKeyDown,
 	onSelect: userOnSelect,
 	onBlur: userOnBlur,
@@ -189,7 +196,7 @@ export function MentionTextInput({
 	);
 
 	return (
-		<div className="relative">
+		<div className={`relative ${wrapperClassName ?? ""}`}>
 			<input
 				{...rest}
 				ref={ref}
@@ -234,6 +241,7 @@ export function MentionTextarea({
 	onValueChange,
 	people,
 	className,
+	wrapperClassName,
 	onKeyDown: userOnKeyDown,
 	onSelect: userOnSelect,
 	onBlur: userOnBlur,
@@ -249,7 +257,7 @@ export function MentionTextarea({
 	);
 
 	return (
-		<div className="relative">
+		<div className={`relative ${wrapperClassName ?? ""}`}>
 			<textarea
 				{...rest}
 				ref={ref}
