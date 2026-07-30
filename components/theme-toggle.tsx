@@ -4,22 +4,26 @@ import { useEffect, useState, useTransition } from "react";
 import { setTheme } from "@/app/theme-actions";
 import { runAction } from "@/lib/client/toast";
 
-export function ThemeToggle({ current }: { current: "dark" | "light" }) {
+function readDomTheme(): "dark" | "light" {
+	if (typeof document === "undefined") return "dark";
+	return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+}
+
+/**
+ * Theme control. Seeds from `data-theme` on <html> (boot script or prior
+ * toggle) — no server cookie read required (docs/adr/0033).
+ */
+export function ThemeToggle({ current }: { current?: "dark" | "light" }) {
 	const [pending, startTransition] = useTransition();
-	const [theme, setLocalTheme] = useState(current);
+	const [theme, setLocalTheme] = useState<"dark" | "light">(current ?? "dark");
 	const next = theme === "dark" ? "light" : "dark";
 
-	// `current` is a server prop and goes stale across a client-router-cache
-	// remount (toggle on /more, navigate away, navigate back): the cached RSC
-	// payload still carries the pre-toggle value, so useState would re-seed
-	// wrong. Reconcile to the live DOM value after mount — initializing from
-	// `current` first keeps SSR/hydration consistent, this effect only fixes
-	// up a remount.
+	// Reconcile to the live DOM after mount: SSR may not know the cookie
+	// (root layout is cookie-free), and a client-router-cache remount can
+	// re-seed a stale prop.
 	useEffect(() => {
-		const domTheme = document.documentElement.dataset.theme;
-		if (domTheme === "light" || domTheme === "dark") {
-			setLocalTheme((prev) => (prev === domTheme ? prev : domTheme));
-		}
+		const domTheme = readDomTheme();
+		setLocalTheme((prev) => (prev === domTheme ? prev : domTheme));
 	}, []);
 
 	return (
@@ -29,8 +33,8 @@ export function ThemeToggle({ current }: { current: "dark" | "light" }) {
 			disabled={pending}
 			onClick={() => {
 				// Applied here rather than by revalidation: `data-theme` is set on
-				// <html> by the ROOT layout, so revalidating any route below it
-				// cannot repaint the page for someone standing on /today — and
+				// <html> by the boot script / this toggle, so revalidating any route
+				// below it cannot repaint for someone standing on /today — and
 				// this toggle lives in the always-visible desktop rail. The server
 				// action's cookie write only has to survive until the next SSR.
 				document.documentElement.dataset.theme = next;

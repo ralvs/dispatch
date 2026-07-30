@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
 	reactStrictMode: true,
+	// Partial Prerendering + `"use cache"` (docs/adr/0033).
+	cacheComponents: true,
 	// Server Actions default to a 1MB body cap — fine for forms, fatal for
 	// phone photos posted through upload actions. Match the reference's 25MB.
 	experimental: {

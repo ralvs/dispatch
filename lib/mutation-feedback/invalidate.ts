@@ -1,13 +1,13 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CacheTag, type CacheTagName } from "@/lib/cache/tags";
 
 /**
  * Single seam for "what the UI should re-read after a write."
  * Action modules call afterMutation(kind) instead of listing paths.
  *
- * Prefer the narrowest path set that keeps visible surfaces honest.
- * Full cache tags (`day-schedule` / `today-chrome`) wait on Cache Components
- * (`"use cache"`); until then path revalidation is the real invalidator, and
- * client `staleTimes` + optimistic UI cover perceived lag.
+ * Dual invalidation (docs/adr/0033):
+ * - revalidateTag — busts `"use cache"` data (chrome / schedule / settings)
+ * - revalidatePath — busts the App Router RSC tree + client staleTimes payload
  */
 export type MutationKind =
 	| "task.write"
@@ -28,10 +28,15 @@ export type MutationKind =
 	| "projects.write"
 	| "projects.detail";
 
+function tag(...tags: CacheTagName[]) {
+	// Next 16: second arg is a cacheLife profile for stale-while-revalidate.
+	for (const t of tags) revalidateTag(t, "max");
+}
+
 function taskViews() {
+	tag(CacheTag.daySchedule, CacheTag.tasks, CacheTag.todayChrome);
 	revalidatePath("/tasks");
 	revalidatePath("/inbox");
-	// Schedule bands + inbox/overdue counts on Today.
 	revalidatePath("/today");
 }
 
@@ -43,71 +48,76 @@ export function afterMutation(kind: MutationKind, detail?: { id?: string }): voi
 			taskViews();
 			return;
 		case "routine.write":
+			tag(CacheTag.routines, CacheTag.todayChrome);
 			revalidatePath("/routines");
 			revalidatePath("/today");
 			return;
 		case "links.write":
+			tag(CacheTag.links, CacheTag.todayChrome);
 			revalidatePath("/links");
-			// Alerts row unread-links count.
 			revalidatePath("/today");
 			return;
 		case "notification.write":
+			tag(CacheTag.notifications, CacheTag.todayChrome);
 			revalidatePath("/notifications");
-			// Masthead unread badge on Today.
 			revalidatePath("/today");
 			return;
 		case "settings.domain":
+			tag(CacheTag.settings, CacheTag.todayChrome, CacheTag.tasks);
 			revalidatePath("/settings");
-			// Domain cadence ("In brief") + task domain chips.
 			revalidatePath("/today");
 			revalidatePath("/tasks");
 			return;
 		case "settings.timezone":
+			tag(
+				CacheTag.settings,
+				CacheTag.todayChrome,
+				CacheTag.daySchedule,
+				CacheTag.tasks,
+				CacheTag.notes,
+			);
 			// Timezone genuinely reshapes every page (day boundaries, dates,
 			// briefing) — the app-wide invalidation is warranted here.
 			revalidatePath("/", "layout");
 			return;
 		case "theme":
 			// Nothing to revalidate. Theme is a cookie plus `data-theme` on
-			// <html>, which only the ROOT layout renders — so revalidating any
-			// route below it repaints nothing, and revalidating app-wide would
-			// discard every route's prefetch cache (undoing loading.tsx) for a
-			// change that isn't a data change at all. ThemeToggle sets the
-			// attribute directly; the cookie is only read on the next SSR.
+			// <html> via the boot script — not a data cache entry.
 			return;
 		case "settings.reminders":
+			tag(CacheTag.settings);
 			revalidatePath("/settings");
 			return;
 		case "today.only":
+			tag(CacheTag.todayChrome, CacheTag.daySchedule);
 			revalidatePath("/today");
 			return;
 		case "notes.write":
-			// Pin/autosave stay on /notes. Capture/review paths that change the
-			// alerts-row needs-review count go through capture.settled or
-			// today.only when they matter.
+			tag(CacheTag.notes);
 			revalidatePath("/notes");
 			if (detail?.id) revalidatePath(`/notes/${detail.id}`);
 			return;
 		case "quotes.write":
+			tag(CacheTag.quotes, CacheTag.todayChrome);
 			revalidatePath("/quotes");
-			// Resurfaced / latest quote cards on Today.
 			revalidatePath("/today");
 			return;
 		case "journal.write":
-			// Journal is not surfaced on Today.
+			tag(CacheTag.journal);
 			revalidatePath("/journal");
 			return;
 		case "people.write":
-			// People are not part of the Today briefing chrome.
+			tag(CacheTag.people);
 			revalidatePath("/people");
 			if (detail?.id) revalidatePath(`/people/${detail.id}`);
 			return;
 		case "projects.write":
+			tag(CacheTag.projects, CacheTag.todayChrome);
 			revalidatePath("/projects");
-			// Active projects card on Today.
 			revalidatePath("/today");
 			return;
 		case "projects.detail":
+			tag(CacheTag.projects, CacheTag.todayChrome);
 			revalidatePath("/projects");
 			if (detail?.id) revalidatePath(`/projects/${detail.id}`);
 			revalidatePath("/today");

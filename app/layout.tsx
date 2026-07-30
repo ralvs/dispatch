@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { cookies } from "next/headers";
 import { AppToaster } from "@/components/app-toaster";
 import { SessionKeeper } from "@/components/session-keeper";
 import { SwRegister } from "@/components/sw-register";
@@ -42,11 +41,19 @@ export const viewport: Viewport = {
 	viewportFit: "cover",
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-	const theme = (await cookies()).get("theme")?.value === "light" ? "light" : "dark";
+// Runs before paint so Cache Components can keep the root layout free of
+// cookies() while still avoiding a theme flash (docs/adr/0033).
+const THEME_BOOT = `(function(){try{var m=document.cookie.match(/(?:^|; )theme=([^;]*)/);var t=m&&decodeURIComponent(m[1])==="light"?"light":"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();`;
 
+export default function RootLayout({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="en" data-theme={theme} className={`${geist.variable} ${geistMono.variable}`}>
+		<html lang="en" suppressHydrationWarning className={`${geist.variable} ${geistMono.variable}`}>
+			<head>
+				{/* Static boot only — no user input. Required so root layout can stay
+				 * cookie-free under Cache Components (docs/adr/0033). */}
+				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: fixed theme boot script, not user content */}
+				<script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
+			</head>
 			<body>
 				{/* Root-level: must run on /sign-in too so a cold-start bounce can
 				 * recover a still-valid refresh cookie (docs/adr/0032). */}

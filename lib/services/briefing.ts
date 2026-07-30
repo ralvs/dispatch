@@ -542,8 +542,10 @@ const STREAK_HISTORY_DAYS = 60;
 /**
  * Hot segment: open tasks + calendar events for the day schedule.
  * Task writes only need this segment to feel current (soft split).
+ * Exported so the Cache Components layer can cache chrome separately while
+ * this path stays request-fresh (docs/adr/0033).
  */
-async function loadDayScheduleInputs(
+export async function loadDayScheduleInputs(
 	sb: SupabaseClient,
 	tz: string,
 	dateIso: string,
@@ -558,8 +560,9 @@ async function loadDayScheduleInputs(
 /**
  * Cold segment: quotes, projects, routine history, alerts, domains cadence.
  * Unchanged by a single task checkbox in the common case.
+ * Exported for cross-request `"use cache"` (docs/adr/0033).
  */
-async function loadBriefingChrome(
+export async function loadBriefingChrome(
 	sb: SupabaseClient,
 	todayIso: string,
 ): Promise<{
@@ -637,20 +640,17 @@ export async function getDaySchedule(
 	return buildDaySchedule({ events, openTasks: open, dateIso, tz });
 }
 
-export async function getBriefing(
-	sb: SupabaseClient,
+export type BriefingChrome = Awaited<ReturnType<typeof loadBriefingChrome>>;
+
+/** Pure assembly of the briefing view from pre-loaded chrome + schedule inputs. */
+export function assembleBriefing(
+	chrome: BriefingChrome,
+	open: TaskRow[],
+	todayEvents: CalendarEventRow[],
 	tz: string,
 	todayIso: string,
 	nowMs: number = Date.now(),
-): Promise<BriefingView> {
-	// Soft split: schedule inputs vs chrome load in parallel; callers still
-	// see one getBriefing interface. Inbox count is derived from open tasks
-	// (no second listInboxTasks query).
-	const [{ open, events: todayEvents }, chrome] = await Promise.all([
-		loadDayScheduleInputs(sb, tz, todayIso),
-		loadBriefingChrome(sb, todayIso),
-	]);
-
+): BriefingView {
 	const {
 		routines,
 		completionsToday,
@@ -719,4 +719,20 @@ export async function getBriefing(
 		latestQuote,
 		projects: summarizeProjects(activeProjects, milestonesByProject),
 	};
+}
+
+export async function getBriefing(
+	sb: SupabaseClient,
+	tz: string,
+	todayIso: string,
+	nowMs: number = Date.now(),
+): Promise<BriefingView> {
+	// Soft split: schedule inputs vs chrome load in parallel; callers still
+	// see one getBriefing interface. Inbox count is derived from open tasks
+	// (no second listInboxTasks query).
+	const [{ open, events: todayEvents }, chrome] = await Promise.all([
+		loadDayScheduleInputs(sb, tz, todayIso),
+		loadBriefingChrome(sb, todayIso),
+	]);
+	return assembleBriefing(chrome, open, todayEvents, tz, todayIso, nowMs);
 }

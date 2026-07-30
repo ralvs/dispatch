@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { SoftRefresh } from "@/components/soft-refresh";
 import { requireOwnerPage } from "@/lib/auth";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { formatDateline, parseDateIso, todayInTz } from "@/lib/dates";
-import { getAppTimezone } from "@/lib/services/settings";
 import { BriefingBody } from "./briefing-body";
 
 // The shell (masthead frame + section placeholders) paints synchronously;
@@ -43,7 +43,7 @@ export default async function TodayPage({
 	searchParams: Promise<{ d?: string }>;
 }) {
 	const { sb } = await requireOwnerPage();
-	const tz = await getAppTimezone(sb);
+	const tz = await getCachedAppTimezone();
 	const todayIso = todayInTz(tz);
 
 	// `?d=` is the day navigation's only state. Anything unparseable falls back

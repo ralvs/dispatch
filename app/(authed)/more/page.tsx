@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import Link from "next/link";
 import { MORE_SECTIONS } from "@/components/nav-links";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -10,7 +9,6 @@ import { requireOwnerPage } from "@/lib/auth";
 // otherwise never sees.
 export default async function MorePage() {
 	const { claims } = await requireOwnerPage();
-	const theme = (await cookies()).get("theme")?.value === "light" ? "light" : "dark";
 
 	return (
 		<div>
@@ -43,7 +41,7 @@ export default async function MorePage() {
 			))}
 
 			<section className="mt-8 space-y-3" aria-label="Account">
-				<ThemeToggle current={theme} />
+				<ThemeToggle />
 				<p className="truncate text-meta text-ink-4" title={claims.email ?? ""}>
 					{claims.email}
 				</p>

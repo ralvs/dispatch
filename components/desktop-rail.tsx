@@ -45,7 +45,7 @@ function SystemLink({ item, pathname }: { item: NavItem; pathname: string }) {
 	);
 }
 
-export function DesktopRail({ email, theme }: { email: string; theme: "dark" | "light" }) {
+export function DesktopRail({ email }: { email: string }) {
 	const pathname = usePathname();
 
 	return (
@@ -88,7 +88,7 @@ export function DesktopRail({ email, theme }: { email: string; theme: "dark" | "
 			</nav>
 
 			<footer className="space-y-3 pt-6">
-				<ThemeToggle current={theme} />
+				<ThemeToggle />
 				<p className="truncate text-meta text-ink-4" title={email}>
 					{email}
 				</p>

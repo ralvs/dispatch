@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getCachedBriefingChrome } from "@/lib/cache/briefing";
 import { formatInstant } from "@/lib/dates";
-import { getBriefing, getDaySchedule } from "@/lib/services/briefing";
+import { assembleBriefing, getDaySchedule, loadDayScheduleInputs } from "@/lib/services/briefing";
 import { listNoteIdsForTargets } from "@/lib/services/note-links";
 import { AlertsRow } from "./alerts-row";
 import { AnchorLine } from "./anchor-line";
@@ -12,9 +13,9 @@ import { ProjectsCard } from "./projects-card";
 import { ResurfacedQuote } from "./resurfaced-quote";
 import { RoutinesCard } from "./routines-card";
 
-// Everything on Today that needs the full briefing read (the ~13-query
-// fan-out in loadBriefingChrome). page.tsx renders the page frame
-// synchronously and Suspends this component so the shell paints first.
+// Everything on Today that needs the briefing read. page.tsx Suspends this
+// so the shell paints first. Chrome is cross-request cached; schedule inputs
+// stay request-fresh for SoftRefresh honesty (docs/adr/0033).
 export async function BriefingBody({
 	sb,
 	tz,
@@ -27,12 +28,17 @@ export async function BriefingBody({
 	/** The day the schedule section shows. Everything else on Today is today's. */
 	selectedIso: string;
 }) {
-	const briefing = await getBriefing(sb, tz, todayIso);
-	const nowUtcIso = new Date().toISOString();
+	const nowMs = Date.now();
+	const [{ open, events: todayEvents }, chrome] = await Promise.all([
+		loadDayScheduleInputs(sb, tz, todayIso),
+		getCachedBriefingChrome(todayIso),
+	]);
+	const briefing = assembleBriefing(chrome, open, todayEvents, tz, todayIso, nowMs);
+	const nowUtcIso = new Date(nowMs).toISOString();
 	const isToday = selectedIso === todayIso;
 
-	// The default view already has today's bands from getBriefing; only a day
-	// navigated away pays for the second read.
+	// The default view already has today's bands from assemble; only a day
+	// navigated away pays for the second read (also cacheable by date).
 	const schedule = isToday ? briefing.daySchedule : await getDaySchedule(sb, tz, selectedIso);
 
 	const eventIds = [...schedule.allDay, ...schedule.timeline]

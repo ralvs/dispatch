@@ -3,15 +3,17 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
-import { formatInstant, parseDateIso } from "@/lib/dates";
+import { getCachedDaySchedule } from "@/lib/cache/briefing";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
+import { formatInstant, parseDateIso, todayInTz } from "@/lib/dates";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
-import { type DaySchedule, getDaySchedule } from "@/lib/services/briefing";
+import type { DaySchedule } from "@/lib/services/briefing";
 import { getEvent } from "@/lib/services/calendar";
 import { ServiceError } from "@/lib/services/errors";
 import { createManualLink, listNoteIdsForTargets } from "@/lib/services/note-links";
 import { createNote } from "@/lib/services/notes";
 import { clearSkipsToday, recordQuoteSkip } from "@/lib/services/resurfacing";
-import { getAppTimezone, todayForRequest } from "@/lib/services/settings";
+import { todayForRequest } from "@/lib/services/settings";
 
 /** Payload for client day-nav: schedule bands only, not the full briefing chrome. */
 export type DaySchedulePayload = {
@@ -29,12 +31,13 @@ export type DaySchedulePayload = {
  */
 export async function loadDayScheduleAction(rawDate: string): Promise<DaySchedulePayload> {
 	const { sb } = await requireOwnerPage();
-	const tz = await getAppTimezone(sb);
-	const todayIso = await todayForRequest(sb);
+	const tz = await getCachedAppTimezone();
+	const todayIso = todayInTz(tz);
 	const dateIso = parseDateIso(rawDate);
 	if (!dateIso) throw new ServiceError("Invalid date", null);
 
-	const schedule = await getDaySchedule(sb, tz, dateIso);
+	// Cached by date; task writes revalidateTag(day-schedule).
+	const schedule = await getCachedDaySchedule(tz, dateIso);
 	const nowUtcIso = new Date().toISOString();
 	const isToday = dateIso === todayIso;
 
