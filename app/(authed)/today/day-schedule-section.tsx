@@ -91,10 +91,14 @@ export function DayScheduleSection({
 	// What's actually on screen right now, kept outside React state so a
 	// background revalidate() resolving later reads the current day/signature
 	// rather than the one captured in its own closure at request time.
-	const visibleRef = useRef<{ dateIso: string; signature: DaySignature }>({
+	// Seeded through a lazy useState initializer rather than inline in useRef:
+	// useRef evaluates its argument on every render and discards it after the
+	// first, and daySignature stringifies the whole day.
+	const [initialVisible] = useState<{ dateIso: string; signature: DaySignature }>(() => ({
 		dateIso: view.dateIso,
 		signature: daySignature(view),
-	});
+	}));
+	const visibleRef = useRef(initialVisible);
 	// Dedupes concurrent background revalidations per day.
 	const inFlight = useRef(new Set<string>());
 	const todayIsoRef = useRef(todayIso);
@@ -162,15 +166,19 @@ export function DayScheduleSection({
 	// object literals on every RSC render, so without this gate a redundant
 	// setView (and full day-section re-render) fires on every SoftRefresh tick
 	// and every revalidatePath even when nothing moved. When `content` (not
-	// just `time`) changed, a write just landed — every other cached day may
-	// now be stale, so it's dropped immediately rather than waiting out the
-	// 60s revalidation timer.
+	// just `time`) changed, a write just landed, so the other cached days are
+	// dropped rather than waiting out the 60s timer. Note this only catches
+	// writes that move the *visible* day: one touching solely another day
+	// leaves that day's entry in place, and the 60s revalidation is what
+	// corrects it.
 	useEffect(() => {
 		// Day-rollover guard: nowLabel is non-null only when a day was today *at
 		// fetch time* (actions.ts), so after midnight a cached "today" entry
 		// would still draw a stale now-marker. A PWA left open overnight hits
 		// this, hence keying the whole cache off todayIso rather than trusting
-		// any one entry's own nowLabel.
+		// any one entry's own nowLabel. This is reactive: todayIso only changes
+		// when the RSC re-renders, so between midnight and the next SoftRefresh
+		// tick (≤5 min, or a tab refocus) a cached entry can still be served.
 		if (todayIsoRef.current !== todayIso) {
 			cache.current.clear();
 			todayIsoRef.current = todayIso;
@@ -196,8 +204,11 @@ export function DayScheduleSection({
 		if (unchanged) return;
 
 		if (visible.signature.content !== signature.content) {
+			// Keep the day this render is for and the one actually on screen —
+			// an RSC render for day A can land just after a flip to day B, and
+			// evicting B would cost a skeleton on the next return to it.
 			for (const key of [...cache.current.keys()]) {
-				if (key !== dateIso) cache.current.delete(key);
+				if (key !== dateIso && key !== visible.dateIso) cache.current.delete(key);
 			}
 		}
 
@@ -227,8 +238,10 @@ export function DayScheduleSection({
 				if (gen !== requestGen.current) return;
 				const signature = daySignature(payload);
 				const fetchedAtMs = Date.now();
-				store({ payload, signature, fetchedAtMs });
+				// commit before store so the day becoming visible is the one
+				// store() protects from eviction, rather than the outgoing one.
 				commit({ payload, signature, fetchedAtMs });
+				store({ payload, signature, fetchedAtMs });
 			});
 		},
 		[view.dateIso, todayIso, commit, store, revalidate],

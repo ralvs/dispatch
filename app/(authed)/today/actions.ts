@@ -3,11 +3,10 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
-import { getCachedDaySchedule } from "@/lib/cache/briefing";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { formatInstant, parseDateIso, todayInTz } from "@/lib/dates";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
-import type { DaySchedulePayload } from "@/lib/services/briefing";
+import { type DaySchedulePayload, getDaySchedule } from "@/lib/services/briefing";
 import { getEvent } from "@/lib/services/calendar";
 import { ServiceError } from "@/lib/services/errors";
 import { createManualLink, listNoteIdsForTargets } from "@/lib/services/note-links";
@@ -26,8 +25,16 @@ export async function loadDayScheduleAction(rawDate: string): Promise<DaySchedul
 	const dateIso = parseDateIso(rawDate);
 	if (!dateIso) throw new ServiceError("Invalid date", null);
 
-	// Cached by date; task writes revalidateTag(day-schedule).
-	const schedule = await getCachedDaySchedule(tz, dateIso);
+	// Uncached, and on the RLS client — deliberately the same read briefing-body
+	// does for a navigated day, because the two must not disagree. The cached
+	// variant lives up to 180s (cacheLife expire) and the caldav/reminders crons
+	// write calendar_events without busting the day-schedule tag, so a cached
+	// read can be older than what SSR/SoftRefresh already painted. Now that
+	// day-nav revalidates the day on screen in the background, serving that
+	// older copy would silently erase a freshly-synced event. Two indexed
+	// queries (lib/services/briefing.ts loadDayScheduleInputs) — the client-side
+	// day cache is what makes repeat visits free, not this.
+	const schedule = await getDaySchedule(sb, tz, dateIso);
 	const nowUtcIso = new Date().toISOString();
 	const isToday = dateIso === todayIso;
 

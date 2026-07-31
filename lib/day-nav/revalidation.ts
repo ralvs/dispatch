@@ -120,23 +120,23 @@ export function readDay(
 }
 
 /**
- * `store` is always true — a background result is always worth caching.
- * `adopt` (swap it onto the screen) only when it's for the day currently
- * visible AND the signature actually differs; an out-of-order or unchanged
- * response updates the cache silently.
+ * Whether a resolved background result should be swapped onto the screen:
+ * only when it's for the day currently visible AND the signature actually
+ * differs. Caching it is unconditional and is the caller's job — an
+ * out-of-order or unchanged response still updates the cache, silently.
  */
 export function reconcileDay(args: {
 	incomingSignature: DaySignature;
 	incomingDateIso: string;
 	visibleDateIso: string;
 	visibleSignature: DaySignature;
-}): { store: boolean; adopt: boolean } {
+}): { adopt: boolean } {
 	const { incomingSignature, incomingDateIso, visibleDateIso, visibleSignature } = args;
 	const sameDay = incomingDateIso === visibleDateIso;
 	const changed =
 		incomingSignature.content !== visibleSignature.content ||
 		incomingSignature.time !== visibleSignature.time;
-	return { store: true, adopt: sameDay && changed };
+	return { adopt: sameDay && changed };
 }
 
 /** Keys to drop, oldest-first by fetchedAtMs, never including `protect`.

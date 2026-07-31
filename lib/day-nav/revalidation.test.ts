@@ -214,6 +214,75 @@ describe("content vs. time split", () => {
 	});
 });
 
+describe("daySignature / projectTask field coverage", () => {
+	const baseTask = task({
+		id: "t",
+		title: "Base",
+		domain: { id: "domain-1", name: "Engine", color: "#111111" },
+		project: { id: "p1", name: "Alpha" },
+	});
+
+	it.each<[string, TaskRow]>([
+		["priority", task({ ...baseTask, priority: 1 })],
+		["title", task({ ...baseTask, title: "Changed" })],
+		["due_date", task({ ...baseTask, due_date: "2026-08-01" })],
+		["due_time", task({ ...baseTask, due_time: "09:00" })],
+		["recurrence_rule", task({ ...baseTask, recurrence_rule: "daily" })],
+		[
+			"domain.name",
+			task({ ...baseTask, domain: { id: "domain-1", name: "Changed", color: "#111111" } }),
+		],
+		[
+			"domain.color",
+			task({ ...baseTask, domain: { id: "domain-1", name: "Engine", color: "#222222" } }),
+		],
+		["project.name", task({ ...baseTask, project: { id: "p1", name: "Changed" } })],
+	])("differs when task field %s changes", (field, changed) => {
+		const a = daySignature(payload({ schedule: schedule({ open: [baseTask] }) }));
+		const b = daySignature(payload({ schedule: schedule({ open: [changed] }) }));
+		expect(a.content, `expected content to differ for field: ${field}`).not.toEqual(b.content);
+	});
+
+	it("differs when the same task moves from open to top3", () => {
+		const a = daySignature(payload({ schedule: schedule({ open: [baseTask], top3: [] }) }));
+		const b = daySignature(payload({ schedule: schedule({ open: [], top3: [baseTask] }) }));
+		expect(a.content).not.toEqual(b.content);
+	});
+});
+
+describe("daySignature / projectEvent field coverage", () => {
+	const baseEvent = event({ id: "e", title: "Base", calendar_name: "Work", location: null });
+
+	it.each<[string, CalendarEventRow]>([
+		["location", event({ ...baseEvent, location: "HQ" })],
+		["calendar_name", event({ ...baseEvent, calendar_name: "Personal" })],
+		["title", event({ ...baseEvent, title: "Changed" })],
+	])("differs when event field %s changes", (field, changed) => {
+		const a = daySignature(
+			payload({ schedule: schedule({ timeline: [eventItem(baseEvent, "09:00")] }) }),
+		);
+		const b = daySignature(
+			payload({ schedule: schedule({ timeline: [eventItem(changed, "09:00")] }) }),
+		);
+		expect(a.content, `expected content to differ for field: ${field}`).not.toEqual(b.content);
+	});
+});
+
+describe("daySignature / item-level and top-level field coverage", () => {
+	it("differs when a DayScheduleItem's time changes", () => {
+		const t = task({ id: "t", title: "T" });
+		const a = daySignature(payload({ schedule: schedule({ timeline: [taskItem(t, "09:00")] }) }));
+		const b = daySignature(payload({ schedule: schedule({ timeline: [taskItem(t, "10:00")] }) }));
+		expect(a.content).not.toEqual(b.content);
+	});
+
+	it("differs when the top-level dateIso changes", () => {
+		const a = daySignature(payload({ dateIso: "2026-07-31" }));
+		const b = daySignature(payload({ dateIso: "2026-08-01" }));
+		expect(a.content).not.toEqual(b.content);
+	});
+});
+
 describe("readDay", () => {
 	it("misses on an empty cache", () => {
 		const cache = new Map<string, DayCacheEntry>();
@@ -265,7 +334,7 @@ describe("reconcileDay", () => {
 				visibleDateIso: "2026-07-31",
 				visibleSignature: sig,
 			}),
-		).toEqual({ store: true, adopt: false });
+		).toEqual({ adopt: false });
 	});
 
 	it("adopts when the visible day's signature changed", () => {
@@ -278,7 +347,23 @@ describe("reconcileDay", () => {
 				visibleDateIso: "2026-07-31",
 				visibleSignature: before,
 			}),
-		).toEqual({ store: true, adopt: true });
+		).toEqual({ adopt: true });
+	});
+
+	it("adopts when content changed but time is identical", () => {
+		const t = task({ id: "t", title: "New" });
+		const before = daySignature(payload({ schedule: schedule({ open: [] }) }));
+		const after = daySignature(payload({ schedule: schedule({ open: [t] }) }));
+		expect(before.time).toEqual(after.time);
+		expect(before.content).not.toEqual(after.content);
+		expect(
+			reconcileDay({
+				incomingSignature: after,
+				incomingDateIso: "2026-07-31",
+				visibleDateIso: "2026-07-31",
+				visibleSignature: before,
+			}),
+		).toEqual({ adopt: true });
 	});
 
 	it("stores but does not adopt a changed signature for a day that isn't visible", () => {
@@ -291,7 +376,7 @@ describe("reconcileDay", () => {
 				visibleDateIso: "2026-07-31",
 				visibleSignature: before,
 			}),
-		).toEqual({ store: true, adopt: false });
+		).toEqual({ adopt: false });
 	});
 });
 
