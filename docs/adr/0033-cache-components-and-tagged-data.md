@@ -1,5 +1,13 @@
 # Cache Components with tagged data for a single-user ops app
 
+> **Superseded for day navigation (2026-07-31).** Decision 4's `day-schedule`
+> segment is no longer read on the day-nav path, and Decision 7 is narrowed:
+> day bands are now read uncached on the RLS client, because the cached copy
+> could lag what SSR had already painted. Freshness for day nav moved to a
+> client-side cache — see
+> [ADR-0034](./0034-the-client-owns-navigation-freshness.md). `today-chrome`
+> and `settings` are unaffected.
+
 ## Context
 
 Phases 1–5 cut auth RTT, day-nav cost, client RSC retention, and optimistic
