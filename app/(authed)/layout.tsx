@@ -5,14 +5,25 @@ import { DesktopRail } from "@/components/desktop-rail";
 import { NavShortcuts } from "@/components/nav-shortcuts";
 import { requireOwnerPage } from "@/lib/auth";
 
+/*
+ * Full-height shell. In a browser tab `dvh` is what tracks the collapsing
+ * toolbars, but an installed iOS PWA reports a `dvh` that already has the safe
+ * areas subtracted, so the shell came up short at the bottom (and doubled the
+ * inset at the top, since we pad for it here). Standalone has no dynamic
+ * chrome, so `vh` is both exact and the full screen under viewportFit:"cover";
+ * the padding below and the dock's own inset padding then place the content.
+ */
+const SHELL =
+	"flex h-[100dvh] flex-col pt-[env(safe-area-inset-top)] [@media(display-mode:standalone)]:h-screen";
+
 function AuthedShellFallback() {
 	return (
-		<div className="flex h-[100dvh] flex-col pt-[env(safe-area-inset-top)]">
+		<div className={SHELL}>
 			<div className="relative flex flex-1 flex-col overflow-hidden">
 				<main
 					id="main"
 					tabIndex={-1}
-					className="flex-1 overflow-y-auto overscroll-contain mx-auto w-full max-w-md px-5 pb-24 pt-6 lg:max-w-6xl lg:pb-12 lg:pl-60 lg:pt-10"
+					className="flex-1 overflow-y-auto overscroll-contain mx-auto w-full max-w-md px-5 pb-28 pt-6 lg:max-w-6xl lg:pb-12 lg:pl-60 lg:pt-10"
 				>
 					<span role="status" className="sr-only">
 						Loading
@@ -32,7 +43,7 @@ async function AuthedShell({ children }: { children: React.ReactNode }) {
 	const { claims } = await requireOwnerPage();
 
 	return (
-		<div className="flex h-[100dvh] flex-col pt-[env(safe-area-inset-top)]">
+		<div className={SHELL}>
 			<a
 				href="#main"
 				className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:border focus:border-line-strong focus:bg-surface focus:px-4 focus:py-2 focus:text-ink"
@@ -45,7 +56,7 @@ async function AuthedShell({ children }: { children: React.ReactNode }) {
 				<main
 					id="main"
 					tabIndex={-1}
-					className="flex-1 overflow-y-auto overscroll-contain mx-auto w-full max-w-md px-5 pb-24 pt-6 lg:max-w-6xl lg:pb-12 lg:pl-60 lg:pt-10"
+					className="flex-1 overflow-y-auto overscroll-contain mx-auto w-full max-w-md px-5 pb-28 pt-6 lg:max-w-6xl lg:pb-12 lg:pl-60 lg:pt-10"
 				>
 					{children}
 				</main>

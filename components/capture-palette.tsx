@@ -16,6 +16,7 @@ import { isBlank } from "@/lib/capture/submission";
 import { toastError } from "@/lib/client/toast";
 import { readCaptureIntent } from "@/lib/pwa/capture-intent";
 import type { CapturedRecord } from "@/lib/services/capture";
+import { DOCK_ACTION_SLOT_ID, DOCK_HEIGHT, DOCK_SURFACE } from "@/lib/ui/dock";
 
 const FOCUSABLE = 'a[href],button:not([disabled]),textarea,input,[tabindex]:not([tabindex="-1"])';
 
@@ -39,6 +40,13 @@ export function CapturePalette() {
 	const restoreFocusRef = useRef<HTMLElement | null>(null);
 
 	const titleId = useId();
+
+	// The dock row renders in the same client tree; resolve its slot after mount
+	// so the trigger can portal into it (see lib/ui/dock.ts).
+	const [dockSlot, setDockSlot] = useState<HTMLElement | null>(null);
+	useEffect(() => {
+		setDockSlot(document.getElementById(DOCK_ACTION_SLOT_ID));
+	}, []);
 
 	// Plain callback (not a useReducer reducer) so dispatching is never
 	// double-invoked under StrictMode — each call runs the pure machine exactly
@@ -222,18 +230,23 @@ export function CapturePalette() {
 
 	return (
 		<>
-			{/* Mobile trigger — the rail carries the desktop one. Hidden while the
-			    palette is open so it never becomes a stray tab target behind it. */}
-			{state.open ? null : (
-				<button
-					type="button"
-					aria-label="Capture a thought"
-					onClick={() => openCapturePalette()}
-					className="absolute bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-5 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-line-strong bg-accent font-serif text-2xl leading-none text-bg shadow-lg transition-opacity active:opacity-70 lg:hidden"
-				>
-					<span aria-hidden="true">+</span>
-				</button>
-			)}
+			{/* Mobile trigger — the rail carries the desktop one. It portals into the
+			    dock row so it sits beside the tab pill, sharing its height and
+			    material. Hidden while the palette is open so it never becomes a
+			    stray tab target behind it. */}
+			{dockSlot && !state.open
+				? createPortal(
+						<button
+							type="button"
+							aria-label="Capture a thought"
+							onClick={() => openCapturePalette()}
+							className={`pointer-events-auto flex aspect-square shrink-0 items-center justify-center font-serif text-2xl leading-none text-accent transition-opacity active:opacity-70 ${DOCK_HEIGHT} ${DOCK_SURFACE}`}
+						>
+							<span aria-hidden="true">+</span>
+						</button>,
+						dockSlot,
+					)
+				: null}
 
 			{state.open
 				? createPortal(
