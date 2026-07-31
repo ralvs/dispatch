@@ -24,8 +24,6 @@ function AuthedShellFallback() {
 					</div>
 				</main>
 			</div>
-			{/* Reserve tab bar space so layout does not jump when shell resolves. */}
-			<div className="shrink-0 border-t border-line-strong pb-[env(safe-area-inset-bottom)] lg:hidden h-14" />
 		</div>
 	);
 }
