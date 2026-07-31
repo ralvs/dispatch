@@ -1,9 +1,22 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { parseDateIso } from "@/lib/dates";
-import type { DaySchedule as DayScheduleView } from "@/lib/services/briefing";
-import { type DaySchedulePayload, loadDayScheduleAction } from "./actions";
+import {
+	type DayCacheEntry,
+	type DaySignature,
+	daySignature,
+	keysToEvict,
+	MAX_CACHED_DAYS,
+	readDay,
+	reconcileDay,
+} from "@/lib/day-nav/revalidation";
+// DaySchedulePayload comes straight from lib/, not through actions.ts: a
+// "use server" module may only export async functions, and a re-exported type
+// there survives into the server-actions loader as an undefined binding.
+import type { DaySchedulePayload, DaySchedule as DayScheduleView } from "@/lib/services/briefing";
+import { loadDayScheduleAction } from "./actions";
 import { DayNav } from "./day-nav";
 import { DaySchedule } from "./day-schedule";
 import { DayTape } from "./day-tape";
@@ -68,21 +81,128 @@ export function DayScheduleSection({
 	const [pending, startTransition] = useTransition();
 	// Ignore stale action results when the user clicks faster than the network.
 	const requestGen = useRef(0);
-	// Days visited this session, keyed by dateIso — flipping back to a day
-	// already seen (today → tomorrow → today) redraws instantly instead of
-	// re-running the Server Action. SoftRefresh's revalidatePath still
-	// refreshes the entry currently on screen (the effect above), so this
-	// only shortcuts navigation, never shows stale data on the active day.
-	const cache = useRef(new Map<string, DaySchedulePayload>());
+	// Days visited this session, keyed by dateIso, each carrying the payload it
+	// last resolved to plus a signature + fetch time — readDay/revalidate below
+	// use those to decide instant-vs-fetch and stale-vs-fresh. SoftRefresh's
+	// revalidatePath still refreshes the entry currently on screen (the effect
+	// below), and background revalidation keeps the rest from going stale for
+	// longer than REVALIDATE_AFTER_MS.
+	const cache = useRef(new Map<string, DayCacheEntry>());
+	// What's actually on screen right now, kept outside React state so a
+	// background revalidate() resolving later reads the current day/signature
+	// rather than the one captured in its own closure at request time.
+	const visibleRef = useRef<{ dateIso: string; signature: DaySignature }>({
+		dateIso: view.dateIso,
+		signature: daySignature(view),
+	});
+	// Dedupes concurrent background revalidations per day.
+	const inFlight = useRef(new Set<string>());
+	const todayIsoRef = useRef(todayIso);
+
+	const commit = useCallback((entry: DayCacheEntry) => {
+		visibleRef.current = { dateIso: entry.payload.dateIso, signature: entry.signature };
+		setView(fromProps(entry.payload));
+	}, []);
+
+	// Every write into the cache goes through here so the bound is enforced on
+	// all three paths (foreground miss, background revalidate, prop sync) —
+	// chevron-stepping a month forward would otherwise grow it without limit.
+	// The day on screen is what needs protecting: the entry just stored carries
+	// the newest fetchedAtMs, so oldest-first eviction can never reach it.
+	const store = useCallback((entry: DayCacheEntry) => {
+		cache.current.set(entry.payload.dateIso, entry);
+		for (const key of keysToEvict(cache.current, MAX_CACHED_DAYS, visibleRef.current.dateIso)) {
+			cache.current.delete(key);
+		}
+	}, []);
+
+	// Background refetch for a cached-but-aged day. Deliberately NOT wrapped in
+	// startTransition — `pending` (and the opacity-70 dim it drives) comes from
+	// the one useTransition above and must stay false here, since a background
+	// refresh should never look like a foreground fetch.
+	const revalidate = useCallback(
+		(nextIso: string) => {
+			if (inFlight.current.has(nextIso)) return;
+			// Don't burn a phone's radio revalidating a day nobody's looking at
+			// (matches components/soft-refresh.tsx's visibility check).
+			if (document.visibilityState !== "visible") return;
+			inFlight.current.add(nextIso);
+			loadDayScheduleAction(nextIso)
+				.then((payload) => {
+					const signature = daySignature(payload);
+					const fetchedAtMs = Date.now();
+					// Always cache the result, even for a day the user already left —
+					// a later revisit should see it, not refetch again.
+					store({ payload, signature, fetchedAtMs });
+					const visible = visibleRef.current;
+					const { adopt } = reconcileDay({
+						incomingSignature: signature,
+						incomingDateIso: nextIso,
+						visibleDateIso: visible.dateIso,
+						visibleSignature: visible.signature,
+					});
+					if (adopt) commit({ payload, signature, fetchedAtMs });
+				})
+				.catch((error) => {
+					// A failed background refresh must be invisible — the user still has
+					// correct-as-of-a-minute-ago content on screen. Not routed through
+					// runAction, which would toast it as a foreground failure.
+					unstable_rethrow(error);
+				})
+				.finally(() => {
+					inFlight.current.delete(nextIso);
+				});
+		},
+		[commit, store],
+	);
 
 	// SoftRefresh / revalidatePath re-renders this tree from the server with a
-	// fresh schedule for the URL day — adopt it without a client fetch, and
-	// refresh this day's cache entry so a later revisit isn't stale.
+	// fresh schedule for the URL day. Stamp it into the cache; adopt it only
+	// when the signature actually changed — eventNoteIds/taskNoteIds are fresh
+	// object literals on every RSC render, so without this gate a redundant
+	// setView (and full day-section re-render) fires on every SoftRefresh tick
+	// and every revalidatePath even when nothing moved. When `content` (not
+	// just `time`) changed, a write just landed — every other cached day may
+	// now be stale, so it's dropped immediately rather than waiting out the
+	// 60s revalidation timer.
 	useEffect(() => {
-		const next = fromProps({ schedule, dateIso, nowUtcIso, nowLabel, eventNoteIds, taskNoteIds });
-		cache.current.set(dateIso, next);
-		setView(next);
-	}, [schedule, dateIso, nowUtcIso, nowLabel, eventNoteIds, taskNoteIds]);
+		// Day-rollover guard: nowLabel is non-null only when a day was today *at
+		// fetch time* (actions.ts), so after midnight a cached "today" entry
+		// would still draw a stale now-marker. A PWA left open overnight hits
+		// this, hence keying the whole cache off todayIso rather than trusting
+		// any one entry's own nowLabel.
+		if (todayIsoRef.current !== todayIso) {
+			cache.current.clear();
+			todayIsoRef.current = todayIso;
+		}
+
+		const payload = fromProps({
+			schedule,
+			dateIso,
+			nowUtcIso,
+			nowLabel,
+			eventNoteIds,
+			taskNoteIds,
+		});
+		const signature = daySignature(payload);
+		const fetchedAtMs = Date.now();
+		store({ payload, signature, fetchedAtMs });
+
+		const visible = visibleRef.current;
+		const unchanged =
+			visible.dateIso === dateIso &&
+			visible.signature.content === signature.content &&
+			visible.signature.time === signature.time;
+		if (unchanged) return;
+
+		if (visible.signature.content !== signature.content) {
+			for (const key of [...cache.current.keys()]) {
+				if (key !== dateIso) cache.current.delete(key);
+			}
+		}
+
+		commit({ payload, signature, fetchedAtMs });
+	}, [schedule, dateIso, nowUtcIso, nowLabel, eventNoteIds, taskNoteIds, todayIso, commit, store]);
 
 	const selectDay = useCallback(
 		(nextIso: string, opts?: { syncUrl?: boolean }) => {
@@ -91,26 +211,27 @@ export function DayScheduleSection({
 			if (opts?.syncUrl !== false) {
 				window.history.replaceState(window.history.state, "", hrefFor(nextIso, todayIso));
 			}
-			const cached = cache.current.get(nextIso);
-			if (cached) {
-				setView(fromProps(cached));
+
+			// Cache-hit-wins: an aged entry still paints instantly, it just also
+			// kicks off a background revalidate() — never a skeleton for a day
+			// already seen.
+			const decision = readDay(cache.current, nextIso, Date.now());
+			if (decision.kind === "hit") {
+				commit(decision.entry);
+				if (decision.revalidate) revalidate(nextIso);
 				return;
 			}
+
 			startTransition(async () => {
 				const payload: DaySchedulePayload = await loadDayScheduleAction(nextIso);
 				if (gen !== requestGen.current) return;
-				cache.current.set(nextIso, payload);
-				setView({
-					schedule: payload.schedule,
-					dateIso: payload.dateIso,
-					nowUtcIso: payload.nowUtcIso,
-					nowLabel: payload.nowLabel,
-					eventNoteIds: payload.eventNoteIds,
-					taskNoteIds: payload.taskNoteIds,
-				});
+				const signature = daySignature(payload);
+				const fetchedAtMs = Date.now();
+				store({ payload, signature, fetchedAtMs });
+				commit({ payload, signature, fetchedAtMs });
 			});
 		},
-		[view.dateIso, todayIso],
+		[view.dateIso, todayIso, commit, store, revalidate],
 	);
 
 	// Back/forward after replaceState is rare (we replace, not push) but a

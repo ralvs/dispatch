@@ -262,6 +262,16 @@ export type DaySchedule = {
 	open: TaskRow[];
 };
 
+/** Payload for client day-nav: schedule bands only, not the full briefing chrome. */
+export type DaySchedulePayload = {
+	schedule: DaySchedule;
+	dateIso: string;
+	nowUtcIso: string;
+	nowLabel: string | null;
+	eventNoteIds: Record<string, string>;
+	taskNoteIds: Record<string, string>;
+};
+
 /** Cap on the open/unscheduled band — same ceiling assembleDoingToday used. */
 const OPEN_CAP = 10;
 

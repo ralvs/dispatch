@@ -7,23 +7,13 @@ import { getCachedDaySchedule } from "@/lib/cache/briefing";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { formatInstant, parseDateIso, todayInTz } from "@/lib/dates";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
-import type { DaySchedule } from "@/lib/services/briefing";
+import type { DaySchedulePayload } from "@/lib/services/briefing";
 import { getEvent } from "@/lib/services/calendar";
 import { ServiceError } from "@/lib/services/errors";
 import { createManualLink, listNoteIdsForTargets } from "@/lib/services/note-links";
 import { createNote } from "@/lib/services/notes";
 import { clearSkipsToday, recordQuoteSkip } from "@/lib/services/resurfacing";
 import { todayForRequest } from "@/lib/services/settings";
-
-/** Payload for client day-nav: schedule bands only, not the full briefing chrome. */
-export type DaySchedulePayload = {
-	schedule: DaySchedule;
-	dateIso: string;
-	nowUtcIso: string;
-	nowLabel: string | null;
-	eventNoteIds: Record<string, string>;
-	taskNoteIds: Record<string, string>;
-};
 
 /**
  * Load one day's tape + bands without re-running the ~13-query briefing chrome.
