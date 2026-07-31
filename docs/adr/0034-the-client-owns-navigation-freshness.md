@@ -72,10 +72,13 @@ anything, so the caldav cron writes `calendar_events` without busting
   `revalidatePath` evicts the whole client cache, you can never see your *own*
   write go stale; only the caldav and reminders crons can drift, and `/today`
   self-refreshes on the same cadence.
-- `lib/cache/briefing.ts` now has three unused exports — `getCachedDaySchedule`
+- `lib/cache/briefing.ts` had three unused exports — `getCachedDaySchedule`
   (orphaned by Decision 2), plus `getCachedBriefing` and
-  `getCachedDayScheduleInputs`, which were already unused before it. Dead code
-  to remove, not a cache to reinstate.
+  `getCachedDayScheduleInputs`, which were already unused before it. All three
+  were removed; `getCachedBriefingChrome` is the file's only remaining export.
+  Dead code removed, not a cache to reinstate. With them gone, `day-schedule`
+  has no `"use cache"` consumer left — `afterMutation` still busts the tag, and
+  its fate belongs to the tag-wiring question in the next bullet.
 - Nine of the twelve tags in `lib/cache/tags.ts` are still consumed by nothing.
   Wiring them to `"use cache"` reads is what would let the matching
   `revalidatePath` calls become `revalidateTag` and stop wiping the client
