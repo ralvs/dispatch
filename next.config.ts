@@ -11,11 +11,22 @@ const nextConfig: NextConfig = {
 			bodySizeLimit: "25mb",
 		},
 		// Dynamic authed routes default to 0s client RSC retention — every tab
-		// revisit re-fetched the full tree. Keep the last payload briefly so
-		// Today ↔ Tasks ↔ Notes feels instant; mutations still revalidatePath.
+		// revisit re-fetched the full tree. Every authed route is dynamic
+		// (requireOwnerPage reads cookies) and every one has a loading.tsx, so
+		// an expired entry means a skeleton, not a stale-then-fresh swap: Next
+		// deletes a stale entry on navigation rather than reusing it
+		// (ppr-navigations.js reads the BFCache with the real `now`, unlike
+		// back/forward which passes -1). There is no route-level SWR to opt
+		// into, so the only lever is how long the instant window lasts.
+		//
+		// 5 minutes matches SoftRefresh's own interval — the app already treats
+		// that as the tolerable staleness for a screen. It's safe to go this
+		// long because any revalidatePath evicts the whole client cache, so you
+		// can never see your OWN writes go stale; only the calendar/reminder
+		// crons can drift, and /today self-refreshes on the same cadence.
 		staleTimes: {
-			dynamic: 30,
-			static: 180,
+			dynamic: 300,
+			static: 300,
 		},
 	},
 	async redirects() {
