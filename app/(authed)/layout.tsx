@@ -6,15 +6,12 @@ import { NavShortcuts } from "@/components/nav-shortcuts";
 import { requireOwnerPage } from "@/lib/auth";
 
 /*
- * Full-height shell. In a browser tab `dvh` is what tracks the collapsing
- * toolbars, but an installed iOS PWA reports a `dvh` that already has the safe
- * areas subtracted, so the shell came up short at the bottom (and doubled the
- * inset at the top, since we pad for it here). Standalone has no dynamic
- * chrome, so `vh` is both exact and the full screen under viewportFit:"cover";
- * the padding below and the dock's own inset padding then place the content.
+ * Full-height shell. `dvh` tracks the collapsing toolbars in a browser tab;
+ * installed (standalone) it is pinned to the initial containing block instead,
+ * because iOS resolves viewport units there against a stale, inset-subtracted
+ * viewport — see the .app-shell rule in app/globals.css.
  */
-const SHELL =
-	"flex h-[100dvh] flex-col pt-[env(safe-area-inset-top)] [@media(display-mode:standalone)]:h-screen";
+const SHELL = "app-shell flex h-[100dvh] flex-col pt-[env(safe-area-inset-top)]";
 
 function AuthedShellFallback() {
 	return (

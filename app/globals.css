@@ -96,10 +96,31 @@ body {
 	color: var(--ink);
 	font-family: var(--font-sans);
 	-webkit-font-smoothing: antialiased;
-	/* Top safe-area inset is applied inside the h-[100dvh] shell
+	/* Top safe-area inset is applied inside the .app-shell
 	 * (app/(authed)/layout.tsx) instead of here. Adding it to body pushes the
-	 * document past 100dvh on an installed iOS PWA (viewportFit: "cover"),
-	 * which reintroduces document scroll and pushes BottomTabBar off-screen. */
+	 * document past the viewport on an installed iOS PWA (viewportFit:
+	 * "cover"), which reintroduces document scroll and pushes the dock
+	 * off-screen. */
+}
+
+/*
+ * The authed shell fills the screen. In a browser tab that is 100dvh (set in
+ * the layout) so the collapsing toolbars shrink it. An installed iOS PWA is
+ * the exception: it resolves viewport units against a viewport that has the
+ * safe areas already taken out, and only recomputes them on an unrelated
+ * reflow — which is why the app sometimes snapped to the right height after
+ * the keyboard opened and closed, and sat short of the bottom the rest of the
+ * time. Anchor to the initial containing block instead: under
+ * viewportFit:"cover" that is the whole screen, it is not a viewport unit, and
+ * it cannot go stale. `height: auto` is needed because top+bottom+height would
+ * be over-constrained and the height would win.
+ */
+@media (display-mode: standalone) {
+	.app-shell {
+		position: fixed;
+		inset: 0;
+		height: auto;
+	}
 }
 
 /* Every interactive surface gets a visible keyboard ring by default. Components
