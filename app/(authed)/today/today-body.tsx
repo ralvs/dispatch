@@ -1,22 +1,22 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getCachedBriefingChrome } from "@/lib/cache/briefing";
+import { getCachedTodayDigest } from "@/lib/cache/today";
 import { formatInstant } from "@/lib/dates";
-import { assembleBriefing, getDaySchedule, loadDayScheduleInputs } from "@/lib/services/briefing";
 import { listNoteIdsForTargets } from "@/lib/services/note-links";
+import { assembleTodayView, getDaySchedule, loadDayScheduleInputs } from "@/lib/services/today";
 import { AlertsRow } from "./alerts-row";
 import { AnchorLine } from "./anchor-line";
 import { BriefSection } from "./brief-section";
-import { DayScheduleSection } from "./day-schedule-section";
+import { DayView } from "./day-view";
 import { LatestQuote } from "./latest-quote";
 import { Masthead } from "./masthead";
 import { ProjectsCard } from "./projects-card";
 import { ResurfacedQuote } from "./resurfaced-quote";
 import { RoutinesCard } from "./routines-card";
 
-// Everything on Today that needs the briefing read. page.tsx Suspends this
+// Everything on Today that needs the view read. page.tsx Suspends this
 // so the shell paints first. Chrome is cross-request cached; schedule inputs
 // stay request-fresh for SoftRefresh honesty (docs/adr/0033).
-export async function BriefingBody({
+export async function TodayBody({
 	sb,
 	tz,
 	todayIso,
@@ -29,17 +29,17 @@ export async function BriefingBody({
 	selectedIso: string;
 }) {
 	const nowMs = Date.now();
-	const [{ open, events: todayEvents }, chrome] = await Promise.all([
+	const [{ open, events: todayEvents }, digest] = await Promise.all([
 		loadDayScheduleInputs(sb, tz, todayIso),
-		getCachedBriefingChrome(todayIso),
+		getCachedTodayDigest(todayIso),
 	]);
-	const briefing = assembleBriefing(chrome, open, todayEvents, tz, todayIso, nowMs);
+	const view = assembleTodayView(digest, open, todayEvents, tz, todayIso, nowMs);
 	const nowUtcIso = new Date(nowMs).toISOString();
 	const isToday = selectedIso === todayIso;
 
 	// The default view already has today's bands from assemble; only a day
 	// navigated away pays for the second read (also cacheable by date).
-	const schedule = isToday ? briefing.daySchedule : await getDaySchedule(sb, tz, selectedIso);
+	const schedule = isToday ? view.daySchedule : await getDaySchedule(sb, tz, selectedIso);
 
 	const eventIds = [...schedule.allDay, ...schedule.timeline]
 		.filter((item) => item.kind === "event")
@@ -64,27 +64,26 @@ export async function BriefingBody({
 		listNoteIdsForTargets(sb, "task", taskIds).then((map) => Object.fromEntries(map)),
 	]);
 
-	const showLatestQuote =
-		briefing.latestQuote !== null && briefing.latestQuote.id !== briefing.resurfaced?.id;
+	const showLatestQuote = view.latestQuote !== null && view.latestQuote.id !== view.resurfaced?.id;
 
 	return (
 		<>
-			<Masthead todayIso={todayIso} unreadNotifications={briefing.masthead.unreadNotifications} />
+			<Masthead todayIso={todayIso} unreadNotifications={view.masthead.unreadNotifications} />
 
 			{/* The day at a glance: the anchor sentence already carries the
 			 * counts, so it stands alone rather than repeating them as a strip
 			 * of big numbers — Awaiting decision fills the row beside it,
 			 * vertically centered against whichever side runs taller. */}
 			<div className="mt-12 grid grid-cols-1 gap-10 lg:grid-cols-[1.6fr_1fr] lg:items-center lg:gap-14">
-				<AnchorLine anchor={briefing.anchor} tz={tz} />
+				<AnchorLine anchor={view.anchor} tz={tz} />
 				<AlertsRow
-					inbox={briefing.inboxCount}
-					needsReview={briefing.needsReviewCount}
-					linksUnread={briefing.linksUnreadCount}
+					inbox={view.inboxCount}
+					needsReview={view.needsReviewCount}
+					linksUnread={view.linksUnreadCount}
 				/>
 			</div>
 
-			<DayScheduleSection
+			<DayView
 				schedule={schedule}
 				dateIso={selectedIso}
 				todayIso={todayIso}
@@ -96,22 +95,22 @@ export async function BriefingBody({
 
 			<div className="mt-14 grid grid-cols-1 gap-14 lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-x-10">
 				<div className="min-w-0">
-					<BriefSection lines={briefing.briefLines} />
+					<BriefSection lines={view.briefLines} />
 					<ResurfacedQuote
-						quote={briefing.resurfaced}
-						skips={briefing.resurfacedSkips}
-						hasQuotes={briefing.latestQuote !== null}
+						quote={view.resurfaced}
+						skips={view.resurfacedSkips}
+						hasQuotes={view.latestQuote !== null}
 					/>
-					{showLatestQuote && briefing.latestQuote && <LatestQuote quote={briefing.latestQuote} />}
+					{showLatestQuote && view.latestQuote && <LatestQuote quote={view.latestQuote} />}
 				</div>
 
 				<div className="min-w-0">
 					<RoutinesCard
-						buckets={briefing.routineBuckets}
-						done={briefing.routines.done}
-						total={briefing.routines.total}
+						buckets={view.routineBuckets}
+						done={view.routines.done}
+						total={view.routines.total}
 					/>
-					<ProjectsCard projects={briefing.projects} />
+					<ProjectsCard projects={view.projects} />
 				</div>
 			</div>
 		</>

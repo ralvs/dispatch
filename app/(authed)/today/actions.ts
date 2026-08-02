@@ -6,16 +6,16 @@ import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { formatInstant, parseDateIso, todayInTz } from "@/lib/dates";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
-import { type DaySchedulePayload, getDaySchedule } from "@/lib/services/briefing";
 import { getEvent } from "@/lib/services/calendar";
 import { ServiceError } from "@/lib/services/errors";
 import { createManualLink, listNoteIdsForTargets } from "@/lib/services/note-links";
 import { createNote } from "@/lib/services/notes";
 import { clearSkipsToday, recordQuoteSkip } from "@/lib/services/resurfacing";
 import { todayForRequest } from "@/lib/services/settings";
+import { type DaySchedulePayload, getDaySchedule } from "@/lib/services/today";
 
 /**
- * Load one day's tape + bands without re-running the ~13-query briefing chrome.
+ * Load one day's tape + bands without re-running the ~13-query Today digest.
  * Used by Today day-nav so chevrons stay on the client and never trip loading.tsx.
  */
 export async function loadDayScheduleAction(rawDate: string): Promise<DaySchedulePayload> {
@@ -25,14 +25,14 @@ export async function loadDayScheduleAction(rawDate: string): Promise<DaySchedul
 	const dateIso = parseDateIso(rawDate);
 	if (!dateIso) throw new ServiceError("Invalid date", null);
 
-	// Uncached, and on the RLS client — deliberately the same read briefing-body
+	// Uncached, and on the RLS client — deliberately the same read today-body
 	// does for a navigated day, because the two must not disagree. The cached
 	// variant lives up to 180s (cacheLife expire) and the caldav/reminders crons
 	// write calendar_events without busting the day-schedule tag, so a cached
 	// read can be older than what SSR/SoftRefresh already painted. Now that
 	// day-nav revalidates the day on screen in the background, serving that
 	// older copy would silently erase a freshly-synced event. Two indexed
-	// queries (lib/services/briefing.ts loadDayScheduleInputs) — the client-side
+	// queries (lib/services/today.ts loadDayScheduleInputs) — the client-side
 	// day cache is what makes repeat visits free, not this.
 	const schedule = await getDaySchedule(sb, tz, dateIso);
 	const nowUtcIso = new Date().toISOString();

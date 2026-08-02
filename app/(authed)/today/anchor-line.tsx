@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { formatInstant } from "@/lib/dates";
-import type { AnchorData } from "@/lib/services/briefing";
+import type { AnchorData } from "@/lib/services/today";
 
 /** The day at a glance: event count, the next one up, and open/overdue tasks. */
 export function AnchorLine({ anchor, tz }: { anchor: AnchorData; tz: string }) {

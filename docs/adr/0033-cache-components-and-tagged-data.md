@@ -7,6 +7,12 @@
 > client-side cache — see
 > [ADR-0034](./0034-the-client-owns-navigation-freshness.md). `today-chrome`
 > and `settings` are unaffected.
+>
+> **Renamed (2026-08-02).** `today-chrome` is now the `today-digest` tag and
+> `TodayDigest` type; "Today chrome" below means today's cold cached segment,
+> not UI frame. See
+> [ADR-0036](./0036-today-is-locked-day-follows-the-picker.md) for the full
+> vocabulary. Wording here is left as written.
 
 ## Context
 

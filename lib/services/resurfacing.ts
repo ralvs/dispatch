@@ -6,7 +6,7 @@ import { unwrap } from "@/lib/services/errors";
 // The Today page's "Resurfaced" card lets the owner skip past today's pick
 // (Next →) and undo the skips (Reset). Skips persist in resurfacing_seen —
 // DB-backed rather than the reference's cookie so they follow the account
-// across devices (docs/adr, Briefing redesign).
+// across devices (docs/adr, Today redesign).
 
 /** Quote ids dismissed today — pickResurfaced advances past these. */
 export async function listSkippedToday(sb: SupabaseClient, todayIso: string): Promise<string[]> {

@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Cross-request cache for /links (docs/adr/0035). Admin client after
- * requireOwnerPage(), as in lib/cache/briefing.ts.
+ * requireOwnerPage(), as in lib/cache/today.ts.
  *
  * The reading pile is filled mostly from outside the app — a bare URL posted
  * to /api/capture — so this entry depends on that route busting `links`.

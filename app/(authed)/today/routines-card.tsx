@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useOptimistic, useTransition } from "react";
 import { runAction } from "@/lib/client/toast";
-import type { RoutineBucket, RoutineBucketRow } from "@/lib/services/briefing";
+import type { RoutineBucket, RoutineBucketRow } from "@/lib/services/today";
 import { toggleCompletionAction } from "../routines/actions";
 import { RoutineCheckRow } from "./routine-check-row";
 
@@ -15,7 +15,7 @@ const BUCKET_LABELS: Record<RoutineBucket["bucket"], string> = {
 };
 
 /**
- * Owns useOptimistic for routine checkboxes so they flip before the briefing
+ * Owns useOptimistic for routine checkboxes so they flip before the Today
  * RSC round-trip — same pattern as DaySchedule task toggles.
  */
 export function RoutinesCard({

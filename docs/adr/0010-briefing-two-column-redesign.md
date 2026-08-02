@@ -1,5 +1,10 @@
 # Today becomes a two-column Briefing; cadence and skips derive from existing data
 
+> **Renamed (2026-08-02).** "Briefing" is retired as a domain term — the page
+> and its data are both `Today` now, and "In brief" is the only surviving
+> `brief`. See [ADR-0036](./0036-today-is-locked-day-follows-the-picker.md).
+> The layout decisions below stand; wording is left as written.
+
 The Today page moves from a single stacked column to the reference
 implementation's "The Briefing" editorial layout: masthead with ISO-week
 dateline and unread-notifications badge, a one-sentence commitments anchor,

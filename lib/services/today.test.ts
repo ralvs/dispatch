@@ -1,4 +1,10 @@
 import { describe, expect, it } from "vitest";
+import type { CalendarEventRow } from "@/lib/services/calendar";
+import type { DomainRow } from "@/lib/services/domains";
+import type { MilestoneRow, ProjectRow } from "@/lib/services/projects";
+import type { QuoteRow } from "@/lib/services/quotes";
+import type { CompletionRow, RoutineRow } from "@/lib/services/routines";
+import type { TaskRow } from "@/lib/services/tasks";
 import {
 	assembleDoingToday,
 	bucketRoutines,
@@ -10,13 +16,7 @@ import {
 	pickResurfaced,
 	quoteOfDay,
 	summarizeProjects,
-} from "@/lib/services/briefing";
-import type { CalendarEventRow } from "@/lib/services/calendar";
-import type { DomainRow } from "@/lib/services/domains";
-import type { MilestoneRow, ProjectRow } from "@/lib/services/projects";
-import type { QuoteRow } from "@/lib/services/quotes";
-import type { CompletionRow, RoutineRow } from "@/lib/services/routines";
-import type { TaskRow } from "@/lib/services/tasks";
+} from "@/lib/services/today";
 
 const TODAY = "2026-07-15";
 

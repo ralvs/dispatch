@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useTransition } from "react";
 import { runAction } from "@/lib/client/toast";
-import type { DayScheduleItem } from "@/lib/services/briefing";
+import type { DayScheduleItem } from "@/lib/services/today";
 import { type TaskRowHandlers, TaskRowItem } from "../tasks/task-row";
 import { createMeetingNoteForEventAction } from "./actions";
 

@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Cross-request cache for /notes (docs/adr/0035). Admin client after
- * requireOwnerPage(), as in lib/cache/briefing.ts.
+ * requireOwnerPage(), as in lib/cache/today.ts.
  *
  * The needs_review band is written by the sweep cron as well as by the app, so
  * this entry depends on app/api/cron/sweep busting `notes` — it does.

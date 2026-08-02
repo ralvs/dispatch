@@ -1,6 +1,6 @@
 // Frozen sample of one day, shared by every design on /compare so the five
-// directions are judged on form alone. Mirrors the shape of BriefingView
-// (lib/services/briefing.ts) but is plain data — no server imports, no auth.
+// directions are judged on form alone. Mirrors the shape of TodayView
+// (lib/services/today.ts) but is plain data — no server imports, no auth.
 
 export type CompareDay = typeof DAY;
 

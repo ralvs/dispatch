@@ -34,10 +34,26 @@ import { lastCompletedByDomain, listTasks, type TaskRow } from "@/lib/services/t
 import { isDueToday, isOverdue, isTop3Today } from "@/lib/task-predicates";
 
 // ─────────────────────────────────────────────────────────────────────────
-// The Today page's editorial briefing. getBriefing assembles a single read
-// of the day's shape — masthead, anchor, brief lines, doing-today, routines,
-// quotes, and at-a-glance widgets — from the underlying services. The pure
-// helpers below are unit-tested in isolation; the fetcher composes them.
+// The Today page's data. getToday assembles a single read of the day's
+// shape — masthead, anchor, brief lines, doing-today, routines, quotes, and
+// at-a-glance widgets — from the underlying services. The pure helpers below
+// are unit-tested in isolation; the fetcher composes them.
+//
+// Vocabulary (docs/adr/0036). The prefix tells you what a name follows:
+//
+//   Today*  is locked to the real calendar today.
+//     TodayView    — everything the page renders (digest + today's schedule)
+//     TodayDigest  — the cold half: quotes, projects, routines, cadence,
+//                    alert counts. Cross-request cached (lib/cache/today.ts).
+//
+//   Day*    follows the date picker (`?d=`), so it is not necessarily today.
+//     DaySchedule  — tasks + events for ONE date, in four bands
+//                    (All day / Timeline / Top 3 / Open)
+//     DayView      — the UI region that owns day navigation
+//     DayBands     — the four lists; DayTape the ruler; DayNav the chevrons
+//
+// "Brief" is narrower than all of these: BriefLine / BriefSection are the
+// "In brief" cadence rows, one section among many.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type CadenceLine = {
@@ -92,7 +108,7 @@ export type ProjectBrief = {
 	nextMilestone: { title: string } | null;
 };
 
-export type BriefingView = {
+export type TodayView = {
 	cadence: CadenceLine[];
 	// Counts Today's alerts row reads: tasks with no domain, notes the parser
 	// could not place, links not yet read.
@@ -262,7 +278,7 @@ export type DaySchedule = {
 	open: TaskRow[];
 };
 
-/** Payload for client day-nav: schedule bands only, not the full briefing chrome. */
+/** Payload for client day-nav: schedule bands only, not the full Today digest. */
 export type DaySchedulePayload = {
 	schedule: DaySchedule;
 	dateIso: string;
@@ -278,7 +294,7 @@ const OPEN_CAP = 10;
 /**
  * A task's due time as a UTC instant, or null when it has no usable one.
  * Defensive rather than throwing: a malformed time demotes the task to the
- * all-day band instead of taking the whole briefing down with it.
+ * all-day band instead of taking the whole Today read down with it.
  */
 function taskDueInstant(task: TaskRow, todayIso: string, tz: string): string | null {
 	if (task.due_time === null || !isWallClockTime(task.due_time)) return null;
@@ -552,7 +568,7 @@ const STREAK_HISTORY_DAYS = 60;
 /**
  * Hot segment: open tasks + calendar events for the day schedule.
  * Task writes only need this segment to feel current (soft split).
- * Exported so the Cache Components layer can cache chrome separately while
+ * Exported so the Cache Components layer can cache digest separately while
  * this path stays request-fresh (docs/adr/0033).
  */
 export async function loadDayScheduleInputs(
@@ -572,7 +588,7 @@ export async function loadDayScheduleInputs(
  * Unchanged by a single task checkbox in the common case.
  * Exported for cross-request `"use cache"` (docs/adr/0033).
  */
-export async function loadBriefingChrome(
+export async function loadTodayDigest(
 	sb: SupabaseClient,
 	todayIso: string,
 ): Promise<{
@@ -637,9 +653,9 @@ export async function loadBriefingChrome(
 }
 
 /**
- * The day bands for one date, without the ~13-query briefing chrome around
+ * The day bands for one date, without the ~13-query digest around
  * them. Today's day navigation calls this when it walks off today; the default
- * view keeps reading `getBriefing().daySchedule` and pays for no extra query.
+ * view keeps reading `getToday().daySchedule` and pays for no extra query.
  */
 export async function getDaySchedule(
 	sb: SupabaseClient,
@@ -650,17 +666,17 @@ export async function getDaySchedule(
 	return buildDaySchedule({ events, openTasks: open, dateIso, tz });
 }
 
-export type BriefingChrome = Awaited<ReturnType<typeof loadBriefingChrome>>;
+export type TodayDigest = Awaited<ReturnType<typeof loadTodayDigest>>;
 
-/** Pure assembly of the briefing view from pre-loaded chrome + schedule inputs. */
-export function assembleBriefing(
-	chrome: BriefingChrome,
+/** Pure assembly of the Today view from pre-loaded digest + schedule inputs. */
+export function assembleTodayView(
+	digest: TodayDigest,
 	open: TaskRow[],
 	todayEvents: CalendarEventRow[],
 	tz: string,
 	todayIso: string,
 	nowMs: number = Date.now(),
-): BriefingView {
+): TodayView {
 	const {
 		routines,
 		completionsToday,
@@ -674,7 +690,7 @@ export function assembleBriefing(
 		activeProjects,
 		linksUnread,
 		milestonesByProject,
-	} = chrome;
+	} = digest;
 
 	const overdue = open.filter((t) => isOverdue(t, todayIso));
 	const dueToday = open.filter((t) => isDueToday(t, todayIso));
@@ -731,18 +747,18 @@ export function assembleBriefing(
 	};
 }
 
-export async function getBriefing(
+export async function getToday(
 	sb: SupabaseClient,
 	tz: string,
 	todayIso: string,
 	nowMs: number = Date.now(),
-): Promise<BriefingView> {
-	// Soft split: schedule inputs vs chrome load in parallel; callers still
-	// see one getBriefing interface. Inbox count is derived from open tasks
+): Promise<TodayView> {
+	// Soft split: schedule inputs vs digest load in parallel; callers still
+	// see one getToday interface. Inbox count is derived from open tasks
 	// (no second listInboxTasks query).
-	const [{ open, events: todayEvents }, chrome] = await Promise.all([
+	const [{ open, events: todayEvents }, digest] = await Promise.all([
 		loadDayScheduleInputs(sb, tz, todayIso),
-		loadBriefingChrome(sb, todayIso),
+		loadTodayDigest(sb, todayIso),
 	]);
-	return assembleBriefing(chrome, open, todayEvents, tz, todayIso, nowMs);
+	return assembleTodayView(digest, open, todayEvents, tz, todayIso, nowMs);
 }

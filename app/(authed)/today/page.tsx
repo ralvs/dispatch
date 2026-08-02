@@ -3,15 +3,15 @@ import { SoftRefresh } from "@/components/soft-refresh";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { formatDateline, parseDateIso, todayInTz } from "@/lib/dates";
-import { BriefingBody } from "./briefing-body";
+import { TodayBody } from "./today-body";
 
 // The shell (masthead frame + section placeholders) paints synchronously;
-// the ~13-query briefing fan-out (lib/services/briefing.ts) streams in
+// the ~13-query Today fan-out (lib/services/today.ts) streams in
 // behind Suspense so the route doesn't block first paint on it. Masthead
-// (with the page's real h1) only mounts once the briefing resolves, so this
+// (with the page's real h1) only mounts once the Today read resolves, so this
 // fallback carries its own h1 — mirroring Masthead's markup — rather than
 // leaving the page headingless mid-stream.
-function BriefingFallback({ todayIso }: { todayIso: string }) {
+function TodayFallback({ todayIso }: { todayIso: string }) {
 	return (
 		<div>
 			<header className="hairline-strong pb-5">
@@ -59,8 +59,8 @@ export default async function TodayPage({
 			{/* No key on selectedIso: day flips are client-owned (schedule
 			 * Server Action) so chrome is not remounted. selectedIso only seeds
 			 * the first paint / SoftRefresh from `?d=`. */}
-			<Suspense fallback={<BriefingFallback todayIso={todayIso} />}>
-				<BriefingBody sb={sb} tz={tz} todayIso={todayIso} selectedIso={selectedIso} />
+			<Suspense fallback={<TodayFallback todayIso={todayIso} />}>
+				<TodayBody sb={sb} tz={tz} todayIso={todayIso} selectedIso={selectedIso} />
 			</Suspense>
 		</div>
 	);

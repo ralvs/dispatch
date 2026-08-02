@@ -1,5 +1,5 @@
 import type { TaskRow } from "@/lib/schemas/task";
-import type { DaySchedule, DayScheduleItem, DaySchedulePayload } from "@/lib/services/briefing";
+import type { DaySchedule, DayScheduleItem, DaySchedulePayload } from "@/lib/services/today";
 
 /** `content` is real data; `time` is the clock. Split so a write is
  *  distinguishable from a SoftRefresh tick. */
@@ -36,7 +36,7 @@ function projectTask(task: TaskRow) {
 	};
 }
 
-/** Fields that change an event row's on-screen appearance (timeline-row.tsx). */
+/** Fields that change an event row's on-screen appearance (schedule-row.tsx). */
 function projectEvent(event: DayScheduleItem & { kind: "event" }) {
 	return {
 		id: event.event.id,
@@ -85,7 +85,7 @@ export function daySignature(payload: DaySchedulePayload): DaySignature {
 		taskNoteIds: sortedEntries(payload.taskNoteIds),
 	});
 
-	// nowLabel === null is the module's "not today" signal (briefing-body.tsx
+	// nowLabel === null is the module's "not today" signal (today-body.tsx
 	// / actions.ts only populate it on the real today) — off-today the
 	// now-marker isn't drawn and dimming is uniform, so time must not
 	// contribute there. Truncate to the minute: nowUtcIso's only consumer is

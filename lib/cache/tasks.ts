@@ -12,7 +12,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 /**
  * Cross-request cache for /tasks (docs/adr/0035).
  *
- * Service-role client for the same reason lib/cache/briefing.ts uses one:
+ * Service-role client for the same reason lib/cache/today.ts uses one:
  * `"use cache"` cannot close over a cookie-bound RLS client. Call only after
  * requireOwnerPage() — single-user app, admin reads the rows the owner would.
  *

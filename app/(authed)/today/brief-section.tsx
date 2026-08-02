@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ColorDot } from "@/components/color-dot";
-import type { BriefLine } from "@/lib/services/briefing";
+import type { BriefLine } from "@/lib/services/today";
 import { CadenceBar } from "./cadence-bar";
 
 /**

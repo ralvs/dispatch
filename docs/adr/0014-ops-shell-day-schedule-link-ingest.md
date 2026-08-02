@@ -2,6 +2,12 @@
 
 Date: 2026-07-19
 
+> **Renamed (2026-08-02).** The day schedule's UI is now `DayView` (region),
+> `DayBands` (the four lists), `DayTape`, `DayNav`; `DaySchedule` is the data
+> type only. See
+> [ADR-0036](./0036-today-is-locked-day-follows-the-picker.md). Decisions
+> below stand; wording is left as written.
+
 ## Context
 
 After Phase 8 (PWA polish) the product works end-to-end, but daily use

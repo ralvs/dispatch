@@ -15,10 +15,10 @@ import {
 // DaySchedulePayload comes straight from lib/, not through actions.ts: a
 // "use server" module may only export async functions, and a re-exported type
 // there survives into the server-actions loader as an undefined binding.
-import type { DaySchedulePayload, DaySchedule as DayScheduleView } from "@/lib/services/briefing";
+import type { DaySchedule, DaySchedulePayload } from "@/lib/services/today";
 import { loadDayScheduleAction } from "./actions";
+import { DayBands } from "./day-bands";
 import { DayNav } from "./day-nav";
-import { DaySchedule } from "./day-schedule";
 import { DayTape } from "./day-tape";
 
 function hrefFor(dateIso: string, todayIso: string): string {
@@ -26,7 +26,7 @@ function hrefFor(dateIso: string, todayIso: string): string {
 }
 
 type View = {
-	schedule: DayScheduleView;
+	schedule: DaySchedule;
 	dateIso: string;
 	nowUtcIso: string;
 	nowLabel: string | null;
@@ -35,7 +35,7 @@ type View = {
 };
 
 function fromProps(props: {
-	schedule: DayScheduleView;
+	schedule: DaySchedule;
 	dateIso: string;
 	nowUtcIso: string;
 	nowLabel: string | null;
@@ -53,10 +53,10 @@ function fromProps(props: {
 }
 
 // The day tape + schedule list. Day navigation is client-owned so a chevron
-// only reloads getDaySchedule (via Server Action) — never the full briefing
+// only reloads getDaySchedule (via Server Action) — never the full Today
 // RSC payload or the route loading.tsx skeleton. `?d=` is kept in the URL
 // with history.replaceState for deep links and SoftRefresh honesty.
-export function DayScheduleSection({
+export function DayView({
 	schedule,
 	dateIso,
 	todayIso,
@@ -65,7 +65,7 @@ export function DayScheduleSection({
 	eventNoteIds,
 	taskNoteIds,
 }: {
-	schedule: DayScheduleView;
+	schedule: DaySchedule;
 	/** The day on screen. Equals todayIso unless the day nav has moved. */
 	dateIso: string;
 	todayIso: string;
@@ -275,7 +275,7 @@ export function DayScheduleSection({
 					/>
 				}
 			/>
-			<DaySchedule
+			<DayBands
 				schedule={view.schedule}
 				dateIso={view.dateIso}
 				todayIso={todayIso}

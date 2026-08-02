@@ -73,7 +73,7 @@ export async function markDomainShipped(sb: SupabaseClient, id: string): Promise
 // ─── Cadence rule ───────────────────────────────────────────────────────
 //
 // The numeric threshold that decides whether a domain shows up in Today's
-// "In brief". The reader is cadenceThresholdDays in lib/services/briefing.ts;
+// "In brief". The reader is cadenceThresholdDays in lib/services/today.ts;
 // these two must agree on the failure_patterns shape, which is why the writer
 // recognises exactly the same rule names.
 

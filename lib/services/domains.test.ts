@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
-import { cadenceThresholdDays } from "@/lib/services/briefing";
 import {
 	archiveDomain,
 	createDomain,
@@ -8,6 +7,7 @@ import {
 	updateDomain,
 	withCadenceThresholdDays,
 } from "@/lib/services/domains";
+import { cadenceThresholdDays } from "@/lib/services/today";
 
 // Stub covering .from().insert().select().single() and .from().update().eq().
 // These writers used to read the row back first, to refuse the system Inbox

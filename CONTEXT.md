@@ -83,9 +83,28 @@ ADR-0014, ADR-0022 and ADR-0024.
 
 ## day schedule
 
-Today’s “when is my day” composition: **all-day** band (all-day events + due
-tasks without time), **timeline** (timed events interleaved with timed tasks,
-ordered by UTC instant so a spillover event keeps its true place), and
-**open/unscheduled** tasks (starred first, then already-due, capped at 10).
-Built by `buildDaySchedule` in `lib/services/briefing.ts` — pure, so the
-partition and the sort are tested without a database. See ADR-0014.
+“When is my day” for **one date** — not necessarily today. Four bands:
+**all-day** (all-day events + due tasks without time), **timeline** (timed
+events interleaved with timed tasks, ordered by UTC instant so a spillover
+event keeps its true place), **top 3**, and **open/unscheduled** tasks
+(starred first, then already-due, capped at 10). Built by `buildDaySchedule`
+in `lib/services/today.ts` — pure, so the partition and the sort are tested
+without a database. See ADR-0014.
+
+`DaySchedule` is the data only. Its UI is `DayView` (the region owning day
+navigation and `?d=`), holding `DayTape` (ruler), `DayNav` (chevrons) and
+`DayBands` (the four lists).
+
+## Today vs Day
+
+The prefix carries the date semantics (ADR-0036):
+
+- **`Today*`** is locked to the real calendar today — `TodayView` (all the
+  page's data), `TodayDigest` (its cold cached half: quotes, projects,
+  routines, cadence, alert counts; tag `today-digest`).
+- **`Day*`** follows the date picker, so it may be any date — `DaySchedule`,
+  `DayView`, `DayBands`, `DayTape`, `DayNav`.
+
+`briefing` and `chrome` are retired as domain terms; `chrome` means UI frame
+again. **brief** is only the "In brief" cadence rows (`BriefLine`,
+`BriefSection`) — one section, not the page.

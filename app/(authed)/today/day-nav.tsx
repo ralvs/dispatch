@@ -2,8 +2,8 @@
 
 import { formatDay, formatDayNavLabel, shiftDay } from "@/lib/dates";
 
-// Day selection is client-owned (DayScheduleSection) so flipping a day only
-// reloads the schedule payload — not the full briefing RSC / loading.tsx.
+// Day selection is client-owned (DayView) so flipping a day only
+// reloads the schedule payload — not the full Today RSC / loading.tsx.
 // `?d=` still updates via history for shareable URLs and SoftRefresh.
 
 function IconChevron({ direction }: { direction: "left" | "right" }) {

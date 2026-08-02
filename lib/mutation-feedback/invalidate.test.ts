@@ -31,7 +31,7 @@ const ALL_KINDS: MutationKind[] = [
 /** Tags with a live `"use cache"` reader. A write that changes data feeding one
  * of these and fails to name it is a staleness bug — the whole point of §A. */
 const LIVE_TAGS = [
-	CacheTag.todayChrome,
+	CacheTag.todayDigest,
 	CacheTag.settings,
 	CacheTag.tasks,
 	CacheTag.notes,
@@ -83,7 +83,7 @@ describe("invalidationFor", () => {
 		it("a task write busts tasks and the Today chrome", () => {
 			const { tags } = invalidationFor("task.write");
 			expect(tags).toContain(CacheTag.tasks);
-			expect(tags).toContain(CacheTag.todayChrome);
+			expect(tags).toContain(CacheTag.todayDigest);
 		});
 
 		it("a note write busts notes", () => {
@@ -94,19 +94,19 @@ describe("invalidationFor", () => {
 			// The chrome carries the unread-link count (unreadLinkCount).
 			const { tags } = invalidationFor("links.write");
 			expect(tags).toContain(CacheTag.links);
-			expect(tags).toContain(CacheTag.todayChrome);
+			expect(tags).toContain(CacheTag.todayDigest);
 		});
 
 		it("a notification write busts the Today chrome", () => {
 			// The masthead badge reads unreadCount out of the cached chrome.
-			expect(invalidationFor("notification.write").tags).toContain(CacheTag.todayChrome);
+			expect(invalidationFor("notification.write").tags).toContain(CacheTag.todayDigest);
 		});
 
 		it("a capture busts tasks and the Today chrome", () => {
 			// needsReview feeds the alerts row from the same cached chrome.
 			const { tags } = invalidationFor("capture.settled");
 			expect(tags).toContain(CacheTag.tasks);
-			expect(tags).toContain(CacheTag.todayChrome);
+			expect(tags).toContain(CacheTag.todayDigest);
 		});
 
 		it("a timezone change busts every live tag", () => {

@@ -1,8 +1,8 @@
 import { PushToggle } from "@/components/push-toggle";
 import { requireOwnerPage } from "@/lib/auth";
-import { cadenceThresholdDays } from "@/lib/services/briefing";
 import { listDomains } from "@/lib/services/domains";
 import { getAppTimezone, getReminderSettings } from "@/lib/services/settings";
+import { cadenceThresholdDays } from "@/lib/services/today";
 import { DomainForm } from "./domain-form";
 import { DomainRowItem } from "./domain-row";
 import { ReminderForm } from "./reminder-form";

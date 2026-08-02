@@ -2,8 +2,8 @@
 
 import { useMemo, useOptimistic, useTransition } from "react";
 import { runAction } from "@/lib/client/toast";
-import type { DaySchedule as DayScheduleData, DayScheduleItem } from "@/lib/services/briefing";
 import type { TaskRow } from "@/lib/services/tasks";
+import type { DaySchedule, DayScheduleItem } from "@/lib/services/today";
 import {
 	type ApplyContext,
 	applyOpenTaskList,
@@ -12,7 +12,7 @@ import {
 import { isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
 import { completeTaskAction, reopenTaskAction, toggleTop3Action } from "../tasks/actions";
 import { TaskRowItem } from "../tasks/task-row";
-import { ScheduleRow } from "./timeline-row";
+import { ScheduleRow } from "./schedule-row";
 
 function Band({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
@@ -23,7 +23,7 @@ function Band({ title, children }: { title: string; children: React.ReactNode })
 	);
 }
 
-function collectOpenTasks(schedule: DayScheduleData): TaskRow[] {
+function collectOpenTasks(schedule: DaySchedule): TaskRow[] {
 	const byId = new Map<string, TaskRow>();
 	for (const item of schedule.allDay) {
 		if (item.kind === "task") byId.set(item.task.id, item.task);
@@ -40,11 +40,7 @@ function collectOpenTasks(schedule: DayScheduleData): TaskRow[] {
 	return [...byId.values()];
 }
 
-function projectSchedule(
-	schedule: DayScheduleData,
-	open: TaskRow[],
-	dateIso: string,
-): DayScheduleData {
+function projectSchedule(schedule: DaySchedule, open: TaskRow[], dateIso: string): DaySchedule {
 	const byId = new Map(open.map((t) => [t.id, t]));
 
 	function mapItems(items: DayScheduleItem[]): DayScheduleItem[] {
@@ -63,7 +59,7 @@ function projectSchedule(
 
 	// Top 3 re-derives from the optimistic list rather than from schedule.top3,
 	// so tapping ☆ on any band moves the row into (or out of) the shortlist
-	// immediately instead of waiting for the briefing RSC round-trip.
+	// immediately instead of waiting for the Today RSC round-trip.
 	const top3 = open.filter((t) => t.status === "open" && isTop3Today(t, dateIso));
 
 	// Open carries the leftovers only — a row promoted to Top 3 leaves this band
@@ -89,9 +85,9 @@ function projectSchedule(
  * sits in its own column on the right so it doesn't compete with the clock.
  *
  * Owns useOptimistic for complete / reopen / top-3 so checkboxes flip before
- * the full briefing RSC round-trip.
+ * the full Today RSC round-trip.
  */
-export function DaySchedule({
+export function DayBands({
 	schedule,
 	dateIso,
 	todayIso,
@@ -99,7 +95,7 @@ export function DaySchedule({
 	eventNoteIds,
 	taskNoteIds,
 }: {
-	schedule: DayScheduleData;
+	schedule: DaySchedule;
 	/**
 	 * The day on screen. Bands derive from it — which tasks are starred for the
 	 * day, which have arrived — and ☆ pins to it, so starring while looking at

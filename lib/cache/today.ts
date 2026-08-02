@@ -1,7 +1,7 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { CacheTag } from "@/lib/cache/tags";
-import { loadBriefingChrome } from "@/lib/services/briefing";
+import { loadTodayDigest } from "@/lib/services/today";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -12,10 +12,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * single-user app; admin reads the same rows the owner would under RLS.
  */
 
-/** Cold chrome: quotes, projects, routines, domain cadence, alert counts. */
-export async function getCachedBriefingChrome(todayIso: string) {
+/** Cold digest: quotes, projects, routines, domain cadence, alert counts. */
+export async function getCachedTodayDigest(todayIso: string) {
 	"use cache";
-	cacheTag(CacheTag.todayChrome);
+	cacheTag(CacheTag.todayDigest);
 	cacheLife({ stale: 60, revalidate: 120, expire: 600 });
-	return loadBriefingChrome(createAdminClient(), todayIso);
+	return loadTodayDigest(createAdminClient(), todayIso);
 }

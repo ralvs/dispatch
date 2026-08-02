@@ -1,4 +1,4 @@
-import type { RoutineBucketRow } from "@/lib/services/briefing";
+import type { RoutineBucketRow } from "@/lib/services/today";
 
 export function RoutineCheckRow({
 	row,

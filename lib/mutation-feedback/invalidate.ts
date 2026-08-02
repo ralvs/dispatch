@@ -44,7 +44,7 @@ import { CacheTag, type CacheTagName } from "@/lib/cache/tags";
  *   off between mutations, since any mutation wipes it anyway.
  *
  * One concrete dependent: `revalidatePath("/today")` in taskViews() is what
- * re-renders DayScheduleSection, and its prop-sync effect is what drops the
+ * re-renders DayView, and its prop-sync effect is what drops the
  * other days from the client day cache (lib/day-nav/revalidation.ts). Dropping
  * that path would leave a stale day on screen for up to REVALIDATE_AFTER_MS.
  *
@@ -103,37 +103,37 @@ export function invalidationFor(kind: MutationKind, detail?: { id?: string }): I
 		case "task.assign":
 		case "capture.settled":
 			return {
-				tags: [CacheTag.daySchedule, CacheTag.tasks, CacheTag.todayChrome],
+				tags: [CacheTag.daySchedule, CacheTag.tasks, CacheTag.todayDigest],
 				paths: p("/tasks", "/inbox", "/today"),
 			};
 		case "routine.write":
 			return {
-				tags: [CacheTag.routines, CacheTag.todayChrome],
+				tags: [CacheTag.routines, CacheTag.todayDigest],
 				paths: p("/routines", "/today"),
 			};
 		case "links.write":
-			return { tags: [CacheTag.links, CacheTag.todayChrome], paths: p("/links", "/today") };
+			return { tags: [CacheTag.links, CacheTag.todayDigest], paths: p("/links", "/today") };
 		case "notification.write":
 			return {
-				tags: [CacheTag.notifications, CacheTag.todayChrome],
+				tags: [CacheTag.notifications, CacheTag.todayDigest],
 				paths: p("/notifications", "/today"),
 			};
 		case "settings.domain":
 			return {
-				tags: [CacheTag.settings, CacheTag.todayChrome, CacheTag.tasks],
+				tags: [CacheTag.settings, CacheTag.todayDigest, CacheTag.tasks],
 				paths: p("/settings", "/today", "/tasks"),
 			};
 		case "settings.timezone":
 			return {
 				tags: [
 					CacheTag.settings,
-					CacheTag.todayChrome,
+					CacheTag.todayDigest,
 					CacheTag.daySchedule,
 					CacheTag.tasks,
 					CacheTag.notes,
 				],
 				// Timezone genuinely reshapes every page (day boundaries, dates,
-				// briefing) — the app-wide invalidation is warranted here.
+				// the Today digest) — the app-wide invalidation is warranted here.
 				paths: [{ path: "/", type: "layout" }],
 			};
 		case "theme":
@@ -143,14 +143,14 @@ export function invalidationFor(kind: MutationKind, detail?: { id?: string }): I
 		case "settings.reminders":
 			return { tags: [CacheTag.settings], paths: p("/settings") };
 		case "today.only":
-			return { tags: [CacheTag.todayChrome, CacheTag.daySchedule], paths: p("/today") };
+			return { tags: [CacheTag.todayDigest, CacheTag.daySchedule], paths: p("/today") };
 		case "notes.write":
 			return {
 				tags: [CacheTag.notes],
 				paths: detail?.id ? p("/notes", `/notes/${detail.id}`) : p("/notes"),
 			};
 		case "quotes.write":
-			return { tags: [CacheTag.quotes, CacheTag.todayChrome], paths: p("/quotes", "/today") };
+			return { tags: [CacheTag.quotes, CacheTag.todayDigest], paths: p("/quotes", "/today") };
 		case "journal.write":
 			return { tags: [CacheTag.journal], paths: p("/journal") };
 		case "people.write":
@@ -159,10 +159,10 @@ export function invalidationFor(kind: MutationKind, detail?: { id?: string }): I
 				paths: detail?.id ? p("/people", `/people/${detail.id}`) : p("/people"),
 			};
 		case "projects.write":
-			return { tags: [CacheTag.projects, CacheTag.todayChrome], paths: p("/projects", "/today") };
+			return { tags: [CacheTag.projects, CacheTag.todayDigest], paths: p("/projects", "/today") };
 		case "projects.detail":
 			return {
-				tags: [CacheTag.projects, CacheTag.todayChrome],
+				tags: [CacheTag.projects, CacheTag.todayDigest],
 				paths: detail?.id
 					? p("/projects", `/projects/${detail.id}`, "/today")
 					: p("/projects", "/today"),

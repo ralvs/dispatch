@@ -1,6 +1,5 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { type BriefingView, getBriefing } from "@/lib/services/briefing";
 import type { DomainRow } from "@/lib/services/domains";
 import { listDomains } from "@/lib/services/domains";
 import type { JournalEntryRow } from "@/lib/services/journal";
@@ -15,6 +14,7 @@ import type { QuoteRow } from "@/lib/services/quotes";
 import { listQuotes } from "@/lib/services/quotes";
 import type { TaskRow } from "@/lib/services/tasks";
 import { listTasks } from "@/lib/services/tasks";
+import { getToday, type TodayView } from "@/lib/services/today";
 
 // ─────────────────────────────────────────────────────────────────────────
 // The read-only snapshot fed to the chat model as its CONTEXT block. The
@@ -31,7 +31,7 @@ const NOTE_CAP = 15;
 const QUOTE_CAP = 15;
 
 export type ChatSnapshot = {
-	briefing?: BriefingView;
+	today?: TodayView;
 	tasks?: TaskRow[];
 	projects?: ProjectRow[];
 	people?: PersonRow[];
@@ -66,8 +66,8 @@ ${context}`;
 export function renderChatContext(snapshot: ChatSnapshot): string {
 	const sections: string[] = [];
 
-	if (snapshot.briefing) {
-		const b = snapshot.briefing;
+	if (snapshot.today) {
+		const b = snapshot.today;
 		const cadence =
 			b.cadence.length > 0
 				? b.cadence.map((c) => `${c.big} ${c.label}`).join(", ")
@@ -83,7 +83,7 @@ export function renderChatContext(snapshot: ChatSnapshot): string {
 			: "none";
 		sections.push(
 			[
-				"## Briefing",
+				"## Today",
 				`Cadence: ${cadence}`,
 				`Inbox: ${b.inboxCount} unfiled`,
 				`Doing today: ${b.doingToday.length ? b.doingToday.map((t) => t.title).join(", ") : "nothing pinned"}`,
@@ -171,8 +171,8 @@ export async function buildChatSystemPrompt(
 	tz: string,
 	todayIso: string,
 ): Promise<string> {
-	const [briefing, tasks, projects, people, entries, notes, quotes, domains] = await Promise.all([
-		safeFetch(() => getBriefing(sb, tz, todayIso)),
+	const [today, tasks, projects, people, entries, notes, quotes, domains] = await Promise.all([
+		safeFetch(() => getToday(sb, tz, todayIso)),
 		safeFetch(() => listTasks(sb, { status: "open" })),
 		safeFetch(() => listProjects(sb)),
 		safeFetch(() => listPeople(sb)),
@@ -183,7 +183,7 @@ export async function buildChatSystemPrompt(
 	]);
 
 	const context = renderChatContext({
-		briefing,
+		today,
 		tasks,
 		projects,
 		people,

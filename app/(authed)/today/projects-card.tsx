@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ProjectBrief } from "@/lib/services/briefing";
+import type { ProjectBrief } from "@/lib/services/today";
 
 export function ProjectsCard({ projects }: { projects: ProjectBrief[] }) {
 	if (projects.length === 0) return null;

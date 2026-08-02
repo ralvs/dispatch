@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { DayScheduleItem } from "@/lib/services/briefing";
+import type { DayScheduleItem } from "@/lib/services/today";
 import { isTop3Today } from "@/lib/task-predicates";
 
 /** Fallback window when the timeline is empty (still includes `now`). */
@@ -229,7 +229,7 @@ const TAPE_CSS = `
 }
 
 /* An event that has ended stays on the tape — it just stops competing with
- * what is still ahead. Matches the past-row treatment in timeline-row.tsx. */
+ * what is still ahead. Matches the past-row treatment in schedule-row.tsx. */
 .dt-flag-dot.is-past,
 .dt-flag-stem.is-past {
 	opacity: 0.5;

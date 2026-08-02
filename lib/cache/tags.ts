@@ -4,7 +4,7 @@
  */
 export const CacheTag = {
 	/** Quotes, projects, routines stats, domains cadence, alert counts. */
-	todayChrome: "today-chrome",
+	todayDigest: "today-digest",
 	/** Open tasks + calendar events for day bands (any date). */
 	daySchedule: "day-schedule",
 	tasks: "tasks",
