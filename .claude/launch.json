@@ -12,6 +12,12 @@
 			"runtimeExecutable": "/Volumes/stuff/renan/dispatch/node_modules/.bin/next",
 			"runtimeArgs": ["dev", "--turbopack", "-p", "3100"],
 			"port": 3100
+		},
+		{
+			"name": "dispatch-prod",
+			"runtimeExecutable": "/Volumes/stuff/renan/dispatch/node_modules/.bin/next",
+			"runtimeArgs": ["start", "-p", "3200"],
+			"port": 3200
 		}
 	]
 }
