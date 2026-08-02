@@ -105,22 +105,14 @@ body {
 
 /*
  * The authed shell fills the screen. In a browser tab that is 100dvh (set in
- * the layout) so the collapsing toolbars shrink it. An installed iOS PWA is
- * the exception: it resolves viewport units against a viewport that has the
- * safe areas already taken out, and only recomputes them on an unrelated
- * reflow — which is why the app sometimes snapped to the right height after
- * the keyboard opened and closed, and sat short of the bottom the rest of the
- * time. Anchor to the initial containing block instead: under
- * viewportFit:"cover" that is the whole screen, it is not a viewport unit, and
- * it cannot go stale. `height: auto` is needed because top+bottom+height would
- * be over-constrained and the height would win.
+ * the layout) so the collapsing toolbars shrink it. Installed, it is a height
+ * measured in JS instead — no viewport unit is trustworthy there. Both the
+ * measurement and the data-standalone flag come from SHELL_BOOT in
+ * app/layout.tsx, which explains why. The 100dvh fallback keeps this honest if
+ * the script never runs.
  */
-@media (display-mode: standalone) {
-	.app-shell {
-		position: fixed;
-		inset: 0;
-		height: auto;
-	}
+html[data-standalone] .app-shell {
+	height: var(--app-h, 100dvh);
 }
 
 /* Every interactive surface gets a visible keyboard ring by default. Components
