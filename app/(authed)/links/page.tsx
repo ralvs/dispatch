@@ -1,12 +1,14 @@
 import { requireOwnerPage } from "@/lib/auth";
-import { listLinks } from "@/lib/services/links";
-import { getAppTimezone } from "@/lib/services/settings";
+import { getCachedLinks } from "@/lib/cache/links";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { LinkRowItem } from "./link-row";
 
 // The link reading list (ADR-0014, renamed from /ingest in ADR-0022).
 export default async function LinksPage() {
-	const { sb } = await requireOwnerPage();
-	const [links, tz] = await Promise.all([listLinks(sb, { limit: 200 }), getAppTimezone(sb)]);
+	// Security boundary first (iron rule #2) — the cached reads use the
+	// service-role client.
+	await requireOwnerPage();
+	const [links, tz] = await Promise.all([getCachedLinks(), getCachedAppTimezone()]);
 
 	const unread = links.filter((l) => l.status === "unread");
 	const read = links.filter((l) => l.status === "read");

@@ -1,12 +1,7 @@
 import { requireOwnerPage } from "@/lib/auth";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
+import { getCachedTaskBoard } from "@/lib/cache/tasks";
 import { todayInTz } from "@/lib/dates";
-import { listDomains } from "@/lib/services/domains";
-import { listMentionsForSources } from "@/lib/services/mentions";
-import { listNoteIdsForTargets } from "@/lib/services/note-links";
-import { listMentionCandidates } from "@/lib/services/people";
-import { listProjects } from "@/lib/services/projects";
-import { getAppTimezone } from "@/lib/services/settings";
-import { listRecentDone, listTasks } from "@/lib/services/tasks";
 import { TaskList } from "./task-list";
 
 export default async function TasksPage({
@@ -14,37 +9,25 @@ export default async function TasksPage({
 }: {
 	searchParams: Promise<{ edit?: string; status?: string; project?: string; domain?: string }>;
 }) {
-	const { sb } = await requireOwnerPage();
+	// The security boundary stays here (iron rule #2). The cached read below
+	// runs on the service-role client and must never precede it.
+	await requireOwnerPage();
 	const {
 		edit: editTaskId,
 		status: initialStatus,
 		project: initialProjectId,
 		domain: initialDomainId,
 	} = await searchParams;
-	const [tz, openTasks, doneTasks, domains, projects, people] = await Promise.all([
-		getAppTimezone(sb),
-		listTasks(sb, { status: "open" }),
-		// Only the "Recently done" band consumes these — there is no Done filter
-		// to page through, so ten is the whole appetite.
-		listRecentDone(sb, 10),
-		listDomains(sb),
-		listProjects(sb),
-		listMentionCandidates(sb),
-	]);
+
+	// searchParams only seed the client filter state — every one of them filters
+	// inside TaskList — so they are deliberately not part of the cache key.
+	const [tz, board] = await Promise.all([getCachedAppTimezone(), getCachedTaskBoard()]);
+	const { openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions } = board;
+
+	// Derived per request, not cached: an entry that survived midnight would
+	// otherwise paint yesterday's overdue set.
 	const todayIso = todayInTz(tz);
 	const inboxCount = openTasks.filter((t) => t.domain_id === null).length;
-	const allTaskIds = [...openTasks, ...doneTasks].map((t) => t.id);
-	const [taskNoteIds, taskMentions] = await Promise.all([
-		listNoteIdsForTargets(sb, "task", allTaskIds).then((rows) => Object.fromEntries(rows)),
-		listMentionsForSources(sb, "task", allTaskIds).then((map) =>
-			Object.fromEntries(
-				[...map.entries()].map(([id, persons]) => [
-					id,
-					persons.map((p) => ({ id: p.id, name: p.name })),
-				]),
-			),
-		),
-	]);
 
 	return (
 		// Header included: the count strip is the status filter, so it lives in

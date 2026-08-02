@@ -1,15 +1,16 @@
 import { requireOwnerPage } from "@/lib/auth";
-import { listNotes } from "@/lib/services/notes";
-import { getAppTimezone } from "@/lib/services/settings";
+import { getCachedNoteLists } from "@/lib/cache/notes";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { createBlankNoteAction } from "./actions";
 import { NoteList } from "./note-list";
 
 export default async function NotesPage() {
-	const { sb } = await requireOwnerPage();
-	const [needsReview, allNotes, tz] = await Promise.all([
-		listNotes(sb, { needsReview: true }),
-		listNotes(sb, { needsReview: false }),
-		getAppTimezone(sb),
+	// Security boundary first (iron rule #2) — the cached reads use the
+	// service-role client.
+	await requireOwnerPage();
+	const [{ needsReview, allNotes }, tz] = await Promise.all([
+		getCachedNoteLists(),
+		getCachedAppTimezone(),
 	]);
 
 	return (
