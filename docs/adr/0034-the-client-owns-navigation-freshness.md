@@ -2,6 +2,14 @@
 
 Date: 2026-07-31
 
+> **Corrected in part (2026-08-02).** The last two Consequences below — the
+> "remaining unlock" from wiring tags, and the open cron/API invalidation gap —
+> are both settled by
+> [ADR-0035](./0035-tags-are-for-query-cost-not-for-navigation.md). The unlock
+> does not exist: `pathWasRevalidated` is one flag gating both the fresh RSC
+> payload and the client-cache wipe, so tag wiring cannot make navigation
+> survive a write. The gap is closed. Everything else here stands.
+
 Supersedes ADR-0033 Decision 4 in part (the `day-schedule` segment) and
 narrows Decision 7.
 
