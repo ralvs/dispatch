@@ -1,4 +1,5 @@
 import { Extension } from "@tiptap/core";
+import { PluginKey } from "@tiptap/pm/state";
 import Suggestion, { type SuggestionProps } from "@tiptap/suggestion";
 import { createRoot, type Root } from "react-dom/client";
 import { type MentionCandidate, normalizeName } from "@/lib/mentions";
@@ -10,6 +11,10 @@ import { type MentionCandidate, normalizeName } from "@/lib/mentions";
 // never disagree.
 
 const MAX_RESULTS = 8;
+
+// Distinct from the wikilink suggestion's key — see the note there; the
+// shared `suggestion` default would make ProseMirror throw at editor mount.
+const mentionSuggestionKey = new PluginKey("mentionSuggestion");
 
 function matches(candidate: MentionCandidate, query: string): boolean {
 	if (query === "") return true;
@@ -93,6 +98,7 @@ export function createMentionSuggestionExtension(people: MentionCandidate[]) {
 			return [
 				Suggestion({
 					editor: this.editor,
+					pluginKey: mentionSuggestionKey,
 					char: "@",
 					allowSpaces: true,
 					startOfLine: false,

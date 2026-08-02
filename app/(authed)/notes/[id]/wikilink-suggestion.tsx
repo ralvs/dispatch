@@ -1,4 +1,5 @@
 import { Extension } from "@tiptap/core";
+import { PluginKey } from "@tiptap/pm/state";
 import Suggestion, { type SuggestionProps } from "@tiptap/suggestion";
 import { createRoot, type Root } from "react-dom/client";
 import { displayTitle } from "@/lib/note-display";
@@ -7,6 +8,11 @@ import { sanitizeLabel } from "@/lib/wikilinks";
 export type WikilinkCandidate = { id: string; title: string | null; body: string };
 
 const MAX_RESULTS = 8;
+
+// @tiptap/suggestion defaults every instance to the plugin key `suggestion`,
+// and ProseMirror rejects two different plugins sharing one key. The editor
+// runs this alongside the `@` mention suggestion, so both must be keyed.
+const wikilinkSuggestionKey = new PluginKey("wikilinkSuggestion");
 
 function matches(candidate: WikilinkCandidate, query: string, currentNoteId: string): boolean {
 	if (candidate.id === currentNoteId) return false;
@@ -94,6 +100,7 @@ export function createWikilinkSuggestionExtension(
 			return [
 				Suggestion({
 					editor: this.editor,
+					pluginKey: wikilinkSuggestionKey,
 					char: "[[",
 					allowSpaces: true,
 					startOfLine: false,
