@@ -48,13 +48,29 @@ import { CacheTag, type CacheTagName } from "@/lib/cache/tags";
  * other days from the client day cache (lib/day-nav/revalidation.ts). Dropping
  * that path would leave a stale day on screen for up to REVALIDATE_AFTER_MS.
  *
- * The 9 tags below that no cached function consumes — tasks, notes, links,
- * notifications, routines, quotes, journal, people, projects — are no-ops
- * today (only today-chrome / day-schedule / settings are wired to a
- * `"use cache"` read). Wiring them is the unlock: it's what would let some of
- * these `revalidatePath` calls become `revalidateTag` and stop wiping the
- * client cache on every write.
+ * ADR-0034 recorded a hope that wiring the unused tags to `"use cache"` reads
+ * would let these `revalidatePath` calls become `revalidateTag` and stop wiping
+ * the client cache on every write. It cannot — see docs/adr/0035. The same
+ * `pathWasRevalidated` flag is read by action-handler.js:901 (unset => no fresh
+ * RSC payload comes back) and by server-action-reducer.js:192-208 (set =>
+ * invalidateBfCache(), globally). "Navigation stays cached across writes" and
+ * "my own write lands" are one switch in opposite positions, so no tag wiring
+ * buys the former. Tags are worth wiring for the server-side query saving
+ * alone, which is why tasks / notes / links are now cached in lib/cache/.
+ *
+ * Still consumed by nothing, and therefore no-ops: day-schedule (orphaned when
+ * 38df3e3 removed its last reader), routines, quotes, journal, people,
+ * projects, notifications. They are kept, not deleted, so that the external
+ * write paths below stay correct-by-construction if a cached read is added.
  */
+/**
+ * One path to revalidate. `layout` mirrors revalidatePath's second argument.
+ */
+export type MutationPath = { path: string; type?: "layout" };
+
+/** What a mutation invalidates, as data. Pure — see invalidate.test.ts. */
+export type Invalidation = { tags: CacheTagName[]; paths: MutationPath[] };
+
 export type MutationKind =
 	| "task.write"
 	| "task.assign"
@@ -74,99 +90,121 @@ export type MutationKind =
 	| "projects.write"
 	| "projects.detail";
 
-function tag(...tags: CacheTagName[]) {
-	// Next 16: second arg is a cacheLife profile for stale-while-revalidate.
-	for (const t of tags) revalidateTag(t, "max");
-}
+/**
+ * The whole table, as data rather than as side effects — so route handlers can
+ * take the tags without the paths, and so a test can assert on it without a
+ * Next request scope. Nothing here calls into Next.
+ */
+export function invalidationFor(kind: MutationKind, detail?: { id?: string }): Invalidation {
+	const p = (...paths: string[]): MutationPath[] => paths.map((path) => ({ path }));
 
-function taskViews() {
-	tag(CacheTag.daySchedule, CacheTag.tasks, CacheTag.todayChrome);
-	revalidatePath("/tasks");
-	revalidatePath("/inbox");
-	revalidatePath("/today");
-}
-
-export function afterMutation(kind: MutationKind, detail?: { id?: string }): void {
 	switch (kind) {
 		case "task.write":
 		case "task.assign":
 		case "capture.settled":
-			taskViews();
-			return;
+			return {
+				tags: [CacheTag.daySchedule, CacheTag.tasks, CacheTag.todayChrome],
+				paths: p("/tasks", "/inbox", "/today"),
+			};
 		case "routine.write":
-			tag(CacheTag.routines, CacheTag.todayChrome);
-			revalidatePath("/routines");
-			revalidatePath("/today");
-			return;
+			return {
+				tags: [CacheTag.routines, CacheTag.todayChrome],
+				paths: p("/routines", "/today"),
+			};
 		case "links.write":
-			tag(CacheTag.links, CacheTag.todayChrome);
-			revalidatePath("/links");
-			revalidatePath("/today");
-			return;
+			return { tags: [CacheTag.links, CacheTag.todayChrome], paths: p("/links", "/today") };
 		case "notification.write":
-			tag(CacheTag.notifications, CacheTag.todayChrome);
-			revalidatePath("/notifications");
-			revalidatePath("/today");
-			return;
+			return {
+				tags: [CacheTag.notifications, CacheTag.todayChrome],
+				paths: p("/notifications", "/today"),
+			};
 		case "settings.domain":
-			tag(CacheTag.settings, CacheTag.todayChrome, CacheTag.tasks);
-			revalidatePath("/settings");
-			revalidatePath("/today");
-			revalidatePath("/tasks");
-			return;
+			return {
+				tags: [CacheTag.settings, CacheTag.todayChrome, CacheTag.tasks],
+				paths: p("/settings", "/today", "/tasks"),
+			};
 		case "settings.timezone":
-			tag(
-				CacheTag.settings,
-				CacheTag.todayChrome,
-				CacheTag.daySchedule,
-				CacheTag.tasks,
-				CacheTag.notes,
-			);
-			// Timezone genuinely reshapes every page (day boundaries, dates,
-			// briefing) — the app-wide invalidation is warranted here.
-			revalidatePath("/", "layout");
-			return;
+			return {
+				tags: [
+					CacheTag.settings,
+					CacheTag.todayChrome,
+					CacheTag.daySchedule,
+					CacheTag.tasks,
+					CacheTag.notes,
+				],
+				// Timezone genuinely reshapes every page (day boundaries, dates,
+				// briefing) — the app-wide invalidation is warranted here.
+				paths: [{ path: "/", type: "layout" }],
+			};
 		case "theme":
 			// Nothing to revalidate. Theme is a cookie plus `data-theme` on
 			// <html> via the boot script — not a data cache entry.
-			return;
+			return { tags: [], paths: [] };
 		case "settings.reminders":
-			tag(CacheTag.settings);
-			revalidatePath("/settings");
-			return;
+			return { tags: [CacheTag.settings], paths: p("/settings") };
 		case "today.only":
-			tag(CacheTag.todayChrome, CacheTag.daySchedule);
-			revalidatePath("/today");
-			return;
+			return { tags: [CacheTag.todayChrome, CacheTag.daySchedule], paths: p("/today") };
 		case "notes.write":
-			tag(CacheTag.notes);
-			revalidatePath("/notes");
-			if (detail?.id) revalidatePath(`/notes/${detail.id}`);
-			return;
+			return {
+				tags: [CacheTag.notes],
+				paths: detail?.id ? p("/notes", `/notes/${detail.id}`) : p("/notes"),
+			};
 		case "quotes.write":
-			tag(CacheTag.quotes, CacheTag.todayChrome);
-			revalidatePath("/quotes");
-			revalidatePath("/today");
-			return;
+			return { tags: [CacheTag.quotes, CacheTag.todayChrome], paths: p("/quotes", "/today") };
 		case "journal.write":
-			tag(CacheTag.journal);
-			revalidatePath("/journal");
-			return;
+			return { tags: [CacheTag.journal], paths: p("/journal") };
 		case "people.write":
-			tag(CacheTag.people);
-			revalidatePath("/people");
-			if (detail?.id) revalidatePath(`/people/${detail.id}`);
-			return;
+			return {
+				tags: [CacheTag.people],
+				paths: detail?.id ? p("/people", `/people/${detail.id}`) : p("/people"),
+			};
 		case "projects.write":
-			tag(CacheTag.projects, CacheTag.todayChrome);
-			revalidatePath("/projects");
-			revalidatePath("/today");
-			return;
+			return { tags: [CacheTag.projects, CacheTag.todayChrome], paths: p("/projects", "/today") };
 		case "projects.detail":
-			tag(CacheTag.projects, CacheTag.todayChrome);
-			revalidatePath("/projects");
-			if (detail?.id) revalidatePath(`/projects/${detail.id}`);
-			revalidatePath("/today");
-			return;
+			return {
+				tags: [CacheTag.projects, CacheTag.todayChrome],
+				paths: detail?.id
+					? p("/projects", `/projects/${detail.id}`, "/today")
+					: p("/projects", "/today"),
+			};
 	}
+}
+
+function bustTags(tags: readonly CacheTagName[]): void {
+	// Next 16: second arg is a cacheLife profile for stale-while-revalidate.
+	for (const t of tags) revalidateTag(t, "max");
+}
+
+/**
+ * From a Server Action. Tags AND paths — the paths are what return a fresh RSC
+ * payload to the client, which every `useOptimistic` site depends on to settle
+ * into (see the header note above before trimming any of them).
+ */
+export function afterMutation(kind: MutationKind, detail?: { id?: string }): void {
+	const { tags, paths } = invalidationFor(kind, detail);
+	bustTags(tags);
+	for (const { path, type } of paths) {
+		if (type) revalidatePath(path, type);
+		else revalidatePath(path);
+	}
+}
+
+/**
+ * From a Route Handler — the crons and the external capture surface.
+ *
+ * Tags only, deliberately. These routes are invoked by cron-job.org and the
+ * iOS Shortcut, not by a browser running the app: there is no client router
+ * cache on the other end for `revalidatePath` to evict, and no `useOptimistic`
+ * transition waiting on a fresh RSC payload. Calling it would cost a page
+ * render nobody reads. `revalidateTag` is the half that actually matters here —
+ * it discards the `"use cache"` entries the next real page load would read.
+ *
+ * Variadic because one external write often spans domains: a capture writes a
+ * task or note AND a notification row (iron rule #6), and the ledger row is
+ * what the Today masthead badge counts.
+ */
+export function afterExternalMutation(...kinds: MutationKind[]): void {
+	const tags = new Set<CacheTagName>();
+	for (const kind of kinds) for (const t of invalidationFor(kind).tags) tags.add(t);
+	bustTags([...tags]);
 }

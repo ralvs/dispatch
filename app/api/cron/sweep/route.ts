@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { env, isSupabaseConfigured } from "@/lib/env";
+import { afterExternalMutation } from "@/lib/mutation-feedback/invalidate";
 import { isAuthorized } from "@/lib/secret-auth";
 import { sweepRawCaptures } from "@/lib/services/capture/sweep";
 import { recordNotification } from "@/lib/services/notifications";
@@ -25,6 +26,11 @@ async function runSweep(request: Request) {
 	const result = await sweepRawCaptures(sb);
 
 	if (result.swept.length > 0 || result.reconciled.length > 0) {
+		// A sweep degrades captured_data into needs_review notes: that moves the
+		// notes list, the needs-review alert count, and the ledger badge — all
+		// three read through a cached entry.
+		afterExternalMutation("capture.settled", "notes.write", "notification.write");
+
 		await recordNotification(sb, {
 			type: "cron.sweep",
 			title: `Sweep reconciled ${result.swept.length + result.reconciled.length} stuck capture(s)`,

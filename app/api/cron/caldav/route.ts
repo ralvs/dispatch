@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createCaldavClient } from "@/lib/caldav/client";
 import { nowUtc } from "@/lib/dates";
 import { env, isCaldavConfigured, isSupabaseConfigured } from "@/lib/env";
+import { afterExternalMutation } from "@/lib/mutation-feedback/invalidate";
 import { isAuthorized } from "@/lib/secret-auth";
 import { syncCalendar } from "@/lib/services/calendar";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -29,6 +30,10 @@ async function runCaldavSync(request: Request) {
 	try {
 		const conn = await createCaldavClient();
 		const result = await syncCalendar(sb, conn);
+
+		// Only when rows actually moved — a quiet tick every few minutes must
+		// not throw away a warm cache for nothing.
+		if (result.pulled > 0 || result.removed > 0) afterExternalMutation("today.only");
 
 		return NextResponse.json(result);
 	} catch (err) {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { env, isCalendarBridgeConfigured, isSupabaseConfigured } from "@/lib/env";
+import { afterExternalMutation } from "@/lib/mutation-feedback/invalidate";
 import { BridgeSyncBodySchema } from "@/lib/schemas/calendar";
 import { isAuthorized } from "@/lib/secret-auth";
 import { syncBridgeEvents } from "@/lib/services/calendar-bridge";
@@ -37,6 +38,9 @@ export async function POST(request: Request) {
 			windowStart: parsed.data.window_start,
 			windowEnd: parsed.data.window_end,
 		});
+
+		afterExternalMutation("today.only");
+
 		return NextResponse.json(result);
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { env, isSupabaseConfigured } from "@/lib/env";
 import { fetchLinkMetadata } from "@/lib/links/metadata";
+import { afterExternalMutation } from "@/lib/mutation-feedback/invalidate";
 import { isAuthorized } from "@/lib/secret-auth";
 import { capture } from "@/lib/services/capture";
 import { createLink } from "@/lib/services/links";
@@ -73,6 +74,11 @@ export async function POST(request: Request) {
 		const meta = await fetchLinkMetadata(url);
 		const link = await createLink(sb, { url, ...meta, source });
 
+		// The asymmetry this closes: the in-app capture action has always called
+		// afterMutation; this, the external surface writing the same rows, never
+		// invalidated anything (ADR-0035).
+		afterExternalMutation("links.write", "notification.write");
+
 		try {
 			await recordNotification(sb, {
 				type: "capture.link",
@@ -95,6 +101,10 @@ export async function POST(request: Request) {
 		source,
 		clientTime: client_time,
 	});
+
+	// Whatever the parser decided — task, note, or a needs_review degradation —
+	// it lands in one of these three. Cheap enough to name all of them.
+	afterExternalMutation("capture.settled", "notes.write", "notification.write");
 
 	try {
 		await recordNotification(sb, {
