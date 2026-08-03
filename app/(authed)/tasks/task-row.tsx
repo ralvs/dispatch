@@ -274,26 +274,30 @@ export function TaskRowItem({
 							<span>{` · ${formatInstant(task.completed_at, tz, "HH:mm")}`}</span>
 						)}
 					</span>
-					{noteText && <TaskNotePopover notes={noteText} title={task.title} />}
-					{noteId && (
-						<Link
-							href={`/notes/${noteId}`}
-							aria-label="View linked note"
-							onClick={(e) => e.stopPropagation()}
-							// Vertical reach kept smaller than the ideal 44px: this chip sits
-							// in a flex-wrap meta row with no row-gap, so a full expansion
-							// would overlap whatever wraps onto the line below it.
-							className="relative inline-flex shrink-0 items-center gap-1 rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 after:absolute after:-inset-y-3 after:-inset-x-1 after:content-[''] hover:border-line-strong hover:text-ink active:opacity-70"
-						>
-							<span aria-hidden="true">¶</span> Note
-						</Link>
-					)}
 					{mentions?.map((person) => (
 						<MentionChip key={person.id} id={person.id} name={person.name} />
 					))}
 				</p>
 			</div>
-			<div className="flex shrink-0 items-center gap-1 self-center">
+			{/* Note chips ride in the right-hand control column with the star,
+			    centered against the whole row, rather than trailing the meta
+			    line — they act on the task, so they belong beside the other
+			    control rather than inside the row's description of itself.
+			    gap-2 is load-bearing: each chip's after: reaches 4px past its
+			    own box, so anything tighter would overlap the neighbour's hit
+			    area and swallow taps meant for it. */}
+			<div className="flex shrink-0 items-center gap-2 self-center">
+				{noteText && <TaskNotePopover notes={noteText} title={task.title} />}
+				{noteId && (
+					<Link
+						href={`/notes/${noteId}`}
+						aria-label="View linked note"
+						onClick={(e) => e.stopPropagation()}
+						className="relative inline-flex shrink-0 items-center gap-1 rounded border border-line px-1 py-px font-mono text-[10px] leading-none text-ink-3 after:absolute after:-inset-y-3 after:-inset-x-1 after:content-[''] hover:border-line-strong hover:text-ink active:opacity-70"
+					>
+						<span aria-hidden="true">¶</span> Note
+					</Link>
+				)}
 				<button
 					type="button"
 					aria-label={`${starred ? "Remove from" : "Pin to"} ${starDay}'s top 3`}

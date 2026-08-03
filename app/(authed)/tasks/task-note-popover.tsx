@@ -41,25 +41,41 @@ export function TaskNotePopover({ notes, title }: { notes: string; title: string
 	const wrapRef = useRef<HTMLSpanElement>(null);
 	const panelRef = useRef<HTMLSpanElement>(null);
 
-	// The glyph sits mid-row, so a panel anchored to it runs off the right edge
-	// on a phone. Nudge it back inside after layout — CSS can't do this, since
-	// the clamp depends on where the anchor happens to land. Measured before
-	// paint so the panel never appears in the wrong place first.
+	// The panel hangs off the right of a glyph that itself sits at the right of
+	// the row, so on a narrow viewport it runs past the left edge instead.
+	// Nudge it back inside after layout — CSS can't do this, since the clamp
+	// depends on where the anchor happens to land. Measured before paint so the
+	// panel never appears in the wrong place first, and re-measured on resize
+	// (rotating a phone with one open) rather than left stale.
 	useLayoutEffect(() => {
 		if (!open) {
 			setShift(0);
 			return;
 		}
-		const panel = panelRef.current;
-		if (!panel) return;
-		// Always measured at shift 0 — closing resets it above, so a correction
-		// from a previous open can never compound onto this one.
-		const rect = panel.getBoundingClientRect();
-		const overflowRight = rect.right - (window.innerWidth - GUTTER);
-		if (overflowRight <= 0) return;
-		// Never trade a right-edge clip for a left-edge one.
-		setShift(-Math.min(overflowRight, Math.max(rect.left - GUTTER, 0)));
-	}, [open]);
+
+		function clamp() {
+			const panel = panelRef.current;
+			if (!panel) return;
+			// Back out the correction already applied, so the maths describes
+			// where the panel *would* sit unshifted. That is what makes this
+			// idempotent — a re-run must not stack a second shift on the first.
+			const rect = panel.getBoundingClientRect();
+			const left = rect.left - shift;
+			const right = rect.right - shift;
+			const overflowLeft = GUTTER - left;
+			const overflowRight = right - (window.innerWidth - GUTTER);
+			// Both at once would mean the panel is wider than the viewport
+			// allows; max-width prevents that, so each branch clamps its own edge
+			// without ever trading it for a clip on the other.
+			if (overflowLeft > 0) setShift(Math.min(overflowLeft, Math.max(-overflowRight, 0)));
+			else if (overflowRight > 0) setShift(-Math.min(overflowRight, Math.max(left - GUTTER, 0)));
+			else setShift(0);
+		}
+
+		clamp();
+		window.addEventListener("resize", clamp);
+		return () => window.removeEventListener("resize", clamp);
+	}, [open, shift]);
 
 	useEffect(() => {
 		if (!open) return;
@@ -106,7 +122,10 @@ export function TaskNotePopover({ notes, title }: { notes: string; title: string
 					role="note"
 					ref={panelRef}
 					style={shift ? { transform: `translateX(${shift}px)` } : undefined}
-					className="absolute left-0 top-full z-20 mt-1.5 block max-h-56 w-64 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain whitespace-pre-wrap break-words border border-line-strong bg-surface px-3 py-2 text-left font-serif text-sm leading-relaxed text-ink-2 shadow-lg"
+					// Right-anchored: the glyph lives in the row's right-hand control
+					// column, so the panel opens back across the row rather than out
+					// past the page edge.
+					className="absolute right-0 top-full z-20 mt-1.5 block max-h-56 w-64 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain whitespace-pre-wrap break-words border border-line-strong bg-surface px-3 py-2 text-left font-serif text-sm leading-relaxed text-ink-2 shadow-lg"
 				>
 					{notes}
 				</span>
