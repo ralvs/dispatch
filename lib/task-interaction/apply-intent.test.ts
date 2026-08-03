@@ -60,6 +60,27 @@ describe("applyTaskLists", () => {
 		expect(next.done).toHaveLength(0);
 	});
 
+	// Characterization, not a wish: the reducer is deliberately NOT idempotent
+	// here. Early completion of a not-yet-due recurring task has to roll too
+	// (nextDueDate starts from max(currentDue, today)), so any "only roll if
+	// due_date <= todayIso" rule would silently break it. Replay is stopped a
+	// layer up instead — see lib/task-interaction/intent-lock.ts and
+	// docs/adr/0037. This test is the reason that lock exists.
+	it("rolls two intervals when the same recurring task is completed twice", () => {
+		const open = [
+			task({ id: "r", title: "Weekly", recurrence_rule: "weekly", due_date: "2026-07-10" }),
+		];
+		const once = applyTaskLists(
+			{ open, done: [] },
+			{ type: "complete", id: "r" },
+			{ todayIso: TODAY },
+		);
+		const twice = applyTaskLists(once, { type: "complete", id: "r" }, { todayIso: TODAY });
+
+		expect(once.open[0]?.due_date).toBe("2026-07-22");
+		expect(twice.open[0]?.due_date).toBe("2026-07-29");
+	});
+
 	it("reopens a done task", () => {
 		const done = [
 			task({ id: "d", title: "Back", status: "done", completed_at: "2026-07-14T00:00:00.000Z" }),

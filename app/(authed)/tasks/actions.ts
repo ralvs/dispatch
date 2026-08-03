@@ -75,9 +75,25 @@ export async function updateTaskAction(id: string, formData: FormData) {
 	afterMutation("task.write");
 }
 
-export async function completeTaskAction(id: string) {
+/**
+ * `observedDueDate` is the due date the clicked row was showing — the
+ * precondition that keeps a replayed completion from rolling a recurring task
+ * forward a second interval (docs/adr/0037). Untrusted like any client
+ * argument, so it is parsed rather than trusted.
+ */
+export async function completeTaskAction(input: { id: string; observedDueDate: string | null }) {
 	const { sb } = await requireOwnerPage();
-	await completeTask(sb, z.uuid().parse(id), await todayForRequest(sb));
+	if (input.observedDueDate !== null && parseDateIso(input.observedDueDate) === null) {
+		throw new Error(`Invalid observed due date: ${input.observedDueDate}`);
+	}
+	await completeTask(sb, z.uuid().parse(input.id), await todayForRequest(sb), {
+		dueDate: input.observedDueDate,
+	});
+	// Revalidates even when the precondition rejected the write: the optimistic
+	// transition on the client is waiting for an RSC payload to settle into,
+	// and skipping it would strand the row on stale props. ADR-0035's
+	// "only act when rows moved" is scoped to afterExternalMutation, which has
+	// no transition on the other end.
 	afterMutation("task.write");
 }
 

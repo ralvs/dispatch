@@ -9,6 +9,7 @@ import {
 	applyOpenTaskList,
 	type TaskIntent,
 } from "@/lib/task-interaction/apply-intent";
+import { useIntentLock } from "@/lib/task-interaction/intent-lock";
 import { isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
 import { completeTaskAction, reopenTaskAction, toggleTop3Action } from "../tasks/actions";
 import { TaskRowItem } from "../tasks/task-row";
@@ -115,6 +116,7 @@ export function DayBands({
 	taskNoteIds?: Record<string, string>;
 }) {
 	const [, startTransition] = useTransition();
+	const lock = useIntentLock();
 	const seed = useMemo(() => collectOpenTasks(schedule), [schedule]);
 	const ctx: ApplyContext = { todayIso, top3DateIso: dateIso };
 
@@ -134,9 +136,11 @@ export function DayBands({
 	const slotsOpen = TOP3_SLOTS - top3.length;
 
 	function run(intent: TaskIntent, action: () => Promise<void>) {
+		if (!lock.claim(intent)) return;
 		startTransition(async () => {
 			dispatchOptimistic(intent);
 			await runAction(action, "Couldn't update that task. Try again.");
+			lock.release(intent);
 		});
 	}
 
@@ -147,7 +151,9 @@ export function DayBands({
 				if (done) {
 					run({ type: "reopen", id: task.id }, () => reopenTaskAction(task.id));
 				} else {
-					run({ type: "complete", id: task.id }, () => completeTaskAction(task.id));
+					run({ type: "complete", id: task.id }, () =>
+						completeTaskAction({ id: task.id, observedDueDate: task.due_date }),
+					);
 				}
 			},
 			onToggleTop3: () => {
