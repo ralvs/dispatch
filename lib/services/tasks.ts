@@ -261,12 +261,30 @@ export async function deleteTask(sb: SupabaseClient, id: string): Promise<void> 
 	unwrap(await sb.from("tasks").delete().eq("id", id));
 }
 
-/** Star / unstar a task as one of today's top 3. */
-export async function toggleTop3(sb: SupabaseClient, id: string, todayIso: string): Promise<void> {
-	const task = await getTaskHot(sb, id);
-	if (!task) throw new Error("Task not found");
-	const next = task.top3_for_date === todayIso ? null : todayIso;
-	unwrap(await sb.from("tasks").update({ top3_for_date: next }).eq("id", id));
+/**
+ * Star / unstar a task as one of a given day's top 3.
+ *
+ * Desired state, not a flip (docs/adr/0037). Starring is idempotent by
+ * construction. Unstarring guards on the day it is clearing, which is what
+ * keeps Today's day navigation honest: unstarring while reading tomorrow can
+ * no longer clear today's star.
+ */
+export async function setTop3(
+	sb: SupabaseClient,
+	id: string,
+	opts: { forDateIso: string; starred: boolean },
+): Promise<{ applied: boolean }> {
+	const rows = unwrap(
+		await (opts.starred
+			? sb.from("tasks").update({ top3_for_date: opts.forDateIso }).eq("id", id)
+			: sb
+					.from("tasks")
+					.update({ top3_for_date: null })
+					.eq("id", id)
+					.eq("top3_for_date", opts.forDateIso)
+		).select("id"),
+	);
+	return { applied: (rows ?? []).length > 0 };
 }
 
 /**

@@ -13,7 +13,7 @@ import {
 	createNote,
 	deleteNote,
 	resolveNeedsReview,
-	togglePin,
+	setPin,
 	updateNote,
 } from "@/lib/services/notes";
 import { getAppTimezone } from "@/lib/services/settings";
@@ -62,10 +62,10 @@ export async function resolveNeedsReviewAction(id: string) {
 	revalidateNoteViews(id);
 }
 
-export async function togglePinAction(id: string) {
+export async function setPinAction(input: { id: string; pinned: boolean }) {
 	const { sb } = await requireOwnerPage();
-	await togglePin(sb, z.uuid().parse(id));
-	revalidateNoteViews(id);
+	await setPin(sb, z.uuid().parse(input.id), input.pinned);
+	revalidateNoteViews(input.id);
 }
 
 export async function deleteNoteAction(id: string) {

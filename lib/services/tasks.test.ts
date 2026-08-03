@@ -5,6 +5,7 @@ import {
 	completeTask,
 	createTask,
 	listInboxTasks,
+	setTop3,
 	updateTask,
 } from "@/lib/services/tasks";
 
@@ -153,6 +154,44 @@ describe("completeTask", () => {
 		await completeTask(sb, "task-7", TODAY, { dueDate: null });
 
 		expect(predicates).toContainEqual({ op: "eq", col: "status", value: "open" });
+	});
+});
+
+describe("setTop3", () => {
+	// Starring is idempotent by construction: same day in, same row out,
+	// however many times it lands. No read, so no lost update to have.
+	it("stars unconditionally and without reading first", async () => {
+		const { sb, calls } = stubBuilder({ data: [{ id: "task-1" }], error: null });
+
+		const result = await setTop3(sb, "task-1", { forDateIso: TODAY, starred: true });
+
+		expect(result).toEqual({ applied: true });
+		expect(calls).toContainEqual({ op: "update", payload: { top3_for_date: TODAY } });
+		expect(calls.filter((c) => c.op === "eq")).toEqual([
+			{ op: "eq", payload: { col: "id", value: "task-1" } },
+		]);
+	});
+
+	// The day predicate is what keeps Today's day navigation honest: unstarring
+	// while reading tomorrow must not clear today's star.
+	it("guards an unstar on the day it is clearing", async () => {
+		const { sb, calls } = stubBuilder({ data: [{ id: "task-1" }], error: null });
+
+		await setTop3(sb, "task-1", { forDateIso: "2026-07-16", starred: false });
+
+		expect(calls).toContainEqual({ op: "update", payload: { top3_for_date: null } });
+		expect(calls).toContainEqual({
+			op: "eq",
+			payload: { col: "top3_for_date", value: "2026-07-16" },
+		});
+	});
+
+	it("reports an unstar whose day no longer matches as unapplied", async () => {
+		const { sb } = stubBuilder({ data: [], error: null });
+
+		await expect(
+			setTop3(sb, "task-1", { forDateIso: "2026-07-16", starred: false }),
+		).resolves.toEqual({ applied: false });
 	});
 });
 

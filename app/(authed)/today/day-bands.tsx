@@ -11,7 +11,7 @@ import {
 } from "@/lib/task-interaction/apply-intent";
 import { useIntentLock } from "@/lib/task-interaction/intent-lock";
 import { isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
-import { completeTaskAction, reopenTaskAction, toggleTop3Action } from "../tasks/actions";
+import { completeTaskAction, reopenTaskAction, setTop3Action } from "../tasks/actions";
 import { TaskRowItem } from "../tasks/task-row";
 import { ScheduleRow } from "./schedule-row";
 
@@ -157,7 +157,13 @@ export function DayBands({
 				}
 			},
 			onToggleTop3: () => {
-				run({ type: "toggleTop3", id: task.id }, () => toggleTop3Action(task.id, dateIso));
+				// Desired state read off the row on screen, against the day being
+				// read rather than today — the same target the reducer uses
+				// (ctx.top3DateIso above, docs/adr/0037).
+				const starred = task.top3_for_date !== dateIso;
+				run({ type: "toggleTop3", id: task.id }, () =>
+					setTop3Action({ id: task.id, starred, forDateIso: dateIso }),
+				);
 			},
 		};
 	}

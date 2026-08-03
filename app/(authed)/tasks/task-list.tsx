@@ -20,7 +20,7 @@ import {
 	deleteTaskAction,
 	quickAddTaskAction,
 	reopenTaskAction,
-	toggleTop3Action,
+	setTop3Action,
 } from "./actions";
 import { CaptureBar } from "./capture-bar";
 import type { TaskDomainOption } from "./task-fields";
@@ -212,7 +212,12 @@ export function TaskList({
 				}
 			},
 			onToggleTop3: () => {
-				run({ type: "toggleTop3", id: task.id }, () => toggleTop3Action(task.id));
+				// Desired state read off the row on screen — the same comparison
+				// the optimistic reducer makes (docs/adr/0037).
+				const starred = task.top3_for_date !== todayIso;
+				run({ type: "toggleTop3", id: task.id }, () =>
+					setTop3Action({ id: task.id, starred, forDateIso: todayIso }),
+				);
 			},
 			onDelete: () => {
 				run({ type: "delete", id: task.id }, () => deleteTaskAction(task.id));

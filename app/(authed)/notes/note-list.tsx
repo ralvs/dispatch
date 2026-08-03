@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useOptimistic, useTransition } from "react";
-import { togglePinAction } from "@/app/(authed)/notes/actions";
+import { setPinAction } from "@/app/(authed)/notes/actions";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
@@ -51,7 +51,8 @@ function Section({
 	label: string;
 	notes: NoteListRow[];
 	tz: string;
-	onTogglePin: (id: string) => void;
+	/** Takes the row, not just its id, so the caller can derive the desired pin state. */
+	onTogglePin: (note: NoteListRow) => void;
 	empty?: string;
 }) {
 	if (notes.length === 0 && !empty) return null;
@@ -63,7 +64,7 @@ function Section({
 			) : (
 				<ul className="mt-2">
 					{notes.map((n) => (
-						<NoteLinkRow key={n.id} note={n} tz={tz} onTogglePin={() => onTogglePin(n.id)} />
+						<NoteLinkRow key={n.id} note={n} tz={tz} onTogglePin={() => onTogglePin(n)} />
 					))}
 				</ul>
 			)}
@@ -102,23 +103,30 @@ export function NoteList({
 	const pinned = notes.filter((n) => n.pinned_at !== null);
 	const unpinned = notes.filter((n) => n.pinned_at === null);
 
-	function toggle(id: string, inReview: boolean) {
+	// The desired state comes from the row on screen — the same comparison the
+	// optimistic reducer makes — so the write is a setter, not a flip, and a
+	// stale second surface can't undo this one (docs/adr/0037).
+	function toggle(note: NoteListRow, inReview: boolean) {
+		const nextPinned = note.pinned_at === null;
 		startTransition(async () => {
-			if (inReview) dispatchReview(id);
-			else dispatchNotes(id);
-			await runAction(() => togglePinAction(id), "Couldn't update pin.");
+			if (inReview) dispatchReview(note.id);
+			else dispatchNotes(note.id);
+			await runAction(
+				() => setPinAction({ id: note.id, pinned: nextPinned }),
+				"Couldn't update pin.",
+			);
 		});
 	}
 
 	return (
 		<>
-			<Section label="Needs review" notes={review} tz={tz} onTogglePin={(id) => toggle(id, true)} />
-			<Section label="Pinned" notes={pinned} tz={tz} onTogglePin={(id) => toggle(id, false)} />
+			<Section label="Needs review" notes={review} tz={tz} onTogglePin={(n) => toggle(n, true)} />
+			<Section label="Pinned" notes={pinned} tz={tz} onTogglePin={(n) => toggle(n, false)} />
 			<Section
 				label="All notes"
 				notes={unpinned}
 				tz={tz}
-				onTogglePin={(id) => toggle(id, false)}
+				onTogglePin={(n) => toggle(n, false)}
 				empty="Nothing here yet. Capture something."
 			/>
 		</>

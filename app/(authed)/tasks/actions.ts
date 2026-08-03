@@ -16,7 +16,7 @@ import {
 	createTask,
 	deleteTask,
 	reopenTask,
-	toggleTop3,
+	setTop3,
 	updateTask,
 } from "@/lib/services/tasks";
 
@@ -115,13 +115,16 @@ export async function deleteTaskAction(id: string) {
  * argument, so it is parsed rather than trusted, and omitting it keeps the
  * original behaviour (pin to today).
  */
-export async function toggleTop3Action(id: string, forDateIso?: string) {
+export async function setTop3Action(input: { id: string; starred: boolean; forDateIso?: string }) {
 	const { sb } = await requireOwnerPage();
-	const target = forDateIso === undefined ? null : parseDateIso(forDateIso);
-	if (forDateIso !== undefined && target === null) {
-		throw new Error(`Invalid top-3 date: ${forDateIso}`);
+	const target = input.forDateIso === undefined ? null : parseDateIso(input.forDateIso);
+	if (input.forDateIso !== undefined && target === null) {
+		throw new Error(`Invalid top-3 date: ${input.forDateIso}`);
 	}
-	await toggleTop3(sb, z.uuid().parse(id), target ?? (await todayForRequest(sb)));
+	await setTop3(sb, z.uuid().parse(input.id), {
+		forDateIso: target ?? (await todayForRequest(sb)),
+		starred: input.starred,
+	});
 	afterMutation("task.write");
 }
 
