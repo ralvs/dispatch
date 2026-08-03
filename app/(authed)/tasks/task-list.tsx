@@ -12,6 +12,7 @@ import {
 	type TaskIntent,
 	type TaskLists,
 } from "@/lib/task-interaction/apply-intent";
+import { useIntentLock } from "@/lib/task-interaction/intent-lock";
 import { isDueToday, isOverdue, isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
 import {
 	completeTaskAction,
@@ -19,7 +20,7 @@ import {
 	deleteTaskAction,
 	quickAddTaskAction,
 	reopenTaskAction,
-	toggleTop3Action,
+	setTop3Action,
 } from "./actions";
 import { CaptureBar } from "./capture-bar";
 import type { TaskDomainOption } from "./task-fields";
@@ -133,6 +134,7 @@ export function TaskList({
 }) {
 	const router = useRouter();
 	const [, startTransition] = useTransition();
+	const lock = useIntentLock();
 	const seed: TaskLists = { open: openTasks, done: doneTasks };
 	const ctx: ApplyContext = { todayIso };
 
@@ -188,10 +190,12 @@ export function TaskList({
 	}, [editTaskId, router]);
 
 	function run(intent: TaskIntent, action: () => Promise<void>) {
+		if (!lock.claim(intent)) return;
 		startTransition(async () => {
 			dispatchOptimistic(intent);
 			// On failure optimistic state rolls back when the transition ends.
 			await runAction(action, "Couldn't update that task. Try again.");
+			lock.release(intent);
 		});
 	}
 
@@ -202,11 +206,18 @@ export function TaskList({
 				if (done) {
 					run({ type: "reopen", id: task.id }, () => reopenTaskAction(task.id));
 				} else {
-					run({ type: "complete", id: task.id }, () => completeTaskAction(task.id));
+					run({ type: "complete", id: task.id }, () =>
+						completeTaskAction({ id: task.id, observedDueDate: task.due_date }),
+					);
 				}
 			},
 			onToggleTop3: () => {
-				run({ type: "toggleTop3", id: task.id }, () => toggleTop3Action(task.id));
+				// Desired state read off the row on screen — the same comparison
+				// the optimistic reducer makes (docs/adr/0037).
+				const starred = task.top3_for_date !== todayIso;
+				run({ type: "toggleTop3", id: task.id }, () =>
+					setTop3Action({ id: task.id, starred, forDateIso: todayIso }),
+				);
 			},
 			onDelete: () => {
 				run({ type: "delete", id: task.id }, () => deleteTaskAction(task.id));

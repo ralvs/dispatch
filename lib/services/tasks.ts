@@ -205,12 +205,19 @@ export async function updateTask(
  * Complete a task. Recurring tasks don't close — the due date rolls forward
  * to the next occurrence (reference semantics: an overdue weekly task rolls
  * from today, never into the past).
+ *
+ * The write is preconditioned on the occurrence the caller was looking at
+ * (docs/adr/0037): the roll is the one non-idempotent write in the app, and a
+ * replay — a stale render, a second tab — would advance the due date another
+ * whole interval. `observed.dueDate` is what the clicked row showed; if the
+ * row has moved on since, nothing is written and `applied` comes back false.
  */
 export async function completeTask(
 	sb: SupabaseClient,
 	id: string,
 	todayIso: string,
-): Promise<{ rolled: boolean }> {
+	observed: { dueDate: string | null },
+): Promise<{ rolled: boolean; nextDue: string | null; applied: boolean }> {
 	const task = await getTaskHot(sb, id);
 	if (!task) throw new Error("Task not found");
 
@@ -220,12 +227,30 @@ export async function completeTask(
 			rule: task.recurrence_rule,
 			todayIso,
 		});
-		unwrap(await sb.from("tasks").update({ due_date: due }).eq("id", id));
-		return { rolled: true };
+		// A recurring task may legitimately have no due date at all
+		// (nextDueDate accepts a null currentDue), and `= NULL` matches nothing
+		// in Postgres — the null case has to go through `is`, not `eq`.
+		const q = sb.from("tasks").update({ due_date: due }).eq("id", id);
+		const rows = unwrap(
+			await (observed.dueDate === null
+				? q.is("due_date", null)
+				: q.eq("due_date", observed.dueDate)
+			).select("id"),
+		);
+		return { rolled: true, nextDue: due, applied: (rows ?? []).length > 0 };
 	}
 
-	unwrap(await sb.from("tasks").update({ status: "done", completed_at: nowUtc() }).eq("id", id));
-	return { rolled: false };
+	// Guarding on status=open makes a replayed close a no-op rather than a
+	// second write of completed_at, which would reshuffle "Recently done".
+	const rows = unwrap(
+		await sb
+			.from("tasks")
+			.update({ status: "done", completed_at: nowUtc() })
+			.eq("id", id)
+			.eq("status", "open")
+			.select("id"),
+	);
+	return { rolled: false, nextDue: null, applied: (rows ?? []).length > 0 };
 }
 
 export async function reopenTask(sb: SupabaseClient, id: string): Promise<void> {
@@ -236,12 +261,30 @@ export async function deleteTask(sb: SupabaseClient, id: string): Promise<void> 
 	unwrap(await sb.from("tasks").delete().eq("id", id));
 }
 
-/** Star / unstar a task as one of today's top 3. */
-export async function toggleTop3(sb: SupabaseClient, id: string, todayIso: string): Promise<void> {
-	const task = await getTaskHot(sb, id);
-	if (!task) throw new Error("Task not found");
-	const next = task.top3_for_date === todayIso ? null : todayIso;
-	unwrap(await sb.from("tasks").update({ top3_for_date: next }).eq("id", id));
+/**
+ * Star / unstar a task as one of a given day's top 3.
+ *
+ * Desired state, not a flip (docs/adr/0037). Starring is idempotent by
+ * construction. Unstarring guards on the day it is clearing, which is what
+ * keeps Today's day navigation honest: unstarring while reading tomorrow can
+ * no longer clear today's star.
+ */
+export async function setTop3(
+	sb: SupabaseClient,
+	id: string,
+	opts: { forDateIso: string; starred: boolean },
+): Promise<{ applied: boolean }> {
+	const rows = unwrap(
+		await (opts.starred
+			? sb.from("tasks").update({ top3_for_date: opts.forDateIso }).eq("id", id)
+			: sb
+					.from("tasks")
+					.update({ top3_for_date: null })
+					.eq("id", id)
+					.eq("top3_for_date", opts.forDateIso)
+		).select("id"),
+	);
+	return { applied: (rows ?? []).length > 0 };
 }
 
 /**

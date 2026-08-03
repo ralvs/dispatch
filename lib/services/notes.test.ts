@@ -7,7 +7,7 @@ import {
 	deleteNote,
 	listNotes,
 	resolveNeedsReview,
-	togglePin,
+	setPin,
 } from "@/lib/services/notes";
 
 // Stub covering the one shape these functions use:
@@ -179,49 +179,82 @@ describe("deleteNote", () => {
 	});
 });
 
-// Chainable stub covering togglePin's two call shapes: .from().select().eq()
-// .maybeSingle() (the read) and .from().update().eq() (the mutation).
-// Mirrors lib/services/tasks.test.ts's stubSupabase for completeTask.
-function stubToggleSupabase(row: Record<string, unknown> | null) {
+// Chainable stub covering setPin's single call shape:
+// .from().update().eq()…​.select(). `updated` is what the UPDATE…RETURNING
+// resolves to — an empty array is a guard that matched nothing. A top-level
+// select() would mean setPin still reads before it writes, so it is recorded
+// too. Mirrors lib/services/tasks.test.ts's stubSupabase.
+function stubPinSupabase(updated: unknown[] = [{ id: "note-1" }]) {
 	const updatePatches: Array<Record<string, unknown>> = [];
+	const predicates: Array<{ op: string; args: unknown[] }> = [];
+	const reads = { count: 0 };
+
 	const sb = {
 		from: vi.fn(() => ({
-			select: vi.fn(() => ({
-				eq: vi.fn(() => ({
-					maybeSingle: vi.fn(async () => ({ data: row, error: null })),
-				})),
-			})),
+			select: vi.fn(() => {
+				reads.count += 1;
+				return { eq: vi.fn(() => ({ maybeSingle: vi.fn(async () => ({ data: null })) })) };
+			}),
 			update: vi.fn((patch: Record<string, unknown>) => {
 				updatePatches.push(patch);
-				return { eq: vi.fn(async () => ({ data: null, error: null })) };
+				// biome-ignore lint/suspicious/noExplicitAny: hand-rolled test double
+				const builder: any = {};
+				for (const op of ["eq", "is", "not"]) {
+					builder[op] = (...args: unknown[]) => {
+						predicates.push({ op, args });
+						return builder;
+					};
+				}
+				builder.select = async () => ({ data: updated, error: null });
+				return builder;
 			}),
 		})),
 	} as unknown as SupabaseClient;
-	return { sb, updatePatches };
+
+	return { sb, updatePatches, predicates, reads };
 }
 
-describe("togglePin", () => {
-	it("pins an unpinned note by stamping pinned_at", async () => {
-		const { sb, updatePatches } = stubToggleSupabase({ pinned_at: null });
+describe("setPin", () => {
+	it("pins an unpinned note by stamping pinned_at, without reading first", async () => {
+		const { sb, updatePatches, reads } = stubPinSupabase();
 
-		await togglePin(sb, "note-1");
+		const result = await setPin(sb, "note-1", true);
 
+		expect(result).toEqual({ applied: true });
 		expect(updatePatches).toHaveLength(1);
 		expect(updatePatches[0].pinned_at).toEqual(expect.any(String));
+		expect(reads.count).toBe(0);
 	});
 
 	it("unpins a pinned note by clearing pinned_at", async () => {
-		const { sb, updatePatches } = stubToggleSupabase({ pinned_at: "2026-07-01T00:00:00Z" });
+		const { sb, updatePatches } = stubPinSupabase();
 
-		await togglePin(sb, "note-1");
+		await setPin(sb, "note-1", false);
 
 		expect(updatePatches).toEqual([{ pinned_at: null }]);
 	});
 
-	it("throws when the note does not exist", async () => {
-		const { sb } = stubToggleSupabase(null);
+	// Guarding on nullness rather than the timestamp value: a timestamptz
+	// round-tripped through JS won't compare equal reliably, and nullness is the
+	// whole of the pin state.
+	it("guards each direction on the state it is moving away from", async () => {
+		const pinning = stubPinSupabase();
+		await setPin(pinning.sb, "note-1", true);
+		expect(pinning.predicates).toContainEqual({ op: "is", args: ["pinned_at", null] });
 
-		await expect(togglePin(sb, "missing")).rejects.toThrow("Note not found");
+		const unpinning = stubPinSupabase();
+		await setPin(unpinning.sb, "note-1", false);
+		expect(unpinning.predicates).toContainEqual({ op: "not", args: ["pinned_at", "is", null] });
+	});
+
+	// A stale second surface re-pinning an already-pinned note used to silently
+	// unpin it. Now it matches nothing — pin order survives — and a missing note
+	// is a no-op rather than a thrown "Note not found" that would toast and
+	// revert an optimistic row that no longer exists.
+	it("reports a guard that matched nothing instead of throwing", async () => {
+		const { sb } = stubPinSupabase([]);
+
+		await expect(setPin(sb, "missing", true)).resolves.toEqual({ applied: false });
 	});
 });
 

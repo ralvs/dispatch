@@ -108,13 +108,31 @@ export async function updateNote(
 	unwrap(await sb.from("notes").update(patch).eq("id", id));
 }
 
-/** Flips a note pinned<->unpinned. The timestamp (not a bool) fixes pin order — most-recently-pinned first. */
-export async function togglePin(sb: SupabaseClient, id: string): Promise<void> {
-	const data = unwrap(await sb.from("notes").select("pinned_at").eq("id", id).maybeSingle());
-	const row = data as { pinned_at: string | null } | null;
-	if (!row) throw new Error("Note not found");
-	const next = row.pinned_at ? null : nowUtc();
-	unwrap(await sb.from("notes").update({ pinned_at: next }).eq("id", id));
+/**
+ * Pin or unpin a note. The timestamp (not a bool) fixes pin order —
+ * most-recently-pinned first.
+ *
+ * Desired state, not a flip (docs/adr/0037): the caller says where the note
+ * should end up, and the write guards on the state it is moving away from, so
+ * a stale second surface can't silently undo the first. Guarding on nullness
+ * rather than the timestamp value is deliberate — round-tripping a timestamptz
+ * through JS and comparing it exactly is fragile (`+00` vs `Z`, microseconds),
+ * and nullness is the whole of the pin state. Re-pinning an already-pinned
+ * note is therefore a no-op that preserves pin order.
+ */
+export async function setPin(
+	sb: SupabaseClient,
+	id: string,
+	pinned: boolean,
+): Promise<{ applied: boolean }> {
+	const q = sb.from("notes");
+	const rows = unwrap(
+		await (pinned
+			? q.update({ pinned_at: nowUtc() }).eq("id", id).is("pinned_at", null)
+			: q.update({ pinned_at: null }).eq("id", id).not("pinned_at", "is", null)
+		).select("id"),
+	);
+	return { applied: ((rows ?? []) as unknown[]).length > 0 };
 }
 
 /** Resolve the never-lose safety net (iron rule #4) without touching the body. */
