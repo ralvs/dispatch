@@ -12,6 +12,7 @@ import type { TaskRow } from "@/lib/services/tasks";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
 import { updateTaskAction } from "./actions";
 import { PriorityBadge, type TaskDomainOption, TaskFormFields } from "./task-fields";
+import { TaskNotePopover } from "./task-note-popover";
 
 export type { TaskDomainOption };
 
@@ -82,6 +83,8 @@ export function TaskRowItem({
 	const starDay = starTarget === todayIso ? "today" : formatDay(starTarget, "utc", "cccc d LLLL");
 	const scheduled = timeLabel !== undefined;
 	const canEdit = manageable && domains.length > 0;
+	// The task's own notes field — a whitespace-only value is not a note.
+	const noteText = task.notes?.trim() || null;
 
 	useEffect(() => {
 		if (!initialEditing || !editing) return;
@@ -271,6 +274,7 @@ export function TaskRowItem({
 							<span>{` · ${formatInstant(task.completed_at, tz, "HH:mm")}`}</span>
 						)}
 					</span>
+					{noteText && <TaskNotePopover notes={noteText} title={task.title} />}
 					{noteId && (
 						<Link
 							href={`/notes/${noteId}`}
