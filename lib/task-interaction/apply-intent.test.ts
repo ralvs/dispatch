@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { TaskRow } from "@/lib/schemas/task";
-import { applyOpenTaskList, applyTaskLists } from "@/lib/task-interaction/apply-intent";
+import {
+	applyDayTaskList,
+	applyOpenTaskList,
+	applyTaskLists,
+} from "@/lib/task-interaction/apply-intent";
 
 const TODAY = "2026-07-15";
 
@@ -166,5 +170,53 @@ describe("applyOpenTaskList", () => {
 		const open = [task({ id: "a", title: "Go" }), task({ id: "b", title: "Stay" })];
 		const next = applyOpenTaskList(open, { type: "complete", id: "a" }, { todayIso: TODAY });
 		expect(next.map((t) => t.id)).toEqual(["b"]);
+	});
+});
+
+describe("applyDayTaskList", () => {
+	const ctx = { todayIso: TODAY, nowIso: `${TODAY}T15:00:00.000Z` };
+
+	it("marks a completed task done in place instead of removing it", () => {
+		const tasks = [task({ id: "a", title: "Go" }), task({ id: "b", title: "Stay" })];
+		const next = applyDayTaskList(tasks, { type: "complete", id: "a" }, ctx);
+		expect(next.map((t) => t.id)).toEqual(["a", "b"]);
+		expect(next[0].status).toBe("done");
+		expect(next[0].completed_at).toBe(ctx.nowIso);
+	});
+
+	// The server never clears top3_for_date on completion; clearing it here
+	// would flash a starred row out of Top 3 and back in on the next render.
+	it("leaves top3_for_date alone when completing", () => {
+		const tasks = [task({ id: "a", title: "Go", top3_for_date: TODAY })];
+		const next = applyDayTaskList(tasks, { type: "complete", id: "a" }, ctx);
+		expect(next[0].top3_for_date).toBe(TODAY);
+	});
+
+	it("rolls a recurring task forward and leaves it open", () => {
+		const tasks = [
+			task({ id: "a", title: "Water plants", due_date: TODAY, recurrence_rule: "daily" }),
+		];
+		const next = applyDayTaskList(tasks, { type: "complete", id: "a" }, ctx);
+		expect(next[0].status).toBe("open");
+		expect(next[0].due_date).toBe("2026-07-16");
+	});
+
+	it("reopens a done task in place", () => {
+		const tasks = [
+			task({ id: "a", title: "Go", status: "done", completed_at: `${TODAY}T13:00:00.000Z` }),
+		];
+		const next = applyDayTaskList(tasks, { type: "reopen", id: "a" }, ctx);
+		expect(next.map((t) => t.id)).toEqual(["a"]);
+		expect(next[0].status).toBe("open");
+		expect(next[0].completed_at).toBeNull();
+	});
+
+	it("toggles the star on a row whatever its status", () => {
+		const tasks = [task({ id: "a", title: "Go", status: "done" })];
+		const starred = applyDayTaskList(tasks, { type: "toggleTop3", id: "a" }, ctx);
+		expect(starred[0].top3_for_date).toBe(TODAY);
+		expect(
+			applyDayTaskList(starred, { type: "toggleTop3", id: "a" }, ctx)[0].top3_for_date,
+		).toBeNull();
 	});
 });

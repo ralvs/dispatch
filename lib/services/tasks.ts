@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { nowUtc } from "@/lib/dates";
+import { dayWindowUtc, nowUtc } from "@/lib/dates";
 import { isRecurrencePattern, nextDueDate } from "@/lib/recurrence";
 import { TASK_SELECT, type TaskRow } from "@/lib/schemas/task";
 import { unwrap } from "@/lib/services/errors";
@@ -44,6 +44,32 @@ export async function listTasks(
 /** The /inbox queue: open tasks that were captured without a domain. */
 export async function listInboxTasks(sb: SupabaseClient): Promise<TaskRow[]> {
 	return listTasks(sb, { status: "open", unfiled: true });
+}
+
+/**
+ * Tasks completed on one app-timezone calendar day.
+ *
+ * Today's day bands keep showing what was finished on the day being read
+ * (docs/adr/0038) — a task ticked off at 09:00 must not vanish from the
+ * timeline it was standing on. Scoped by `completed_at`, not by due date, so
+ * an overdue task closed today counts as today's work.
+ */
+export async function listCompletedOn(
+	sb: SupabaseClient,
+	dateIso: string,
+	tz: string,
+): Promise<TaskRow[]> {
+	const { startUtc, endUtc } = dayWindowUtc(dateIso, tz);
+	const data = unwrap(
+		await sb
+			.from("tasks")
+			.select(TASK_SELECT)
+			.eq("status", "done")
+			.gte("completed_at", startUtc)
+			.lt("completed_at", endUtc)
+			.order("completed_at", { ascending: true }),
+	);
+	return (data ?? []).map(flatten);
 }
 
 /** Recently completed tasks only — Tasks page strip, not full history. */

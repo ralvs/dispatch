@@ -29,11 +29,11 @@ export async function TodayBody({
 	selectedIso: string;
 }) {
 	const nowMs = Date.now();
-	const [{ open, events: todayEvents }, digest] = await Promise.all([
+	const [{ open, completed, events: todayEvents }, digest] = await Promise.all([
 		loadDayScheduleInputs(sb, tz, todayIso),
 		getCachedTodayDigest(todayIso),
 	]);
-	const view = assembleTodayView(digest, open, todayEvents, tz, todayIso, nowMs);
+	const view = assembleTodayView(digest, open, todayEvents, tz, todayIso, nowMs, completed);
 	const nowUtcIso = new Date(nowMs).toISOString();
 	const isToday = selectedIso === todayIso;
 

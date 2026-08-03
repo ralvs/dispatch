@@ -107,6 +107,59 @@ export function applyTaskLists(lists: TaskLists, intent: TaskIntent, ctx: ApplyC
 }
 
 /**
+ * Project Today's day-band task list after an intent, in place.
+ *
+ * Unlike applyOpenTaskList, completing a task does NOT drop it: Today's bands
+ * keep the day's finished work on screen (docs/adr/0038), so the checkbox has
+ * to flip where the row already is rather than pull it out from under the
+ * cursor. Written out rather than delegating to applyTaskLists because that
+ * one's semantics are the opposite — it moves rows between two lists, caps
+ * `done` at 10, and clears `top3_for_date` on completion (a Tasks-page
+ * shortlist rule the server never writes; clearing it here would flash a
+ * starred row out of Top 3 and back in on the next RSC render).
+ *
+ * A recurring task still leaves the day when completed — it rolls to its next
+ * due date, so it is genuinely no longer this day's work.
+ */
+export function applyDayTaskList(
+	tasks: TaskRow[],
+	intent: TaskIntent,
+	ctx: ApplyContext,
+): TaskRow[] {
+	const nowIso = ctx.nowIso ?? new Date().toISOString();
+
+	switch (intent.type) {
+		case "create":
+			return [intent.task, ...tasks];
+		case "delete":
+			return withoutId(tasks, intent.id);
+		case "toggleTop3": {
+			const target = ctx.top3DateIso ?? ctx.todayIso;
+			return mapId(tasks, intent.id, (t) => ({
+				...t,
+				top3_for_date: t.top3_for_date === target ? null : target,
+			}));
+		}
+		case "reopen":
+			return mapId(tasks, intent.id, (t) => ({ ...t, status: "open", completed_at: null }));
+		case "complete":
+			return mapId(tasks, intent.id, (t) => {
+				if (t.recurrence_rule && isRecurrencePattern(t.recurrence_rule)) {
+					return {
+						...t,
+						due_date: nextDueDate({
+							currentDue: t.due_date,
+							rule: t.recurrence_rule,
+							todayIso: ctx.todayIso,
+						}),
+					};
+				}
+				return { ...t, status: "done", completed_at: nowIso };
+			});
+	}
+}
+
+/**
  * Project a flat open-task list (Today schedule seed) after an intent.
  * Completed non-recurring tasks leave the list; rolls stay open with new due.
  */

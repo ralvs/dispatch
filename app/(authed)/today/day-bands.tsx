@@ -6,7 +6,7 @@ import type { TaskRow } from "@/lib/services/tasks";
 import type { DaySchedule, DayScheduleItem } from "@/lib/services/today";
 import {
 	type ApplyContext,
-	applyOpenTaskList,
+	applyDayTaskList,
 	type TaskIntent,
 } from "@/lib/task-interaction/apply-intent";
 import { useIntentLock } from "@/lib/task-interaction/intent-lock";
@@ -24,7 +24,7 @@ function Band({ title, children }: { title: string; children: React.ReactNode })
 	);
 }
 
-function collectOpenTasks(schedule: DaySchedule): TaskRow[] {
+function collectDayTasks(schedule: DaySchedule): TaskRow[] {
 	const byId = new Map<string, TaskRow>();
 	for (const item of schedule.allDay) {
 		if (item.kind === "task") byId.set(item.task.id, item.task);
@@ -41,8 +41,13 @@ function collectOpenTasks(schedule: DaySchedule): TaskRow[] {
 	return [...byId.values()];
 }
 
-function projectSchedule(schedule: DaySchedule, open: TaskRow[], dateIso: string): DaySchedule {
-	const byId = new Map(open.map((t) => [t.id, t]));
+// `tasks` is the optimistic list of everything the day shows — open rows and
+// rows completed on this day alike. Status is deliberately not a filter
+// anywhere below: ticking a checkbox restyles the row in place rather than
+// removing it (docs/adr/0038), which is also what the next server render
+// returns, so there is no flicker when it lands.
+function projectSchedule(schedule: DaySchedule, tasks: TaskRow[], dateIso: string): DaySchedule {
+	const byId = new Map(tasks.map((t) => [t.id, t]));
 
 	function mapItems(items: DayScheduleItem[]): DayScheduleItem[] {
 		const out: DayScheduleItem[] = [];
@@ -52,7 +57,9 @@ function projectSchedule(schedule: DaySchedule, open: TaskRow[], dateIso: string
 				continue;
 			}
 			const next = byId.get(item.task.id);
-			if (!next || next.status === "done") continue;
+			// A recurring task rolls to its next due date on completion, which
+			// takes it off this day for real — that is the one removal left.
+			if (!next || next.due_date !== item.task.due_date) continue;
 			out.push({ ...item, task: next });
 		}
 		return out;
@@ -61,14 +68,15 @@ function projectSchedule(schedule: DaySchedule, open: TaskRow[], dateIso: string
 	// Top 3 re-derives from the optimistic list rather than from schedule.top3,
 	// so tapping ☆ on any band moves the row into (or out of) the shortlist
 	// immediately instead of waiting for the Today RSC round-trip.
-	const top3 = open.filter((t) => t.status === "open" && isTop3Today(t, dateIso));
+	const top3 = tasks.filter((t) => isTop3Today(t, dateIso));
 
 	// Open carries the leftovers only — a row promoted to Top 3 leaves this band
 	// in the same tick it joins that one, so it never shows up twice.
 	const openBand: TaskRow[] = [];
 	for (const t of schedule.open) {
 		const next = byId.get(t.id);
-		if (next && next.status === "open" && !isTop3Today(next, dateIso)) openBand.push(next);
+		if (!next || next.due_date !== t.due_date) continue; // rolled off the day
+		if (!isTop3Today(next, dateIso)) openBand.push(next);
 	}
 
 	return {
@@ -117,16 +125,16 @@ export function DayBands({
 }) {
 	const [, startTransition] = useTransition();
 	const lock = useIntentLock();
-	const seed = useMemo(() => collectOpenTasks(schedule), [schedule]);
+	const seed = useMemo(() => collectDayTasks(schedule), [schedule]);
 	const ctx: ApplyContext = { todayIso, top3DateIso: dateIso };
 
-	const [openTasks, dispatchOptimistic] = useOptimistic(seed, (current, intent: TaskIntent) =>
-		applyOpenTaskList(current, intent, ctx),
+	const [dayTasks, dispatchOptimistic] = useOptimistic(seed, (current, intent: TaskIntent) =>
+		applyDayTaskList(current, intent, ctx),
 	);
 
 	const projected = useMemo(
-		() => projectSchedule(schedule, openTasks, dateIso),
-		[schedule, openTasks, dateIso],
+		() => projectSchedule(schedule, dayTasks, dateIso),
+		[schedule, dayTasks, dateIso],
 	);
 
 	const { allDay, timeline, top3, open } = projected;

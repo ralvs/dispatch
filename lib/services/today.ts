@@ -30,7 +30,12 @@ import {
 	listRoutines,
 	type RoutineRow,
 } from "@/lib/services/routines";
-import { lastCompletedByDomain, listTasks, type TaskRow } from "@/lib/services/tasks";
+import {
+	lastCompletedByDomain,
+	listCompletedOn,
+	listTasks,
+	type TaskRow,
+} from "@/lib/services/tasks";
 import { isDueToday, isOverdue, isTop3Today } from "@/lib/task-predicates";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -318,14 +323,26 @@ function compareItems(a: DayScheduleItem, b: DayScheduleItem): number {
  * day navigation composes the same bands for any date. Every rule below reads
  * off that date, so "due today", "starred for the day" and "already arrived"
  * stay true relative to the day on screen rather than to the wall clock.
+ *
+ * `completedTasks` are the tasks closed on that day (docs/adr/0038). They run
+ * through exactly the same placement rules as the open ones, so a row ticked
+ * off keeps the seat it had — the day is a record of what happened on it, not
+ * only of what is left. Nothing is added that wasn't already on the day: a
+ * completed task still has to be due by `dateIso` or starred for it to show.
  */
 export function buildDaySchedule(input: {
 	events: CalendarEventRow[];
 	openTasks: TaskRow[];
+	/** Tasks whose `completed_at` falls on `dateIso`. Optional — omitted by
+	 * callers (tests, briefings) that only care about what is still open. */
+	completedTasks?: TaskRow[];
 	dateIso: string;
 	tz: string;
 }): DaySchedule {
-	const { events, openTasks, dateIso, tz } = input;
+	const { events, dateIso, tz } = input;
+	// One list from here down: placement never asks whether a task is done,
+	// only where it belongs on the day.
+	const openTasks = [...input.openTasks, ...(input.completedTasks ?? [])];
 
 	const allDay: DayScheduleItem[] = [];
 	const timeline: DayScheduleItem[] = [];
@@ -376,12 +393,18 @@ export function buildDaySchedule(input: {
 	const arrived = unplaced.filter(
 		(t) => !isTop3Today(t, dateIso) && t.due_date !== null && t.due_date <= dateIso,
 	);
+	// Done rows sink below the open ones and sit outside OPEN_CAP: the cap
+	// exists to stop a backlog of *work* from swamping the band, and what was
+	// finished today is already bounded by the day itself. Capping the merged
+	// list would let this morning's completions push live work off the page.
+	const arrivedOpen = arrived.filter((t) => t.status !== "done");
+	const arrivedDone = arrived.filter((t) => t.status === "done");
 
 	return {
 		allDay: allDay.sort(compareItems),
 		timeline: timeline.sort(compareItems),
 		top3,
-		open: arrived.slice(0, OPEN_CAP),
+		open: [...arrivedOpen.slice(0, OPEN_CAP), ...arrivedDone],
 	};
 }
 
@@ -566,21 +589,27 @@ export function summarizeProjects(
 const STREAK_HISTORY_DAYS = 60;
 
 /**
- * Hot segment: open tasks + calendar events for the day schedule.
- * Task writes only need this segment to feel current (soft split).
- * Exported so the Cache Components layer can cache digest separately while
- * this path stays request-fresh (docs/adr/0033).
+ * Hot segment: open tasks + tasks completed on the day + calendar events for
+ * the day schedule. Task writes only need this segment to feel current (soft
+ * split). Exported so the Cache Components layer can cache digest separately
+ * while this path stays request-fresh (docs/adr/0033).
+ *
+ * `completed` is kept apart from `open` on purpose: only the day bands want
+ * it. Every count on the rest of Today — overdue, due today, inbox, the
+ * anchor sentence — is a count of outstanding work and must keep reading
+ * `open` alone.
  */
 export async function loadDayScheduleInputs(
 	sb: SupabaseClient,
 	tz: string,
 	dateIso: string,
-): Promise<{ open: TaskRow[]; events: CalendarEventRow[] }> {
-	const [open, events] = await Promise.all([
+): Promise<{ open: TaskRow[]; completed: TaskRow[]; events: CalendarEventRow[] }> {
+	const [open, completed, events] = await Promise.all([
 		listTasks(sb, { status: "open" }),
+		listCompletedOn(sb, dateIso, tz),
 		listEventsOn(sb, dateIso, tz),
 	]);
-	return { open, events };
+	return { open, completed, events };
 }
 
 /**
@@ -662,8 +691,8 @@ export async function getDaySchedule(
 	tz: string,
 	dateIso: string,
 ): Promise<DaySchedule> {
-	const { open, events } = await loadDayScheduleInputs(sb, tz, dateIso);
-	return buildDaySchedule({ events, openTasks: open, dateIso, tz });
+	const { open, completed, events } = await loadDayScheduleInputs(sb, tz, dateIso);
+	return buildDaySchedule({ events, openTasks: open, completedTasks: completed, dateIso, tz });
 }
 
 export type TodayDigest = Awaited<ReturnType<typeof loadTodayDigest>>;
@@ -676,6 +705,8 @@ export function assembleTodayView(
 	tz: string,
 	todayIso: string,
 	nowMs: number = Date.now(),
+	/** Tasks closed today — day bands only; no count below reads them. */
+	completedToday: TaskRow[] = [],
 ): TodayView {
 	const {
 		routines,
@@ -720,6 +751,7 @@ export function assembleTodayView(
 		daySchedule: buildDaySchedule({
 			events: todayEvents,
 			openTasks: open,
+			completedTasks: completedToday,
 			dateIso: todayIso,
 			tz,
 		}),
@@ -756,9 +788,9 @@ export async function getToday(
 	// Soft split: schedule inputs vs digest load in parallel; callers still
 	// see one getToday interface. Inbox count is derived from open tasks
 	// (no second listInboxTasks query).
-	const [{ open, events: todayEvents }, digest] = await Promise.all([
+	const [{ open, completed, events: todayEvents }, digest] = await Promise.all([
 		loadDayScheduleInputs(sb, tz, todayIso),
 		loadTodayDigest(sb, todayIso),
 	]);
-	return assembleTodayView(digest, open, todayEvents, tz, todayIso, nowMs);
+	return assembleTodayView(digest, open, todayEvents, tz, todayIso, nowMs, completed);
 }

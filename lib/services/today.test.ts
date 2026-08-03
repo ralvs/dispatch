@@ -634,4 +634,65 @@ describe("buildDaySchedule", () => {
 		expect(day.top3).toEqual([]);
 		expect(day.open).toEqual([]);
 	});
+
+	// The day is a record of what happened on it (docs/adr/0038): completing a
+	// task must not erase it from the band it was standing on.
+	describe("tasks completed on the day", () => {
+		function withDone(openTasks: TaskRow[], completedTasks: TaskRow[]) {
+			return buildDaySchedule({
+				events: [],
+				openTasks,
+				completedTasks,
+				dateIso: TODAY,
+				tz: SP,
+			});
+		}
+
+		function done(overrides: Partial<TaskRow> & { id: string }): TaskRow {
+			return task({
+				status: "done",
+				completed_at: `${TODAY}T13:00:00.000Z`,
+				...overrides,
+			});
+		}
+
+		it("keeps a task due today on the timeline at its due time", () => {
+			const day = withDone([], [done({ id: "t1", due_date: TODAY, due_time: "09:00" })]);
+			expect(day.timeline.map((i) => i.key)).toEqual(["task:t1"]);
+			expect(day.timeline.map((i) => i.time)).toEqual(["09:00"]);
+			expect(day.open).toEqual([]);
+		});
+
+		it("keeps an untimed task due today in the all-day band", () => {
+			const day = withDone([], [done({ id: "t1", due_date: TODAY })]);
+			expect(day.allDay.map((i) => i.key)).toEqual(["task:t1"]);
+		});
+
+		it("keeps an overdue task closed today in the open band", () => {
+			const day = withDone([], [done({ id: "t1", due_date: "2026-07-10" })]);
+			expect(day.open.map((t) => t.id)).toEqual(["t1"]);
+		});
+
+		it("keeps a starred task closed today in Top 3", () => {
+			const day = withDone([], [done({ id: "t1", top3_for_date: TODAY })]);
+			expect(day.top3.map((t) => t.id)).toEqual(["t1"]);
+		});
+
+		it("adds nothing that was never on the day — no due date, not starred", () => {
+			const day = withDone([], [done({ id: "t1" })]);
+			expect(day.allDay).toEqual([]);
+			expect(day.timeline).toEqual([]);
+			expect(day.top3).toEqual([]);
+			expect(day.open).toEqual([]);
+		});
+
+		it("sinks done rows below open ones and spends none of the open cap", () => {
+			const open = Array.from({ length: 10 }, (_, i) =>
+				task({ id: `open${i}`, due_date: "2026-07-01" }),
+			);
+			const day = withDone(open, [done({ id: "closed", due_date: "2026-07-01" })]);
+			expect(day.open).toHaveLength(11);
+			expect(day.open.at(-1)?.id).toBe("closed");
+		});
+	});
 });
