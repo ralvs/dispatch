@@ -165,6 +165,18 @@ export function DayBands({
 			) : (
 				<div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.6fr_1fr] lg:items-start lg:gap-14">
 					<div className="min-w-0">
+						{/* Tasks alone (no events, nothing timed) would leave this whole
+						 * column blank next to a populated Top 3 / Open — say the day is
+						 * clear instead of rendering a hole. */}
+						{allDay.length === 0 && timeline.length === 0 && (
+							<Band title="Timeline">
+								<li className="py-2 font-serif italic text-ink-3">
+									Nothing scheduled {dateIso === todayIso ? "today" : "that day"}. Events and timed
+									tasks land here.
+								</li>
+							</Band>
+						)}
+
 						{allDay.length > 0 && (
 							<Band title="All day">
 								{allDay.map((item) => (

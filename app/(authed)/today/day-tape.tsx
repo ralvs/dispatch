@@ -275,6 +275,12 @@ const TAPE_CSS = `
 	display: none;
 }
 
+/* No flags means no lanes, so the reserve below the axis is fixed: enough to
+ * clear the tick labels and seat the caption that stands in for them. */
+.dt-tape.is-empty {
+	padding-bottom: 72px;
+}
+
 @media (min-width: 48rem) {
 	.dt-tape {
 		padding-top: calc(72px + var(--dt-lanes-up, 0) * 22px);
@@ -395,7 +401,11 @@ export function DayTape({
 				{nav}
 			</div>
 			<style>{TAPE_CSS}</style>
-			<div className="dt-tape mt-2" style={tapeStyle} aria-hidden="true">
+			<div
+				className={`dt-tape mt-2${flags.length === 0 ? " is-empty" : ""}`}
+				style={tapeStyle}
+				aria-hidden="true"
+			>
 				<div className="dt-axis">
 					{ticks.map((h) => (
 						<div key={h} className="dt-tick" style={{ left: `${pct(h * 60)}%` }} />
@@ -447,6 +457,15 @@ export function DayTape({
 						</>
 					)}
 				</div>
+				{flags.length === 0 && (
+					// Where the flags would have been: without it the ruler reads as
+					// broken rather than as a day with nothing timed on it.
+					<p className="-translate-x-1/2 absolute bottom-3.5 left-1/2 whitespace-nowrap font-serif text-ink-4 text-sm italic">
+						{/* nowLabel is non-null only on today, so it doubles as the
+					     "is this today" signal the tape doesn't otherwise get. */}
+						{nowLabel === null ? "Nothing timed that day." : "Nothing timed today."}
+					</p>
+				)}
 			</div>
 		</section>
 	);
