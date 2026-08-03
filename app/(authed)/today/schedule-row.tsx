@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useTransition } from "react";
+import { IconNoteDoc, IconNoteDocPlus, NOTE_CHIP_CLASS } from "@/components/note-glyphs";
 import { runAction } from "@/lib/client/toast";
 import type { DayScheduleItem } from "@/lib/services/today";
 import { type TaskRowHandlers, TaskRowItem } from "../tasks/task-row";
@@ -27,45 +28,47 @@ function IconCalendar({ className }: { className?: string }) {
 	);
 }
 
-/** Quiet link/create affordance for an event's meeting note — mirrors the
- * mono metadata styling used elsewhere in Today. */
+/**
+ * Quiet link/create affordance for an event's meeting note. Shares its shell
+ * and glyphs with the task rows beside it (components/note-glyphs) so the two
+ * read as one column down a schedule band rather than two conventions.
+ */
 function MeetingNoteGlyph({ eventId, noteId }: { eventId: string; noteId?: string }) {
 	const [pending, startTransition] = useTransition();
 
-	// The chip stays visually tiny; the padded wrapper grows its hit area to 44px.
 	if (noteId) {
 		return (
-			<span className="-m-2.5 inline-flex shrink-0 items-center self-center p-2.5">
-				<Link
-					href={`/notes/${noteId}`}
-					aria-label="View meeting note"
-					className="inline-flex items-center gap-1 rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
-				>
-					<span aria-hidden="true">¶</span> Note
-				</Link>
-			</span>
+			<Link
+				href={`/notes/${noteId}`}
+				aria-label="View meeting note"
+				// Icon-only, so a native tooltip carries on hover what the label
+				// carries to a screen reader.
+				title="View meeting note"
+				className={`${NOTE_CHIP_CLASS} self-center`}
+			>
+				<IconNoteDoc />
+			</Link>
 		);
 	}
 
 	return (
-		<span className="-m-2.5 inline-flex shrink-0 items-center self-center p-2.5">
-			<button
-				type="button"
-				aria-label="Create meeting note"
-				disabled={pending}
-				onClick={() => {
-					startTransition(async () => {
-						await runAction(
-							() => createMeetingNoteForEventAction(eventId),
-							"Couldn't create a note for this event. Try again.",
-						);
-					});
-				}}
-				className="inline-flex items-center gap-1 rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 hover:border-line-strong hover:text-ink disabled:opacity-50 active:opacity-70"
-			>
-				<span aria-hidden="true">+</span> Note
-			</button>
-		</span>
+		<button
+			type="button"
+			aria-label="Create meeting note"
+			title="Create meeting note"
+			disabled={pending}
+			onClick={() => {
+				startTransition(async () => {
+					await runAction(
+						() => createMeetingNoteForEventAction(eventId),
+						"Couldn't create a note for this event. Try again.",
+					);
+				});
+			}}
+			className={`${NOTE_CHIP_CLASS} self-center disabled:opacity-50`}
+		>
+			<IconNoteDocPlus />
+		</button>
 	);
 }
 

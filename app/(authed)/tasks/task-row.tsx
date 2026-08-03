@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type KeyboardEvent, useEffect, useRef, useState, useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
 import { MentionChip } from "@/components/mention-chip";
+import { IconNoteDoc, NOTE_CHIP_CLASS } from "@/components/note-glyphs";
 import { runAction } from "@/lib/client/toast";
 import { formatDay, formatDueLabel, formatInstant } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
@@ -314,10 +315,11 @@ export function TaskRowItem({
 					<Link
 						href={`/notes/${noteId}`}
 						aria-label="View linked note"
+						title="View linked note"
 						onClick={(e) => e.stopPropagation()}
-						className="relative inline-flex shrink-0 items-center gap-1 rounded border border-line px-1 py-px font-mono text-[10px] leading-none text-ink-3 after:absolute after:-inset-y-3 after:-inset-x-1 after:content-[''] hover:border-line-strong hover:text-ink active:opacity-70"
+						className={NOTE_CHIP_CLASS}
 					>
-						<span aria-hidden="true">¶</span> Note
+						<IconNoteDoc />
 					</Link>
 				)}
 			</div>

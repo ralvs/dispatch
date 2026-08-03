@@ -120,7 +120,7 @@ export function DayBands({
 	nowUtcIso: string;
 	/** event id -> linked note id, for the meeting-note affordance on event rows. */
 	eventNoteIds?: Record<string, string>;
-	/** task id -> linked note id, for the "¶ Note" chip on task rows. */
+	/** task id -> linked note id, for the linked-note glyph on task rows. */
 	taskNoteIds?: Record<string, string>;
 }) {
 	const [, startTransition] = useTransition();
