@@ -286,7 +286,29 @@ export function TaskRowItem({
 			    gap-2 is load-bearing: each chip's after: reaches 4px past its
 			    own box, so anything tighter would overlap the neighbour's hit
 			    area and swallow taps meant for it. */}
-			<div className="flex shrink-0 items-center gap-2 self-center">
+			<div className="flex shrink-0 items-center gap-3 self-center">
+				{/* The star leads so the note chips end the row. Two columns have to
+				    be ragged and this is the pair worth keeping straight: a task's
+				    note chips then land in the same column as an event's own note
+				    affordance, which is what makes a schedule band read as one list
+				    rather than two interleaved ones. Kept `invisible` rather than
+				    unmounted when done, so the chips hold that column whether or
+				    not the row still has a star to show.
+				    gap-3 is load-bearing: the star's hit area reaches 8px past its
+				    box and a chip's 4px past its own, so anything tighter would let
+				    the star swallow taps meant for the chip beside it. */}
+				<button
+					type="button"
+					aria-label={`${starred ? "Remove from" : "Pin to"} ${starDay}'s top 3`}
+					aria-pressed={starred}
+					disabled={done}
+					onClick={handlers.onToggleTop3}
+					className={`relative text-base leading-none after:absolute after:-inset-y-3.5 after:-inset-x-2 after:content-[''] active:opacity-70 ${
+						starred ? "text-accent" : "text-ink-4 hover:text-ink-2"
+					} ${done ? "invisible" : ""}`}
+				>
+					{starred ? "★" : "☆"}
+				</button>
 				{noteText && <TaskNotePopover notes={noteText} title={task.title} />}
 				{noteId && (
 					<Link
@@ -298,18 +320,6 @@ export function TaskRowItem({
 						<span aria-hidden="true">¶</span> Note
 					</Link>
 				)}
-				<button
-					type="button"
-					aria-label={`${starred ? "Remove from" : "Pin to"} ${starDay}'s top 3`}
-					aria-pressed={starred}
-					disabled={done}
-					onClick={handlers.onToggleTop3}
-					className={`relative text-base leading-none after:absolute after:-inset-3.5 after:content-[''] active:opacity-70 ${
-						starred ? "text-accent" : "text-ink-4 hover:text-ink-2"
-					} ${done ? "invisible" : ""}`}
-				>
-					{starred ? "★" : "☆"}
-				</button>
 			</div>
 		</li>
 	);
