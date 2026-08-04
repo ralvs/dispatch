@@ -3,7 +3,7 @@ import { todayInTz } from "@/lib/dates";
 import { env, isSupabaseConfigured } from "@/lib/env";
 import { isAuthorized } from "@/lib/secret-auth";
 import { getAppTimezone } from "@/lib/services/settings";
-import { getToday } from "@/lib/services/today";
+import { doingTodayFromSchedule, getToday } from "@/lib/services/today";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 			date: todayIso,
 			cadence: today.cadence.map((line) => ({ big: line.big, label: line.label })),
 			inbox_count: today.inboxCount,
-			doing_today: today.doingToday.map((t) => ({
+			doing_today: doingTodayFromSchedule(today.daySchedule).map((t) => ({
 				id: t.id,
 				title: t.title,
 				due_date: t.due_date,

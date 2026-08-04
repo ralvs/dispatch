@@ -14,7 +14,7 @@ import type { QuoteRow } from "@/lib/services/quotes";
 import { listQuotes } from "@/lib/services/quotes";
 import type { TaskRow } from "@/lib/services/tasks";
 import { listTasks } from "@/lib/services/tasks";
-import { getToday, type TodayView } from "@/lib/services/today";
+import { doingTodayFromSchedule, getToday, type TodayView } from "@/lib/services/today";
 
 // ─────────────────────────────────────────────────────────────────────────
 // The read-only snapshot fed to the chat model as its CONTEXT block. The
@@ -86,7 +86,11 @@ export function renderChatContext(snapshot: ChatSnapshot): string {
 				"## Today",
 				`Cadence: ${cadence}`,
 				`Inbox: ${b.inboxCount} unfiled`,
-				`Doing today: ${b.doingToday.length ? b.doingToday.map((t) => t.title).join(", ") : "nothing pinned"}`,
+				`Doing today: ${
+					doingTodayFromSchedule(b.daySchedule)
+						.map((t) => t.title)
+						.join(", ") || "nothing pinned"
+				}`,
 				`Routines: ${routines}`,
 				`Quote of the day: ${quote}`,
 			].join("\n"),
