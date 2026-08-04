@@ -9,13 +9,11 @@ vi.mock("@/lib/services/settings", () => ({
 	getAppTimezone: vi.fn(async () => "America/Sao_Paulo"),
 }));
 vi.mock("@/lib/services/tasks", () => ({ createTask: vi.fn() }));
-vi.mock("@/lib/services/mentions", () => ({ syncMentions: vi.fn() }));
-vi.mock("@/lib/services/people", () => ({ listMentionCandidates: vi.fn(async () => []) }));
+vi.mock("@/lib/services/mentions", () => ({ syncTaskMentionsFromText: vi.fn() }));
 
 import { parseTaskCapture } from "@/lib/ai/parser";
 import { listDomains } from "@/lib/services/domains";
-import { syncMentions } from "@/lib/services/mentions";
-import { listMentionCandidates } from "@/lib/services/people";
+import { syncTaskMentionsFromText } from "@/lib/services/mentions";
 import { listProjects } from "@/lib/services/projects";
 import { createTask } from "@/lib/services/tasks";
 
@@ -25,7 +23,7 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	(listDomains as Mock).mockResolvedValue([]);
 	(listProjects as Mock).mockResolvedValue([]);
-	(listMentionCandidates as Mock).mockResolvedValue([]);
+	(syncTaskMentionsFromText as Mock).mockResolvedValue(undefined);
 });
 
 describe("quickAddTask", () => {
@@ -99,20 +97,21 @@ describe("quickAddTask", () => {
 		);
 	});
 
-	it("never lets a mention-sync failure fail the capture (iron rule #4)", async () => {
+	it("syncs mentions best-effort after create (iron rule #4 via fail:swallow)", async () => {
 		(parseTaskCapture as Mock).mockResolvedValue({
 			ok: true,
 			task: { action: "create_task", title: "call @Ana" },
 		});
 		(createTask as Mock).mockResolvedValue({ id: "task-5", title: "call @Ana", notes: null });
-		(listMentionCandidates as Mock).mockRejectedValue(new Error("db down"));
-		(syncMentions as Mock).mockRejectedValue(new Error("should never be reached"));
 
 		const result = await quickAddTask(sb, "call @Ana");
 
 		expect(result).toEqual({
 			task: { id: "task-5", title: "call @Ana", notes: null },
 			parsed: true,
+		});
+		expect(syncTaskMentionsFromText).toHaveBeenCalledWith(sb, "task-5", "call @Ana", null, {
+			fail: "swallow",
 		});
 	});
 

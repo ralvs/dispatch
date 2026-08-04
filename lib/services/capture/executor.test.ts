@@ -11,16 +11,14 @@ vi.mock("@/lib/services/calendar", () => ({ createEventHere: vi.fn() }));
 vi.mock("@/lib/caldav/client", () => ({ createCaldavClient: vi.fn(async () => ({})) }));
 vi.mock("@/lib/services/notifications", () => ({ recordNotification: vi.fn() }));
 vi.mock("@/lib/env", () => ({ isCaldavConfigured: vi.fn(() => true) }));
-vi.mock("@/lib/services/mentions", () => ({ syncMentions: vi.fn() }));
-vi.mock("@/lib/services/people", () => ({ listMentionCandidates: vi.fn(async () => []) }));
+vi.mock("@/lib/services/mentions", () => ({ syncTaskMentionsFromText: vi.fn() }));
 
 import { isCaldavConfigured } from "@/lib/env";
 import { createEventHere } from "@/lib/services/calendar";
 import { createEntry } from "@/lib/services/journal";
-import { syncMentions } from "@/lib/services/mentions";
+import { syncTaskMentionsFromText } from "@/lib/services/mentions";
 import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
 import { recordNotification } from "@/lib/services/notifications";
-import { listMentionCandidates } from "@/lib/services/people";
 import { createQuote } from "@/lib/services/quotes";
 import { createTask } from "@/lib/services/tasks";
 
@@ -37,7 +35,7 @@ const PROV = {
 
 beforeEach(() => {
 	vi.clearAllMocks();
-	(listMentionCandidates as Mock).mockResolvedValue([]);
+	(syncTaskMentionsFromText as Mock).mockResolvedValue(undefined);
 });
 
 describe("runActions", () => {
@@ -153,10 +151,8 @@ describe("runActions", () => {
 		);
 	});
 
-	it("never degrades an already-created task when its mention sync throws (iron rule #4)", async () => {
+	it("syncs mentions best-effort after create_task (iron rule #4 via fail:swallow)", async () => {
 		(createTask as Mock).mockResolvedValue({ id: "task-9", title: "call @Ana", notes: null });
-		(listMentionCandidates as Mock).mockRejectedValue(new Error("db down"));
-		(syncMentions as Mock).mockRejectedValue(new Error("should never be reached"));
 
 		const actions: CaptureAction[] = [{ action: "create_task", title: "call @Ana" }];
 
@@ -166,6 +162,9 @@ describe("runActions", () => {
 			action: "create_task",
 			ok: true,
 			entity: { table: "tasks", id: "task-9" },
+		});
+		expect(syncTaskMentionsFromText).toHaveBeenCalledWith(sb, "task-9", "call @Ana", null, {
+			fail: "swallow",
 		});
 		expect(createNeedsReviewNote).not.toHaveBeenCalled();
 	});

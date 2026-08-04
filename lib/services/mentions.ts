@@ -1,7 +1,9 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { buildMentionIndex, extractMentions } from "@/lib/mentions";
 import { PEOPLE_SELECT, type PersonRow } from "@/lib/schemas/person";
 import { ServiceError, unwrap } from "@/lib/services/errors";
+import { listMentionCandidates } from "@/lib/services/people";
 
 // ─────────────────────────────────────────────────────────────────────────
 // @mention People (docs/adr/0030 Decision 4). syncMentions mirrors
@@ -16,6 +18,34 @@ export type MentionSource = { type: "task" | "note"; id: string };
 
 function sourceColumn(type: "task" | "note"): "task_id" | "note_id" {
 	return type === "task" ? "task_id" : "note_id";
+}
+
+/**
+ * Parse @mentions out of a task's title/notes and reconcile the mention rows.
+ * One seam for form writes (throw) and capture/quick-add (swallow — iron rule #4).
+ */
+export async function syncTaskMentionsFromText(
+	sb: SupabaseClient,
+	taskId: string,
+	title: string,
+	notes: string | null | undefined,
+	opts: { fail: "throw" | "swallow" } = { fail: "throw" },
+): Promise<void> {
+	const run = async () => {
+		const candidates = await listMentionCandidates(sb);
+		const index = buildMentionIndex(candidates);
+		const matches = extractMentions(`${title}\n${notes ?? ""}`, index);
+		await syncMentions(sb, { type: "task", id: taskId }, matches);
+	};
+	if (opts.fail === "swallow") {
+		try {
+			await run();
+		} catch {
+			// Swallowed on purpose — never lose a capture over a mention sync.
+		}
+		return;
+	}
+	await run();
 }
 
 /**
