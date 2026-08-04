@@ -1,5 +1,7 @@
 import { isRecurrencePattern, nextDueDate } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/schemas/task";
+import type { DaySchedule, DayScheduleItem } from "@/lib/services/today";
+import { isTop3Today } from "@/lib/task-predicates";
 
 /** Intents the optimistic layer understands (v1). Edit waits for the server. */
 export type TaskIntent =
@@ -38,13 +40,62 @@ function findIn(tasks: TaskRow[], id: string): TaskRow | undefined {
 	return tasks.find((t) => t.id === id);
 }
 
+function top3Target(ctx: ApplyContext): string {
+	return ctx.top3DateIso ?? ctx.todayIso;
+}
+
+function nowOf(ctx: ApplyContext): string {
+	return ctx.nowIso ?? new Date().toISOString();
+}
+
+/**
+ * Field-level complete projection shared by Tasks and Day surfaces.
+ * Placement (move to done vs stay in place) is the caller's job.
+ *
+ * `clearTop3` is true on the Tasks page only — a shortlist cosmetic the server
+ * never writes. Clearing it on Today would flash a starred row out of Top 3
+ * and back in on the next RSC render (docs/adr/0038).
+ */
+export function completeTaskFields(
+	task: TaskRow,
+	ctx: ApplyContext,
+	opts: { clearTop3: boolean },
+): TaskRow {
+	if (task.recurrence_rule && isRecurrencePattern(task.recurrence_rule)) {
+		return {
+			...task,
+			due_date: nextDueDate({
+				currentDue: task.due_date,
+				rule: task.recurrence_rule,
+				todayIso: ctx.todayIso,
+			}),
+		};
+	}
+	return {
+		...task,
+		status: "done",
+		completed_at: nowOf(ctx),
+		...(opts.clearTop3 ? { top3_for_date: null } : {}),
+	};
+}
+
+export function reopenTaskFields(task: TaskRow): TaskRow {
+	return { ...task, status: "open", completed_at: null };
+}
+
+export function toggleTop3Fields(task: TaskRow, ctx: ApplyContext): TaskRow {
+	const target = top3Target(ctx);
+	return {
+		...task,
+		top3_for_date: task.top3_for_date === target ? null : target,
+	};
+}
+
 /**
  * Project open+done lists for the Tasks page after an intent.
  * Pure — same recurrence roll math as completeTask (lib/recurrence.nextDueDate).
  */
 export function applyTaskLists(lists: TaskLists, intent: TaskIntent, ctx: ApplyContext): TaskLists {
-	const nowIso = ctx.nowIso ?? new Date().toISOString();
-
 	switch (intent.type) {
 		case "create": {
 			return { open: [intent.task, ...lists.open], done: lists.done };
@@ -56,11 +107,7 @@ export function applyTaskLists(lists: TaskLists, intent: TaskIntent, ctx: ApplyC
 			};
 		}
 		case "toggleTop3": {
-			const target = ctx.top3DateIso ?? ctx.todayIso;
-			const patch = (t: TaskRow): TaskRow => ({
-				...t,
-				top3_for_date: t.top3_for_date === target ? null : target,
-			});
+			const patch = (t: TaskRow): TaskRow => toggleTop3Fields(t, ctx);
 			return {
 				open: mapId(lists.open, intent.id, patch),
 				done: mapId(lists.done, intent.id, patch),
@@ -69,7 +116,7 @@ export function applyTaskLists(lists: TaskLists, intent: TaskIntent, ctx: ApplyC
 		case "reopen": {
 			const task = findIn(lists.done, intent.id) ?? findIn(lists.open, intent.id);
 			if (!task) return lists;
-			const reopened: TaskRow = { ...task, status: "open", completed_at: null };
+			const reopened = reopenTaskFields(task);
 			return {
 				open: [reopened, ...withoutId(lists.open, intent.id)],
 				done: withoutId(lists.done, intent.id),
@@ -79,109 +126,128 @@ export function applyTaskLists(lists: TaskLists, intent: TaskIntent, ctx: ApplyC
 			const task = findIn(lists.open, intent.id) ?? findIn(lists.done, intent.id);
 			if (!task) return lists;
 
-			if (task.recurrence_rule && isRecurrencePattern(task.recurrence_rule)) {
-				const due = nextDueDate({
-					currentDue: task.due_date,
-					rule: task.recurrence_rule,
-					todayIso: ctx.todayIso,
-				});
-				const rolled: TaskRow = { ...task, due_date: due };
+			const next = completeTaskFields(task, ctx, { clearTop3: true });
+			if (next.status === "open") {
+				// Recurrence roll — stays open with a new due date.
 				return {
-					open: mapId(lists.open, intent.id, () => rolled),
+					open: mapId(lists.open, intent.id, () => next),
 					done: withoutId(lists.done, intent.id),
 				};
 			}
-
-			const completed: TaskRow = {
-				...task,
-				status: "done",
-				completed_at: nowIso,
-				top3_for_date: null,
-			};
 			return {
 				open: withoutId(lists.open, intent.id),
-				done: [completed, ...withoutId(lists.done, intent.id)].slice(0, 10),
+				done: [next, ...withoutId(lists.done, intent.id)].slice(0, 10),
 			};
 		}
 	}
 }
 
 /**
- * Project Today's day-band task list after an intent, in place.
+ * Project a flat day-task list after an intent, in place.
  *
- * Unlike applyOpenTaskList, completing a task does NOT drop it: Today's bands
- * keep the day's finished work on screen (docs/adr/0038), so the checkbox has
- * to flip where the row already is rather than pull it out from under the
- * cursor. Written out rather than delegating to applyTaskLists because that
- * one's semantics are the opposite — it moves rows between two lists, caps
- * `done` at 10, and clears `top3_for_date` on completion (a Tasks-page
- * shortlist rule the server never writes; clearing it here would flash a
- * starred row out of Top 3 and back in on the next RSC render).
- *
- * A recurring task still leaves the day when completed — it rolls to its next
- * due date, so it is genuinely no longer this day's work.
+ * Completing a task does NOT drop it: Today's bands keep the day's finished
+ * work on screen (docs/adr/0038). Prefer {@link applyDayIntent} when you have
+ * a full DaySchedule — that one also re-bands membership.
  */
 export function applyDayTaskList(
 	tasks: TaskRow[],
 	intent: TaskIntent,
 	ctx: ApplyContext,
 ): TaskRow[] {
-	const nowIso = ctx.nowIso ?? new Date().toISOString();
-
 	switch (intent.type) {
 		case "create":
 			return [intent.task, ...tasks];
 		case "delete":
 			return withoutId(tasks, intent.id);
-		case "toggleTop3": {
-			const target = ctx.top3DateIso ?? ctx.todayIso;
-			return mapId(tasks, intent.id, (t) => ({
-				...t,
-				top3_for_date: t.top3_for_date === target ? null : target,
-			}));
-		}
+		case "toggleTop3":
+			return mapId(tasks, intent.id, (t) => toggleTop3Fields(t, ctx));
 		case "reopen":
-			return mapId(tasks, intent.id, (t) => ({ ...t, status: "open", completed_at: null }));
+			return mapId(tasks, intent.id, reopenTaskFields);
 		case "complete":
-			return mapId(tasks, intent.id, (t) => {
-				if (t.recurrence_rule && isRecurrencePattern(t.recurrence_rule)) {
-					return {
-						...t,
-						due_date: nextDueDate({
-							currentDue: t.due_date,
-							rule: t.recurrence_rule,
-							todayIso: ctx.todayIso,
-						}),
-					};
-				}
-				return { ...t, status: "done", completed_at: nowIso };
-			});
+			return mapId(tasks, intent.id, (t) => completeTaskFields(t, ctx, { clearTop3: false }));
 	}
 }
 
-/**
- * Project a flat open-task list (Today schedule seed) after an intent.
- * Completed non-recurring tasks leave the list; rolls stay open with new due.
- */
-export function applyOpenTaskList(
-	open: TaskRow[],
-	intent: TaskIntent,
-	ctx: ApplyContext,
-): TaskRow[] {
-	const { open: next } = applyTaskLists({ open, done: [] }, intent, ctx);
-	return next;
+/** Flatten every task the day currently shows, deduped by id. */
+export function collectDayTasks(schedule: DaySchedule): TaskRow[] {
+	const byId = new Map<string, TaskRow>();
+	for (const item of schedule.allDay) {
+		if (item.kind === "task") byId.set(item.task.id, item.task);
+	}
+	for (const item of schedule.timeline) {
+		if (item.kind === "task") byId.set(item.task.id, item.task);
+	}
+	for (const task of schedule.top3) {
+		byId.set(task.id, task);
+	}
+	for (const task of schedule.open) {
+		byId.set(task.id, task);
+	}
+	return [...byId.values()];
 }
 
-/** Patch tasks embedded in day-schedule bands by id. */
-export function mapScheduleTasks(
-	items: Array<{ kind: string; task?: TaskRow; [k: string]: unknown }>,
-	byId: Map<string, TaskRow>,
-): typeof items {
-	return items.flatMap((item) => {
-		if (item.kind !== "task" || !item.task) return [item];
-		const next = byId.get(item.task.id);
-		if (!next) return []; // removed (completed)
-		if (next.status === "done") return [];
-		return [{ ...item, task: next }];
-	});
+/**
+ * Re-band a day schedule from an optimistic flat task list.
+ *
+ * Status is deliberately not a filter: done rows stay where they were
+ * (docs/adr/0038). A recurring task that rolls its due date leaves the day.
+ */
+export function projectDaySchedule(
+	schedule: DaySchedule,
+	tasks: TaskRow[],
+	dateIso: string,
+): DaySchedule {
+	const byId = new Map(tasks.map((t) => [t.id, t]));
+
+	function mapItems(items: DayScheduleItem[]): DayScheduleItem[] {
+		const out: DayScheduleItem[] = [];
+		for (const item of items) {
+			if (item.kind !== "task") {
+				out.push(item);
+				continue;
+			}
+			const next = byId.get(item.task.id);
+			// A recurring task rolls to its next due date on completion, which
+			// takes it off this day for real — that is the one removal left.
+			if (!next || next.due_date !== item.task.due_date) continue;
+			out.push({ ...item, task: next });
+		}
+		return out;
+	}
+
+	// Top 3 re-derives from the optimistic list rather than from schedule.top3,
+	// so tapping ☆ on any band moves the row into (or out of) the shortlist
+	// immediately instead of waiting for the Today RSC round-trip.
+	const top3 = tasks.filter((t) => isTop3Today(t, dateIso));
+
+	// Open carries the leftovers only — a row promoted to Top 3 leaves this band
+	// in the same tick it joins that one, so it never shows up twice.
+	const openBand: TaskRow[] = [];
+	for (const t of schedule.open) {
+		const next = byId.get(t.id);
+		if (!next || next.due_date !== t.due_date) continue; // rolled off the day
+		if (!isTop3Today(next, dateIso)) openBand.push(next);
+	}
+
+	return {
+		allDay: mapItems(schedule.allDay),
+		timeline: mapItems(schedule.timeline),
+		top3,
+		open: openBand,
+	};
+}
+
+/**
+ * One pure seam for Today's optimistic day bands: intent + base schedule →
+ * next schedule. Field patch and band membership live here so React only
+ * dispatches.
+ */
+export function applyDayIntent(
+	schedule: DaySchedule,
+	intent: TaskIntent,
+	ctx: ApplyContext,
+): DaySchedule {
+	const dateIso = top3Target(ctx);
+	const tasks = applyDayTaskList(collectDayTasks(schedule), intent, ctx);
+	return projectDaySchedule(schedule, tasks, dateIso);
 }

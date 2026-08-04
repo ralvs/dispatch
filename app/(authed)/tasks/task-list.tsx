@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
-import { runAction } from "@/lib/client/toast";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { TaskRow } from "@/lib/services/tasks";
 import {
@@ -12,7 +11,7 @@ import {
 	type TaskIntent,
 	type TaskLists,
 } from "@/lib/task-interaction/apply-intent";
-import { useIntentLock } from "@/lib/task-interaction/intent-lock";
+import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
 import { isDueToday, isOverdue, isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
 import {
 	completeTaskAction,
@@ -134,13 +133,13 @@ export function TaskList({
 }) {
 	const router = useRouter();
 	const [, startTransition] = useTransition();
-	const lock = useIntentLock();
 	const seed: TaskLists = { open: openTasks, done: doneTasks };
 	const ctx: ApplyContext = { todayIso };
 
 	const [lists, dispatchOptimistic] = useOptimistic(seed, (current, intent: TaskIntent) =>
 		applyTaskLists(current, intent, ctx),
 	);
+	const run = useTaskIntentRunner(dispatchOptimistic);
 
 	// Ids of tasks created optimistically in this session — always shown
 	// regardless of the active filter, so a capture typed while "Domain: Work"
@@ -189,40 +188,18 @@ export function TaskList({
 		router.replace(`/tasks${filterQuery(status, projectId, domainId)}`, { scroll: false });
 	}, [editTaskId, router]);
 
-	function run(intent: TaskIntent, action: () => Promise<void>) {
-		if (!lock.claim(intent)) return;
-		startTransition(async () => {
-			dispatchOptimistic(intent);
-			// On failure optimistic state rolls back when the transition ends.
-			await runAction(action, "Couldn't update that task. Try again.");
-			lock.release(intent);
-		});
-	}
-
 	function handlersFor(task: TaskRow) {
-		const done = task.status === "done";
-		return {
-			onToggleDone: () => {
-				if (done) {
-					run({ type: "reopen", id: task.id }, () => reopenTaskAction(task.id));
-				} else {
-					run({ type: "complete", id: task.id }, () =>
-						completeTaskAction({ id: task.id, observedDueDate: task.due_date }),
-					);
-				}
+		return bindTaskHandlers(
+			task,
+			run,
+			{
+				complete: completeTaskAction,
+				reopen: reopenTaskAction,
+				setTop3: setTop3Action,
+				delete: deleteTaskAction,
 			},
-			onToggleTop3: () => {
-				// Desired state read off the row on screen — the same comparison
-				// the optimistic reducer makes (docs/adr/0037).
-				const starred = task.top3_for_date !== todayIso;
-				run({ type: "toggleTop3", id: task.id }, () =>
-					setTop3Action({ id: task.id, starred, forDateIso: todayIso }),
-				);
-			},
-			onDelete: () => {
-				run({ type: "delete", id: task.id }, () => deleteTaskAction(task.id));
-			},
-		};
+			{ top3DateIso: todayIso },
+		);
 	}
 
 	// Project/Domain AND together and apply across whichever status is showing.

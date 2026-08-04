@@ -50,7 +50,8 @@ Three rules follow:
    much is left" and "what happened today" are different questions and must not
    share an input.
 
-The optimistic layer mirrors this with `applyDayTaskList`, which patches a row
+The optimistic layer mirrors this with `applyDayIntent` (field patch via
+`applyDayTaskList` + re-band via `projectDaySchedule`), which patches a row
 in place rather than moving it between lists. It deliberately does **not**
 clear `top3_for_date` on completion the way `applyTaskLists` does — the server
 never writes that, so clearing it client-side would flash a starred row out of
@@ -68,8 +69,8 @@ Top 3 and straight back in on the next RSC render.
   work off the page.
 - **A recurring task still leaves the day when completed.** It rolls to its
   next due date and stays `open` (docs/adr/0037), so it is genuinely no longer
-  this day's work. `projectSchedule` detects this by the `due_date` moving, not
-  by status.
+  this day's work. `projectDaySchedule` detects this by the `due_date` moving,
+  not by status.
 - One extra indexed query per day-schedule read (`completed_at` window,
   `status = done`). It joins the existing `Promise.all` in
   `loadDayScheduleInputs`, so it costs no round-trip.

@@ -62,8 +62,8 @@ export function TaskRowItem({
 	noteId?: string;
 	/**
 	 * Optional on purpose: only "Recently done" (Tasks page) needs it to show a
-	 * completion time. Today's call sites never pass it because completed tasks
-	 * are filtered out of every band before they'd reach this component.
+	 * completion time. Today can show done rows in place (docs/adr/0038) but
+	 * does not pass tz — those rows restyle via status, not a timestamp.
 	 */
 	tz?: string;
 	/** @mention candidates (docs/adr/0030) for the edit form's title/notes autocomplete. */

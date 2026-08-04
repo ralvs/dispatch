@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { TaskRow } from "@/lib/schemas/task";
+import type { DaySchedule } from "@/lib/services/today";
 import {
+	applyDayIntent,
 	applyDayTaskList,
-	applyOpenTaskList,
 	applyTaskLists,
+	completeTaskFields,
 } from "@/lib/task-interaction/apply-intent";
 
 const TODAY = "2026-07-15";
@@ -26,6 +28,10 @@ function task(partial: Partial<TaskRow> & Pick<TaskRow, "id" | "title">): TaskRo
 		project: null,
 		...partial,
 	};
+}
+
+function emptySchedule(overrides: Partial<DaySchedule> = {}): DaySchedule {
+	return { allDay: [], timeline: [], top3: [], open: [], ...overrides };
 }
 
 describe("applyTaskLists", () => {
@@ -165,11 +171,38 @@ describe("applyTaskLists", () => {
 	});
 });
 
-describe("applyOpenTaskList", () => {
-	it("drops completed non-recurring tasks from a flat open list", () => {
-		const open = [task({ id: "a", title: "Go" }), task({ id: "b", title: "Stay" })];
-		const next = applyOpenTaskList(open, { type: "complete", id: "a" }, { todayIso: TODAY });
-		expect(next.map((t) => t.id)).toEqual(["b"]);
+describe("completeTaskFields", () => {
+	it("shares roll math for both surfaces", () => {
+		const t = task({
+			id: "r",
+			title: "Weekly",
+			recurrence_rule: "weekly",
+			due_date: "2026-07-10",
+			top3_for_date: TODAY,
+		});
+		const rolled = completeTaskFields(t, { todayIso: TODAY }, { clearTop3: true });
+		expect(rolled.due_date).toBe("2026-07-22");
+		expect(rolled.status).toBe("open");
+		// clearTop3 only applies to non-recurring completion.
+		expect(rolled.top3_for_date).toBe(TODAY);
+	});
+
+	it("clears top3 only when asked", () => {
+		const t = task({ id: "a", title: "Go", top3_for_date: TODAY });
+		expect(
+			completeTaskFields(
+				t,
+				{ todayIso: TODAY, nowIso: `${TODAY}T12:00:00.000Z` },
+				{ clearTop3: true },
+			).top3_for_date,
+		).toBeNull();
+		expect(
+			completeTaskFields(
+				t,
+				{ todayIso: TODAY, nowIso: `${TODAY}T12:00:00.000Z` },
+				{ clearTop3: false },
+			).top3_for_date,
+		).toBe(TODAY);
 	});
 });
 
@@ -218,5 +251,45 @@ describe("applyDayTaskList", () => {
 		expect(
 			applyDayTaskList(starred, { type: "toggleTop3", id: "a" }, ctx)[0].top3_for_date,
 		).toBeNull();
+	});
+});
+
+describe("applyDayIntent", () => {
+	const ctx = { todayIso: TODAY, top3DateIso: TODAY, nowIso: `${TODAY}T15:00:00.000Z` };
+
+	it("keeps a completed non-recurring task on its band (ADR-0038)", () => {
+		const t = task({ id: "a", title: "Go", due_date: TODAY });
+		const schedule = emptySchedule({
+			open: [t],
+			allDay: [{ kind: "task", key: "task:a", sortAt: TODAY, time: null, task: t }],
+		});
+		const next = applyDayIntent(schedule, { type: "complete", id: "a" }, ctx);
+		expect(next.allDay).toHaveLength(1);
+		expect(next.allDay[0]?.kind === "task" && next.allDay[0].task.status).toBe("done");
+		expect(next.open[0]?.status).toBe("done");
+	});
+
+	it("drops a rolled recurring task from the day", () => {
+		const t = task({
+			id: "r",
+			title: "Weekly",
+			due_date: TODAY,
+			recurrence_rule: "daily",
+		});
+		const schedule = emptySchedule({
+			open: [t],
+			allDay: [{ kind: "task", key: "task:r", sortAt: TODAY, time: null, task: t }],
+		});
+		const next = applyDayIntent(schedule, { type: "complete", id: "r" }, ctx);
+		expect(next.allDay).toHaveLength(0);
+		expect(next.open).toHaveLength(0);
+	});
+
+	it("moves a row into Top 3 when starred", () => {
+		const t = task({ id: "a", title: "Go", due_date: TODAY });
+		const schedule = emptySchedule({ open: [t] });
+		const next = applyDayIntent(schedule, { type: "toggleTop3", id: "a" }, ctx);
+		expect(next.top3.map((x) => x.id)).toEqual(["a"]);
+		expect(next.open).toHaveLength(0);
 	});
 });
