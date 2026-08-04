@@ -250,7 +250,7 @@ export function VariantSurface({ variant, day }: { variant: UiVariant; day: Comp
 					</p>
 					<div className="relative mt-8 h-36 rounded-card border border-line bg-surface-2/40 p-5">
 						<p className="text-sm text-ink-3">Page surface behind the popover…</p>
-						<div className="elevation-overlay absolute left-8 top-12 w-56 rounded-control border border-line-strong bg-[var(--elevated-bg)] py-1.5">
+						<div className="elevation-overlay absolute left-8 top-12 w-56 rounded-control border border-line-strong bg-surface py-1.5">
 							<button
 								type="button"
 								className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-surface-2"

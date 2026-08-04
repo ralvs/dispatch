@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 import { tv, type VariantProps } from "tailwind-variants";
 
 export const card = tv({
-	base: ["rounded-card border border-line-strong elevation-card", "bg-[var(--elevated-bg)]"],
+	base: ["rounded-card border border-line-strong bg-surface elevation-card"],
 	variants: {
 		padding: {
 			default: "p-5",

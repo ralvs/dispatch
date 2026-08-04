@@ -45,8 +45,6 @@
 	--field-shadow: none;
 	--elevation-card: none;
 	--elevation-overlay: none;
-	/* Lifted panel bg (dialogs/cards under depth); flat variants keep surface. */
-	--elevated-bg: var(--surface);
 
 	color-scheme: dark;
 }
@@ -72,9 +70,9 @@
 }
 
 /* ── UI variant tokens (Phase 4 bake-off) ───────────────────────────────
- * Depth must read on near-black: soft black falloff alone is invisible on
- * #0a0a0a, so dark depth uses a light rim + deeper drop + slightly lifted
- * surfaces. Light keeps a conventional soft shadow. */
+ * Depth is shadow-only — never a background swap. On dark canvas, black
+ * shadows disappear into #0a0a0a, so dark depth uses white/light shadows
+ * (the mirror of light mode's dark soft shadows). */
 
 [data-ui="line"] {
 	--field-bg: transparent;
@@ -83,7 +81,6 @@
 	--field-shadow: none;
 	--elevation-card: none;
 	--elevation-overlay: none;
-	--elevated-bg: var(--surface);
 }
 
 [data-ui="box"] {
@@ -93,28 +90,23 @@
 	--field-shadow: none;
 	--elevation-card: none;
 	--elevation-overlay: none;
-	--elevated-bg: var(--surface);
 }
 
+/* Dark (default): white glow = lift on near-black. */
 [data-ui="depth"] {
-	--field-bg: var(--surface-2);
+	--field-bg: var(--surface);
 	--field-radius: 10px;
 	--field-border-width: 1px;
-	--field-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 2px 8px rgba(0, 0, 0, 0.45);
-	--elevated-bg: var(--surface-2);
-	/* Rim so the lift reads on #0a0a0a, then a real drop. */
-	--elevation-card:
-		0 0 0 1px rgba(255, 255, 255, 0.07), 0 2px 4px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.55);
-	--elevation-overlay:
-		0 0 0 1px rgba(255, 255, 255, 0.1), 0 8px 16px rgba(0, 0, 0, 0.5), 0 24px 56px rgba(0, 0, 0, 0.7);
+	--field-shadow: 0 1px 2px rgba(255, 255, 255, 0.06), 0 4px 16px rgba(255, 255, 255, 0.08);
+	--elevation-card: 0 1px 2px rgba(255, 255, 255, 0.06), 0 8px 28px rgba(255, 255, 255, 0.1);
+	--elevation-overlay: 0 8px 16px rgba(255, 255, 255, 0.08), 0 24px 48px rgba(255, 255, 255, 0.12);
 }
 
+/* Light: conventional dark soft shadow. Same geometry, inverted ink. */
 [data-theme="light"][data-ui="depth"],
 [data-theme="light"] [data-ui="depth"] {
-	--field-bg: var(--surface);
-	--field-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
-	--elevated-bg: var(--surface);
-	--elevation-card: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.08);
+	--field-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.08);
+	--elevation-card: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 28px rgba(0, 0, 0, 0.1);
 	--elevation-overlay: 0 8px 16px rgba(0, 0, 0, 0.08), 0 24px 48px rgba(0, 0, 0, 0.12);
 }
 
@@ -241,9 +233,9 @@ html[data-standalone] .app-shell {
 	box-shadow: var(--field-shadow);
 }
 
-/* Dialog / elevated panel — uses elevated-bg + elevation-overlay under depth. */
+/* Dialog / elevated panel — same surface as cards; depth only adds overlay shadow. */
 .elevated-panel {
-	background: var(--elevated-bg);
+	background: var(--surface);
 	box-shadow: var(--elevation-overlay);
 }
 
