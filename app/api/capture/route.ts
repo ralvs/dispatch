@@ -104,7 +104,8 @@ export async function POST(request: Request) {
 
 	// Whatever the parser decided — task, note, or a needs_review degradation —
 	// it lands in one of these three. Cheap enough to name all of them.
-	afterExternalMutation("capture.settled", "notes.write", "notification.write");
+	// capture.settled owns notes/quotes/journal tags; ledger is separate.
+	afterExternalMutation("capture.settled", "notification.write");
 
 	try {
 		await recordNotification(sb, {

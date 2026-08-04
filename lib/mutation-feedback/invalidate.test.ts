@@ -102,10 +102,12 @@ describe("invalidationFor", () => {
 			expect(invalidationFor("notification.write").tags).toContain(CacheTag.todayDigest);
 		});
 
-		it("a capture busts tasks and the Today chrome", () => {
-			// needsReview feeds the alerts row from the same cached chrome.
+		it("a capture busts tasks, notes, and the Today chrome", () => {
+			// needsReview feeds the alerts row from the same cached chrome;
+			// notes is live under "use cache", so capture must name it too.
 			const { tags } = invalidationFor("capture.settled");
 			expect(tags).toContain(CacheTag.tasks);
+			expect(tags).toContain(CacheTag.notes);
 			expect(tags).toContain(CacheTag.todayDigest);
 		});
 

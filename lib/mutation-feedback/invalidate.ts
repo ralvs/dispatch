@@ -101,10 +101,25 @@ export function invalidationFor(kind: MutationKind, detail?: { id?: string }): I
 	switch (kind) {
 		case "task.write":
 		case "task.assign":
-		case "capture.settled":
 			return {
 				tags: [CacheTag.daySchedule, CacheTag.tasks, CacheTag.todayDigest],
 				paths: p("/tasks", "/inbox", "/today"),
+			};
+		// Capture can land as task, note (incl. needs_review), event, quote, or
+		// journal — own the full write surface so palette and external callers
+		// cannot under-stack. Notification ledger stays a separate kind (iron
+		// rule #6 is external/autonomous only; palette never writes a row).
+		case "capture.settled":
+			return {
+				tags: [
+					CacheTag.daySchedule,
+					CacheTag.tasks,
+					CacheTag.todayDigest,
+					CacheTag.notes,
+					CacheTag.quotes,
+					CacheTag.journal,
+				],
+				paths: p("/tasks", "/inbox", "/today", "/notes", "/quotes", "/journal"),
 			};
 		case "routine.write":
 			return {

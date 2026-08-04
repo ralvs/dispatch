@@ -29,7 +29,8 @@ async function runSweep(request: Request) {
 		// A sweep degrades captured_data into needs_review notes: that moves the
 		// notes list, the needs-review alert count, and the ledger badge — all
 		// three read through a cached entry.
-		afterExternalMutation("capture.settled", "notes.write", "notification.write");
+		// capture.settled owns the notes tag; ledger is separate.
+		afterExternalMutation("capture.settled", "notification.write");
 
 		await recordNotification(sb, {
 			type: "cron.sweep",
