@@ -20,15 +20,17 @@ function AuthedShellFallback() {
 				<main
 					id="main"
 					tabIndex={-1}
-					className="flex-1 overflow-y-auto overscroll-contain mx-auto w-full max-w-md px-5 pb-28 pt-6 lg:max-w-6xl lg:pb-12 lg:pl-60 lg:pt-10"
+					className="flex-1 w-full overflow-y-auto overscroll-contain lg:pl-60"
 				>
-					<span role="status" className="sr-only">
-						Loading
-					</span>
-					<div className="space-y-4" aria-hidden="true">
-						<div className="h-8 w-40 rounded bg-surface animate-pulse" />
-						<div className="h-4 w-full rounded bg-surface animate-pulse" />
-						<div className="h-4 w-3/4 rounded bg-surface animate-pulse" />
+					<div className="mx-auto w-full max-w-md px-5 pb-28 pt-6 lg:max-w-6xl lg:pb-12 lg:pt-10">
+						<span role="status" className="sr-only">
+							Loading
+						</span>
+						<div className="space-y-4" aria-hidden="true">
+							<div className="h-8 w-40 rounded bg-surface animate-pulse" />
+							<div className="h-4 w-full rounded bg-surface animate-pulse" />
+							<div className="h-4 w-3/4 rounded bg-surface animate-pulse" />
+						</div>
 					</div>
 				</main>
 			</div>
@@ -53,9 +55,11 @@ async function AuthedShell({ children }: { children: React.ReactNode }) {
 				<main
 					id="main"
 					tabIndex={-1}
-					className="flex-1 overflow-y-auto overscroll-contain mx-auto w-full max-w-md px-5 pb-28 pt-6 lg:max-w-6xl lg:pb-12 lg:pl-60 lg:pt-10"
+					className="flex-1 w-full overflow-y-auto overscroll-contain lg:pl-60"
 				>
-					{children}
+					<div className="mx-auto w-full max-w-md px-5 pb-28 pt-6 lg:max-w-6xl lg:pb-12 lg:pt-10">
+						{children}
+					</div>
 				</main>
 				<CapturePalette />
 				<NavShortcuts />
