@@ -14,36 +14,28 @@ import { tv, type VariantProps } from "tailwind-variants";
 import { Icon } from "./icon";
 
 /**
- * Field shape comes from --field-* tokens (data-ui variant swap).
- * `display` is always a bare serif line — headings you type into, not form chrome.
+ * Field shape comes entirely from --field-* tokens (data-ui variant swap).
+ * Every field — title or meta — uses the same shell. Size only changes height
+ * and type scale; it never forks the chrome into "line vs box".
  */
 export const fieldControl = tv({
 	base: [
-		"w-full text-ink outline-none transition-colors",
+		"field-shell w-full text-ink outline-none transition-colors",
 		"placeholder:text-ink-4",
 		"disabled:cursor-not-allowed disabled:opacity-50",
+		"hover:border-line-strong focus:border-line-strong",
+		"data-[invalid]:border-error",
 		"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
 	],
 	variants: {
-		variant: {
-			data: "field-shell px-2.5 text-sm hover:border-line-strong focus:border-line-strong data-[invalid]:border-error",
-			display:
-				"border-0 border-b border-line bg-transparent px-0 font-serif text-ink placeholder:font-normal placeholder:text-ink-4 focus:border-line-strong data-[invalid]:border-error rounded-none",
-		},
 		size: {
-			sm: "h-7",
-			md: "h-9",
-			lg: "h-11",
-		},
-		displaySize: {
-			lg: "h-auto py-1 text-lg",
-			xl: "h-auto py-1 text-2xl",
+			sm: "h-7 px-2.5 text-eyebrow",
+			md: "h-9 px-2.5 text-sm",
+			lg: "h-11 px-3 text-base",
 		},
 	},
 	defaultVariants: {
-		variant: "data",
 		size: "md",
-		displaySize: "lg",
 	},
 });
 
@@ -56,26 +48,22 @@ const selectShell = tv({
 
 const textareaShell = tv({
 	base: [
-		"w-full text-ink outline-none transition-colors",
+		"field-shell w-full text-ink outline-none transition-colors",
 		"placeholder:text-ink-4",
 		"disabled:cursor-not-allowed disabled:opacity-50",
+		"hover:border-line-strong focus:border-line-strong",
+		"data-[invalid]:border-error",
 		"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-		"h-auto resize-none py-2",
+		"h-auto resize-none px-2.5 py-2 text-sm",
 	],
 	variants: {
-		variant: {
-			data: "field-shell px-2.5 text-sm hover:border-line-strong focus:border-line-strong data-[invalid]:border-error",
-			display:
-				"border-0 border-b border-line bg-transparent px-0 font-serif text-ink placeholder:font-normal placeholder:text-ink-4 focus:border-line-strong data-[invalid]:border-error rounded-none",
-		},
 		size: {
 			sm: "min-h-20",
-			md: "min-h-24",
-			lg: "min-h-32",
+			md: "min-h-28",
+			lg: "min-h-36",
 		},
 	},
 	defaultVariants: {
-		variant: "data",
 		size: "md",
 	},
 });
@@ -121,7 +109,7 @@ export function Field({
 			{label && (
 				<label
 					htmlFor={controlId}
-					className="mb-1.5 block font-mono text-eyebrow uppercase tracking-widest text-ink-3"
+					className="mb-2 block font-mono text-eyebrow uppercase tracking-widest text-ink-3"
 				>
 					{label}
 				</label>
@@ -130,12 +118,12 @@ export function Field({
 				{children}
 			</FieldContext.Provider>
 			{error && (
-				<p id={errId} role="alert" className="mt-1.5 text-meta text-error">
+				<p id={errId} role="alert" className="mt-2 text-meta text-error">
 					{error}
 				</p>
 			)}
 			{description && !error && (
-				<p id={descId} className="mt-1.5 text-meta text-ink-4">
+				<p id={descId} className="mt-2 text-meta text-ink-4">
 					{description}
 				</p>
 			)}
@@ -149,9 +137,7 @@ type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> &
 	};
 
 export function Input({
-	variant = "data",
 	size = "md",
-	displaySize,
 	invalid,
 	className,
 	type = "text",
@@ -177,9 +163,7 @@ export function Input({
 			aria-invalid={isInvalid || undefined}
 			aria-describedby={props["aria-describedby"] ?? ctx?.describedBy}
 			className={fieldControl({
-				variant,
-				size: variant === "display" ? undefined : size,
-				displaySize: variant === "display" ? (displaySize ?? "lg") : undefined,
+				size,
 				className: [isNativeDate ? "tf-native" : "", className].filter(Boolean).join(" "),
 			})}
 			{...props}
@@ -188,19 +172,11 @@ export function Input({
 }
 
 type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> &
-	Pick<FieldControlVariants, "variant" | "size"> & {
+	FieldControlVariants & {
 		invalid?: boolean;
 	};
 
-export function Select({
-	variant = "data",
-	size = "md",
-	invalid,
-	className,
-	children,
-	id,
-	...props
-}: SelectProps) {
+export function Select({ size = "md", invalid, className, children, id, ...props }: SelectProps) {
 	const ctx = useFieldCtx();
 	const isInvalid = invalid ?? ctx?.invalid;
 
@@ -211,12 +187,12 @@ export function Select({
 				data-invalid={isInvalid || undefined}
 				aria-invalid={isInvalid || undefined}
 				aria-describedby={props["aria-describedby"] ?? ctx?.describedBy}
-				className={selectShell({ variant, size, className })}
+				className={selectShell({ size, className })}
 				{...props}
 			>
 				{children}
 			</select>
-			<span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-ink-3">
+			<span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-ink-3">
 				<Icon icon={ChevronDown} size="sm" />
 			</span>
 		</div>
@@ -224,18 +200,11 @@ export function Select({
 }
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> &
-	Pick<FieldControlVariants, "variant" | "size"> & {
+	FieldControlVariants & {
 		invalid?: boolean;
 	};
 
-export function Textarea({
-	variant = "data",
-	size = "md",
-	invalid,
-	className,
-	id,
-	...props
-}: TextareaProps) {
+export function Textarea({ size = "md", invalid, className, id, ...props }: TextareaProps) {
 	const ctx = useFieldCtx();
 	const isInvalid = invalid ?? ctx?.invalid;
 
@@ -245,7 +214,7 @@ export function Textarea({
 			data-invalid={isInvalid || undefined}
 			aria-invalid={isInvalid || undefined}
 			aria-describedby={props["aria-describedby"] ?? ctx?.describedBy}
-			className={textareaShell({ variant, size, className })}
+			className={textareaShell({ size, className })}
 			{...props}
 		/>
 	);

@@ -42,8 +42,11 @@
 	--field-bg: var(--surface);
 	--field-radius: 10px;
 	--field-border-width: 1px;
+	--field-shadow: none;
 	--elevation-card: none;
 	--elevation-overlay: none;
+	/* Lifted panel bg (dialogs/cards under depth); flat variants keep surface. */
+	--elevated-bg: var(--surface);
 
 	color-scheme: dark;
 }
@@ -68,36 +71,51 @@
 	color-scheme: light;
 }
 
-/* ── UI variant tokens (Phase 4 bake-off) ─────────────────────────────── */
+/* ── UI variant tokens (Phase 4 bake-off) ───────────────────────────────
+ * Depth must read on near-black: soft black falloff alone is invisible on
+ * #0a0a0a, so dark depth uses a light rim + deeper drop + slightly lifted
+ * surfaces. Light keeps a conventional soft shadow. */
 
 [data-ui="line"] {
 	--field-bg: transparent;
 	--field-radius: 0;
 	--field-border-width: 0 0 1px 0;
+	--field-shadow: none;
 	--elevation-card: none;
 	--elevation-overlay: none;
+	--elevated-bg: var(--surface);
 }
 
 [data-ui="box"] {
 	--field-bg: var(--surface);
 	--field-radius: 10px;
 	--field-border-width: 1px;
+	--field-shadow: none;
 	--elevation-card: none;
 	--elevation-overlay: none;
+	--elevated-bg: var(--surface);
 }
 
 [data-ui="depth"] {
-	--field-bg: var(--surface);
+	--field-bg: var(--surface-2);
 	--field-radius: 10px;
 	--field-border-width: 1px;
-	--elevation-card: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.1);
-	--elevation-overlay: 0 8px 30px rgba(0, 0, 0, 0.28);
+	--field-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 2px 8px rgba(0, 0, 0, 0.45);
+	--elevated-bg: var(--surface-2);
+	/* Rim so the lift reads on #0a0a0a, then a real drop. */
+	--elevation-card:
+		0 0 0 1px rgba(255, 255, 255, 0.07), 0 2px 4px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.55);
+	--elevation-overlay:
+		0 0 0 1px rgba(255, 255, 255, 0.1), 0 8px 16px rgba(0, 0, 0, 0.5), 0 24px 56px rgba(0, 0, 0, 0.7);
 }
 
 [data-theme="light"][data-ui="depth"],
 [data-theme="light"] [data-ui="depth"] {
-	--elevation-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.06);
-	--elevation-overlay: 0 8px 30px rgba(0, 0, 0, 0.12);
+	--field-bg: var(--surface);
+	--field-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+	--elevated-bg: var(--surface);
+	--elevation-card: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.08);
+	--elevation-overlay: 0 8px 16px rgba(0, 0, 0, 0.08), 0 24px 48px rgba(0, 0, 0, 0.12);
 }
 
 @theme inline {
@@ -213,13 +231,20 @@ html[data-standalone] .app-shell {
 	box-shadow: var(--elevation-overlay);
 }
 
-/* Field shell — shape entirely from variant tokens. */
+/* Field shell — shape entirely from variant tokens (all fields, all sizes). */
 .field-shell {
 	background: var(--field-bg);
 	border-color: var(--line);
 	border-style: solid;
 	border-width: var(--field-border-width);
 	border-radius: var(--field-radius);
+	box-shadow: var(--field-shadow);
+}
+
+/* Dialog / elevated panel — uses elevated-bg + elevation-overlay under depth. */
+.elevated-panel {
+	background: var(--elevated-bg);
+	box-shadow: var(--elevation-overlay);
 }
 
 /* Native date/time pickers: mute empty skeletons + dim the calendar glyph.

@@ -24,7 +24,7 @@ const DESIGNS = [
 	{
 		id: "depth",
 		name: "Depth",
-		note: "Rounded boxed fields + shadow tokens on cards, popovers, dock",
+		note: "Boxed fields + lift everywhere — fields, dialog, cards, popovers (rim + drop on dark)",
 		Component: DepthDesign,
 	},
 ] as const;

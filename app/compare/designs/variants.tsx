@@ -20,12 +20,12 @@ export type UiVariant = "line" | "box" | "depth";
 /**
  * Shared bake-off tree. Visual differences come only from the data-ui token
  * swap on the wrapper — same components, same markup, three field/elevation
- * treatments.
+ * treatments. Form is framed as a dialog (where person edit is heading).
  */
 export function VariantSurface({ variant, day }: { variant: UiVariant; day: CompareDay }) {
 	return (
 		<div data-ui={variant} className="min-h-[720px] bg-bg text-ink">
-			<div className="mx-auto max-w-3xl space-y-14 px-5 py-8">
+			<div className="mx-auto max-w-3xl space-y-16 px-5 py-10">
 				<header className="hairline-strong pb-4">
 					<div className="flex items-center justify-between">
 						<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
@@ -52,9 +52,9 @@ export function VariantSurface({ variant, day }: { variant: UiVariant; day: Comp
 
 				<section>
 					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Buttons</h2>
-					<div className="mt-4 space-y-4">
+					<div className="mt-6 space-y-5">
 						{(["sm", "md", "lg"] as const).map((size) => (
-							<div key={size} className="flex flex-wrap items-center gap-2">
+							<div key={size} className="flex flex-wrap items-center gap-3">
 								<span className="w-8 font-mono text-meta text-ink-4">{size}</span>
 								<Button size={size} variant="primary">
 									Primary
@@ -87,65 +87,83 @@ export function VariantSurface({ variant, day }: { variant: UiVariant; day: Comp
 
 				<section>
 					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-						Dense form · person detail
+						Person dialog
 					</h2>
-					<p className="mt-1 text-meta text-ink-4">
-						13 controls — where line fields win or lose on label→input binding.
+					<p className="mt-2 max-w-prose text-meta text-ink-4">
+						Same field shell throughout — no title-vs-meta chrome split. Spaced for a dialog, not a
+						dense detail page.
 					</p>
-					<div className="mt-6 grid gap-x-6 gap-y-4 sm:grid-cols-2">
-						<Field label="Name" className="sm:col-span-2">
-							<Input variant="display" displaySize="xl" defaultValue="Marina Costa" />
-						</Field>
-						<Field label="Role">
-							<Input defaultValue="Head of Product" />
-						</Field>
-						<Field label="Company">
-							<Input defaultValue="Casa Verde" />
-						</Field>
-						<Field label="Email">
-							<Input type="email" defaultValue="marina@casaverde.dev" />
-						</Field>
-						<Field label="Phone">
-							<Input type="tel" placeholder="+55 11 …" />
-						</Field>
-						<Field label="Birthday">
-							<Input type="date" defaultValue="1988-04-12" />
-						</Field>
-						<Field label="Met">
-							<Input type="date" />
-						</Field>
-						<Field label="Relationship">
-							<Select defaultValue="colleague">
-								<option value="colleague">Colleague</option>
-								<option value="friend">Friend</option>
-								<option value="family">Family</option>
-							</Select>
-						</Field>
-						<Field label="Timezone">
-							<Select defaultValue="sp">
-								<option value="sp">America/Sao_Paulo</option>
-								<option value="ny">America/New_York</option>
-							</Select>
-						</Field>
-						<Field label="Notes" className="sm:col-span-2">
-							<Textarea defaultValue="Q3 roadmap owner. Prefers async over meetings." rows={3} />
-						</Field>
-						<Field label="Tags" className="sm:col-span-2">
-							<Input placeholder="work, product…" />
-						</Field>
-						<div className="sm:col-span-2">
-							<Checkbox defaultChecked>Follow up this week</Checkbox>
+
+					{/* Dialog shell: elevated-panel so depth lifts the whole sheet, not just cards. */}
+					<div className="elevated-panel mt-8 rounded-card border border-line-strong p-6 sm:p-8">
+						<div className="mb-8 flex items-start justify-between gap-4">
+							<div>
+								<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+									Edit person
+								</p>
+								<p className="mt-1 font-serif text-xl text-ink">Marina Costa</p>
+							</div>
+							<Button variant="ghost" size="sm" isIconOnly aria-label="Close dialog">
+								<Icon icon={X} size="sm" />
+							</Button>
 						</div>
-						<div className="flex flex-wrap gap-2 sm:col-span-2">
-							<Button type="submit" variant="primary">
-								Save
-							</Button>
-							<Button type="button" variant="ghost">
-								Cancel
-							</Button>
-							<Button type="button" variant="danger-soft">
-								Delete
-							</Button>
+
+						<div className="grid gap-x-8 gap-y-7 sm:grid-cols-2">
+							<Field label="Name" className="sm:col-span-2">
+								<Input defaultValue="Marina Costa" size="lg" />
+							</Field>
+							<Field label="Role">
+								<Input defaultValue="Head of Product" />
+							</Field>
+							<Field label="Company">
+								<Input defaultValue="Casa Verde" />
+							</Field>
+							<Field label="Email">
+								<Input type="email" defaultValue="marina@casaverde.dev" />
+							</Field>
+							<Field label="Phone">
+								<Input type="tel" placeholder="+55 11 …" />
+							</Field>
+							<Field label="Birthday">
+								<Input type="date" defaultValue="1988-04-12" />
+							</Field>
+							<Field label="Met">
+								<Input type="date" />
+							</Field>
+							<Field label="Relationship">
+								<Select defaultValue="colleague">
+									<option value="colleague">Colleague</option>
+									<option value="friend">Friend</option>
+									<option value="family">Family</option>
+								</Select>
+							</Field>
+							<Field label="Timezone">
+								<Select defaultValue="sp">
+									<option value="sp">America/Sao_Paulo</option>
+									<option value="ny">America/New_York</option>
+								</Select>
+							</Field>
+							<Field label="Notes" className="sm:col-span-2">
+								<Textarea defaultValue="Q3 roadmap owner. Prefers async over meetings." rows={4} />
+							</Field>
+							<Field label="Tags" className="sm:col-span-2">
+								<Input placeholder="work, product…" />
+							</Field>
+							<div className="sm:col-span-2 pt-1">
+								<Checkbox defaultChecked>Follow up this week</Checkbox>
+							</div>
+							<div className="flex flex-wrap items-center gap-3 border-t border-line pt-6 sm:col-span-2">
+								<Button type="submit" variant="primary">
+									Save
+								</Button>
+								<Button type="button" variant="ghost">
+									Cancel
+								</Button>
+								<span className="flex-1" />
+								<Button type="button" variant="danger-soft">
+									Delete
+								</Button>
+							</div>
 						</div>
 					</div>
 				</section>
@@ -154,7 +172,7 @@ export function VariantSurface({ variant, day }: { variant: UiVariant; day: Comp
 					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
 						Today slice
 					</h2>
-					<div className="mt-4 flex flex-wrap gap-2">
+					<div className="mt-6 flex flex-wrap gap-2.5">
 						{day.alerts.map((a) => (
 							<a key={a.key} href={a.href} className="no-underline">
 								<Badge tone={a.key === "review" ? "warning" : "accent"}>
@@ -168,9 +186,9 @@ export function VariantSurface({ variant, day }: { variant: UiVariant; day: Comp
 						<Badge tone="muted">P4</Badge>
 					</div>
 
-					<ul className="mt-6">
+					<ul className="mt-8">
 						{day.schedule.timeline.slice(0, 4).map((item) => (
-							<li key={item.key} className="hairline flex items-center gap-3 py-3">
+							<li key={item.key} className="hairline flex items-center gap-3 py-3.5">
 								{item.time && (
 									<span className="w-12 shrink-0 font-mono text-meta tabular-nums text-ink-3">
 										{item.time}
@@ -209,33 +227,49 @@ export function VariantSurface({ variant, day }: { variant: UiVariant; day: Comp
 
 				<section>
 					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Cards</h2>
-					<div className="mt-4 grid gap-4 sm:grid-cols-2">
-						<Card>
-							<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-								Default padding
-							</p>
-							<p className="mt-2 font-serif text-lg text-ink">Room to breathe.</p>
-							<p className="mt-1 text-sm text-ink-3">rounded-card · elevation-card · p-4</p>
+					<div className="mt-6 grid gap-5 sm:grid-cols-2">
+						<Card padding="comfortable">
+							<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Default</p>
+							<p className="mt-3 font-serif text-lg text-ink">Room to breathe.</p>
+							<p className="mt-2 text-sm text-ink-3">rounded-card · elevation-card · elevated-bg</p>
 						</Card>
 						<Card padding="compact">
 							<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Compact</p>
-							<p className="mt-2 font-serif text-lg text-ink">Same tokens, less air.</p>
-							<p className="mt-1 text-sm text-ink-3">rounded-card · elevation-card · p-3</p>
+							<p className="mt-3 font-serif text-lg text-ink">Same tokens, less air.</p>
+							<p className="mt-2 text-sm text-ink-3">p-4</p>
 						</Card>
 					</div>
 				</section>
 
 				<section>
 					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-						Display field
+						Overlay (popover / menu)
 					</h2>
-					<div className="mt-4">
-						<Input
-							variant="display"
-							displaySize="xl"
-							placeholder="Note title — bare serif line in every variant"
-							defaultValue=""
-						/>
+					<p className="mt-2 text-meta text-ink-4">
+						Uses elevation-overlay — the same token as the dock and dialogs under depth.
+					</p>
+					<div className="relative mt-8 h-36 rounded-card border border-line bg-surface-2/40 p-5">
+						<p className="text-sm text-ink-3">Page surface behind the popover…</p>
+						<div className="elevation-overlay absolute left-8 top-12 w-56 rounded-control border border-line-strong bg-[var(--elevated-bg)] py-1.5">
+							<button
+								type="button"
+								className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-surface-2"
+							>
+								Open note
+							</button>
+							<button
+								type="button"
+								className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-surface-2"
+							>
+								Mark done
+							</button>
+							<button
+								type="button"
+								className="block w-full px-3 py-2 text-left text-sm text-error hover:bg-surface-2"
+							>
+								Delete
+							</button>
+						</div>
 					</div>
 				</section>
 			</div>
