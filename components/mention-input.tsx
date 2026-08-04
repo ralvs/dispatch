@@ -136,7 +136,7 @@ function MentionDropdown({
 			id={listId}
 			role="listbox"
 			aria-label="Matching people"
-			className="absolute left-0 top-full z-20 mt-1 min-w-40 max-w-64 rounded-md border border-line bg-surface py-1 shadow-lg"
+			className="absolute left-0 top-full z-20 mt-1 min-w-40 max-w-64 rounded-control border border-line bg-surface py-1 elevation-overlay"
 		>
 			{items.map((item, index) => (
 				<button

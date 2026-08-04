@@ -14,7 +14,7 @@ export const DOCK_HEIGHT = "h-14";
 
 /** Translucent capsule material: blurred surface, hairline, soft lift. */
 export const DOCK_SURFACE =
-	"rounded-full border border-line-strong/70 bg-surface/75 shadow-[0_8px_30px_rgba(0,0,0,0.28)] backdrop-blur-xl backdrop-saturate-150";
+	"rounded-pill border border-line-strong/70 bg-surface/75 elevation-overlay backdrop-blur-xl backdrop-saturate-150";
 
 /** Empty div in the dock row that the capture button portals into. */
 export const DOCK_ACTION_SLOT_ID = "dock-action-slot";

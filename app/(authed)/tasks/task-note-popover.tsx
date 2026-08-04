@@ -1,7 +1,9 @@
 "use client";
 
+import { FileText } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import { IconNoteLines, NOTE_CHIP_CLASS } from "@/components/note-glyphs";
+import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
 
 /** Breathing room kept between the panel and the viewport edge. */
 const GUTTER = 8;
@@ -95,7 +97,7 @@ export function TaskNotePopover({ notes, title }: { notes: string; title: string
 				// tying the panel back to the control that opened it.
 				className={`${NOTE_CHIP_CLASS} ${open ? "border-line-strong text-ink" : ""}`}
 			>
-				<IconNoteLines />
+				<Icon icon={FileText} size="sm" />
 			</button>
 			{open && (
 				<span
@@ -106,7 +108,7 @@ export function TaskNotePopover({ notes, title }: { notes: string; title: string
 					// Right-anchored: the glyph lives in the row's right-hand control
 					// column, so the panel opens back across the row rather than out
 					// past the page edge.
-					className="absolute right-0 top-full z-20 mt-1.5 block max-h-56 w-64 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain whitespace-pre-wrap break-words border border-line-strong bg-surface px-3 py-2 text-left font-serif text-sm leading-relaxed text-ink-2 shadow-lg"
+					className="absolute right-0 top-full z-20 mt-1.5 block max-h-56 w-64 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain whitespace-pre-wrap break-words rounded-control border border-line-strong bg-surface px-3 py-2 text-left font-serif text-sm leading-relaxed text-ink-2 elevation-overlay"
 				>
 					{notes}
 				</span>

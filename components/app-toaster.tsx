@@ -30,7 +30,7 @@ export function AppToaster() {
 			toastOptions={{
 				classNames: {
 					toast:
-						"rounded-md border border-line-strong bg-surface text-ink shadow-lg font-sans text-sm",
+						"rounded-control border border-line-strong bg-surface text-ink elevation-overlay font-sans text-sm",
 					title: "text-ink font-medium",
 					description: "text-ink-2",
 					error: "border-error/40",

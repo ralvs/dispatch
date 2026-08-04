@@ -264,7 +264,7 @@ export function CapturePalette() {
 								aria-labelledby={titleId}
 								onClick={(event) => event.stopPropagation()}
 								onKeyDown={onDialogKeyDown}
-								className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-xl border border-line-strong bg-surface p-5 shadow-xl"
+								className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-card border border-line-strong bg-surface p-5 elevation-overlay"
 							>
 								<div className="mb-3 flex items-center justify-between">
 									<h2

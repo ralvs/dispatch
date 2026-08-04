@@ -8,12 +8,15 @@
  * Dark (default) is the Geist dark inversion: #0a0a0a canvas, #ededed ink.
  * Color is deliberate and scarce, but present: Vercel Blue (#0070f3) is the
  * accent/link/active signal, and the develop / preview / ship gradients are
- * the decorative system (masthead, slip overflow).
+ * the decorative system (masthead mesh wordmark, slip overflow).
  * Semantic names only — components never reference raw colors.
  * --ink-3/--ink-4 are tuned for WCAG AA (4.5:1) rather than matched to
  * Geist's originals. In dark theme, ink-3 and ink-4 land intentionally
  * near-identical: a #0a0a0a canvas leaves no room for four muted grays
  * that all clear AA, so the bottom two rungs of the ladder converge.
+ *
+ * Geometry (supersedes ADR 0013 bimodal 6/12): control 10px / card 16px.
+ * Field shape + elevation are variant tokens swapped by [data-ui=…].
  */
 
 :root {
@@ -34,6 +37,14 @@
 	--error: #ff4d4d;
 	--warning: #f5a623;
 	--success: #50e3c2;
+
+	/* Field + elevation defaults = box (flat). Bake-off overrides via data-ui. */
+	--field-bg: var(--surface);
+	--field-radius: 10px;
+	--field-border-width: 1px;
+	--elevation-card: none;
+	--elevation-overlay: none;
+
 	color-scheme: dark;
 }
 
@@ -55,6 +66,38 @@
 	--warning: #ab570a;
 	--success: #0761d1;
 	color-scheme: light;
+}
+
+/* ── UI variant tokens (Phase 4 bake-off) ─────────────────────────────── */
+
+[data-ui="line"] {
+	--field-bg: transparent;
+	--field-radius: 0;
+	--field-border-width: 0 0 1px 0;
+	--elevation-card: none;
+	--elevation-overlay: none;
+}
+
+[data-ui="box"] {
+	--field-bg: var(--surface);
+	--field-radius: 10px;
+	--field-border-width: 1px;
+	--elevation-card: none;
+	--elevation-overlay: none;
+}
+
+[data-ui="depth"] {
+	--field-bg: var(--surface);
+	--field-radius: 10px;
+	--field-border-width: 1px;
+	--elevation-card: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.1);
+	--elevation-overlay: 0 8px 30px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="light"][data-ui="depth"],
+[data-theme="light"] [data-ui="depth"] {
+	--elevation-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.06);
+	--elevation-overlay: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
 @theme inline {
@@ -88,7 +131,16 @@
 	--text-meta: 12px;
 	--text-meta--line-height: 1.4;
 
+	/* Geometry: control 10 / card 16 / pill for dock + circular marks only */
+	--radius-control: 10px;
+	--radius-card: 16px;
+	--radius-pill: 9999px;
+	--radius-mark: 3px;
 	--radius-none: 0;
+
+	/* Elevation routed through variant tokens so line/box stay flat */
+	--shadow-card: var(--elevation-card);
+	--shadow-overlay: var(--elevation-overlay);
 }
 
 body {
@@ -142,24 +194,69 @@ html[data-standalone] .app-shell {
 	border-bottom: 1px solid var(--line-strong);
 }
 
-/* The brand gradients — develop / preview / ship — and the blended mesh.
- * Decoration only: gradient text and thin fills, never chrome surfaces. */
-.gradient-develop {
-	background-image: linear-gradient(90deg, #007cf0, #00dfd8);
+/* Expand an interactive target without growing visible chrome.
+ * Set --hit-x / --hit-y (CSS lengths) on the element; defaults grow nothing. */
+.hit-area {
+	position: relative;
 }
-.gradient-preview {
-	background-image: linear-gradient(90deg, #7928ca, #ff0080);
+.hit-area::after {
+	content: "";
+	position: absolute;
+	inset: calc(var(--hit-y, 0px) * -1) calc(var(--hit-x, 0px) * -1);
 }
+
+/* Elevation helpers — primitives and dock read the variant tokens. */
+.elevation-card {
+	box-shadow: var(--elevation-card);
+}
+.elevation-overlay {
+	box-shadow: var(--elevation-overlay);
+}
+
+/* Field shell — shape entirely from variant tokens. */
+.field-shell {
+	background: var(--field-bg);
+	border-color: var(--line);
+	border-style: solid;
+	border-width: var(--field-border-width);
+	border-radius: var(--field-radius);
+}
+
+/* Native date/time pickers: mute empty skeletons + dim the calendar glyph.
+ * data-empty is set by Field when value is blank. */
+.tf-native::-webkit-calendar-picker-indicator {
+	opacity: 0.4;
+	cursor: pointer;
+	transition: opacity 120ms ease;
+}
+.tf-native:hover::-webkit-calendar-picker-indicator,
+.tf-native:focus::-webkit-calendar-picker-indicator {
+	opacity: 0.85;
+}
+.tf-native[data-empty="true"]::-webkit-datetime-edit,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-text,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-day-field,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-month-field,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-year-field,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-hour-field,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-minute-field,
+.tf-native[data-empty="true"]::-webkit-datetime-edit-ampm-field {
+	color: var(--ink-4);
+}
+
+/* Ship gradient only — develop/preview retired (0 uses). Decoration only. */
 .gradient-ship {
 	background-image: linear-gradient(90deg, #ff4d4d, #f9cb28);
 }
-.gradient-text {
-	background-clip: text;
-	-webkit-background-clip: text;
-	color: transparent;
-}
 .gradient-text-mesh {
-	background-image: linear-gradient(100deg, #007cf0 0%, #00dfd8 28%, #7928ca 52%, #ff0080 74%, #f9cb28 100%);
+	background-image: linear-gradient(
+		100deg,
+		#007cf0 0%,
+		#00dfd8 28%,
+		#7928ca 52%,
+		#ff0080 74%,
+		#f9cb28 100%
+	);
 	background-clip: text;
 	-webkit-background-clip: text;
 	color: transparent;
@@ -167,7 +264,14 @@ html[data-standalone] .app-shell {
 /* Stops darkened so the wordmark holds contrast on the near-white light canvas
  * (the dark-theme stops above are near-invisible against #fafafa). */
 [data-theme="light"] .gradient-text-mesh {
-	background-image: linear-gradient(100deg, #0060c0 0%, #00807a 28%, #7928ca 52%, #c4005f 74%, #7d5600 100%);
+	background-image: linear-gradient(
+		100deg,
+		#0060c0 0%,
+		#00807a 28%,
+		#7928ca 52%,
+		#c4005f 74%,
+		#7d5600 100%
+	);
 }
 
 @media (prefers-reduced-motion: reduce) {
