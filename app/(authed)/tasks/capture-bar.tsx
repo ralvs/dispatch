@@ -3,6 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
 import { MentionTextInput } from "@/components/mention-input";
+import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
 import type { MentionCandidate } from "@/lib/mentions";
@@ -58,7 +59,7 @@ export function CaptureBar({
 			action={submit}
 			className={`mt-8 ${pending ? "pointer-events-none opacity-50" : ""}`}
 		>
-			<div className="flex items-center gap-4 border-b border-line-strong pb-2 transition-colors focus-within:border-ink-3">
+			<div className="field-shell flex items-center gap-4 py-2 transition-colors focus-within:border-ink-3">
 				<MentionTextInput
 					type="text"
 					// Named so it reaches formData: with Details open the submit goes
@@ -90,12 +91,14 @@ export function CaptureBar({
 						↵
 					</span>
 				)}
-				<button
+				<Button
 					type="button"
+					variant="ghost"
+					size="sm"
 					onClick={() => setDetailed((open) => !open)}
 					aria-expanded={detailed}
 					aria-controls="task-details"
-					className="relative flex shrink-0 items-center gap-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-colors after:absolute after:-inset-3 after:content-[''] hover:text-ink active:opacity-70"
+					className="relative shrink-0 after:absolute after:-inset-3 after:content-['']"
 				>
 					Details
 					{/* The label stays put and the caret carries the state — a
@@ -106,27 +109,24 @@ export function CaptureBar({
 					>
 						<Icon icon={ChevronDown} size="sm" />
 					</span>
-				</button>
+				</Button>
 			</div>
 
 			{detailed && (
 				<div id="task-details" className="mt-5">
 					<TaskMetaFields domains={domains} todayIso={todayIso} />
 					<div className="mt-5 flex items-center gap-3">
-						<button
+						<Button
 							type="submit"
+							variant="primary"
 							disabled={pending || !title}
-							className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70 disabled:opacity-40"
+							isPending={pending}
 						>
 							{pending ? "Adding…" : "Add task"}
-						</button>
-						<button
-							type="button"
-							onClick={() => setDetailed(false)}
-							className="relative px-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-colors after:absolute after:-inset-3 after:content-[''] hover:text-ink active:opacity-70"
-						>
+						</Button>
+						<Button type="button" variant="ghost" onClick={() => setDetailed(false)}>
 							Cancel
-						</button>
+						</Button>
 					</div>
 				</div>
 			)}

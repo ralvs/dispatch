@@ -2,6 +2,7 @@
 
 import { CollapsibleForm, useCollapsibleForm } from "@/components/collapsible-form";
 import { ColorSwatchPicker } from "@/components/color-swatch-picker";
+import { Field, Input, Textarea } from "@/components/ui";
 import { createDomainAction } from "./actions";
 
 export function DomainForm() {
@@ -14,39 +15,23 @@ export function DomainForm() {
 			submitLabel="Add domain"
 			pendingLabel="Adding…"
 		>
-			<input
-				name="name"
-				required
-				placeholder="Domain name"
-				aria-label="Domain name"
-				className="w-full border-b border-line bg-transparent pb-2 font-serif text-lg text-ink placeholder:text-ink-4"
-			/>
-			<label className="block">
-				<span className="font-mono text-eyebrow uppercase text-ink-3">Description</span>
-				<textarea
-					name="description"
-					rows={2}
-					placeholder="Optional"
-					className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
-				/>
-			</label>
-			<label className="block">
-				<span className="font-mono text-eyebrow uppercase text-ink-3">Fruit definition</span>
-				<textarea
+			<Field>
+				<Input name="name" required placeholder="Domain name" aria-label="Domain name" size="lg" />
+			</Field>
+			<Field label="Description">
+				<Textarea name="description" rows={2} placeholder="Optional" size="sm" />
+			</Field>
+			<Field label="Fruit definition">
+				<Textarea
 					name="fruit_definition"
 					rows={2}
 					placeholder="What does healthy look like here?"
-					className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
+					size="sm"
 				/>
-			</label>
-			<label className="block">
-				<span className="font-mono text-eyebrow uppercase text-ink-3">Expected cadence</span>
-				<input
-					name="expected_cadence"
-					placeholder="Optional"
-					className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
-				/>
-			</label>
+			</Field>
+			<Field label="Expected cadence">
+				<Input name="expected_cadence" placeholder="Optional" />
+			</Field>
 			<ColorSwatchPicker name="color" />
 		</CollapsibleForm>
 	);

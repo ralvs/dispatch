@@ -11,7 +11,7 @@ export function Masthead({
 	unreadNotifications: number;
 }) {
 	return (
-		<header className="hairline-strong pb-5">
+		<header className="hairline-strong pb-4">
 			<div className="flex items-baseline justify-between">
 				{/* This is the page's only h1 — the dateline names the day this page
 				 * is. The wordmark below stays a brand moment, not a heading. */}

@@ -91,7 +91,7 @@ export function DayBands({
 					Nothing on the clock. Star tasks or set due dates to shape the day.
 				</p>
 			) : (
-				<div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.6fr_1fr] lg:items-start lg:gap-14">
+				<div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-14">
 					<div className="min-w-0">
 						{allDay.length > 0 && (
 							<Band title="All day">

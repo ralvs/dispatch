@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
 import { ColorSwatchPicker } from "@/components/color-swatch-picker";
+import { Button, Card, Field, Input, Textarea } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import type { DomainRow as DomainRowType } from "@/lib/services/domains";
@@ -42,79 +43,61 @@ export function DomainRowItem({
 	if (editing) {
 		return (
 			<li id={`domain-${domain.id}`} className="hairline scroll-mt-24 py-3">
-				<form
-					action={saveDetails}
-					className="space-y-2 rounded-xl border border-line-strong bg-surface p-3"
-				>
-					<label className="block">
-						<span className="font-mono text-eyebrow uppercase text-ink-3">Name</span>
-						<input
-							name="name"
-							required
-							defaultValue={domain.name}
-							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-						/>
-					</label>
-					<label className="block">
-						<span className="font-mono text-eyebrow uppercase text-ink-3">Description</span>
-						<textarea
-							name="description"
-							rows={2}
-							defaultValue={domain.description ?? ""}
-							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-						/>
-					</label>
-					<label className="block">
-						<span className="font-mono text-eyebrow uppercase text-ink-3">Fruit definition</span>
-						<textarea
-							name="fruit_definition"
-							rows={2}
-							defaultValue={domain.fruit_definition ?? ""}
-							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-						/>
-					</label>
-					<label className="block">
-						<span className="font-mono text-eyebrow uppercase text-ink-3">Expected cadence</span>
-						<input
-							name="expected_cadence"
-							defaultValue={domain.expected_cadence ?? ""}
-							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-						/>
-					</label>
-					<label className="block">
-						<span className="font-mono text-eyebrow uppercase text-ink-3">Flag after (days)</span>
-						<input
-							name="cadence_days"
-							type="number"
-							min={1}
-							max={365}
-							step={1}
-							inputMode="numeric"
-							placeholder="Leave blank for never"
-							defaultValue={cadenceDays ?? ""}
-							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
-						/>
-						<span className="mt-1 block font-mono text-meta text-ink-4">
-							Surfaces in "In brief" from 75% of this, slipping past it.
-						</span>
-					</label>
-					<ColorSwatchPicker name="color" defaultValue={domain.color} />
-					<div className="flex gap-2 pt-1">
-						<button
-							type="submit"
-							disabled={pending}
-							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50 active:opacity-70"
+				<form action={saveDetails}>
+					<Card className="space-y-3" padding="compact">
+						<Field label="Name">
+							<Input name="name" required defaultValue={domain.name} />
+						</Field>
+						<Field label="Description">
+							<Textarea
+								name="description"
+								rows={2}
+								defaultValue={domain.description ?? ""}
+								size="sm"
+							/>
+						</Field>
+						<Field label="Fruit definition">
+							<Textarea
+								name="fruit_definition"
+								rows={2}
+								defaultValue={domain.fruit_definition ?? ""}
+								size="sm"
+							/>
+						</Field>
+						<Field label="Expected cadence">
+							<Input name="expected_cadence" defaultValue={domain.expected_cadence ?? ""} />
+						</Field>
+						<Field
+							label="Flag after (days)"
+							description='Surfaces in "In brief" from 75% of this, slipping past it.'
 						>
-							Save
-						</button>
-						<button
-							type="button"
-							onClick={() => setEditing(false)}
-							className="px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 active:opacity-70"
-						>
-							Cancel
-						</button>
-					</div>
+							<Input
+								name="cadence_days"
+								type="number"
+								min={1}
+								max={365}
+								step={1}
+								inputMode="numeric"
+								placeholder="Leave blank for never"
+								defaultValue={cadenceDays ?? ""}
+							/>
+						</Field>
+						<ColorSwatchPicker name="color" defaultValue={domain.color} />
+						<div className="flex gap-2 pt-1">
+							<Button
+								type="submit"
+								variant="primary"
+								size="sm"
+								isPending={pending}
+								disabled={pending}
+							>
+								Save
+							</Button>
+							<Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>
+								Cancel
+							</Button>
+						</div>
+					</Card>
 				</form>
 			</li>
 		);
@@ -146,16 +129,19 @@ export function DomainRowItem({
 			</p>
 
 			<div className="mt-2 flex flex-wrap gap-2">
-				<button
+				<Button
 					type="button"
+					variant="tertiary"
+					size="sm"
 					aria-label={`Edit ${domain.name}`}
 					onClick={() => setEditing(true)}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					Edit
-				</button>
-				<button
+				</Button>
+				<Button
 					type="button"
+					variant="tertiary"
+					size="sm"
 					aria-label={`Mark ${domain.name} shipped`}
 					disabled={pending}
 					onClick={() =>
@@ -166,13 +152,14 @@ export function DomainRowItem({
 							);
 						})
 					}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					Mark shipped
-				</button>
+				</Button>
 				{domain.active ? (
-					<button
+					<Button
 						type="button"
+						variant="danger"
+						size="sm"
 						aria-label={`Archive ${domain.name}`}
 						disabled={pending}
 						onClick={() =>
@@ -180,13 +167,14 @@ export function DomainRowItem({
 								await runAction(() => archiveDomainAction(domain.id), "Couldn't archive domain.");
 							})
 						}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error active:opacity-70"
 					>
 						Archive
-					</button>
+					</Button>
 				) : (
-					<button
+					<Button
 						type="button"
+						variant="tertiary"
+						size="sm"
 						aria-label={`Reactivate ${domain.name}`}
 						disabled={pending}
 						onClick={() =>
@@ -197,10 +185,9 @@ export function DomainRowItem({
 								);
 							})
 						}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 					>
 						Reactivate
-					</button>
+					</Button>
 				)}
 			</div>
 		</li>

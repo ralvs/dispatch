@@ -1,6 +1,7 @@
 "use client";
 
 import { useOptimistic, useTransition } from "react";
+import { Button } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { RoutineStats } from "@/lib/routine-stats";
 import { TIME_OF_DAY_LABELS } from "@/lib/schemas/routine";
@@ -57,8 +58,10 @@ export function RoutineRowItem({
 					</p>
 				</div>
 				<div className="flex shrink-0 gap-2">
-					<button
+					<Button
 						type="button"
+						variant={doneToday ? "primary" : "tertiary"}
+						size="sm"
 						aria-pressed={doneToday}
 						aria-label={
 							doneToday
@@ -66,23 +69,19 @@ export function RoutineRowItem({
 								: `Mark "${routine.name}" done today`
 						}
 						onClick={toggle}
-						className={`border px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest active:opacity-70 ${
-							doneToday
-								? "border-ink bg-ink text-bg"
-								: "border-line text-ink-3 hover:border-line-strong hover:text-ink"
-						}`}
 					>
 						{doneToday ? "Done" : "Mark done"}
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
+						variant="danger"
+						size="sm"
 						aria-label={`Delete routine "${routine.name}"`}
 						disabled={pending}
 						onClick={remove}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error disabled:opacity-50 active:opacity-70"
 					>
 						Delete
-					</button>
+					</Button>
 				</div>
 			</div>
 			<div

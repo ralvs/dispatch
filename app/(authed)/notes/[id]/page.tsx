@@ -103,7 +103,7 @@ async function LinkSections({ sb, noteId }: { sb: Sb; noteId: string }) {
 					</h2>
 					<ul className="mt-2">
 						{backlinks.map((b) => (
-							<li key={b.id} className="border-b border-line">
+							<li key={b.id} className="hairline">
 								<Link href={`/notes/${b.note_id}`} className="block py-2 hover:bg-surface">
 									<span className="block truncate font-serif text-sm text-ink">
 										{displayTitle(b)}
@@ -130,10 +130,7 @@ async function LinkSections({ sb, noteId }: { sb: Sb; noteId: string }) {
 									: null;
 							if (!task && !event) return null;
 							return (
-								<li
-									key={link.id}
-									className="flex items-center justify-between gap-2 border-b border-line py-2"
-								>
+								<li key={link.id} className="flex items-center justify-between gap-2 hairline py-2">
 									{task ? (
 										<Link
 											href={`/tasks?edit=${task.id}`}

@@ -74,14 +74,14 @@ export function ChatThread() {
 					value={input}
 					onChange={(e) => setInput(e.target.value)}
 					placeholder="Ask about your tasks, notes, quotes…"
-					className="w-full rounded-md border border-line bg-surface px-2 py-1.5 font-serif text-base text-ink placeholder:text-ink-4"
+					className="field-shell h-auto w-full py-1.5 font-serif text-base text-ink placeholder:text-ink-4"
 				/>
 				{/* self-stretch so the button tracks the input's height rather than its
 				    own smaller mono line-box — the two sit on one line. */}
 				<button
 					type="submit"
 					aria-label="Send"
-					className="self-stretch rounded-md border border-line-strong px-3 font-mono text-meta uppercase tracking-widest text-ink-2 hover:text-ink active:opacity-70"
+					className="self-stretch rounded-control border border-line-strong px-3 font-mono text-eyebrow uppercase tracking-widest text-ink-2 hover:text-ink active:opacity-70"
 				>
 					Send
 				</button>

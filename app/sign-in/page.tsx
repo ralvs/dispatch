@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Button, Field, Input } from "@/components/ui";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 const SignInSchema = z.object({
@@ -96,45 +97,27 @@ export default function SignInPage() {
 			<div className="hairline-strong mt-6" />
 
 			<form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6" noValidate>
-				<div>
-					<label htmlFor="email" className="font-mono text-eyebrow uppercase text-ink-3">
-						Email
-					</label>
-					<input
+				<Field label="Email" error={errors.email?.message} htmlFor="email">
+					<Input
 						id="email"
 						type="email"
 						autoComplete="email"
-						aria-invalid={errors.email ? "true" : undefined}
-						aria-describedby={errors.email ? "email-error" : undefined}
-						className="mt-2 w-full rounded-md border border-line bg-surface px-3 py-2.5 text-base text-ink focus:border-line-strong"
+						size="lg"
+						invalid={Boolean(errors.email)}
 						{...register("email")}
 					/>
-					{errors.email && (
-						<p id="email-error" role="alert" className="mt-1 text-meta text-error">
-							{errors.email.message}
-						</p>
-					)}
-				</div>
+				</Field>
 
-				<div>
-					<label htmlFor="password" className="font-mono text-eyebrow uppercase text-ink-3">
-						Password
-					</label>
-					<input
+				<Field label="Password" error={errors.password?.message} htmlFor="password">
+					<Input
 						id="password"
 						type="password"
 						autoComplete="current-password"
-						aria-invalid={errors.password ? "true" : undefined}
-						aria-describedby={errors.password ? "password-error" : undefined}
-						className="mt-2 w-full rounded-md border border-line bg-surface px-3 py-2.5 text-base text-ink focus:border-line-strong"
+						size="lg"
+						invalid={Boolean(errors.password)}
 						{...register("password")}
 					/>
-					{errors.password && (
-						<p id="password-error" role="alert" className="mt-1 text-meta text-error">
-							{errors.password.message}
-						</p>
-					)}
-				</div>
+				</Field>
 
 				{serverError && (
 					<p role="alert" className="text-meta text-error">
@@ -142,13 +125,16 @@ export default function SignInPage() {
 					</p>
 				)}
 
-				<button
+				<Button
 					type="submit"
+					variant="primary"
+					fullWidth
+					size="lg"
+					isPending={isSubmitting}
 					disabled={isSubmitting}
-					className="w-full rounded-full bg-ink px-4 py-2.5 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70 disabled:opacity-50"
 				>
 					{isSubmitting ? "Signing in…" : "Sign in"}
-				</button>
+				</Button>
 			</form>
 		</main>
 	);

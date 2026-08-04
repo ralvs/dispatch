@@ -78,7 +78,7 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 					type="button"
 					disabled={pending}
 					onClick={() => toggle("task")}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
+					className="rounded-control border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					{LABELS.task}
 				</button>
@@ -86,7 +86,7 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 					type="button"
 					disabled={pending}
 					onClick={() => toggle("event")}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
+					className="rounded-control border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					{LABELS.event}
 				</button>
@@ -102,7 +102,7 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 							if (e.key === "Escape") close();
 						}}
 						placeholder="Search by title…"
-						className="w-full rounded-md border border-line bg-transparent px-2 py-1 text-sm text-ink placeholder:text-ink-4"
+						className="w-full rounded-control border border-line bg-transparent px-2 py-1 text-sm text-ink placeholder:text-ink-4"
 					/>
 					{results.length > 0 && (
 						<ul className="mt-1 border border-line">

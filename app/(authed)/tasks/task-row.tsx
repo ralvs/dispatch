@@ -5,6 +5,7 @@ import Link from "next/link";
 import { type KeyboardEvent, useEffect, useRef, useState, useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
 import { MentionChip } from "@/components/mention-chip";
+import { Button, Checkbox } from "@/components/ui";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
@@ -163,31 +164,36 @@ export function TaskRowItem({
 						}}
 					/>
 					<div className="flex flex-wrap items-center gap-2 pt-0.5">
-						<button
+						<Button
 							type="submit"
+							variant="primary"
+							size="sm"
+							isPending={pending}
 							disabled={pending}
-							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg active:opacity-70 disabled:opacity-50"
 						>
 							{pending ? "Saving…" : "Save"}
-						</button>
-						<button
+						</Button>
+						<Button
 							type="button"
+							variant="tertiary"
+							size="sm"
 							disabled={pending}
 							onClick={() => setEditing(false)}
-							className="rounded-md border border-line px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 						>
 							Cancel
-						</button>
+						</Button>
 						{handlers.onDelete && (
-							<button
+							<Button
 								type="button"
+								variant="danger"
+								size="sm"
+								className="ml-auto"
 								disabled={pending}
 								onClick={remove}
 								aria-label={`Delete task "${task.title}"`}
-								className="ml-auto rounded-md border border-line px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error active:opacity-70"
 							>
 								Delete
-							</button>
+							</Button>
 						)}
 					</div>
 				</form>
@@ -200,26 +206,18 @@ export function TaskRowItem({
 	} ${canEdit || !manageable ? "hover:text-accent-ink" : ""}`;
 
 	return (
-		<li className="hairline flex items-center gap-3 py-2.5" data-task-id={task.id}>
+		<li className="hairline flex items-center gap-3 py-3" data-task-id={task.id}>
 			{scheduled && timeLabel && (
-				<span className="w-12 shrink-0 self-center font-mono text-meta tabular-nums leading-none text-ink-3">
+				<span className="w-12 shrink-0 font-mono text-meta tabular-nums leading-none text-ink-3">
 					{timeLabel}
 				</span>
 			)}
-			{/* Native checkbox can't take generated content, so the tappable area
-			    comes from a label wrapper (padding pulled back in with a matching
-			    negative margin so it doesn't disturb the row's flex gap). */}
-			<label className="relative -m-3.5 flex shrink-0 cursor-pointer self-center p-3.5 active:opacity-70">
-				<input
-					type="checkbox"
-					checked={done}
-					aria-label={done ? `Reopen "${task.title}"` : `Complete "${task.title}"`}
-					onChange={handlers.onToggleDone}
-					className={`h-4 w-4 appearance-none border ${
-						done ? "border-ink-4 bg-ink-4" : "border-line-strong hover:border-ink-3"
-					}`}
-				/>
-			</label>
+			<Checkbox
+				checked={done}
+				aria-label={done ? `Reopen "${task.title}"` : `Complete "${task.title}"`}
+				onChange={handlers.onToggleDone}
+				className="shrink-0"
+			/>
 			<div className="min-w-0 flex-1">
 				<p className="flex min-w-0 items-baseline gap-1.5">
 					{/* The hit-target expansion lives on the control itself (button/link),
@@ -289,7 +287,7 @@ export function TaskRowItem({
 			    gap-2 is load-bearing: each chip's after: reaches 4px past its
 			    own box, so anything tighter would overlap the neighbour's hit
 			    area and swallow taps meant for it. */}
-			<div className="flex shrink-0 items-center gap-3 self-center">
+			<div className="flex shrink-0 items-center gap-3">
 				{/* The star leads so the note chips end the row. Two columns have to
 				    be ragged and this is the pair worth keeping straight: a task's
 				    note chips then land in the same column as an event's own note

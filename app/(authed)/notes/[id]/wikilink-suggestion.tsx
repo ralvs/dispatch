@@ -31,14 +31,14 @@ function WikilinkMenu({
 }) {
 	if (items.length === 0) {
 		return (
-			<div className="rounded-md border border-line bg-surface px-3 py-2 font-mono text-meta text-ink-4 shadow-lg">
+			<div className="rounded-control border border-line bg-surface px-3 py-2 font-mono text-meta text-ink-4 elevation-overlay">
 				No matching notes
 			</div>
 		);
 	}
 
 	return (
-		<ul className="min-w-48 rounded-md border border-line bg-surface py-1 shadow-lg">
+		<ul className="min-w-48 rounded-control border border-line bg-surface py-1 elevation-overlay">
 			{items.map((item, index) => (
 				<li key={item.id}>
 					<button

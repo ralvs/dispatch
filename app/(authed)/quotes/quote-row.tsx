@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Button, Textarea } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { QuoteAnnotationRow, QuoteRow } from "@/lib/services/quotes";
 import { createAnnotationAction, deleteQuoteAction, listAnnotationsAction } from "./actions";
@@ -49,17 +50,20 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 					: ""}
 			</p>
 			<div className="mt-2 flex gap-2">
-				<button
+				<Button
 					type="button"
+					variant="tertiary"
+					size="sm"
 					aria-label={expanded ? "Collapse annotations" : "Expand annotations"}
 					aria-pressed={expanded}
 					onClick={toggleExpand}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					{expanded ? "Hide" : "Annotations"}
-				</button>
-				<button
+				</Button>
+				<Button
 					type="button"
+					variant="danger"
+					size="sm"
 					aria-label={`Delete quote "${quote.text.slice(0, 20)}"`}
 					disabled={pending}
 					onClick={() =>
@@ -67,10 +71,9 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 							await runAction(() => deleteQuoteAction(quote.id), "Couldn't delete quote.");
 						})
 					}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error active:opacity-70"
 				>
 					Delete
-				</button>
+				</Button>
 			</div>
 			{expanded && (
 				<div className="mt-3 space-y-2 border-line border-l pl-3">
@@ -80,22 +83,25 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 						</p>
 					))}
 					<div className="flex gap-2">
-						<textarea
+						<Textarea
 							value={annotationBody}
 							onChange={(e) => setAnnotationBody(e.target.value)}
 							rows={2}
 							aria-label="Add annotation"
 							placeholder="Add a reflection…"
-							className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
+							size="sm"
 						/>
-						<button
+						<Button
 							type="button"
+							variant="primary"
+							size="sm"
+							className="shrink-0"
 							disabled={pending}
+							isPending={pending}
 							onClick={addAnnotation}
-							className="shrink-0 rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50 active:opacity-70"
 						>
 							Add
-						</button>
+						</Button>
 					</div>
 				</div>
 			)}

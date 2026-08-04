@@ -4,6 +4,7 @@ import { FileText } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import type { TaskRow } from "@/lib/services/tasks";
 
@@ -37,14 +38,16 @@ export function InboxRow({
 			</p>
 			<div className="mt-2 flex flex-wrap items-center gap-1.5">
 				{domainButtons}
-				<button
+				<Button
 					type="button"
+					variant="danger"
+					size="sm"
+					className="ml-auto"
 					onClick={onDelete}
 					aria-label={`Delete task "${task.title}"`}
-					className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error active:opacity-70"
 				>
 					Delete
-				</button>
+				</Button>
 			</div>
 		</li>
 	);

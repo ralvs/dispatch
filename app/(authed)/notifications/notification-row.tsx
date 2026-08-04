@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { formatInstant } from "@/lib/dates";
 import type { NotificationRow as Row } from "@/lib/services/notifications";
 
@@ -18,10 +19,10 @@ export function NotificationRow({
 
 	return (
 		<li className="hairline py-3">
-			<div className="flex items-baseline justify-between gap-4">
-				<p className="flex items-baseline gap-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+			<div className="flex items-center justify-between gap-4">
+				<p className="flex items-center gap-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3">
 					{unread && (
-						<span aria-hidden className="inline-block h-1.5 w-1.5 self-center bg-accent" />
+						<span aria-hidden className="inline-block h-1.5 w-1.5 rounded-pill bg-accent" />
 					)}
 					{notification.type}
 					{unread && <span className="sr-only"> (unread)</span>}
@@ -32,33 +33,23 @@ export function NotificationRow({
 			</div>
 			<p className={`mt-1 text-sm ${unread ? "text-ink" : "text-ink-2"}`}>{notification.title}</p>
 			{notification.body && <p className="mt-1 text-meta text-ink-3">{notification.body}</p>}
-			<div className="mt-2 flex items-baseline gap-3">
+			<div className="mt-2 flex items-center gap-2">
 				{notification.source_url && (
-					// Borderless on purpose — it is a link out, not a row action — but it
-					// keeps the buttons' box so every control on this row shares a height.
 					<a
 						href={notification.source_url}
-						className="rounded-md border border-transparent px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink active:opacity-70"
+						className="inline-flex h-7 items-center px-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink active:opacity-70"
 					>
 						Open →
 					</a>
 				)}
 				{unread && (
-					<button
-						type="button"
-						onClick={onMarkRead}
-						className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
-					>
+					<Button type="button" variant="tertiary" size="sm" onClick={onMarkRead}>
 						Mark read
-					</button>
+					</Button>
 				)}
-				<button
-					type="button"
-					onClick={onDismiss}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
-				>
+				<Button type="button" variant="tertiary" size="sm" onClick={onDismiss}>
 					Dismiss
-				</button>
+				</Button>
 			</div>
 		</li>
 	);

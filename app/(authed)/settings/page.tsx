@@ -25,7 +25,7 @@ export default async function SettingsPage() {
 				<h1 className="mt-1 font-serif text-3xl text-ink">The back office</h1>
 			</header>
 
-			<section className="mt-6" aria-label="Domains">
+			<section className="mt-8" aria-label="Domains">
 				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Domains</h2>
 				<p className="mt-1 font-mono text-meta text-ink-4">What I'm stewarding.</p>
 				<div className="mt-3">
@@ -69,7 +69,7 @@ export default async function SettingsPage() {
 				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
 					Notifications
 				</h2>
-				<div className="mt-2 border-b border-line pb-4">
+				<div className="mt-2 hairline pb-4">
 					<PushToggle />
 				</div>
 			</section>

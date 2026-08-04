@@ -21,7 +21,7 @@ function NoteLinkRow({
 }) {
 	const pinned = note.pinned_at !== null;
 	return (
-		<li className="flex items-start border-b border-line">
+		<li className="hairline flex items-start">
 			<Link href={`/notes/${note.id}`} className="block flex-1 py-3 hover:bg-surface">
 				<span className="block truncate font-serif text-base text-ink">{displayTitle(note)}</span>
 				<span className="mt-0.5 block font-mono text-meta text-ink-4">

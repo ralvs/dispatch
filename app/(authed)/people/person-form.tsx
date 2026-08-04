@@ -1,6 +1,7 @@
 "use client";
 
 import { CollapsibleForm, useCollapsibleForm } from "@/components/collapsible-form";
+import { Field, Input, Select } from "@/components/ui";
 import { createPersonAction } from "./actions";
 import { RELATIONSHIP_TYPES } from "./constants";
 
@@ -14,53 +15,28 @@ export function PersonForm() {
 			submitLabel="Add person"
 			pendingLabel="Adding…"
 		>
-			<input
-				name="name"
-				required
-				placeholder="Name"
-				aria-label="Person name"
-				className="w-full border-b border-line bg-transparent pb-2 font-serif text-lg text-ink placeholder:text-ink-4"
-			/>
+			<Field>
+				<Input name="name" required placeholder="Name" aria-label="Person name" size="lg" />
+			</Field>
 			<div className="grid grid-cols-2 gap-3">
-				<label className="block">
-					<span className="font-mono text-eyebrow uppercase text-ink-3">Relationship</span>
-					<select
-						name="relationship_type"
-						defaultValue=""
-						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-					>
+				<Field label="Relationship">
+					<Select name="relationship_type" defaultValue="">
 						{RELATIONSHIP_TYPES.map((r) => (
 							<option key={r.value} value={r.value}>
 								{r.label}
 							</option>
 						))}
-					</select>
-				</label>
-				<label className="block">
-					<span className="font-mono text-eyebrow uppercase text-ink-3">Company</span>
-					<input
-						name="company"
-						placeholder="Optional"
-						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
-					/>
-				</label>
-				<label className="block">
-					<span className="font-mono text-eyebrow uppercase text-ink-3">Email</span>
-					<input
-						name="email"
-						type="email"
-						placeholder="Optional"
-						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
-					/>
-				</label>
-				<label className="block">
-					<span className="font-mono text-eyebrow uppercase text-ink-3">Phone</span>
-					<input
-						name="phone"
-						placeholder="Optional"
-						className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-4"
-					/>
-				</label>
+					</Select>
+				</Field>
+				<Field label="Company">
+					<Input name="company" placeholder="Optional" />
+				</Field>
+				<Field label="Email">
+					<Input name="email" type="email" placeholder="Optional" />
+				</Field>
+				<Field label="Phone">
+					<Input name="phone" placeholder="Optional" />
+				</Field>
 			</div>
 		</CollapsibleForm>
 	);

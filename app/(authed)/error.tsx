@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { Button } from "@/components/ui";
 
 export default function RouteError({
 	error,
@@ -23,13 +24,9 @@ export default function RouteError({
 				<p className="mt-1 text-meta text-ink-3">Something went wrong loading this page.</p>
 			</header>
 
-			<button
-				type="button"
-				onClick={reset}
-				className="mt-6 rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70"
-			>
+			<Button type="button" variant="primary" className="mt-6" onClick={reset}>
 				Try again
-			</button>
+			</Button>
 		</div>
 	);
 }

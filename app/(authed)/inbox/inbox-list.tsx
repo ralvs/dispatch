@@ -64,7 +64,7 @@ export function InboxList({
 							type="button"
 							aria-label={`Move ${t.title} to ${d.name}`}
 							onClick={() => file(t, d.id)}
-							className="inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
+							className="inline-flex h-7 items-center gap-1.5 rounded-control border border-line px-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 						>
 							<ColorDot color={d.color} />
 							{d.name}

@@ -304,7 +304,7 @@ export function CapturePalette() {
 												<button
 													type="button"
 													onClick={captureAnother}
-													className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70"
+													className="inline-flex h-9 items-center rounded-control bg-ink px-3 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70"
 												>
 													Capture another
 												</button>
@@ -360,7 +360,7 @@ export function CapturePalette() {
 												type="button"
 												onClick={submit}
 												disabled={pending || isBlank(state.text)}
-												className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70 disabled:opacity-50"
+												className="inline-flex h-9 items-center rounded-control bg-ink px-3 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70 disabled:opacity-50"
 											>
 												{state.status === "error" ? "Retry" : pending ? "Capturing…" : "Capture"}
 											</button>

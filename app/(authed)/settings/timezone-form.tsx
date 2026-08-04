@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { Button, Field, Select } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import { updateTimezoneAction } from "./actions";
 
@@ -28,32 +29,20 @@ export function TimezoneForm({ current }: { current: string }) {
 					await runAction(() => updateTimezoneAction(formData), "Couldn't update timezone.");
 				})
 			}
-			className="mt-2 flex flex-wrap items-center gap-2"
+			className="mt-2 flex flex-wrap items-end gap-3"
 		>
-			<label className="flex items-center gap-2">
-				<span className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-					Timezone
-				</span>
-				<select
-					name="timezone"
-					defaultValue={current}
-					disabled={pending}
-					className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink disabled:opacity-50"
-				>
+			<Field label="Timezone" className="min-w-0 sm:min-w-56">
+				<Select name="timezone" defaultValue={current} disabled={pending}>
 					{zones.map((zone) => (
 						<option key={zone} value={zone}>
 							{zone}
 						</option>
 					))}
-				</select>
-			</label>
-			<button
-				type="submit"
-				disabled={pending}
-				className="rounded-md border border-line px-2 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink disabled:opacity-50 active:opacity-70"
-			>
+				</Select>
+			</Field>
+			<Button type="submit" variant="tertiary" size="sm" isPending={pending} disabled={pending}>
 				{pending ? "Saving…" : "Save"}
-			</button>
+			</Button>
 			<p className="w-full font-mono text-meta text-ink-4">
 				Day boundaries, due dates, and every "today" in the app follow this zone.
 			</p>

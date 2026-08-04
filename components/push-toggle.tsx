@@ -122,7 +122,7 @@ export function PushToggle() {
 			aria-label={subscribed ? "Turn off push notifications" : "Turn on push notifications"}
 			disabled={busy}
 			onClick={subscribed ? unsubscribe : subscribe}
-			className="rounded-md border border-line px-3 py-2 font-mono text-meta text-ink-3 transition-opacity hover:border-ink hover:text-ink active:opacity-70 disabled:opacity-50"
+			className="inline-flex h-9 items-center rounded-control border border-line px-3 font-mono text-meta text-ink-3 transition-opacity hover:border-ink hover:text-ink active:opacity-70 disabled:opacity-50"
 		>
 			{subscribed ? "Disable push notifications" : "Enable push notifications"}
 		</button>

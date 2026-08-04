@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Badge } from "@/components/ui";
 
 /**
  * Things waiting on a decision, as opposed to the cadence strip's counts of
@@ -15,9 +16,21 @@ export function AlertsRow({
 	linksUnread: number;
 }) {
 	const alerts = [
-		{ key: "inbox", count: inbox, label: "in the inbox", href: "/inbox" },
-		{ key: "review", count: needsReview, label: "need review", href: "/notes" },
-		{ key: "links", count: linksUnread, label: "unread links", href: "/links" },
+		{ key: "inbox", count: inbox, label: "in the inbox", href: "/inbox", tone: "accent" as const },
+		{
+			key: "review",
+			count: needsReview,
+			label: "need review",
+			href: "/notes",
+			tone: "warning" as const,
+		},
+		{
+			key: "links",
+			count: linksUnread,
+			label: "unread links",
+			href: "/links",
+			tone: "accent" as const,
+		},
 	].filter((a) => a.count > 0);
 
 	if (alerts.length === 0) return null;
@@ -29,12 +42,10 @@ export function AlertsRow({
 			<ul className="flex flex-col items-end gap-2">
 				{alerts.map((alert) => (
 					<li key={alert.key}>
-						<Link
-							href={alert.href}
-							className="inline-flex items-center gap-2 rounded-full border border-line-strong bg-surface px-3 py-1.5 font-mono text-meta hover:border-ink-3 hover:bg-surface-2"
-						>
-							<span className="tabular-nums text-accent">{alert.count}</span>
-							<span className="text-ink-2">{alert.label}</span>
+						<Link href={alert.href} className="no-underline">
+							<Badge tone={alert.tone}>
+								<span className="tabular-nums">{alert.count}</span> {alert.label}
+							</Badge>
 						</Link>
 					</li>
 				))}

@@ -16,7 +16,7 @@ export function ProjectsCard({ projects }: { projects: ProjectBrief[] }) {
 			</div>
 			<ul className="mt-2">
 				{projects.map((p) => (
-					<li key={p.id} className="border-b border-line py-2.5">
+					<li key={p.id} className="hairline py-3">
 						<Link href={`/projects/${p.id}`} className="block">
 							<div className="flex items-baseline justify-between gap-3">
 								<span className="min-w-0 flex-1 truncate text-sm text-ink">{p.name}</span>

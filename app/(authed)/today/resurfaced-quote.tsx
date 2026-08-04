@@ -26,7 +26,7 @@ export function ResurfacedQuote({
 
 	return (
 		<section
-			className="mt-8 rounded-xl border border-line bg-surface px-5 py-6"
+			className="elevation-card mt-14 rounded-card border border-line bg-surface px-5 py-6"
 			aria-label="Resurfaced"
 		>
 			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Resurfaced</h2>

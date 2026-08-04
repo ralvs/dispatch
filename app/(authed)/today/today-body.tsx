@@ -62,7 +62,7 @@ export async function TodayBody({
 			 * counts, so it stands alone rather than repeating them as a strip
 			 * of big numbers — Awaiting decision fills the row beside it,
 			 * vertically centered against whichever side runs taller. */}
-			<div className="mt-12 grid grid-cols-1 gap-10 lg:grid-cols-[1.6fr_1fr] lg:items-center lg:gap-14">
+			<div className="mt-14 grid grid-cols-1 gap-10 lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-14">
 				<AnchorLine anchor={view.anchor} tz={tz} />
 				<AlertsRow
 					inbox={view.inboxCount}
@@ -82,7 +82,7 @@ export async function TodayBody({
 				taskNoteIds={taskNoteIds}
 			/>
 
-			<div className="mt-14 grid grid-cols-1 gap-14 lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-x-10">
+			<div className="mt-14 grid grid-cols-1 gap-10 lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-14">
 				<div className="min-w-0">
 					<BriefSection lines={view.briefLines} />
 					<ResurfacedQuote

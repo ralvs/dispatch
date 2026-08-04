@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { MentionTextarea, MentionTextInput } from "@/components/mention-input";
+import { Badge, Field, fieldControl, Input, Select } from "@/components/ui";
 import { shiftDay } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
@@ -12,60 +13,26 @@ export type TaskDomainOption = {
 	color: string | null;
 };
 
-/**
- * Native date/time inputs paint the browser's own `mm/dd/yyyy` / `--:-- --`
- * skeleton at full ink weight, so an empty field shouts as loudly as a filled
- * one and the picker glyph sits there at full brightness. CSS has no "this
- * date input is empty" selector, so emptiness is tracked in React and handed
- * to the stylesheet as `data-empty` — an untouched field then reads like every
- * other placeholder in the app instead of like an answer.
- */
-const FIELD_CSS = `
-.tf-native::-webkit-calendar-picker-indicator {
-	opacity: 0.4;
-	cursor: pointer;
-	transition: opacity 120ms ease;
-}
-
-.tf-native:hover::-webkit-calendar-picker-indicator,
-.tf-native:focus::-webkit-calendar-picker-indicator {
-	opacity: 0.85;
-}
-
-/* The colour has to be set on each sub-field: setting it on the container
-   pseudo-element alone does not cascade into them. */
-.tf-native[data-empty="true"]::-webkit-datetime-edit,
-.tf-native[data-empty="true"]::-webkit-datetime-edit-text,
-.tf-native[data-empty="true"]::-webkit-datetime-edit-day-field,
-.tf-native[data-empty="true"]::-webkit-datetime-edit-month-field,
-.tf-native[data-empty="true"]::-webkit-datetime-edit-year-field,
-.tf-native[data-empty="true"]::-webkit-datetime-edit-hour-field,
-.tf-native[data-empty="true"]::-webkit-datetime-edit-minute-field,
-.tf-native[data-empty="true"]::-webkit-datetime-edit-ampm-field {
-	color: var(--ink-4);
-}
-`;
-
 /** Label always stacks above its control (block, not inline beside). */
 const FIELD_LABEL = "block font-mono text-eyebrow uppercase text-ink-3";
+
 /**
- * One height, one radius, one focus treatment for every control in the row.
- * Exported so other surfaces in this directory (task-list filters) share the
- * same idiom instead of redeclaring it.
+ * Shared field shell for non-primitive surfaces in this directory (mention
+ * controls). Prefer Input/Select from `@/components/ui` for native fields.
  */
-export const CONTROL =
-	"h-9 rounded-md border border-line bg-surface px-2.5 text-sm text-ink outline-none transition-colors hover:border-line-strong focus:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent";
+export const CONTROL = fieldControl({ size: "md" });
+
 /**
  * Borderless on purpose: five bordered boxes in a row (date, time, and three
  * shortcuts) read as five equal controls. The shortcuts are a shortcut to the
  * field beside them, so they keep the hit area and drop the chrome.
  */
 export const CHIP =
-	"h-9 rounded-md px-2 font-mono text-eyebrow uppercase text-ink-3 transition-colors hover:bg-surface hover:text-ink";
+	"h-9 rounded-control px-2 font-mono text-eyebrow uppercase text-ink-3 transition-colors hover:bg-surface hover:text-ink";
 export const CHIP_ON = "bg-accent-bg text-accent-ink hover:bg-accent-bg hover:text-accent-ink";
 /** Reset is an action, not a relative day — visually subordinate to the chips beside it. */
 const CHIP_RESET =
-	"h-9 rounded-md px-2 font-mono text-eyebrow uppercase text-ink-4 transition-colors hover:bg-surface hover:text-accent-slip disabled:pointer-events-none disabled:opacity-0";
+	"h-9 rounded-control px-2 font-mono text-eyebrow uppercase text-ink-4 transition-colors hover:bg-surface hover:text-accent-slip disabled:pointer-events-none disabled:opacity-0";
 
 /** What a due date actually gets set to, nine times out of ten. */
 const RELATIVE_DAYS = [
@@ -94,11 +61,11 @@ const PRIORITY_CELL: Record<number, string> = {
 	4: "peer-checked:text-ink-2",
 };
 
-const PRIORITY_BADGE: Record<number, string> = {
-	1: "text-error border-error/40",
-	2: "text-warning border-warning/40",
-	3: "text-accent-ink border-accent/40",
-	4: "text-ink-4 border-line",
+const PRIORITY_TONE: Record<number, "error" | "warning" | "accent" | "muted"> = {
+	1: "error",
+	2: "warning",
+	3: "accent",
+	4: "muted",
 };
 
 const PRIORITY_META: Record<number, { label: string; title: string }> = {
@@ -121,14 +88,11 @@ export function PriorityBadge({
 	className?: string;
 }) {
 	const meta = priorityMeta(priority);
-	const tone = PRIORITY_BADGE[priority] ?? PRIORITY_BADGE[4];
+	const tone = PRIORITY_TONE[priority] ?? PRIORITY_TONE[4];
 	return (
-		<span
-			title={meta.title}
-			className={`inline-block shrink-0 rounded border px-1 py-px font-mono text-[10px] leading-none tabular-nums tracking-wide ${tone} ${className}`}
-		>
+		<Badge tone={tone} title={meta.title} className={`tabular-nums ${className}`}>
 			{meta.label}
-		</span>
+		</Badge>
 	);
 }
 
@@ -168,7 +132,7 @@ export function TaskTitleField({
 			people={people}
 			placeholder={placeholder}
 			aria-label="Task title"
-			className="w-full border-b border-line bg-transparent pb-1.5 font-serif text-base text-ink placeholder:font-normal placeholder:text-ink-4"
+			className="field-shell h-auto w-full py-1.5 font-serif text-base text-ink placeholder:font-normal placeholder:text-ink-4"
 		/>
 	);
 }
@@ -207,16 +171,13 @@ export function TaskMetaFields({
 		// wide (a date, a time, three shortcuts), "where/how often/how much"
 		// are three narrow answers that line up under it.
 		<div className="space-y-4">
-			<style>{FIELD_CSS}</style>
-
 			<div className="min-w-0">
 				<span className={FIELD_LABEL}>Due</span>
 				<div className="mt-1 flex flex-wrap items-center gap-1.5">
-					<input
+					<Input
 						type="date"
 						name="due_date"
 						value={due}
-						data-empty={due === ""}
 						onChange={(event) => {
 							const next = event.target.value;
 							setDue(next);
@@ -225,17 +186,16 @@ export function TaskMetaFields({
 							if (next === "") setTime("");
 						}}
 						aria-label="Due date"
-						className={`tf-native ${CONTROL} w-[9.5rem]`}
+						className="w-[9.5rem]"
 					/>
-					<input
+					<Input
 						type="time"
 						name="due_time"
 						value={time}
-						data-empty={time === ""}
 						disabled={due === ""}
 						onChange={(event) => setTime(event.target.value)}
 						aria-label="Due time"
-						className={`tf-native ${CONTROL} w-[7.5rem] disabled:cursor-not-allowed disabled:opacity-40`}
+						className="w-[7.5rem]"
 					/>
 					{RELATIVE_DAYS.map(({ label, days }) => {
 						const target = shiftDay(todayIso, days);
@@ -268,14 +228,13 @@ export function TaskMetaFields({
 			</div>
 
 			<div className="flex flex-wrap items-start gap-x-6 gap-y-4">
-				<label className="block min-w-0">
-					<span className={FIELD_LABEL}>Domain</span>
+				<Field label="Domain" className="min-w-0">
 					{/* No color dot on <option> — styling native option elements is
 					    unreliable cross-browser, so this stays a plain name list. */}
-					<select
+					<Select
 						name="domain_id"
 						defaultValue={defaults.domain_id ?? ""}
-						className={`${CONTROL} mt-1 block w-[11rem] max-w-full`}
+						className="w-[11rem] max-w-full"
 					>
 						{/* "Unfiled" is offered only when it is already the answer — on the
 						    create form (undefined) or for a task sitting in the inbox (null).
@@ -289,16 +248,15 @@ export function TaskMetaFields({
 								{d.name}
 							</option>
 						))}
-					</select>
-				</label>
+					</Select>
+				</Field>
 
-				<label className="block min-w-0">
-					<span className={FIELD_LABEL}>Repeats</span>
-					<select
+				<Field label="Repeats" className="min-w-0">
+					<Select
 						name="recurrence_rule"
 						value={recurrence}
 						onChange={(event) => setRecurrence(event.target.value)}
-						className={`${CONTROL} mt-1 block w-[11rem] max-w-full`}
+						className="w-[11rem] max-w-full"
 					>
 						<option value="">Never</option>
 						{RECURRENCE_PATTERNS.map((p) => (
@@ -306,8 +264,8 @@ export function TaskMetaFields({
 								{RECURRENCE_LABELS[p]}
 							</option>
 						))}
-					</select>
-				</label>
+					</Select>
+				</Field>
 
 				<PriorityPicker defaultValue={defaults.priority ?? 4} />
 			</div>
@@ -384,7 +342,7 @@ export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) 
 		<fieldset className="block min-w-0">
 			<legend className={FIELD_LABEL}>Priority</legend>
 			<div
-				className="mt-1 inline-flex h-9 overflow-hidden rounded-md border border-line"
+				className="mt-1 inline-flex h-9 overflow-hidden rounded-control border border-line"
 				role="radiogroup"
 				aria-label="Priority"
 			>

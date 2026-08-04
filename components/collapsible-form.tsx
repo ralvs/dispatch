@@ -73,7 +73,13 @@ const FOOTER_CLASS = "flex gap-2 pt-2";
  */
 export function CollapsedTrigger({ label, onOpen }: { label: string; onOpen: () => void }) {
 	return (
-		<Button type="button" variant="tertiary" fullWidth className="justify-start px-4" onClick={onOpen}>
+		<Button
+			type="button"
+			variant="tertiary"
+			fullWidth
+			className="justify-start px-4"
+			onClick={onOpen}
+		>
 			{label}
 		</Button>
 	);

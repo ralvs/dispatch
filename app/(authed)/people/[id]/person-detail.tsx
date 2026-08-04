@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
+import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
@@ -60,87 +61,45 @@ export function PersonDetail({
 				<h1 className="mt-1 font-serif text-3xl text-ink">{person.name}</h1>
 			</header>
 
-			<section className="mt-6" aria-label="Details">
+			<section className="mt-8" aria-label="Details">
 				{editing ? (
-					<form
-						action={saveDetails}
-						className="space-y-3 rounded-xl border border-line-strong bg-surface p-4"
-					>
-						<label className="block">
-							<span className="font-mono text-eyebrow uppercase text-ink-3">Name</span>
-							<input
-								name="name"
-								required
-								defaultValue={person.name}
-								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-							/>
-						</label>
-						<div className="grid grid-cols-2 gap-3">
-							<label className="block">
-								<span className="font-mono text-eyebrow uppercase text-ink-3">Relationship</span>
-								<select
-									name="relationship_type"
-									defaultValue={person.relationship_type ?? ""}
-									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-								>
-									{RELATIONSHIP_TYPES.map((r) => (
-										<option key={r.value} value={r.value}>
-											{r.label}
-										</option>
-									))}
-								</select>
-							</label>
-							<label className="block">
-								<span className="font-mono text-eyebrow uppercase text-ink-3">Company</span>
-								<input
-									name="company"
-									defaultValue={person.company ?? ""}
-									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-								/>
-							</label>
-							<label className="block">
-								<span className="font-mono text-eyebrow uppercase text-ink-3">Email</span>
-								<input
-									name="email"
-									type="email"
-									defaultValue={person.email ?? ""}
-									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-								/>
-							</label>
-							<label className="block">
-								<span className="font-mono text-eyebrow uppercase text-ink-3">Phone</span>
-								<input
-									name="phone"
-									defaultValue={person.phone ?? ""}
-									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-								/>
-							</label>
-							<label className="col-span-2 block">
-								<span className="font-mono text-eyebrow uppercase text-ink-3">Notes</span>
-								<textarea
-									name="notes"
-									rows={3}
-									defaultValue={person.notes ?? ""}
-									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-								/>
-							</label>
-						</div>
-						<div className="flex gap-2 pt-1">
-							<button
-								type="submit"
-								disabled={pending}
-								className="rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50 active:opacity-70"
-							>
-								Save
-							</button>
-							<button
-								type="button"
-								onClick={() => setEditing(false)}
-								className="px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 active:opacity-70"
-							>
-								Cancel
-							</button>
-						</div>
+					<form action={saveDetails}>
+						<Card className="space-y-4" padding="default">
+							<Field label="Name">
+								<Input name="name" required defaultValue={person.name} />
+							</Field>
+							<div className="grid grid-cols-2 gap-3">
+								<Field label="Relationship">
+									<Select name="relationship_type" defaultValue={person.relationship_type ?? ""}>
+										{RELATIONSHIP_TYPES.map((r) => (
+											<option key={r.value} value={r.value}>
+												{r.label}
+											</option>
+										))}
+									</Select>
+								</Field>
+								<Field label="Company">
+									<Input name="company" defaultValue={person.company ?? ""} />
+								</Field>
+								<Field label="Email">
+									<Input name="email" type="email" defaultValue={person.email ?? ""} />
+								</Field>
+								<Field label="Phone">
+									<Input name="phone" defaultValue={person.phone ?? ""} />
+								</Field>
+								<Field label="Notes" className="col-span-2">
+									<Textarea name="notes" rows={3} defaultValue={person.notes ?? ""} />
+								</Field>
+							</div>
+							<div className="flex gap-2 pt-1">
+								<Button type="submit" variant="primary" isPending={pending} disabled={pending}>
+									Save
+								</Button>
+								<Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+									Cancel
+								</Button>
+							</div>
+						</Card>
 					</form>
 				) : (
 					<div>
@@ -171,16 +130,19 @@ export function PersonDetail({
 							)}
 						</dl>
 						<div className="mt-3 flex gap-2">
-							<button
+							<Button
 								type="button"
+								variant="tertiary"
+								size="sm"
 								aria-label={`Edit ${person.name}`}
 								onClick={() => setEditing(true)}
-								className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 							>
 								Edit
-							</button>
-							<button
+							</Button>
+							<Button
 								type="button"
+								variant="danger"
+								size="sm"
 								aria-label={`Delete ${person.name}`}
 								disabled={pending}
 								onClick={() =>
@@ -188,10 +150,9 @@ export function PersonDetail({
 										await runAction(() => deletePersonAction(person.id), "Couldn't delete person.");
 									})
 								}
-								className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error active:opacity-70"
 							>
 								Delete
-							</button>
+							</Button>
 						</div>
 					</div>
 				)}
@@ -215,11 +176,11 @@ function MentionedInSection({
 	if (tasks.length === 0 && notes.length === 0) return null;
 
 	return (
-		<section className="mt-8" aria-label="Mentioned in">
+		<section className="mt-14" aria-label="Mentioned in">
 			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Mentioned in</h2>
 			<ul className="mt-2">
 				{tasks.map((task) => (
-					<li key={`task-${task.id}`} className="hairline py-2">
+					<li key={`task-${task.id}`} className="hairline py-3">
 						<Link
 							href={`/tasks?edit=${task.id}`}
 							className="truncate font-serif text-sm text-ink hover:text-accent"
@@ -230,7 +191,7 @@ function MentionedInSection({
 					</li>
 				))}
 				{notes.map((note) => (
-					<li key={`note-${note.id}`} className="hairline py-2">
+					<li key={`note-${note.id}`} className="hairline py-3">
 						<Link
 							href={`/notes/${note.id}`}
 							className="truncate font-serif text-sm text-ink hover:text-accent"
@@ -259,11 +220,11 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 	}
 
 	return (
-		<section className="mt-8" aria-label="Facts">
+		<section className="mt-14" aria-label="Facts">
 			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Facts</h2>
 			<ul className="mt-2">
 				{facts.map((f) => (
-					<li key={f.id} className="hairline flex items-baseline justify-between gap-3 py-2">
+					<li key={f.id} className="hairline flex items-center justify-between gap-3 py-3">
 						<div>
 							<p className="text-sm text-ink">{f.fact_value}</p>
 							<p className="mt-0.5 font-mono text-meta text-ink-4">
@@ -271,8 +232,10 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 								{f.date_relevant ? ` · ${f.date_relevant}` : ""}
 							</p>
 						</div>
-						<button
+						<Button
 							type="button"
+							variant="danger-soft"
+							size="sm"
 							aria-label={`Delete fact "${f.fact_value}"`}
 							disabled={pending}
 							onClick={() =>
@@ -280,76 +243,58 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 									await runAction(() => deleteFactAction(personId, f.id), "Couldn't delete fact.");
 								})
 							}
-							className="shrink-0 font-mono text-meta text-ink-4 hover:text-accent-slip active:opacity-70"
 						>
 							Delete
-						</button>
+						</Button>
 					</li>
 				))}
 			</ul>
 			{open ? (
-				<form
-					ref={formRef}
-					action={submit}
-					className="mt-2 space-y-2 rounded-xl border border-line-strong bg-surface p-3"
-				>
-					<div className="grid grid-cols-2 gap-2">
-						<label className="block">
-							<span className="font-mono text-eyebrow uppercase text-ink-3">Type</span>
-							<select
-								name="fact_type"
-								defaultValue="other"
-								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
+				<form ref={formRef} action={submit} className="mt-3">
+					<Card className="space-y-3" padding="compact">
+						<div className="grid grid-cols-2 gap-2">
+							<Field label="Type">
+								<Select name="fact_type" defaultValue="other">
+									{FACT_TYPES.map((f) => (
+										<option key={f.value} value={f.value}>
+											{f.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+							<Field label="Date">
+								<Input type="date" name="date_relevant" />
+							</Field>
+						</div>
+						<Field label="Value">
+							<Input name="fact_value" required />
+						</Field>
+						<div className="flex gap-2">
+							<Button
+								type="submit"
+								variant="primary"
+								size="sm"
+								isPending={pending}
+								disabled={pending}
 							>
-								{FACT_TYPES.map((f) => (
-									<option key={f.value} value={f.value}>
-										{f.label}
-									</option>
-								))}
-							</select>
-						</label>
-						<label className="block">
-							<span className="font-mono text-eyebrow uppercase text-ink-3">Date</span>
-							<input
-								type="date"
-								name="date_relevant"
-								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-							/>
-						</label>
-					</div>
-					<label className="block">
-						<span className="font-mono text-eyebrow uppercase text-ink-3">Value</span>
-						<input
-							name="fact_value"
-							required
-							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-						/>
-					</label>
-					<div className="flex gap-2">
-						<button
-							type="submit"
-							disabled={pending}
-							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50 active:opacity-70"
-						>
-							Add
-						</button>
-						<button
-							type="button"
-							onClick={() => setOpen(false)}
-							className="px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 active:opacity-70"
-						>
-							Cancel
-						</button>
-					</div>
+								Add
+							</Button>
+							<Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
+								Cancel
+							</Button>
+						</div>
+					</Card>
 				</form>
 			) : (
-				<button
+				<Button
 					type="button"
+					variant="tertiary"
+					fullWidth
+					className="mt-3 justify-start"
 					onClick={() => setOpen(true)}
-					className="mt-2 w-full rounded-md border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					+ Add fact
-				</button>
+				</Button>
 			)}
 		</section>
 	);
@@ -381,11 +326,11 @@ function InteractionsSection({
 	}
 
 	return (
-		<section className="mt-8" aria-label="Interactions">
+		<section className="mt-14" aria-label="Interactions">
 			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Interactions</h2>
 			<ul className="mt-2">
 				{interactions.map((i) => (
-					<li key={i.id} className="hairline flex items-baseline justify-between gap-3 py-2">
+					<li key={i.id} className="hairline flex items-center justify-between gap-3 py-3">
 						<div>
 							<p className="text-sm text-ink">
 								{i.notes ?? interactionTypeLabel(i.interaction_type)}
@@ -394,8 +339,10 @@ function InteractionsSection({
 								{interactionTypeLabel(i.interaction_type)} · {formatInstant(i.occurred_at, tz)}
 							</p>
 						</div>
-						<button
+						<Button
 							type="button"
+							variant="danger-soft"
+							size="sm"
 							aria-label="Delete interaction"
 							disabled={pending}
 							onClick={() =>
@@ -406,86 +353,63 @@ function InteractionsSection({
 									);
 								})
 							}
-							className="shrink-0 font-mono text-meta text-ink-4 hover:text-accent-slip active:opacity-70"
 						>
 							Delete
-						</button>
+						</Button>
 					</li>
 				))}
 			</ul>
 			{open ? (
-				<form
-					ref={formRef}
-					action={submit}
-					className="mt-2 space-y-2 rounded-xl border border-line-strong bg-surface p-3"
-				>
-					<div className="grid grid-cols-2 gap-2">
-						<label className="block">
-							<span className="font-mono text-eyebrow uppercase text-ink-3">Type</span>
-							<select
-								name="interaction_type"
-								defaultValue="call"
-								className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-							>
-								{INTERACTION_TYPES.map((t) => (
-									<option key={t.value} value={t.value}>
-										{t.label}
-									</option>
-								))}
-							</select>
-						</label>
+				<form ref={formRef} action={submit} className="mt-3">
+					<Card className="space-y-3" padding="compact">
 						<div className="grid grid-cols-2 gap-2">
-							<label className="block">
-								<span className="font-mono text-eyebrow uppercase text-ink-3">Date</span>
-								<input
-									type="date"
-									name="occurred_date"
-									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-								/>
-							</label>
-							<label className="block">
-								<span className="font-mono text-eyebrow uppercase text-ink-3">Time</span>
-								<input
-									type="time"
-									name="occurred_time"
-									className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-								/>
-							</label>
+							<Field label="Type">
+								<Select name="interaction_type" defaultValue="call">
+									{INTERACTION_TYPES.map((t) => (
+										<option key={t.value} value={t.value}>
+											{t.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+							<div className="grid grid-cols-2 gap-2">
+								<Field label="Date">
+									<Input type="date" name="occurred_date" />
+								</Field>
+								<Field label="Time">
+									<Input type="time" name="occurred_time" />
+								</Field>
+							</div>
 						</div>
-					</div>
-					<label className="block">
-						<span className="font-mono text-eyebrow uppercase text-ink-3">Notes</span>
-						<textarea
-							name="notes"
-							rows={2}
-							className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-						/>
-					</label>
-					<div className="flex gap-2">
-						<button
-							type="submit"
-							disabled={pending}
-							className="rounded-md bg-ink px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-bg disabled:opacity-50 active:opacity-70"
-						>
-							Log
-						</button>
-						<button
-							type="button"
-							onClick={() => setOpen(false)}
-							className="px-3 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3 active:opacity-70"
-						>
-							Cancel
-						</button>
-					</div>
+						<Field label="Notes">
+							<Textarea name="notes" rows={2} size="sm" />
+						</Field>
+						<div className="flex gap-2">
+							<Button
+								type="submit"
+								variant="primary"
+								size="sm"
+								isPending={pending}
+								disabled={pending}
+							>
+								Log
+							</Button>
+							<Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
+								Cancel
+							</Button>
+						</div>
+					</Card>
 				</form>
 			) : (
-				<button
+				<Button
 					type="button"
+					variant="tertiary"
+					fullWidth
+					className="mt-3 justify-start"
 					onClick={() => setOpen(true)}
-					className="mt-2 w-full rounded-md border border-line px-3 py-2 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					+ Log interaction
-				</button>
+				</Button>
 			)}
 		</section>
 	);

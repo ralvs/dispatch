@@ -26,7 +26,7 @@ function MeetingNoteGlyph({ eventId, noteId }: { eventId: string; noteId?: strin
 				// Icon-only, so a native tooltip carries on hover what the label
 				// carries to a screen reader.
 				title="View meeting note"
-				className={`${NOTE_CHIP_CLASS} self-center`}
+				className={NOTE_CHIP_CLASS}
 			>
 				<Icon icon={FileText} size="sm" />
 			</Link>
@@ -47,7 +47,7 @@ function MeetingNoteGlyph({ eventId, noteId }: { eventId: string; noteId?: strin
 					);
 				});
 			}}
-			className={`${NOTE_CHIP_CLASS} self-center disabled:opacity-50`}
+			className={`${NOTE_CHIP_CLASS} disabled:opacity-50`}
 		>
 			<Icon icon={FilePlus} size="sm" />
 		</button>
@@ -70,12 +70,12 @@ function EventRow({
 
 	return (
 		<li
-			className={`hairline flex items-center gap-3 py-2.5 ${past ? "opacity-50" : ""}`}
+			className={`hairline flex items-center gap-3 py-3 ${past ? "opacity-50" : ""}`}
 			aria-label={past ? `${event.title} (past)` : undefined}
 		>
 			{time && (
 				<span
-					className={`w-12 shrink-0 self-center font-mono text-meta tabular-nums leading-none ${
+					className={`w-12 shrink-0 font-mono text-meta tabular-nums leading-none ${
 						past ? "text-ink-4" : "text-ink-3"
 					}`}
 				>
@@ -85,7 +85,7 @@ function EventRow({
 			<Icon
 				icon={Calendar}
 				size="sm"
-				className={`shrink-0 self-center ${past ? "text-ink-4" : "text-ink-3"}`}
+				className={`shrink-0 ${past ? "text-ink-4" : "text-ink-3"}`}
 			/>
 			<div className="min-w-0 flex-1">
 				<p className={`truncate text-sm ${past ? "text-ink-4" : "text-ink"}`}>{event.title}</p>

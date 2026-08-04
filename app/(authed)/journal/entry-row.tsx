@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { Button } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { JournalEntryRow } from "@/lib/services/journal";
 import { deleteEntryAction } from "./actions";
@@ -17,8 +18,10 @@ export function EntryRowItem({ entry }: { entry: JournalEntryRow }) {
 				<p className="font-mono text-meta text-ink-4">
 					{entry.tags.length > 0 ? entry.tags.join(", ") : "—"}
 				</p>
-				<button
+				<Button
 					type="button"
+					variant="danger"
+					size="sm"
 					aria-label={`Delete journal entry from ${entry.entry_date}`}
 					disabled={pending}
 					onClick={() =>
@@ -26,10 +29,9 @@ export function EntryRowItem({ entry }: { entry: JournalEntryRow }) {
 							await runAction(async () => deleteEntryAction(entry.id), "Couldn't delete entry.");
 						})
 					}
-					className="rounded-md border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error"
 				>
 					Delete
-				</button>
+				</Button>
 			</div>
 		</li>
 	);

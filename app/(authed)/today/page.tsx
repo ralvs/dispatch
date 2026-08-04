@@ -14,7 +14,7 @@ import { TodayBody } from "./today-body";
 function TodayFallback({ todayIso }: { todayIso: string }) {
 	return (
 		<div>
-			<header className="hairline-strong pb-5">
+			<header className="hairline-strong pb-4">
 				<div className="flex items-baseline justify-between">
 					<h1 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
 						{formatDateline(todayIso)}
@@ -27,7 +27,7 @@ function TodayFallback({ todayIso }: { todayIso: string }) {
 				Loading
 			</span>
 
-			<div className="mt-12 space-y-4" aria-hidden="true">
+			<div className="mt-14 space-y-4" aria-hidden="true">
 				{Array.from({ length: 8 }).map((_, i) => (
 					// biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows, never reordered.
 					<div key={i} className="h-4 rounded bg-surface animate-pulse" />

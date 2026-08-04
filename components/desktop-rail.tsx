@@ -57,7 +57,7 @@ export function DesktopRail({ email }: { email: string }) {
 			<button
 				type="button"
 				onClick={() => openCapturePalette()}
-				className="mt-8 flex items-center justify-between rounded-md border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:border-accent hover:text-ink active:opacity-70"
+				className="mt-8 flex items-center justify-between rounded-control border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:border-accent hover:text-ink active:opacity-70"
 			>
 				<span>+ Capture</span>
 				<span aria-hidden="true" className="text-ink-4">
