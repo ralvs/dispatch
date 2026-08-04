@@ -1,17 +1,8 @@
 import Link from "next/link";
+import { MENTION_CHIP_CLASS } from "@/components/ui/badge";
 
-/**
- * Shared @mention chip styling (docs/adr/0030 §4) — matches the note-link
- * chip on task rows so both "linked to a note" and "mentions a person" read
- * as the same family of small cross-reference glyphs. Exported as a plain
- * class string, not just the React component, because the note-side
- * TipTap `Mention` node renders raw HTML (see mention-extension.ts) and has
- * no React tree to mount into.
- */
-// `before:` pseudo-element pads the tap target out to ~44px without growing
-// the visible pill — the glyph stays the same size, only the hit area does.
-export const MENTION_CHIP_CLASS =
-	"relative inline-flex shrink-0 items-center gap-1 rounded border border-line px-1 py-px text-[10px] leading-none text-ink-3 before:absolute before:-inset-x-2 before:-inset-y-4 before:content-[''] hover:border-line-strong hover:text-ink active:opacity-70";
+/** Re-export for TipTap mention-extension + existing importers. */
+export { MENTION_CHIP_CLASS };
 
 /** A single "@Name" chip linking to /people/[id] — the task-row rendering of a mention. */
 export function MentionChip({ id, name }: { id: string; name: string }) {
