@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatInstant } from "@/lib/dates";
@@ -16,9 +17,11 @@ import { NoteEditor } from "./note-editor";
 type TaskTargetInfo = { id: string; title: string; status: "open" | "done" };
 type EventTargetInfo = { id: string; title: string; start_at: string };
 
+type Sb = Awaited<ReturnType<typeof requireOwnerPage>>["sb"];
+
 /** Batch-fetches label info for manual link targets — avoids N+1 per row. */
 async function loadManualTargets(
-	sb: Awaited<ReturnType<typeof requireOwnerPage>>["sb"],
+	sb: Sb,
 	taskIds: string[],
 	eventIds: string[],
 ): Promise<{ tasks: Map<string, TaskTargetInfo>; events: Map<string, EventTargetInfo> }> {
@@ -36,21 +39,45 @@ async function loadManualTargets(
 	};
 }
 
-export default async function NotePage({ params }: { params: Promise<{ id: string }> }) {
-	const { id: rawId } = await params;
-	const parsedId = z.uuid().safeParse(rawId);
-	if (!parsedId.success) notFound();
+/*
+ * The editor is what you opened the page for, so it waits only on its own two
+ * autocomplete reads. The link panels below carry the long pole — backlinks and
+ * links, then a dependent second wave for the manual targets' labels — and
+ * stream in behind their own boundary rather than holding the note hostage.
+ */
+async function EditorSection({
+	sb,
+	note,
+}: {
+	sb: Sb;
+	note: NonNullable<Awaited<ReturnType<typeof getNote>>>;
+}) {
+	const [noteTitles, people] = await Promise.all([listNoteTitles(sb), listMentionCandidates(sb)]);
+	return <NoteEditor note={note} noteTitles={noteTitles} people={people} />;
+}
 
-	const { sb } = await requireOwnerPage();
-	const [note, noteTitles, backlinks, links, tz, people] = await Promise.all([
-		getNote(sb, parsedId.data),
-		listNoteTitles(sb),
-		listBacklinks(sb, parsedId.data),
-		listLinksForNote(sb, parsedId.data),
+function EditorFallback() {
+	return (
+		<div className="mt-4">
+			<span role="status" className="sr-only">
+				Loading note
+			</span>
+			<div className="space-y-3" aria-hidden="true">
+				<div className="h-7 w-2/3 rounded bg-surface animate-pulse" />
+				<div className="h-4 w-full rounded bg-surface animate-pulse" />
+				<div className="h-4 w-11/12 rounded bg-surface animate-pulse" />
+				<div className="h-4 w-4/5 rounded bg-surface animate-pulse" />
+			</div>
+		</div>
+	);
+}
+
+async function LinkSections({ sb, noteId }: { sb: Sb; noteId: string }) {
+	const [backlinks, links, tz] = await Promise.all([
+		listBacklinks(sb, noteId),
+		listLinksForNote(sb, noteId),
 		getAppTimezone(sb),
-		listMentionCandidates(sb),
 	]);
-	if (!note) notFound();
 
 	const manualLinks = links.filter((l) => l.kind === "manual");
 	const taskIds = manualLinks
@@ -66,17 +93,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 	);
 
 	return (
-		<div>
-			<nav aria-label="Breadcrumb" className="pb-4">
-				<Link
-					href="/notes"
-					className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
-				>
-					← Notes
-				</Link>
-			</nav>
-			<NoteEditor note={note} noteTitles={noteTitles} people={people} />
-
+		<>
 			{backlinks.length > 0 && (
 				<section className="mt-8" aria-label="Backlinks">
 					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
@@ -128,7 +145,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 											{event?.title} · {event ? formatInstant(event.start_at, tz) : ""}
 										</span>
 									)}
-									<form action={detachLinkAction.bind(null, note.id, link.id)}>
+									<form action={detachLinkAction.bind(null, noteId, link.id)}>
 										<button
 											type="submit"
 											aria-label="Remove link"
@@ -142,8 +159,51 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 						})}
 					</ul>
 				)}
-				<LinkPicker noteId={note.id} />
+				<LinkPicker noteId={noteId} />
 			</section>
+		</>
+	);
+}
+
+function LinkSectionsFallback() {
+	return (
+		<div className="mt-8 space-y-2" aria-hidden="true">
+			<div className="h-3 w-20 rounded bg-surface animate-pulse" />
+			<div className="h-8 w-full rounded bg-surface animate-pulse" />
+		</div>
+	);
+}
+
+export default async function NotePage({ params }: { params: Promise<{ id: string }> }) {
+	const { id: rawId } = await params;
+	const parsedId = z.uuid().safeParse(rawId);
+	if (!parsedId.success) notFound();
+
+	const { sb } = await requireOwnerPage();
+	// The note itself stays awaited here: it is one query, and it is what decides
+	// between this page and a 404 — streaming that decision would mean sending
+	// a 200 and swapping in not-found after the fact.
+	const note = await getNote(sb, parsedId.data);
+	if (!note) notFound();
+
+	return (
+		<div>
+			<nav aria-label="Breadcrumb" className="pb-4">
+				<Link
+					href="/notes"
+					className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
+				>
+					← Notes
+				</Link>
+			</nav>
+
+			<Suspense fallback={<EditorFallback />}>
+				<EditorSection sb={sb} note={note} />
+			</Suspense>
+
+			<Suspense fallback={<LinkSectionsFallback />}>
+				<LinkSections sb={sb} noteId={note.id} />
+			</Suspense>
 		</div>
 	);
 }
