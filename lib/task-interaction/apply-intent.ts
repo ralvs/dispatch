@@ -1,7 +1,9 @@
+// Client-safe placement module, not `@/lib/services/today` — this file runs in
+// the browser (day-bands.tsx), and the service module is `server-only`.
+import { type DaySchedule, placeOnDay } from "@/lib/day-schedule";
 import { isRecurrencePattern, nextDueDate } from "@/lib/recurrence";
+import type { CalendarEventRow } from "@/lib/schemas/calendar";
 import type { TaskRow } from "@/lib/schemas/task";
-import type { CalendarEventRow } from "@/lib/services/calendar";
-import { type DaySchedule, placeOnDay } from "@/lib/services/today";
 
 /** Intents the optimistic layer understands (v1). Edit waits for the server. */
 /** Optimistic + write payload — one contract for projector, lock, and action. */
