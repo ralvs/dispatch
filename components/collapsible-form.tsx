@@ -10,6 +10,8 @@
 
 import { unstable_rethrow } from "next/navigation";
 import { type ReactNode, useRef, useState, useTransition } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { toastError } from "@/lib/client/toast";
 
 // The transition-wrapped choreography, pulled out of the hook so it's
@@ -63,14 +65,7 @@ export function useCollapsibleForm(
 	return { open, setOpen, formRef, pending, submit };
 }
 
-const TRIGGER_CLASS =
-	"w-full rounded-md border border-line px-4 py-2.5 text-left font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:border-line-strong hover:text-ink active:opacity-70";
-const CARD_CLASS = "space-y-3 rounded-xl border border-line-strong bg-surface p-4";
-const FOOTER_CLASS = "flex gap-2 pt-1";
-const SUBMIT_CLASS =
-	"rounded-md bg-ink px-4 py-2 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70 disabled:opacity-50";
-const CANCEL_CLASS =
-	"px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity active:opacity-70";
+const FOOTER_CLASS = "flex gap-2 pt-2";
 
 /**
  * The collapsed "+ New …" trigger. Byte-identical across every form that used
@@ -78,9 +73,9 @@ const CANCEL_CLASS =
  */
 export function CollapsedTrigger({ label, onOpen }: { label: string; onOpen: () => void }) {
 	return (
-		<button type="button" onClick={onOpen} className={TRIGGER_CLASS}>
+		<Button type="button" variant="tertiary" fullWidth className="justify-start px-4" onClick={onOpen}>
 			{label}
-		</button>
+		</Button>
 	);
 }
 
@@ -107,16 +102,18 @@ export function CollapsibleFormCard({
 	children: ReactNode;
 }) {
 	return (
-		<form ref={formRef} action={submit} className={CARD_CLASS}>
-			{children}
-			<div className={FOOTER_CLASS}>
-				<button type="submit" disabled={pending} className={SUBMIT_CLASS}>
-					{pending ? pendingLabel : submitLabel}
-				</button>
-				<button type="button" onClick={onCancel} className={CANCEL_CLASS}>
-					Cancel
-				</button>
-			</div>
+		<form ref={formRef} action={submit}>
+			<Card className="space-y-4" padding="default">
+				{children}
+				<div className={FOOTER_CLASS}>
+					<Button type="submit" variant="primary" isPending={pending} disabled={pending}>
+						{pending ? pendingLabel : submitLabel}
+					</Button>
+					<Button type="button" variant="ghost" onClick={onCancel}>
+						Cancel
+					</Button>
+				</div>
+			</Card>
 		</form>
 	);
 }

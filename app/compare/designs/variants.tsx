@@ -31,8 +31,9 @@ export function VariantSurface({
 	elevation: Elevation;
 	day: CompareDay;
 }) {
+	// Tokens ship on :root (ADR 0039). field/elevation props are labels only.
 	return (
-		<div data-field={field} data-elevation={elevation} className="min-h-[720px] bg-bg text-ink">
+		<div className="min-h-[720px] bg-bg text-ink">
 			<div className="mx-auto max-w-3xl space-y-16 px-5 py-10">
 				<header className="hairline-strong pb-4">
 					<div className="flex items-center justify-between">

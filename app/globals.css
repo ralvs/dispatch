@@ -38,13 +38,14 @@
 	--warning: #f5a623;
 	--success: #50e3c2;
 
-	/* Field + elevation defaults = box (flat). Bake-off overrides via data-ui. */
-	--field-bg: var(--surface);
-	--field-radius: 10px;
-	--field-border-width: 1px;
+	/* Shipped UI: line fields + subtle depth elevation (compare bake-off #3). */
+	--field-bg: transparent;
+	--field-radius: 0;
+	--field-border-width: 0 0 1px 0;
 	--field-shadow: none;
-	--elevation-card: none;
-	--elevation-overlay: none;
+	/* Dark: white glow so lift reads on #0a0a0a. */
+	--elevation-card: 0 1px 2px rgba(255, 255, 255, 0.04), 0 3px 10px rgba(255, 255, 255, 0.05);
+	--elevation-overlay: 0 2px 6px rgba(255, 255, 255, 0.05), 0 8px 20px rgba(255, 255, 255, 0.06);
 
 	color-scheme: dark;
 }
@@ -66,55 +67,10 @@
 	--error: #ee0000;
 	--warning: #ab570a;
 	--success: #0761d1;
-	color-scheme: light;
-}
-
-/* ── UI variant tokens (Phase 4 bake-off) ───────────────────────────────
- * Field shape (data-field) and elevation (data-elevation) are orthogonal.
- * Depth is shadow-only — never a background swap. Dark uses a subtle white
- * glow (black falloff vanishes on #0a0a0a); light uses a subtle dark soft
- * shadow. Line fields never take field-shadow — only cards/overlays lift. */
-
-[data-field="line"] {
-	--field-bg: transparent;
-	--field-radius: 0;
-	--field-border-width: 0 0 1px 0;
-	--field-shadow: none;
-}
-
-[data-field="box"] {
-	--field-bg: var(--surface);
-	--field-radius: 10px;
-	--field-border-width: 1px;
-	--field-shadow: none;
-}
-
-[data-elevation="flat"] {
-	--elevation-card: none;
-	--elevation-overlay: none;
-}
-
-/* Dark (default): soft white glow — tight, low opacity. */
-[data-elevation="depth"] {
-	--elevation-card: 0 1px 2px rgba(255, 255, 255, 0.04), 0 3px 10px rgba(255, 255, 255, 0.05);
-	--elevation-overlay: 0 2px 6px rgba(255, 255, 255, 0.05), 0 8px 20px rgba(255, 255, 255, 0.06);
-}
-
-/* Boxed fields under depth get a whisper of field lift; line stays clean. */
-[data-field="box"][data-elevation="depth"] {
-	--field-shadow: 0 1px 2px rgba(255, 255, 255, 0.035), 0 2px 6px rgba(255, 255, 255, 0.04);
-}
-
-/* Light: same geometry, dark ink. */
-[data-theme="light"] [data-elevation="depth"],
-[data-theme="light"][data-elevation="depth"] {
+	/* Light: conventional dark soft shadow (mirror of dark's white glow). */
 	--elevation-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 3px 10px rgba(0, 0, 0, 0.05);
 	--elevation-overlay: 0 2px 6px rgba(0, 0, 0, 0.05), 0 8px 20px rgba(0, 0, 0, 0.06);
-}
-
-[data-theme="light"] [data-field="box"][data-elevation="depth"],
-[data-theme="light"][data-field="box"][data-elevation="depth"] {
-	--field-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.04);
+	color-scheme: light;
 }
 
 @theme inline {

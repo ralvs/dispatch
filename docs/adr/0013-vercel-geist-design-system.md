@@ -31,10 +31,9 @@ colors, and dark mode stays the default.
   resolves to Geist Sans 600 with -0.02em tracking (`.display-tight` steps
   to -0.05em at hero scale). Geist Mono returns for the uppercase eyebrows,
   which map 1:1 to the spec's `mono-eyebrow`.
-- **Geometry is bimodal** per the spec: 6px (`rounded-md`) for app chrome —
-  buttons, inputs, triggers; 12px (`rounded-xl`) cards; pills only for
-  badges, capture category chips, circular icon buttons, and the sign-in
-  CTA (the one marketing-shaped surface).
+- **Geometry** (superseded by [0039](./0039-ui-primitives-line-depth.md)):
+  originally bimodal 6px/12px per the Geist spec. 0039 ships control 10px /
+  card 16px, line fields, and depth elevation tokens instead.
 
 ## Consequences
 
