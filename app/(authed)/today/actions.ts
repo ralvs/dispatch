@@ -4,15 +4,15 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { formatInstant, parseDateIso, todayInTz } from "@/lib/dates";
+import { parseDateIso, todayInTz } from "@/lib/dates";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { getEvent } from "@/lib/services/calendar";
 import { ServiceError } from "@/lib/services/errors";
-import { createManualLink, listNoteIdsForTargets } from "@/lib/services/note-links";
+import { createManualLink } from "@/lib/services/note-links";
 import { createNote } from "@/lib/services/notes";
 import { clearSkipsToday, recordQuoteSkip } from "@/lib/services/resurfacing";
 import { todayForRequest } from "@/lib/services/settings";
-import { type DaySchedulePayload, getDaySchedule } from "@/lib/services/today";
+import { type DaySchedulePayload, loadDaySchedulePayload } from "@/lib/services/today";
 
 /**
  * Load one day's tape + bands without re-running the ~13-query Today digest.
@@ -34,37 +34,7 @@ export async function loadDayScheduleAction(rawDate: string): Promise<DaySchedul
 	// older copy would silently erase a freshly-synced event. Two indexed
 	// queries (lib/services/today.ts loadDayScheduleInputs) — the client-side
 	// day cache is what makes repeat visits free, not this.
-	const schedule = await getDaySchedule(sb, tz, dateIso);
-	const nowUtcIso = new Date().toISOString();
-	const isToday = dateIso === todayIso;
-
-	const eventIds = [...schedule.allDay, ...schedule.timeline]
-		.filter((item) => item.kind === "event")
-		.map((item) => item.event.id);
-	const scheduledTaskIds = [...schedule.allDay, ...schedule.timeline]
-		.filter((item) => item.kind === "task")
-		.map((item) => item.task.id);
-	const taskIds = [
-		...new Set([
-			...scheduledTaskIds,
-			...schedule.top3.map((task) => task.id),
-			...schedule.open.map((task) => task.id),
-		]),
-	];
-
-	const [eventNoteIds, taskNoteIds] = await Promise.all([
-		listNoteIdsForTargets(sb, "event", eventIds).then((map) => Object.fromEntries(map)),
-		listNoteIdsForTargets(sb, "task", taskIds).then((map) => Object.fromEntries(map)),
-	]);
-
-	return {
-		schedule,
-		dateIso,
-		nowUtcIso,
-		nowLabel: isToday ? formatInstant(nowUtcIso, tz, "HH:mm") : null,
-		eventNoteIds,
-		taskNoteIds,
-	};
+	return loadDaySchedulePayload(sb, tz, dateIso, { todayIso });
 }
 
 /** "Next →" on the Resurfaced card: skip today's pick, advance the rotation. */

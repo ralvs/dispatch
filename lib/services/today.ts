@@ -12,6 +12,7 @@ import { computeRoutineStats, type RoutineStats } from "@/lib/routine-stats";
 import { type CalendarEventRow, listEventsOn } from "@/lib/services/calendar";
 import { type DomainRow, listDomains } from "@/lib/services/domains";
 import { unreadLinkCount } from "@/lib/services/links";
+import { listNoteIdsForTargets } from "@/lib/services/note-links";
 import { countNeedsReview } from "@/lib/services/notes";
 import { unreadCount } from "@/lib/services/notifications";
 import {
@@ -693,6 +694,59 @@ export async function getDaySchedule(
 ): Promise<DaySchedule> {
 	const { open, completed, events } = await loadDayScheduleInputs(sb, tz, dateIso);
 	return buildDaySchedule({ events, openTasks: open, completedTasks: completed, dateIso, tz });
+}
+
+/**
+ * Day bands plus the note-id maps every Today consumer needs for row glyphs.
+ * SSR (today-body) and day-nav (loadDayScheduleAction) share this so they
+ * cannot drift on which tasks/events get a linked-note lookup.
+ *
+ * Pass `schedule` when the bands are already loaded (default Today view) to
+ * skip a second read.
+ */
+export async function loadDaySchedulePayload(
+	sb: SupabaseClient,
+	tz: string,
+	dateIso: string,
+	opts: {
+		todayIso: string;
+		nowMs?: number;
+		/** Pre-loaded bands; omit to fetch via getDaySchedule. */
+		schedule?: DaySchedule;
+	},
+): Promise<DaySchedulePayload> {
+	const nowMs = opts.nowMs ?? Date.now();
+	const schedule = opts.schedule ?? (await getDaySchedule(sb, tz, dateIso));
+	const nowUtcIso = new Date(nowMs).toISOString();
+	const isToday = dateIso === opts.todayIso;
+
+	const eventIds = [...schedule.allDay, ...schedule.timeline]
+		.filter((item) => item.kind === "event")
+		.map((item) => item.event.id);
+	const scheduledTaskIds = [...schedule.allDay, ...schedule.timeline]
+		.filter((item) => item.kind === "task")
+		.map((item) => item.task.id);
+	const taskIds = [
+		...new Set([
+			...scheduledTaskIds,
+			...schedule.top3.map((task) => task.id),
+			...schedule.open.map((task) => task.id),
+		]),
+	];
+
+	const [eventNoteIds, taskNoteIds] = await Promise.all([
+		listNoteIdsForTargets(sb, "event", eventIds).then((map) => Object.fromEntries(map)),
+		listNoteIdsForTargets(sb, "task", taskIds).then((map) => Object.fromEntries(map)),
+	]);
+
+	return {
+		schedule,
+		dateIso,
+		nowUtcIso,
+		nowLabel: isToday ? formatInstant(nowUtcIso, tz, "HH:mm") : null,
+		eventNoteIds,
+		taskNoteIds,
+	};
 }
 
 export type TodayDigest = Awaited<ReturnType<typeof loadTodayDigest>>;

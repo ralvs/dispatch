@@ -1,8 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCachedTodayDigest } from "@/lib/cache/today";
-import { formatInstant } from "@/lib/dates";
-import { listNoteIdsForTargets } from "@/lib/services/note-links";
-import { assembleTodayView, getDaySchedule, loadDayScheduleInputs } from "@/lib/services/today";
+import {
+	assembleTodayView,
+	loadDayScheduleInputs,
+	loadDaySchedulePayload,
+} from "@/lib/services/today";
 import { AlertsRow } from "./alerts-row";
 import { AnchorLine } from "./anchor-line";
 import { BriefSection } from "./brief-section";
@@ -34,35 +36,21 @@ export async function TodayBody({
 		getCachedTodayDigest(todayIso),
 	]);
 	const view = assembleTodayView(digest, open, todayEvents, tz, todayIso, nowMs, completed);
-	const nowUtcIso = new Date(nowMs).toISOString();
 	const isToday = selectedIso === todayIso;
 
 	// The default view already has today's bands from assemble; only a day
-	// navigated away pays for the second read (also cacheable by date).
-	const schedule = isToday ? view.daySchedule : await getDaySchedule(sb, tz, selectedIso);
-
-	const eventIds = [...schedule.allDay, ...schedule.timeline]
-		.filter((item) => item.kind === "event")
-		.map((item) => item.event.id);
-
-	// Every task Today can render a row for: the scheduled bands (all day +
-	// timeline), Top 3, and Open — deduped into one id list so the note-link
-	// lookup below stays a single batched call.
-	const scheduledTaskIds = [...schedule.allDay, ...schedule.timeline]
-		.filter((item) => item.kind === "task")
-		.map((item) => item.task.id);
-	const taskIds = [
-		...new Set([
-			...scheduledTaskIds,
-			...schedule.top3.map((task) => task.id),
-			...schedule.open.map((task) => task.id),
-		]),
-	];
-
-	const [eventNoteIds, taskNoteIds] = await Promise.all([
-		listNoteIdsForTargets(sb, "event", eventIds).then((map) => Object.fromEntries(map)),
-		listNoteIdsForTargets(sb, "task", taskIds).then((map) => Object.fromEntries(map)),
-	]);
+	// navigated away pays for the second read. Note-id maps share one helper
+	// with loadDayScheduleAction so SSR and day-nav cannot drift.
+	const { schedule, nowUtcIso, nowLabel, eventNoteIds, taskNoteIds } = await loadDaySchedulePayload(
+		sb,
+		tz,
+		selectedIso,
+		{
+			todayIso,
+			nowMs,
+			schedule: isToday ? view.daySchedule : undefined,
+		},
+	);
 
 	const showLatestQuote = view.latestQuote !== null && view.latestQuote.id !== view.resurfaced?.id;
 
@@ -88,7 +76,7 @@ export async function TodayBody({
 				dateIso={selectedIso}
 				todayIso={todayIso}
 				nowUtcIso={nowUtcIso}
-				nowLabel={isToday ? formatInstant(nowUtcIso, tz, "HH:mm") : null}
+				nowLabel={nowLabel}
 				eventNoteIds={eventNoteIds}
 				taskNoteIds={taskNoteIds}
 			/>
