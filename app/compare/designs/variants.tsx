@@ -164,15 +164,15 @@ export function VariantSurface({
 								<Checkbox defaultChecked>Follow up this week</Checkbox>
 							</div>
 							<div className="flex flex-wrap items-center gap-3 border-t border-line pt-6 sm:col-span-2">
-								<Button type="submit" variant="primary">
-									Save
+								<Button type="button" variant="danger-soft">
+									Delete
 								</Button>
+								<span className="flex-1" />
 								<Button type="button" variant="ghost">
 									Cancel
 								</Button>
-								<span className="flex-1" />
-								<Button type="button" variant="danger-soft">
-									Delete
+								<Button type="submit" variant="primary">
+									Save
 								</Button>
 							</div>
 						</div>

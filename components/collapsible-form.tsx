@@ -65,7 +65,8 @@ export function useCollapsibleForm(
 	return { open, setOpen, formRef, pending, submit };
 }
 
-const FOOTER_CLASS = "flex gap-2 pt-2";
+/** Cancel left of primary; primary is the rightmost control. */
+const FOOTER_CLASS = "flex justify-end gap-2 pt-2";
 
 /**
  * The collapsed "+ New …" trigger. Byte-identical across every form that used
@@ -112,11 +113,11 @@ export function CollapsibleFormCard({
 			<Card className="space-y-4" padding="default">
 				{children}
 				<div className={FOOTER_CLASS}>
-					<Button type="submit" variant="primary" isPending={pending} disabled={pending}>
-						{pending ? pendingLabel : submitLabel}
-					</Button>
 					<Button type="button" variant="ghost" onClick={onCancel}>
 						Cancel
+					</Button>
+					<Button type="submit" variant="primary" isPending={pending} disabled={pending}>
+						{pending ? pendingLabel : submitLabel}
 					</Button>
 				</div>
 			</Card>

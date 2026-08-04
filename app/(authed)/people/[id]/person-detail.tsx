@@ -91,12 +91,12 @@ export function PersonDetail({
 									<Textarea name="notes" rows={3} defaultValue={person.notes ?? ""} />
 								</Field>
 							</div>
-							<div className="flex gap-2 pt-1">
-								<Button type="submit" variant="primary" isPending={pending} disabled={pending}>
-									Save
-								</Button>
+							<div className="flex justify-end gap-2 pt-1">
 								<Button type="button" variant="ghost" onClick={() => setEditing(false)}>
 									Cancel
+								</Button>
+								<Button type="submit" variant="primary" isPending={pending} disabled={pending}>
+									Save
 								</Button>
 							</div>
 						</Card>
@@ -269,7 +269,10 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 						<Field label="Value">
 							<Input name="fact_value" required />
 						</Field>
-						<div className="flex gap-2">
+						<div className="flex justify-end gap-2">
+							<Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
+								Cancel
+							</Button>
 							<Button
 								type="submit"
 								variant="primary"
@@ -278,9 +281,6 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 								disabled={pending}
 							>
 								Add
-							</Button>
-							<Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
-								Cancel
 							</Button>
 						</div>
 					</Card>
@@ -384,7 +384,10 @@ function InteractionsSection({
 						<Field label="Notes">
 							<Textarea name="notes" rows={2} size="sm" />
 						</Field>
-						<div className="flex gap-2">
+						<div className="flex justify-end gap-2">
+							<Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
+								Cancel
+							</Button>
 							<Button
 								type="submit"
 								variant="primary"
@@ -393,9 +396,6 @@ function InteractionsSection({
 								disabled={pending}
 							>
 								Log
-							</Button>
-							<Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
-								Cancel
 							</Button>
 						</div>
 					</Card>

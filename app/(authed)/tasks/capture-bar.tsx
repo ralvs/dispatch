@@ -115,7 +115,10 @@ export function CaptureBar({
 			{detailed && (
 				<div id="task-details" className="mt-5">
 					<TaskMetaFields domains={domains} todayIso={todayIso} />
-					<div className="mt-5 flex items-center gap-3">
+					<div className="mt-5 flex items-center justify-end gap-3">
+						<Button type="button" variant="ghost" onClick={() => setDetailed(false)}>
+							Cancel
+						</Button>
 						<Button
 							type="submit"
 							variant="primary"
@@ -123,9 +126,6 @@ export function CaptureBar({
 							isPending={pending}
 						>
 							{pending ? "Adding…" : "Add task"}
-						</Button>
-						<Button type="button" variant="ghost" onClick={() => setDetailed(false)}>
-							Cancel
 						</Button>
 					</div>
 				</div>

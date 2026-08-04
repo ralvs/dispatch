@@ -83,7 +83,10 @@ export function DomainRowItem({
 							/>
 						</Field>
 						<ColorSwatchPicker name="color" defaultValue={domain.color} />
-						<div className="flex gap-2 pt-1">
+						<div className="flex justify-end gap-2 pt-1">
+							<Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>
+								Cancel
+							</Button>
 							<Button
 								type="submit"
 								variant="primary"
@@ -92,9 +95,6 @@ export function DomainRowItem({
 								disabled={pending}
 							>
 								Save
-							</Button>
-							<Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>
-								Cancel
 							</Button>
 						</div>
 					</Card>

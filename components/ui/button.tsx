@@ -17,7 +17,10 @@ export const button = tv({
 	],
 	variants: {
 		variant: {
-			primary: "bg-ink text-bg hover:opacity-90",
+			// Explicit canvas ink on filled control — text-bg alone can lose to inherited
+			// text-ink and vanish on a light (dark-theme ink) primary fill.
+			primary: "bg-ink text-[var(--bg)] hover:opacity-90",
+
 			secondary:
 				"border border-line-strong bg-transparent text-ink-3 hover:border-accent hover:text-ink",
 			tertiary:

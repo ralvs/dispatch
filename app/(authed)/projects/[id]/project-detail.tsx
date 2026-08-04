@@ -137,12 +137,12 @@ export function ProjectDetail({
 									<Input name="target_date" type="date" defaultValue={project.target_date ?? ""} />
 								</Field>
 							</div>
-							<div className="flex gap-2 pt-1">
-								<Button type="submit" variant="primary" isPending={pending} disabled={pending}>
-									Save
-								</Button>
+							<div className="flex justify-end gap-2 pt-1">
 								<Button type="button" variant="ghost" onClick={() => setEditing(false)}>
 									Cancel
+								</Button>
+								<Button type="submit" variant="primary" isPending={pending} disabled={pending}>
+									Save
 								</Button>
 							</div>
 						</Card>
@@ -338,7 +338,10 @@ function MilestonesSection({
 								<Input name="weight" type="number" min="1" step="1" placeholder="1" />
 							</Field>
 						</div>
-						<div className="flex gap-2">
+						<div className="flex justify-end gap-2">
+							<Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
+								Cancel
+							</Button>
 							<Button
 								type="submit"
 								variant="primary"
@@ -347,9 +350,6 @@ function MilestonesSection({
 								disabled={pending}
 							>
 								Add
-							</Button>
-							<Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
-								Cancel
 							</Button>
 						</div>
 					</Card>

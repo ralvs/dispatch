@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText } from "lucide-react";
+import { AlignLeft } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
@@ -17,7 +17,8 @@ const GUTTER = 8;
  * keyboard use work without any focus bookkeeping.
  *
  * Distinct from the page glyph beside it: that links to a *linked note*
- * (its own record on /notes), this shows the field written on the task.
+ * (its own record on /notes) and uses FileText. This one is AlignLeft —
+ * three lines for the notes written *on* the task itself.
  */
 export function TaskNotePopover({ notes, title }: { notes: string; title: string }) {
 	const [open, setOpen] = useState(false);
@@ -97,7 +98,7 @@ export function TaskNotePopover({ notes, title }: { notes: string; title: string
 				// tying the panel back to the control that opened it.
 				className={`${NOTE_CHIP_CLASS} ${open ? "border-line-strong text-ink" : ""}`}
 			>
-				<Icon icon={FileText} size="sm" />
+				<Icon icon={AlignLeft} size="sm" />
 			</button>
 			{open && (
 				<span

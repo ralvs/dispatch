@@ -163,16 +163,21 @@ export function TaskRowItem({
 							recurrence_rule: task.recurrence_rule,
 						}}
 					/>
+					{/* Destructive left · primary right: Delete | … | Cancel | Save */}
 					<div className="flex flex-wrap items-center gap-2 pt-0.5">
-						<Button
-							type="submit"
-							variant="primary"
-							size="sm"
-							isPending={pending}
-							disabled={pending}
-						>
-							{pending ? "Saving…" : "Save"}
-						</Button>
+						{handlers.onDelete && (
+							<Button
+								type="button"
+								variant="danger"
+								size="sm"
+								disabled={pending}
+								onClick={remove}
+								aria-label={`Delete task "${task.title}"`}
+							>
+								Delete
+							</Button>
+						)}
+						<span className="min-w-2 flex-1" />
 						<Button
 							type="button"
 							variant="tertiary"
@@ -182,19 +187,15 @@ export function TaskRowItem({
 						>
 							Cancel
 						</Button>
-						{handlers.onDelete && (
-							<Button
-								type="button"
-								variant="danger"
-								size="sm"
-								className="ml-auto"
-								disabled={pending}
-								onClick={remove}
-								aria-label={`Delete task "${task.title}"`}
-							>
-								Delete
-							</Button>
-						)}
+						<Button
+							type="submit"
+							variant="primary"
+							size="sm"
+							isPending={pending}
+							disabled={pending}
+						>
+							{pending ? "Saving…" : "Save"}
+						</Button>
 					</div>
 				</form>
 			</li>
@@ -287,41 +288,38 @@ export function TaskRowItem({
 			    gap-2 is load-bearing: each chip's after: reaches 4px past its
 			    own box, so anything tighter would overlap the neighbour's hit
 			    area and swallow taps meant for it. */}
-			<div className="flex shrink-0 items-center gap-3">
-				{/* The star leads so the note chips end the row. Two columns have to
-				    be ragged and this is the pair worth keeping straight: a task's
-				    note chips then land in the same column as an event's own note
-				    affordance, which is what makes a schedule band read as one list
-				    rather than two interleaved ones. Kept `invisible` rather than
-				    unmounted when done, so the chips hold that column whether or
-				    not the row still has a star to show.
-				    gap-3 is load-bearing: the star's hit area reaches 8px past its
-				    box and a chip's 4px past its own, so anything tighter would let
-				    the star swallow taps meant for the chip beside it. */}
+			{/* Fixed slots keep star / task-notes / linked-note in three columns
+			    down a schedule band — no drifting when a row lacks a chip.
+			    gap-3: star hit-area reaches 8px past its box, chips 4px past theirs. */}
+			<div className="grid shrink-0 grid-cols-[1rem_1.5rem_1.5rem] items-center gap-3">
 				<button
 					type="button"
 					aria-label={`${starred ? "Remove from" : "Pin to"} ${starDay}'s top 3`}
 					aria-pressed={starred}
 					disabled={done}
 					onClick={handlers.onToggleTop3}
-					className={`hit-area relative inline-flex leading-none [--hit-x:8px] [--hit-y:14px] active:opacity-70 ${
+					className={`hit-area relative inline-flex size-4 items-center justify-center leading-none [--hit-x:8px] [--hit-y:14px] active:opacity-70 ${
 						starred ? "text-accent" : "text-ink-4 hover:text-ink-2"
 					} ${done ? "invisible" : ""}`}
 				>
 					<Icon icon={Star} size="md" fill={starred ? "currentColor" : "none"} />
 				</button>
-				{noteText && <TaskNotePopover notes={noteText} title={task.title} />}
-				{noteId && (
-					<Link
-						href={`/notes/${noteId}`}
-						aria-label="View linked note"
-						title="View linked note"
-						onClick={(e) => e.stopPropagation()}
-						className={NOTE_CHIP_CLASS}
-					>
-						<Icon icon={FileText} size="sm" />
-					</Link>
-				)}
+				<span className="inline-flex size-6 items-center justify-center">
+					{noteText ? <TaskNotePopover notes={noteText} title={task.title} /> : null}
+				</span>
+				<span className="inline-flex size-6 items-center justify-center">
+					{noteId ? (
+						<Link
+							href={`/notes/${noteId}`}
+							aria-label="View linked note"
+							title="View linked note"
+							onClick={(e) => e.stopPropagation()}
+							className={NOTE_CHIP_CLASS}
+						>
+							<Icon icon={FileText} size="sm" />
+						</Link>
+					) : null}
+				</span>
 			</div>
 		</li>
 	);
