@@ -11,8 +11,38 @@ import {
 	type UpdateNoteSchema,
 } from "@/lib/schemas/note";
 import { unwrap, unwrapCount } from "@/lib/services/errors";
+import { type GraphFail, syncNoteMentionsFromText } from "@/lib/services/mentions";
+import { syncWikilinks } from "@/lib/services/note-links";
+import { extractWikilinkIds } from "@/lib/wikilinks";
 
 export type { NoteListRow, NoteRow };
+
+export type NoteWriteOpts = {
+	/** Capture swallows graph failures (iron rule #4). Forms throw. Default throw. */
+	graphFail?: GraphFail;
+};
+
+/** Wikilinks + person mentions derived from note text. */
+async function syncNoteGraph(
+	sb: SupabaseClient,
+	noteId: string,
+	body: string,
+	fail: GraphFail,
+): Promise<void> {
+	const run = async () => {
+		await syncWikilinks(sb, noteId, extractWikilinkIds(body));
+		await syncNoteMentionsFromText(sb, noteId, body, { fail: "throw" });
+	};
+	if (fail === "swallow") {
+		try {
+			await run();
+		} catch {
+			// Never lose a capture over graph reconcile.
+		}
+		return;
+	}
+	await run();
+}
 
 // shape intentionally differs from CreateNoteSchema: source_type there has a
 // Zod `.default("own_thought")`, so z.infer's output type makes it required
@@ -34,7 +64,11 @@ export type CreateNoteInput = {
 };
 
 /** Create a note. Body is stored verbatim in whatever language it arrived in. */
-export async function createNote(sb: SupabaseClient, input: CreateNoteInput): Promise<NoteRow> {
+export async function createNote(
+	sb: SupabaseClient,
+	input: CreateNoteInput,
+	opts: NoteWriteOpts = {},
+): Promise<NoteRow> {
 	const data = unwrap(
 		await sb
 			.from("notes")
@@ -45,7 +79,10 @@ export async function createNote(sb: SupabaseClient, input: CreateNoteInput): Pr
 			.select(NOTE_SELECT)
 			.single(),
 	);
-	return data as unknown as NoteRow;
+	const note = data as unknown as NoteRow;
+	// Text write owns wikilinks + person graph — callers must not post-sync.
+	await syncNoteGraph(sb, note.id, input.body, opts.graphFail ?? "throw");
+	return note;
 }
 
 /**
@@ -56,6 +93,7 @@ export async function createNote(sb: SupabaseClient, input: CreateNoteInput): Pr
  *
  * `reason` explains why it degraded; `proposed_kind` (when the parser guessed at
  * an intent it lacked a service for) is surfaced as an `unhandled:<kind>` tag.
+ * Graph reconcile always swallows here so the safety net cannot fail on mentions.
  */
 export async function createNeedsReviewNote(
 	sb: SupabaseClient,
@@ -72,13 +110,17 @@ export async function createNeedsReviewNote(
 		...(input.proposed_kind ? [`unhandled:${input.proposed_kind}`] : []),
 		...(input.tags ?? []),
 	];
-	return createNote(sb, {
-		body: input.body,
-		source_type: "own_thought",
-		needs_review: true,
-		origin_capture_id: input.origin_capture_id ?? null,
-		tags,
-	});
+	return createNote(
+		sb,
+		{
+			body: input.body,
+			source_type: "own_thought",
+			needs_review: true,
+			origin_capture_id: input.origin_capture_id ?? null,
+			tags,
+		},
+		{ graphFail: "swallow" },
+	);
 }
 
 export async function listNotes(
@@ -104,8 +146,13 @@ export async function updateNote(
 	sb: SupabaseClient,
 	id: string,
 	patch: z.infer<typeof UpdateNoteSchema>,
+	opts: NoteWriteOpts = {},
 ): Promise<void> {
 	unwrap(await sb.from("notes").update(patch).eq("id", id));
+	// Mentions/wikilinks only re-derive when body text moves (not pin/resolve).
+	if ("body" in patch && patch.body !== undefined) {
+		await syncNoteGraph(sb, id, patch.body, opts.graphFail ?? "throw");
+	}
 }
 
 /**

@@ -8,7 +8,6 @@ import { createEventHere } from "@/lib/services/calendar";
 import type { ActionResult } from "@/lib/services/capture";
 import { type RoutingLists, taskInputFromAction } from "@/lib/services/capture/resolve";
 import { createEntry } from "@/lib/services/journal";
-import { syncTaskMentionsFromText } from "@/lib/services/mentions";
 import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
 import { recordNotification } from "@/lib/services/notifications";
 import { createQuote } from "@/lib/services/quotes";
@@ -118,21 +117,24 @@ async function runOne(
 	try {
 		switch (action.action) {
 			case "create_task": {
-				const task = await createTask(sb, taskInputFromAction(action, prov.routing));
-				await syncTaskMentionsFromText(sb, task.id, task.title, task.notes, {
-					fail: "swallow",
+				const task = await createTask(sb, taskInputFromAction(action, prov.routing), {
+					graphFail: "swallow",
 				});
 				return { action: "create_task", ok: true, entity: { table: "tasks", id: task.id } };
 			}
 			case "create_event":
 				return await runCreateEvent(sb, action, prov);
 			case "create_note": {
-				const note = await createNote(sb, {
-					body: action.body,
-					source_type: action.source_type,
-					tags: action.tags,
-					origin_capture_id: prov.capturedId,
-				});
+				const note = await createNote(
+					sb,
+					{
+						body: action.body,
+						source_type: action.source_type,
+						tags: action.tags,
+						origin_capture_id: prov.capturedId,
+					},
+					{ graphFail: "swallow" },
+				);
 				return { action: "create_note", ok: true, entity: { table: "notes", id: note.id } };
 			}
 			case "create_quote": {

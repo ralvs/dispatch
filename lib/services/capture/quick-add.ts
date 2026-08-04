@@ -2,7 +2,6 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parseTaskCapture } from "@/lib/ai/parser";
 import { loadCaptureContext, taskInputFromAction } from "@/lib/services/capture/resolve";
-import { syncTaskMentionsFromText } from "@/lib/services/mentions";
 import { createTask, type TaskRow } from "@/lib/services/tasks";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -24,12 +23,16 @@ export async function quickAddTask(
 	const parsed = await parseTaskCapture(text, ctx);
 
 	if (!parsed.ok) {
-		const task = await createTask(sb, { title: text.trim(), source: "manual" });
-		await syncTaskMentionsFromText(sb, task.id, task.title, task.notes, { fail: "swallow" });
+		const task = await createTask(
+			sb,
+			{ title: text.trim(), source: "manual" },
+			{ graphFail: "swallow" },
+		);
 		return { task, parsed: false };
 	}
 
-	const task = await createTask(sb, taskInputFromAction(parsed.task, routing));
-	await syncTaskMentionsFromText(sb, task.id, task.title, task.notes, { fail: "swallow" });
+	const task = await createTask(sb, taskInputFromAction(parsed.task, routing), {
+		graphFail: "swallow",
+	});
 	return { task, parsed: true };
 }

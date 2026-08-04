@@ -9,11 +9,9 @@ vi.mock("@/lib/services/settings", () => ({
 	getAppTimezone: vi.fn(async () => "America/Sao_Paulo"),
 }));
 vi.mock("@/lib/services/tasks", () => ({ createTask: vi.fn() }));
-vi.mock("@/lib/services/mentions", () => ({ syncTaskMentionsFromText: vi.fn() }));
 
 import { parseTaskCapture } from "@/lib/ai/parser";
 import { listDomains } from "@/lib/services/domains";
-import { syncTaskMentionsFromText } from "@/lib/services/mentions";
 import { listProjects } from "@/lib/services/projects";
 import { createTask } from "@/lib/services/tasks";
 
@@ -23,7 +21,6 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	(listDomains as Mock).mockResolvedValue([]);
 	(listProjects as Mock).mockResolvedValue([]);
-	(syncTaskMentionsFromText as Mock).mockResolvedValue(undefined);
 });
 
 describe("quickAddTask", () => {
@@ -52,6 +49,7 @@ describe("quickAddTask", () => {
 				project_id: null,
 				source: "manual",
 			}),
+			{ graphFail: "swallow" },
 		);
 	});
 
@@ -64,10 +62,14 @@ describe("quickAddTask", () => {
 			const result = await quickAddTask(sb, "  call the dentist  ");
 
 			expect(result).toEqual({ task: { id: "task-2" }, parsed: false });
-			expect(createTask).toHaveBeenCalledWith(sb, {
-				title: "call the dentist",
-				source: "manual",
-			});
+			expect(createTask).toHaveBeenCalledWith(
+				sb,
+				{
+					title: "call the dentist",
+					source: "manual",
+				},
+				{ graphFail: "swallow" },
+			);
 		},
 	);
 
@@ -94,10 +96,11 @@ describe("quickAddTask", () => {
 				project_id: null,
 				notes: '[capture: unresolved project "Ghost project"]',
 			}),
+			{ graphFail: "swallow" },
 		);
 	});
 
-	it("syncs mentions best-effort after create (iron rule #4 via fail:swallow)", async () => {
+	it("passes graphFail swallow into createTask (iron rule #4)", async () => {
 		(parseTaskCapture as Mock).mockResolvedValue({
 			ok: true,
 			task: { action: "create_task", title: "call @Ana" },
@@ -110,8 +113,8 @@ describe("quickAddTask", () => {
 			task: { id: "task-5", title: "call @Ana", notes: null },
 			parsed: true,
 		});
-		expect(syncTaskMentionsFromText).toHaveBeenCalledWith(sb, "task-5", "call @Ana", null, {
-			fail: "swallow",
+		expect(createTask).toHaveBeenCalledWith(sb, expect.objectContaining({ title: "call @Ana" }), {
+			graphFail: "swallow",
 		});
 	});
 
@@ -129,6 +132,7 @@ describe("quickAddTask", () => {
 		expect(createTask).toHaveBeenCalledWith(
 			sb,
 			expect.objectContaining({ domain_id: null, project_id: null }),
+			{ graphFail: "swallow" },
 		);
 	});
 });

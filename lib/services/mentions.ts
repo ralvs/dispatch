@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { buildMentionIndex, extractMentions } from "@/lib/mentions";
+import { buildMentionIndex, extractMentionMatches, extractMentions } from "@/lib/mentions";
 import { PEOPLE_SELECT, type PersonRow } from "@/lib/schemas/person";
 import { ServiceError, unwrap } from "@/lib/services/errors";
 import { listMentionCandidates } from "@/lib/services/people";
@@ -20,32 +20,66 @@ function sourceColumn(type: "task" | "note"): "task_id" | "note_id" {
 	return type === "task" ? "task_id" : "note_id";
 }
 
+/** How graph reconcile failures surface. Capture always swallows (iron rule #4). */
+export type GraphFail = "throw" | "swallow";
+
+async function withGraphFail(fail: GraphFail, run: () => Promise<void>): Promise<void> {
+	if (fail === "swallow") {
+		try {
+			await run();
+		} catch {
+			// Swallowed on purpose — never lose a capture over a graph sync.
+		}
+		return;
+	}
+	await run();
+}
+
 /**
- * Parse @mentions out of a task's title/notes and reconcile the mention rows.
- * One seam for form writes (throw) and capture/quick-add (swallow — iron rule #4).
+ * Parse plain `@Name` mentions out of a task's title/notes and reconcile rows.
+ * Prefer createTask / updateTask — they own this. Kept exported for unit tests.
  */
 export async function syncTaskMentionsFromText(
 	sb: SupabaseClient,
 	taskId: string,
 	title: string,
 	notes: string | null | undefined,
-	opts: { fail: "throw" | "swallow" } = { fail: "throw" },
+	opts: { fail?: GraphFail } = {},
 ): Promise<void> {
-	const run = async () => {
+	await withGraphFail(opts.fail ?? "throw", async () => {
 		const candidates = await listMentionCandidates(sb);
 		const index = buildMentionIndex(candidates);
 		const matches = extractMentions(`${title}\n${notes ?? ""}`, index);
 		await syncMentions(sb, { type: "task", id: taskId }, matches);
-	};
-	if (opts.fail === "swallow") {
-		try {
-			await run();
-		} catch {
-			// Swallowed on purpose — never lose a capture over a mention sync.
+	});
+}
+
+/**
+ * Note body graph: structured `@[uuid|Name]` plus plain `@Name` (capture/paste).
+ * Prefer createNote / updateNote — they own this. Kept exported for unit tests.
+ */
+export async function syncNoteMentionsFromText(
+	sb: SupabaseClient,
+	noteId: string,
+	body: string,
+	opts: { fail?: GraphFail } = {},
+): Promise<void> {
+	await withGraphFail(opts.fail ?? "throw", async () => {
+		const structured = extractMentionMatches(body);
+		const candidates = await listMentionCandidates(sb);
+		const index = buildMentionIndex(candidates);
+		const plain = extractMentions(body, index);
+		// Structured first, then plain; first appearance of a person wins.
+		const byId = new Map<string, string>();
+		for (const m of structured) {
+			if (!byId.has(m.personId)) byId.set(m.personId, m.name);
 		}
-		return;
-	}
-	await run();
+		for (const m of plain) {
+			if (!byId.has(m.personId)) byId.set(m.personId, m.name);
+		}
+		const matches = [...byId.entries()].map(([personId, name]) => ({ personId, name }));
+		await syncMentions(sb, { type: "note", id: noteId }, matches);
+	});
 }
 
 /**

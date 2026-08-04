@@ -81,15 +81,26 @@ URL here and everything else to the parser (`capture.link` ledger row).
 A reading list of links, not the unfiled-task **inbox** at `/inbox`. See
 ADR-0014, ADR-0022 and ADR-0024.
 
+## mention
+
+A **person** linked to a **task** or **note** because the person appears in
+that item's text. Mentions are derived on text save (create/update of title,
+notes, or body) — not on complete, star, pin, or delete — and live in the
+`mentions` table with the verbatim `matched_name`. Notes may also carry plain
+`@Name` matches from capture or paste; structured `@[uuid|Name]` remains the
+editor form (docs/adr/0030). The graph is never allowed to fail a capture.
+
 ## day schedule
 
 “When is my day” for **one date** — not necessarily today. Four bands:
 **all-day** (all-day events + due tasks without time), **timeline** (timed
 events interleaved with timed tasks, ordered by UTC instant so a spillover
 event keeps its true place), **top 3**, and **open/unscheduled** tasks
-(starred first, then already-due, capped at 10). Built by `buildDaySchedule`
-in `lib/services/today.ts` — pure, so the partition and the sort are tested
-without a database. See ADR-0014.
+(starred first, then already-due, capped at 10). **Day membership** — which
+task or event sits in which band for that date — is one rule set, used both
+when the day is first assembled and when the client projects an optimistic
+tick (docs/adr/0038 keeps finished work on the day; a recurrence roll is the
+one removal). See ADR-0014.
 
 `DaySchedule` is the data only. Its UI is `DayView` (the region owning day
 navigation and `?d=`), holding `DayTape` (ruler), `DayNav` (chevrons) and

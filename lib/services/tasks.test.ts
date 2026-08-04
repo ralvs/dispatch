@@ -1,5 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
+
+vi.mock("@/lib/services/mentions", () => ({
+	syncTaskMentionsFromText: vi.fn(async () => {}),
+}));
+
+import { syncTaskMentionsFromText } from "@/lib/services/mentions";
 import {
 	assignDomain,
 	completeTask,
@@ -8,6 +14,10 @@ import {
 	setTop3,
 	updateTask,
 } from "@/lib/services/tasks";
+
+beforeEach(() => {
+	vi.clearAllMocks();
+});
 
 const TODAY = "2026-07-15";
 
@@ -278,6 +288,7 @@ function stubBuilder(result: { data?: unknown; error?: unknown }) {
 			return builder;
 		};
 		builder.single = async () => result;
+		builder.maybeSingle = async () => result;
 		// biome-ignore lint/suspicious/noThenProperty: intentional thenable test double
 		builder.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
 			Promise.resolve(result).then(resolve, reject);
@@ -309,6 +320,20 @@ describe("createTask", () => {
 		expect(calls[0]).toMatchObject({
 			op: "insert",
 			payload: { domain_id: null, source: "manual" },
+		});
+		expect(syncTaskMentionsFromText).toHaveBeenCalledWith(sb, "task-1", "ligar pro médico", null, {
+			fail: "throw",
+		});
+	});
+
+	it("swallows graph failure when graphFail is swallow", async () => {
+		const { sb } = stubBuilder({ data: { id: "task-1" }, error: null });
+		(syncTaskMentionsFromText as Mock).mockResolvedValueOnce(undefined);
+
+		await createTask(sb, { title: "call @Ana" }, { graphFail: "swallow" });
+
+		expect(syncTaskMentionsFromText).toHaveBeenCalledWith(sb, "task-1", "call @Ana", null, {
+			fail: "swallow",
 		});
 	});
 

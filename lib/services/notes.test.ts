@@ -1,5 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/services/mentions", () => ({
+	syncNoteMentionsFromText: vi.fn(async () => {}),
+}));
+vi.mock("@/lib/services/note-links", () => ({
+	syncWikilinks: vi.fn(async () => {}),
+}));
+
+import { syncNoteMentionsFromText } from "@/lib/services/mentions";
+import { syncWikilinks } from "@/lib/services/note-links";
 import {
 	countNeedsReview,
 	createNeedsReviewNote,
@@ -9,6 +19,10 @@ import {
 	resolveNeedsReview,
 	setPin,
 } from "@/lib/services/notes";
+
+beforeEach(() => {
+	vi.clearAllMocks();
+});
 
 // Stub covering the one shape these functions use:
 // .from().insert().select().single(). Records every insert payload so tests
@@ -39,6 +53,10 @@ describe("createNote", () => {
 		expect(note.id).toBe("note-1");
 		expect(inserts).toHaveLength(1);
 		expect(inserts[0]).toMatchObject({ body: "um pensamento", source_type: "own_thought" });
+		expect(syncWikilinks).toHaveBeenCalledWith(sb, "note-1", []);
+		expect(syncNoteMentionsFromText).toHaveBeenCalledWith(sb, "note-1", "um pensamento", {
+			fail: "throw",
+		});
 	});
 
 	it("stores the body verbatim and preserves an explicit source_type", async () => {

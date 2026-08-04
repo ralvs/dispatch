@@ -4,11 +4,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatInstant } from "@/lib/dates";
-import { extractMentionMatches } from "@/lib/mentions";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { searchEventsByTitle } from "@/lib/services/calendar";
-import { syncMentions } from "@/lib/services/mentions";
-import { createManualLink, deleteLink, syncWikilinks } from "@/lib/services/note-links";
+import { createManualLink, deleteLink } from "@/lib/services/note-links";
 import {
 	createNote,
 	deleteNote,
@@ -18,7 +16,6 @@ import {
 } from "@/lib/services/notes";
 import { getAppTimezone } from "@/lib/services/settings";
 import { searchTasksByTitle } from "@/lib/services/tasks";
-import { extractWikilinkIds } from "@/lib/wikilinks";
 
 function revalidateNoteViews(id?: string) {
 	afterMutation("notes.write", id ? { id } : undefined);
@@ -51,8 +48,6 @@ export async function saveNoteAction(id: string, input: { title: string | null; 
 		title: parsed.title !== null && parsed.title.trim() !== "" ? parsed.title : null,
 		body: parsed.body,
 	});
-	await syncWikilinks(sb, noteId, extractWikilinkIds(parsed.body));
-	await syncMentions(sb, { type: "note", id: noteId }, extractMentionMatches(parsed.body));
 	revalidateNoteViews(id);
 }
 

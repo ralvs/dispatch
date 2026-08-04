@@ -11,12 +11,10 @@ vi.mock("@/lib/services/calendar", () => ({ createEventHere: vi.fn() }));
 vi.mock("@/lib/caldav/client", () => ({ createCaldavClient: vi.fn(async () => ({})) }));
 vi.mock("@/lib/services/notifications", () => ({ recordNotification: vi.fn() }));
 vi.mock("@/lib/env", () => ({ isCaldavConfigured: vi.fn(() => true) }));
-vi.mock("@/lib/services/mentions", () => ({ syncTaskMentionsFromText: vi.fn() }));
 
 import { isCaldavConfigured } from "@/lib/env";
 import { createEventHere } from "@/lib/services/calendar";
 import { createEntry } from "@/lib/services/journal";
-import { syncTaskMentionsFromText } from "@/lib/services/mentions";
 import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
 import { recordNotification } from "@/lib/services/notifications";
 import { createQuote } from "@/lib/services/quotes";
@@ -35,7 +33,6 @@ const PROV = {
 
 beforeEach(() => {
 	vi.clearAllMocks();
-	(syncTaskMentionsFromText as Mock).mockResolvedValue(undefined);
 });
 
 describe("runActions", () => {
@@ -106,6 +103,7 @@ describe("runActions", () => {
 				project_id: "proj-reviews",
 				notes: null,
 			}),
+			{ graphFail: "swallow" },
 		);
 	});
 
@@ -125,6 +123,7 @@ describe("runActions", () => {
 				project_id: null,
 				notes: 'context\n[capture: unresolved project "Ghost project"]',
 			}),
+			{ graphFail: "swallow" },
 		);
 	});
 
@@ -148,10 +147,11 @@ describe("runActions", () => {
 				notes: "front porch pots",
 				recurrence_rule: "weekly",
 			}),
+			{ graphFail: "swallow" },
 		);
 	});
 
-	it("syncs mentions best-effort after create_task (iron rule #4 via fail:swallow)", async () => {
+	it("passes graphFail swallow into createTask (iron rule #4)", async () => {
 		(createTask as Mock).mockResolvedValue({ id: "task-9", title: "call @Ana", notes: null });
 
 		const actions: CaptureAction[] = [{ action: "create_task", title: "call @Ana" }];
@@ -163,10 +163,31 @@ describe("runActions", () => {
 			ok: true,
 			entity: { table: "tasks", id: "task-9" },
 		});
-		expect(syncTaskMentionsFromText).toHaveBeenCalledWith(sb, "task-9", "call @Ana", null, {
-			fail: "swallow",
+		expect(createTask).toHaveBeenCalledWith(sb, expect.objectContaining({ title: "call @Ana" }), {
+			graphFail: "swallow",
 		});
 		expect(createNeedsReviewNote).not.toHaveBeenCalled();
+	});
+
+	it("passes graphFail swallow into createNote", async () => {
+		(createNote as Mock).mockResolvedValue({ id: "note-9" });
+
+		const actions: CaptureAction[] = [
+			{ action: "create_note", body: "call @Ana later", source_type: "own_thought" },
+		];
+
+		const results = await runActions(sb, actions, PROV);
+
+		expect(results[0]).toEqual({
+			action: "create_note",
+			ok: true,
+			entity: { table: "notes", id: "note-9" },
+		});
+		expect(createNote).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({ body: "call @Ana later", origin_capture_id: "cap-1" }),
+			{ graphFail: "swallow" },
+		);
 	});
 
 	it("creates a quote for the create_quote verb", async () => {

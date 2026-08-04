@@ -6,7 +6,6 @@ import { parseDateIso } from "@/lib/dates";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { CreateTaskFormSchema } from "@/lib/schemas/task";
 import { quickAddTask } from "@/lib/services/capture/quick-add";
-import { syncTaskMentionsFromText } from "@/lib/services/mentions";
 import { todayForRequest } from "@/lib/services/settings";
 import {
 	assignDomain,
@@ -21,7 +20,7 @@ import {
 export async function createTaskAction(formData: FormData) {
 	const { sb } = await requireOwnerPage();
 	const parsed = CreateTaskFormSchema.parse(Object.fromEntries(formData));
-	const task = await createTask(sb, {
+	await createTask(sb, {
 		title: parsed.title,
 		notes: parsed.notes || null,
 		due_date: parsed.due_date || null,
@@ -30,7 +29,6 @@ export async function createTaskAction(formData: FormData) {
 		domain_id: parsed.domain_id || null,
 		recurrence_rule: parsed.recurrence_rule || null,
 	});
-	await syncTaskMentionsFromText(sb, task.id, parsed.title, parsed.notes || null);
 	afterMutation("task.write");
 }
 
@@ -56,7 +54,6 @@ export async function updateTaskAction(id: string, formData: FormData) {
 		domain_id: parsed.domain_id || undefined,
 		recurrence_rule: parsed.recurrence_rule || null,
 	});
-	await syncTaskMentionsFromText(sb, id, parsed.title, parsed.notes || null);
 	afterMutation("task.write");
 }
 

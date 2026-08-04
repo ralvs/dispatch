@@ -4,6 +4,7 @@ import { dayWindowUtc, nowUtc } from "@/lib/dates";
 import { isRecurrencePattern, nextDueDate } from "@/lib/recurrence";
 import { TASK_SELECT, type TaskRow } from "@/lib/schemas/task";
 import { unwrap } from "@/lib/services/errors";
+import { type GraphFail, syncTaskMentionsFromText } from "@/lib/services/mentions";
 
 export type { TaskRow } from "@/lib/schemas/task";
 
@@ -164,6 +165,11 @@ async function getTaskHot(sb: SupabaseClient, id: string): Promise<TaskHotRow | 
 	return (data as TaskHotRow | null) ?? null;
 }
 
+export type TaskWriteOpts = {
+	/** Capture swallows graph failures (iron rule #4). Forms throw. Default throw. */
+	graphFail?: GraphFail;
+};
+
 export async function createTask(
 	sb: SupabaseClient,
 	input: {
@@ -177,6 +183,7 @@ export async function createTask(
 		recurrence_rule?: string | null;
 		source?: string;
 	},
+	opts: TaskWriteOpts = {},
 ): Promise<TaskRow> {
 	// due_time may only be set alongside a due_date (DB check constraint).
 	// This is the one chokepoint every write path (form, capture) funnels
@@ -191,7 +198,7 @@ export async function createTask(
 				...input,
 				due_time,
 				// A task without a stated destination is unfiled — no domain at all,
-				// which is what the /inbox queue selects on (docs/adr/0027). Stated
+				// which is what the /inbox route selects on (docs/adr/0027). Stated
 				// explicitly rather than left to the column default so the write says
 				// what it means.
 				domain_id: input.domain_id ?? null,
@@ -200,7 +207,12 @@ export async function createTask(
 			.select(TASK_SELECT)
 			.single(),
 	);
-	return flatten(data);
+	const task = flatten(data);
+	// Text write owns the person graph — callers must not post-sync.
+	await syncTaskMentionsFromText(sb, task.id, input.title, input.notes ?? null, {
+		fail: opts.graphFail ?? "throw",
+	});
+	return task;
 }
 
 export async function updateTask(
@@ -216,6 +228,7 @@ export async function updateTask(
 		project_id: string | null;
 		recurrence_rule: string | null;
 	}>,
+	opts: TaskWriteOpts = {},
 ): Promise<void> {
 	// due_time may only be set alongside a due_date (DB check constraint).
 	// UpdateTaskSchema is `.partial()`, so a patch that nulls due_date while
@@ -225,6 +238,32 @@ export async function updateTask(
 	// has a date to sit on, whether or not the caller also touched due_time.
 	const nextPatch = patch.due_date === null ? { ...patch, due_time: null } : patch;
 	unwrap(await sb.from("tasks").update(nextPatch).eq("id", id));
+
+	// Mentions only re-derive when text moves (not complete/star/domain).
+	if ("title" in nextPatch || "notes" in nextPatch) {
+		const titleIn = "title" in nextPatch;
+		const notesIn = "notes" in nextPatch;
+		if (titleIn && notesIn) {
+			await syncTaskMentionsFromText(
+				sb,
+				id,
+				nextPatch.title as string,
+				nextPatch.notes as string | null,
+				{ fail: opts.graphFail ?? "throw" },
+			);
+		} else {
+			const row = await getTask(sb, id);
+			if (row) {
+				await syncTaskMentionsFromText(
+					sb,
+					id,
+					titleIn ? (nextPatch.title as string) : row.title,
+					notesIn ? (nextPatch.notes as string | null) : row.notes,
+					{ fail: opts.graphFail ?? "throw" },
+				);
+			}
+		}
+	}
 }
 
 /**
