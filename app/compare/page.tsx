@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BoxDesign, DepthDesign, LineDesign } from "./designs/variants";
+import { BoxDepthDesign, BoxFlatDesign, LineDepthDesign, LineFlatDesign } from "./designs/variants";
 import { DAY } from "./mock";
 
-// Temporary bake-off surface. Round 7: field shape + elevation via token swap.
+// Temporary bake-off surface. Round 7: field × elevation are orthogonal.
 // Old designs (current/ledger/mixed) stay on disk for one-line revert.
 // Delete the route once a winner ships.
 
@@ -12,20 +12,26 @@ const DESIGNS = [
 	{
 		id: "line",
 		name: "Line",
-		note: "Bottom-line fields, flat elevation — label→input rests on spacing alone",
-		Component: LineDesign,
+		note: "Bottom-line fields · flat — no lift",
+		Component: LineFlatDesign,
 	},
 	{
 		id: "box",
 		name: "Box",
-		note: "Rounded boxed fields, flat elevation — hairlines only",
-		Component: BoxDesign,
+		note: "Boxed fields · flat — hairlines only",
+		Component: BoxFlatDesign,
 	},
 	{
-		id: "depth",
-		name: "Depth",
-		note: "Boxed fields + shadow lift only — white glow on dark, dark soft shadow on light; no bg swap",
-		Component: DepthDesign,
+		id: "line-depth",
+		name: "Line · Depth",
+		note: "Bottom-line fields · subtle lift on cards / dialog / popovers (fields stay clean)",
+		Component: LineDepthDesign,
+	},
+	{
+		id: "box-depth",
+		name: "Box · Depth",
+		note: "Boxed fields · subtle lift on fields + cards / dialog / popovers",
+		Component: BoxDepthDesign,
 	},
 ] as const;
 

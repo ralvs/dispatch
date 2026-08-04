@@ -15,16 +15,24 @@ import {
 } from "@/components/ui";
 import type { CompareDay } from "../mock";
 
-export type UiVariant = "line" | "box" | "depth";
+export type FieldShape = "line" | "box";
+export type Elevation = "flat" | "depth";
 
 /**
- * Shared bake-off tree. Visual differences come only from the data-ui token
- * swap on the wrapper — same components, same markup, three field/elevation
- * treatments. Form is framed as a dialog (where person edit is heading).
+ * Shared bake-off tree. Field shape and elevation are orthogonal token axes
+ * (data-field × data-elevation). Form is framed as a dialog.
  */
-export function VariantSurface({ variant, day }: { variant: UiVariant; day: CompareDay }) {
+export function VariantSurface({
+	field,
+	elevation,
+	day,
+}: {
+	field: FieldShape;
+	elevation: Elevation;
+	day: CompareDay;
+}) {
 	return (
-		<div data-ui={variant} className="min-h-[720px] bg-bg text-ink">
+		<div data-field={field} data-elevation={elevation} className="min-h-[720px] bg-bg text-ink">
 			<div className="mx-auto max-w-3xl space-y-16 px-5 py-10">
 				<header className="hairline-strong pb-4">
 					<div className="flex items-center justify-between">
@@ -46,7 +54,9 @@ export function VariantSurface({ variant, day }: { variant: UiVariant; day: Comp
 						Dispatch
 					</p>
 					<p className="mt-2 font-mono text-meta text-ink-4">
-						UI variant · <span className="text-ink-2">{variant}</span>
+						<span className="text-ink-2">{field}</span>
+						{" · "}
+						<span className="text-ink-2">{elevation}</span>
 					</p>
 				</header>
 
@@ -231,7 +241,9 @@ export function VariantSurface({ variant, day }: { variant: UiVariant; day: Comp
 						<Card padding="comfortable">
 							<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Default</p>
 							<p className="mt-3 font-serif text-lg text-ink">Room to breathe.</p>
-							<p className="mt-2 text-sm text-ink-3">rounded-card · elevation-card (white shadow on dark)</p>
+							<p className="mt-2 text-sm text-ink-3">
+								rounded-card · elevation-card (white shadow on dark)
+							</p>
 						</Card>
 						<Card padding="compact">
 							<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Compact</p>
@@ -277,14 +289,18 @@ export function VariantSurface({ variant, day }: { variant: UiVariant; day: Comp
 	);
 }
 
-export function LineDesign({ day }: { day: CompareDay }) {
-	return <VariantSurface variant="line" day={day} />;
+export function LineFlatDesign({ day }: { day: CompareDay }) {
+	return <VariantSurface field="line" elevation="flat" day={day} />;
 }
 
-export function BoxDesign({ day }: { day: CompareDay }) {
-	return <VariantSurface variant="box" day={day} />;
+export function BoxFlatDesign({ day }: { day: CompareDay }) {
+	return <VariantSurface field="box" elevation="flat" day={day} />;
 }
 
-export function DepthDesign({ day }: { day: CompareDay }) {
-	return <VariantSurface variant="depth" day={day} />;
+export function LineDepthDesign({ day }: { day: CompareDay }) {
+	return <VariantSurface field="line" elevation="depth" day={day} />;
+}
+
+export function BoxDepthDesign({ day }: { day: CompareDay }) {
+	return <VariantSurface field="box" elevation="depth" day={day} />;
 }

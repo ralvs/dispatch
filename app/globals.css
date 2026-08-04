@@ -70,44 +70,51 @@
 }
 
 /* ── UI variant tokens (Phase 4 bake-off) ───────────────────────────────
- * Depth is shadow-only — never a background swap. On dark canvas, black
- * shadows disappear into #0a0a0a, so dark depth uses white/light shadows
- * (the mirror of light mode's dark soft shadows). */
+ * Field shape (data-field) and elevation (data-elevation) are orthogonal.
+ * Depth is shadow-only — never a background swap. Dark uses a subtle white
+ * glow (black falloff vanishes on #0a0a0a); light uses a subtle dark soft
+ * shadow. Line fields never take field-shadow — only cards/overlays lift. */
 
-[data-ui="line"] {
+[data-field="line"] {
 	--field-bg: transparent;
 	--field-radius: 0;
 	--field-border-width: 0 0 1px 0;
 	--field-shadow: none;
-	--elevation-card: none;
-	--elevation-overlay: none;
 }
 
-[data-ui="box"] {
+[data-field="box"] {
 	--field-bg: var(--surface);
 	--field-radius: 10px;
 	--field-border-width: 1px;
 	--field-shadow: none;
+}
+
+[data-elevation="flat"] {
 	--elevation-card: none;
 	--elevation-overlay: none;
 }
 
-/* Dark (default): white glow = lift on near-black. */
-[data-ui="depth"] {
-	--field-bg: var(--surface);
-	--field-radius: 10px;
-	--field-border-width: 1px;
-	--field-shadow: 0 1px 2px rgba(255, 255, 255, 0.06), 0 4px 16px rgba(255, 255, 255, 0.08);
-	--elevation-card: 0 1px 2px rgba(255, 255, 255, 0.06), 0 8px 28px rgba(255, 255, 255, 0.1);
-	--elevation-overlay: 0 8px 16px rgba(255, 255, 255, 0.08), 0 24px 48px rgba(255, 255, 255, 0.12);
+/* Dark (default): soft white glow — tight, low opacity. */
+[data-elevation="depth"] {
+	--elevation-card: 0 1px 2px rgba(255, 255, 255, 0.04), 0 3px 10px rgba(255, 255, 255, 0.05);
+	--elevation-overlay: 0 2px 6px rgba(255, 255, 255, 0.05), 0 8px 20px rgba(255, 255, 255, 0.06);
 }
 
-/* Light: conventional dark soft shadow. Same geometry, inverted ink. */
-[data-theme="light"][data-ui="depth"],
-[data-theme="light"] [data-ui="depth"] {
-	--field-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.08);
-	--elevation-card: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 28px rgba(0, 0, 0, 0.1);
-	--elevation-overlay: 0 8px 16px rgba(0, 0, 0, 0.08), 0 24px 48px rgba(0, 0, 0, 0.12);
+/* Boxed fields under depth get a whisper of field lift; line stays clean. */
+[data-field="box"][data-elevation="depth"] {
+	--field-shadow: 0 1px 2px rgba(255, 255, 255, 0.035), 0 2px 6px rgba(255, 255, 255, 0.04);
+}
+
+/* Light: same geometry, dark ink. */
+[data-theme="light"] [data-elevation="depth"],
+[data-theme="light"][data-elevation="depth"] {
+	--elevation-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 3px 10px rgba(0, 0, 0, 0.05);
+	--elevation-overlay: 0 2px 6px rgba(0, 0, 0, 0.05), 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] [data-field="box"][data-elevation="depth"],
+[data-theme="light"][data-field="box"][data-elevation="depth"] {
+	--field-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
 @theme inline {
