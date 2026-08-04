@@ -8,11 +8,12 @@ import { RoutineRowItem } from "./routine-row";
 
 export default async function RoutinesPage() {
 	const { sb } = await requireOwnerPage();
-	const tz = await getAppTimezone(sb);
+	// Completions depend on the routine ids, so that hop stays sequential; the
+	// timezone read does not, and used to sit in front of both.
+	const [tz, routines] = await Promise.all([getAppTimezone(sb), listRoutines(sb)]);
 	const todayIso = todayInTz(tz);
 	const sinceIso = shiftDay(todayIso, -35);
 
-	const routines = await listRoutines(sb);
 	const completionsByRoutine = await listCompletionsForRoutines(
 		sb,
 		routines.map((r) => r.id),

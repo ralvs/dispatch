@@ -7,8 +7,7 @@ import { JournalForm } from "./journal-form";
 
 export default async function JournalPage() {
 	const { sb } = await requireOwnerPage();
-	const tz = await getAppTimezone(sb);
-	const entries = await listEntries(sb);
+	const [tz, entries] = await Promise.all([getAppTimezone(sb), listEntries(sb)]);
 
 	const groups = new Map<string, typeof entries>();
 	for (const entry of entries) {
