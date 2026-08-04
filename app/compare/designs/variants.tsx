@@ -231,7 +231,7 @@ export function VariantSurface({ variant, day }: { variant: UiVariant; day: Comp
 						<Card padding="comfortable">
 							<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Default</p>
 							<p className="mt-3 font-serif text-lg text-ink">Room to breathe.</p>
-							<p className="mt-2 text-sm text-ink-3">rounded-card · elevation-card · elevated-bg</p>
+							<p className="mt-2 text-sm text-ink-3">rounded-card · elevation-card (white shadow on dark)</p>
 						</Card>
 						<Card padding="compact">
 							<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Compact</p>
