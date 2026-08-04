@@ -60,6 +60,7 @@ export function DayView({
 	schedule,
 	dateIso,
 	todayIso,
+	tz,
 	nowUtcIso,
 	nowLabel,
 	eventNoteIds,
@@ -69,6 +70,7 @@ export function DayView({
 	/** The day on screen. Equals todayIso unless the day nav has moved. */
 	dateIso: string;
 	todayIso: string;
+	tz: string;
 	nowUtcIso: string;
 	/** Null on any day but today — there is no "now" to mark on another day. */
 	nowLabel: string | null;
@@ -279,6 +281,7 @@ export function DayView({
 				schedule={view.schedule}
 				dateIso={view.dateIso}
 				todayIso={todayIso}
+				tz={tz}
 				nowUtcIso={view.nowUtcIso}
 				eventNoteIds={view.eventNoteIds}
 				taskNoteIds={view.taskNoteIds}

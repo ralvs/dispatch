@@ -36,6 +36,7 @@ export function DayBands({
 	schedule,
 	dateIso,
 	todayIso,
+	tz,
 	nowUtcIso,
 	eventNoteIds,
 	taskNoteIds,
@@ -52,6 +53,8 @@ export function DayBands({
 	 * forward from the wall clock, not from whichever day is being read.
 	 */
 	todayIso: string;
+	/** App timezone — day membership (placeOnDay) needs it for timed tasks. */
+	tz: string;
 	/** Wall-clock "now" as UTC ISO — grays out timed events that have ended. */
 	nowUtcIso: string;
 	/** event id -> linked note id, for the meeting-note affordance on event rows. */
@@ -59,7 +62,7 @@ export function DayBands({
 	/** task id -> linked note id, for the linked-note glyph on task rows. */
 	taskNoteIds?: Record<string, string>;
 }) {
-	const ctx: ApplyContext = { todayIso, top3DateIso: dateIso };
+	const ctx: ApplyContext = { todayIso, top3DateIso: dateIso, tz };
 	const [projected, dispatchOptimistic] = useOptimistic(schedule, (current, intent: TaskIntent) =>
 		applyDayIntent(current, intent, ctx),
 	);

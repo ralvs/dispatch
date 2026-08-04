@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { TaskIntent } from "@/lib/task-interaction/apply-intent";
 import { createIntentLock, isReplayUnsafe } from "@/lib/task-interaction/intent-lock";
 
-const complete = (id: string): TaskIntent => ({ type: "complete", id });
+const complete = (id: string): TaskIntent => ({ type: "complete", id, observedDueDate: null });
 
 describe("isReplayUnsafe", () => {
 	// Completing a recurring task rolls the due date instead of closing it, so
@@ -12,7 +12,9 @@ describe("isReplayUnsafe", () => {
 	it("singles out complete", () => {
 		expect(isReplayUnsafe(complete("t1"))).toBe(true);
 		expect(isReplayUnsafe({ type: "reopen", id: "t1" })).toBe(false);
-		expect(isReplayUnsafe({ type: "toggleTop3", id: "t1" })).toBe(false);
+		expect(
+			isReplayUnsafe({ type: "setTop3", id: "t1", starred: true, forDateIso: "2026-07-15" }),
+		).toBe(false);
 		expect(isReplayUnsafe({ type: "delete", id: "t1" })).toBe(false);
 	});
 });
@@ -46,7 +48,7 @@ describe("createIntentLock", () => {
 	// exists for the destructive replay, not for click volume.
 	it("never refuses a star, however fast it repeats", () => {
 		const lock = createIntentLock();
-		const star: TaskIntent = { type: "toggleTop3", id: "t1" };
+		const star: TaskIntent = { type: "setTop3", id: "t1", starred: true, forDateIso: "2026-07-15" };
 
 		expect([lock.claim(star), lock.claim(star), lock.claim(star)]).toEqual([true, true, true]);
 	});

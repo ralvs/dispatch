@@ -121,10 +121,6 @@ export type TodayView = {
 	inboxCount: number;
 	needsReviewCount: number;
 	linksUnreadCount: number;
-	// doingToday predates daySchedule and still feeds the widget payload
-	// (app/api/widget/route.ts) and chat context — keep it until those callers
-	// migrate. Today itself reads daySchedule.
-	doingToday: TaskRow[];
 	daySchedule: DaySchedule;
 	routines: { total: number; done: number; remainingNames: string[] };
 	quoteOfDay: QuoteRow | null;
@@ -237,9 +233,28 @@ export function buildCadenceLines(input: {
 }
 
 /**
- * Doing today: today's starred top-3 first, then any other open task whose
- * due date has arrived, capped at 10. Ported verbatim from the Phase-1
- * derivation that used to live inline in app/(authed)/today/page.tsx.
+ * Flat "doing today" list from a day schedule: top 3 first, then open band
+ * (deduped). Widget + chat project from daySchedule instead of a parallel field.
+ */
+export function doingTodayFromSchedule(schedule: DaySchedule): TaskRow[] {
+	const seen = new Set<string>();
+	const out: TaskRow[] = [];
+	for (const t of schedule.top3) {
+		if (seen.has(t.id)) continue;
+		seen.add(t.id);
+		out.push(t);
+	}
+	for (const t of schedule.open) {
+		if (seen.has(t.id)) continue;
+		seen.add(t.id);
+		out.push(t);
+	}
+	return out;
+}
+
+/**
+ * @deprecated Prefer {@link doingTodayFromSchedule} after placeOnDay.
+ * Kept for unit characterization of the pre-band flat list shape.
  */
 export function assembleDoingToday(open: TaskRow[], todayIso: string): TaskRow[] {
 	const top3 = open.filter((t) => isTop3Today(t, todayIso));
@@ -320,30 +335,22 @@ function compareItems(a: DayScheduleItem, b: DayScheduleItem): number {
 }
 
 /**
- * `dateIso` is the day being shown, which is today only by default — Today's
- * day navigation composes the same bands for any date. Every rule below reads
- * off that date, so "due today", "starred for the day" and "already arrived"
- * stay true relative to the day on screen rather than to the wall clock.
+ * Day membership: which events/tasks sit in which band for one date.
+ * One pure module used by SSR (`buildDaySchedule`) and optimistic day bands
+ * (`applyDayIntent`) so placement cannot drift.
  *
- * `completedTasks` are the tasks closed on that day (docs/adr/0038). They run
- * through exactly the same placement rules as the open ones, so a row ticked
- * off keeps the seat it had — the day is a record of what happened on it, not
- * only of what is left. Nothing is added that wasn't already on the day: a
- * completed task still has to be due by `dateIso` or starred for it to show.
+ * `dateIso` is the day being shown. Placement never asks whether a task is
+ * done (docs/adr/0038) — only where it belongs. A completed task still has to
+ * be due by `dateIso` or starred for it to show.
  */
-export function buildDaySchedule(input: {
+export function placeOnDay(input: {
 	events: CalendarEventRow[];
-	openTasks: TaskRow[];
-	/** Tasks whose `completed_at` falls on `dateIso`. Optional — omitted by
-	 * callers (tests, briefings) that only care about what is still open. */
-	completedTasks?: TaskRow[];
+	/** Open + completed-on-day, already merged. */
+	tasks: TaskRow[];
 	dateIso: string;
 	tz: string;
 }): DaySchedule {
-	const { events, dateIso, tz } = input;
-	// One list from here down: placement never asks whether a task is done,
-	// only where it belongs on the day.
-	const openTasks = [...input.openTasks, ...(input.completedTasks ?? [])];
+	const { events, tasks, dateIso, tz } = input;
 
 	const allDay: DayScheduleItem[] = [];
 	const timeline: DayScheduleItem[] = [];
@@ -362,7 +369,7 @@ export function buildDaySchedule(input: {
 		});
 	}
 
-	const dueToday = openTasks.filter((t) => t.due_date === dateIso);
+	const dueToday = tasks.filter((t) => t.due_date === dateIso);
 	for (const task of dueToday) {
 		const at = taskDueInstant(task, dateIso, tz);
 		if (at === null) {
@@ -378,26 +385,14 @@ export function buildDaySchedule(input: {
 		});
 	}
 
-	// Whatever the bands above already show must not repeat below them.
 	const placed = new Set(
 		[...allDay, ...timeline].filter((i) => i.kind === "task").map((i) => i.task.id),
 	);
-	const unplaced = openTasks.filter((t) => !placed.has(t.id));
-	// Top 3 reaches across every band — a starred task that landed on the
-	// timeline still belongs to the day's shortlist. Never capped: the 3-slot
-	// rule bounds it in practice, and silently hiding a fourth star would be
-	// worse than showing it.
-	const top3 = openTasks.filter((t) => isTop3Today(t, dateIso));
-	// Open is what is left over: anything unplaced whose due date has already
-	// arrived (overdue included — not on the day's spine, but certainly open).
-	// Starred rows are excluded because the band above already carries them.
+	const unplaced = tasks.filter((t) => !placed.has(t.id));
+	const top3 = tasks.filter((t) => isTop3Today(t, dateIso));
 	const arrived = unplaced.filter(
 		(t) => !isTop3Today(t, dateIso) && t.due_date !== null && t.due_date <= dateIso,
 	);
-	// Done rows sink below the open ones and sit outside OPEN_CAP: the cap
-	// exists to stop a backlog of *work* from swamping the band, and what was
-	// finished today is already bounded by the day itself. Capping the merged
-	// list would let this morning's completions push live work off the page.
 	const arrivedOpen = arrived.filter((t) => t.status !== "done");
 	const arrivedDone = arrived.filter((t) => t.status === "done");
 
@@ -407,6 +402,27 @@ export function buildDaySchedule(input: {
 		top3,
 		open: [...arrivedOpen.slice(0, OPEN_CAP), ...arrivedDone],
 	};
+}
+
+/**
+ * Server/read path entry for day bands. Merges open + completed-on-day then
+ * places via {@link placeOnDay}.
+ */
+export function buildDaySchedule(input: {
+	events: CalendarEventRow[];
+	openTasks: TaskRow[];
+	/** Tasks whose `completed_at` falls on `dateIso`. Optional — omitted by
+	 * callers (tests, briefings) that only care about what is still open. */
+	completedTasks?: TaskRow[];
+	dateIso: string;
+	tz: string;
+}): DaySchedule {
+	return placeOnDay({
+		events: input.events,
+		tasks: [...input.openTasks, ...(input.completedTasks ?? [])],
+		dateIso: input.dateIso,
+		tz: input.tz,
+	});
 }
 
 /** The one-sentence commitments anchor under the masthead. */
@@ -801,7 +817,6 @@ export function assembleTodayView(
 		inboxCount,
 		needsReviewCount: needsReview,
 		linksUnreadCount: linksUnread,
-		doingToday: assembleDoingToday(open, todayIso),
 		daySchedule: buildDaySchedule({
 			events: todayEvents,
 			openTasks: open,

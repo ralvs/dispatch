@@ -68,15 +68,29 @@ export function bindTaskHandlers(
 			if (done) {
 				run({ type: "reopen", id: task.id }, () => actions.reopen(task.id));
 			} else {
-				run({ type: "complete", id: task.id }, () =>
-					actions.complete({ id: task.id, observedDueDate: task.due_date }),
+				const intent = {
+					type: "complete" as const,
+					id: task.id,
+					observedDueDate: task.due_date,
+				};
+				run(intent, () =>
+					actions.complete({ id: intent.id, observedDueDate: intent.observedDueDate }),
 				);
 			}
 		},
 		onToggleTop3: () => {
-			const starred = top3DesiredState(task, opts.top3DateIso);
-			run({ type: "toggleTop3", id: task.id }, () =>
-				actions.setTop3({ id: task.id, starred, forDateIso: opts.top3DateIso }),
+			const intent = {
+				type: "setTop3" as const,
+				id: task.id,
+				starred: top3DesiredState(task, opts.top3DateIso),
+				forDateIso: opts.top3DateIso,
+			};
+			run(intent, () =>
+				actions.setTop3({
+					id: intent.id,
+					starred: intent.starred,
+					forDateIso: intent.forDateIso,
+				}),
 			);
 		},
 		...(actions.delete

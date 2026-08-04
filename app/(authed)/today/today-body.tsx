@@ -75,6 +75,7 @@ export async function TodayBody({
 				schedule={schedule}
 				dateIso={selectedIso}
 				todayIso={todayIso}
+				tz={tz}
 				nowUtcIso={nowUtcIso}
 				nowLabel={nowLabel}
 				eventNoteIds={eventNoteIds}

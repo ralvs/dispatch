@@ -39,7 +39,7 @@ describe("applyTaskLists", () => {
 		const open = [task({ id: "a", title: "Ship" })];
 		const next = applyTaskLists(
 			{ open, done: [] },
-			{ type: "complete", id: "a" },
+			{ type: "complete", id: "a", observedDueDate: null },
 			{ todayIso: TODAY, nowIso: "2026-07-15T18:00:00.000Z" },
 		);
 		expect(next.open).toHaveLength(0);
@@ -61,7 +61,7 @@ describe("applyTaskLists", () => {
 		];
 		const next = applyTaskLists(
 			{ open, done: [] },
-			{ type: "complete", id: "r" },
+			{ type: "complete", id: "r", observedDueDate: null },
 			{ todayIso: TODAY },
 		);
 		expect(next.open).toHaveLength(1);
@@ -82,10 +82,14 @@ describe("applyTaskLists", () => {
 		];
 		const once = applyTaskLists(
 			{ open, done: [] },
-			{ type: "complete", id: "r" },
+			{ type: "complete", id: "r", observedDueDate: null },
 			{ todayIso: TODAY },
 		);
-		const twice = applyTaskLists(once, { type: "complete", id: "r" }, { todayIso: TODAY });
+		const twice = applyTaskLists(
+			once,
+			{ type: "complete", id: "r", observedDueDate: null },
+			{ todayIso: TODAY },
+		);
 
 		expect(once.open[0]?.due_date).toBe("2026-07-22");
 		expect(twice.open[0]?.due_date).toBe("2026-07-29");
@@ -104,44 +108,48 @@ describe("applyTaskLists", () => {
 		expect(next.open[0]).toMatchObject({ id: "d", status: "open", completed_at: null });
 	});
 
-	it("toggles top-3 for today", () => {
+	it("sets top-3 desired state for today", () => {
 		const open = [task({ id: "t", title: "Star me" })];
 		const starred = applyTaskLists(
 			{ open, done: [] },
-			{ type: "toggleTop3", id: "t" },
+			{ type: "setTop3", id: "t", starred: true, forDateIso: TODAY },
 			{ todayIso: TODAY },
 		);
 		expect(starred.open[0]?.top3_for_date).toBe(TODAY);
-		const cleared = applyTaskLists(starred, { type: "toggleTop3", id: "t" }, { todayIso: TODAY });
+		const cleared = applyTaskLists(
+			starred,
+			{ type: "setTop3", id: "t", starred: false, forDateIso: TODAY },
+			{ todayIso: TODAY },
+		);
 		expect(cleared.open[0]?.top3_for_date).toBeNull();
 	});
 
 	// Today's day navigation stars against the day on screen, so the optimistic
 	// patch has to pin to that day — otherwise the row flashes into the shortlist
 	// and back out when the server answers with a different date.
-	it("toggles top-3 for the day on screen when one is given", () => {
+	it("pins top-3 to the day on screen via forDateIso", () => {
 		const other = "2026-07-31";
 		const open = [task({ id: "t", title: "Star me" })];
 		const starred = applyTaskLists(
 			{ open, done: [] },
-			{ type: "toggleTop3", id: "t" },
-			{ todayIso: TODAY, top3DateIso: other },
+			{ type: "setTop3", id: "t", starred: true, forDateIso: other },
+			{ todayIso: TODAY },
 		);
 		expect(starred.open[0]?.top3_for_date).toBe(other);
 
 		// Unstarring only clears when it is that same day's star.
 		const cleared = applyTaskLists(
 			starred,
-			{ type: "toggleTop3", id: "t" },
-			{ todayIso: TODAY, top3DateIso: other },
+			{ type: "setTop3", id: "t", starred: false, forDateIso: other },
+			{ todayIso: TODAY },
 		);
 		expect(cleared.open[0]?.top3_for_date).toBeNull();
 
-		// A different day's star is replaced, not cleared.
+		// Starring for another day replaces the pin.
 		const moved = applyTaskLists(
 			starred,
-			{ type: "toggleTop3", id: "t" },
-			{ todayIso: TODAY, top3DateIso: TODAY },
+			{ type: "setTop3", id: "t", starred: true, forDateIso: TODAY },
+			{ todayIso: TODAY },
 		);
 		expect(moved.open[0]?.top3_for_date).toBe(TODAY);
 	});
@@ -211,7 +219,7 @@ describe("applyDayTaskList", () => {
 
 	it("marks a completed task done in place instead of removing it", () => {
 		const tasks = [task({ id: "a", title: "Go" }), task({ id: "b", title: "Stay" })];
-		const next = applyDayTaskList(tasks, { type: "complete", id: "a" }, ctx);
+		const next = applyDayTaskList(tasks, { type: "complete", id: "a", observedDueDate: null }, ctx);
 		expect(next.map((t) => t.id)).toEqual(["a", "b"]);
 		expect(next[0].status).toBe("done");
 		expect(next[0].completed_at).toBe(ctx.nowIso);
@@ -221,7 +229,7 @@ describe("applyDayTaskList", () => {
 	// would flash a starred row out of Top 3 and back in on the next render.
 	it("leaves top3_for_date alone when completing", () => {
 		const tasks = [task({ id: "a", title: "Go", top3_for_date: TODAY })];
-		const next = applyDayTaskList(tasks, { type: "complete", id: "a" }, ctx);
+		const next = applyDayTaskList(tasks, { type: "complete", id: "a", observedDueDate: null }, ctx);
 		expect(next[0].top3_for_date).toBe(TODAY);
 	});
 
@@ -229,7 +237,7 @@ describe("applyDayTaskList", () => {
 		const tasks = [
 			task({ id: "a", title: "Water plants", due_date: TODAY, recurrence_rule: "daily" }),
 		];
-		const next = applyDayTaskList(tasks, { type: "complete", id: "a" }, ctx);
+		const next = applyDayTaskList(tasks, { type: "complete", id: "a", observedDueDate: null }, ctx);
 		expect(next[0].status).toBe("open");
 		expect(next[0].due_date).toBe("2026-07-16");
 	});
@@ -244,18 +252,31 @@ describe("applyDayTaskList", () => {
 		expect(next[0].completed_at).toBeNull();
 	});
 
-	it("toggles the star on a row whatever its status", () => {
+	it("sets the star on a row whatever its status", () => {
 		const tasks = [task({ id: "a", title: "Go", status: "done" })];
-		const starred = applyDayTaskList(tasks, { type: "toggleTop3", id: "a" }, ctx);
+		const starred = applyDayTaskList(
+			tasks,
+			{ type: "setTop3", id: "a", starred: true, forDateIso: TODAY },
+			ctx,
+		);
 		expect(starred[0].top3_for_date).toBe(TODAY);
 		expect(
-			applyDayTaskList(starred, { type: "toggleTop3", id: "a" }, ctx)[0].top3_for_date,
+			applyDayTaskList(
+				starred,
+				{ type: "setTop3", id: "a", starred: false, forDateIso: TODAY },
+				ctx,
+			)[0].top3_for_date,
 		).toBeNull();
 	});
 });
 
 describe("applyDayIntent", () => {
-	const ctx = { todayIso: TODAY, top3DateIso: TODAY, nowIso: `${TODAY}T15:00:00.000Z` };
+	const ctx = {
+		todayIso: TODAY,
+		top3DateIso: TODAY,
+		nowIso: `${TODAY}T15:00:00.000Z`,
+		tz: "UTC",
+	};
 
 	it("keeps a completed non-recurring task on its band (ADR-0038)", () => {
 		const t = task({ id: "a", title: "Go", due_date: TODAY });
@@ -263,10 +284,15 @@ describe("applyDayIntent", () => {
 			open: [t],
 			allDay: [{ kind: "task", key: "task:a", sortAt: TODAY, time: null, task: t }],
 		});
-		const next = applyDayIntent(schedule, { type: "complete", id: "a" }, ctx);
+		const next = applyDayIntent(
+			schedule,
+			{ type: "complete", id: "a", observedDueDate: null },
+			ctx,
+		);
+		// placeOnDay: due today without time → all-day only (not also open).
 		expect(next.allDay).toHaveLength(1);
 		expect(next.allDay[0]?.kind === "task" && next.allDay[0].task.status).toBe("done");
-		expect(next.open[0]?.status).toBe("done");
+		expect(next.open).toHaveLength(0);
 	});
 
 	it("drops a rolled recurring task from the day", () => {
@@ -280,7 +306,11 @@ describe("applyDayIntent", () => {
 			open: [t],
 			allDay: [{ kind: "task", key: "task:r", sortAt: TODAY, time: null, task: t }],
 		});
-		const next = applyDayIntent(schedule, { type: "complete", id: "r" }, ctx);
+		const next = applyDayIntent(
+			schedule,
+			{ type: "complete", id: "r", observedDueDate: null },
+			ctx,
+		);
 		expect(next.allDay).toHaveLength(0);
 		expect(next.open).toHaveLength(0);
 	});
@@ -288,7 +318,11 @@ describe("applyDayIntent", () => {
 	it("moves a row into Top 3 when starred", () => {
 		const t = task({ id: "a", title: "Go", due_date: TODAY });
 		const schedule = emptySchedule({ open: [t] });
-		const next = applyDayIntent(schedule, { type: "toggleTop3", id: "a" }, ctx);
+		const next = applyDayIntent(
+			schedule,
+			{ type: "setTop3", id: "a", starred: true, forDateIso: TODAY },
+			ctx,
+		);
 		expect(next.top3.map((x) => x.id)).toEqual(["a"]);
 		expect(next.open).toHaveLength(0);
 	});
