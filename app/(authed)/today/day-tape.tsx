@@ -1,4 +1,6 @@
+import { Check, Star } from "lucide-react";
 import type { CSSProperties } from "react";
+import { Icon } from "@/components/ui/icon";
 import type { DayScheduleItem } from "@/lib/services/today";
 import { isTop3Today } from "@/lib/task-predicates";
 
@@ -427,12 +429,22 @@ export function DayTape({
 								<div className={`${dotClass}${past}`} style={{ left: `${left}%` }} />
 								<div className={`dt-flag-label ${item.tier}${past}`} style={labelStyle}>
 									<span className="dt-flag-title">{item.title}</span>
-									<span>
+									<span className="inline-flex items-center gap-0.5">
 										{item.time}
-										{item.top3 && !item.done && <span className="text-warning"> ★</span>}
+										{item.top3 && !item.done && (
+											<span className="text-warning">
+												{" "}
+												<Icon icon={Star} size="sm" fill="currentColor" className="inline" />
+											</span>
+										)}
 										{/* Color alone (the dot) isn't enough to say "done" — pair it with a glyph,
-										 * matching the ★ precedent above and task-fields.tsx's color+label rule. */}
-										{item.done && <span className="text-success"> ✓</span>}
+										 * matching the star precedent above and task-fields.tsx's color+label rule. */}
+										{item.done && (
+											<span className="text-success">
+												{" "}
+												<Icon icon={Check} size="sm" className="inline" />
+											</span>
+										)}
 									</span>
 								</div>
 							</div>

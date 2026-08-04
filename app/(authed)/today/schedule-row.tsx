@@ -1,36 +1,18 @@
 "use client";
 
+import { Calendar, FilePlus, FileText } from "lucide-react";
 import Link from "next/link";
 import { useTransition } from "react";
-import { IconNoteDoc, IconNoteDocPlus, NOTE_CHIP_CLASS } from "@/components/note-glyphs";
+import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
 import type { DayScheduleItem } from "@/lib/services/today";
 import { type TaskRowHandlers, TaskRowItem } from "../tasks/task-row";
 import { createMeetingNoteForEventAction } from "./actions";
 
-function IconCalendar({ className }: { className?: string }) {
-	return (
-		<svg
-			viewBox="0 0 16 16"
-			width="16"
-			height="16"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.5"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			className={className}
-			aria-hidden="true"
-		>
-			<rect x="2.5" y="3.5" width="11" height="10" rx="0.5" />
-			<path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" />
-		</svg>
-	);
-}
-
 /**
  * Quiet link/create affordance for an event's meeting note. Shares its shell
- * and glyphs with the task rows beside it (components/note-glyphs) so the two
+ * and glyphs with the task rows beside it (NOTE_CHIP_CLASS) so the two
  * read as one column down a schedule band rather than two conventions.
  */
 function MeetingNoteGlyph({ eventId, noteId }: { eventId: string; noteId?: string }) {
@@ -46,7 +28,7 @@ function MeetingNoteGlyph({ eventId, noteId }: { eventId: string; noteId?: strin
 				title="View meeting note"
 				className={`${NOTE_CHIP_CLASS} self-center`}
 			>
-				<IconNoteDoc />
+				<Icon icon={FileText} size="sm" />
 			</Link>
 		);
 	}
@@ -67,7 +49,7 @@ function MeetingNoteGlyph({ eventId, noteId }: { eventId: string; noteId?: strin
 			}}
 			className={`${NOTE_CHIP_CLASS} self-center disabled:opacity-50`}
 		>
-			<IconNoteDocPlus />
+			<Icon icon={FilePlus} size="sm" />
 		</button>
 	);
 }
@@ -100,8 +82,10 @@ function EventRow({
 					{time}
 				</span>
 			)}
-			<IconCalendar
-				className={`h-4 w-4 shrink-0 self-center ${past ? "text-ink-4" : "text-ink-3"}`}
+			<Icon
+				icon={Calendar}
+				size="sm"
+				className={`shrink-0 self-center ${past ? "text-ink-4" : "text-ink-3"}`}
 			/>
 			<div className="min-w-0 flex-1">
 				<p className={`truncate text-sm ${past ? "text-ink-4" : "text-ink"}`}>{event.title}</p>

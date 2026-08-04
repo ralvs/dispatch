@@ -1,34 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CurrentDesign } from "./designs/current";
-import { LedgerDesign } from "./designs/ledger";
-import { MixedDesign } from "./designs/mixed";
+import { BoxDesign, DepthDesign, LineDesign } from "./designs/variants";
 import { DAY } from "./mock";
 
-// Temporary bake-off surface. Round 4: two finalists — the shipped Today page
-// given room to breathe, and Ledger, which keeps the ruled structure and the
-// day tape. Both carry the same gadgets on the same tokens. Delete the route
-// once the direction ships.
+// Temporary bake-off surface. Round 7: field shape + elevation via token swap.
+// Old designs (current/ledger/mixed) stay on disk for one-line revert.
+// Delete the route once a winner ships.
 
 const DESIGNS = [
 	{
-		id: "current",
-		name: "Current",
-		note: "Round 6 — Awaiting decision moved up beside the anchor sentence, Open on the right of the schedule",
-		Component: CurrentDesign,
+		id: "line",
+		name: "Line",
+		note: "Bottom-line fields, flat elevation — label→input rests on spacing alone",
+		Component: LineDesign,
 	},
 	{
-		id: "ledger",
-		name: "Ledger",
-		note: "Ruled ledger structure — full-width day tape up top, two columns for the working half",
-		Component: LedgerDesign,
+		id: "box",
+		name: "Box",
+		note: "Rounded boxed fields, flat elevation — hairlines only",
+		Component: BoxDesign,
 	},
 	{
-		id: "mixed",
-		name: "Mixed",
-		note: "Round 6 — no counts strip, and the schedule spans the full width with Open on the right",
-		Component: MixedDesign,
+		id: "depth",
+		name: "Depth",
+		note: "Rounded boxed fields + shadow tokens on cards, popovers, dock",
+		Component: DepthDesign,
 	},
 ] as const;
 
@@ -37,6 +34,7 @@ const WIDTHS = { phone: 402, desktop: 1180 } as const;
 export default function ComparePage() {
 	const [active, setActive] = useState<string>(DESIGNS[0].id);
 	const [viewport, setViewport] = useState<keyof typeof WIDTHS>("phone");
+	const [theme, setTheme] = useState<"dark" | "light">("dark");
 
 	// 1/2/3 switch designs — the whole point of this page is flipping between
 	// them fast. Ignored while typing into one of the designs' own controls.
@@ -47,10 +45,24 @@ export default function ComparePage() {
 			if (el?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el?.tagName ?? "")) return;
 			const design = DESIGNS[Number(e.key) - 1];
 			if (design) setActive(design.id);
+			if (e.key === "t" || e.key === "T") {
+				setTheme((t) => (t === "dark" ? "light" : "dark"));
+			}
 		}
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
 	}, []);
+
+	// Sync bake-off theme onto <html> so data-theme tokens resolve correctly
+	// inside the frame (app uses data-theme on html, not a local class).
+	useEffect(() => {
+		const prev = document.documentElement.getAttribute("data-theme");
+		document.documentElement.setAttribute("data-theme", theme);
+		return () => {
+			if (prev) document.documentElement.setAttribute("data-theme", prev);
+			else document.documentElement.removeAttribute("data-theme");
+		};
+	}, [theme]);
 
 	const current = DESIGNS.find((d) => d.id === active) ?? DESIGNS[0];
 	const { Component } = current;
@@ -60,7 +72,7 @@ export default function ComparePage() {
 			<header className="sticky top-0 z-10 border-b border-neutral-300 bg-neutral-100/90 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/90">
 				<div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-6 gap-y-3 px-5 py-3">
 					<span className="font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-500">
-						Today · {DESIGNS.length} directions · press 1–{DESIGNS.length}
+						UI · {DESIGNS.length} variants · 1–{DESIGNS.length} · T theme
 					</span>
 
 					<nav className="flex flex-wrap gap-1" aria-label="Design directions">
@@ -82,6 +94,15 @@ export default function ComparePage() {
 							</button>
 						))}
 					</nav>
+
+					<button
+						type="button"
+						onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+						className="rounded-md px-3 py-1.5 font-mono text-[11px] uppercase tracking-widest text-neutral-600 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-800"
+						aria-keyshortcuts="T"
+					>
+						{theme}
+					</button>
 
 					<fieldset className="ml-auto flex gap-1" aria-label="Viewport">
 						{(Object.keys(WIDTHS) as (keyof typeof WIDTHS)[]).map((v) => (

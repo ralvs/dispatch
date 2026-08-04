@@ -1,8 +1,10 @@
 "use client";
 
+import { Star } from "lucide-react";
 import Link from "next/link";
 import { useOptimistic, useTransition } from "react";
 import { setPinAction } from "@/app/(authed)/notes/actions";
+import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
@@ -35,7 +37,7 @@ function NoteLinkRow({
 				onClick={onTogglePin}
 				className={`shrink-0 px-2 py-3 font-mono text-meta active:opacity-70 ${pinned ? "text-accent" : "text-ink-4 hover:text-ink"}`}
 			>
-				{pinned ? "★" : "☆"}
+				<Icon icon={Star} size="sm" fill={pinned ? "currentColor" : "none"} />
 			</button>
 		</li>
 	);

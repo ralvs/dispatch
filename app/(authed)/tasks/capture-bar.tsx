@@ -1,7 +1,9 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
 import { MentionTextInput } from "@/components/mention-input";
+import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
 import type { MentionCandidate } from "@/lib/mentions";
 import { type TaskDomainOption, TaskMetaFields } from "./task-fields";
@@ -100,9 +102,9 @@ export function CaptureBar({
 					    "Hide details" label crowds the title field on mobile. */}
 					<span
 						aria-hidden
-						className={`inline-block transition-transform ${detailed ? "rotate-180" : ""}`}
+						className={`inline-flex transition-transform ${detailed ? "rotate-180" : ""}`}
 					>
-						⌄
+						<Icon icon={ChevronDown} size="sm" />
 					</span>
 				</button>
 			</div>

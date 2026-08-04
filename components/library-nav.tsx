@@ -1,6 +1,8 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
+import { Icon } from "@/components/ui/icon";
 
 const STORAGE_KEY = "dispatch:library-open";
 
@@ -40,8 +42,11 @@ export function LibraryNav({
 				aria-controls="rail-library"
 				className="flex w-full items-center gap-1.5 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-4 transition-opacity hover:text-ink-2 active:opacity-70"
 			>
-				<span aria-hidden="true" className={open ? "" : "-rotate-90"}>
-					▾
+				<span
+					aria-hidden="true"
+					className={`inline-flex transition-transform ${open ? "rotate-90" : ""}`}
+				>
+					<Icon icon={ChevronRight} size="sm" />
 				</span>
 				Library
 			</button>

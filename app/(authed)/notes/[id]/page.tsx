@@ -1,7 +1,9 @@
+import { X } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
+import { Icon } from "@/components/ui/icon";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
@@ -149,9 +151,9 @@ async function LinkSections({ sb, noteId }: { sb: Sb; noteId: string }) {
 										<button
 											type="submit"
 											aria-label="Remove link"
-											className="shrink-0 font-mono text-eyebrow text-ink-4 hover:text-accent-slip active:opacity-70"
+											className="inline-flex shrink-0 text-ink-4 hover:text-accent-slip active:opacity-70"
 										>
-											×
+											<Icon icon={X} size="sm" />
 										</button>
 									</form>
 								</li>

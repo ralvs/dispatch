@@ -1,5 +1,8 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
+
 export type TaskStatusFilter = "open" | "overdue" | "today";
 
 export type TaskFilterOption = { id: string; name: string };
@@ -114,7 +117,9 @@ function ScopeSelect({
 			} has-[select:focus-visible]:outline-2 has-[select:focus-visible]:outline-offset-2 has-[select:focus-visible]:outline-accent hover:text-ink`}
 		>
 			<span aria-hidden>{current}</span>
-			<span aria-hidden>⌄</span>
+			<span aria-hidden className="inline-flex">
+				<Icon icon={ChevronDown} size="sm" />
+			</span>
 			<select
 				value={value}
 				onChange={(event) => onChange(event.target.value)}

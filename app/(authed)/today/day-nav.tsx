@@ -1,34 +1,16 @@
 "use client";
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { formatDay, formatDayNavLabel, shiftDay } from "@/lib/dates";
 
 // Day selection is client-owned (DayView) so flipping a day only
 // reloads the schedule payload — not the full Today RSC / loading.tsx.
 // `?d=` still updates via history for shareable URLs and SoftRefresh.
 
-function IconChevron({ direction }: { direction: "left" | "right" }) {
-	return (
-		<svg
-			viewBox="0 0 16 16"
-			width="14"
-			height="14"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.5"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
-		>
-			<path d={direction === "left" ? "M10 3.5 5.5 8l4.5 4.5" : "M6 3.5 10.5 8 6 12.5"} />
-		</svg>
-	);
-}
-
-// The bordered button stays 28×28; a padded, borderless wrapper (below) grows
-// the actual tap target to 44px around it.
+// The bordered button stays 28×28; hit-area grows the tap target to 44px.
 const STEP =
-	"inline-flex h-7 w-7 items-center justify-center rounded border border-line text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70 disabled:opacity-40";
-const STEP_HIT_AREA = "-m-[8.5px] inline-flex p-[8.5px]";
+	"inline-flex h-7 w-7 items-center justify-center rounded-control border border-line text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70 disabled:opacity-40";
 
 export function DayNav({
 	dateIso,
@@ -63,12 +45,12 @@ export function DayNav({
 					type="button"
 					disabled={pending}
 					onClick={() => onSelect(todayIso)}
-					className="inline-flex h-7 items-center rounded border border-line px-2 font-mono text-meta uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70 disabled:opacity-40"
+					className="inline-flex h-7 items-center rounded-control border border-line px-2 font-mono text-meta uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70 disabled:opacity-40"
 				>
 					Today
 				</button>
 			)}
-			<span className={STEP_HIT_AREA}>
+			<span className="hit-area inline-flex [--hit-x:8.5px] [--hit-y:8.5px]">
 				<button
 					type="button"
 					className={STEP}
@@ -76,7 +58,7 @@ export function DayNav({
 					disabled={pending}
 					onClick={() => onSelect(previous)}
 				>
-					<IconChevron direction="left" />
+					<Icon icon={ChevronLeft} size="sm" />
 				</button>
 			</span>
 			<p
@@ -87,7 +69,7 @@ export function DayNav({
 				 * screen reader and a hover both get. */}
 				<span title={formatDay(dateIso, "utc")}>{formatDayNavLabel(dateIso, todayIso)}</span>
 			</p>
-			<span className={STEP_HIT_AREA}>
+			<span className="hit-area inline-flex [--hit-x:8.5px] [--hit-y:8.5px]">
 				<button
 					type="button"
 					className={STEP}
@@ -95,7 +77,7 @@ export function DayNav({
 					disabled={pending}
 					onClick={() => onSelect(next)}
 				>
-					<IconChevron direction="right" />
+					<Icon icon={ChevronRight} size="sm" />
 				</button>
 			</span>
 		</nav>

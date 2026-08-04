@@ -1,8 +1,10 @@
 "use client";
 
+import { FileText } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { IconNoteDoc, NOTE_CHIP_CLASS } from "@/components/note-glyphs";
+import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
 import type { TaskRow } from "@/lib/services/tasks";
 
 export function InboxRow({
@@ -29,7 +31,7 @@ export function InboxRow({
 						onClick={(e) => e.stopPropagation()}
 						className={NOTE_CHIP_CLASS}
 					>
-						<IconNoteDoc />
+						<Icon icon={FileText} size="sm" />
 					</Link>
 				)}
 			</p>

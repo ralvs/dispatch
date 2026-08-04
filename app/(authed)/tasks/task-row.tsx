@@ -1,10 +1,12 @@
 "use client";
 
+import { FileText, Star } from "lucide-react";
 import Link from "next/link";
 import { type KeyboardEvent, useEffect, useRef, useState, useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
 import { MentionChip } from "@/components/mention-chip";
-import { IconNoteDoc, NOTE_CHIP_CLASS } from "@/components/note-glyphs";
+import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
 import { formatDay, formatDueLabel, formatInstant } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
@@ -304,11 +306,11 @@ export function TaskRowItem({
 					aria-pressed={starred}
 					disabled={done}
 					onClick={handlers.onToggleTop3}
-					className={`relative text-base leading-none after:absolute after:-inset-y-3.5 after:-inset-x-2 after:content-[''] active:opacity-70 ${
+					className={`hit-area relative inline-flex leading-none [--hit-x:8px] [--hit-y:14px] active:opacity-70 ${
 						starred ? "text-accent" : "text-ink-4 hover:text-ink-2"
 					} ${done ? "invisible" : ""}`}
 				>
-					{starred ? "★" : "☆"}
+					<Icon icon={Star} size="md" fill={starred ? "currentColor" : "none"} />
 				</button>
 				{noteText && <TaskNotePopover notes={noteText} title={task.title} />}
 				{noteId && (
@@ -319,7 +321,7 @@ export function TaskRowItem({
 						onClick={(e) => e.stopPropagation()}
 						className={NOTE_CHIP_CLASS}
 					>
-						<IconNoteDoc />
+						<Icon icon={FileText} size="sm" />
 					</Link>
 				)}
 			</div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { X } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { COLOR_PALETTE } from "@/lib/schemas/color";
 
 /**
@@ -31,8 +33,8 @@ export function ColorSwatchPicker({
 						defaultChecked={!defaultValue}
 						className="peer sr-only"
 					/>
-					<span className="flex size-7 items-center justify-center rounded-full border border-line font-mono text-meta text-ink-4 transition-colors hover:border-line-strong peer-checked:border-ink peer-checked:text-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent">
-						×
+					<span className="flex size-7 items-center justify-center rounded-pill border border-line font-mono text-meta text-ink-4 transition-colors hover:border-line-strong peer-checked:border-ink peer-checked:text-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent">
+						<Icon icon={X} size="sm" />
 					</span>
 				</label>
 				{COLOR_PALETTE.map((color) => (
