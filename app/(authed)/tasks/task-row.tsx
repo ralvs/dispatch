@@ -2,20 +2,19 @@
 
 import { FileText, Star } from "lucide-react";
 import Link from "next/link";
-import { type KeyboardEvent, useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ColorDot } from "@/components/color-dot";
 import { MentionChip } from "@/components/mention-chip";
-import { Button, Checkbox } from "@/components/ui";
+import { Checkbox } from "@/components/ui";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
-import { runAction } from "@/lib/client/toast";
 import { formatDay, formatDueLabel, formatInstant } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_GLYPH, recurrenceLabel } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/services/tasks";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
-import { updateTaskAction } from "./actions";
-import { PriorityBadge, type TaskDomainOption, TaskFormFields } from "./task-fields";
+import { TaskDialog } from "./task-dialog";
+import { PriorityBadge, type TaskDomainOption } from "./task-fields";
 import { TaskNotePopover } from "./task-note-popover";
 
 export type { TaskDomainOption };
@@ -74,10 +73,8 @@ export function TaskRowItem({
 	/** People already mentioned in this task — rendered as chips in the meta line. */
 	mentions?: { id: string; name: string }[];
 }) {
-	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(initialEditing);
-	const formWrapRef = useRef<HTMLLIElement>(null);
-	const formRef = useRef<HTMLFormElement>(null);
+	const rowRef = useRef<HTMLLIElement>(null);
 	const done = task.status === "done";
 	const overdue = isOverdue(task, todayIso);
 	const starTarget = starDateIso ?? todayIso;
@@ -90,116 +87,18 @@ export function TaskRowItem({
 	// The task's own notes field — a whitespace-only value is not a note.
 	const noteText = task.notes?.trim() || null;
 
+	// The row stays in place behind the dialog, so bring it into view rather
+	// than leaving the deep-linked task somewhere off-screen underneath.
 	useEffect(() => {
 		if (!initialEditing || !editing) return;
-		formWrapRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
-		// Focus title so typing / Esc / Enter are immediately available.
-		const title = formRef.current?.querySelector<HTMLInputElement>('input[name="title"]');
-		title?.focus();
-		title?.select();
+		rowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
 	}, [initialEditing, editing]);
-
-	function save(formData: FormData) {
-		// Edit waits for the server (no optimistic multi-field patch).
-		startTransition(async () => {
-			const ok = await runAction(
-				() => updateTaskAction(task.id, formData),
-				"Couldn't save task. Try again.",
-			);
-			if (ok) setEditing(false);
-		});
-	}
 
 	function remove() {
 		if (!handlers.onDelete) return;
 		if (!window.confirm(`Delete "${task.title}"?`)) return;
+		setEditing(false);
 		handlers.onDelete();
-	}
-
-	function onFormKeyDown(e: KeyboardEvent<HTMLFormElement>) {
-		if (e.key === "Escape") {
-			e.preventDefault();
-			setEditing(false);
-			return;
-		}
-		// Enter saves from single-line fields; leave textarea for newlines.
-		if (e.key === "Enter" && !(e.target instanceof HTMLTextAreaElement)) {
-			// Native submit already fires for text inputs; skip buttons/selects
-			// that use Enter for their own activation.
-			if (e.target instanceof HTMLButtonElement || e.target instanceof HTMLSelectElement) {
-				return;
-			}
-			e.preventDefault();
-			formRef.current?.requestSubmit();
-		}
-	}
-
-	if (editing && canEdit) {
-		return (
-			<li
-				ref={formWrapRef}
-				className={`hairline py-3 ${pending ? "opacity-50" : ""}`}
-				data-task-id={task.id}
-			>
-				{/* Symmetric indent so the edit surface is narrower than list rows. */}
-				<form
-					ref={formRef}
-					action={save}
-					onKeyDown={onFormKeyDown}
-					className="mx-6 space-y-2.5 border-x border-line-strong px-3 py-1 sm:mx-10 sm:px-4"
-				>
-					<TaskFormFields
-						domains={domains}
-						todayIso={todayIso}
-						showNotes
-						people={people}
-						defaults={{
-							title: task.title,
-							notes: task.notes,
-							due_date: task.due_date,
-							due_time: task.due_time,
-							domain_id: task.domain_id,
-							priority: task.priority,
-							recurrence_rule: task.recurrence_rule,
-						}}
-					/>
-					{/* Destructive left · primary right: Delete | … | Cancel | Save */}
-					<div className="flex flex-wrap items-center gap-2 pt-0.5">
-						{handlers.onDelete && (
-							<Button
-								type="button"
-								variant="danger"
-								size="sm"
-								disabled={pending}
-								onClick={remove}
-								aria-label={`Delete task "${task.title}"`}
-							>
-								Delete
-							</Button>
-						)}
-						<span className="min-w-2 flex-1" />
-						<Button
-							type="button"
-							variant="tertiary"
-							size="sm"
-							disabled={pending}
-							onClick={() => setEditing(false)}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="submit"
-							variant="primary"
-							size="sm"
-							isPending={pending}
-							disabled={pending}
-						>
-							{pending ? "Saving…" : "Save"}
-						</Button>
-					</div>
-				</form>
-			</li>
-		);
 	}
 
 	const titleClass = `relative block max-w-full text-left font-serif text-base after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] active:opacity-70 ${
@@ -207,7 +106,28 @@ export function TaskRowItem({
 	} ${canEdit || !manageable ? "hover:text-accent-ink" : ""}`;
 
 	return (
-		<li className="hairline flex items-center gap-3 py-3" data-task-id={task.id}>
+		<li ref={rowRef} className="hairline flex items-center gap-3 py-3" data-task-id={task.id}>
+			{canEdit && (
+				<TaskDialog
+					open={editing}
+					onClose={() => setEditing(false)}
+					mode="edit"
+					taskId={task.id}
+					domains={domains}
+					todayIso={todayIso}
+					people={people}
+					onDelete={handlers.onDelete ? remove : undefined}
+					defaults={{
+						title: task.title,
+						notes: task.notes,
+						due_date: task.due_date,
+						due_time: task.due_time,
+						domain_id: task.domain_id,
+						priority: task.priority,
+						recurrence_rule: task.recurrence_rule,
+					}}
+				/>
+			)}
 			{scheduled && timeLabel && (
 				<span className="w-12 shrink-0 font-mono text-meta tabular-nums leading-none text-ink-3">
 					{timeLabel}

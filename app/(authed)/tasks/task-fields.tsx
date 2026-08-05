@@ -116,11 +116,14 @@ export function TaskTitleField({
 	defaultValue = "",
 	placeholder = "What needs doing?",
 	people = [],
+	autoFocus = false,
 }: {
 	defaultValue?: string;
 	placeholder?: string;
 	/** @mention candidates (docs/adr/0030) — empty disables the autocomplete but never the field. */
 	people?: MentionCandidate[];
+	/** Marks this as the field Dialog hands focus to on open. */
+	autoFocus?: boolean;
 }) {
 	const [value, setValue] = useState(defaultValue);
 	return (
@@ -132,6 +135,7 @@ export function TaskTitleField({
 			people={people}
 			placeholder={placeholder}
 			aria-label="Task title"
+			data-autofocus={autoFocus || undefined}
 			className="field-shell h-auto w-full py-1.5 font-serif text-base text-ink placeholder:font-normal placeholder:text-ink-4"
 		/>
 	);
@@ -274,9 +278,9 @@ export function TaskMetaFields({
 }
 
 /**
- * Title + optional notes + the meta row — the full surface, used by the edit
- * form on a task row. The create path composes the pieces itself, so the
- * capture line never renders a second title field.
+ * Title + optional notes + the meta row — the full surface, used by the task
+ * dialog for both create and edit. The capture bar keeps its own bare title
+ * line for quick-add, so it never renders a second title field beside this one.
  */
 export function TaskFormFields({
 	domains,
@@ -285,6 +289,7 @@ export function TaskFormFields({
 	titlePlaceholder = "What needs doing?",
 	showNotes = false,
 	people = [],
+	autoFocusTitle = false,
 }: {
 	domains: TaskDomainOption[];
 	todayIso: string;
@@ -293,6 +298,8 @@ export function TaskFormFields({
 	showNotes?: boolean;
 	/** @mention candidates (docs/adr/0030), threaded to both title and notes. */
 	people?: MentionCandidate[];
+	/** Hands the title field to Dialog's open-focus. */
+	autoFocusTitle?: boolean;
 }) {
 	return (
 		<>
@@ -300,6 +307,7 @@ export function TaskFormFields({
 				defaultValue={defaults.title ?? ""}
 				placeholder={titlePlaceholder}
 				people={people}
+				autoFocus={autoFocusTitle}
 			/>
 
 			{showNotes && <TaskNotesField defaultValue={defaults.notes ?? ""} people={people} />}
