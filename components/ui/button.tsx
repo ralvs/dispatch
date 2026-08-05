@@ -1,7 +1,7 @@
 "use client";
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { tv, type VariantProps } from "tailwind-variants";
+import { tv, type VariantProps } from "./tv";
 
 /**
  * One radius, one disabled opacity, one transition, one focus treatment.
@@ -17,9 +17,9 @@ export const button = tv({
 	],
 	variants: {
 		variant: {
-			// Explicit canvas ink on filled control — text-bg alone can lose to inherited
-			// text-ink and vanish on a light (dark-theme ink) primary fill.
-			primary: "bg-ink text-[var(--bg)] hover:opacity-90",
+			// Canvas ink on a filled control. Only survives the variant merge
+			// because ./tv registers the type scale — see the note there.
+			primary: "bg-ink text-bg hover:opacity-90",
 
 			secondary:
 				"border border-line-strong bg-transparent text-ink-3 hover:border-accent hover:text-ink",

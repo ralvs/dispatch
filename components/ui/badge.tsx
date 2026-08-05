@@ -1,4 +1,4 @@
-import { tv, type VariantProps } from "tailwind-variants";
+import { tv, type VariantProps } from "./tv";
 
 /**
  * One rounded-control badge. Tone variants collapse PriorityBadge, MentionChip,

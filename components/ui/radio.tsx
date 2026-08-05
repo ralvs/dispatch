@@ -1,7 +1,7 @@
 "use client";
 
 import type { InputHTMLAttributes, ReactNode } from "react";
-import { tv } from "tailwind-variants";
+import { tv } from "./tv";
 
 export const radio = tv({
 	slots: {

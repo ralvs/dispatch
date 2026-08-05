@@ -2,8 +2,8 @@
 
 import { Check } from "lucide-react";
 import type { InputHTMLAttributes, ReactNode } from "react";
-import { tv } from "tailwind-variants";
 import { Icon } from "./icon";
+import { tv } from "./tv";
 
 export const checkbox = tv({
 	slots: {

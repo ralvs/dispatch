@@ -1,5 +1,5 @@
 import type { HTMLAttributes, ReactNode } from "react";
-import { tv, type VariantProps } from "tailwind-variants";
+import { tv, type VariantProps } from "./tv";
 
 export const card = tv({
 	base: ["rounded-card border border-line-strong bg-surface elevation-card"],

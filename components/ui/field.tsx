@@ -10,8 +10,8 @@ import {
 	useContext,
 	useId,
 } from "react";
-import { tv, type VariantProps } from "tailwind-variants";
 import { Icon } from "./icon";
+import { tv, type VariantProps } from "./tv";
 
 /**
  * Field shape comes entirely from --field-* tokens (data-ui variant swap).

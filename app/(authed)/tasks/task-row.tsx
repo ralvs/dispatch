@@ -288,10 +288,24 @@ export function TaskRowItem({
 			    gap-2 is load-bearing: each chip's after: reaches 4px past its
 			    own box, so anything tighter would overlap the neighbour's hit
 			    area and swallow taps meant for it. */}
-			{/* Fixed slots keep star / task-notes / linked-note in three columns
-			    down a schedule band — no drifting when a row lacks a chip.
+			{/* The star is the only chip every row has, so it anchors the column at
+			    the far right and the optional chips stack inward from it —
+			    linked-note, then task-notes, then star. Absent chips render nothing
+			    rather than holding an empty slot.
 			    gap-3: star hit-area reaches 8px past its box, chips 4px past theirs. */}
-			<div className="grid shrink-0 grid-cols-[1rem_1.5rem_1.5rem] items-center gap-3">
+			<div className="flex shrink-0 items-center gap-3">
+				{noteId && (
+					<Link
+						href={`/notes/${noteId}`}
+						aria-label="View linked note"
+						title="View linked note"
+						onClick={(e) => e.stopPropagation()}
+						className={NOTE_CHIP_CLASS}
+					>
+						<Icon icon={FileText} size="sm" />
+					</Link>
+				)}
+				{noteText && <TaskNotePopover notes={noteText} title={task.title} />}
 				<button
 					type="button"
 					aria-label={`${starred ? "Remove from" : "Pin to"} ${starDay}'s top 3`}
@@ -304,22 +318,6 @@ export function TaskRowItem({
 				>
 					<Icon icon={Star} size="md" fill={starred ? "currentColor" : "none"} />
 				</button>
-				<span className="inline-flex size-6 items-center justify-center">
-					{noteText ? <TaskNotePopover notes={noteText} title={task.title} /> : null}
-				</span>
-				<span className="inline-flex size-6 items-center justify-center">
-					{noteId ? (
-						<Link
-							href={`/notes/${noteId}`}
-							aria-label="View linked note"
-							title="View linked note"
-							onClick={(e) => e.stopPropagation()}
-							className={NOTE_CHIP_CLASS}
-						>
-							<Icon icon={FileText} size="sm" />
-						</Link>
-					) : null}
-				</span>
 			</div>
 		</li>
 	);
