@@ -5,6 +5,12 @@ newspaper design, one pane of glass. Functional reimplementation of
 [jerad-ops](https://github.com/ralvs/jerad-ops) on a different stack, owned by
 Renan Alves (renan@alves.id).
 
+Cross-project preferences — orchestration, commit and review workflow, stack
+defaults, communication style — live in `~/.claude/CLAUDE.md` on Renan's
+machine. Claude Code loads that file automatically in every project; other
+agents should read it once at the start of a session. This file covers only
+what is specific to Dispatch, and wins where the two disagree.
+
 ## Stack
 
 - **Next.js 16** (App Router, Turbopack) — single app, no separate API server
