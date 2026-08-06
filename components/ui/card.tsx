@@ -1,13 +1,18 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { tv, type VariantProps } from "./tv";
 
+/**
+ * A white card floating on the warm paper ground (docs/adr/0042). Depth comes
+ * from the tinted shadow, not from a strong border — the hairline is there to
+ * define the edge in dark mode, where surface and canvas sit closer together.
+ */
 export const card = tv({
-	base: ["rounded-card border border-line-strong bg-surface elevation-card"],
+	base: ["rounded-card border border-line bg-surface elevation-card"],
 	variants: {
 		padding: {
-			default: "p-5",
+			default: "p-6",
 			compact: "p-4",
-			comfortable: "p-6",
+			comfortable: "p-8",
 			none: "p-0",
 		},
 	},

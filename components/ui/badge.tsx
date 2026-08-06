@@ -1,23 +1,26 @@
 import { tv, type VariantProps } from "./tv";
 
 /**
- * One rounded-control badge. Tone variants collapse PriorityBadge, MentionChip,
+ * One pill badge. Tone variants collapse PriorityBadge, MentionChip,
  * project/person row badges, and Today alert chips.
+ *
+ * Tinted fills rather than outlines (docs/adr/0042): on the paper ground a
+ * bordered chip reads as a tiny empty box, while a soft fill reads as a label.
  */
 export const badge = tv({
 	base: [
 		"inline-flex shrink-0 items-center gap-1",
-		"rounded-control border px-1.5 py-px",
-		"font-mono text-[10px] leading-none tracking-wide",
+		"rounded-pill px-2 py-0.5",
+		"text-[11px] font-semibold leading-none",
 	],
 	variants: {
 		tone: {
-			neutral: "border-line text-ink-3",
-			accent: "border-accent/40 text-accent-ink",
-			error: "border-error/40 text-error",
-			warning: "border-warning/40 text-warning",
-			success: "border-success/40 text-success",
-			muted: "border-line text-ink-4",
+			neutral: "bg-surface-2 text-ink-2 border border-line",
+			accent: "bg-accent-bg text-accent-ink",
+			error: "bg-error/10 text-error",
+			warning: "bg-warning/10 text-warning",
+			success: "bg-success/10 text-success",
+			muted: "bg-surface-2 text-ink-4",
 		},
 	},
 	defaultVariants: {
@@ -48,9 +51,9 @@ export function Badge({ tone, children, className, title }: BadgeProps) {
  */
 export const MENTION_CHIP_CLASS = [
 	badge({ tone: "neutral" }),
-	"relative gap-1 px-1 text-ink-3",
+	"relative gap-1 px-1.5",
 	"before:absolute before:-inset-x-2 before:-inset-y-4 before:content-['']",
-	"hover:border-line-strong hover:text-ink active:opacity-70",
+	"transition-colors hover:border-line-strong hover:bg-bg hover:text-ink active:translate-y-px",
 ].join(" ");
 
 /**
@@ -59,7 +62,7 @@ export const MENTION_CHIP_CLASS = [
  */
 export const NOTE_CHIP_CLASS = [
 	"hit-area relative inline-flex shrink-0 items-center justify-center",
-	"rounded-control border border-line p-1 leading-none text-ink-3",
-	"hover:border-line-strong hover:text-ink active:opacity-70",
+	"rounded-pill border border-line bg-surface-2 p-1.5 leading-none text-ink-3",
+	"transition-colors hover:border-line-strong hover:text-ink active:translate-y-px",
 	"[--hit-x:4px] [--hit-y:14px]",
 ].join(" ");

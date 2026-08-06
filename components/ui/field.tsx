@@ -23,15 +23,15 @@ export const fieldControl = tv({
 		"field-shell w-full text-ink outline-none transition-colors",
 		"placeholder:text-ink-4",
 		"disabled:cursor-not-allowed disabled:opacity-50",
-		"hover:border-line-strong focus:border-line-strong",
+		"hover:border-line-strong focus:border-accent",
 		"data-[invalid]:border-error",
 		"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
 	],
 	variants: {
 		size: {
-			sm: "h-7 px-2.5 text-eyebrow",
-			md: "h-9 px-2.5 text-sm",
-			lg: "h-11 px-3 text-base",
+			sm: "h-8 px-3 text-[13px]",
+			md: "h-10 px-3 text-sm",
+			lg: "h-11 px-3.5 text-base",
 		},
 	},
 	defaultVariants: {
@@ -51,10 +51,10 @@ const textareaShell = tv({
 		"field-shell w-full text-ink outline-none transition-colors",
 		"placeholder:text-ink-4",
 		"disabled:cursor-not-allowed disabled:opacity-50",
-		"hover:border-line-strong focus:border-line-strong",
+		"hover:border-line-strong focus:border-accent",
 		"data-[invalid]:border-error",
 		"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-		"h-auto resize-none px-2.5 py-2 text-sm",
+		"h-auto resize-none px-3 py-2.5 text-sm",
 	],
 	variants: {
 		size: {
@@ -89,7 +89,7 @@ type FieldShellProps = {
 	className?: string;
 };
 
-/** Label + description/error wiring. Owns mono eyebrow label + a11y ids. */
+/** Label + description/error wiring. Owns the sentence-case label + a11y ids. */
 export function Field({
 	label,
 	description,
@@ -107,10 +107,7 @@ export function Field({
 	return (
 		<div className={className}>
 			{label && (
-				<label
-					htmlFor={controlId}
-					className="mb-2 block font-mono text-eyebrow uppercase tracking-widest text-ink-3"
-				>
+				<label htmlFor={controlId} className="label mb-2 block">
 					{label}
 				</label>
 			)}

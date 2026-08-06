@@ -35,15 +35,17 @@ export const viewport: Viewport = {
 	// chrome and canvas can disagree when the user overrides the OS
 	// preference — a known, accepted limitation of a static viewport export.
 	themeColor: [
-		{ media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-		{ media: "(prefers-color-scheme: light)", color: "#fafafa" },
+		{ media: "(prefers-color-scheme: dark)", color: "#1a1815" },
+		{ media: "(prefers-color-scheme: light)", color: "#f5f2ea" },
 	],
 	viewportFit: "cover",
 };
 
 // Runs before paint so Cache Components can keep the root layout free of
 // cookies() while still avoiding a theme flash (docs/adr/0033).
-const THEME_BOOT = `(function(){try{var m=document.cookie.match(/(?:^|; )theme=([^;]*)/);var t=m&&decodeURIComponent(m[1])==="light"?"light":"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();`;
+// Light is the default mode (docs/adr/0042) — the cookie only has to name the
+// dark override.
+const THEME_BOOT = `(function(){try{var m=document.cookie.match(/(?:^|; )theme=([^;]*)/);var t=m&&decodeURIComponent(m[1])==="dark"?"dark":"light";document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","light");}})();`;
 
 /*
  * Standalone shell height. Installed on iOS, CSS viewport units cannot be

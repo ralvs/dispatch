@@ -9,7 +9,7 @@ export const checkbox = tv({
 	slots: {
 		root: "inline-flex cursor-pointer items-center gap-2",
 		box: [
-			"relative inline-flex h-4 w-4 shrink-0 items-center justify-center",
+			"relative inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center",
 			"rounded-mark border border-line-strong bg-surface text-bg",
 			"transition-colors peer-checked:border-ink peer-checked:bg-ink",
 			"peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent",

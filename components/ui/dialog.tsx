@@ -1,7 +1,9 @@
 "use client";
 
+import { X } from "lucide-react";
 import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Icon } from "./icon";
 import { tv, type VariantProps } from "./tv";
 
 /**
@@ -18,7 +20,7 @@ const FOCUSABLE =
 	'a[href],button:not([disabled]),textarea,input:not([disabled]),select,[tabindex]:not([tabindex="-1"])';
 
 const panel = tv({
-	base: "flex max-h-[85dvh] w-full flex-col overflow-hidden rounded-card border border-line-strong bg-surface elevation-overlay",
+	base: "flex max-h-[85dvh] w-full flex-col overflow-hidden rounded-card border border-line bg-surface elevation-overlay",
 	variants: {
 		size: {
 			sm: "max-w-sm",
@@ -145,12 +147,9 @@ export function Dialog({
 				onKeyDown={onKeyDown}
 				className={panel({ size, className })}
 			>
-				<div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+				<div className="flex items-start justify-between gap-4 border-b border-line px-6 py-5">
 					<div className="min-w-0">
-						<h2
-							id={titleId}
-							className="font-mono text-eyebrow uppercase tracking-widest text-ink-3"
-						>
+						<h2 id={titleId} className="font-serif text-lg text-ink">
 							{title}
 						</h2>
 						{description && (
@@ -163,9 +162,9 @@ export function Dialog({
 						type="button"
 						aria-label={`Close ${title.toLowerCase()}`}
 						onClick={onClose}
-						className="shrink-0 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:text-ink active:opacity-70"
+						className="-mr-1.5 -mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:translate-y-px"
 					>
-						Esc
+						<Icon icon={X} size="sm" />
 					</button>
 				</div>
 				{children}
@@ -183,7 +182,7 @@ export function DialogBody({
 	children: ReactNode;
 	className?: string;
 }) {
-	return <div className={`min-h-0 flex-1 overflow-y-auto px-5 py-4 ${className}`}>{children}</div>;
+	return <div className={`min-h-0 flex-1 overflow-y-auto px-6 py-5 ${className}`}>{children}</div>;
 }
 
 /** Pinned footer: destructive left, primary rightmost. */
@@ -196,7 +195,7 @@ export function DialogFooter({
 }) {
 	return (
 		<div
-			className={`flex flex-wrap items-center gap-2 border-t border-line px-5 py-3 ${className}`}
+			className={`flex flex-wrap items-center gap-2 border-t border-line px-6 py-4 ${className}`}
 		>
 			{children}
 		</div>

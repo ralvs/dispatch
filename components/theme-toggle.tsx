@@ -1,12 +1,14 @@
 "use client";
 
+import { Moon, Sun } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { setTheme } from "@/app/theme-actions";
+import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
 
 function readDomTheme(): "dark" | "light" {
-	if (typeof document === "undefined") return "dark";
-	return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+	if (typeof document === "undefined") return "light";
+	return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
 /**
@@ -15,7 +17,7 @@ function readDomTheme(): "dark" | "light" {
  */
 export function ThemeToggle({ current }: { current?: "dark" | "light" }) {
 	const [pending, startTransition] = useTransition();
-	const [theme, setLocalTheme] = useState<"dark" | "light">(current ?? "dark");
+	const [theme, setLocalTheme] = useState<"dark" | "light">(current ?? "light");
 	const next = theme === "dark" ? "light" : "dark";
 
 	// Reconcile to the live DOM after mount: SSR may not know the cookie
@@ -43,9 +45,10 @@ export function ThemeToggle({ current }: { current?: "dark" | "light" }) {
 					await runAction(() => setTheme(next), "Couldn't switch theme.");
 				});
 			}}
-			className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:text-ink active:opacity-70"
+			className="inline-flex items-center gap-2 rounded-pill px-3 py-1.5 text-[13px] font-semibold text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:translate-y-px"
 		>
-			{theme === "dark" ? "◐ Light" : "◑ Dark"}
+			<Icon icon={theme === "dark" ? Sun : Moon} size="sm" />
+			{theme === "dark" ? "Light" : "Dark"}
 		</button>
 	);
 }
