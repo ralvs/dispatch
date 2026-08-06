@@ -15,7 +15,7 @@ export function EntryRowItem({ entry }: { entry: JournalEntryRow }) {
 				{entry.transcription_text}
 			</p>
 			<div className="mt-2 flex items-center justify-between">
-				<p className="font-mono text-meta text-ink-4">
+				<p className="text-meta text-ink-4">
 					{entry.tags.length > 0 ? entry.tags.join(", ") : "—"}
 				</p>
 				<Button

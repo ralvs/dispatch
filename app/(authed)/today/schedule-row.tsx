@@ -89,7 +89,7 @@ function EventRow({
 			/>
 			<div className="min-w-0 flex-1">
 				<p className={`truncate text-sm ${past ? "text-ink-4" : "text-ink"}`}>{event.title}</p>
-				{meta && <p className="mt-0.5 truncate font-mono text-meta text-ink-4">{meta}</p>}
+				{meta && <p className="mt-0.5 truncate text-meta text-ink-4">{meta}</p>}
 			</div>
 			<MeetingNoteGlyph eventId={event.id} noteId={noteId} />
 		</li>

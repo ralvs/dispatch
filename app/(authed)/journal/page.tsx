@@ -19,7 +19,7 @@ export default async function JournalPage() {
 	return (
 		<div>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Journal</p>
+				<p className="label">Journal</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">Pages worth keeping</h1>
 			</header>
 
@@ -35,10 +35,8 @@ export default async function JournalPage() {
 				) : (
 					[...groups.entries()].map(([date, dayEntries]) => (
 						<div key={date} className="mt-6 first:mt-2">
-							<p className="font-mono text-meta uppercase tracking-widest text-ink-4">
-								{formatDay(date, tz)}
-							</p>
-							<ul className="mt-2">
+							<p className="text-meta text-ink-4">{formatDay(date, tz)}</p>
+							<ul className="list-card mt-3">
 								{dayEntries.map((entry) => (
 									<EntryRowItem key={entry.id} entry={entry} />
 								))}

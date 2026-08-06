@@ -57,7 +57,7 @@ export function PersonDetail({
 	return (
 		<div className={pending ? "opacity-50" : ""}>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Person</p>
+				<p className="label">Person</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">{person.name}</h1>
 			</header>
 
@@ -105,26 +105,26 @@ export function PersonDetail({
 					<div>
 						<dl className="grid grid-cols-2 gap-2 text-sm text-ink">
 							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Relationship</dt>
+								<dt className="label">Relationship</dt>
 								<dd>
 									{person.relationship_type ? relationshipLabel(person.relationship_type) : "—"}
 								</dd>
 							</div>
 							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Company</dt>
+								<dt className="label">Company</dt>
 								<dd>{person.company ?? "—"}</dd>
 							</div>
 							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Email</dt>
+								<dt className="label">Email</dt>
 								<dd>{person.email ?? "—"}</dd>
 							</div>
 							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Phone</dt>
+								<dt className="label">Phone</dt>
 								<dd>{person.phone ?? "—"}</dd>
 							</div>
 							{person.notes && (
 								<div className="col-span-2">
-									<dt className="font-mono text-eyebrow uppercase text-ink-3">Notes</dt>
+									<dt className="label">Notes</dt>
 									<dd className="whitespace-pre-wrap">{person.notes}</dd>
 								</div>
 							)}
@@ -177,8 +177,8 @@ function MentionedInSection({
 
 	return (
 		<section className="mt-14" aria-label="Mentioned in">
-			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Mentioned in</h2>
-			<ul className="mt-2">
+			<h2 className="label text-ink-4">Mentioned in</h2>
+			<ul className="list-card mt-3">
 				{tasks.map((task) => (
 					<li key={`task-${task.id}`} className="hairline py-3">
 						<Link
@@ -221,13 +221,13 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 
 	return (
 		<section className="mt-14" aria-label="Facts">
-			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Facts</h2>
-			<ul className="mt-2">
+			<h2 className="label text-ink-4">Facts</h2>
+			<ul className="list-card mt-3">
 				{facts.map((f) => (
 					<li key={f.id} className="hairline flex items-center justify-between gap-3 py-3">
 						<div>
 							<p className="text-sm text-ink">{f.fact_value}</p>
-							<p className="mt-0.5 font-mono text-meta text-ink-4">
+							<p className="mt-0.5 text-meta text-ink-4">
 								{factTypeLabel(f.fact_type)}
 								{f.date_relevant ? ` · ${f.date_relevant}` : ""}
 							</p>
@@ -327,15 +327,15 @@ function InteractionsSection({
 
 	return (
 		<section className="mt-14" aria-label="Interactions">
-			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Interactions</h2>
-			<ul className="mt-2">
+			<h2 className="label text-ink-4">Interactions</h2>
+			<ul className="list-card mt-3">
 				{interactions.map((i) => (
 					<li key={i.id} className="hairline flex items-center justify-between gap-3 py-3">
 						<div>
 							<p className="text-sm text-ink">
 								{i.notes ?? interactionTypeLabel(i.interaction_type)}
 							</p>
-							<p className="mt-0.5 font-mono text-meta text-ink-4">
+							<p className="mt-0.5 text-meta text-ink-4">
 								{interactionTypeLabel(i.interaction_type)} · {formatInstant(i.occurred_at, tz)}
 							</p>
 						</div>

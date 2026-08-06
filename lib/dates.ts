@@ -109,11 +109,11 @@ export function isoWeek(dateIso: string): number {
 	return dt.weekNumber;
 }
 
-/** Masthead dateline: `THU · JUL 17 · WEEK 29`. */
+/** Masthead dateline: `Thu · Jul 17 · Week 29`. */
 export function formatDateline(dateIso: string): string {
 	const dt = DateTime.fromISO(dateIso, { zone: "utc" });
 	if (!dt.isValid) throw new Error(`Invalid date: ${dateIso}`);
-	return `${dt.toFormat("ccc · LLL d").toUpperCase()} · WEEK ${dt.weekNumber}`;
+	return `${dt.toFormat("ccc · LLL d")} · Week ${dt.weekNumber}`;
 }
 
 /**
@@ -128,7 +128,7 @@ export function parseDateIso(value: unknown): string | null {
 	return value;
 }
 
-/** Day-navigation label: `TODAY`, `YESTERDAY`, `TOMORROW`, else `WED · JUL 29`. */
+/** Day-navigation label: `Today`, `Yesterday`, `Tomorrow`, else `Wed · Jul 29`. */
 export function formatDayNavLabel(dateIso: string, todayIso: string): string {
 	const days = Math.round(
 		DateTime.fromISO(dateIso, { zone: "utc" }).diff(
@@ -136,10 +136,10 @@ export function formatDayNavLabel(dateIso: string, todayIso: string): string {
 			"days",
 		).days,
 	);
-	if (days === 0) return "TODAY";
-	if (days === -1) return "YESTERDAY";
-	if (days === 1) return "TOMORROW";
-	return DateTime.fromISO(dateIso, { zone: "utc" }).toFormat("ccc · LLL d").toUpperCase();
+	if (days === 0) return "Today";
+	if (days === -1) return "Yesterday";
+	if (days === 1) return "Tomorrow";
+	return DateTime.fromISO(dateIso, { zone: "utc" }).toFormat("ccc · LLL d");
 }
 
 /** Editorial display formats used across the UI. */

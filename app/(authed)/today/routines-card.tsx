@@ -59,19 +59,17 @@ export function RoutinesCard({
 	return (
 		<section className="mt-8" aria-label="Routines today">
 			<div className="flex items-baseline justify-between">
-				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+				<h2 className="label">
 					Routines · {displayDone} of {total} today
 				</h2>
-				<Link href="/routines" className="font-mono text-meta text-ink-4 hover:text-ink-2">
+				<Link href="/routines" className="text-meta text-ink-4 hover:text-ink-2">
 					All →
 				</Link>
 			</div>
 			{optBuckets.map((bucket) => (
 				<div key={bucket.bucket} className="mt-3">
-					<h3 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-						{BUCKET_LABELS[bucket.bucket]}
-					</h3>
-					<ul className="mt-1">
+					<h3 className="label text-ink-4">{BUCKET_LABELS[bucket.bucket]}</h3>
+					<ul className="list-card mt-3">
 						{bucket.rows.map((row) => (
 							<RoutineCheckRow key={row.id} row={row} onToggle={() => toggle(row)} />
 						))}

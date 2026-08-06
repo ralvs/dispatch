@@ -17,13 +17,13 @@ export default async function NotesPage() {
 		<div>
 			<header className="hairline-strong flex items-end justify-between pb-4">
 				<div>
-					<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Notes</p>
+					<p className="label">Notes</p>
 					<h1 className="mt-1 font-serif text-3xl text-ink">Loose thoughts</h1>
 				</div>
 				<form action={createBlankNoteAction}>
 					<button
 						type="submit"
-						className="rounded-control border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-accent hover:text-ink active:opacity-70"
+						className="rounded-control border border-line-strong px-3 py-2 label hover:border-accent hover:text-ink active:translate-y-px"
 					>
 						+ New note
 					</button>

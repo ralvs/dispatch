@@ -40,7 +40,7 @@ export function LibraryNav({
 				onClick={toggle}
 				aria-expanded={open}
 				aria-controls="rail-library"
-				className="flex w-full items-center gap-1.5 py-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-4 transition-opacity hover:text-ink-2 active:opacity-70"
+				className="flex w-full items-center gap-1.5 py-1.5 label text-ink-4 transition-opacity hover:text-ink-2 active:translate-y-px"
 			>
 				<span
 					aria-hidden="true"

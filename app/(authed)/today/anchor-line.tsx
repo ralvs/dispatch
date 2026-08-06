@@ -7,7 +7,7 @@ export function AnchorLine({ anchor, tz }: { anchor: AnchorData; tz: string }) {
 	return (
 		<div>
 			{anchor.eventCount > 0 && (
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+				<p className="label">
 					{anchor.eventCount} event{anchor.eventCount === 1 ? "" : "s"} today
 				</p>
 			)}
@@ -24,7 +24,7 @@ export function AnchorLine({ anchor, tz }: { anchor: AnchorData; tz: string }) {
 				<p className="mt-2 font-serif text-lg leading-snug text-ink">You are free.</p>
 			)}
 			{anchor.openCount > 0 && (
-				<p className="mt-2 font-mono text-meta text-ink-3">
+				<p className="mt-2 text-meta text-ink-3">
 					<Link href="/tasks" className="hover:underline">
 						<span className="tabular-nums">{anchor.openCount}</span> open
 						{anchor.overdueCount > 0 && (

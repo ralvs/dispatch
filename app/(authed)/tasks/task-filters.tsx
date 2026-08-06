@@ -43,7 +43,7 @@ export function TaskStatusStrip({
 	];
 
 	return (
-		<fieldset className="flex items-center gap-1 font-mono text-meta">
+		<fieldset className="flex items-center gap-1 text-meta">
 			<legend className="sr-only">Filter tasks</legend>
 			{counts.map((c, i) => {
 				const active = status === c.value;
@@ -66,7 +66,7 @@ export function TaskStatusStrip({
 							type="button"
 							onClick={() => onStatusChange(c.value)}
 							aria-pressed={active}
-							className={`relative rounded-sm px-0.5 transition-colors after:absolute after:-inset-2 after:content-[''] hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${tone} ${
+							className={`relative rounded-mark px-0.5 transition-colors after:absolute after:-inset-2 after:content-[''] hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${tone} ${
 								active ? "underline decoration-accent decoration-2 underline-offset-4" : ""
 							}`}
 						>
@@ -112,7 +112,7 @@ function ScopeSelect({
 
 	return (
 		<span
-			className={`group relative inline-flex items-center gap-1 font-mono text-meta transition-colors ${
+			className={`group relative inline-flex items-center gap-1 text-meta transition-colors ${
 				value ? "text-accent-ink" : "text-ink-4"
 			} has-[select:focus-visible]:outline-2 has-[select:focus-visible]:outline-offset-2 has-[select:focus-visible]:outline-accent hover:text-ink`}
 		>

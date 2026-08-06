@@ -32,7 +32,7 @@ function MentionMenu({
 }) {
 	if (items.length === 0) {
 		return (
-			<div className="rounded-control border border-line bg-surface px-3 py-2 font-mono text-meta text-ink-4 elevation-overlay">
+			<div className="rounded-control border border-line bg-surface px-3 py-2 text-meta text-ink-4 elevation-overlay">
 				No matching people
 			</div>
 		);
@@ -49,7 +49,7 @@ function MentionMenu({
 							e.preventDefault();
 							onSelect(item);
 						}}
-						className={`block w-full truncate px-3 py-1.5 text-left font-mono text-meta active:opacity-70 ${
+						className={`block w-full truncate px-3 py-1.5 text-left text-meta active:translate-y-px ${
 							index === selectedIndex ? "bg-accent-bg text-accent-ink" : "text-ink-2"
 						}`}
 					>

@@ -23,7 +23,7 @@ export default async function RoutinesPage() {
 	return (
 		<div>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Routines</p>
+				<p className="label">Routines</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">Daily habits</h1>
 			</header>
 
@@ -37,7 +37,7 @@ export default async function RoutinesPage() {
 						No routines yet. Add something you want to do daily.
 					</p>
 				) : (
-					<ul className="mt-2">
+					<ul className="list-card mt-3">
 						{routines.map((routine) => {
 							const dates = (completionsByRoutine[routine.id] ?? []).map((c) => c.completed_date);
 							const stats = computeRoutineStats(dates, todayIso);

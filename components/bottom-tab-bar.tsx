@@ -26,7 +26,7 @@ export function BottomTabBar() {
 								<Link
 									href={tab.href}
 									aria-current={active ? "page" : undefined}
-									className={`flex h-full items-center rounded-full px-2 text-center font-mono text-eyebrow uppercase tracking-normal transition-colors duration-200 active:opacity-70 ${
+									className={`flex h-full items-center rounded-full px-2 text-center label transition-colors duration-200 active:translate-y-px ${
 										active ? "bg-accent-bg text-accent" : "text-ink-3"
 									}`}
 								>

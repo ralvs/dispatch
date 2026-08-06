@@ -79,7 +79,7 @@ export function CaptureBar({
 						className="w-full min-w-0 bg-transparent font-serif text-lg text-ink placeholder:font-normal placeholder:text-ink-4"
 					/>
 					{title && (
-						<span aria-hidden className="shrink-0 font-mono text-meta text-ink-4">
+						<span aria-hidden className="shrink-0 text-meta text-ink-4">
 							↵
 						</span>
 					)}

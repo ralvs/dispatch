@@ -15,7 +15,7 @@ export default async function ProjectsPage() {
 	return (
 		<div>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Projects</p>
+				<p className="label">Projects</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">What's in motion</h1>
 			</header>
 
@@ -31,10 +31,8 @@ export default async function ProjectsPage() {
 					if (group.length === 0) return null;
 					return (
 						<section key={status} className="mt-8" aria-label={label}>
-							<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-								{label}
-							</h2>
-							<ul className="mt-2">
+							<h2 className="label text-ink-4">{label}</h2>
+							<ul className="list-card mt-3">
 								{group.map((p) => (
 									<ProjectRowItem key={p.id} project={p} />
 								))}

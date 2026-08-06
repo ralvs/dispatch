@@ -251,8 +251,10 @@ const TAPE_CSS = `
 	background: var(--bg);
 	padding: 0 3px;
 	transform: translateX(-50%);
-	font-family: var(--font-mono);
-	font-size: 9px;
+	/* Event titles are prose, so they read as prose. The times inside still
+	 * align because Geist Sans carries tabular figures (docs/adr/0042). */
+	font-family: var(--font-sans);
+	font-size: 10px;
 	line-height: 1.4;
 	color: var(--ink-3);
 	white-space: nowrap;
@@ -393,7 +395,7 @@ export function DayTape({
 		// the actual "change day" navigation that happens to live in this section.
 		<section className="mt-14">
 			<div className="flex items-center justify-between gap-4">
-				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Day tape</h2>
+				<h2 className="label">Day tape</h2>
 				{nav}
 			</div>
 			<style>{TAPE_CSS}</style>

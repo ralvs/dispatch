@@ -240,7 +240,7 @@ export function CapturePalette() {
 							type="button"
 							aria-label="Capture a thought"
 							onClick={() => openCapturePalette()}
-							className={`pointer-events-auto flex aspect-square shrink-0 items-center justify-center font-serif text-2xl leading-none text-accent transition-opacity active:opacity-70 ${DOCK_HEIGHT} ${DOCK_SURFACE}`}
+							className={`pointer-events-auto flex aspect-square shrink-0 items-center justify-center font-serif text-2xl leading-none text-accent transition-opacity active:translate-y-px ${DOCK_HEIGHT} ${DOCK_SURFACE}`}
 						>
 							<span aria-hidden="true">+</span>
 						</button>,
@@ -267,17 +267,14 @@ export function CapturePalette() {
 								className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-card border border-line-strong bg-surface p-5 elevation-overlay"
 							>
 								<div className="mb-3 flex items-center justify-between">
-									<h2
-										id={titleId}
-										className="font-mono text-eyebrow uppercase tracking-widest text-ink-3"
-									>
+									<h2 id={titleId} className="label">
 										Capture
 									</h2>
 									<button
 										type="button"
 										aria-label="Close capture palette"
 										onClick={closePalette}
-										className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:text-ink active:opacity-70"
+										className="label transition-opacity hover:text-ink active:translate-y-px"
 									>
 										Esc
 									</button>
@@ -304,22 +301,20 @@ export function CapturePalette() {
 												<button
 													type="button"
 													onClick={captureAnother}
-													className="inline-flex h-9 items-center rounded-control bg-ink px-3 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70"
+													className="inline-flex h-9 items-center rounded-control bg-ink px-3 label text-bg transition-opacity active:translate-y-px"
 												>
 													Capture another
 												</button>
 												<button
 													type="button"
 													onClick={closePalette}
-													className="px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:text-ink active:opacity-70"
+													className="px-3 py-2 label transition-opacity hover:text-ink active:translate-y-px"
 												>
 													Done
 												</button>
 											</div>
 										) : (
-											<p className="mt-4 font-mono text-meta uppercase tracking-widest text-ink-4">
-												Working…
-											</p>
+											<p className="mt-4 text-meta text-ink-4">Working…</p>
 										)}
 									</div>
 								) : (
@@ -360,7 +355,7 @@ export function CapturePalette() {
 												type="button"
 												onClick={submit}
 												disabled={pending || isBlank(state.text)}
-												className="inline-flex h-9 items-center rounded-control bg-ink px-3 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70 disabled:opacity-50"
+												className="inline-flex h-9 items-center rounded-control bg-ink px-3 label text-bg transition-opacity active:translate-y-px disabled:opacity-50"
 											>
 												{state.status === "error" ? "Retry" : pending ? "Capturing…" : "Capture"}
 											</button>

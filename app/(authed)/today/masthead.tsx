@@ -15,14 +15,12 @@ export function Masthead({
 			<div className="flex items-baseline justify-between">
 				{/* This is the page's only h1 — the dateline names the day this page
 				 * is. The wordmark below stays a brand moment, not a heading. */}
-				<h1 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-					{formatDateline(todayIso)}
-				</h1>
+				<h1 className="label">{formatDateline(todayIso)}</h1>
 				<div className="flex items-center gap-4">
 					{unreadNotifications > 0 && (
 						<Link
 							href="/notifications"
-							className="flex items-center gap-1.5 font-mono text-meta text-ink-3 hover:text-ink-2"
+							className="flex items-center gap-1.5 text-meta text-ink-3 hover:text-ink-2"
 						>
 							<Icon icon={Bell} size="sm" />
 							{unreadNotifications}
@@ -35,14 +33,14 @@ export function Masthead({
 					)}
 					<Link
 						href="/chat"
-						className="flex items-center gap-1.5 font-mono text-meta text-accent-ink hover:text-accent"
+						className="flex items-center gap-1.5 text-meta text-accent-ink hover:text-accent"
 					>
 						<Icon icon={MessageSquare} size="sm" />
 						Ask
 					</Link>
 				</div>
 			</div>
-			<p className="display-tight gradient-text-mesh mt-1 w-fit font-serif text-4xl">Dispatch</p>
+			<p className="display-tight mt-1 w-fit font-serif text-4xl text-ink">Dispatch</p>
 		</header>
 	);
 }

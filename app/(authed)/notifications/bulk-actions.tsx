@@ -32,9 +32,7 @@ export function BulkActions({
 			)}
 			{confirmingDismiss ? (
 				<span className="flex items-center gap-3">
-					<span className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-						Dismiss all {visible}?
-					</span>
+					<span className="label">Dismiss all {visible}?</span>
 					<Button
 						type="button"
 						variant="secondary"

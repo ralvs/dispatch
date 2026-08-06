@@ -21,20 +21,20 @@ export default async function SettingsPage() {
 	return (
 		<div>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Settings</p>
+				<p className="label">Settings</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">The back office</h1>
 			</header>
 
 			<section className="mt-8" aria-label="Domains">
-				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Domains</h2>
-				<p className="mt-1 font-mono text-meta text-ink-4">What I'm stewarding.</p>
+				<h2 className="label text-ink-4">Domains</h2>
+				<p className="mt-1 text-meta text-ink-4">What I'm stewarding.</p>
 				<div className="mt-3">
 					<DomainForm />
 				</div>
 				{active.length === 0 ? (
 					<p className="py-6 text-center font-serif italic text-ink-3">No active domains.</p>
 				) : (
-					<ul className="mt-2">
+					<ul className="list-card mt-3">
 						{active.map((d) => (
 							<DomainRowItem
 								key={d.id}
@@ -49,10 +49,8 @@ export default async function SettingsPage() {
 
 			{archived.length > 0 && (
 				<section className="mt-8" aria-label="Archived domains">
-					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-						Archived domains
-					</h2>
-					<ul className="mt-2">
+					<h2 className="label text-ink-4">Archived domains</h2>
+					<ul className="list-card mt-3">
 						{archived.map((d) => (
 							<DomainRowItem
 								key={d.id}
@@ -66,16 +64,14 @@ export default async function SettingsPage() {
 			)}
 
 			<section className="mt-8" aria-label="Notifications">
-				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-					Notifications
-				</h2>
+				<h2 className="label text-ink-4">Notifications</h2>
 				<div className="mt-2 hairline pb-4">
 					<PushToggle />
 				</div>
 			</section>
 
 			<section className="mt-8" aria-label="App">
-				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">App</h2>
+				<h2 className="label text-ink-4">App</h2>
 				<TimezoneForm current={tz} />
 				<ReminderForm
 					offsetMinutes={reminderSettings.offsetMinutes}

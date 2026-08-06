@@ -3,7 +3,7 @@ export default function Loading() {
 		<div>
 			<header className="hairline-strong flex items-end justify-between pb-4">
 				<div>
-					<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Notes</p>
+					<p className="label">Notes</p>
 					<h1 className="mt-1 font-serif text-3xl text-ink">Loose thoughts</h1>
 				</div>
 			</header>

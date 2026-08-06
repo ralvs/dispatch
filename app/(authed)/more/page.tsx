@@ -13,16 +13,14 @@ export default async function MorePage() {
 	return (
 		<div>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">More</p>
+				<p className="label">More</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">The rest of the desk</h1>
 			</header>
 
 			{MORE_SECTIONS.map((section) => (
 				<section key={section.title} className="mt-6" aria-label={section.title}>
-					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-						{section.title}
-					</h2>
-					<ul className="mt-1">
+					<h2 className="label text-ink-4">{section.title}</h2>
+					<ul className="list-card mt-3">
 						{section.items.map((item) => (
 							<li key={item.key} className="hairline">
 								<Link
@@ -30,7 +28,7 @@ export default async function MorePage() {
 									className="flex items-baseline justify-between py-3 font-serif text-lg text-ink hover:text-accent"
 								>
 									{item.label}
-									<span aria-hidden="true" className="font-mono text-meta text-ink-4">
+									<span aria-hidden="true" className="text-meta text-ink-4">
 										→
 									</span>
 								</Link>

@@ -82,7 +82,7 @@ export default function SignInPage() {
 	if (checkingSession) {
 		return (
 			<main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6 pb-24">
-				<p className="font-mono text-eyebrow uppercase text-ink-3">Dispatch</p>
+				<p className="label">Dispatch</p>
 				<p className="mt-4 font-serif text-ink-3" role="status">
 					Checking session…
 				</p>
@@ -92,7 +92,7 @@ export default function SignInPage() {
 
 	return (
 		<main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6 pb-24">
-			<p className="font-mono text-eyebrow uppercase text-ink-3">Dispatch</p>
+			<p className="label">Dispatch</p>
 			<h1 className="mt-1 font-serif text-3xl text-ink">Sign in</h1>
 			<div className="hairline-strong mt-6" />
 

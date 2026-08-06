@@ -16,11 +16,9 @@ function TodayFallback({ todayIso }: { todayIso: string }) {
 		<div>
 			<header className="hairline-strong pb-4">
 				<div className="flex items-baseline justify-between">
-					<h1 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-						{formatDateline(todayIso)}
-					</h1>
+					<h1 className="label">{formatDateline(todayIso)}</h1>
 				</div>
-				<p className="display-tight gradient-text-mesh mt-1 w-fit font-serif text-4xl">Dispatch</p>
+				<p className="display-tight mt-1 w-fit font-serif text-4xl text-ink">Dispatch</p>
 			</header>
 
 			<span role="status" className="sr-only">

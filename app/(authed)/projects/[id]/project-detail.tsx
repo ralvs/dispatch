@@ -51,12 +51,12 @@ export function ProjectDetail({
 	return (
 		<div className={pending ? "opacity-50" : ""}>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Project</p>
+				<p className="label">Project</p>
 				<h1 className="mt-1 flex items-center gap-2 font-serif text-3xl text-ink">
 					<ColorDot color={project.color} />
 					{project.name}
 				</h1>
-				<p className="mt-1 flex items-center gap-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-4">
+				<p className="mt-1 flex items-center gap-1.5 label text-ink-4">
 					{statusLabel(project.status)}
 					{domain && (
 						<>
@@ -151,32 +151,32 @@ export function ProjectDetail({
 					<div>
 						<dl className="grid grid-cols-2 gap-2 text-sm text-ink">
 							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Type</dt>
+								<dt className="label">Type</dt>
 								<dd>{project.type ? projectTypeLabel(project.type) : "—"}</dd>
 							</div>
 							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Kind</dt>
+								<dt className="label">Kind</dt>
 								<dd>{kindLabel(project.kind)}</dd>
 							</div>
 							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Engagement</dt>
+								<dt className="label">Engagement</dt>
 								<dd>{engagementTypeLabel(project.engagement_type)}</dd>
 							</div>
 							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Quoted hours</dt>
+								<dt className="label">Quoted hours</dt>
 								<dd>{project.quoted_hours ?? "—"}</dd>
 							</div>
 							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Start date</dt>
+								<dt className="label">Start date</dt>
 								<dd>{project.start_date ?? "—"}</dd>
 							</div>
 							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Target date</dt>
+								<dt className="label">Target date</dt>
 								<dd>{project.target_date ?? "—"}</dd>
 							</div>
 							{project.description && (
 								<div className="col-span-2">
-									<dt className="font-mono text-eyebrow uppercase text-ink-3">Description</dt>
+									<dt className="label">Description</dt>
 									<dd className="whitespace-pre-wrap">{project.description}</dd>
 								</div>
 							)}
@@ -266,8 +266,8 @@ function MilestonesSection({
 	return (
 		<section className="mt-14" aria-label="Milestones">
 			<div className="flex items-center justify-between">
-				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Milestones</h2>
-				<span className="font-mono text-meta text-ink-4">{Math.round(progress * 100)}%</span>
+				<h2 className="label text-ink-4">Milestones</h2>
+				<span className="text-meta text-ink-4">{Math.round(progress * 100)}%</span>
 			</div>
 			<div
 				className="mt-2 h-1.5 w-full bg-line"
@@ -280,7 +280,7 @@ function MilestonesSection({
 				<div className="h-full bg-ink" style={{ width: `${progress * 100}%` }} />
 			</div>
 
-			<ul className="mt-3">
+			<ul className="list-card mt-3">
 				{milestones.map((m) => (
 					<li key={m.id} className="hairline flex items-center justify-between gap-3 py-3">
 						<div className="flex items-center gap-2">
@@ -304,7 +304,7 @@ function MilestonesSection({
 									{m.title}
 								</span>
 							</Checkbox>
-							<span className="font-mono text-meta text-ink-4">w{m.weight}</span>
+							<span className="text-meta text-ink-4">w{m.weight}</span>
 						</div>
 						<Button
 							type="button"

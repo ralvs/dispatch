@@ -101,7 +101,7 @@ export function TaskRowItem({
 		handlers.onDelete();
 	}
 
-	const titleClass = `relative block max-w-full text-left font-serif text-base after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] active:opacity-70 ${
+	const titleClass = `relative block max-w-full text-left font-serif text-base after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] active:translate-y-px ${
 		done ? "text-ink-4 line-through" : "text-ink"
 	} ${canEdit || !manageable ? "hover:text-accent-ink" : ""}`;
 
@@ -168,7 +168,7 @@ export function TaskRowItem({
 						)}
 					</span>
 				</p>
-				<p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-meta text-ink-4">
+				<p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-meta text-ink-4">
 					<PriorityBadge priority={task.priority} className={done ? "opacity-50" : undefined} />
 					<span>
 						<span className="inline-flex items-center gap-1">
@@ -232,7 +232,7 @@ export function TaskRowItem({
 					aria-pressed={starred}
 					disabled={done}
 					onClick={handlers.onToggleTop3}
-					className={`hit-area relative inline-flex size-4 items-center justify-center leading-none [--hit-x:8px] [--hit-y:14px] active:opacity-70 ${
+					className={`hit-area relative inline-flex size-4 items-center justify-center leading-none [--hit-x:8px] [--hit-y:14px] active:translate-y-px ${
 						starred ? "text-accent" : "text-ink-4 hover:text-ink-2"
 					} ${done ? "invisible" : ""}`}
 				>

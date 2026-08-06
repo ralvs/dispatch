@@ -2,7 +2,7 @@ export default function Loading() {
 	return (
 		<div>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">More</p>
+				<p className="label">More</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">The rest of the desk</h1>
 			</header>
 

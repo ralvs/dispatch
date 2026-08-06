@@ -20,14 +20,14 @@ export function NotificationRow({
 	return (
 		<li className="hairline py-3">
 			<div className="flex items-center justify-between gap-4">
-				<p className="flex items-center gap-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+				<p className="flex items-center gap-1.5 label">
 					{unread && (
 						<span aria-hidden className="inline-block h-1.5 w-1.5 rounded-pill bg-accent" />
 					)}
 					{notification.type}
 					{unread && <span className="sr-only"> (unread)</span>}
 				</p>
-				<p className="shrink-0 font-mono text-meta text-ink-4">
+				<p className="shrink-0 text-meta text-ink-4">
 					{formatInstant(notification.created_at, tz)}
 				</p>
 			</div>
@@ -37,7 +37,7 @@ export function NotificationRow({
 				{notification.source_url && (
 					<a
 						href={notification.source_url}
-						className="inline-flex h-7 items-center px-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink active:opacity-70"
+						className="inline-flex h-7 items-center px-2 label hover:text-ink active:translate-y-px"
 					>
 						Open →
 					</a>

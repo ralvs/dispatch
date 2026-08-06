@@ -43,7 +43,7 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 			<blockquote className="max-w-prose break-words font-serif text-base italic text-ink">
 				“{quote.text}”
 			</blockquote>
-			<p className="mt-1 font-mono text-meta text-ink-4">
+			<p className="mt-1 text-meta text-ink-4">
 				{quote.source_author ?? quote.source_type ?? "—"}
 				{annotations !== null
 					? ` · ${annotations.length} annotation${annotations.length === 1 ? "" : "s"}`

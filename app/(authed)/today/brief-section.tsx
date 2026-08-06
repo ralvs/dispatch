@@ -10,7 +10,7 @@ import { CadenceBar } from "./cadence-bar";
 export function BriefSection({ lines }: { lines: BriefLine[] }) {
 	return (
 		<section aria-label="In brief">
-			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">In brief</h2>
+			<h2 className="label">In brief</h2>
 			{lines.length === 0 ? (
 				<p className="py-8 font-serif italic text-ink-3">
 					Nothing past cadence. Every domain is within its rhythm.

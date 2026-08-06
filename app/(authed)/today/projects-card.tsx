@@ -7,14 +7,12 @@ export function ProjectsCard({ projects }: { projects: ProjectBrief[] }) {
 	return (
 		<section className="mt-8" aria-label="Active projects">
 			<div className="flex items-baseline justify-between">
-				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-					Projects · {projects.length} active
-				</h2>
-				<Link href="/projects" className="font-mono text-meta text-ink-4 hover:text-ink-2">
+				<h2 className="label">Projects · {projects.length} active</h2>
+				<Link href="/projects" className="text-meta text-ink-4 hover:text-ink-2">
 					All →
 				</Link>
 			</div>
-			<ul className="mt-2">
+			<ul className="list-card mt-3">
 				{projects.map((p) => (
 					<li key={p.id} className="hairline py-3">
 						<Link href={`/projects/${p.id}`} className="block">
@@ -25,7 +23,7 @@ export function ProjectsCard({ projects }: { projects: ProjectBrief[] }) {
 								</span>
 							</div>
 							{p.nextMilestone && (
-								<p className="mt-0.5 truncate font-mono text-meta text-ink-4">
+								<p className="mt-0.5 truncate text-meta text-ink-4">
 									Next · {p.nextMilestone.title}
 								</p>
 							)}

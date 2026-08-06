@@ -16,7 +16,7 @@ export default function AuthedNotFound() {
 	return (
 		<div>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Not found</p>
+				<p className="label">Not found</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">Nothing at this address</h1>
 				<p className="mt-1 text-meta text-ink-3">
 					It was deleted, or the link points somewhere that never existed.
@@ -32,7 +32,7 @@ export default function AuthedNotFound() {
 					<Link
 						key={href}
 						href={href}
-						className="rounded-md border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-accent hover:text-ink active:opacity-70"
+						className="rounded-pill border border-line-strong px-3 py-2 label hover:border-accent hover:text-ink active:translate-y-px"
 					>
 						{label}
 					</Link>

@@ -152,7 +152,7 @@ function MentionDropdown({
 						e.preventDefault();
 						onPick(item);
 					}}
-					className={`block w-full truncate px-3 py-1.5 text-left font-mono text-meta ${
+					className={`block w-full truncate px-3 py-1.5 text-left text-meta ${
 						index === selected ? "bg-accent-bg text-accent-ink" : "text-ink-2"
 					}`}
 				>

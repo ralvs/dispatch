@@ -10,7 +10,7 @@ import { formatDay, formatDayNavLabel, shiftDay } from "@/lib/dates";
 
 // The bordered button stays 28×28; hit-area grows the tap target to 44px.
 const STEP =
-	"inline-flex h-7 w-7 items-center justify-center rounded-control border border-line text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70 disabled:opacity-40";
+	"inline-flex h-7 w-7 items-center justify-center rounded-control border border-line text-ink-3 hover:border-line-strong hover:text-ink active:translate-y-px disabled:opacity-40";
 
 export function DayNav({
 	dateIso,
@@ -45,7 +45,7 @@ export function DayNav({
 					type="button"
 					disabled={pending}
 					onClick={() => onSelect(todayIso)}
-					className="inline-flex h-7 items-center rounded-control border border-line px-2 font-mono text-meta uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70 disabled:opacity-40"
+					className="inline-flex h-7 items-center rounded-control border border-line px-2 text-meta font-medium text-ink-3 hover:border-line-strong hover:text-ink active:translate-y-px disabled:opacity-40"
 				>
 					Today
 				</button>
@@ -61,10 +61,7 @@ export function DayNav({
 					<Icon icon={ChevronLeft} size="sm" />
 				</button>
 			</span>
-			<p
-				className="min-w-28 text-center font-mono text-eyebrow uppercase tracking-widest text-ink-2"
-				aria-live="polite"
-			>
+			<p className="min-w-28 text-center label text-ink-2" aria-live="polite">
 				{/* The relative word is the quick read; the full date is what a
 				 * screen reader and a hover both get. */}
 				<span title={formatDay(dateIso, "utc")}>{formatDayNavLabel(dateIso, todayIso)}</span>

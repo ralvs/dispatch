@@ -72,7 +72,7 @@ export function NotificationList({
 					Nothing to report. The wire is quiet.
 				</p>
 			) : (
-				<ul className="mt-4">
+				<ul className="list-card mt-3">
 					{rows.map((n) => (
 						<NotificationRow
 							key={n.id}

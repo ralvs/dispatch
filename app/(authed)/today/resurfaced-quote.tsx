@@ -29,14 +29,14 @@ export function ResurfacedQuote({
 			className="elevation-card mt-14 rounded-card border border-line bg-surface px-5 py-6"
 			aria-label="Resurfaced"
 		>
-			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Resurfaced</h2>
+			<h2 className="label">Resurfaced</h2>
 			{quote ? (
 				<>
 					<blockquote className="mt-3 font-serif text-lg italic leading-snug text-ink">
 						“{quote.text}”
 					</blockquote>
 					{(quote.source_author || quote.source_reference) && (
-						<p className="mt-2 font-mono text-meta text-ink-3">
+						<p className="mt-2 text-meta text-ink-3">
 							{quote.source_author ?? quote.source_reference}
 							{quote.source_author && quote.source_reference ? ` · ${quote.source_reference}` : ""}
 						</p>
@@ -47,7 +47,7 @@ export function ResurfacedQuote({
 					Every quote surfaced today has been skipped. Reset to start over.
 				</p>
 			)}
-			<div className="mt-4 flex items-baseline gap-5 font-mono text-meta">
+			<div className="mt-4 flex items-baseline gap-5 text-meta">
 				{quote && (
 					<>
 						<Link href="/quotes" className="text-ink-3 hover:text-ink-2">
@@ -64,7 +64,7 @@ export function ResurfacedQuote({
 									);
 								})
 							}
-							className="text-ink-3 hover:text-ink-2 active:opacity-70 disabled:opacity-50"
+							className="text-ink-3 hover:text-ink-2 active:translate-y-px disabled:opacity-50"
 						>
 							Next →
 						</button>
@@ -79,7 +79,7 @@ export function ResurfacedQuote({
 								await runAction(() => resetResurfacedAction(), "Couldn't reset skips.");
 							})
 						}
-						className="text-ink-4 hover:text-ink-2 active:opacity-70 disabled:opacity-50"
+						className="text-ink-4 hover:text-ink-2 active:translate-y-px disabled:opacity-50"
 					>
 						Reset
 					</button>

@@ -39,7 +39,7 @@ export function ChatThread() {
 									key={`${message.id}-${i}`}
 									className={
 										message.role === "user"
-											? "text-right font-mono text-sm text-ink-2"
+											? "text-right text-sm text-ink-2"
 											: "max-w-prose font-serif text-base text-ink"
 									}
 								>
@@ -59,7 +59,7 @@ export function ChatThread() {
 				{status === "streaming" ? "Answering…" : status === "ready" ? lastMessageText : ""}
 			</div>
 			{status === "streaming" && (
-				<p aria-hidden="true" className="mt-3 font-mono text-meta text-ink-4">
+				<p aria-hidden="true" className="mt-3 text-meta text-ink-4">
 					…
 				</p>
 			)}
@@ -81,7 +81,7 @@ export function ChatThread() {
 				<button
 					type="submit"
 					aria-label="Send"
-					className="self-stretch rounded-control border border-line-strong px-3 font-mono text-eyebrow uppercase tracking-widest text-ink-2 hover:text-ink active:opacity-70"
+					className="self-stretch rounded-control border border-line-strong px-3 label text-ink-2 hover:text-ink active:translate-y-px"
 				>
 					Send
 				</button>

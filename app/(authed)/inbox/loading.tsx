@@ -2,7 +2,7 @@ export default function Loading() {
 	return (
 		<div>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Inbox</p>
+				<p className="label">Inbox</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">The inbox</h1>
 				<p className="mt-1 text-meta text-ink-3">
 					Captured tasks without a home. Give each one a domain.

@@ -98,10 +98,8 @@ async function LinkSections({ sb, noteId }: { sb: Sb; noteId: string }) {
 		<>
 			{backlinks.length > 0 && (
 				<section className="mt-8" aria-label="Backlinks">
-					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-						Linked from
-					</h2>
-					<ul className="mt-2">
+					<h2 className="label text-ink-4">Linked from</h2>
+					<ul className="list-card mt-3">
 						{backlinks.map((b) => (
 							<li key={b.id} className="hairline">
 								<Link href={`/notes/${b.note_id}`} className="block py-2 hover:bg-surface">
@@ -116,9 +114,9 @@ async function LinkSections({ sb, noteId }: { sb: Sb; noteId: string }) {
 			)}
 
 			<section className="mt-8" aria-label="Linked items">
-				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Linked</h2>
+				<h2 className="label text-ink-4">Linked</h2>
 				{manualLinks.length > 0 && (
-					<ul className="mt-2">
+					<ul className="list-card mt-3">
 						{manualLinks.map((link) => {
 							const task =
 								link.target_type === "task" && link.target_task_id
@@ -148,7 +146,7 @@ async function LinkSections({ sb, noteId }: { sb: Sb; noteId: string }) {
 										<button
 											type="submit"
 											aria-label="Remove link"
-											className="inline-flex shrink-0 text-ink-4 hover:text-accent-slip active:opacity-70"
+											className="inline-flex shrink-0 text-ink-4 hover:text-accent-slip active:translate-y-px"
 										>
 											<Icon icon={X} size="sm" />
 										</button>
@@ -188,10 +186,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 	return (
 		<div>
 			<nav aria-label="Breadcrumb" className="pb-4">
-				<Link
-					href="/notes"
-					className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
-				>
+				<Link href="/notes" className="label hover:text-ink">
 					← Notes
 				</Link>
 			</nav>

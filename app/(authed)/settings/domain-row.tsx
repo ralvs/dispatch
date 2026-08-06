@@ -124,7 +124,7 @@ export function DomainRowItem({
 					? "Flags after: never — no cadence rule"
 					: `Flags after: ${cadenceDays} day${cadenceDays === 1 ? "" : "s"}`}
 			</p>
-			<p className="mt-0.5 font-mono text-meta text-ink-4">
+			<p className="mt-0.5 text-meta text-ink-4">
 				Last shipped: {domain.last_shipped_at ? formatInstant(domain.last_shipped_at, tz) : "never"}
 			</p>
 

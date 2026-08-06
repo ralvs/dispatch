@@ -25,16 +25,13 @@ export function RoutineCheckRow({
 				</span>
 			)}
 			{row.streak > 1 && (
-				<span
-					className="shrink-0 font-mono text-meta text-ink-3"
-					title={`${row.streak}-day streak`}
-				>
+				<span className="shrink-0 text-meta text-ink-3" title={`${row.streak}-day streak`}>
 					<span aria-hidden="true">🔥</span> {row.streak}
 				</span>
 			)}
 			{row.missed && !row.done && (
 				<span
-					className="shrink-0 font-mono text-meta text-accent-slip"
+					className="shrink-0 text-meta text-accent-slip"
 					title="Past its time and still unchecked"
 				>
 					<span aria-hidden="true">⚠</span> missed

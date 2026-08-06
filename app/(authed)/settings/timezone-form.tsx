@@ -43,7 +43,7 @@ export function TimezoneForm({ current }: { current: string }) {
 			<Button type="submit" variant="tertiary" size="sm" isPending={pending} disabled={pending}>
 				{pending ? "Saving…" : "Save"}
 			</Button>
-			<p className="w-full font-mono text-meta text-ink-4">
+			<p className="w-full text-meta text-ink-4">
 				Day boundaries, due dates, and every "today" in the app follow this zone.
 			</p>
 		</form>

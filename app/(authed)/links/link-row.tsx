@@ -34,18 +34,16 @@ export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
 					className={`min-w-0 flex-1 text-sm hover:text-accent ${unread ? "text-ink" : "text-ink-2"}`}
 				>
 					{displayTitle(link)}
-					<span aria-hidden className="ml-1.5 font-mono text-meta text-ink-4">
+					<span aria-hidden className="ml-1.5 text-meta text-ink-4">
 						↗
 					</span>
 				</a>
-				<p className="shrink-0 font-mono text-meta text-ink-4">
-					{formatInstant(link.created_at, tz)}
-				</p>
+				<p className="shrink-0 text-meta text-ink-4">{formatInstant(link.created_at, tz)}</p>
 			</div>
 
 			{link.description && <p className="mt-1 text-meta text-ink-3">{link.description}</p>}
 
-			<p className="mt-1 truncate font-mono text-meta text-ink-4">
+			<p className="mt-1 truncate text-meta text-ink-4">
 				{link.url}
 				{link.source ? ` · ${link.source}` : ""}
 			</p>
@@ -55,7 +53,7 @@ export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
 					type="button"
 					disabled={pending}
 					onClick={() => mark(unread ? "read" : "unread")}
-					className="rounded-control border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
+					className="rounded-control border border-line px-2 py-1 label hover:border-line-strong hover:text-ink active:translate-y-px"
 				>
 					{unread ? "Mark read" : "Mark unread"}
 				</button>
@@ -64,7 +62,7 @@ export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
 						type="button"
 						disabled={pending}
 						onClick={() => mark("dismissed")}
-						className="rounded-control border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
+						className="rounded-control border border-line px-2 py-1 label hover:border-line-strong hover:text-ink active:translate-y-px"
 					>
 						Dismiss
 					</button>

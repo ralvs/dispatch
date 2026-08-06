@@ -24,7 +24,7 @@ function NoteLinkRow({
 		<li className="hairline flex items-start">
 			<Link href={`/notes/${note.id}`} className="block flex-1 py-3 hover:bg-surface">
 				<span className="block truncate font-serif text-base text-ink">{displayTitle(note)}</span>
-				<span className="mt-0.5 block font-mono text-meta text-ink-4">
+				<span className="mt-0.5 block text-meta text-ink-4">
 					{formatInstant(note.created_at, tz)}
 					{note.needs_review ? " · needs review" : ""}
 					{note.tags.length > 0 ? ` · ${note.tags.join(", ")}` : ""}
@@ -35,7 +35,7 @@ function NoteLinkRow({
 				aria-label={pinned ? "Unpin note" : "Pin note"}
 				aria-pressed={pinned}
 				onClick={onTogglePin}
-				className={`shrink-0 px-2 py-3 font-mono text-meta active:opacity-70 ${pinned ? "text-accent" : "text-ink-4 hover:text-ink"}`}
+				className={`shrink-0 px-2 py-3 text-meta active:translate-y-px ${pinned ? "text-accent" : "text-ink-4 hover:text-ink"}`}
 			>
 				<Icon icon={Star} size="sm" fill={pinned ? "currentColor" : "none"} />
 			</button>
@@ -60,11 +60,11 @@ function Section({
 	if (notes.length === 0 && !empty) return null;
 	return (
 		<section className="mt-6" aria-label={label}>
-			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">{label}</h2>
+			<h2 className="label text-ink-4">{label}</h2>
 			{notes.length === 0 ? (
 				<p className="py-8 text-center font-serif italic text-ink-3">{empty}</p>
 			) : (
-				<ul className="mt-2">
+				<ul className="list-card mt-3">
 					{notes.map((n) => (
 						<NoteLinkRow key={n.id} note={n} tz={tz} onTogglePin={() => onTogglePin(n)} />
 					))}

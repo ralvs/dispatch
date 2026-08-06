@@ -19,7 +19,7 @@ export function ColorSwatchPicker({
 }) {
 	return (
 		<fieldset className="block min-w-0">
-			<legend className="font-mono text-eyebrow uppercase text-ink-3">Color</legend>
+			<legend className="label">Color</legend>
 			<div className="mt-1 flex flex-wrap items-center">
 				<label
 					className="relative flex size-11 cursor-pointer items-center justify-center"
@@ -33,7 +33,7 @@ export function ColorSwatchPicker({
 						defaultChecked={!defaultValue}
 						className="peer sr-only"
 					/>
-					<span className="flex size-7 items-center justify-center rounded-pill border border-line font-mono text-meta text-ink-4 transition-colors hover:border-line-strong peer-checked:border-ink peer-checked:text-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent">
+					<span className="flex size-7 items-center justify-center rounded-pill border border-line text-meta text-ink-4 transition-colors hover:border-line-strong peer-checked:border-ink peer-checked:text-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent">
 						<Icon icon={X} size="sm" />
 					</span>
 				</label>

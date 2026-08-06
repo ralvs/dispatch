@@ -10,7 +10,7 @@ export default async function QuotesPage() {
 	return (
 		<div>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Quotes</p>
+				<p className="label">Quotes</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">Words worth keeping</h1>
 			</header>
 
@@ -24,7 +24,7 @@ export default async function QuotesPage() {
 						Nothing saved yet. Capture something you read or heard.
 					</p>
 				) : (
-					<ul className="mt-2">
+					<ul className="list-card mt-3">
 						{quotes.map((q) => (
 							<QuoteRowItem key={q.id} quote={q} />
 						))}

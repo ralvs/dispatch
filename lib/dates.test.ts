@@ -70,8 +70,8 @@ describe("isoWeek / formatDateline", () => {
 		expect(isoWeek("2027-01-01")).toBe(53);
 	});
 
-	it("renders the masthead dateline in uppercase mono style", () => {
-		expect(formatDateline("2026-07-17")).toBe("FRI · JUL 17 · WEEK 29");
+	it("renders the masthead dateline in sentence case", () => {
+		expect(formatDateline("2026-07-17")).toBe("Fri · Jul 17 · Week 29");
 	});
 
 	it("throws on an invalid date", () => {
@@ -153,18 +153,18 @@ describe("formatDayNavLabel", () => {
 	const today = "2026-07-29";
 
 	it("names the three days around today in words", () => {
-		expect(formatDayNavLabel(today, today)).toBe("TODAY");
-		expect(formatDayNavLabel("2026-07-28", today)).toBe("YESTERDAY");
-		expect(formatDayNavLabel("2026-07-30", today)).toBe("TOMORROW");
+		expect(formatDayNavLabel(today, today)).toBe("Today");
+		expect(formatDayNavLabel("2026-07-28", today)).toBe("Yesterday");
+		expect(formatDayNavLabel("2026-07-30", today)).toBe("Tomorrow");
 	});
 
 	it("falls back to a dateline further out", () => {
-		expect(formatDayNavLabel("2026-08-03", today)).toBe("MON · AUG 3");
-		expect(formatDayNavLabel("2026-07-26", today)).toBe("SUN · JUL 26");
+		expect(formatDayNavLabel("2026-08-03", today)).toBe("Mon · Aug 3");
+		expect(formatDayNavLabel("2026-07-26", today)).toBe("Sun · Jul 26");
 	});
 
 	it("crosses a month boundary without drifting", () => {
-		expect(formatDayNavLabel("2026-08-01", "2026-07-31")).toBe("TOMORROW");
-		expect(formatDayNavLabel("2026-07-31", "2026-08-01")).toBe("YESTERDAY");
+		expect(formatDayNavLabel("2026-08-01", "2026-07-31")).toBe("Tomorrow");
+		expect(formatDayNavLabel("2026-07-31", "2026-08-01")).toBe("Yesterday");
 	});
 });

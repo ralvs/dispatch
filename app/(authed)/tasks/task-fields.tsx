@@ -15,7 +15,7 @@ export type TaskDomainOption = {
 };
 
 /** Label always stacks above its control (block, not inline beside). */
-const FIELD_LABEL = "block font-mono text-eyebrow uppercase text-ink-3";
+const FIELD_LABEL = "block label";
 
 /**
  * Shared field shell for non-primitive surfaces in this directory (mention
@@ -29,7 +29,7 @@ export const CONTROL = fieldControl({ size: "md" });
  * field beside them, so they keep the hit area and drop the chrome.
  */
 export const CHIP =
-	"h-9 whitespace-nowrap rounded-control px-2 font-mono text-eyebrow uppercase text-ink-3 transition-colors hover:bg-surface hover:text-ink";
+	"h-9 whitespace-nowrap rounded-control px-2 label transition-colors hover:bg-surface hover:text-ink";
 export const CHIP_ON = "bg-accent-bg text-accent-ink hover:bg-accent-bg hover:text-accent-ink";
 /**
  * Reset clears rather than sets, so it sits with the group's label instead of

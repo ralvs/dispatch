@@ -2,7 +2,7 @@ export default function Loading() {
 	return (
 		<div>
 			<nav aria-label="Breadcrumb" className="pb-4">
-				<span className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">← Notes</span>
+				<span className="label">← Notes</span>
 			</nav>
 
 			<span role="status" className="sr-only">

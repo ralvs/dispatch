@@ -273,7 +273,7 @@ export function TaskList({
 		// status filter now, so it has to read the same client state the list does.
 		<div>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Tasks</p>
+				<p className="label">Tasks</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">The docket</h1>
 				<div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
 					<TaskStatusStrip
@@ -314,10 +314,8 @@ export function TaskList({
 					 * both read from the one optimistic list. */}
 					{top3.length > 0 && (
 						<section className="mt-8" aria-label="Today's top 3">
-							<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-								Top 3 · today
-							</h2>
-							<ul className="mt-2">
+							<h2 className="label">Top 3 · today</h2>
+							<ul className="list-card mt-3">
 								{top3.map((t) => (
 									<TaskRowItem
 										key={t.id}
@@ -333,7 +331,7 @@ export function TaskList({
 								))}
 							</ul>
 							{slotsOpen > 0 && (
-								<p className="mt-2 font-mono text-meta text-ink-4">
+								<p className="mt-2 text-meta text-ink-4">
 									{slotsOpen} slot{slotsOpen === 1 ? "" : "s"} open · tap ☆ on a row to pin
 								</p>
 							)}
@@ -341,7 +339,7 @@ export function TaskList({
 					)}
 
 					<section className="mt-8" aria-label="Open tasks">
-						<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Open</h2>
+						<h2 className="label">Open</h2>
 						{filteredOpen.length === 0 ? (
 							<p className="py-8 text-center font-serif italic text-ink-3">
 								Nothing on the docket. Capture something.
@@ -349,7 +347,7 @@ export function TaskList({
 						) : (
 							// Everything open may already be starred, in which case the band
 							// above carries the lot and this one renders nothing at all.
-							<ul className="mt-2">
+							<ul className="list-card mt-3">
 								{rest.map((t) => (
 									<TaskRowItem
 										key={t.id}
@@ -369,10 +367,8 @@ export function TaskList({
 
 					{recentDoneBand.length > 0 && (
 						<section className="mt-10" aria-label="Recently completed">
-							<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-								Recently done
-							</h2>
-							<ul className="mt-2">
+							<h2 className="label text-ink-4">Recently done</h2>
+							<ul className="list-card mt-3">
 								{recentDoneBand.map((t) => (
 									<TaskRowItem
 										key={t.id}
@@ -395,11 +391,11 @@ export function TaskList({
 
 			{status === "today" && (
 				<section className="mt-8" aria-label="Tasks due today">
-					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Today</h2>
+					<h2 className="label">Today</h2>
 					{todayTasks.length === 0 ? (
 						<p className="py-8 text-center font-serif italic text-ink-3">Nothing due today.</p>
 					) : (
-						<ul className="mt-2">
+						<ul className="list-card mt-3">
 							{todayTasks.map((t) => (
 								<TaskRowItem
 									key={t.id}
@@ -420,11 +416,11 @@ export function TaskList({
 
 			{status === "overdue" && (
 				<section className="mt-8" aria-label="Overdue tasks">
-					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Overdue</h2>
+					<h2 className="label">Overdue</h2>
 					{overdueTasks.length === 0 ? (
 						<p className="py-8 text-center font-serif italic text-ink-3">Nothing overdue.</p>
 					) : (
-						<ul className="mt-2">
+						<ul className="list-card mt-3">
 							{overdueTasks.map((t) => (
 								<TaskRowItem
 									key={t.id}

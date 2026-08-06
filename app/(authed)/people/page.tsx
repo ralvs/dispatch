@@ -10,7 +10,7 @@ export default async function PeoplePage() {
 	return (
 		<div>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">People</p>
+				<p className="label">People</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">Who matters</h1>
 			</header>
 
@@ -24,7 +24,7 @@ export default async function PeoplePage() {
 						No one here yet. Add someone.
 					</p>
 				) : (
-					<ul className="mt-2">
+					<ul className="list-card mt-3">
 						{people.map((p) => (
 							<PersonRowItem key={p.id} person={p} />
 						))}

@@ -17,8 +17,8 @@ import { ScheduleRow } from "./schedule-row";
 function Band({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<div className="mt-8">
-			<h3 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">{title}</h3>
-			<ul className="mt-1">{children}</ul>
+			<h3 className="label text-ink-4">{title}</h3>
+			<ul className="list-card mt-3">{children}</ul>
 		</div>
 	);
 }
@@ -156,7 +156,7 @@ export function DayBands({
 							)}
 						</Band>
 						{slotsOpen > 0 && (
-							<p className="mt-2 font-mono text-meta text-ink-4">
+							<p className="mt-2 text-meta text-ink-4">
 								{slotsOpen} Top 3 slot{slotsOpen === 1 ? "" : "s"} open · tap ☆ on a row to pin
 							</p>
 						)}

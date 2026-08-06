@@ -51,7 +51,7 @@ export function ReminderForm({
 			<Button type="submit" variant="tertiary" size="sm" isPending={pending} disabled={pending}>
 				{pending ? "Saving…" : "Save"}
 			</Button>
-			<p className="w-full font-mono text-meta text-ink-4">
+			<p className="w-full text-meta text-ink-4">
 				Measured from a task's due time. The anchor time is used when a task has a due date but no
 				due time. A task with no due date never fires a reminder. Reminders are global — there is no
 				per-task override.

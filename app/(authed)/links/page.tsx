@@ -16,7 +16,7 @@ export default async function LinksPage() {
 	return (
 		<div>
 			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Links</p>
+				<p className="label">Links</p>
 				<h1 className="mt-1 font-serif text-3xl text-ink">The reading pile</h1>
 				<p className="mt-1 text-meta text-ink-3">
 					{unread.length === 0
@@ -33,10 +33,8 @@ export default async function LinksPage() {
 				<>
 					{unread.length > 0 && (
 						<section className="mt-6" aria-label="Unread links">
-							<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-								Unread
-							</h2>
-							<ul className="mt-1">
+							<h2 className="label text-ink-4">Unread</h2>
+							<ul className="list-card mt-3">
 								{unread.map((link) => (
 									<LinkRowItem key={link.id} link={link} tz={tz} />
 								))}
@@ -46,8 +44,8 @@ export default async function LinksPage() {
 
 					{read.length > 0 && (
 						<section className="mt-8" aria-label="Read links">
-							<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Read</h2>
-							<ul className="mt-1">
+							<h2 className="label text-ink-4">Read</h2>
+							<ul className="list-card mt-3">
 								{read.map((link) => (
 									<LinkRowItem key={link.id} link={link} tz={tz} />
 								))}

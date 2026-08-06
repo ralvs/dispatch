@@ -108,9 +108,7 @@ export function PushToggle() {
 
 	if (status === "unsupported") {
 		return (
-			<p className="font-mono text-meta text-ink-4">
-				Push notifications aren't configured for this browser.
-			</p>
+			<p className="text-meta text-ink-4">Push notifications aren't configured for this browser.</p>
 		);
 	}
 
@@ -122,7 +120,7 @@ export function PushToggle() {
 			aria-label={subscribed ? "Turn off push notifications" : "Turn on push notifications"}
 			disabled={busy}
 			onClick={subscribed ? unsubscribe : subscribe}
-			className="inline-flex h-9 items-center rounded-control border border-line px-3 font-mono text-meta text-ink-3 transition-opacity hover:border-ink hover:text-ink active:opacity-70 disabled:opacity-50"
+			className="inline-flex h-9 items-center rounded-control border border-line px-3 text-meta text-ink-3 transition-opacity hover:border-ink hover:text-ink active:translate-y-px disabled:opacity-50"
 		>
 			{subscribed ? "Disable push notifications" : "Enable push notifications"}
 		</button>

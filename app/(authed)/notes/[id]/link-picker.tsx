@@ -78,7 +78,7 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 					type="button"
 					disabled={pending}
 					onClick={() => toggle("task")}
-					className="rounded-control border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
+					className="rounded-control border border-line px-2 py-1 label hover:border-line-strong hover:text-ink active:translate-y-px"
 				>
 					{LABELS.task}
 				</button>
@@ -86,7 +86,7 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 					type="button"
 					disabled={pending}
 					onClick={() => toggle("event")}
-					className="rounded-control border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
+					className="rounded-control border border-line px-2 py-1 label hover:border-line-strong hover:text-ink active:translate-y-px"
 				>
 					{LABELS.event}
 				</button>
@@ -111,7 +111,7 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 									<button
 										type="button"
 										onClick={() => attach(r.id)}
-										className="block w-full truncate px-2 py-1.5 text-left text-sm text-ink hover:bg-surface active:opacity-70"
+										className="block w-full truncate px-2 py-1.5 text-left text-sm text-ink hover:bg-surface active:translate-y-px"
 									>
 										{r.label}
 									</button>
