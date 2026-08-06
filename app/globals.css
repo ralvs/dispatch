@@ -57,8 +57,8 @@
 [data-theme="dark"] {
 	/* warm charcoal — the same system with the lights off */
 	--bg: #1a1815;
-	--surface: #232019;
-	--surface-2: #2d2921;
+	--surface: #272319;
+	--surface-2: #322d23;
 	--ink: #f2ede3;
 	--ink-2: #a8a196;
 	--ink-3: #948d82;
@@ -76,11 +76,14 @@
 	--field-bg: #2d2921;
 	--field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
 
-	/* Dark: real shadow, not a white glow. Warm cards on a warm ground read as
-	 * lifted because the surface is lighter than the canvas, so depth can stay
-	 * conventional instead of inverting. */
-	--elevation-card: 0 1px 2px rgba(0, 0, 0, 0.24), 0 4px 12px rgba(0, 0, 0, 0.28);
-	--elevation-overlay: 0 4px 12px rgba(0, 0, 0, 0.32), 0 16px 40px rgba(0, 0, 0, 0.44);
+	/* Dark needs a lit top edge, not just a drop shadow. A dark shadow on a dark
+	 * ground is invisible, and surface-vs-canvas alone is only ~1.1:1 — which is
+	 * what 0013's inverted white glow was actually solving. The drop shadow
+	 * still seats the card; the inset hairline is what makes it read as lifted. */
+	--elevation-card: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 2px rgba(0, 0, 0, 0.3),
+		0 4px 12px rgba(0, 0, 0, 0.34);
+	--elevation-overlay: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.4),
+		0 16px 40px rgba(0, 0, 0, 0.5);
 
 	color-scheme: dark;
 }

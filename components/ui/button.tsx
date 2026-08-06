@@ -59,6 +59,10 @@ export const button = tv({
 		{ isIconOnly: true, size: "sm", class: "w-8" },
 		{ isIconOnly: true, size: "md", class: "w-10" },
 		{ isIconOnly: true, size: "lg", class: "w-11" },
+		// A pill only reads as a button at button width. Stretched full-bleed it
+		// becomes an 800px stadium that reads as a search field, so full-width
+		// controls drop to the control radius instead.
+		{ fullWidth: true, class: "rounded-control" },
 	],
 	defaultVariants: {
 		variant: "primary",
