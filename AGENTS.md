@@ -14,19 +14,13 @@ Renan Alves (renan@alves.id).
 - **Vercel AI SDK via AI Gateway** — one `AI_GATEWAY_API_KEY`, no provider keys; models in `lib/env.ts`
 - **Luxon** for all date math; **Vitest** colocated `*.test.ts`
 
-## Layout
-
-```
-app/            routes (App Router; (authed)/ group behind sign-in)
-app/api/        external HTTP surfaces only (capture, cron, calendar, widget, push, chat)
-components/     shared client components
-lib/            env, dates, schemas, constants, supabase clients, ai, services
-lib/services/   all business logic; every fn takes SupabaseClient as 1st arg
-docs/adr/       architecture decision records — read before changing direction
-supabase/       migrations + config
-```
-
 ## Iron rules
+
+Canonical statement and rationale: `docs/adr/0041-the-iron-rules.md`. Mirrored
+here because these six are worth carrying in context; the ADR wins on conflict.
+The numbering is a stable interface — cited by number across the codebase,
+never reordered.
+
 
 1. **UTC in storage, app timezone at the boundary.** Every persisted timestamp
    is UTC (`timestamptz`). Day boundaries, display, and natural-language date
@@ -45,17 +39,14 @@ supabase/       migrations + config
    never translated. UI chrome is English.
 6. **Every autonomous/external action writes a `notifications` row.**
 
-## Commands
-
-- `bun dev` — dev server (Turbopack)
-- `bun run check` — biome + tsc + vitest; must be green before every commit
-- `bun run test` / `test:watch`
-
 ## Conventions
 
+- `bun run check` must be green before every commit
+- Read `docs/adr/` before changing direction; new ADR whenever a decision
+  deviates from the reference implementation or this file
+- `app/api/` is for external HTTP surfaces only — everything else is a server
+  action behind `requireOwner()`
 - Conventional Commits; incremental commits per logical group; author
   `Renan Alves <renan@alves.id>`
-- New ADR in `docs/adr/` whenever a decision deviates from the reference
-  implementation or this file
 - Reference implementation (feature semantics, prompts, schema shape):
   https://github.com/ralvs/jerad-ops

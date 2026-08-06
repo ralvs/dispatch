@@ -78,7 +78,7 @@ never a runtime error in the executor. Parser fallbacks are `unavailable`
 **Growth path to the full reference vocabulary:** add a service, add its
 executor case, add a variant here. The reference vocabulary (projects,
 people, inventory, milestones, calendar, resurface-weight) is the roadmap;
-the reference impl stays linked in `CLAUDE.md`. No rewrite needed — quotes,
+the reference impl stays linked in `AGENTS.md`. No rewrite needed — quotes,
 journal entries, and health metrics landed exactly this way.
 
 ## Ledger applies at ingest, not at the palette

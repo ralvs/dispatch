@@ -12,7 +12,7 @@ import { WallClockTimeSchema } from "@/lib/schemas/time";
 // vocabulary added (projects, people, inventory, …) is deferred; the growth
 // path is: add a service + an executor case + a variant here. The full
 // reference vocabulary is recorded in the ADR and the reference impl stays
-// linked in CLAUDE.md.
+// linked in AGENTS.md.
 //
 // Unknown/unsupported verbs the model might emit are NOT listed here, so they
 // fail this schema during parsing (→ typed "failed" → degrade to a

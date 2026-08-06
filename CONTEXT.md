@@ -1,8 +1,8 @@
 # Dispatch — domain glossary
 
 Load-bearing terms used across the code and docs. One or two sentences each,
-grounded in what the code actually does. See `CLAUDE.md` for the iron rules and
-`docs/adr/` for the decisions behind them.
+grounded in what the code actually does. See `docs/adr/0041-the-iron-rules.md`
+for the iron rules and `docs/adr/` for the decisions behind them.
 
 ## capture
 
