@@ -1,8 +1,9 @@
 "use client";
 
+import { RotateCcw } from "lucide-react";
 import { useId, useState } from "react";
 import { MentionTextarea, MentionTextInput } from "@/components/mention-input";
-import { Badge, Field, fieldControl, Input, Select } from "@/components/ui";
+import { Badge, Field, fieldControl, Icon, Input, Select } from "@/components/ui";
 import { shiftDay } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
@@ -28,11 +29,16 @@ export const CONTROL = fieldControl({ size: "md" });
  * field beside them, so they keep the hit area and drop the chrome.
  */
 export const CHIP =
-	"h-9 rounded-control px-2 font-mono text-eyebrow uppercase text-ink-3 transition-colors hover:bg-surface hover:text-ink";
+	"h-9 whitespace-nowrap rounded-control px-2 font-mono text-eyebrow uppercase text-ink-3 transition-colors hover:bg-surface hover:text-ink";
 export const CHIP_ON = "bg-accent-bg text-accent-ink hover:bg-accent-bg hover:text-accent-ink";
-/** Reset is an action, not a relative day — visually subordinate to the chips beside it. */
-const CHIP_RESET =
-	"h-9 rounded-control px-2 font-mono text-eyebrow uppercase text-ink-4 transition-colors hover:bg-surface hover:text-accent-slip disabled:pointer-events-none disabled:opacity-0";
+/**
+ * Reset clears rather than sets, so it sits with the group's label instead of
+ * among the chips — an icon that is always present and only ever changes
+ * state, so nothing beside it shifts when a date appears. Red on the way out:
+ * it is the one control here that takes an answer away.
+ */
+const RESET_BUTTON =
+	"inline-flex size-7 shrink-0 items-center justify-center rounded-control text-ink-4 transition-colors hover:bg-surface hover:text-error disabled:pointer-events-none disabled:opacity-30";
 
 /** What a due date actually gets set to, nine times out of ten. */
 const RELATIVE_DAYS = [
@@ -173,11 +179,30 @@ export function TaskMetaFields({
 	return (
 		// Two deliberate rows rather than one that happens to wrap: "when" is
 		// wide (a date, a time, three shortcuts), "where/how often/how much"
-		// are three narrow answers that line up under it.
-		<div className="space-y-4">
+		// are three answers on one grid under it. Both rows run the full width
+		// of the surface — nothing sits in a fixed-width column with dead space
+		// beside it. space-y-7 so the next row's label reads as that row's
+		// label, not as a caption on the control above it.
+		<div className="space-y-7">
 			<div className="min-w-0">
-				<span className={FIELD_LABEL}>Due</span>
-				<div className="mt-1 flex flex-wrap items-center gap-1.5">
+				<div className="flex items-center justify-between gap-3">
+					<span className={FIELD_LABEL}>Due</span>
+					{/* Not a relative day like the chips below — an action that clears
+					    date, time, and recurrence together ("no dates at all"). Always
+					    rendered so the controls under it never shift; disabled once
+					    there is nothing left to clear. */}
+					<button
+						type="button"
+						onClick={resetSchedule}
+						disabled={scheduleIsEmpty}
+						aria-label="Clear due date, time, and recurrence"
+						title="Clear due date, time, and recurrence"
+						className={RESET_BUTTON}
+					>
+						<Icon icon={RotateCcw} size="sm" />
+					</button>
+				</div>
+				<div className="mt-2 flex flex-wrap items-center gap-2">
 					<Input
 						type="date"
 						name="due_date"
@@ -190,7 +215,7 @@ export function TaskMetaFields({
 							if (next === "") setTime("");
 						}}
 						aria-label="Due date"
-						className="w-[9.5rem]"
+						className="min-w-[9.5rem] flex-1"
 					/>
 					<Input
 						type="time"
@@ -199,47 +224,36 @@ export function TaskMetaFields({
 						disabled={due === ""}
 						onChange={(event) => setTime(event.target.value)}
 						aria-label="Due time"
-						className="w-[7.5rem]"
+						className="min-w-[7.5rem] flex-1"
 					/>
-					{RELATIVE_DAYS.map(({ label, days }) => {
-						const target = shiftDay(todayIso, days);
-						const on = due === target;
-						return (
-							<button
-								key={label}
-								type="button"
-								aria-pressed={on}
-								onClick={() => setDue(on ? "" : target)}
-								className={`${CHIP} ${on ? CHIP_ON : ""}`}
-							>
-								{label}
-							</button>
-						);
-					})}
-					{/* Not a relative day like the chips above — an action that clears
-					    date, time, and recurrence together ("no dates at all"). Hidden
-					    once there is nothing left to reset. */}
-					<button
-						type="button"
-						onClick={resetSchedule}
-						disabled={scheduleIsEmpty}
-						aria-label="Clear due date, time, and recurrence"
-						className={CHIP_RESET}
-					>
-						Reset
-					</button>
+					{/* The chips take their own width and the two fields absorb whatever
+					    is left, so "+1 week" never breaks across two lines to make room
+					    for a date input that could have given it up. */}
+					<div className="flex shrink-0 items-center gap-1">
+						{RELATIVE_DAYS.map(({ label, days }) => {
+							const target = shiftDay(todayIso, days);
+							const on = due === target;
+							return (
+								<button
+									key={label}
+									type="button"
+									aria-pressed={on}
+									onClick={() => setDue(on ? "" : target)}
+									className={`${CHIP} ${on ? CHIP_ON : ""}`}
+								>
+									{label}
+								</button>
+							);
+						})}
+					</div>
 				</div>
 			</div>
 
-			<div className="flex flex-wrap items-start gap-x-6 gap-y-4">
+			<div className="grid grid-cols-1 gap-x-6 gap-y-7 sm:grid-cols-3">
 				<Field label="Domain" className="min-w-0">
 					{/* No color dot on <option> — styling native option elements is
 					    unreliable cross-browser, so this stays a plain name list. */}
-					<Select
-						name="domain_id"
-						defaultValue={defaults.domain_id ?? ""}
-						className="w-[11rem] max-w-full"
-					>
+					<Select name="domain_id" defaultValue={defaults.domain_id ?? ""} className="w-full">
 						{/* "Unfiled" is offered only when it is already the answer — on the
 						    create form (undefined) or for a task sitting in the inbox (null).
 						    A filed task never sees it, which is what keeps filing one-way
@@ -260,7 +274,7 @@ export function TaskMetaFields({
 						name="recurrence_rule"
 						value={recurrence}
 						onChange={(event) => setRecurrence(event.target.value)}
-						className="w-[11rem] max-w-full"
+						className="w-full"
 					>
 						<option value="">Never</option>
 						{RECURRENCE_PATTERNS.map((p) => (
@@ -338,19 +352,24 @@ function TaskNotesField({
 				onValueChange={setValue}
 				people={people}
 				aria-labelledby={labelId}
-				className={`${CONTROL} mt-1 block h-auto w-full py-1.5`}
+				className={`${CONTROL} mt-2 block h-auto w-full py-1.5`}
 			/>
 		</div>
 	);
 }
 
-/** Segmented priority control — radio group, colour reserved for the answer. */
+/**
+ * Segmented priority control — radio group, colour reserved for the answer.
+ * The segment fills its column rather than sizing to its four labels, so it
+ * shares the grid's rhythm with the two selects beside it instead of leaving
+ * a gap at the end of the row.
+ */
 export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) {
 	return (
 		<fieldset className="block min-w-0">
 			<legend className={FIELD_LABEL}>Priority</legend>
 			<div
-				className="mt-1 inline-flex h-9 overflow-hidden rounded-control border border-line"
+				className="mt-2 flex h-9 w-full overflow-hidden rounded-control border border-line"
 				role="radiogroup"
 				aria-label="Priority"
 			>
@@ -358,7 +377,7 @@ export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) 
 					<label
 						key={p.value}
 						title={p.title}
-						className={`relative cursor-pointer ${i > 0 ? "border-l border-line" : ""}`}
+						className={`relative flex-1 cursor-pointer ${i > 0 ? "border-l border-line" : ""}`}
 					>
 						<input
 							type="radio"
@@ -368,7 +387,7 @@ export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) 
 							className="peer sr-only"
 						/>
 						<span
-							className={`flex h-full items-center px-3 font-mono text-meta tabular-nums text-ink-3 transition-colors hover:text-ink peer-checked:shadow-[inset_0_-2px_0_currentColor] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-[-2px] peer-focus-visible:outline-accent ${PRIORITY_CELL[p.value]}`}
+							className={`flex h-full items-center justify-center px-2 font-mono text-meta tabular-nums text-ink-3 transition-colors hover:text-ink peer-checked:shadow-[inset_0_-2px_0_currentColor] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-[-2px] peer-focus-visible:outline-accent ${PRIORITY_CELL[p.value]}`}
 						>
 							{p.label}
 						</span>

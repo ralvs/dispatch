@@ -119,7 +119,9 @@ export function TaskDialog({
 				}}
 				className={`flex min-h-0 flex-1 flex-col ${pending ? "opacity-50" : ""}`}
 			>
-				<DialogBody className="space-y-4">
+				{/* space-y-7: each label belongs to the control under it, and at a
+				    tighter gap it starts reading as a caption on the one above. */}
+				<DialogBody className="space-y-7">
 					<TaskFormFields
 						domains={domains}
 						todayIso={todayIso}

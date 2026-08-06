@@ -55,6 +55,26 @@ ADR-0020 D1 still holds where it matters — the capture line is the only place
 a task is *written* on `/tasks`, and a second title field never renders beside
 the first. What changed is where `Details` puts the rest of the fields.
 
+## Decision 3 — the meta row fills the surface, Reset holds a fixed seat
+
+The fields inherited fixed widths from a form that lived in a list row
+(`w-[11rem]` selects, a priority segment sized to its four labels). In a
+dialog that left a column of dead space at the end of the row. Domain,
+Repeats and Priority are now a three-column grid that spans the surface and
+stacks on narrow screens; the priority segment stretches so its cells share
+the grid's rhythm. Due date and time absorb the width the relative chips
+don't need.
+
+Reset moved out of the chip row and onto the group's label line as an icon.
+It used to be `opacity-0` until a date existed, so the chips beside it shifted
+the moment one was set. It is now always in place and merely disabled, and it
+hovers red (`--error`) rather than blue: it is the one control in the group
+that takes an answer away rather than giving one.
+
+Label-to-control spacing went to `space-y-7`. At the previous gap each label
+sat nearer the control above it than the one it named, so it read as a
+caption on the wrong field.
+
 ## Risks accepted
 
 - **A modal for a two-field edit.** Changing one task's priority now costs an
