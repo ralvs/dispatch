@@ -2,6 +2,8 @@
 
 Date: 2026-07-19
 
+**Superseded by [0042](./0042-warm-paper-design-system.md)** (warm paper, light by default, sentence-case labels).
+
 ## Context
 
 Dispatch shipped with an "editorial newspaper" identity (warm umber palette,

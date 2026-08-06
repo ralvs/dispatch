@@ -5,6 +5,9 @@ Date: 2026-08-04
 Supersedes the **geometry** section of [0013](./0013-vercel-geist-design-system.md).
 Palette, type, and semantic color from 0013 still stand.
 
+**Geometry and field shape superseded by [0042](./0042-warm-paper-design-system.md)** (control 12 / card 20 / pill controls, filled fields). The primitive layer this ADR
+established is unchanged — only the values moved.
+
 ## Context
 
 Dispatch had no UI primitive layer — every control was a hand-typed
