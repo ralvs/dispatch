@@ -9,7 +9,7 @@ import {
 	shiftDay,
 } from "@/lib/dates";
 import { buildDaySchedule, type DaySchedule, type DaySchedulePayload } from "@/lib/day-schedule";
-import { computeRoutineStats, type RoutineStats } from "@/lib/routine-stats";
+import { computeRoutineStats, type RoutineStats, recentDaysGrid } from "@/lib/routine-stats";
 import { type CalendarEventRow, listEventsOn } from "@/lib/services/calendar";
 import { type DomainRow, listDomains } from "@/lib/services/domains";
 import { unreadLinkCount } from "@/lib/services/links";
@@ -110,6 +110,13 @@ export type RoutineBucketRow = {
 	name: string;
 	done: boolean;
 	streak: number;
+	/**
+	 * The last seven days, oldest first — the streak trail beside each row.
+	 * A number is a claim you have to trust; seven squares are the evidence
+	 * for it, and they show the shape of a habit a streak count flattens
+	 * (six-on-one-off reads as 0 as a streak and as a rhythm as a trail).
+	 */
+	trail: boolean[];
 	specificTime: string | null;
 	reminderEnabled: boolean;
 	missed: boolean;
@@ -124,6 +131,13 @@ export type ProjectBrief = {
 	id: string;
 	name: string;
 	progress: number;
+	/** Milestone headcount behind `progress`, which is weighted and so cannot
+	 * be read back as "9 of 14". The row shows both: the ring is the weighted
+	 * truth, the count is the one a person can check. */
+	doneCount: number;
+	totalCount: number;
+	/** Palette slug (lib/schemas/color.ts), or null — colours the ring. */
+	color: string | null;
 	nextMilestone: { title: string } | null;
 };
 
@@ -422,12 +436,14 @@ export function bucketRoutines(input: {
 			rows: routines
 				.filter((r) => r.time_of_day === bucket)
 				.map((r) => {
-					const stats: RoutineStats = computeRoutineStats(datesByRoutine.get(r.id) ?? [], todayIso);
+					const dates = datesByRoutine.get(r.id) ?? [];
+					const stats: RoutineStats = computeRoutineStats(dates, todayIso);
 					return {
 						id: r.id,
 						name: r.name,
 						done: stats.done_today,
 						streak: stats.current_streak,
+						trail: recentDaysGrid(dates, todayIso, 7).map((d) => d.done),
 						specificTime: r.specific_time,
 						reminderEnabled: r.reminder_enabled,
 						missed: isRoutineMissed(r.specific_time, stats.done_today, todayIso, tz, nowMs),
@@ -449,6 +465,9 @@ export function summarizeProjects(
 			id: p.id,
 			name: p.name,
 			progress: milestoneProgress(milestones),
+			doneCount: milestones.filter((m) => m.status === "done").length,
+			totalCount: milestones.length,
+			color: p.color ?? null,
 			nextMilestone: next ? { title: next.title } : null,
 		};
 	});

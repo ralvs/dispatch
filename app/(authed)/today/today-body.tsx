@@ -5,19 +5,28 @@ import {
 	loadDayScheduleInputs,
 	loadDaySchedulePayload,
 } from "@/lib/services/today";
-import { AlertsRow } from "./alerts-row";
-import { AnchorLine } from "./anchor-line";
-import { BriefSection } from "./brief-section";
+import { Counters } from "./counters";
 import { DayView } from "./day-view";
-import { LatestQuote } from "./latest-quote";
-import { Masthead } from "./masthead";
 import { ProjectsCard } from "./projects-card";
 import { ResurfacedQuote } from "./resurfaced-quote";
 import { RoutinesCard } from "./routines-card";
+import { TodayStyles } from "./today-styles";
 
-// Everything on Today that needs the view read. page.tsx Suspends this
-// so the shell paints first. Chrome is cross-request cached; schedule inputs
-// stay request-fresh for SoftRefresh honesty (docs/adr/0033).
+/**
+ * Everything on Today that needs the view read. page.tsx Suspends this so the
+ * shell paints first. Chrome is cross-request cached; schedule inputs stay
+ * request-fresh for SoftRefresh honesty (docs/adr/0033).
+ *
+ * The page reads top down: dateline → headline → counters → all-day band → day
+ * tape → then the stack, which is Timeline / Open / Resurfaced beside Top 3 /
+ * Routines / Projects on desktop, and one orientation-first column on a phone.
+ *
+ * DayView owns that whole composition because everything above the stack
+ * follows the day nav, and the stack has to be a single tree for the phone
+ * reorder to work. The three sections that do NOT follow the day — the
+ * counters, the two cards, the quote — are rendered here on the server and
+ * passed in as slots.
+ */
 export async function TodayBody({
 	sb,
 	tz,
@@ -27,7 +36,7 @@ export async function TodayBody({
 	sb: SupabaseClient;
 	tz: string;
 	todayIso: string;
-	/** The day the schedule section shows. Everything else on Today is today's. */
+	/** The day the schedule shows. Everything else on Today is today's. */
 	selectedIso: string;
 }) {
 	const nowMs = Date.now();
@@ -45,32 +54,12 @@ export async function TodayBody({
 		sb,
 		tz,
 		selectedIso,
-		{
-			todayIso,
-			nowMs,
-			schedule: isToday ? view.daySchedule : undefined,
-		},
+		{ todayIso, nowMs, schedule: isToday ? view.daySchedule : undefined },
 	);
-
-	const showLatestQuote = view.latestQuote !== null && view.latestQuote.id !== view.resurfaced?.id;
 
 	return (
 		<>
-			<Masthead todayIso={todayIso} unreadNotifications={view.masthead.unreadNotifications} />
-
-			{/* The day at a glance: the anchor sentence already carries the
-			 * counts, so it stands alone rather than repeating them as a strip
-			 * of big numbers — Awaiting decision fills the row beside it,
-			 * vertically centered against whichever side runs taller. */}
-			<div className="mt-14 grid grid-cols-1 gap-10 lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-14">
-				<AnchorLine anchor={view.anchor} tz={tz} />
-				<AlertsRow
-					inbox={view.inboxCount}
-					needsReview={view.needsReviewCount}
-					linksUnread={view.linksUnreadCount}
-				/>
-			</div>
-
+			<TodayStyles />
 			<DayView
 				schedule={schedule}
 				dateIso={selectedIso}
@@ -80,28 +69,32 @@ export async function TodayBody({
 				nowLabel={nowLabel}
 				eventNoteIds={eventNoteIds}
 				taskNoteIds={taskNoteIds}
-			/>
-
-			<div className="mt-14 grid grid-cols-1 gap-10 lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-14">
-				<div className="min-w-0">
-					<BriefSection lines={view.briefLines} />
+				counters={
+					<Counters
+						events={view.anchor.eventCount}
+						open={view.anchor.openCount}
+						overdue={view.anchor.overdueCount}
+						inbox={view.inboxCount}
+					/>
+				}
+				aside={
+					<>
+						<RoutinesCard
+							buckets={view.routineBuckets}
+							done={view.routines.done}
+							total={view.routines.total}
+						/>
+						<ProjectsCard projects={view.projects} />
+					</>
+				}
+				quote={
 					<ResurfacedQuote
 						quote={view.resurfaced}
 						skips={view.resurfacedSkips}
 						hasQuotes={view.latestQuote !== null}
 					/>
-					{showLatestQuote && view.latestQuote && <LatestQuote quote={view.latestQuote} />}
-				</div>
-
-				<div className="min-w-0">
-					<RoutinesCard
-						buckets={view.routineBuckets}
-						done={view.routines.done}
-						total={view.routines.total}
-					/>
-					<ProjectsCard projects={view.projects} />
-				</div>
-			</div>
+				}
+			/>
 		</>
 	);
 }

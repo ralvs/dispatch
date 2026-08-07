@@ -1,183 +1,210 @@
 "use client";
 
-import { useOptimistic } from "react";
+import { Card } from "@/components/ui";
 import type { TaskRow } from "@/lib/services/tasks";
 import type { DaySchedule } from "@/lib/services/today";
-import {
-	type ApplyContext,
-	applyDayIntent,
-	type TaskIntent,
-} from "@/lib/task-interaction/apply-intent";
-import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
 import { TOP3_SLOTS } from "@/lib/task-predicates";
-import { completeTaskAction, reopenTaskAction, setTop3Action } from "../tasks/actions";
-import { TaskRowItem } from "../tasks/task-row";
-import { ScheduleRow } from "./schedule-row";
+import { TODAY_VARIANT } from "@/lib/ui/variant";
+import type { TaskRowHandlers } from "../tasks/task-row";
+import { EventDayRow, TaskDayRow } from "./day-row";
 
-function Band({ title, children }: { title: string; children: React.ReactNode }) {
+/**
+ * The day's three lists, as three separately-placeable sections.
+ *
+ * They are separate exports rather than one component because the desktop
+ * composition puts Top 3 in the right column and Timeline/Open in the left,
+ * and a phone re-sequences all three against sections that are not the day's
+ * at all. One component could not sit in two columns.
+ *
+ * They do NOT own their own optimistic state — DayView does, and hands each a
+ * projection of the same store plus the same `handlersFor`. Two stores would
+ * mean ticking a task in Top 3 leaves its Timeline twin unchecked.
+ */
+
+type Placement = {
+	schedule: DaySchedule;
+	/** The day on screen — what ☆ reflects and pins to. */
+	dateIso: string;
+	/** The real calendar today: a recurrence rolls forward from the wall clock. */
+	todayIso: string;
+	handlersFor: (task: TaskRow) => TaskRowHandlers;
+	eventNoteIds?: Record<string, string>;
+	taskNoteIds?: Record<string, string>;
+};
+
+function SectionHead({ title, aside }: { title: string; aside?: React.ReactNode }) {
 	return (
-		<div className="mt-8">
-			<h3 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">{title}</h3>
-			<ul className="mt-1">{children}</ul>
+		<div className="mb-1.5 flex items-baseline justify-between gap-4">
+			<h2 className="m-0 text-base font-medium tracking-[-0.02em] text-ink">{title}</h2>
+			{aside}
 		</div>
 	);
 }
 
 /**
- * "When is my day" in one place (ADR-0014): an all-day band, a timeline where
- * timed events and timed tasks share one clock, and everything open that has
- * no hour attached to it — all day and timeline read down the left, open
- * sits in its own column on the right so it doesn't compete with the clock.
- *
- * Owns useOptimistic for complete / reopen / top-3 so checkboxes flip before
- * the full Today RSC round-trip. Projection lives in applyDayIntent.
+ * The priority legend, and it earns its place only when priority is actually
+ * drawn: three ring swatches under the `ring` variant, and nothing under
+ * `rail`, which would need three rail heights instead. It also hides on an
+ * empty day, where there is no ring on screen to decode.
  */
-export function DayBands({
+function PriorityLegend() {
+	if (TODAY_VARIANT !== "ring") return null;
+	const swatches = [
+		{
+			key: "high",
+			label: "high",
+			className: "border-priority-high shadow-[0_0_0_3px_var(--priority-high-halo)]",
+		},
+		{ key: "medium", label: "med", className: "border-priority-med" },
+		{ key: "low", label: "low", className: "border-line-strong" },
+	];
+	return (
+		<div className="flex items-center gap-3.5 lg:gap-4" aria-hidden="true">
+			{swatches.map((s) => (
+				<span key={s.key} className="flex items-center gap-1.5 font-mono text-meta text-ink-4">
+					<i className={`block size-[13px] shrink-0 rounded-[5px] border-2 ${s.className}`} />
+					{s.label}
+				</span>
+			))}
+		</div>
+	);
+}
+
+/** A band with nothing in it says so in words rather than collapsing. */
+function Placeholder({ lead, hint }: { lead: string; hint?: string }) {
+	return (
+		<p className="border-b border-line pt-6 pb-7 text-base italic text-ink-3">
+			{lead}
+			{hint && <span className="mt-1.5 block text-sm not-italic text-ink-4">{hint}</span>}
+		</p>
+	);
+}
+
+/**
+ * An unfilled slot renders as a slot, not as a gap: three is the shape of the
+ * commitment, and a two-row list would quietly rewrite it.
+ */
+export function Top3Section({ schedule, dateIso, todayIso, handlersFor, taskNoteIds }: Placement) {
+	const { top3 } = schedule;
+	const slotsOpen = TOP3_SLOTS - top3.length;
+
+	return (
+		<section className="t-sec-top3 t-day-owned" aria-label="Top 3">
+			<Card padding="none" className="px-6 py-5 lg:py-[22px]">
+				<SectionHead
+					title="Top 3 today"
+					aside={
+						slotsOpen > 0 ? (
+							<span className="font-mono text-meta text-ink-3">
+								{slotsOpen} slot{slotsOpen === 1 ? "" : "s"} open
+							</span>
+						) : undefined
+					}
+				/>
+				<ul>
+					{top3.map((task, i) => (
+						<TaskDayRow
+							key={task.id}
+							task={task}
+							rank={i + 1}
+							todayIso={todayIso}
+							starDateIso={dateIso}
+							handlers={handlersFor(task)}
+							noteId={taskNoteIds?.[task.id]}
+						/>
+					))}
+					{Array.from({ length: slotsOpen }).map((_, i) => (
+						<li
+							// biome-ignore lint/suspicious/noArrayIndexKey: fixed-length empty slots, never reordered.
+							key={`slot-${i}`}
+							className="flex min-h-12 items-center gap-3 border-b border-line py-3 last:border-b-0"
+						>
+							<span
+								aria-hidden="true"
+								className="shrink-0 font-mono text-meta tabular-nums text-ink-4"
+							>
+								{String(top3.length + i + 1).padStart(2, "0")}
+							</span>
+							<span className="text-base italic text-ink-4">Star a task to pin it</span>
+						</li>
+					))}
+				</ul>
+			</Card>
+		</section>
+	);
+}
+
+export function TimelineSection({
 	schedule,
 	dateIso,
 	todayIso,
-	tz,
-	nowUtcIso,
+	handlersFor,
 	eventNoteIds,
 	taskNoteIds,
-}: {
-	schedule: DaySchedule;
-	/**
-	 * The day on screen. Bands derive from it — which tasks are starred for the
-	 * day, which have arrived — and ☆ pins to it, so starring while looking at
-	 * tomorrow builds tomorrow's shortlist.
-	 */
-	dateIso: string;
-	/**
-	 * The real calendar today. Only completion needs it: a recurring task rolls
-	 * forward from the wall clock, not from whichever day is being read.
-	 */
-	todayIso: string;
-	/** App timezone — day membership (placeOnDay) needs it for timed tasks. */
-	tz: string;
-	/** Wall-clock "now" as UTC ISO — grays out timed events that have ended. */
-	nowUtcIso: string;
-	/** event id -> linked note id, for the meeting-note affordance on event rows. */
-	eventNoteIds?: Record<string, string>;
-	/** task id -> linked note id, for the linked-note glyph on task rows. */
-	taskNoteIds?: Record<string, string>;
-}) {
-	const ctx: ApplyContext = { todayIso, top3DateIso: dateIso, tz };
-	const [projected, dispatchOptimistic] = useOptimistic(schedule, (current, intent: TaskIntent) =>
-		applyDayIntent(current, intent, ctx),
-	);
-	const run = useTaskIntentRunner(dispatchOptimistic);
-
-	const { allDay, timeline, top3, open } = projected;
-	const empty =
-		allDay.length === 0 && timeline.length === 0 && top3.length === 0 && open.length === 0;
-
-	const slotsOpen = TOP3_SLOTS - top3.length;
-
-	const writeActions = {
-		complete: completeTaskAction,
-		reopen: reopenTaskAction,
-		setTop3: setTop3Action,
-	};
-
-	function handlersFor(task: TaskRow) {
-		return bindTaskHandlers(task, run, writeActions, { top3DateIso: dateIso });
-	}
+	nowUtcIso,
+}: Placement & { nowUtcIso: string }) {
+	const { timeline } = schedule;
 
 	return (
-		<section className="mt-14" aria-label="Day schedule">
-			{empty ? (
-				<p className="py-8 text-center font-serif italic text-ink-3">
-					Nothing on the clock. Star tasks or set due dates to shape the day.
-				</p>
+		<section className="t-sec-timeline t-day-owned" aria-label="Timeline">
+			<SectionHead title="Timeline" />
+			{timeline.length === 0 ? (
+				<Placeholder
+					lead="Nothing on the clock."
+					hint="Give a task a time, or let the calendar fill it."
+				/>
 			) : (
-				<div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-14">
-					<div className="min-w-0">
-						{allDay.length > 0 && (
-							<Band title="All day">
-								{allDay.map((item) => (
-									<ScheduleRow
-										key={item.key}
-										item={item}
-										dateIso={dateIso}
-										todayIso={todayIso}
-										nowUtcIso={nowUtcIso}
-										handlers={item.kind === "task" ? handlersFor(item.task) : undefined}
-										noteId={
-											item.kind === "event"
-												? eventNoteIds?.[item.event.id]
-												: taskNoteIds?.[item.task.id]
-										}
-									/>
-								))}
-							</Band>
-						)}
+				<ul>
+					{timeline.map((item) =>
+						item.kind === "event" ? (
+							<EventDayRow
+								key={item.key}
+								item={item}
+								// Compare instants, not strings: Postgres hands back
+								// "+00:00" where toISOString() writes "Z", so the two only
+								// sort alike by accident.
+								past={Date.parse(item.event.end_at) < Date.parse(nowUtcIso)}
+								noteId={eventNoteIds?.[item.event.id]}
+							/>
+						) : (
+							<TaskDayRow
+								key={item.key}
+								task={item.task}
+								time={item.time}
+								todayIso={todayIso}
+								starDateIso={dateIso}
+								handlers={handlersFor(item.task)}
+								noteId={taskNoteIds?.[item.task.id]}
+							/>
+						),
+					)}
+				</ul>
+			)}
+		</section>
+	);
+}
 
-						{timeline.length > 0 && (
-							<Band title="Timeline">
-								{timeline.map((item) => (
-									<ScheduleRow
-										key={item.key}
-										item={item}
-										dateIso={dateIso}
-										todayIso={todayIso}
-										nowUtcIso={nowUtcIso}
-										handlers={item.kind === "task" ? handlersFor(item.task) : undefined}
-										noteId={
-											item.kind === "event"
-												? eventNoteIds?.[item.event.id]
-												: taskNoteIds?.[item.task.id]
-										}
-									/>
-								))}
-							</Band>
-						)}
-					</div>
+export function OpenSection({ schedule, dateIso, todayIso, handlersFor, taskNoteIds }: Placement) {
+	const { open } = schedule;
 
-					<div className="min-w-0">
-						<Band title="Top 3">
-							{top3.length > 0 ? (
-								top3.map((task) => (
-									<TaskRowItem
-										key={task.id}
-										task={task}
-										todayIso={todayIso}
-										starDateIso={dateIso}
-										manageable={false}
-										handlers={handlersFor(task)}
-										noteId={taskNoteIds?.[task.id]}
-									/>
-								))
-							) : (
-								<li className="py-2 font-serif italic text-ink-3">
-									Nothing pinned. Star a task to work on it{" "}
-									{dateIso === todayIso ? "today" : "then"}.
-								</li>
-							)}
-						</Band>
-						{slotsOpen > 0 && (
-							<p className="mt-2 font-mono text-meta text-ink-4">
-								{slotsOpen} Top 3 slot{slotsOpen === 1 ? "" : "s"} open · tap ☆ on a row to pin
-							</p>
-						)}
-
-						{open.length > 0 && (
-							<Band title="Open">
-								{open.map((task) => (
-									<TaskRowItem
-										key={task.id}
-										task={task}
-										todayIso={todayIso}
-										starDateIso={dateIso}
-										manageable={false}
-										handlers={handlersFor(task)}
-										noteId={taskNoteIds?.[task.id]}
-									/>
-								))}
-							</Band>
-						)}
-					</div>
-				</div>
+	return (
+		<section className="t-sec-open t-day-owned" aria-label="Open">
+			<SectionHead title="Open" aside={open.length > 0 ? <PriorityLegend /> : undefined} />
+			{open.length === 0 ? (
+				<Placeholder lead="Nothing open." />
+			) : (
+				<ul>
+					{open.map((task) => (
+						<TaskDayRow
+							key={task.id}
+							task={task}
+							todayIso={todayIso}
+							starDateIso={dateIso}
+							handlers={handlersFor(task)}
+							noteId={taskNoteIds?.[task.id]}
+						/>
+					))}
+				</ul>
 			)}
 		</section>
 	);

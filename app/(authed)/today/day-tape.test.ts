@@ -1,54 +1,99 @@
 import { describe, expect, it } from "vitest";
-import { computeTapeRange } from "./day-tape";
+import type { DayScheduleItem } from "@/lib/services/today";
+import { computeTapeWindow, TAPE_END_MIN, TAPE_START_MIN, tapeBlocks } from "./day-tape";
 
-describe("computeTapeRange", () => {
-	it("pads and snaps around events + now, dropping empty early/late hours", () => {
-		// Events at 10:00 and 18:00, now 15:00 → roughly 09:00–19:00
-		const { startMin, endMin, ticks } = computeTapeRange([10 * 60, 18 * 60], 15 * 60);
-		expect(startMin).toBe(9 * 60);
-		expect(endMin).toBe(19 * 60);
-		expect(ticks[0]).toBe(9);
-		expect(ticks[ticks.length - 1]).toBe(19);
-		// No 06:00 / 24:00 on a mid-day cluster
-		expect(ticks).not.toContain(6);
-		expect(ticks).not.toContain(24);
+// The window is pinned at 06:00–22:00 and only ever widens. It replaces a
+// window that fitted itself to the day's contents — which made a 30-minute
+// meeting a different width every morning, and a proportional measure you
+// cannot compare between days is not measuring anything.
+
+describe("computeTapeWindow", () => {
+	it("holds 06:00–22:00 for an ordinary day", () => {
+		const { startMin, endMin } = computeTapeWindow([10 * 60, 18 * 60], 15 * 60);
+		expect(startMin).toBe(TAPE_START_MIN);
+		expect(endMin).toBe(TAPE_END_MIN);
 	});
 
-	it("expands a tight cluster to a readable minimum span", () => {
-		const { startMin, endMin } = computeTapeRange([12 * 60], 12 * 60 + 30);
-		expect(endMin - startMin).toBeGreaterThanOrEqual(6 * 60);
+	it("holds the same window when the day is empty", () => {
+		const { startMin, endMin } = computeTapeWindow([], null);
+		expect(startMin).toBe(6 * 60);
+		expect(endMin).toBe(22 * 60);
 	});
 
-	it("falls back to a daytime window when there are no points", () => {
-		const { startMin, endMin } = computeTapeRange([], Number.NaN);
-		expect(startMin).toBe(8 * 60);
-		expect(endMin).toBe(20 * 60);
+	it("does not shrink to a tight cluster", () => {
+		const { startMin, endMin } = computeTapeWindow([12 * 60], 12 * 60 + 30);
+		expect(startMin).toBe(6 * 60);
+		expect(endMin).toBe(22 * 60);
+	});
+
+	it("widens to a whole hour for an early item", () => {
+		const { startMin, endMin } = computeTapeWindow([5 * 60 + 20], null);
+		expect(startMin).toBe(5 * 60);
+		expect(endMin).toBe(22 * 60);
+	});
+
+	it("widens to a whole hour for a late item", () => {
+		const { startMin, endMin } = computeTapeWindow([23 * 60 + 10], null);
+		expect(startMin).toBe(6 * 60);
+		expect(endMin).toBe(24 * 60);
+	});
+
+	it("widens for `now` too, so the mark is never clamped to an edge", () => {
+		const { startMin } = computeTapeWindow([9 * 60], 4 * 60 + 45);
+		expect(startMin).toBe(4 * 60);
 	});
 
 	it("clamps to the calendar day", () => {
-		const { startMin, endMin } = computeTapeRange([0], 30);
+		const { startMin, endMin } = computeTapeWindow([0, 24 * 60], 30);
 		expect(startMin).toBe(0);
-		expect(endMin).toBeLessThanOrEqual(24 * 60);
+		expect(endMin).toBe(24 * 60);
+	});
+
+	it("rules every three hours, always closing on the right edge", () => {
+		const { ticks } = computeTapeWindow([], null);
+		expect(ticks).toEqual([6, 9, 12, 15, 18, 21, 22]);
 	});
 });
 
-describe("computeTapeRange without a now", () => {
-	it("fits the events alone on a day that is not today", () => {
-		// 14:00–16:00 pads to 13:00–17:00, then widens to the 6h minimum span.
-		const { startMin, endMin } = computeTapeRange([14 * 60, 16 * 60], null);
-		expect(startMin).toBe(12 * 60);
-		expect(endMin).toBe(18 * 60);
+function event(key: string, time: string, startAt: string, endAt: string): DayScheduleItem {
+	return {
+		kind: "event",
+		key,
+		sortAt: startAt,
+		time,
+		// Only the three fields the tape reads are needed here.
+		event: {
+			id: key,
+			title: key,
+			start_at: startAt,
+			end_at: endAt,
+			all_day: false,
+			location: null,
+			calendar_name: "Work",
+		} as DayScheduleItem extends { kind: "event"; event: infer E } ? E : never,
+	};
+}
+
+describe("tapeBlocks", () => {
+	it("gives an event its real duration and a task no width at all", () => {
+		const blocks = tapeBlocks([
+			event("standup", "10:00", "2026-08-07T13:00:00Z", "2026-08-07T13:30:00Z"),
+		]);
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]).toMatchObject({ kind: "event", startMin: 600, durationMin: 30 });
 	});
 
-	it("ignores a now that would otherwise stretch the window", () => {
-		const withNow = computeTapeRange([14 * 60], 22 * 60);
-		const withoutNow = computeTapeRange([14 * 60], null);
-		expect(withNow.endMin).toBeGreaterThan(withoutNow.endMin);
+	it("drops items with no time — they belong to the all-day band", () => {
+		const timed = event("standup", "10:00", "2026-08-07T13:00:00Z", "2026-08-07T13:30:00Z");
+		const untimed = { ...timed, key: "allday", time: null } as DayScheduleItem;
+		expect(tapeBlocks([timed, untimed])).toHaveLength(1);
 	});
 
-	it("still falls back to a daytime window when the day is empty", () => {
-		const { startMin, endMin } = computeTapeRange([], null);
-		expect(startMin).toBe(8 * 60);
-		expect(endMin).toBe(20 * 60);
+	it("orders by clock, so the tape assembles left to right", () => {
+		const blocks = tapeBlocks([
+			event("late", "18:00", "2026-08-07T21:00:00Z", "2026-08-07T22:00:00Z"),
+			event("early", "09:00", "2026-08-07T12:00:00Z", "2026-08-07T12:30:00Z"),
+		]);
+		expect(blocks.map((b) => b.key)).toEqual(["early", "late"]);
 	});
 });

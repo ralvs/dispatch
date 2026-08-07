@@ -1,7 +1,7 @@
 "use client";
 
 import { unstable_rethrow } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { parseDateIso } from "@/lib/dates";
 import {
 	type DayCacheEntry,
@@ -15,11 +15,28 @@ import {
 // DaySchedulePayload comes straight from lib/, not through actions.ts: a
 // "use server" module may only export async functions, and a re-exported type
 // there survives into the server-actions loader as an undefined binding.
+import type { TaskRow } from "@/lib/services/tasks";
 import type { DaySchedule, DaySchedulePayload } from "@/lib/services/today";
+import {
+	type ApplyContext,
+	applyDayIntent,
+	type TaskIntent,
+} from "@/lib/task-interaction/apply-intent";
+import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
+import { completeTaskAction, reopenTaskAction, setTop3Action } from "../tasks/actions";
 import { loadDayScheduleAction } from "./actions";
-import { DayBands } from "./day-bands";
+import { OpenSection, TimelineSection, Top3Section } from "./day-bands";
+import { DayHeadline } from "./day-headline";
 import { DayNav } from "./day-nav";
 import { DayTape } from "./day-tape";
+
+// Module-level so handlersFor's dependency list can be honest: a fresh object
+// literal each render would make the callback identity churn for nothing.
+const WRITE_ACTIONS = {
+	complete: completeTaskAction,
+	reopen: reopenTaskAction,
+	setTop3: setTop3Action,
+};
 
 function hrefFor(dateIso: string, todayIso: string): string {
 	return dateIso === todayIso ? "/today" : `/today?d=${dateIso}`;
@@ -65,6 +82,9 @@ export function DayView({
 	nowLabel,
 	eventNoteIds,
 	taskNoteIds,
+	counters,
+	aside,
+	quote,
 }: {
 	schedule: DaySchedule;
 	/** The day on screen. Equals todayIso unless the day nav has moved. */
@@ -76,6 +96,16 @@ export function DayView({
 	nowLabel: string | null;
 	eventNoteIds?: Record<string, string>;
 	taskNoteIds?: Record<string, string>;
+	/**
+	 * Today's own sections, rendered on the server and slotted into this
+	 * region's grid. They are passed in rather than rendered here because none
+	 * of them follows the day — they are locked to the real today (ADR-0036) —
+	 * but they share the page's two-column stack, and the stack has to be one
+	 * tree for the phone reorder to work at all.
+	 */
+	counters: React.ReactNode;
+	aside: React.ReactNode;
+	quote: React.ReactNode;
 }) {
 	const [view, setView] = useState<View>(() =>
 		fromProps({ schedule, dateIso, nowUtcIso, nowLabel, eventNoteIds, taskNoteIds }),
@@ -261,31 +291,69 @@ export function DayView({
 		return () => window.removeEventListener("popstate", onPopState);
 	}, [selectDay, todayIso]);
 
+	// The optimistic store lives here, not in the sections: Top 3 and the
+	// Timeline sit in different columns and can hold the same task, so two
+	// stores would let a tick land in one and not the other.
+	const ctx: ApplyContext = { todayIso, top3DateIso: view.dateIso, tz };
+	const [projected, dispatchOptimistic] = useOptimistic(
+		view.schedule,
+		(current, intent: TaskIntent) => applyDayIntent(current, intent, ctx),
+	);
+	const run = useTaskIntentRunner(dispatchOptimistic);
+	const handlersFor = useCallback(
+		(task: TaskRow) => bindTaskHandlers(task, run, WRITE_ACTIONS, { top3DateIso: view.dateIso }),
+		[run, view.dateIso],
+	);
+
+	const placement = {
+		schedule: projected,
+		dateIso: view.dateIso,
+		todayIso,
+		handlersFor,
+		eventNoteIds: view.eventNoteIds,
+		taskNoteIds: view.taskNoteIds,
+	};
+
 	return (
-		<div className={pending ? "opacity-70 transition-opacity" : undefined}>
-			<DayTape
-				timeline={view.schedule.timeline}
-				dateIso={view.dateIso}
-				nowLabel={view.nowLabel}
-				nowUtcIso={view.nowUtcIso}
-				nav={
-					<DayNav
-						dateIso={view.dateIso}
-						todayIso={todayIso}
-						pending={pending}
-						onSelect={selectDay}
-					/>
-				}
-			/>
-			<DayBands
-				schedule={view.schedule}
-				dateIso={view.dateIso}
-				todayIso={todayIso}
-				tz={tz}
-				nowUtcIso={view.nowUtcIso}
-				eventNoteIds={view.eventNoteIds}
-				taskNoteIds={view.taskNoteIds}
-			/>
+		// data-pending drives .t-day-owned's dim (today-styles.tsx). Only what
+		// the nav actually changes carries that class — the counters, routines,
+		// projects and the quote are today's whatever day is on screen, and must
+		// not flicker when a chevron moves.
+		<div data-pending={pending || undefined}>
+			{/* The nav is the dateline: on desktop it is the eyebrow above the
+			    headline, and on a phone it sticks to the top of the scroller so
+			    the day survives the headline scrolling away. */}
+			<div className="sticky top-0 z-20 -mx-5 mb-6 flex items-center bg-bg/85 px-5 py-3 backdrop-blur-lg backdrop-saturate-150 lg:static lg:mx-0 lg:mb-4 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+				<DayNav dateIso={view.dateIso} todayIso={todayIso} pending={pending} onSelect={selectDay} />
+			</div>
+
+			<div className="lg:flex lg:items-end lg:justify-between lg:gap-12">
+				<DayHeadline
+					timeline={projected.timeline}
+					isToday={view.dateIso === todayIso}
+					nowUtcIso={view.nowUtcIso}
+				/>
+				{counters}
+			</div>
+
+			<DayTape timeline={projected.timeline} allDay={projected.allDay} nowLabel={view.nowLabel} />
+
+			{/* One tree, two compositions. The column wrappers dissolve below `lg`
+			    (display: contents) and `order` re-sequences the same sections
+			    orientation-first — Top 3 and Routines rise above the long lists
+			    because the phone is where they get ticked off. If this ever needs
+			    a <MobileToday>, something has gone wrong. */}
+			<div className="t-cols mt-9 lg:mt-13">
+				<div className="t-col t-col-main">
+					<TimelineSection {...placement} nowUtcIso={view.nowUtcIso} />
+					<OpenSection {...placement} />
+					{quote}
+				</div>
+				<div className="t-col t-col-side">
+					<Top3Section {...placement} />
+					{aside}
+				</div>
+			</div>
 		</div>
 	);
 }

@@ -1,22 +1,20 @@
+/**
+ * Route-level skeleton. It draws the dateline and the tape's track and nothing
+ * else — those two are the page's fixed furniture, so the frame that arrives
+ * is the frame that stays. Everything below is a list whose length nobody can
+ * predict, and eight grey bars pretending otherwise is a worse guess than
+ * empty space.
+ */
 export default function Loading() {
 	return (
 		<div>
-			<header className="hairline-strong pb-4">
-				<div className="flex items-baseline justify-between">
-					<div className="h-3 w-24 rounded bg-surface animate-pulse" aria-hidden="true" />
-				</div>
-				<h1 className="display-tight mt-1 w-fit font-serif text-t36 text-ink">Dispatch</h1>
-			</header>
-
 			<span role="status" className="sr-only">
 				Loading
 			</span>
-
-			<div className="mt-14 space-y-4" aria-hidden="true">
-				{Array.from({ length: 8 }).map((_, i) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows, never reordered.
-					<div key={i} className="h-4 rounded bg-surface animate-pulse" />
-				))}
+			<div aria-hidden="true">
+				<div className="h-7 w-56 rounded-pill bg-surface-2" />
+				<div className="mt-4 h-14 w-2/3 rounded bg-surface-2 lg:h-[58px]" />
+				<div className="mt-10 h-[46px] rounded-[12px] bg-surface-2" />
 			</div>
 		</div>
 	);
