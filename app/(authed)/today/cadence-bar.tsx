@@ -21,7 +21,7 @@ export function CadenceBar({
 		<div className="relative mt-2 h-[3px] w-full bg-line-strong" aria-hidden>
 			<div className="absolute left-0 top-0 h-full bg-ink-3" style={{ width: `${neutralPct}%` }} />
 			<div
-				className="gradient-ship absolute top-0 h-full"
+				className="absolute top-0 h-full bg-accent"
 				style={{ left: `${neutralPct}%`, width: `${overflowPct}%` }}
 			/>
 			<div className="absolute top-[-2px] h-[7px] w-px bg-ink-2" style={{ left: `${tickPct}%` }} />

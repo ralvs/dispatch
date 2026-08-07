@@ -5,9 +5,7 @@ export default function Loading() {
 				<div className="flex items-baseline justify-between">
 					<div className="h-3 w-24 rounded bg-surface animate-pulse" aria-hidden="true" />
 				</div>
-				<h1 className="display-tight gradient-text-mesh mt-1 w-fit font-serif text-4xl">
-					Dispatch
-				</h1>
+				<h1 className="display-tight mt-1 w-fit font-serif text-t36 text-ink">Dispatch</h1>
 			</header>
 
 			<span role="status" className="sr-only">

@@ -4,9 +4,12 @@ import { useEffect, useState, useTransition } from "react";
 import { setTheme } from "@/app/theme-actions";
 import { runAction } from "@/lib/client/toast";
 
+// Light is the default; dark is the peer reached by data-theme="dark". This
+// mirrors THEME_BOOT in app/layout.tsx — the two must agree on which way the
+// default falls, or the first paint and the toggle disagree.
 function readDomTheme(): "dark" | "light" {
-	if (typeof document === "undefined") return "dark";
-	return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+	if (typeof document === "undefined") return "light";
+	return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
 /**
@@ -15,7 +18,7 @@ function readDomTheme(): "dark" | "light" {
  */
 export function ThemeToggle({ current }: { current?: "dark" | "light" }) {
 	const [pending, startTransition] = useTransition();
-	const [theme, setLocalTheme] = useState<"dark" | "light">(current ?? "dark");
+	const [theme, setLocalTheme] = useState<"dark" | "light">(current ?? "light");
 	const next = theme === "dark" ? "light" : "dark";
 
 	// Reconcile to the live DOM after mount: SSR may not know the cookie

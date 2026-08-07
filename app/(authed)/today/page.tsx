@@ -20,7 +20,7 @@ function TodayFallback({ todayIso }: { todayIso: string }) {
 						{formatDateline(todayIso)}
 					</h1>
 				</div>
-				<p className="display-tight gradient-text-mesh mt-1 w-fit font-serif text-4xl">Dispatch</p>
+				<p className="display-tight mt-1 w-fit font-serif text-t36 text-ink">Dispatch</p>
 			</header>
 
 			<span role="status" className="sr-only">
