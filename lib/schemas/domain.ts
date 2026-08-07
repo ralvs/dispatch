@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { HexColorSchema } from "@/lib/schemas/color";
+import { ColorSlugSchema } from "@/lib/schemas/color";
 
 export const FailurePatternSchema = z
 	.object({
@@ -24,7 +24,7 @@ export const DomainSchema = z.object({
 	// .nullable() is load-bearing: lib/form-decode.ts's isNullable probe
 	// (field.safeParse(null).success) is what turns a blank "None" swatch
 	// submission into an explicit null that CLEARS the column.
-	color: HexColorSchema.nullable().optional(),
+	color: ColorSlugSchema.nullable().optional(),
 	created_at: z.string().datetime({ offset: true }),
 	updated_at: z.string().datetime({ offset: true }),
 });
@@ -38,7 +38,7 @@ export const CreateDomainSchema = z.object({
 	fruit_definition: z.string().nullable().optional(),
 	expected_cadence: z.string().nullable().optional(),
 	// .nullable() is load-bearing — see DomainRowSchema.color.
-	color: HexColorSchema.nullable().optional(),
+	color: ColorSlugSchema.nullable().optional(),
 });
 
 // Patch shape used by the UI's edit form. failure_patterns is included so
@@ -57,7 +57,7 @@ export const UpdateDomainSchema = z.object({
 	// Accept ISO datetime or null (to clear).
 	last_shipped_at: z.string().datetime({ offset: true }).nullable().optional(),
 	// .nullable() is load-bearing — see DomainRowSchema.color.
-	color: HexColorSchema.nullable().optional(),
+	color: ColorSlugSchema.nullable().optional(),
 });
 
 // ─── Row shape actually returned by the domains service ────────────────

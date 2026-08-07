@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { HexColorSchema } from "@/lib/schemas/color";
+import { ColorSlugSchema } from "@/lib/schemas/color";
 
 export const ProjectStatusSchema = z.enum(["active", "paused", "done", "archived"]);
 export const ProjectTypeSchema = z.enum(["client", "internal", "content"]);
@@ -24,7 +24,7 @@ export const ProjectSchema = z.object({
 	hours_logged: z.number(),
 	start_date: z.string().date().nullable().optional(),
 	target_date: z.string().date().nullable().optional(),
-	color: HexColorSchema.nullable().optional(),
+	color: ColorSlugSchema.nullable().optional(),
 	engagement_type: EngagementTypeSchema.default("project"),
 	kind: ProjectKindSchema.default("project"),
 	completed_at: z.string().datetime({ offset: true }).nullable().optional(),
@@ -45,7 +45,7 @@ export const CreateProjectSchema = z.object({
 	quoted_hours: z.number().nullable().optional(),
 	start_date: z.string().date().nullable().optional(),
 	target_date: z.string().date().nullable().optional(),
-	color: HexColorSchema.nullable().optional(),
+	color: ColorSlugSchema.nullable().optional(),
 	engagement_type: EngagementTypeSchema.optional(),
 	kind: ProjectKindSchema.optional(),
 });

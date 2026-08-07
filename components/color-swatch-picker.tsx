@@ -2,13 +2,17 @@
 
 import { X } from "lucide-react";
 import { Icon } from "@/components/ui/icon";
-import { COLOR_PALETTE } from "@/lib/schemas/color";
+import { COLOR_SLUG_LABELS, COLOR_SLUGS, colorSlugVar } from "@/lib/schemas/color";
 
 /**
- * Radio group over the curated palette, plus a "None" option. Same
+ * Radio group over the nine palette slots, plus a "None" option. Same
  * sr-only-radio + `peer` idiom as PriorityPicker (task-fields.tsx) — the
  * checked swatch gets a visible ring instead of the priority's underline,
- * since color itself is already the answer being shown.
+ * since colour itself is already the answer being shown.
+ *
+ * The value submitted is a slug, not a hex. "None" submits "" — a
+ * present-but-blank nullable field, which lib/form-decode.ts turns into an
+ * explicit null that clears the column.
  */
 export function ColorSwatchPicker({
 	name,
@@ -37,23 +41,23 @@ export function ColorSwatchPicker({
 						<Icon icon={X} size="sm" />
 					</span>
 				</label>
-				{COLOR_PALETTE.map((color) => (
+				{COLOR_SLUGS.map((slug) => (
 					<label
-						key={color}
+						key={slug}
 						className="relative flex size-11 cursor-pointer items-center justify-center"
-						title={color}
+						title={COLOR_SLUG_LABELS[slug]}
 					>
 						<input
 							type="radio"
 							name={name}
-							value={color}
-							aria-label={`Color ${color}`}
-							defaultChecked={defaultValue === color}
+							value={slug}
+							aria-label={COLOR_SLUG_LABELS[slug]}
+							defaultChecked={defaultValue === slug}
 							className="peer sr-only"
 						/>
 						<span
 							aria-hidden="true"
-							style={{ backgroundColor: color }}
+							style={{ backgroundColor: colorSlugVar(slug) }}
 							className="block size-7 rounded-full ring-2 ring-transparent ring-offset-2 ring-offset-surface transition-shadow peer-checked:ring-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent"
 						/>
 					</label>
