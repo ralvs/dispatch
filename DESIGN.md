@@ -115,6 +115,12 @@ typography:
     fontWeight: 400
     lineHeight: 1.45
     letterSpacing: "0.1em"
+  micro:
+    fontFamily: "Geist Mono, ui-monospace, SFMono-Regular, Menlo, monospace"
+    fontSize: "11px"
+    fontWeight: 400
+    lineHeight: 1.4
+    letterSpacing: "0.08em"
 rounded:
   none: "0"
   mark: "7px"
@@ -344,6 +350,11 @@ section heading can sit at body size and still read as a heading.
 - **Meta** (mono, 400, 12px): clock times, counts, streaks, ruler hours.
 - **Eyebrow** (mono, 400, 12px, 0.1em, uppercase): the dateline, `ALL DAY`, a
   bucket name — anything the system labelled rather than a person.
+- **Micro** (mono, 400, 11px, 0.08em): the one step below the ramp, and the
+  only place the ramp is broken. It exists in exactly three sites, all of them
+  mono labels under density pressure that 12px measurably loses: the day tape's
+  per-block start times, the tape's ruler at phone width, and the dock's five
+  tab labels at 375pt.
 
 ### Named Rules
 
@@ -359,6 +370,12 @@ being drawn.
 **The Tabular Rule.** Every number that can change under the reader — a clock,
 a count, a streak, a percentage — is `tabular-nums`. Digits that reflow while
 you look at them are a defect.
+
+**The Closed Ramp Rule.** 56/44/36/30/18/16/14/12, plus `micro` at 11px in the
+three sites named above. That is the whole ramp. A fourth 11px site, or any
+new size at all, is a signal that a layout is too dense — fix the layout, do
+not invent a step. If a new step is genuinely warranted, it lands here first
+and in the code second.
 
 ## Layout
 

@@ -156,6 +156,10 @@
       "eyebrow": {
         "displayName": "Eyebrow",
         "purpose": "Anything the system labelled rather than a person named — the dateline, ALL DAY, a bucket name."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "The one step below the ramp, in exactly three density-pressured mono sites: the day tape's per-block start times, the tape's ruler at phone width, and the dock's five tab labels at 375pt."
       }
     },
     "shadows": [
@@ -318,6 +322,11 @@
       {
         "name": "The Tabular Rule",
         "body": "Every number that can change under the reader — a clock, a count, a streak, a percentage — is tabular-nums. Digits that reflow while you look at them are a defect.",
+        "section": "typography"
+      },
+      {
+        "name": "The Closed Ramp Rule",
+        "body": "56/44/36/30/18/16/14/12, plus micro at 11px in three named sites. That is the whole ramp. A fourth 11px site, or any new size at all, is a signal that a layout is too dense — fix the layout, do not invent a step. If a new step is genuinely warranted, it lands in DESIGN.md first and in the code second.",
         "section": "typography"
       },
       {
