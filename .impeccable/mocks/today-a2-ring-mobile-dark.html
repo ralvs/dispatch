@@ -36,11 +36,18 @@
 				<!-- The date lives in the bar, so the headline never needs a label
 				     above it and the day stays visible after it scrolls away. -->
 				<header class="appbar">
-					<div class="where">
-						<span class="brand-mark" aria-hidden="true"></span>
-						<span class="eyebrow">Thursday, 6 August</span>
+					<!-- The bar is the nav. The brand mark goes: the dock already says
+					     where you are, and its 22px is what makes the chevrons fit at
+					     375pt. Swiping the tape sideways steps the day too. -->
+					<nav class="daynav" aria-label="Day navigation">
+						<button class="step" type="button" aria-label="Previous day"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+						<span class="eyebrow daylabel" aria-live="polite">Thursday, 6 August</span>
+						<button class="step" type="button" aria-label="Next day"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+					</nav>
+					<div class="appbar-right">
+						<button class="pill pill-ghost today-reset" type="button" hidden>Today</button>
+						<button class="pill pill-ghost pill-sm" type="button">Ask</button>
 					</div>
-					<button class="pill pill-ghost pill-sm" type="button">Ask</button>
 				</header>
 
 				<main class="page">
@@ -58,7 +65,12 @@
 					<!-- Day tape: 06:00–22:00 = 960 min. left% = (start-360)/9.6,
 					     width% = mins/9.6. Identical arithmetic to desktop; only the
 					     labels above the track are gone. -->
-					<section class="tape" aria-label="Day tape, 06:00 to 22:00">
+					<section class="tape day-owned" aria-label="Day tape, 06:00 to 22:00">
+						<div class="allday">
+							<span class="eyebrow">All day</span>
+							<span class="ad"><i class="dot" style="background: var(--travel)"></i> Voo para o Porto</span>
+							<span class="ad"><i class="dot" style="background: var(--engine)"></i> Renew the domain</span>
+						</div>
 						<div class="measure-track">
 							<div class="blk" style="left: 18.75%; width: 4.6875%; background: var(--code); animation-delay: 0.02s"></div>
 							<div class="blk" style="left: 25%; width: 1.5625%; background: var(--code); animation-delay: 0.07s"></div>
@@ -97,7 +109,7 @@
 						</div>
 					</section>
 
-					<section class="band">
+					<section class="band day-owned">
 						<div class="sec-head"><h2 class="sec">Timeline</h2></div>
 						<div class="row past"><span class="time num">09:00</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--code)"></span><span class="title">Deploy review</span></div>
 						<div class="row past"><span class="time num">10:00</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--code)"></span><span class="title">Daily standup</span></div>

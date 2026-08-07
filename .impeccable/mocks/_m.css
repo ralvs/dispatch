@@ -587,3 +587,44 @@ body.phone-page {
 		}
 	}
 }
+
+/* ── day navigation, phone ─────────────────────────────────────────────
+ * The app bar becomes the nav. The brand mark goes: the dock already says
+ * where you are, and the 22px it cost is what makes the chevrons fit at 375pt.
+ * Swiping the tape sideways steps the day too — the chevrons are the
+ * discoverable path, the gesture is the fast one.
+ */
+.appbar .daynav {
+	gap: 6px;
+	min-width: 0;
+}
+.appbar .daylabel {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.appbar .today-reset {
+	height: 28px;
+	padding: 0 11px;
+	margin-left: 0;
+}
+.appbar-right {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+/* All-day chips sit right on top of the track, so tape + band read as one
+   object. They wrap rather than scroll — a hidden chip is a missed commitment. */
+.allday {
+	gap: 7px 10px;
+	margin-bottom: 12px;
+}
+.ad {
+	height: 28px;
+	padding: 0 11px;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: inline-flex;
+}

@@ -513,7 +513,96 @@ h2.sec {
 	margin-top: 16px;
 }
 
-</style>
+/* ── day navigation ────────────────────────────────────────────────────
+ * The nav IS the dateline. A separate widget above the tape would state the
+ * day twice, so the chevrons flank the date that was already there.
+ *
+ * The label always names the real date — never "TOMORROW". Being off today is
+ * carried by the reset pill existing at all, which keeps the label purely
+ * informative instead of switching voice with the mode.
+ */
+.daynav {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.step {
+	width: 28px;
+	height: 28px;
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	padding: 0;
+	border: 1px solid var(--rule-2);
+	border-radius: var(--r-pill);
+	background: transparent;
+	color: var(--ink-3);
+	cursor: pointer;
+}
+.step:hover {
+	color: var(--ink);
+	border-color: var(--ink-4);
+}
+.step svg {
+	width: 15px;
+	height: 15px;
+}
+.daynav .daylabel {
+	white-space: nowrap;
+}
+/* Holds its slot on today so the chevrons never shift when the day changes. */
+.today-reset {
+	height: 28px;
+	padding: 0 12px;
+	font-size: 12px;
+	margin-left: 4px;
+}
+.today-reset[hidden] {
+	display: inline-flex;
+	visibility: hidden;
+}
+/* Stepping a day dims the payload the nav owns — tape, all-day, timeline —
+   and nothing else. Mirrors the shipped `pending` transition. */
+.day-owned {
+	transition: opacity 0.18s ease;
+}
+[data-pending] .day-owned {
+	opacity: 0.55;
+}
+
+/* ── all-day band ──────────────────────────────────────────────────────
+ * Everything that belongs to the day but has no hour, so the tape is
+ * structurally incapable of showing it. It caps the tape from above for
+ * exactly that reason: together they are the whole day.
+ */
+.allday {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	margin-bottom: 14px;
+}
+.allday > .eyebrow {
+	flex-shrink: 0;
+}
+.ad {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 30px;
+	padding: 0 13px;
+	border: 1px solid var(--rule-2);
+	border-radius: var(--r-md);
+	font-size: 14px;
+	color: var(--ink);
+	white-space: nowrap;
+}
+.ad .dot {
+	width: 7px;
+	height: 7px;
+}
+
+		</style>
 		<style>
 			.row {
 				display: flex;

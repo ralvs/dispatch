@@ -103,13 +103,44 @@ Touch floor: rows ≥48px, and every checkbox carries a 44px hit slug it does no
 draw. Build it as one tree — a max-width query beside each desktop rule, and
 `display: contents` + `order` for the stack — never as a phone fork.
 
+## Day navigation and the all-day band
+
+Today is a **date-driven surface**: chevrons step the day and the tape, the
+all-day band and the timeline follow. Both are in every comp.
+
+**The nav is the dateline** — not a widget above the tape, which would state the
+day twice. The chevrons flank the date that was already there: the eyebrow on
+desktop, the app bar on phone. Decisions that hold:
+
+- **The label always names the real date**, never "TOMORROW". Being off today is
+  carried by the **Today reset** existing at all, so the label stays purely
+  informative instead of switching voice with the mode. On today the reset holds
+  its slot invisibly, so the chevrons never shift — the shipped `DayNav` already
+  does this and it survives.
+- **Only the day's own payload dims** while a step is pending (`.day-owned`:
+  tape, all-day, timeline). Header, Top 3, Routines, Projects and the quote do
+  not flicker, because the nav does not change them.
+- **No now-mark off today.** `nowLabel` is null on any other day
+  (`day-view.tsx`), and the tape keeps its ruler without it.
+- **Phone also swipes.** Dragging the tape sideways steps the day; the chevrons
+  are the discoverable path, the gesture is the fast one.
+
+**The headline follows the day**, one word apart: `Next up at 14:00 — …` on
+today, `First up at 09:30 — …` on any other day, `You are free.` when today is
+empty, `Nothing on the clock.` when another day is.
+
+**The all-day band was missing from revision A and is now restored.** It is
+everything that belongs to the day but has no hour, which is precisely what the
+tape is structurally incapable of showing — so it caps the tape from above and
+the two read as one object. Absent, never empty, when there is nothing all-day.
+It ships today in `day-bands.tsx`; the comps had dropped it by mistake.
+
 ## Priority colour
 
 One hue at three intensities, not three hues: high is a solid red ring with a
 halo, medium the same red at 42% with no halo, low a plain grey ring. The seven
 domain colours already sit on the same row as filled dots, so a third hue would
-collide with the Travel gold. **Open:** user has not confirmed whether they want
-three distinct hues instead.
+collide with the Travel gold. **Confirmed by the user — one hue stands.**
 
 ## States that must ship
 
@@ -119,15 +150,18 @@ three distinct hues instead.
 - Past entries dim; the timed task keeps its checkbox.
 - Top 3 with an unfilled slot renders the slot, not a gap.
 
+## Decided, with the tradeoff on the record
+
+- **Priority palette:** one hue at three intensities. Confirmed.
+- **Small text on `--ink-3` / `--ink-4` stays as the pinned palette has it**, and
+  therefore misses WCAG AA: `--ink-3` (#8c8681) on paper is 3.3:1 and `--ink-4`
+  (#b4aea8) is 2.0:1, against a 4.5:1 floor for 12px. It affects the quote's
+  actions, the `.t12` counts and the tape ruler, on desktop and phone alike,
+  and touch has no hover to compensate. **The user chose fidelity to
+  bydefault.so over the contrast floor.** Do not "fix" this during the build;
+  reversing it later is one darkening of two tokens in the theme, which lands on
+  both compositions at once.
+
 ## Unresolved
 
-- Priority palette (one hue vs three) — see above.
-- **Small text on `--ink-3` / `--ink-4` misses WCAG AA.** `--ink-3` (#8c8681) on
-  paper is 3.3:1 and `--ink-4` (#b4aea8) is 2.0:1, against a 4.5:1 floor for
-  12px. It hits the quote's actions, the `.t12` counts, and the tape ruler — on
-  desktop and phone alike, since both read the same tokens. The phone makes it
-  sharper: there is no hover to compensate on touch. Left as-is in the comps
-  rather than forked at one breakpoint; the fix is one darkening of `--ink-3`
-  and `--ink-4` in `_a.css`, which lands on both compositions at once. Needs a
-  call, because it is a deliberate deviation from the pinned bydefault palette.
 - Whether the tape belongs on other date-driven surfaces or only on Today.

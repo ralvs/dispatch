@@ -180,7 +180,17 @@
 
 			<div class="head-row" style="margin-top: 66px">
 				<div>
-					<p class="eyebrow" style="margin: 0 0 16px">Thursday, 6 August 2026</p>
+					<nav class="daynav" style="margin: 0 0 16px" aria-label="Day navigation">
+						<button class="step" type="button" aria-label="Previous day">
+							<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+						</button>
+						<span class="eyebrow daylabel" aria-live="polite">Thursday, 6 August 2026</span>
+						<button class="step" type="button" aria-label="Next day">
+							<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+						</button>
+						<!-- Holds its slot on today, so the chevrons never shift. -->
+						<button class="pill pill-ghost today-reset" type="button" hidden>Today</button>
+					</nav>
 					<h1 class="t56" style="margin: 0; max-width: 16ch">
 				Next up at 14:00 — <span style="color: var(--ink-4)">Almoço com a Ana.</span>
 			</h1>
@@ -192,7 +202,14 @@
 					<div><b>4</b> in the inbox</div>
 				</div>
 			</div>
-			<div style="margin-top: 40px">
+			<div class="day-owned" style="margin-top: 40px">
+				<!-- Belongs to the day but has no hour, so the tape structurally
+				     cannot show it. It caps the tape for exactly that reason. -->
+				<div class="allday">
+					<span class="eyebrow">All day</span>
+					<span class="ad"><i class="dot" style="background: var(--travel)"></i> Voo para o Porto</span>
+					<span class="ad"><i class="dot" style="background: var(--engine)"></i> Renew the domain</span>
+				</div>
 				<div class="tape-times">
 					<span style="left: 18.75%">09:00</span><span style="left: 25%">10:00</span
 					><span style="left: 34.375%">11:30</span><span style="left: 50%">14:00</span

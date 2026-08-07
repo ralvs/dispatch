@@ -20,6 +20,8 @@ Serve them with `bun run` — or the `mocks` entry in `.claude/launch.json`
 | `today-a2-ring-quiet.html` | Empty-day states. |
 | `today-a2-ring-mobile.html` | **The build, on a phone.** Same day at 393pt. |
 | `today-a2-ring-mobile-dark.html` | Same, `data-theme="dark"`. |
+| `today-a2-ring-mobile-quiet.html` | Empty-day states at phone width. |
+| `today-a2-ring-mobile-otherday.html` | The day nav in use: Friday, no now-mark, Today reset showing. |
 | `today-a1-rail.html` | The alternate. Light. |
 | `today-a1-rail-dark.html` | Alternate, dark. |
 | `today-a1-rail-quiet.html` | Alternate, empty states. |
@@ -77,3 +79,36 @@ separate file here only so the locked desktop comps stay byte-identical.
 Touch: rows are ≥48px and every checkbox carries a 44px hit slug via
 `.check::before`, which the desktop comps do not need.
 
+
+## Day navigation and the all-day band
+
+Both are in every comp, desktop and phone.
+
+**The nav is the dateline.** A separate widget above the tape would state the
+day twice, so the chevrons flank the date that was already there — in the
+eyebrow on desktop, in the app bar on phone. The label always names the real
+date; it never switches to "TOMORROW". Being off today is carried by the
+**Today reset** existing at all, which keeps the label purely informative. On
+today the reset holds its slot invisibly, so the chevrons never shift.
+
+Stepping a day dims only what the day owns — `.day-owned` on the tape, the
+all-day band and the timeline. The header, Top 3, Routines, Projects and the
+quote do not flicker, because the nav does not change them.
+
+**The all-day band** is everything that belongs to the day but has no hour, so
+the tape is structurally incapable of showing it. It caps the tape from above
+for exactly that reason: together they are the whole day. When there is nothing
+all-day the band is absent, not empty — see the quiet comps.
+
+**The headline follows the day.** One word changes:
+
+| Day | Headline |
+|---|---|
+| Today, something ahead | `Next up at 14:00 — Almoço com a Ana.` |
+| Any other day | `First up at 09:30 — Retro do sprint.` |
+| Nothing on today | `You are free.` |
+| Nothing on another day | `Nothing on the clock.` |
+
+On any day but today there is no now-mark — `nowLabel` is null off today, and
+the tape keeps its ruler without it. On phone, swiping the tape sideways steps
+the day as well; the chevrons are the discoverable path, the gesture the fast one.

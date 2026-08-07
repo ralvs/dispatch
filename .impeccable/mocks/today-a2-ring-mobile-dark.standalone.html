@@ -514,6 +514,95 @@ h2.sec {
 	margin-top: 16px;
 }
 
+/* ── day navigation ────────────────────────────────────────────────────
+ * The nav IS the dateline. A separate widget above the tape would state the
+ * day twice, so the chevrons flank the date that was already there.
+ *
+ * The label always names the real date — never "TOMORROW". Being off today is
+ * carried by the reset pill existing at all, which keeps the label purely
+ * informative instead of switching voice with the mode.
+ */
+.daynav {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.step {
+	width: 28px;
+	height: 28px;
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	padding: 0;
+	border: 1px solid var(--rule-2);
+	border-radius: var(--r-pill);
+	background: transparent;
+	color: var(--ink-3);
+	cursor: pointer;
+}
+.step:hover {
+	color: var(--ink);
+	border-color: var(--ink-4);
+}
+.step svg {
+	width: 15px;
+	height: 15px;
+}
+.daynav .daylabel {
+	white-space: nowrap;
+}
+/* Holds its slot on today so the chevrons never shift when the day changes. */
+.today-reset {
+	height: 28px;
+	padding: 0 12px;
+	font-size: 12px;
+	margin-left: 4px;
+}
+.today-reset[hidden] {
+	display: inline-flex;
+	visibility: hidden;
+}
+/* Stepping a day dims the payload the nav owns — tape, all-day, timeline —
+   and nothing else. Mirrors the shipped `pending` transition. */
+.day-owned {
+	transition: opacity 0.18s ease;
+}
+[data-pending] .day-owned {
+	opacity: 0.55;
+}
+
+/* ── all-day band ──────────────────────────────────────────────────────
+ * Everything that belongs to the day but has no hour, so the tape is
+ * structurally incapable of showing it. It caps the tape from above for
+ * exactly that reason: together they are the whole day.
+ */
+.allday {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	margin-bottom: 14px;
+}
+.allday > .eyebrow {
+	flex-shrink: 0;
+}
+.ad {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 30px;
+	padding: 0 13px;
+	border: 1px solid var(--rule-2);
+	border-radius: var(--r-md);
+	font-size: 14px;
+	color: var(--ink);
+	white-space: nowrap;
+}
+.ad .dot {
+	width: 7px;
+	height: 7px;
+}
+
 /* Dispatch — Today, revision A, phone.
  *
  * Layers on top of _a.css. Same tokens, same type ramp, same geometry — this
@@ -1104,6 +1193,47 @@ body.phone-page {
 	}
 }
 
+/* ── day navigation, phone ─────────────────────────────────────────────
+ * The app bar becomes the nav. The brand mark goes: the dock already says
+ * where you are, and the 22px it cost is what makes the chevrons fit at 375pt.
+ * Swiping the tape sideways steps the day too — the chevrons are the
+ * discoverable path, the gesture is the fast one.
+ */
+.appbar .daynav {
+	gap: 6px;
+	min-width: 0;
+}
+.appbar .daylabel {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.appbar .today-reset {
+	height: 28px;
+	padding: 0 11px;
+	margin-left: 0;
+}
+.appbar-right {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+/* All-day chips sit right on top of the track, so tape + band read as one
+   object. They wrap rather than scroll — a hidden chip is a missed commitment. */
+.allday {
+	gap: 7px 10px;
+	margin-bottom: 12px;
+}
+.ad {
+	height: 28px;
+	padding: 0 11px;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: inline-flex;
+}
+
 		</style>
 	</head>
 	<body class="phone-page">
@@ -1135,11 +1265,18 @@ body.phone-page {
 				<!-- The date lives in the bar, so the headline never needs a label
 				     above it and the day stays visible after it scrolls away. -->
 				<header class="appbar">
-					<div class="where">
-						<span class="brand-mark" aria-hidden="true"></span>
-						<span class="eyebrow">Thursday, 6 August</span>
+					<!-- The bar is the nav. The brand mark goes: the dock already says
+					     where you are, and its 22px is what makes the chevrons fit at
+					     375pt. Swiping the tape sideways steps the day too. -->
+					<nav class="daynav" aria-label="Day navigation">
+						<button class="step" type="button" aria-label="Previous day"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+						<span class="eyebrow daylabel" aria-live="polite">Thursday, 6 August</span>
+						<button class="step" type="button" aria-label="Next day"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+					</nav>
+					<div class="appbar-right">
+						<button class="pill pill-ghost today-reset" type="button" hidden>Today</button>
+						<button class="pill pill-ghost pill-sm" type="button">Ask</button>
 					</div>
-					<button class="pill pill-ghost pill-sm" type="button">Ask</button>
 				</header>
 
 				<main class="page">
@@ -1157,7 +1294,12 @@ body.phone-page {
 					<!-- Day tape: 06:00–22:00 = 960 min. left% = (start-360)/9.6,
 					     width% = mins/9.6. Identical arithmetic to desktop; only the
 					     labels above the track are gone. -->
-					<section class="tape" aria-label="Day tape, 06:00 to 22:00">
+					<section class="tape day-owned" aria-label="Day tape, 06:00 to 22:00">
+						<div class="allday">
+							<span class="eyebrow">All day</span>
+							<span class="ad"><i class="dot" style="background: var(--travel)"></i> Voo para o Porto</span>
+							<span class="ad"><i class="dot" style="background: var(--engine)"></i> Renew the domain</span>
+						</div>
 						<div class="measure-track">
 							<div class="blk" style="left: 18.75%; width: 4.6875%; background: var(--code); animation-delay: 0.02s"></div>
 							<div class="blk" style="left: 25%; width: 1.5625%; background: var(--code); animation-delay: 0.07s"></div>
@@ -1196,7 +1338,7 @@ body.phone-page {
 						</div>
 					</section>
 
-					<section class="band">
+					<section class="band day-owned">
 						<div class="sec-head"><h2 class="sec">Timeline</h2></div>
 						<div class="row past"><span class="time num">09:00</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--code)"></span><span class="title">Deploy review</span></div>
 						<div class="row past"><span class="time num">10:00</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--code)"></span><span class="title">Daily standup</span></div>
