@@ -25,6 +25,7 @@ Serve them with `bun run` — or the `mocks` entry in `.claude/launch.json`
 | `today-a1-rail.html` | The alternate. Light. |
 | `today-a1-rail-dark.html` | Alternate, dark. |
 | `today-a1-rail-quiet.html` | Alternate, empty states. |
+| `palette-lab.html` | **The domain palette**, with the measurements that justify it. |
 | `tape-lab.html` | Why the day tape carries no event titles — measured against a real day. |
 
 ## A1 vs A2 — one axis
@@ -112,3 +113,54 @@ all-day the band is absent, not empty — see the quiet comps.
 On any day but today there is no now-mark — `nowLabel` is null off today, and
 the tape keeps its ruler without it. On phone, swiping the tape sideways steps
 the day as well; the chevrons are the discoverable path, the gesture the fast one.
+
+## The domain palette
+
+Nine slots: the seven seeded stewardship domains plus two spares. Defined in
+`_a.css`, proved in `palette-lab.html`. The old eight-swatch palette in
+`lib/schemas/color.ts` is discarded outright — it was tuned for the warm linen
+ground of the *first* rejected identity, two visual worlds ago.
+
+| Token | Name | Domain | Light | Dark |
+|---|---|---|---|---|
+| `--burgundy` | Burgundy | *spare* | `#7f002c` | `#bf2f52` |
+| `--spirit` | Clay | Spirituality | `#86634f` | `#a8836e` |
+| `--travel` | Brass | Travel | `#9e8400` | `#d1b64a` |
+| `--health` | Fern | Health | `#1f8d54` | `#54b97d` |
+| `--pine` | Pine | *spare* | `#005a52` | `#298b81` |
+| `--code` | Cyan | Code | `#009fac` | `#5ad5e3` |
+| `--finance` | Azure | Finance | `#0d6abb` | `#4a9cf1` |
+| `--engine` | Iris | Engine | `#623ca8` | `#8f6ddd` |
+| `--family` | Orchid | Family | `#bf4ea4` | `#da67bd` |
+
+### How they were chosen
+
+Generated in OKLCH and measured, never eyeballed. Three floors, all met in both
+themes:
+
+- **ΔE<sub>ok</sub> ≥ 0.12 between any two**, because a domain colour's smallest
+  form is a 9px dot. Worst pair is Fern/Cyan at 0.125.
+- **ΔE<sub>ok</sub> ≥ 0.15 from the accent and the priority ring** — a higher bar,
+  because confusing a domain with a *state* is worse than confusing two domains.
+  Worst is Clay/priority at 0.152.
+- **≥ 3:1 against its own ground**, the non-text contrast line. Worst is
+  Cyan on light at 3.07:1.
+
+Hue alone could not carry nine colours outside the band the accent already owns,
+so **lightness does half the work**: Pine and Burgundy are deep, Cyan and Brass
+are light. Two slots are deliberate exceptions to hue-spacing:
+
+- **Clay** sits at the accent's own hue (h50 vs h41) and is told apart by being
+  *muted* — chroma 0.055 against the accent's 0.199. It is the quiet one on
+  purpose, which suits Spirituality.
+- **Burgundy** is at h12, inside the reserved red band, and clears the priority
+  ring on lightness alone (L 0.38 against the ring's 0.58). A hue-spacing search
+  said there was no room; a lightness search found the best slot in the palette.
+
+### What this fixes
+
+`--engine` used to be `#f15a0f` — **byte-identical to the accent**. Engine is the
+most frequent domain, so every Engine dot and every Engine block on the tape was
+reading as "interactive" or "overdue". It is now Iris, 0.29 away from the accent.
+Two other pairs were indistinguishable at dot size: engine/travel (18° apart) and
+code/finance (20°).

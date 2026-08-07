@@ -41,6 +41,26 @@ this file's prose.
 >    whole build: all 13 other surfaces inherit these tokens and will shift.
 >    Screenshot `/tasks`, `/inbox`, `/notes` and `/projects` before and after and
 >    fix what actually breaks; do not redesign them in this phase.
+> 1b. **The domain palette becomes a token, not a hex.** Port the nine domain
+>    colours from `_a.css` (evidence: `.impeccable/mocks/palette-lab.html`) and
+>    change how a domain's colour is *stored*:
+>    - `stewardship_domains.color` goes from a hex string to a **palette slug**
+>      (`engine`, `health`, `family`, `spirit`, `finance`, `code`, `travel`,
+>      `pine`, `burgundy`). A stored hex cannot theme-switch, and dark is a full
+>      peer now.
+>    - Migration: map the seven seeded domains to their assigned slugs by name,
+>      and any other value to null. There are only eight rows plus Inbox; do not
+>      build a colour-distance mapper for this.
+>    - `HexColorSchema` in `lib/schemas/color.ts` becomes a slug union, and
+>      `COLOR_PALETTE` — currently eight hexes "picked to read well on the warm
+>      linen background", an identity that was replaced twice — is deleted.
+>    - `components/color-dot.tsx` and `components/color-swatch-picker.tsx` render
+>      `var(--domain-<slug>)` instead of an inline hex. Keep the picker's "None"
+>      option and its `null`-clearing behaviour, which `lib/form-decode.ts`
+>      depends on.
+>    - **Do not retune the colours by hand.** They meet three measured floors in
+>      both themes; change them in the lab and re-measure, or not at all.
+>
 > 2. **The shell.** Desktop header (brand, pill tabs, Ask + Capture) and the
 >    mobile dock — restyle `components/bottom-tab-bar.tsx` to the comp: active
 >    tab on `accent-soft` with accent ink, capture as a round ink capsule with a

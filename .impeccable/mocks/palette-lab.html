@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Domain palette — lab</title>
+		<link rel="stylesheet" href="_a.css" />
+		<style>
+			.lab {
+				max-width: 1180px;
+				margin: 0 auto;
+				padding: 40px 44px 90px;
+			}
+			.pair {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 28px;
+				align-items: start;
+			}
+			.sheet {
+				border-radius: var(--r-card);
+				padding: 26px;
+			}
+			.sheet.light {
+				background: #fafafa;
+				border: 1px solid #e5e5e5;
+			}
+			.sheet.dark {
+				background: #1a1817;
+				border: 1px solid #322e2c;
+			}
+			.spec {
+				display: flex;
+				align-items: center;
+				gap: 14px;
+				padding: 9px 0;
+			}
+			.spec .nm {
+				width: 132px;
+				flex-shrink: 0;
+				font-size: 15px;
+			}
+			.spec .hx {
+				font-family: var(--mono);
+				font-size: 12px;
+				width: 72px;
+				flex-shrink: 0;
+			}
+			.spec .who {
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				width: 96px;
+				flex-shrink: 0;
+			}
+			/* the three shapes a domain colour actually takes */
+			.spec .d9 {
+				width: 9px;
+				height: 9px;
+				border-radius: 999px;
+				flex-shrink: 0;
+			}
+			.spec .blkspec {
+				width: 34px;
+				height: 22px;
+				border-radius: 4px;
+				flex-shrink: 0;
+			}
+			.spec .tick {
+				width: 9px;
+				height: 22px;
+				border-radius: 4px;
+				border: 2px solid;
+				flex-shrink: 0;
+			}
+			.spec .sw {
+				width: 28px;
+				height: 28px;
+				border-radius: 999px;
+				flex-shrink: 0;
+			}
+			.sheet.light .nm {
+				color: #2a2524;
+			}
+			.sheet.light .hx,
+			.sheet.light .who {
+				color: #8c8681;
+			}
+			.sheet.dark .nm {
+				color: #f5f2ef;
+			}
+			.sheet.dark .hx,
+			.sheet.dark .who {
+				color: #8d8681;
+			}
+
+			/* a real tape, filled with every colour at once */
+			.tapespec {
+				position: relative;
+				height: 40px;
+				border-radius: 11px;
+				margin-top: 22px;
+			}
+			.sheet.light .tapespec {
+				background: #f0efed;
+			}
+			.sheet.dark .tapespec {
+				background: #2b2725;
+			}
+			.tapespec i {
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				border-radius: 4px;
+			}
+
+			table.m {
+				border-collapse: collapse;
+				font-family: var(--mono);
+				font-size: 11px;
+				margin-top: 12px;
+			}
+			table.m th,
+			table.m td {
+				padding: 4px 7px;
+				text-align: center;
+				border: 1px solid var(--rule);
+				color: var(--ink-3);
+			}
+			table.m th {
+				font-weight: 400;
+				color: var(--ink-4);
+			}
+			table.m td.self {
+				background: var(--ground-2);
+				color: var(--ink-4);
+			}
+			table.m td.bad {
+				background: #fde7e5;
+				color: #b3231a;
+				font-weight: 500;
+			}
+			table.m td.warn {
+				background: #fdf0e8;
+				color: #a83f09;
+			}
+			h2.sec {
+				margin: 44px 0 10px;
+			}
+			.note {
+				font-size: 14px;
+				color: var(--ink-2);
+				max-width: 78ch;
+				line-height: 1.6;
+			}
+			#verdict {
+				font-family: var(--mono);
+				font-size: 12px;
+				margin-top: 10px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="lab">
+			<h1 class="t30" style="margin: 0">Domain palette</h1>
+			<p class="note" style="margin-top: 10px">
+				Nine hues for the seven seeded stewardship domains plus two spares. Measured, not
+				eyeballed: every pair has to stay apart at 9px, and none of them may wander into the
+				band the accent and the priority ring already own.
+			</p>
+
+			<h2 class="sec t18" style="color: var(--ink)">The shapes a domain colour takes</h2>
+			<p class="note">
+				A 9px dot beside a row title, a filled block on the day tape, an outlined tick for a
+				scheduled task, and a 28px swatch in the picker. All four, both themes, real sizes.
+			</p>
+			<div class="pair" style="margin-top: 18px">
+				<div class="sheet light" id="sheet-light"></div>
+				<div class="sheet dark" id="sheet-dark"></div>
+			</div>
+
+			<h2 class="sec t18" style="color: var(--ink)">Separation at dot size</h2>
+			<p class="note">
+				Pairwise perceptual distance in OKLab (ΔE<sub>ok</sub>). A 9px dot is a small field, so
+				the floor here is <b>0.12</b> — well above the ~0.02 just-noticeable difference for
+				large areas. Anything under 0.12 is flagged; under 0.09 is a defect.
+			</p>
+			<div id="matrix"></div>
+			<p id="verdict"></p>
+
+			<h2 class="sec t18" style="color: var(--ink)">Against what is already spoken for</h2>
+			<p class="note">
+				The accent (#f15a0f) marks interactivity and overdue; the priority ring (#d92d20) marks
+				a high-priority task. A domain colour that lands near either one lies about what it is.
+				Distance from every domain to both, same ΔE<sub>ok</sub> scale, floor 0.15 — higher,
+				because confusing a domain with a state is worse than confusing two domains.
+			</p>
+			<div id="reserved"></div>
+		</div>
+
+		<script>
+			// ── the palette ────────────────────────────────────────────────────
+			// Generated in OKLCH, not picked by eye. Hue alone could not separate
+			// nine colours outside the reserved warm band, so lightness carries
+			// half the work: Pine and Burgundy are deep, Cyan and Brass are light,
+			// and Clay is the one that separates by *chroma* — it sits at the
+			// accent's own hue and is told apart by being muted, not by being
+			// elsewhere. Burgundy was found by search: h12 is inside the reserved
+			// hue band and clears it on lightness alone (L 0.38 vs the ring's 0.58).
+			const P = [
+				{ key: "burgundy", name: "Burgundy", who: "— spare",      hue: 12,  l: "#7f002c", d: "#bf2f52" },
+				{ key: "spirit",   name: "Clay",     who: "Spirituality", hue: 50,  l: "#86634f", d: "#a8836e" },
+				{ key: "travel",   name: "Brass",    who: "Travel",       hue: 95,  l: "#9e8400", d: "#d1b64a" },
+				{ key: "health",   name: "Fern",     who: "Health",       hue: 155, l: "#1f8d54", d: "#54b97d" },
+				{ key: "pine",     name: "Pine",     who: "— spare",      hue: 185, l: "#005a52", d: "#298b81" },
+				{ key: "code",     name: "Cyan",     who: "Code",         hue: 205, l: "#009fac", d: "#5ad5e3" },
+				{ key: "finance",  name: "Azure",    who: "Finance",      hue: 252, l: "#0d6abb", d: "#4a9cf1" },
+				{ key: "engine",   name: "Iris",     who: "Engine",       hue: 295, l: "#623ca8", d: "#8f6ddd" },
+				{ key: "family",   name: "Orchid",   who: "Family",       hue: 338, l: "#bf4ea4", d: "#da67bd" },
+			];
+			const RESERVED = [
+				{ name: "accent", l: "#f15a0f", d: "#ff6f2c" },
+				{ name: "priority high", l: "#d92d20", d: "#ff6a5e" },
+			];
+
+			// ── colour maths: sRGB → linear → OKLab ────────────────────────────
+			const srgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+			const lin = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+			function oklab(hex) {
+				const [r, g, b] = srgb(hex).map(lin);
+				const L = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+				const M = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+				const S = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+				return [
+					0.2104542553 * L + 0.793617785 * M - 0.0040720468 * S,
+					1.9779984951 * L - 2.428592205 * M + 0.4505937099 * S,
+					0.0259040371 * L + 0.7827717662 * M - 0.808675766 * S,
+				];
+			}
+			const dE = (a, b) => {
+				const [x, y, z] = oklab(a), [u, v, w] = oklab(b);
+				return Math.hypot(x - u, y - v, z - w);
+			};
+			function relLum(hex) {
+				const [r, g, b] = srgb(hex).map(lin);
+				return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+			}
+			const contrast = (a, b) => {
+				const [x, y] = [relLum(a), relLum(b)].sort((p, q) => q - p);
+				return (x + 0.05) / (y + 0.05);
+			};
+
+			// ── specimens ──────────────────────────────────────────────────────
+			for (const theme of ["light", "dark"]) {
+				const ground = theme === "light" ? "#fafafa" : "#1a1817";
+				const host = document.getElementById(`sheet-${theme}`);
+				host.innerHTML =
+					P.map((c) => {
+						const v = c[theme === "light" ? "l" : "d"];
+						return `<div class="spec">
+							<span class="d9" style="background:${v}"></span>
+							<span class="nm">${c.name}</span>
+							<span class="hx">${v}</span>
+							<span class="who">${c.who}</span>
+							<span class="blkspec" style="background:${v}"></span>
+							<span class="tick" style="color:${v}"></span>
+							<span class="sw" style="background:${v}"></span>
+							<span class="hx" style="width:auto">${contrast(v, ground).toFixed(2)}:1</span>
+						</div>`;
+					}).join("") +
+					`<div class="tapespec">${P.map(
+						(c, i) =>
+							`<i style="left:${3 + i * 10.7}%;width:${i % 3 === 0 ? 7.4 : i % 3 === 1 ? 3.4 : 5.2}%;background:${c[theme === "light" ? "l" : "d"]}"></i>`,
+					).join("")}</div>`;
+			}
+
+			// ── separation matrix ──────────────────────────────────────────────
+			function matrix(host, theme) {
+				const k = theme === "light" ? "l" : "d";
+				let worst = Infinity, worstPair = "";
+				let html = `<table class="m"><tr><th>${theme}</th>${P.map((c) => `<th>${c.name}</th>`).join("")}</tr>`;
+				for (const a of P) {
+					html += `<tr><th style="text-align:right">${a.name}</th>`;
+					for (const b of P) {
+						if (a === b) { html += `<td class="self">—</td>`; continue; }
+						const v = dE(a[k], b[k]);
+						if (v < worst) { worst = v; worstPair = `${a.name}/${b.name}`; }
+						const cls = v < 0.09 ? "bad" : v < 0.12 ? "warn" : "";
+						html += `<td class="${cls}">${v.toFixed(3)}</td>`;
+					}
+					html += `</tr>`;
+				}
+				host.insertAdjacentHTML("beforeend", `${html}</table>`);
+				return { worst, worstPair };
+			}
+			const mh = document.getElementById("matrix");
+			const rl = matrix(mh, "light"), rd = matrix(mh, "dark");
+			document.getElementById("verdict").textContent =
+				`worst light ${rl.worst.toFixed(3)} (${rl.worstPair}) · worst dark ${rd.worst.toFixed(3)} (${rd.worstPair})`;
+
+			// ── distance from the reserved colours ─────────────────────────────
+			let rh = `<table class="m"><tr><th></th>${P.map((c) => `<th>${c.name}</th>`).join("")}</tr>`;
+			for (const theme of ["light", "dark"]) {
+				const k = theme === "light" ? "l" : "d";
+				for (const r of RESERVED) {
+					rh += `<tr><th style="text-align:right">${r.name} · ${theme}</th>`;
+					for (const c of P) {
+						const v = dE(c[k], r[k]);
+						rh += `<td class="${v < 0.11 ? "bad" : v < 0.15 ? "warn" : ""}">${v.toFixed(3)}</td>`;
+					}
+					rh += `</tr>`;
+				}
+			}
+			document.getElementById("reserved").innerHTML = `${rh}</table>`;
+		</script>
+	</body>
+</html>

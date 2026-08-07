@@ -23,13 +23,23 @@
 	--accent-soft: #fdf0e8;
 	--accent-ink: #c2450a;
 
-	--engine: #f15a0f;
-	--health: #2f9e6f;
-	--family: #d4437e;
-	--spirit: #7b5cd6;
-	--finance: #1f7ae0;
-	--code: #0f9bb5;
-	--travel: #c98a10;
+	/* ── domain colours ────────────────────────────────────────────────
+	 * Nine slots: the seven seeded stewardship domains plus two spares.
+	 * Generated in OKLCH and measured, never eyeballed — every pair clears
+	 * ΔEok 0.12 at 9px, every one clears 0.15 from the accent and the
+	 * priority ring, and all clear 3:1 on their own ground. Evidence and the
+	 * method: palette-lab.html. Retune there, not here.
+	 */
+	--burgundy: #7f002c; /* spare */
+	--spirit: #86634f; /* Spirituality — muted on purpose: it sits at the
+	                      accent's hue and separates by chroma, not by hue */
+	--travel: #9e8400;
+	--health: #1f8d54;
+	--pine: #005a52; /* spare */
+	--code: #009fac;
+	--finance: #0d6abb;
+	--engine: #623ca8;
+	--family: #bf4ea4;
 
 	--r-card: 22px;
 	--r-md: 12px;
@@ -57,13 +67,15 @@
 	--accent-soft: #33211a;
 	--accent-ink: #ff8f5c;
 
-	--engine: #ff6f2c;
-	--health: #3fbe88;
-	--family: #ef5f96;
-	--spirit: #9a7cf0;
-	--finance: #4f9bf0;
-	--code: #2bbcd6;
-	--travel: #e0a72a;
+	--burgundy: #bf2f52;
+	--spirit: #a8836e;
+	--travel: #d1b64a;
+	--health: #54b97d;
+	--pine: #298b81;
+	--code: #5ad5e3;
+	--finance: #4a9cf1;
+	--engine: #8f6ddd;
+	--family: #da67bd;
 
 	--lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.34);
 	color-scheme: dark;
