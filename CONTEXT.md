@@ -102,9 +102,17 @@ when the day is first assembled and when the client projects an optimistic
 tick (docs/adr/0038 keeps finished work on the day; a recurrence roll is the
 one removal). See ADR-0014.
 
-`DaySchedule` is the data only. Its UI is `DayView` (the region owning day
-navigation and `?d=`), holding `DayTape` (ruler), `DayNav` (chevrons) and
-`DayBands` (the four lists).
+`DaySchedule` is the data only. Its UI is `DayView` — the region owning day
+navigation and `?d=`, Today's page composition, and the one optimistic store
+the bands share. It holds `DayNav` (the chevrons, which are the dateline
+itself), `DayHeadline` (the sentence that follows the day), `DayTape` (the
+proportional 06:00–22:00 measure, capped by the all-day band) and the three
+band sections from `day-bands.tsx` — `Top3Section`, `TimelineSection`,
+`OpenSection`. The all-day band has no section of its own: it belongs to the
+tape, because together they are the whole day.
+
+The store lives in `DayView` rather than the sections because Top 3 and the
+Timeline sit in different columns and can hold the same task.
 
 ## Today vs Day
 
@@ -114,8 +122,30 @@ The prefix carries the date semantics (ADR-0036):
   page's data), `TodayDigest` (its cold cached half: quotes, projects,
   routines, cadence, alert counts; tag `today-digest`).
 - **`Day*`** follows the date picker, so it may be any date — `DaySchedule`,
-  `DayView`, `DayBands`, `DayTape`, `DayNav`.
+  `DayView`, `DayHeadline`, `DayTape`, `DayNav`, and the band sections.
 
-`briefing` and `chrome` are retired as domain terms; `chrome` means UI frame
-again. **brief** is only the "In brief" cadence rows (`BriefLine`,
-`BriefSection`) — one section, not the page.
+`briefing`, `chrome` and **brief** are all retired as domain terms; `chrome`
+means UI frame again. The "In brief" section was cut in the revision-A
+composition, so `BriefLine` / `deriveBriefLines` / `TodayView.briefLines`
+survive in `lib/services/today.ts` unread by any surface — nothing new should
+consume them.
+
+## day tape
+
+The proportional measure of one day at the top of Today: a pinned
+**06:00–22:00** track where committed time is a filled block in its own
+colour, free time is empty, and the now-mark carries its own hour. The window
+only ever widens, and only to contain something outside it — a window that
+fitted itself to the day's contents would make a 30-minute meeting a
+different width every morning, and a proportion you cannot compare between
+days measures nothing.
+
+**Titles never go inside the blocks** (evidence:
+`.impeccable/mocks/tape-lab.html`). Start times ride above the track on
+desktop and go entirely on a phone; every title lives in the Timeline list
+directly below. An **event** is a filled block spanning its duration; a
+**scheduled task** is an outlined tick, because it is a point in time rather
+than a span — the shape is what tells you which is which.
+
+Colour is the domain's for a task and the **calendar's** for an event, since
+a calendar event carries no domain (`lib/ui/event-color.ts`).

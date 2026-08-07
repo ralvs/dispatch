@@ -54,7 +54,7 @@ export {
 
 // ─────────────────────────────────────────────────────────────────────────
 // The Today page's data. getToday assembles a single read of the day's
-// shape — masthead, anchor, brief lines, doing-today, routines, quotes, and
+// shape — anchor, doing-today, routines, quotes, and
 // at-a-glance widgets — from the underlying services. The pure helpers below
 // are unit-tested in isolation; the fetcher composes them.
 //
@@ -68,11 +68,16 @@ export {
 //   Day*    follows the date picker (`?d=`), so it is not necessarily today.
 //     DaySchedule  — tasks + events for ONE date, in four bands
 //                    (All day / Timeline / Top 3 / Open)
-//     DayView      — the UI region that owns day navigation
-//     DayBands     — the four lists; DayTape the ruler; DayNav the chevrons
+//     DayView      — the UI region that owns day navigation, the page's
+//                    composition, and the optimistic store the bands share
+//     DayBands     — Top3Section / TimelineSection / OpenSection; DayTape the
+//                    tape and the all-day band; DayNav the chevrons
 //
-// "Brief" is narrower than all of these: BriefLine / BriefSection are the
-// "In brief" cadence rows, one section among many.
+// "In brief" was a section of Today and is RETIRED — the revision-A
+// composition cut it. BriefLine / deriveBriefLines / TodayView.briefLines
+// survive below unread by any surface, kept only because the digest they read
+// from is cross-request cached and pruning it is a separate change. Nothing
+// new should consume them.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type CadenceLine = {
@@ -83,7 +88,8 @@ export type CadenceLine = {
 	slip?: boolean;
 };
 
-/** One "In brief" row: a domain measured against its expected cadence. */
+/** One row of the retired "In brief" section: a domain measured against its
+ * expected cadence. No surface renders these any more. */
 export type BriefLine = {
 	key: string;
 	name: string;
@@ -342,7 +348,8 @@ export function cadenceThresholdDays(failurePatterns: unknown): number | null {
 }
 
 /**
- * "In brief" lines: domains at (or approaching) their cadence threshold.
+ * Lines for the retired "In brief" section: domains at (or approaching) their
+ * cadence threshold. Nothing renders them; see the note at the top of the file.
  * Last touch = the most recent of last_shipped_at and the domain's latest
  * completed task; a never-touched domain falls back to its created_at. Lines
  * appear once daysSince reaches 75% of the threshold, so a domain surfaces

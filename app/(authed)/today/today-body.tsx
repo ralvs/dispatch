@@ -75,6 +75,8 @@ export async function TodayBody({
 						open={view.anchor.openCount}
 						overdue={view.anchor.overdueCount}
 						inbox={view.inboxCount}
+						needsReview={view.needsReviewCount}
+						notifications={view.masthead.unreadNotifications}
 					/>
 				}
 				aside={

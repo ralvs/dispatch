@@ -26,7 +26,7 @@ export async function createDomainAction(formData: FormData) {
 	revalidateDomainViews();
 }
 
-// Blank clears the rule, which takes the domain out of "In brief" entirely.
+// Blank clears the rule, which stops the observations cron flagging the domain.
 const CadenceDaysSchema = z
 	.string()
 	.trim()

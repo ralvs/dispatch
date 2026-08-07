@@ -43,17 +43,28 @@ export function Counters({
 	open,
 	overdue,
 	inbox,
+	needsReview,
+	notifications,
 }: {
 	events: number;
 	open: number;
 	overdue: number;
 	inbox: number;
+	/** Notes the parser could not place — iron rule #4's safety net. */
+	needsReview: number;
+	notifications: number;
 }) {
+	// The comps show four. The last two are here because the sections this
+	// composition cut were the only places they appeared, and both are things
+	// waiting on a decision — which is what this block is. They are rare, and
+	// every row is conditional, so an ordinary day still reads as four.
 	const rows = [
 		{ key: "events", count: events, label: events === 1 ? "event" : "events", href: "/today" },
 		{ key: "open", count: open, label: "open", href: "/tasks" },
 		{ key: "overdue", count: overdue, label: "overdue", href: "/tasks", late: true },
 		{ key: "inbox", count: inbox, label: "in the inbox", href: "/inbox" },
+		{ key: "review", count: needsReview, label: "need review", href: "/notes" },
+		{ key: "unread", count: notifications, label: "notifications", href: "/notifications" },
 	].filter((row) => row.count > 0);
 
 	if (rows.length === 0) return null;

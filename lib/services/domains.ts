@@ -73,7 +73,7 @@ export async function markDomainShipped(sb: SupabaseClient, id: string): Promise
 // ─── Cadence rule ───────────────────────────────────────────────────────
 //
 // The numeric threshold that decides whether a domain shows up in Today's
-// "In brief". The reader is cadenceThresholdDays in lib/services/today.ts;
+// cadence flagging. The reader is cadenceThresholdDays in lib/services/today.ts;
 // these two must agree on the failure_patterns shape, which is why the writer
 // recognises exactly the same rule names.
 
@@ -93,7 +93,7 @@ function isFailurePattern(entry: unknown): entry is FailurePattern {
  * Merge a threshold into a domain's failure_patterns, preserving every rule
  * the editor does not manage (advanced rules are still hand-written SQL).
  * `days === null` removes the numeric rule entirely, which drops the domain
- * out of "In brief". An existing rule keeps its name — a journal-cadence
+ * out of cadence flagging. An existing rule keeps its name — a journal-cadence
  * domain does not silently become an activity-cadence one.
  */
 export function withCadenceThresholdDays(
