@@ -1,0 +1,1331 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<title>Today — A2: Ring, phone</title>
+		<style>
+/* Dispatch — Today, revision A.
+ * Type + palette lifted exactly from bydefault.so:
+ *   Geist Sans, weights 400/500 ONLY, ramp 56/44/36/30/18/16/14/12,
+ *   h1 56px/500/-1.4px/1.04, ground neutral-50, warm stone ink, #f15a0f accent.
+ * Geometry (pills, large card radii) from collectiveos.vercel.app.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400;500&display=swap");
+
+:root {
+	--ground: #fafafa;
+	--ground-2: #f0efed;
+	--paper: #ffffff;
+
+	--ink: #2a2524;
+	--ink-2: #57534e;
+	--ink-3: #8c8681;
+	--ink-4: #b4aea8;
+	--rule: #e5e5e5;
+	--rule-2: #d6d3d0;
+
+	--accent: #f15a0f;
+	--accent-soft: #fdf0e8;
+	--accent-ink: #c2450a;
+
+	--engine: #f15a0f;
+	--health: #2f9e6f;
+	--family: #d4437e;
+	--spirit: #7b5cd6;
+	--finance: #1f7ae0;
+	--code: #0f9bb5;
+	--travel: #c98a10;
+
+	--r-card: 22px;
+	--r-md: 12px;
+	--r-pill: 999px;
+
+	--lift: 0 1px 2px rgba(41, 37, 36, 0.04), 0 10px 28px rgba(41, 37, 36, 0.05);
+
+	--sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+	--mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+[data-theme="dark"] {
+	--ground: #1a1817;
+	--ground-2: #2b2725;
+	--paper: #232020;
+
+	--ink: #f5f2ef;
+	--ink-2: #b8b1ab;
+	--ink-3: #8d8681;
+	--ink-4: #6b645f;
+	--rule: #322e2c;
+	--rule-2: #423d3a;
+
+	--accent: #ff6f2c;
+	--accent-soft: #33211a;
+	--accent-ink: #ff8f5c;
+
+	--engine: #ff6f2c;
+	--health: #3fbe88;
+	--family: #ef5f96;
+	--spirit: #9a7cf0;
+	--finance: #4f9bf0;
+	--code: #2bbcd6;
+	--travel: #e0a72a;
+
+	--lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.34);
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: var(--ground);
+	color: var(--ink);
+	font-family: var(--sans);
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+
+/* ── type ramp (bydefault): 56 / 44 / 36 / 30 / 18 / 16 / 14 / 12 ── */
+.t56 {
+	font-size: 56px;
+	font-weight: 500;
+	letter-spacing: -1.4px;
+	line-height: 1.04;
+}
+.t30 {
+	font-size: 30px;
+	font-weight: 500;
+	letter-spacing: -0.75px;
+	line-height: 1.15;
+}
+.t18 {
+	font-size: 18px;
+	font-weight: 400;
+	line-height: 1.7;
+	color: var(--ink-2);
+}
+.t16 {
+	font-size: 16px;
+	font-weight: 400;
+}
+.t14 {
+	font-size: 14px;
+	font-weight: 400;
+	color: var(--ink-2);
+}
+.t12 {
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--ink-3);
+}
+
+.eyebrow {
+	font-family: var(--mono);
+	font-size: 12px;
+	font-weight: 400;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+.num {
+	font-variant-numeric: tabular-nums;
+}
+
+/* ── chrome ── */
+.card {
+	background: var(--paper);
+	border: 1px solid var(--rule);
+	border-radius: var(--r-card);
+	box-shadow: var(--lift);
+}
+
+.pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 40px;
+	padding: 0 20px;
+	border: 0;
+	border-radius: var(--r-pill);
+	background: var(--ink);
+	color: var(--ground);
+	font-family: var(--sans);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+}
+.pill-ghost {
+	background: transparent;
+	border: 1px solid var(--rule-2);
+	color: var(--ink);
+	font-weight: 400;
+}
+.pill-accent {
+	background: var(--accent);
+	color: #fff;
+}
+
+/* header (from comp C) */
+.hdr {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+}
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 16px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+}
+.brand-mark {
+	width: 26px;
+	height: 26px;
+	border-radius: 8px;
+	background: var(--accent);
+	position: relative;
+	flex-shrink: 0;
+}
+.brand-mark::after {
+	content: "";
+	position: absolute;
+	inset: 8px 7px;
+	border-left: 2px solid #fff;
+	border-bottom: 2px solid #fff;
+	transform: rotate(-45deg) translate(1px, -1px);
+}
+.tabs {
+	display: flex;
+	gap: 2px;
+	background: var(--ground-2);
+	padding: 5px;
+	border-radius: var(--r-pill);
+}
+.tab {
+	padding: 7px 18px;
+	border-radius: var(--r-pill);
+	font-size: 14px;
+	color: var(--ink-3);
+}
+.tab.on {
+	background: var(--paper);
+	color: var(--ink);
+	font-weight: 500;
+	box-shadow: 0 1px 2px rgba(41, 37, 36, 0.06), 0 2px 8px rgba(41, 37, 36, 0.05);
+}
+
+/* marks */
+.dot {
+	display: inline-block;
+	width: 9px;
+	height: 9px;
+	border-radius: var(--r-pill);
+	flex-shrink: 0;
+}
+.check {
+	width: 19px;
+	height: 19px;
+	border: 1.5px solid var(--rule-2);
+	border-radius: 7px;
+	flex-shrink: 0;
+	background: var(--paper);
+	position: relative;
+}
+.check.on {
+	background: var(--ink);
+	border-color: var(--ink);
+}
+.check.on::after {
+	content: "";
+	position: absolute;
+	left: 5.5px;
+	top: 2.5px;
+	width: 5px;
+	height: 9.5px;
+	border: solid var(--paper);
+	border-width: 0 1.75px 1.75px 0;
+	transform: rotate(45deg);
+}
+
+/* routines progress bar (from comp B) */
+.meter {
+	height: 7px;
+	border-radius: var(--r-pill);
+	background: var(--ground-2);
+	overflow: hidden;
+}
+.meter i {
+	display: block;
+	height: 100%;
+	border-radius: var(--r-pill);
+	background: var(--ink);
+}
+
+/* headline row — counters ride on the right, off the headline's baseline */
+.head-row {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 48px;
+}
+.counters {
+	display: grid;
+	gap: 7px;
+	text-align: right;
+	flex-shrink: 0;
+	padding-bottom: 6px;
+}
+.counters div {
+	font-size: 14px;
+	color: var(--ink-2);
+	white-space: nowrap;
+}
+.counters b {
+	font-weight: 500;
+	font-size: 16px;
+	color: var(--ink);
+	font-variant-numeric: tabular-nums;
+	margin-right: 5px;
+}
+.counters .late,
+.counters .late b {
+	color: var(--accent);
+}
+
+/* ── day tape ──────────────────────────────────────────────────────────
+ * Span is 06:00–22:00 = 960 min. left% = (start-360)/9.6, width% = mins/9.6.
+ * Start times ride ABOVE the track so a 15-minute block never has to carry
+ * text; the block itself only has to stay visible, which a min-width buys.
+ */
+.tape-times {
+	position: relative;
+	height: 16px;
+	margin-bottom: 5px;
+}
+.tape-times span {
+	position: absolute;
+	transform: translateX(-1px);
+	font-family: var(--mono);
+	font-size: 11px;
+	color: var(--ink-3);
+	white-space: nowrap;
+}
+.measure-track {
+	position: relative;
+	height: 46px;
+	background: var(--ground-2);
+	border-radius: 12px;
+}
+.blk {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	min-width: 7px;
+	display: flex;
+	align-items: center;
+	padding: 0 10px;
+	border-radius: 8px;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 500;
+	letter-spacing: -0.01em;
+	white-space: nowrap;
+	overflow: hidden;
+}
+/* a scheduled task is a point in time, not a span: an outlined tick that
+   still carries its own domain colour. */
+.blk.task {
+	background: transparent !important;
+	border: 2px solid currentColor;
+	padding: 0;
+	min-width: 9px;
+}
+.nowmark {
+	position: absolute;
+	top: -6px;
+	bottom: -6px;
+	width: 2px;
+	background: var(--ink);
+	border-radius: 2px;
+	z-index: 3;
+}
+.ticks {
+	position: relative;
+	margin-top: 9px;
+	height: 16px;
+}
+.ticks > span {
+	position: absolute;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-4);
+	transform: translateX(-50%);
+}
+.ticks > span:first-child {
+	transform: none;
+}
+.ticks .now-label {
+	color: var(--ink);
+	font-weight: 500;
+	transform: translateX(-50%);
+}
+
+/* Event marker: a calendar glyph sits in the checkbox's column, so events and
+   tasks line up in one band. Mirrors the shipped ScheduleRow. */
+.cal {
+	width: 19px;
+	height: 19px;
+	flex-shrink: 0;
+	color: var(--ink-3);
+	display: grid;
+	place-items: center;
+}
+.cal svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Empty band placeholder */
+.empty-band {
+	padding: 26px 0 30px;
+	color: var(--ink-3);
+	font-size: 16px;
+	font-style: italic;
+	border-bottom: 1px solid var(--rule);
+}
+.empty-band span {
+	font-style: normal;
+	display: block;
+	margin-top: 6px;
+	font-size: 14px;
+	color: var(--ink-4);
+}
+
+/* Resurfaced quote */
+.quote blockquote {
+	margin: 12px 0 0;
+	font-size: 18px;
+	line-height: 1.55;
+	font-style: italic;
+	letter-spacing: -0.01em;
+	color: var(--ink);
+}
+.quote .attrib {
+	margin: 10px 0 0;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+}
+.quote .acts {
+	margin-top: 18px;
+	display: flex;
+	gap: 20px;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+}
+
+/* Completion ring (routines top level + projects) */
+.ring {
+	border-radius: 50%;
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	position: relative;
+}
+.ring > .hole {
+	position: absolute;
+	border-radius: 50%;
+	background: var(--paper);
+}
+.ring > .val {
+	position: relative;
+	font-family: var(--mono);
+	font-variant-numeric: tabular-nums;
+	color: var(--ink-2);
+}
+
+/* Seven-day streak trail — tiny squares, one per day */
+.trail {
+	display: flex;
+	gap: 3px;
+	align-items: center;
+}
+.trail i {
+	width: 6px;
+	height: 6px;
+	border-radius: 2px;
+	background: var(--rule-2);
+	display: block;
+}
+.trail i.on {
+	background: var(--ink-2);
+}
+.streak {
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+	width: 30px;
+	text-align: right;
+}
+.streak.hot {
+	color: var(--accent);
+}
+
+.wrap {
+	max-width: 1180px;
+	margin: 0 auto;
+	padding: 30px 44px 80px;
+}
+.cols {
+	display: grid;
+	grid-template-columns: 1.5fr 1fr;
+	gap: 40px;
+	align-items: start;
+}
+h2.sec {
+	font-size: 16px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+	margin: 0;
+}
+.sec-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+.panel {
+	padding: 22px 24px;
+}
+.stack > * + * {
+	margin-top: 16px;
+}
+
+/* Dispatch — Today, revision A, phone.
+ *
+ * Layers on top of _a.css. Same tokens, same type ramp, same geometry — this
+ * file only carries what a 393pt screen forces to change:
+ *
+ *   1. h1 steps 56 → 36 on the pinned ramp. It still breaks on the em-dash.
+ *   2. The day tape loses its per-block start times and becomes a glance
+ *      strip: shape of the day only. Every time and title lives in Timeline.
+ *   3. Two columns become one, reordered orientation-first.
+ *   4. Tabs leave the header for the dock; capture becomes the dock's action.
+ *
+ * In the build this is one responsive tree, not a fork — the stack order is
+ * `display: contents` + `order` over the same sections, and every rule here
+ * belongs under a max-width query beside its desktop peer.
+ */
+
+:root {
+	/* Priority is one hue at three intensities (see today-a2-ring.html). */
+	--p-high: #d92d20;
+	--p-high-halo: rgba(217, 45, 32, 0.16);
+	--p-med: rgba(217, 45, 32, 0.42);
+
+	--safe-t: 56px; /* emulated in the frame; env(safe-area-inset-top) on device */
+	--safe-b: 22px;
+	--pad: 20px;
+	--dock-h: 54px;
+}
+[data-theme="dark"] {
+	--p-high: #ff6a5e;
+	--p-high-halo: rgba(255, 106, 94, 0.2);
+	--p-med: rgba(255, 106, 94, 0.45);
+}
+
+/* ── the frame ─────────────────────────────────────────────────────────
+ * Reviewed on a desktop it is a 393×852 device; opened on a real phone it
+ * drops the chrome and goes edge to edge. One structure, two presentations.
+ */
+body.phone-page {
+	--bezel: #1c1a19;
+	background: #e8e6e3;
+	display: grid;
+	place-items: center;
+	min-height: 100dvh;
+	padding: 28px 0;
+}
+[data-theme="dark"] body.phone-page {
+	--bezel: #423c39;
+	background: #0c0b0a;
+}
+
+.frame {
+	position: relative;
+	width: 393px;
+	height: 852px;
+	overflow: hidden;
+	background: var(--ground);
+	border-radius: 46px;
+	box-shadow:
+		0 0 0 10px var(--bezel),
+		0 30px 70px rgba(0, 0, 0, 0.3);
+}
+
+/* The shell owns the viewport: the document does not scroll, the content
+   region inside it does. Same rule the app already holds. */
+.scroller {
+	position: absolute;
+	inset: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	-webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 460px) {
+	:root {
+		/* max(), not a fallback: a browser tab reports 0 and the bar would sit
+		   flush against the pixel edge. The installed PWA reports the real 59. */
+		--safe-t: max(env(safe-area-inset-top), 10px);
+		--safe-b: max(env(safe-area-inset-bottom), 10px);
+	}
+	body.phone-page {
+		padding: 0;
+		display: block;
+		background: var(--ground);
+	}
+	.frame {
+		position: fixed;
+		inset: 0;
+		width: auto;
+		height: auto;
+		border-radius: 0;
+		box-shadow: none;
+	}
+	.statusbar {
+		display: none;
+	}
+}
+
+/* Emulated status bar — frame chrome, not part of the design. */
+.statusbar {
+	position: absolute;
+	inset: 0 0 auto;
+	height: var(--safe-t);
+	z-index: 5;
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	padding: 0 32px 8px;
+	font-family: var(--sans);
+	font-size: 15px;
+	font-weight: 500;
+	color: var(--ink);
+	pointer-events: none;
+}
+.statusbar .glyphs {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	opacity: 0.85;
+}
+
+/* ── app bar ───────────────────────────────────────────────────────────
+ * Sticky. Carries identity and the date, so the headline never has to. The
+ * blur is doing a specific job: content passes under a translucent bar.
+ */
+.appbar {
+	position: sticky;
+	top: 0;
+	z-index: 4;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	/* The bar owns the top inset, so its material runs under the status bar
+	   instead of stopping short of it — and nothing collides on scroll. */
+	height: calc(var(--safe-t) + 52px);
+	padding: var(--safe-t) var(--pad) 0;
+	background: color-mix(in srgb, var(--ground) 78%, transparent);
+	backdrop-filter: saturate(1.5) blur(14px);
+	-webkit-backdrop-filter: saturate(1.5) blur(14px);
+	border-bottom: 1px solid transparent;
+	transition: border-color 0.2s ease;
+}
+.scroller:not([data-top]) .appbar {
+	border-bottom-color: var(--rule);
+}
+.appbar .where {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+}
+.appbar .brand-mark {
+	width: 22px;
+	height: 22px;
+	border-radius: 7px;
+}
+.appbar .brand-mark::after {
+	inset: 7px 6px;
+	border-left-width: 1.5px;
+	border-bottom-width: 1.5px;
+}
+.appbar .eyebrow {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.pill-sm {
+	height: 32px;
+	padding: 0 15px;
+	font-size: 13px;
+	flex-shrink: 0;
+}
+
+/* ── page ──────────────────────────────────────────────────────────── */
+.page {
+	padding: 26px var(--pad) calc(var(--dock-h) + var(--safe-b) + 44px);
+}
+
+.t36 {
+	font-size: 36px;
+	font-weight: 500;
+	letter-spacing: -0.9px;
+	line-height: 1.1;
+	margin: 0;
+	text-wrap: pretty;
+}
+
+/* Counters run as one wrapped line, not a grid of stat tiles. */
+.counters-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 18px;
+	margin-top: 20px;
+	font-size: 14px;
+	color: var(--ink-2);
+}
+.counters-row span {
+	white-space: nowrap;
+}
+.counters-row b {
+	font-weight: 500;
+	font-size: 16px;
+	color: var(--ink);
+	font-variant-numeric: tabular-nums;
+	margin-right: 5px;
+}
+.counters-row .late,
+.counters-row .late b {
+	color: var(--accent);
+}
+
+/* ── day tape, phone ───────────────────────────────────────────────────
+ * 0.37px per minute at this width, so a 30-minute meeting is 11px and no
+ * block can carry text — which was already true on desktop. What goes is the
+ * row of per-block start times above the track: at this scale 09:00 and 10:00
+ * would overlap. The strip keeps the proportion, the domain colours, the
+ * outlined tick for a scheduled task, and the now-mark carrying its own hour.
+ */
+.tape {
+	margin-top: 30px;
+}
+.tape .measure-track {
+	height: 40px;
+	border-radius: 11px;
+}
+.tape .blk {
+	border-radius: 4px;
+	padding: 0;
+	min-width: 7px;
+}
+.tape .blk.task {
+	min-width: 9px;
+	border-width: 2px;
+}
+.tape .nowmark {
+	top: -5px;
+	bottom: -5px;
+}
+.tape .ticks {
+	margin-top: 8px;
+	height: 15px;
+}
+.tape .ticks > span {
+	font-size: 11px;
+}
+.tape .ticks > span.last {
+	left: auto;
+	right: 0;
+	transform: none;
+}
+
+/* ── sections ──────────────────────────────────────────────────────── */
+.band {
+	margin-top: 34px;
+}
+.band > .sec-head {
+	margin-bottom: 2px;
+}
+.panel {
+	padding: 18px;
+}
+.stack > * + * {
+	margin-top: 16px;
+}
+
+/* Touch: every checkbox carries a 44px hit slug it does not have to show. */
+.check {
+	width: 22px;
+	height: 22px;
+	border-radius: 8px;
+	position: relative;
+}
+.check::before {
+	content: "";
+	position: absolute;
+	inset: -11px;
+}
+.check.on::after {
+	left: 6.5px;
+	top: 3px;
+	width: 6px;
+	height: 11px;
+	border-width: 0 2px 2px 0;
+}
+
+/* rows — timeline and open */
+.row {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	min-height: 48px;
+	padding: 11px 0;
+	border-bottom: 1px solid var(--rule);
+}
+.row:last-child {
+	border-bottom: 0;
+}
+.row .time {
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+	width: 42px;
+	flex-shrink: 0;
+}
+.row .title {
+	flex: 1;
+	min-width: 0;
+	font-size: 16px;
+	letter-spacing: -0.01em;
+	line-height: 1.35;
+}
+.row .title.done {
+	color: var(--ink-4);
+	text-decoration: line-through;
+}
+.row.past {
+	opacity: 0.5;
+}
+.cal {
+	width: 22px;
+}
+.cal svg {
+	width: 17px;
+	height: 17px;
+}
+
+.check.p1 {
+	border-color: var(--p-high);
+	border-width: 2px;
+	box-shadow: 0 0 0 3.5px var(--p-high-halo);
+}
+.check.p2 {
+	border-color: var(--p-med);
+	border-width: 2px;
+}
+.check.p3 {
+	border-color: var(--rule-2);
+}
+.title.p1 {
+	font-weight: 500;
+}
+.due {
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-4);
+	flex-shrink: 0;
+}
+.due.late {
+	color: var(--accent);
+}
+
+.legend {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+.legend span {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-4);
+}
+.legend i {
+	width: 13px;
+	height: 13px;
+	border-radius: 5px;
+	display: block;
+	border: 2px solid var(--rule-2);
+	flex-shrink: 0;
+}
+.legend i.l1 {
+	border-color: var(--p-high);
+	box-shadow: 0 0 0 3px var(--p-high-halo);
+}
+.legend i.l2 {
+	border-color: var(--p-med);
+}
+
+/* top 3 */
+.t3 {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	min-height: 48px;
+	padding: 11px 0;
+	border-bottom: 1px solid var(--rule);
+}
+.t3:last-child {
+	border-bottom: 0;
+}
+.t3 .rank {
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-4);
+	flex-shrink: 0;
+}
+.t3 .title {
+	flex: 1;
+	min-width: 0;
+	font-size: 16px;
+	letter-spacing: -0.01em;
+	line-height: 1.35;
+}
+.t3 .title.done {
+	color: var(--ink-4);
+	text-decoration: line-through;
+}
+.t3 .empty {
+	color: var(--ink-4);
+	font-style: italic;
+}
+
+/* routines */
+.rt {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	min-height: 46px;
+	padding: 8px 0;
+}
+.rt .t {
+	flex: 1;
+	min-width: 0;
+	font-size: 16px;
+}
+.rt.done .t {
+	color: var(--ink-4);
+}
+.trail i {
+	width: 7px;
+	height: 7px;
+}
+.streak {
+	width: 26px;
+}
+
+/* projects */
+.prj {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-height: 48px;
+	padding: 11px 0;
+	border-bottom: 1px solid var(--rule);
+}
+.prj:last-child {
+	border-bottom: 0;
+}
+.prj .n {
+	font-size: 16px;
+	flex: 1;
+	min-width: 0;
+}
+
+/* quote */
+.quote blockquote {
+	font-size: 18px;
+	line-height: 1.5;
+}
+.quote .acts {
+	margin-top: 16px;
+	gap: 18px;
+}
+
+/* ── the dock ──────────────────────────────────────────────────────────
+ * The header's tab pill, moved to the thumb. Same material logic as the
+ * incumbent dock — translucent paper, blur, hairline, soft lift — restyled
+ * into this world. Capture is its own capsule beside it, ink-filled, exactly
+ * as the desktop header's primary. The active tab takes the accent; capture
+ * takes ink, so the two signals never read as the same thing.
+ */
+.dock {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 6;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 0 12px calc(var(--safe-b) + 8px);
+	pointer-events: none;
+}
+.dock-inner,
+.dock-capture {
+	pointer-events: auto;
+	height: var(--dock-h);
+	border-radius: var(--r-pill);
+	background: color-mix(in srgb, var(--paper) 80%, transparent);
+	backdrop-filter: saturate(1.8) blur(20px);
+	-webkit-backdrop-filter: saturate(1.8) blur(20px);
+	border: 1px solid var(--rule-2);
+	/* Deeper than a card's lift on purpose: the dock has to stay a separate
+	   object while it floats over a white card. */
+	box-shadow:
+		0 2px 6px rgba(41, 37, 36, 0.06),
+		0 14px 34px rgba(41, 37, 36, 0.16);
+}
+[data-theme="dark"] .dock-inner,
+[data-theme="dark"] .dock-capture {
+	box-shadow:
+		0 2px 6px rgba(0, 0, 0, 0.5),
+		0 14px 34px rgba(0, 0, 0, 0.45);
+}
+.dock-inner {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 5px;
+	min-width: 0;
+}
+.dock-inner a {
+	display: flex;
+	align-items: center;
+	height: 100%;
+	padding: 0 9px;
+	border-radius: var(--r-pill);
+	font-family: var(--mono);
+	font-size: 11px;
+	font-weight: 400;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	text-decoration: none;
+	white-space: nowrap;
+}
+.dock-inner a.on {
+	background: var(--accent-soft);
+	color: var(--accent-ink);
+}
+.dock-capture {
+	width: var(--dock-h);
+	display: grid;
+	place-items: center;
+	background: var(--ink);
+	border-color: var(--ink);
+	color: var(--ground);
+	flex-shrink: 0;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+}
+.dock-capture svg {
+	width: 21px;
+	height: 21px;
+}
+
+/* ── the one authored moment ───────────────────────────────────────────
+ * The tape assembles: the track's blocks wipe out from their own start edge,
+ * left to right in clock order, and the now-mark drops in last. The resting
+ * state is the default — the animation only plays where motion is welcome.
+ */
+@media (prefers-reduced-motion: no-preference) {
+	.tape .blk {
+		animation: tape-wipe 0.62s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+	}
+	.tape .nowmark {
+		animation: now-drop 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.62s backwards;
+	}
+	.tape .ticks .now-label {
+		animation: now-drop-label 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.68s backwards;
+	}
+	@keyframes tape-wipe {
+		from {
+			clip-path: inset(0 100% 0 0);
+		}
+		to {
+			clip-path: inset(0 0 0 0);
+		}
+	}
+	@keyframes now-drop {
+		from {
+			opacity: 0;
+			transform: translateY(-6px);
+		}
+	}
+	/* the label already carries translateX(-50%); keep it inside the frames */
+	@keyframes now-drop-label {
+		from {
+			opacity: 0;
+			transform: translateX(-50%) translateY(-6px);
+		}
+		to {
+			transform: translateX(-50%) translateY(0);
+		}
+	}
+}
+
+		</style>
+	</head>
+	<body class="phone-page">
+		<div class="frame">
+			<!-- frame chrome, not the design -->
+			<div class="statusbar" aria-hidden="true">
+				<span>13:10</span>
+				<span class="glyphs">
+					<svg aria-hidden="true" width="17" height="11" viewBox="0 0 17 11" fill="currentColor">
+						<rect x="0" y="7.5" width="3" height="3.5" rx="1" />
+						<rect x="4.6" y="5.2" width="3" height="5.8" rx="1" />
+						<rect x="9.2" y="2.6" width="3" height="8.4" rx="1" />
+						<rect x="13.8" y="0" width="3" height="11" rx="1" />
+					</svg>
+					<svg aria-hidden="true" width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+						<path d="M1 3.4a9.6 9.6 0 0 1 13 0" />
+						<path d="M3.6 6.2a6 6 0 0 1 7.8 0" />
+						<circle cx="7.5" cy="9.2" r="0.9" fill="currentColor" stroke="none" />
+					</svg>
+					<svg aria-hidden="true" width="25" height="12" viewBox="0 0 25 12" fill="none">
+						<rect x="0.6" y="0.6" width="21" height="10.8" rx="3.2" stroke="currentColor" stroke-opacity="0.4" stroke-width="1.1" />
+						<rect x="2.2" y="2.2" width="14" height="7.6" rx="2" fill="currentColor" />
+						<path d="M23.2 4.2v3.6a2 2 0 0 0 0-3.6Z" fill="currentColor" fill-opacity="0.45" />
+					</svg>
+				</span>
+			</div>
+
+			<div class="scroller">
+				<!-- The date lives in the bar, so the headline never needs a label
+				     above it and the day stays visible after it scrolls away. -->
+				<header class="appbar">
+					<div class="where">
+						<span class="brand-mark" aria-hidden="true"></span>
+						<span class="eyebrow">Thursday, 6 August</span>
+					</div>
+					<button class="pill pill-ghost pill-sm" type="button">Ask</button>
+				</header>
+
+				<main class="page">
+					<h1 class="t36">
+						Next up at 14:00 — <span style="color: var(--ink-4)">Almoço com a Ana.</span>
+					</h1>
+
+					<p class="counters-row">
+						<span><b>5</b> events</span>
+						<span><b>11</b> open</span>
+						<span class="late"><b>2</b> overdue</span>
+						<span><b>4</b> in the inbox</span>
+					</p>
+
+					<!-- Day tape: 06:00–22:00 = 960 min. left% = (start-360)/9.6,
+					     width% = mins/9.6. Identical arithmetic to desktop; only the
+					     labels above the track are gone. -->
+					<section class="tape" aria-label="Day tape, 06:00 to 22:00">
+						<div class="measure-track">
+							<div class="blk" style="left: 18.75%; width: 4.6875%; background: var(--code); animation-delay: 0.02s"></div>
+							<div class="blk" style="left: 25%; width: 1.5625%; background: var(--code); animation-delay: 0.07s"></div>
+							<div class="blk" style="left: 34.375%; width: 3.125%; background: var(--engine); animation-delay: 0.12s"></div>
+							<div class="blk" style="left: 50%; width: 9.375%; background: var(--family); animation-delay: 0.17s"></div>
+							<div class="blk task" style="left: 59.375%; color: var(--finance); animation-delay: 0.22s"></div>
+							<div class="blk" style="left: 75%; width: 6.25%; background: var(--health); animation-delay: 0.27s"></div>
+							<div class="nowmark" style="left: 44.79%"></div>
+						</div>
+						<div class="ticks">
+							<span style="left: 0">06:00</span>
+							<span class="now-label" style="left: 44.79%">13:10</span>
+							<span style="left: 75%">18:00</span>
+							<span class="last">22:00</span>
+						</div>
+					</section>
+
+					<!-- Orientation-first: the three that matter sit above the full
+					     lists, because the phone is where they get ticked off. -->
+					<section class="card panel band">
+						<div class="sec-head" style="margin-bottom: 2px">
+							<h2 class="sec">Top 3 today</h2><span class="t12">1 slot open</span>
+						</div>
+						<div class="t3">
+							<span class="rank num">01</span><span class="check p1"></span>
+							<span class="dot" style="background: var(--engine)"></span>
+							<span class="title">Ship the Today refactor</span>
+						</div>
+						<div class="t3">
+							<span class="rank num">02</span><span class="check on"></span>
+							<span class="dot" style="background: var(--finance)"></span>
+							<span class="title done">Call the accountant</span>
+						</div>
+						<div class="t3">
+							<span class="rank num">03</span><span class="title empty">Star a task to pin it</span>
+						</div>
+					</section>
+
+					<section class="band">
+						<div class="sec-head"><h2 class="sec">Timeline</h2></div>
+						<div class="row past"><span class="time num">09:00</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--code)"></span><span class="title">Deploy review</span></div>
+						<div class="row past"><span class="time num">10:00</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--code)"></span><span class="title">Daily standup</span></div>
+						<div class="row past"><span class="time num">11:30</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--engine)"></span><span class="title">1:1 com o Pedro</span></div>
+						<div class="row"><span class="time num">14:00</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--family)"></span><span class="title">Almoço com a Ana</span></div>
+						<div class="row"><span class="time num">15:30</span><span class="check p2"></span><span class="dot" style="background: var(--finance)"></span><span class="title">Enviar o relatório mensal</span></div>
+						<div class="row"><span class="time num">18:00</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--health)"></span><span class="title">Treino</span></div>
+					</section>
+
+					<section class="band">
+						<div class="sec-head">
+							<h2 class="sec">Open</h2>
+							<div class="legend">
+								<span><i class="l1"></i> high</span>
+								<span><i class="l2"></i> med</span>
+								<span><i></i> low</span>
+							</div>
+						</div>
+						<div class="row">
+							<span class="check p1"></span>
+							<span class="dot" style="background: var(--engine)"></span>
+							<span class="title p1">Renew the CalDAV app password</span>
+							<span class="due late num">6d late</span>
+						</div>
+						<div class="row">
+							<span class="check p1"></span>
+							<span class="dot" style="background: var(--finance)"></span>
+							<span class="title p1">Reconciliar cartão de crédito de julho</span>
+							<span class="due late num">2d late</span>
+						</div>
+						<div class="row">
+							<span class="check p2"></span>
+							<span class="dot" style="background: var(--travel)"></span>
+							<span class="title">Draft the Q3 travel plan</span>
+							<span class="due num">Fri</span>
+						</div>
+						<div class="row">
+							<span class="check p3"></span>
+							<span class="dot" style="background: var(--spirit)"></span>
+							<span class="title">Pick the next book</span>
+						</div>
+						<div class="row">
+							<span class="check on"></span>
+							<span class="dot" style="background: var(--code)"></span>
+							<span class="title done">Push the capture-parser fix</span>
+						</div>
+					</section>
+
+					<section class="card panel band">
+						<div style="display: flex; align-items: center; justify-content: space-between; gap: 16px">
+							<div>
+								<h2 class="sec">Routines</h2>
+								<p class="t12" style="margin: 4px 0 0">Evening block left</p>
+							</div>
+							<span class="ring" style="width: 48px; height: 48px; background: conic-gradient(var(--ink) 62.5%, var(--ground-2) 0)">
+								<span class="hole" style="inset: 6px"></span>
+								<span class="val" style="font-size: 12px">5/8</span>
+							</span>
+						</div>
+
+						<p class="eyebrow" style="margin: 14px 0 0">Morning</p>
+						<div class="rt done">
+							<span class="check on"></span><span class="t">Leitura</span>
+							<span class="trail"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>
+							<span class="streak hot num">41</span>
+						</div>
+						<div class="rt done">
+							<span class="check on"></span><span class="t">Journal</span>
+							<span class="trail"><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i></span>
+							<span class="streak num">2</span>
+						</div>
+
+						<p class="eyebrow" style="margin: 14px 0 0">Evening</p>
+						<div class="rt">
+							<span class="check"></span><span class="t">Inbox to zero</span>
+							<span class="trail"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i></span>
+							<span class="streak num">0</span>
+						</div>
+					</section>
+
+					<section class="card panel band">
+						<div class="sec-head" style="margin-bottom: 2px">
+							<h2 class="sec">Projects</h2><span class="t12">All ›</span>
+						</div>
+						<div class="prj">
+							<span class="ring" style="width: 34px; height: 34px; background: conic-gradient(var(--engine) 64%, var(--ground-2) 0)"><span class="hole" style="inset: 5px"></span><span class="val" style="font-size: 12px">6</span></span>
+							<span class="n">Dispatch v2</span><span class="t12">9 of 14 done</span>
+						</div>
+						<div class="prj">
+							<span class="ring" style="width: 34px; height: 34px; background: conic-gradient(var(--travel) 28%, var(--ground-2) 0)"><span class="hole" style="inset: 5px"></span><span class="val" style="font-size: 12px">3</span></span>
+							<span class="n">Portugal trip</span><span class="t12">2 of 7 done</span>
+						</div>
+						<div class="prj">
+							<span class="ring" style="width: 34px; height: 34px; background: conic-gradient(var(--finance) 80%, var(--ground-2) 0)"><span class="hole" style="inset: 5px"></span><span class="val" style="font-size: 12px">2</span></span>
+							<span class="n">Tax year close</span><span class="t12">8 of 10 done</span>
+						</div>
+					</section>
+
+					<section class="card panel band quote">
+						<h2 class="eyebrow" style="margin: 0">Resurfaced</h2>
+						<blockquote>“You have power over your mind — not outside events.”</blockquote>
+						<p class="attrib">Marcus Aurelius · Meditations</p>
+						<div class="acts"><span>Open in Quotes →</span><span>Next →</span></div>
+					</section>
+				</main>
+			</div>
+
+			<nav class="dock" aria-label="Primary">
+				<div class="dock-inner">
+					<a class="on" href="/today" aria-current="page">Today</a>
+					<a href="/tasks">Tasks</a>
+					<a href="/notes">Notes</a>
+					<a href="/links">Links</a>
+					<a href="/more">More</a>
+				</div>
+				<button class="dock-capture" type="button" aria-label="Capture">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+						<path d="M12 5v14M5 12h14" />
+					</svg>
+				</button>
+			</nav>
+		</div>
+
+		<script>
+			// The app bar only grows its hairline once content has passed under it.
+			const s = document.querySelector(".scroller");
+			const sync = () => s.toggleAttribute("data-top", s.scrollTop < 4);
+			sync();
+			s.addEventListener("scroll", sync, { passive: true });
+		</script>
+	</body>
+</html>

@@ -76,6 +76,33 @@ sections. Reverting to A1 should be a flag change, never a redesign.
 Comps: `.impeccable/mocks/today-a2-ring.html` (chosen, light),
 `-dark`, `-quiet`; A1 equivalents alongside.
 
+## Mobile composition
+
+Designed and rendered; **the phone is a responsive layer, not a second design.**
+Comps: `.impeccable/mocks/today-a2-ring-mobile.html` and `-dark`.
+
+Four adaptations, and the section inventory is unchanged:
+
+- **`h1` steps 56 → 36** on the same ramp, still breaking on the em-dash.
+- **The tape becomes a glance strip.** At 393pt the tape runs 0.37px/min, so a
+  30-minute meeting is 11px and the per-block start times above the track would
+  overlap two-deep. They go. The ruler keeps `06:00 · now · 18:00 · 22:00`, the
+  now-mark keeps its own hour, and the proportion, domain colours and outlined
+  task tick are the desktop object untouched. Titles were never in the blocks,
+  so nothing is lost that the Timeline below does not already carry.
+- **One column, ordered orientation-first:** headline → tape → Top 3 →
+  Timeline → Open → Routines → Projects → Resurfaced. Top 3 and Routines rise
+  above the long lists because the phone is where they get ticked off.
+- **Tabs leave the header for the dock**; capture is the dock's action, an
+  ink-filled capsule matching the desktop header's primary, while the active tab
+  takes accent-soft — two signals that can never be read as one. IA is the
+  shipped one (Today / Tasks / Notes / Links / More). The date moves into a
+  sticky app bar, so it survives the headline scrolling away.
+
+Touch floor: rows ≥48px, and every checkbox carries a 44px hit slug it does not
+draw. Build it as one tree — a max-width query beside each desktop rule, and
+`display: contents` + `order` for the stack — never as a phone fork.
+
 ## Priority colour
 
 One hue at three intensities, not three hues: high is a solid red ring with a
@@ -95,6 +122,12 @@ three distinct hues instead.
 ## Unresolved
 
 - Priority palette (one hue vs three) — see above.
-- Mobile composition. Everything so far is desktop-first; the dock and the
-  single-column stack are not designed yet.
+- **Small text on `--ink-3` / `--ink-4` misses WCAG AA.** `--ink-3` (#8c8681) on
+  paper is 3.3:1 and `--ink-4` (#b4aea8) is 2.0:1, against a 4.5:1 floor for
+  12px. It hits the quote's actions, the `.t12` counts, and the tape ruler — on
+  desktop and phone alike, since both read the same tokens. The phone makes it
+  sharper: there is no hover to compensate on touch. Left as-is in the comps
+  rather than forked at one breakpoint; the fix is one darkening of `--ink-3`
+  and `--ink-4` in `_a.css`, which lands on both compositions at once. Needs a
+  call, because it is a deliberate deviation from the pinned bydefault palette.
 - Whether the tape belongs on other date-driven surfaces or only on Today.

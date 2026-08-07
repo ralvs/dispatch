@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<title>Today — A2: Ring, phone, dark</title>
+		<link rel="stylesheet" href="_a.css" />
+		<link rel="stylesheet" href="_m.css" />
+	</head>
+	<body class="phone-page">
+		<div class="frame">
+			<!-- frame chrome, not the design -->
+			<div class="statusbar" aria-hidden="true">
+				<span>13:10</span>
+				<span class="glyphs">
+					<svg aria-hidden="true" width="17" height="11" viewBox="0 0 17 11" fill="currentColor">
+						<rect x="0" y="7.5" width="3" height="3.5" rx="1" />
+						<rect x="4.6" y="5.2" width="3" height="5.8" rx="1" />
+						<rect x="9.2" y="2.6" width="3" height="8.4" rx="1" />
+						<rect x="13.8" y="0" width="3" height="11" rx="1" />
+					</svg>
+					<svg aria-hidden="true" width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+						<path d="M1 3.4a9.6 9.6 0 0 1 13 0" />
+						<path d="M3.6 6.2a6 6 0 0 1 7.8 0" />
+						<circle cx="7.5" cy="9.2" r="0.9" fill="currentColor" stroke="none" />
+					</svg>
+					<svg aria-hidden="true" width="25" height="12" viewBox="0 0 25 12" fill="none">
+						<rect x="0.6" y="0.6" width="21" height="10.8" rx="3.2" stroke="currentColor" stroke-opacity="0.4" stroke-width="1.1" />
+						<rect x="2.2" y="2.2" width="14" height="7.6" rx="2" fill="currentColor" />
+						<path d="M23.2 4.2v3.6a2 2 0 0 0 0-3.6Z" fill="currentColor" fill-opacity="0.45" />
+					</svg>
+				</span>
+			</div>
+
+			<div class="scroller">
+				<!-- The date lives in the bar, so the headline never needs a label
+				     above it and the day stays visible after it scrolls away. -->
+				<header class="appbar">
+					<div class="where">
+						<span class="brand-mark" aria-hidden="true"></span>
+						<span class="eyebrow">Thursday, 6 August</span>
+					</div>
+					<button class="pill pill-ghost pill-sm" type="button">Ask</button>
+				</header>
+
+				<main class="page">
+					<h1 class="t36">
+						Next up at 14:00 — <span style="color: var(--ink-4)">Almoço com a Ana.</span>
+					</h1>
+
+					<p class="counters-row">
+						<span><b>5</b> events</span>
+						<span><b>11</b> open</span>
+						<span class="late"><b>2</b> overdue</span>
+						<span><b>4</b> in the inbox</span>
+					</p>
+
+					<!-- Day tape: 06:00–22:00 = 960 min. left% = (start-360)/9.6,
+					     width% = mins/9.6. Identical arithmetic to desktop; only the
+					     labels above the track are gone. -->
+					<section class="tape" aria-label="Day tape, 06:00 to 22:00">
+						<div class="measure-track">
+							<div class="blk" style="left: 18.75%; width: 4.6875%; background: var(--code); animation-delay: 0.02s"></div>
+							<div class="blk" style="left: 25%; width: 1.5625%; background: var(--code); animation-delay: 0.07s"></div>
+							<div class="blk" style="left: 34.375%; width: 3.125%; background: var(--engine); animation-delay: 0.12s"></div>
+							<div class="blk" style="left: 50%; width: 9.375%; background: var(--family); animation-delay: 0.17s"></div>
+							<div class="blk task" style="left: 59.375%; color: var(--finance); animation-delay: 0.22s"></div>
+							<div class="blk" style="left: 75%; width: 6.25%; background: var(--health); animation-delay: 0.27s"></div>
+							<div class="nowmark" style="left: 44.79%"></div>
+						</div>
+						<div class="ticks">
+							<span style="left: 0">06:00</span>
+							<span class="now-label" style="left: 44.79%">13:10</span>
+							<span style="left: 75%">18:00</span>
+							<span class="last">22:00</span>
+						</div>
+					</section>
+
+					<!-- Orientation-first: the three that matter sit above the full
+					     lists, because the phone is where they get ticked off. -->
+					<section class="card panel band">
+						<div class="sec-head" style="margin-bottom: 2px">
+							<h2 class="sec">Top 3 today</h2><span class="t12">1 slot open</span>
+						</div>
+						<div class="t3">
+							<span class="rank num">01</span><span class="check p1"></span>
+							<span class="dot" style="background: var(--engine)"></span>
+							<span class="title">Ship the Today refactor</span>
+						</div>
+						<div class="t3">
+							<span class="rank num">02</span><span class="check on"></span>
+							<span class="dot" style="background: var(--finance)"></span>
+							<span class="title done">Call the accountant</span>
+						</div>
+						<div class="t3">
+							<span class="rank num">03</span><span class="title empty">Star a task to pin it</span>
+						</div>
+					</section>
+
+					<section class="band">
+						<div class="sec-head"><h2 class="sec">Timeline</h2></div>
+						<div class="row past"><span class="time num">09:00</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--code)"></span><span class="title">Deploy review</span></div>
+						<div class="row past"><span class="time num">10:00</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--code)"></span><span class="title">Daily standup</span></div>
+						<div class="row past"><span class="time num">11:30</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--engine)"></span><span class="title">1:1 com o Pedro</span></div>
+						<div class="row"><span class="time num">14:00</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--family)"></span><span class="title">Almoço com a Ana</span></div>
+						<div class="row"><span class="time num">15:30</span><span class="check p2"></span><span class="dot" style="background: var(--finance)"></span><span class="title">Enviar o relatório mensal</span></div>
+						<div class="row"><span class="time num">18:00</span><span class="cal"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--health)"></span><span class="title">Treino</span></div>
+					</section>
+
+					<section class="band">
+						<div class="sec-head">
+							<h2 class="sec">Open</h2>
+							<div class="legend">
+								<span><i class="l1"></i> high</span>
+								<span><i class="l2"></i> med</span>
+								<span><i></i> low</span>
+							</div>
+						</div>
+						<div class="row">
+							<span class="check p1"></span>
+							<span class="dot" style="background: var(--engine)"></span>
+							<span class="title p1">Renew the CalDAV app password</span>
+							<span class="due late num">6d late</span>
+						</div>
+						<div class="row">
+							<span class="check p1"></span>
+							<span class="dot" style="background: var(--finance)"></span>
+							<span class="title p1">Reconciliar cartão de crédito de julho</span>
+							<span class="due late num">2d late</span>
+						</div>
+						<div class="row">
+							<span class="check p2"></span>
+							<span class="dot" style="background: var(--travel)"></span>
+							<span class="title">Draft the Q3 travel plan</span>
+							<span class="due num">Fri</span>
+						</div>
+						<div class="row">
+							<span class="check p3"></span>
+							<span class="dot" style="background: var(--spirit)"></span>
+							<span class="title">Pick the next book</span>
+						</div>
+						<div class="row">
+							<span class="check on"></span>
+							<span class="dot" style="background: var(--code)"></span>
+							<span class="title done">Push the capture-parser fix</span>
+						</div>
+					</section>
+
+					<section class="card panel band">
+						<div style="display: flex; align-items: center; justify-content: space-between; gap: 16px">
+							<div>
+								<h2 class="sec">Routines</h2>
+								<p class="t12" style="margin: 4px 0 0">Evening block left</p>
+							</div>
+							<span class="ring" style="width: 48px; height: 48px; background: conic-gradient(var(--ink) 62.5%, var(--ground-2) 0)">
+								<span class="hole" style="inset: 6px"></span>
+								<span class="val" style="font-size: 12px">5/8</span>
+							</span>
+						</div>
+
+						<p class="eyebrow" style="margin: 14px 0 0">Morning</p>
+						<div class="rt done">
+							<span class="check on"></span><span class="t">Leitura</span>
+							<span class="trail"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>
+							<span class="streak hot num">41</span>
+						</div>
+						<div class="rt done">
+							<span class="check on"></span><span class="t">Journal</span>
+							<span class="trail"><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i></span>
+							<span class="streak num">2</span>
+						</div>
+
+						<p class="eyebrow" style="margin: 14px 0 0">Evening</p>
+						<div class="rt">
+							<span class="check"></span><span class="t">Inbox to zero</span>
+							<span class="trail"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i></span>
+							<span class="streak num">0</span>
+						</div>
+					</section>
+
+					<section class="card panel band">
+						<div class="sec-head" style="margin-bottom: 2px">
+							<h2 class="sec">Projects</h2><span class="t12">All ›</span>
+						</div>
+						<div class="prj">
+							<span class="ring" style="width: 34px; height: 34px; background: conic-gradient(var(--engine) 64%, var(--ground-2) 0)"><span class="hole" style="inset: 5px"></span><span class="val" style="font-size: 12px">6</span></span>
+							<span class="n">Dispatch v2</span><span class="t12">9 of 14 done</span>
+						</div>
+						<div class="prj">
+							<span class="ring" style="width: 34px; height: 34px; background: conic-gradient(var(--travel) 28%, var(--ground-2) 0)"><span class="hole" style="inset: 5px"></span><span class="val" style="font-size: 12px">3</span></span>
+							<span class="n">Portugal trip</span><span class="t12">2 of 7 done</span>
+						</div>
+						<div class="prj">
+							<span class="ring" style="width: 34px; height: 34px; background: conic-gradient(var(--finance) 80%, var(--ground-2) 0)"><span class="hole" style="inset: 5px"></span><span class="val" style="font-size: 12px">2</span></span>
+							<span class="n">Tax year close</span><span class="t12">8 of 10 done</span>
+						</div>
+					</section>
+
+					<section class="card panel band quote">
+						<h2 class="eyebrow" style="margin: 0">Resurfaced</h2>
+						<blockquote>“You have power over your mind — not outside events.”</blockquote>
+						<p class="attrib">Marcus Aurelius · Meditations</p>
+						<div class="acts"><span>Open in Quotes →</span><span>Next →</span></div>
+					</section>
+				</main>
+			</div>
+
+			<nav class="dock" aria-label="Primary">
+				<div class="dock-inner">
+					<a class="on" href="/today" aria-current="page">Today</a>
+					<a href="/tasks">Tasks</a>
+					<a href="/notes">Notes</a>
+					<a href="/links">Links</a>
+					<a href="/more">More</a>
+				</div>
+				<button class="dock-capture" type="button" aria-label="Capture">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+						<path d="M12 5v14M5 12h14" />
+					</svg>
+				</button>
+			</nav>
+		</div>
+
+		<script>
+			// The app bar only grows its hairline once content has passed under it.
+			const s = document.querySelector(".scroller");
+			const sync = () => s.toggleAttribute("data-top", s.scrollTop < 4);
+			sync();
+			s.addEventListener("scroll", sync, { passive: true });
+		</script>
+	</body>
+</html>

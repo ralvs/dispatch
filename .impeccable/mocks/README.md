@@ -18,6 +18,8 @@ Serve them with `bun run` — or the `mocks` entry in `.claude/launch.json`
 | `today-a2-ring.html` | **The build.** Light, a full working day. |
 | `today-a2-ring-dark.html` | Same, `data-theme="dark"`. |
 | `today-a2-ring-quiet.html` | Empty-day states. |
+| `today-a2-ring-mobile.html` | **The build, on a phone.** Same day at 393pt. |
+| `today-a2-ring-mobile-dark.html` | Same, `data-theme="dark"`. |
 | `today-a1-rail.html` | The alternate. Light. |
 | `today-a1-rail-dark.html` | Alternate, dark. |
 | `today-a1-rail-quiet.html` | Alternate, empty states. |
@@ -44,3 +46,34 @@ be a flag, never a redesign.
 
 Light is the default. Dark is the same tokens under
 `[data-theme="dark"]` in `_a.css` — no forked components, no separate stylesheet.
+
+## Phone
+
+`_m.css` layers on `_a.css` and carries only what 393pt forces to change. Open a
+mobile comp on a desktop browser and it renders inside a 393×852 device with
+emulated safe-area insets; open it on a phone (≤460px) and the frame drops away
+and it goes edge to edge. Same markup, two presentations.
+
+Four things change, and nothing else does:
+
+1. **`h1` steps 56 → 36** on the pinned ramp. It still breaks on the em-dash.
+2. **The day tape becomes a glance strip.** At 0.37px per minute the per-block
+   start times above the track would overlap two-deep, so they go; the ruler
+   keeps `06:00 · now · 18:00 · 22:00` and the now-mark keeps its own hour. The
+   percentages are the desktop arithmetic untouched. Every time and title is in
+   the Timeline directly below — which was already the tape's contract.
+3. **Two columns become one**, ordered orientation-first: headline → tape →
+   Top 3 → Timeline → Open → Routines → Projects → Resurfaced. Top 3 and
+   Routines sit above the long lists because the phone is where they get ticked.
+4. **Tabs leave the header for the dock**, and capture becomes the dock's
+   action. The date moves into the app bar, so it stays visible after the
+   headline scrolls away.
+
+At build time this is **one responsive tree, not a fork**: every rule in
+`_m.css` belongs under a max-width query beside its desktop peer, and the stack
+order is `display: contents` + `order` over the same sections. `_m.css` is a
+separate file here only so the locked desktop comps stay byte-identical.
+
+Touch: rows are ≥48px and every checkbox carries a 44px hit slug via
+`.check::before`, which the desktop comps do not need.
+

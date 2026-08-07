@@ -1,0 +1,589 @@
+/* Dispatch — Today, revision A, phone.
+ *
+ * Layers on top of _a.css. Same tokens, same type ramp, same geometry — this
+ * file only carries what a 393pt screen forces to change:
+ *
+ *   1. h1 steps 56 → 36 on the pinned ramp. It still breaks on the em-dash.
+ *   2. The day tape loses its per-block start times and becomes a glance
+ *      strip: shape of the day only. Every time and title lives in Timeline.
+ *   3. Two columns become one, reordered orientation-first.
+ *   4. Tabs leave the header for the dock; capture becomes the dock's action.
+ *
+ * In the build this is one responsive tree, not a fork — the stack order is
+ * `display: contents` + `order` over the same sections, and every rule here
+ * belongs under a max-width query beside its desktop peer.
+ */
+
+:root {
+	/* Priority is one hue at three intensities (see today-a2-ring.html). */
+	--p-high: #d92d20;
+	--p-high-halo: rgba(217, 45, 32, 0.16);
+	--p-med: rgba(217, 45, 32, 0.42);
+
+	--safe-t: 56px; /* emulated in the frame; env(safe-area-inset-top) on device */
+	--safe-b: 22px;
+	--pad: 20px;
+	--dock-h: 54px;
+}
+[data-theme="dark"] {
+	--p-high: #ff6a5e;
+	--p-high-halo: rgba(255, 106, 94, 0.2);
+	--p-med: rgba(255, 106, 94, 0.45);
+}
+
+/* ── the frame ─────────────────────────────────────────────────────────
+ * Reviewed on a desktop it is a 393×852 device; opened on a real phone it
+ * drops the chrome and goes edge to edge. One structure, two presentations.
+ */
+body.phone-page {
+	--bezel: #1c1a19;
+	background: #e8e6e3;
+	display: grid;
+	place-items: center;
+	min-height: 100dvh;
+	padding: 28px 0;
+}
+[data-theme="dark"] body.phone-page {
+	--bezel: #423c39;
+	background: #0c0b0a;
+}
+
+.frame {
+	position: relative;
+	width: 393px;
+	height: 852px;
+	overflow: hidden;
+	background: var(--ground);
+	border-radius: 46px;
+	box-shadow:
+		0 0 0 10px var(--bezel),
+		0 30px 70px rgba(0, 0, 0, 0.3);
+}
+
+/* The shell owns the viewport: the document does not scroll, the content
+   region inside it does. Same rule the app already holds. */
+.scroller {
+	position: absolute;
+	inset: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	-webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 460px) {
+	:root {
+		/* max(), not a fallback: a browser tab reports 0 and the bar would sit
+		   flush against the pixel edge. The installed PWA reports the real 59. */
+		--safe-t: max(env(safe-area-inset-top), 10px);
+		--safe-b: max(env(safe-area-inset-bottom), 10px);
+	}
+	body.phone-page {
+		padding: 0;
+		display: block;
+		background: var(--ground);
+	}
+	.frame {
+		position: fixed;
+		inset: 0;
+		width: auto;
+		height: auto;
+		border-radius: 0;
+		box-shadow: none;
+	}
+	.statusbar {
+		display: none;
+	}
+}
+
+/* Emulated status bar — frame chrome, not part of the design. */
+.statusbar {
+	position: absolute;
+	inset: 0 0 auto;
+	height: var(--safe-t);
+	z-index: 5;
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	padding: 0 32px 8px;
+	font-family: var(--sans);
+	font-size: 15px;
+	font-weight: 500;
+	color: var(--ink);
+	pointer-events: none;
+}
+.statusbar .glyphs {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	opacity: 0.85;
+}
+
+/* ── app bar ───────────────────────────────────────────────────────────
+ * Sticky. Carries identity and the date, so the headline never has to. The
+ * blur is doing a specific job: content passes under a translucent bar.
+ */
+.appbar {
+	position: sticky;
+	top: 0;
+	z-index: 4;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	/* The bar owns the top inset, so its material runs under the status bar
+	   instead of stopping short of it — and nothing collides on scroll. */
+	height: calc(var(--safe-t) + 52px);
+	padding: var(--safe-t) var(--pad) 0;
+	background: color-mix(in srgb, var(--ground) 78%, transparent);
+	backdrop-filter: saturate(1.5) blur(14px);
+	-webkit-backdrop-filter: saturate(1.5) blur(14px);
+	border-bottom: 1px solid transparent;
+	transition: border-color 0.2s ease;
+}
+.scroller:not([data-top]) .appbar {
+	border-bottom-color: var(--rule);
+}
+.appbar .where {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+}
+.appbar .brand-mark {
+	width: 22px;
+	height: 22px;
+	border-radius: 7px;
+}
+.appbar .brand-mark::after {
+	inset: 7px 6px;
+	border-left-width: 1.5px;
+	border-bottom-width: 1.5px;
+}
+.appbar .eyebrow {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.pill-sm {
+	height: 32px;
+	padding: 0 15px;
+	font-size: 13px;
+	flex-shrink: 0;
+}
+
+/* ── page ──────────────────────────────────────────────────────────── */
+.page {
+	padding: 26px var(--pad) calc(var(--dock-h) + var(--safe-b) + 44px);
+}
+
+.t36 {
+	font-size: 36px;
+	font-weight: 500;
+	letter-spacing: -0.9px;
+	line-height: 1.1;
+	margin: 0;
+	text-wrap: pretty;
+}
+
+/* Counters run as one wrapped line, not a grid of stat tiles. */
+.counters-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 18px;
+	margin-top: 20px;
+	font-size: 14px;
+	color: var(--ink-2);
+}
+.counters-row span {
+	white-space: nowrap;
+}
+.counters-row b {
+	font-weight: 500;
+	font-size: 16px;
+	color: var(--ink);
+	font-variant-numeric: tabular-nums;
+	margin-right: 5px;
+}
+.counters-row .late,
+.counters-row .late b {
+	color: var(--accent);
+}
+
+/* ── day tape, phone ───────────────────────────────────────────────────
+ * 0.37px per minute at this width, so a 30-minute meeting is 11px and no
+ * block can carry text — which was already true on desktop. What goes is the
+ * row of per-block start times above the track: at this scale 09:00 and 10:00
+ * would overlap. The strip keeps the proportion, the domain colours, the
+ * outlined tick for a scheduled task, and the now-mark carrying its own hour.
+ */
+.tape {
+	margin-top: 30px;
+}
+.tape .measure-track {
+	height: 40px;
+	border-radius: 11px;
+}
+.tape .blk {
+	border-radius: 4px;
+	padding: 0;
+	min-width: 7px;
+}
+.tape .blk.task {
+	min-width: 9px;
+	border-width: 2px;
+}
+.tape .nowmark {
+	top: -5px;
+	bottom: -5px;
+}
+.tape .ticks {
+	margin-top: 8px;
+	height: 15px;
+}
+.tape .ticks > span {
+	font-size: 11px;
+}
+.tape .ticks > span.last {
+	left: auto;
+	right: 0;
+	transform: none;
+}
+
+/* ── sections ──────────────────────────────────────────────────────── */
+.band {
+	margin-top: 34px;
+}
+.band > .sec-head {
+	margin-bottom: 2px;
+}
+.panel {
+	padding: 18px;
+}
+.stack > * + * {
+	margin-top: 16px;
+}
+
+/* Touch: every checkbox carries a 44px hit slug it does not have to show. */
+.check {
+	width: 22px;
+	height: 22px;
+	border-radius: 8px;
+	position: relative;
+}
+.check::before {
+	content: "";
+	position: absolute;
+	inset: -11px;
+}
+.check.on::after {
+	left: 6.5px;
+	top: 3px;
+	width: 6px;
+	height: 11px;
+	border-width: 0 2px 2px 0;
+}
+
+/* rows — timeline and open */
+.row {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	min-height: 48px;
+	padding: 11px 0;
+	border-bottom: 1px solid var(--rule);
+}
+.row:last-child {
+	border-bottom: 0;
+}
+.row .time {
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+	width: 42px;
+	flex-shrink: 0;
+}
+.row .title {
+	flex: 1;
+	min-width: 0;
+	font-size: 16px;
+	letter-spacing: -0.01em;
+	line-height: 1.35;
+}
+.row .title.done {
+	color: var(--ink-4);
+	text-decoration: line-through;
+}
+.row.past {
+	opacity: 0.5;
+}
+.cal {
+	width: 22px;
+}
+.cal svg {
+	width: 17px;
+	height: 17px;
+}
+
+.check.p1 {
+	border-color: var(--p-high);
+	border-width: 2px;
+	box-shadow: 0 0 0 3.5px var(--p-high-halo);
+}
+.check.p2 {
+	border-color: var(--p-med);
+	border-width: 2px;
+}
+.check.p3 {
+	border-color: var(--rule-2);
+}
+.title.p1 {
+	font-weight: 500;
+}
+.due {
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-4);
+	flex-shrink: 0;
+}
+.due.late {
+	color: var(--accent);
+}
+
+.legend {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+.legend span {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-4);
+}
+.legend i {
+	width: 13px;
+	height: 13px;
+	border-radius: 5px;
+	display: block;
+	border: 2px solid var(--rule-2);
+	flex-shrink: 0;
+}
+.legend i.l1 {
+	border-color: var(--p-high);
+	box-shadow: 0 0 0 3px var(--p-high-halo);
+}
+.legend i.l2 {
+	border-color: var(--p-med);
+}
+
+/* top 3 */
+.t3 {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	min-height: 48px;
+	padding: 11px 0;
+	border-bottom: 1px solid var(--rule);
+}
+.t3:last-child {
+	border-bottom: 0;
+}
+.t3 .rank {
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-4);
+	flex-shrink: 0;
+}
+.t3 .title {
+	flex: 1;
+	min-width: 0;
+	font-size: 16px;
+	letter-spacing: -0.01em;
+	line-height: 1.35;
+}
+.t3 .title.done {
+	color: var(--ink-4);
+	text-decoration: line-through;
+}
+.t3 .empty {
+	color: var(--ink-4);
+	font-style: italic;
+}
+
+/* routines */
+.rt {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	min-height: 46px;
+	padding: 8px 0;
+}
+.rt .t {
+	flex: 1;
+	min-width: 0;
+	font-size: 16px;
+}
+.rt.done .t {
+	color: var(--ink-4);
+}
+.trail i {
+	width: 7px;
+	height: 7px;
+}
+.streak {
+	width: 26px;
+}
+
+/* projects */
+.prj {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-height: 48px;
+	padding: 11px 0;
+	border-bottom: 1px solid var(--rule);
+}
+.prj:last-child {
+	border-bottom: 0;
+}
+.prj .n {
+	font-size: 16px;
+	flex: 1;
+	min-width: 0;
+}
+
+/* quote */
+.quote blockquote {
+	font-size: 18px;
+	line-height: 1.5;
+}
+.quote .acts {
+	margin-top: 16px;
+	gap: 18px;
+}
+
+/* ── the dock ──────────────────────────────────────────────────────────
+ * The header's tab pill, moved to the thumb. Same material logic as the
+ * incumbent dock — translucent paper, blur, hairline, soft lift — restyled
+ * into this world. Capture is its own capsule beside it, ink-filled, exactly
+ * as the desktop header's primary. The active tab takes the accent; capture
+ * takes ink, so the two signals never read as the same thing.
+ */
+.dock {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 6;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 0 12px calc(var(--safe-b) + 8px);
+	pointer-events: none;
+}
+.dock-inner,
+.dock-capture {
+	pointer-events: auto;
+	height: var(--dock-h);
+	border-radius: var(--r-pill);
+	background: color-mix(in srgb, var(--paper) 80%, transparent);
+	backdrop-filter: saturate(1.8) blur(20px);
+	-webkit-backdrop-filter: saturate(1.8) blur(20px);
+	border: 1px solid var(--rule-2);
+	/* Deeper than a card's lift on purpose: the dock has to stay a separate
+	   object while it floats over a white card. */
+	box-shadow:
+		0 2px 6px rgba(41, 37, 36, 0.06),
+		0 14px 34px rgba(41, 37, 36, 0.16);
+}
+[data-theme="dark"] .dock-inner,
+[data-theme="dark"] .dock-capture {
+	box-shadow:
+		0 2px 6px rgba(0, 0, 0, 0.5),
+		0 14px 34px rgba(0, 0, 0, 0.45);
+}
+.dock-inner {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 5px;
+	min-width: 0;
+}
+.dock-inner a {
+	display: flex;
+	align-items: center;
+	height: 100%;
+	padding: 0 9px;
+	border-radius: var(--r-pill);
+	font-family: var(--mono);
+	font-size: 11px;
+	font-weight: 400;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	text-decoration: none;
+	white-space: nowrap;
+}
+.dock-inner a.on {
+	background: var(--accent-soft);
+	color: var(--accent-ink);
+}
+.dock-capture {
+	width: var(--dock-h);
+	display: grid;
+	place-items: center;
+	background: var(--ink);
+	border-color: var(--ink);
+	color: var(--ground);
+	flex-shrink: 0;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+}
+.dock-capture svg {
+	width: 21px;
+	height: 21px;
+}
+
+/* ── the one authored moment ───────────────────────────────────────────
+ * The tape assembles: the track's blocks wipe out from their own start edge,
+ * left to right in clock order, and the now-mark drops in last. The resting
+ * state is the default — the animation only plays where motion is welcome.
+ */
+@media (prefers-reduced-motion: no-preference) {
+	.tape .blk {
+		animation: tape-wipe 0.62s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+	}
+	.tape .nowmark {
+		animation: now-drop 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.62s backwards;
+	}
+	.tape .ticks .now-label {
+		animation: now-drop-label 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.68s backwards;
+	}
+	@keyframes tape-wipe {
+		from {
+			clip-path: inset(0 100% 0 0);
+		}
+		to {
+			clip-path: inset(0 0 0 0);
+		}
+	}
+	@keyframes now-drop {
+		from {
+			opacity: 0;
+			transform: translateY(-6px);
+		}
+	}
+	/* the label already carries translateX(-50%); keep it inside the frames */
+	@keyframes now-drop-label {
+		from {
+			opacity: 0;
+			transform: translateX(-50%) translateY(-6px);
+		}
+		to {
+			transform: translateX(-50%) translateY(0);
+		}
+	}
+}
