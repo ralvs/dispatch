@@ -2,57 +2,104 @@
 name: Dispatch
 description: Personal operations dashboard — capture in, order out.
 colors:
-  bg: "#0a0a0a"
-  surface: "#141414"
-  surface-2: "#1f1f1f"
-  ink: "#ededed"
-  ink-2: "#a1a1a1"
-  ink-3: "#8f8f8f"
-  ink-4: "#8a8a8a"
-  line: "#232323"
-  line-strong: "#343434"
-  accent: "#0070f3"
-  accent-bg: "rgba(0, 112, 243, 0.16)"
-  accent-ink: "#52a8ff"
-  accent-slip: "#47a1ff"
-  error: "#ff4d4d"
-  warning: "#f5a623"
-  success: "#50e3c2"
-  light-bg: "#fafafa"
-  light-surface: "#ffffff"
-  light-surface-2: "#f2f2f2"
-  light-ink: "#171717"
-  light-ink-2: "#4d4d4d"
-  light-ink-3: "#5f5f5f"
-  light-ink-4: "#6b6b6b"
-  light-line: "#ebebeb"
-  light-line-strong: "#d9d9d9"
-  light-accent-ink: "#0761d1"
-  light-error: "#ee0000"
-  light-warning: "#ab570a"
-  light-success: "#0761d1"
+  bg: "#fafafa"
+  surface: "#ffffff"
+  surface-2: "#f0efed"
+  ink: "#2a2524"
+  ink-2: "#57534e"
+  ink-3: "#8c8681"
+  ink-4: "#b4aea8"
+  line: "#e5e5e5"
+  line-strong: "#d6d3d0"
+  accent: "#f15a0f"
+  accent-bg: "#fdf0e8"
+  accent-ink: "#c2450a"
+  error: "#d92d20"
+  warning: "#9e6b00"
+  success: "#1f8d54"
+  priority-high: "#d92d20"
+  priority-med: "rgba(217, 45, 32, 0.42)"
+  domain-engine: "#623ca8"
+  domain-health: "#1f8d54"
+  domain-family: "#bf4ea4"
+  domain-spirit: "#86634f"
+  domain-finance: "#0d6abb"
+  domain-code: "#009fac"
+  domain-travel: "#9e8400"
+  domain-pine: "#005a52"
+  domain-burgundy: "#7f002c"
+  dark-bg: "#1a1817"
+  dark-surface: "#232020"
+  dark-surface-2: "#2b2725"
+  dark-ink: "#f5f2ef"
+  dark-ink-2: "#b8b1ab"
+  dark-ink-3: "#8d8681"
+  dark-ink-4: "#6b645f"
+  dark-line: "#322e2c"
+  dark-line-strong: "#423d3a"
+  dark-accent: "#ff6f2c"
+  dark-accent-bg: "#33211a"
+  dark-accent-ink: "#ff8f5c"
+  dark-error: "#ff6a5e"
+  dark-warning: "#d1a44a"
+  dark-success: "#54b97d"
+  dark-priority-high: "#ff6a5e"
+  dark-priority-med: "rgba(255, 106, 94, 0.45)"
+  dark-domain-engine: "#8f6ddd"
+  dark-domain-health: "#54b97d"
+  dark-domain-family: "#da67bd"
+  dark-domain-spirit: "#a8836e"
+  dark-domain-finance: "#4a9cf1"
+  dark-domain-code: "#5ad5e3"
+  dark-domain-travel: "#d1b64a"
+  dark-domain-pine: "#298b81"
+  dark-domain-burgundy: "#bf2f52"
 typography:
+  hero:
+    fontFamily: "Geist, Arial, ui-sans-serif, sans-serif"
+    fontSize: "56px"
+    fontWeight: 500
+    lineHeight: 1.04
+    letterSpacing: "-1.4px"
   display:
     fontFamily: "Geist, Arial, ui-sans-serif, sans-serif"
-    fontSize: "2.25rem"
-    fontWeight: 600
-    lineHeight: 1.1
-    letterSpacing: "-0.05em"
+    fontSize: "44px"
+    fontWeight: 500
+    lineHeight: 1.08
+    letterSpacing: "-1.1px"
   headline:
     fontFamily: "Geist, Arial, ui-sans-serif, sans-serif"
-    fontSize: "1.875rem"
-    fontWeight: 600
-    lineHeight: 1.2
-    letterSpacing: "-0.02em"
+    fontSize: "36px"
+    fontWeight: 500
+    lineHeight: 1.1
+    letterSpacing: "-0.9px"
   title:
     fontFamily: "Geist, Arial, ui-sans-serif, sans-serif"
-    fontSize: "1.125rem"
-    fontWeight: 600
-    lineHeight: 1.25
-    letterSpacing: "-0.02em"
+    fontSize: "30px"
+    fontWeight: 500
+    lineHeight: 1.15
+    letterSpacing: "-0.75px"
+  lead:
+    fontFamily: "Geist, Arial, ui-sans-serif, sans-serif"
+    fontSize: "18px"
+    fontWeight: 400
+    lineHeight: 1.7
+    letterSpacing: "normal"
   body:
     fontFamily: "Geist, Arial, ui-sans-serif, sans-serif"
-    fontSize: "0.875rem"
+    fontSize: "16px"
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: "-0.01em"
+  section:
+    fontFamily: "Geist, Arial, ui-sans-serif, sans-serif"
+    fontSize: "16px"
+    fontWeight: 500
+    lineHeight: 1.5
+    letterSpacing: "-0.02em"
+  small:
+    fontFamily: "Geist, Arial, ui-sans-serif, sans-serif"
+    fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.5
     letterSpacing: "normal"
@@ -64,15 +111,15 @@ typography:
     letterSpacing: "normal"
   eyebrow:
     fontFamily: "Geist Mono, ui-monospace, SFMono-Regular, Menlo, monospace"
-    fontSize: "11px"
-    fontWeight: 500
+    fontSize: "12px"
+    fontWeight: 400
     lineHeight: 1.45
-    letterSpacing: "0.08em"
+    letterSpacing: "0.1em"
 rounded:
   none: "0"
-  mark: "3px"
-  control: "10px"
-  card: "16px"
+  mark: "7px"
+  control: "12px"
+  card: "22px"
   pill: "9999px"
 spacing:
   compact: "16px"
@@ -82,35 +129,27 @@ components:
   button-primary:
     backgroundColor: "{colors.ink}"
     textColor: "{colors.bg}"
-    typography: "{typography.eyebrow}"
-    rounded: "{rounded.control}"
-    padding: "0 12px"
-    height: "36px"
-  button-primary-hover:
+    typography: "{typography.small}"
+    rounded: "{rounded.pill}"
+    padding: "0 20px"
+    height: "40px"
+  button-outline:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    typography: "{typography.small}"
+    rounded: "{rounded.pill}"
+    padding: "0 20px"
+    height: "40px"
+  button-control:
     backgroundColor: "{colors.ink}"
     textColor: "{colors.bg}"
-  button-secondary:
-    backgroundColor: "transparent"
-    textColor: "{colors.ink-3}"
     typography: "{typography.eyebrow}"
     rounded: "{rounded.control}"
     padding: "0 12px"
     height: "36px"
-  button-secondary-hover:
-    textColor: "{colors.ink}"
-  button-ghost:
+  button-control-secondary:
     backgroundColor: "transparent"
     textColor: "{colors.ink-3}"
-    typography: "{typography.eyebrow}"
-    rounded: "{rounded.control}"
-    padding: "0 12px"
-    height: "36px"
-  button-ghost-hover:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink}"
-  button-danger:
-    backgroundColor: "transparent"
-    textColor: "{colors.error}"
     typography: "{typography.eyebrow}"
     rounded: "{rounded.control}"
     padding: "0 12px"
@@ -122,381 +161,410 @@ components:
     rounded: "{rounded.none}"
     padding: "0 10px"
     height: "36px"
-  badge-neutral:
-    backgroundColor: "transparent"
-    textColor: "{colors.ink-3}"
-    rounded: "{rounded.control}"
-    padding: "1px 6px"
-  badge-accent:
-    backgroundColor: "transparent"
-    textColor: "{colors.accent-ink}"
-    rounded: "{rounded.control}"
-    padding: "1px 6px"
   card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
     rounded: "{rounded.card}"
-    padding: "20px"
+    padding: "22px 24px"
   dialog:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
     rounded: "{rounded.card}"
-    padding: "0"
-  dock:
+    padding: "20px"
+  tab-active:
     backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink-3}"
+    textColor: "{colors.ink}"
+    typography: "{typography.small}"
     rounded: "{rounded.pill}"
-    padding: "4px"
-    height: "56px"
+    padding: "7px 18px"
+  tab-rest:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink-3}"
+    typography: "{typography.small}"
+    rounded: "{rounded.pill}"
+    padding: "7px 18px"
+  dock-tab-active:
+    backgroundColor: "{colors.accent-bg}"
+    textColor: "{colors.accent-ink}"
+    typography: "{typography.eyebrow}"
+    rounded: "{rounded.pill}"
+    padding: "0 9px"
+  dock-action:
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.bg}"
+    rounded: "{rounded.pill}"
+    height: "54px"
+    width: "54px"
+  chip-allday:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    typography: "{typography.small}"
+    rounded: "{rounded.control}"
+    padding: "0 13px"
+    height: "30px"
 ---
 
 # Design System: Dispatch
 
 ## Overview
 
-**Creative North Star: "The Instrument Panel"**
+**Creative North Star: "The Measured Day"**
 
-Dispatch looks the way it does because one person reads it every morning to
-find out what his day is. A near-black canvas carries a single ink ladder, a
-single blue signal, and hairline rules that divide without decorating. Nothing
-competes for attention, which is what makes the two or three things that *do*
-carry color legible at a glance. The reference is cockpit instrumentation: dense
-information, monospaced labels, and color reserved for state that matters.
+Dispatch is one person's instrument for finding out what today is, and the
+system is built around a single act: measuring. The day tape measures committed
+time against free time. A ring measures routines done against routines left. A
+counter measures what is open against what is late. Everything else — the
+paper-white ground, the warm stone ink, the one orange — exists to keep those
+measurements legible, and nothing on a page is allowed to compete with them.
 
-The system is austere by construction, not by omission. Type is one family
-(Geist Sans and Geist Mono) working across two registers — a 600-weight display
-voice with tight negative tracking for anything a human named, and an
-uppercase mono eyebrow for anything the system labeled. That split does most of
-the hierarchical work, so headings rarely need size to establish rank. Surfaces
-are flat and hairline-bounded; depth arrives only as a soft shadow on things
-that genuinely float.
+Type and colour are lifted from bydefault.so exactly, and geometry from
+collectiveos: Geist Sans at **two weights only**, a 56/44/36/30/18/16/14/12
+ramp, a neutral-50 ground under a warm stone ink ladder, one orange accent, and
+large soft-cornered cards on a gentle lift. Hierarchy comes from size and colour
+and never from weight, because there is no weight above 500 to reach for. The
+result is quiet without being cold: the warmth is in the greys, not in
+decoration.
 
-Two visual rejections are on the record. An "editorial newspaper" identity
-(warm umber, terracotta accent, Newsreader serif, zero radius) was replaced. A
-fully monochrome restyle was then rejected for being colorless — which is why
-the blue survives at all. The mesh-gradient wordmark is the one element that was
-inherited from the Geist styling rather than chosen; it is present but not
-load-bearing, and a replacement world owes it nothing.
+Three visual worlds have been rejected before this one, and each rejection is
+load-bearing. An editorial identity (warm linen, terracotta, a serif display
+face) was replaced. A fully monochrome restyle was rejected for being
+colourless. The Vercel/Geist system that followed — near-black canvas, Signal
+Blue, 600-weight display type, a mesh-gradient wordmark — is the immediate
+predecessor and the direct anti-reference for this one: revision A is
+light-first, is 500 at its heaviest, and has no gradient anywhere.
 
 **Key Characteristics:**
 
-- Dark by default; light is a full peer theme, not an afterthought
-- One type family, two registers: display sans and uppercase mono eyebrow
-- Hairlines divide, shadows lift, backgrounds never swap to signal state
-- One accent color, governed by both a role rule and a budget
-- Ink ladder tuned for WCAG AA (4.5:1) rather than for visual matching
+- Light by default; dark is a complete peer, not an afterthought
+- Two type weights, ever: 400 and 500
+- One orange, and it means exactly one thing: this needs you
+- Nine measured domain colours, which are data — never decoration
+- Large radii and a soft warm lift; hairlines still do the dividing
+- Shape distinguishes kinds; colour distinguishes instances
 
 ## Colors
 
-An ink-and-grey ladder on a near-black canvas, interrupted by exactly one blue.
-Both themes are complete and normative; dark is the default.
+A warm stone ink ladder on a neutral-50 ground, interrupted by exactly one
+orange, with a separate measured palette that belongs to the data rather than
+to the chrome.
 
 ### Primary
 
-- **Signal Blue** (`accent`): the only chromatic voice in the chrome. Active
-  nav item, links, focus rings, the capture button, and the accent-tinted
-  selection background. On dark it lightens to **Signal Blue Raised**
-  (`accent-ink`) for text-on-dark contrast; on light it darkens instead.
-- **Signal Blue Wash** (`accent-bg`): a low-alpha fill for selected or active
-  rows. Never a border, never text.
+- **Dispatch Orange** (`accent`): the whole chromatic voice of the chrome. The
+  brand mark, overdue counts, `6d late` labels, a starred task, focus rings.
+  On dark it lifts to a warmer, brighter orange rather than shifting hue.
+- **Ember Wash** (`accent-bg`): the low, warm tint behind the active dock tab —
+  the one place a background carries state. Never a border, never text.
+- **Ember Deep** (`accent-ink`): the orange darkened enough to be read as small
+  text, and the ink of the active dock tab.
 
 ### Neutral
 
-- **Void** (`bg`): the canvas. Near-black on dark, near-white on light — never
-  pure `#000` or `#fff`.
-- **Slab** (`surface`): cards, dialogs, the dock capsule. One step off the
-  canvas, no more.
-- **Slab Raised** (`surface-2`): the rare second layer, for a surface sitting
-  on a surface.
-- **Ink** (`ink`): primary text and the primary button's fill.
-- **Ink Muted** (`ink-2`) → **Ink Quiet** (`ink-3`) → **Ink Faint** (`ink-4`):
-  the descending ladder for secondary text, labels, and placeholders. On dark,
-  `ink-3` and `ink-4` land near-identical *on purpose* — a `#0a0a0a` canvas
-  leaves no room for four muted greys that all clear AA, so the bottom two
-  rungs converge. That is a documented tradeoff, not a bug to "fix".
+- **Neutral Fifty** (`bg`): the ground. `#fafafa`, never pure white; on dark a
+  warm near-black that is closer to brown than to blue.
+- **Paper** (`surface`): cards, dialogs, the dock capsule, and the punched
+  centre of a ring. On light it is the only true white in the system.
+- **Ash** (`surface-2`): the second layer — the tab group's trough, the day
+  tape's empty track, the unfilled arc of a ring, a skeleton bar.
+- **Stone** (`ink`): primary text, the primary button's fill, the now-mark.
+- **Stone Muted** (`ink-2`) → **Stone Quiet** (`ink-3`) → **Stone Faint**
+  (`ink-4`): the descending ladder. `ink-4` is where a headline's subject and a
+  finished task's title go — present, deliberately receded.
 - **Hairline** (`line`) and **Hairline Strong** (`line-strong`): the 1px rules
-  that do all the structural dividing. `line-strong` bounds cards and controls;
-  `line` divides content within them.
+  that do the structural dividing. `line` separates rows within a list;
+  `line-strong` bounds cards, chips, chevrons, and an unset checkbox.
 
-### Tertiary (semantic)
+### Tertiary
 
-- **Alarm** (`error`), **Caution** (`warning`), **Clear** (`success`): state
-  only — validation, overdue work, confirmation. They are never brand colors
-  and never appear as decoration.
+- **The domain palette** (`domain-*`): nine slots — Iris, Fern, Orchid, Clay,
+  Azure, Cyan, Brass, Pine, Burgundy. They are **not** part of the chrome and
+  are never chosen by eye. They were generated in OKLCH and measured against
+  three floors, met in both themes: ΔEok ≥ 0.12 between any two, because a
+  domain's smallest form is a 9px dot; ΔEok ≥ 0.15 from the accent and the
+  priority ring, because mistaking a domain for a *state* is worse than
+  mistaking two domains; and ≥ 3:1 against their own ground. Hue alone could
+  not carry nine colours outside the band the accent owns, so lightness does
+  half the work — Pine and Burgundy are deep, Cyan and Brass are light. Clay
+  sits at the accent's own hue and separates by chroma instead, which is why it
+  reads muted, which suits Spirituality.
+- **The priority ramp** (`priority-high`, `priority-med`): one red at three
+  intensities — solid with a halo, the same red at 42%, then the plain grey
+  rule. Not three hues: the domain dots already own the wheel, and a third hue
+  would collide with Brass.
 
 ### Named Rules
 
-**The Two-Gate Rule.** Blue passes a role gate first: it marks interactivity or
-current position — a link, a focus ring, the active tab, the capture
-affordance. If it is not one of those, it is not blue. A budget gate then backs
-that up: when legitimate uses stack on one screen, cut back to a couple of blue
-elements. The role decides what is *allowed*; the budget decides what actually
-ships.
+**The One Orange Rule.** The accent means "this needs you" and nothing else.
+Overdue, late, starred, focused. It is never a decoration, never a heading
+colour, and never used to make a section look important. If two things on a
+screen are orange for different reasons, one of them is wrong.
 
-**The Semantic Names Only Rule.** Components reference `--ink-3`, never
-`#8f8f8f`. Every color reaches a component through a semantic token, which is
-what makes the two themes a variable swap rather than a fork.
+**The Measured Palette Rule.** Domain colours are data. They are generated and
+measured in `.impeccable/mocks/palette-lab.html` against the three floors above.
+Retune them in the lab and re-measure, or not at all — never by hand, and never
+one at a time.
 
-**The Tuned-For-Contrast Rule.** The ink ladder is tuned to WCAG AA (4.5:1),
-not to the source system's original values. When contrast and fidelity conflict,
-contrast wins.
+**The Stored Slug Rule.** A domain's colour is stored as a palette slug
+(`health`), never as a hex. A stored hex cannot theme-switch, and dark is a full
+peer. Anything rendering a domain colour resolves it through
+`var(--domain-<slug>)`.
+
+**The Recorded Contrast Tradeoff.** `ink-3` (3.3:1) and `ink-4` (2.0:1) miss
+WCAG AA at 12px on paper. That is the pinned palette and a recorded decision —
+fidelity over the contrast floor. It affects the tape's ruler, `meta` counts,
+and the quote's actions. Do not "fix" it locally; reversing it is a darkening of
+two tokens here, which lands on every surface at once.
 
 ## Typography
 
 **Display Font:** Geist Sans (with Arial, ui-sans-serif)
-**Body Font:** Geist Sans (same family)
+**Body Font:** Geist Sans (the same family; there is only one)
 **Label/Mono Font:** Geist Mono (with ui-monospace, SFMono-Regular, Menlo)
 
-**Character:** One family doing two jobs. Geist Sans at 600 with negative
-tracking is confident and compact — it reads as a title without needing size.
-Geist Mono in uppercase with wide tracking is the system's own voice: every
-label, timestamp, count, and status the app generated rather than the user
-wrote. You can tell who wrote a piece of text by which face it is set in.
+**Character:** One family working across two registers — a tight, large,
+500-weight sans for anything a human named, and an uppercase mono eyebrow for
+anything the system labelled. The split does most of the hierarchical work, so a
+section heading can sit at body size and still read as a heading.
 
 ### Hierarchy
 
-- **Display** (600, `text-4xl` / 2.25rem, `-0.05em` tracking): the "Dispatch"
-  masthead only. The tracking tightens as size grows; this is the tightest tier.
-- **Headline** (600, `text-3xl` / 1.875rem, `-0.02em`): page titles. The most
-  common large-type size in the app by a wide margin.
-- **Title** (600, `text-lg` / 1.125rem, `-0.02em`): card and list-row titles,
-  desktop rail nav items.
-- **Body** (400, `text-sm` / 0.875rem): the workhorse. Content, field values,
-  descriptions.
-- **Meta** (400, mono, 12px): timestamps, counts, secondary system text.
-- **Eyebrow** (500, mono, 11px, `0.08em`, uppercase): section labels, field
-  labels, button text, badges, nav items. The single most-used type role in the
-  system.
+- **Hero** (500, 56px, 1.04, −1.4px): Today's headline on desktop, and nothing
+  else. Steps to 36px on a phone on the same ramp.
+- **Display** (500, 44px, 1.08, −1.1px): available on the ramp; currently
+  unspent.
+- **Headline** (500, 36px, 1.1, −0.9px): a page's `h1`, and Today's headline at
+  phone width.
+- **Title** (500, 30px, 1.15, −0.75px): a section title large enough to open a
+  page region.
+- **Lead** (400, 18px, 1.7): a pull-quote and standfirst copy.
+- **Body** (400, 16px, 1.5, −0.01em): every row title, every task, every list.
+- **Section** (500, 16px, −0.02em): a section heading. Same size as body — the
+  weight step is the entire signal, which is why it is enough.
+- **Small** (400, 14px): a chip, a pill's label, a supporting line.
+- **Meta** (mono, 400, 12px): clock times, counts, streaks, ruler hours.
+- **Eyebrow** (mono, 400, 12px, 0.1em, uppercase): the dateline, `ALL DAY`, a
+  bucket name — anything the system labelled rather than a person.
 
 ### Named Rules
 
-**The Two Voices Rule.** Sans is for what a human wrote; mono uppercase is for
-what the system labeled. A user's task title is never mono; a field label is
-never sans.
+**The Two Weights Rule.** 400 and 500. There is no 600 and no bold. If
+something is not standing out enough, it needs to be bigger, in a different
+colour, or in the mono register — never heavier.
 
-**The Tighter As It Grows Rule.** Letter-spacing goes more negative as type
-gets larger — `-0.02em` at title and headline, `-0.05em` at display. Large type
-is never set at default tracking.
+**The Named vs Labelled Rule.** If a person wrote it, it is sans. If the system
+labelled it, it is uppercase mono. A row's title is sans; the time beside it is
+mono. This is why the page reads as two columns of meaning without any rules
+being drawn.
 
-**The Button-Speaks-Mono Rule.** Every button label is uppercase mono eyebrow,
-at every size. Buttons are system chrome, not content.
+**The Tabular Rule.** Every number that can change under the reader — a clock,
+a count, a streak, a percentage — is `tabular-nums`. Digits that reflow while
+you look at them are a defect.
 
 ## Layout
 
-A single-column mobile view that becomes a rail-plus-content desktop view; there
-is no intermediate tablet composition.
+The shell owns the viewport: the document never scrolls, the content region
+inside it does (ADR-0028). Installed on iOS the shell height is measured in JS
+rather than trusted to a viewport unit.
 
-- **Mobile:** content is capped at `max-w-md` with `20px` horizontal padding,
-  `24px` top padding, and `112px` of bottom padding to clear the floating dock.
-  Navigation is the dock, fixed at the bottom.
-- **Desktop (`lg` and up):** a fixed `208px` left rail (`w-52`, with `240px` of
-  content offset), and content widening to `max-w-6xl` with `40px` top padding.
-  The dock disappears entirely.
-- **The shell owns the viewport.** The authed shell is a fixed-height flex
-  column that fills the screen; only the content region scrolls, with
-  `overscroll-contain`. In a browser tab that height is `100dvh`; in an
-  installed PWA it is a JS-measured value, because no viewport unit is
-  trustworthy there. Every route carries its own loading boundary, so
-  navigation reveals skeleton structure rather than a blank interval.
-- **Rhythm:** vertical spacing is Tailwind's 4px-based scale, with `space-y-4`
-  (16px) as the default gap between stacked blocks. Card padding runs
-  compact (16px) → default (20px) → comfortable (24px).
-- **Safe areas:** bottom inset is honored by the dock, top inset inside the
-  shell rather than on `body` — putting it on `body` pushes the document past
-  the viewport in an installed iOS PWA and reintroduces document scroll.
+The page frame is centred at `max-width: 72rem` with 44px of horizontal padding
+on desktop and 20px on a phone, and it carries the header at the top with 64px
+beneath it before a page's own content begins.
+
+Today's stack is **one tree, two compositions.** Desktop is a `1.5fr / 1fr`
+grid with 40px between columns: Timeline, Open and the quote on the left; Top 3,
+Routines and Projects on the right. Below `64rem` the two column wrappers
+dissolve via `display: contents` and `order` re-sequences the same sections into
+one column, orientation-first — Top 3 and Routines rise above the long lists,
+because the phone is where things get ticked off. There is no separate mobile
+component tree and there must never be one.
+
+Vertical rhythm runs on a coarse scale: 16px between stacked cards, 34–40px
+between sections, 64px under the header. Rows are ≥48px on touch and every
+checkbox carries a 44px hit slug it does not draw.
 
 ### Named Rules
 
-**The One Scroll Container Rule.** The document does not scroll. The shell
-fills the viewport and the content region scrolls inside it.
+**The One Tree Rule.** A phone layout is a max-width query beside its desktop
+peer, plus `display: contents` and `order`. If a `<MobileX>` component is being
+written, the layout is wrong.
+
+**The Invisible Slot Rule.** A control that appears conditionally holds its slot
+with `visibility`, not `display`, so its neighbours never shift. The day nav's
+Today reset is the canonical case.
 
 ## Elevation & Depth
 
-Depth is **shadow only** — a deliberate choice made by running a live bake-off
-of field-shape × elevation combinations and picking the winner. Surfaces never
-swap their background color to signal lift. A card and a dialog sit on the same
-`surface`; the dialog simply casts a larger shadow.
-
-Because the canvas is near-black, a black falloff would be invisible. The dark
-theme therefore lifts with a subtle **white glow**, and the light theme mirrors
-the identical geometry with a conventional dark shadow.
+Mostly flat, lifted rarely, and the lift is warm. Depth is carried by a soft
+two-part shadow on the few things that genuinely float — cards, dialogs, the
+active tab in its trough, the dock — over a hairline-and-tone system that does
+everything else. On dark the shadows go black and deepen rather than inverting
+to a glow.
 
 ### Shadow Vocabulary
 
-- **Card lift** (`--elevation-card`): dark
-  `0 1px 2px rgba(255,255,255,0.04), 0 3px 10px rgba(255,255,255,0.05)`; light
-  the same geometry in `rgba(0,0,0,…)`. Cards and resting panels.
-- **Overlay lift** (`--elevation-overlay`): dark
-  `0 2px 6px rgba(255,255,255,0.05), 0 8px 20px rgba(255,255,255,0.06)`; light
-  mirrored. Dialogs, popovers, and the floating dock.
+- **Card lift** (`0 1px 2px rgba(41,37,36,0.04), 0 10px 28px rgba(41,37,36,0.05)`):
+  cards, panels, and the active tab pill. Barely there by design — enough to
+  separate paper from ground, not enough to read as a stack.
+- **Overlay lift** (`0 2px 6px rgba(41,37,36,0.06), 0 14px 34px rgba(41,37,36,0.16)`):
+  dialogs and the dock. Deeper on purpose: the dock floats over white cards and
+  has to stay a separate object while it does.
+- **Priority halo** (`0 0 0 3.5px var(--priority-high-halo)`): not depth at all
+  — a ring of colour around a high-priority checkbox. The only shadow in the
+  system carrying meaning rather than height.
 
 ### Named Rules
 
-**The No Background Swap Rule.** Lift is expressed as shadow. A surface that
-needs to feel raised gets a shadow, not a lighter fill.
-
-**The Mirror Rule.** Light and dark shadows share geometry and differ only in
-ink. A change to one is a change to both.
+**The Warm Shadow Rule.** Shadows are cast in `rgba(41,37,36,…)`, not in black.
+A neutral shadow on a warm ground reads as dirt.
 
 ## Shapes
 
-Four radii, each with an assigned job, and no fifth:
+Large and soft, with one hard exception. Cards are 22px, controls and chips are
+12px, and anything a thumb reaches for is a full pill — the header's tabs, the
+Ask and Capture buttons, the day-nav chevrons, the dock and its capsules. The
+checkbox is a 7px squircle at 19px, which is the shape most repeated on the page
+and the reason `mark` exists as its own step. Fields are the exception: they
+have no radius at all, because they are a single bottom rule rather than a box.
 
-- **Control (10px)** — buttons, badges, chips, popovers, triggers.
-- **Card (16px)** — cards, dialogs, modals.
-- **Mark (3px)** — checkbox squares only.
-- **Pill (9999px)** — the mobile dock capsule and circular marks (status dots,
-  color swatches) only.
-- **None (0)** — text fields, by way of the field-shape token.
-
-Borders are the primary form-giver: a 1px hairline bounds nearly every surface,
-and `line-strong` versus `line` is how the system distinguishes a container's
-edge from a divider inside it.
-
-Text fields are **lines, not boxes** — transparent background, no radius, a
-single 1px bottom border. All four field shapes (input, select, textarea, and
-the native date/time controls) share one shell driven by `--field-*` variables,
-so size changes height and type scale only and never forks the chrome.
+Two shapes carry meaning outright. On the day tape an **event is a filled block**
+spanning its duration and a **scheduled task is an outlined tick**, because a
+task is a point in time rather than a span — the shape is what tells you which
+is which, and the colour then tells you whose. In a list, an event takes a
+calendar glyph in the same 19px column a task's checkbox occupies, which is what
+says "this is not yours to tick".
 
 ### Named Rules
 
-**The Pill Is Not For Badges Rule.** Pill radius belongs to the dock capsule
-and to circular marks. Badges, alert chips, and CTAs take control radius.
-
-**The One Shell Rule.** Field shape lives entirely in `--field-*` tokens.
-Changing every field in the app from line to box is a token edit in
-`globals.css`, not a component fork.
+**The Shape-Then-Colour Rule.** Shape distinguishes *kinds*; colour
+distinguishes *instances*. Colour is never the only thing separating two things
+that behave differently.
 
 ## Components
 
-All primitives live in `components/ui/` and are built with `tailwind-variants`
-over a shared `tv` instance. No component library — declining one means focus
-rings, `aria-invalid` / `aria-describedby` wiring, and real `<label>` hit areas
-are owned here rather than inherited.
-
 ### Buttons
 
-Compact and system-voiced; a button never looks like content.
+Two voices, and they are not interchangeable.
 
-- **Shape:** control radius (10px), heights `28 / 36 / 44px` (sm / md / lg).
-- **Primary:** ink fill with canvas-colored text — an inversion, not a colored
-  button. The accent is never a button fill.
-- **Secondary:** transparent with a `line-strong` border and quiet ink; the
-  border goes accent on hover.
-- **Tertiary:** the same, one step quieter (`line` border).
-- **Ghost:** no border; picks up a `surface` fill on hover.
-- **Danger / danger-soft:** transparent with an error-tinted border, or bare
-  faint ink for low-stakes destructive affordances.
-- **States:** color-only transitions, `active:opacity-70` for press,
-  `disabled:opacity-50`, and a 2px accent focus ring at 2px offset. Pending
-  state sets `aria-busy` and drops to 50% opacity.
+- **Pill** — sans, sentence case, 14px at 500, fully rounded, 40px tall. The
+  primary voice, and it is spent only on the shell's two standing actions
+  (Ask and Capture) and the day nav's Today reset.
+  - **Primary:** ink fill, ground-coloured label. Capture, because capture is
+    the one action the whole product exists to make cheap.
+  - **Outline:** transparent on a `line-strong` hairline, full-ink label.
+- **Control** — mono, uppercase, 12px, 12px radius, 36px tall. The quiet voice
+  the rest of the app is built from: row actions, form buttons, filters.
+- **Hover / Focus:** colour only — a border darkens, a label steps up the ink
+  ladder. Nothing moves. Focus is a 2px accent outline at 2px offset, applied
+  globally and never removed without replacement.
 
-### Inputs / Fields
+### Chips
 
-- **Style:** transparent, zero radius, 1px bottom hairline. Heights match the
-  button ladder.
-- **Focus:** the border strengthens to `line-strong` *and* a 2px accent outline
-  appears at 2px offset. Hover strengthens the border alone.
-- **Error:** the border goes `error`; the message renders as 12px error text
-  with `role="alert"`, wired through `aria-describedby`.
-- **Labels:** uppercase mono eyebrow in quiet ink, 8px above the control.
-- **Native date/time:** the picker glyph sits at 40% opacity and rises to 85%
-  on hover or focus; an empty control mutes its skeleton digits to faint ink.
-
-### Badges / Chips
-
-- **Style:** control radius, 1px border, transparent fill, 10px mono. Tone
-  variants (`neutral`, `accent`, `error`, `warning`, `success`, `muted`) set
-  the border at 40% alpha and the text at full strength.
-- **Never filled.** A badge is a bordered outline, always.
-- Person mentions and note affordances derive their class strings from the same
-  variant object, so chip chrome cannot drift from badge chrome.
+- **Style:** 12px radius on a `line-strong` hairline, transparent fill, full-ink
+  label, with a 7–9px domain dot leading. 30px tall.
+- **State:** the all-day band's chips are stateless labels. They wrap rather
+  than scroll — a hidden chip is a missed commitment.
 
 ### Cards / Containers
 
-- **Corner Style:** card radius (16px).
-- **Background:** `surface`, one step off the canvas.
-- **Border:** 1px `line-strong`.
-- **Shadow:** card lift (see Elevation).
-- **Internal Padding:** 20px default; 16px compact, 24px comfortable, 0 for
-  full-bleed content.
+- **Corner Style:** 22px — the largest radius in the system.
+- **Background:** paper on ground.
+- **Shadow Strategy:** card lift (see Elevation).
+- **Border:** a 1px `line` hairline, which is what keeps the card visible on
+  dark where the shadow cannot do it alone.
+- **Internal Padding:** 22px vertical, 24px horizontal.
+
+### Inputs / Fields
+
+- **Style:** no box and no radius — a transparent field over a single 1px
+  bottom rule.
+- **Focus:** the global 2px accent outline.
+- **Empty:** native date/time skeletons dim to `ink-4` so an unset field does
+  not read as filled.
 
 ### Navigation
 
-Two entirely separate treatments, never both visible.
+- **Desktop:** a segmented pill group in an `surface-2` trough. The active tab
+  lifts onto paper at weight 500 with the card shadow; the rest sit at `ink-3`
+  in the same 14px sans. The group sits centred in a header that scrolls with
+  the page rather than pinning.
+- **Mobile:** the same tabs move to a floating dock. The active tab takes the
+  ember wash with ember-deep ink in 11px uppercase mono; capture sits beside it
+  as a square ink capsule with a Lucide `Plus`. Two signals that can never be
+  read as one — **the tab takes the accent, the action takes ink.**
 
-- **Mobile dock:** a floating pill capsule, 56px tall, centered above the
-  bottom safe-area inset. Translucent `surface` at 75% with `backdrop-blur-xl`
-  and `backdrop-saturate-150`, a 70%-alpha `line-strong` hairline, and overlay
-  lift. Items are uppercase mono eyebrow; the active one takes the accent. The
-  capture button is a second capsule of identical height and material sitting
-  beside it — it portals into a slot in the same flex row so the two can never
-  drift apart.
-- **Desktop rail:** a fixed 208px column against the canvas (not a surface),
-  divided by hairlines, with a `border-r` edge. Primary items are `text-lg`
-  display sans; secondary items drop to mono meta uppercase. Active state is
-  color, never a background fill.
+### The Day Tape (signature)
 
-### Dialog
+A proportional measure of one day, pinned at **06:00–22:00**. Committed time is
+a filled block in its own colour, free time is empty, and the now-mark is a 2px
+ink rule carrying its own hour in 500-weight mono.
 
-One modal shell for the whole app: portalled overlay, focus trap, scroll lock,
-`inert` on the background, Escape and backdrop dismissal. Card radius,
-`line-strong` border, `surface` background, overlay lift, capped at `85dvh` with
-its body scrolling. Children mount only while open, which is what makes
-reopening a form show fresh values. Focus moves to `[data-autofocus]` (or the
-first focusable element) after paint, and returns to the trigger on close.
+The window is pinned rather than fitted to the day's contents: a window that
+shrinks to what happens to be scheduled makes a 30-minute meeting a different
+width every morning, and a proportion you cannot compare between days measures
+nothing. It only widens, and only to contain something outside it.
 
-### Icons
+**Titles never go inside the blocks.** At 1092px the tape runs 1.14px per
+minute, so a 30-minute meeting gets 34px against the 141px its title needs; at
+393pt it is 11px. Start times ride above the track on desktop and go entirely on
+a phone, where the ruler thins to its two ends plus the now-mark. Every title is
+in the Timeline list directly below, which was always the tape's contract.
 
-Lucide only, through one wrapper, at three sizes (14 / 16 / 20) matching the
-control-height ladder, `strokeWidth` 1.5. The wrapper marks an icon
-`aria-hidden` automatically unless it carries an accessible name. Hand-rolled
-glyphs and text symbols (`★ ✓ × ⌄`) are retired.
+Three collision rules keep it readable and all three resolve in favour of the
+reading that changes: a start label gives way to the one before it, and any
+ruler hour gives way to the now-label and to the closing hour.
 
-### Signature Component: the masthead wordmark
+The tape is capped from above by the **all-day band** — everything that belongs
+to the day but has no hour, which is precisely what the tape is structurally
+incapable of showing. The two read as one object for exactly that reason. When
+there is nothing all-day the band is absent, not empty.
 
-"Dispatch" set in 36px display sans at `-0.05em`, filled with a five-stop mesh
-gradient (blue → cyan → violet → magenta → amber) clipped to the text. The light
-theme uses a separately darkened stop set, because the dark-theme stops go
-near-invisible on a `#fafafa` canvas. This is the only ornamental element in the
-system, and it was inherited from the source styling rather than chosen.
+**Motion:** the tape is the one authored moment. Blocks wipe out from their own
+start edge in clock order, and the now-mark drops in last. The resting state is
+the default and the whole thing sits behind `prefers-reduced-motion:
+no-preference`.
+
+### Progress (signature)
+
+One completion figure with two renderings — a conic `ring` with an opaque
+punched centre that carries its own reading, and a flat `bar`. Which one draws
+is not a per-call-site choice: it comes from `TODAY_VARIANT` in
+`lib/ui/variant.ts`, the single flag that separates the two designed Today
+compositions. Reverting the whole page from rings to bars is one line there.
 
 ## Do's and Don'ts
 
 ### Do:
 
-- **Do** route every color through a semantic token (`--ink-3`, `--accent`).
-  Raw hex in a component is a defect.
-- **Do** set system-authored text — labels, counts, timestamps, button text —
-  in uppercase mono eyebrow (11px, `0.08em`), and user-authored text in sans.
-- **Do** use the four assigned radii and only those: 10px controls, 16px cards,
-  3px checkbox marks, pill for the dock and circular marks.
-- **Do** express lift as shadow, mirroring the same geometry across both themes.
-- **Do** compose the `components/ui/` primitives. App code does not retype
-  control class strings.
-- **Do** tighten letter-spacing as type scales up.
-- **Do** give every interactive surface a visible keyboard ring — the global
-  `:focus-visible` rule is a floor, and a component may replace it but never
-  remove it.
-- **Do** keep both themes complete. Every token has a light and a dark value.
+- **Do** use size, colour, or the mono register to create hierarchy. Weight is
+  not available: the ramp stops at 500.
+- **Do** resolve a domain colour through `var(--domain-<slug>)` from the stored
+  slug. Never write a domain hex into a component.
+- **Do** pair colour with a shape or a word whenever it carries meaning — an
+  outlined tick versus a filled block, a `6d late` label beside the orange.
+- **Do** hold a conditional control's slot with `visibility` so its neighbours
+  never shift.
+- **Do** write a phone layout as a max-width query beside its desktop peer, and
+  reorder with `display: contents` + `order`.
+- **Do** give every number that can change under the reader `tabular-nums`.
+- **Do** let an empty band say so in words. Absent, never empty; a placeholder,
+  never a collapse.
+- **Do** cast shadows in `rgba(41,37,36,…)` on light.
 
 ### Don't:
 
-- **Don't** use pill radius for badges, alert chips, or CTAs.
-- **Don't** fill a button, badge, or any chrome with the accent. Blue marks
-  interactivity and position; the primary button inverts to ink instead.
-- **Don't** swap a background color to signal elevation.
-- **Don't** box a text field. Fields are transparent with a single bottom
-  hairline, and the shape lives in `--field-*` tokens.
-- **Don't** let gradients touch chrome. The mesh gradient is decoration, in one
-  place.
-- **Don't** introduce a second icon library, hand-rolled glyph, or text symbol
-  as an icon.
-- **Don't** "fix" the near-identical `ink-3` / `ink-4` on dark. The convergence
-  is a deliberate consequence of holding AA contrast on a `#0a0a0a` canvas.
-- **Don't** add a top safe-area inset to `body`; it breaks the installed PWA's
-  viewport and pushes the dock off-screen.
-- **Don't** ship a component with animation that ignores
-  `prefers-reduced-motion` — the global reduce rule is honored system-wide, and
-  there is currently no motion vocabulary beyond color transitions and
-  `active:opacity-70`.
+- **Don't** introduce a second accent, or spend the orange on anything that is
+  not "this needs you". Its rarity is the entire signal.
+- **Don't** retune a domain colour by hand. Change it in
+  `.impeccable/mocks/palette-lab.html`, re-measure against the three floors, or
+  leave it alone.
+- **Don't** "fix" the `ink-3` / `ink-4` contrast locally. It is a recorded
+  tradeoff; reversing it is a change to two tokens in the theme.
+- **Don't** put a title inside a day-tape block. There is no width for it at
+  either breakpoint, and the Timeline below already carries it.
+- **Don't** fork a component for the phone. If a `<MobileX>` is being written,
+  the layout is wrong.
+- **Don't** spend the pill voice on ordinary controls. Two standing actions and
+  the Today reset; everything else is the mono control.
+- **Don't** move anything on hover. Hover is a colour change.
+- **Don't** draw a ring at 0% for something with nothing to measure — that is
+  furniture, not a reading.
