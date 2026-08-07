@@ -1,7 +1,7 @@
 import { Suspense } from "react";
+import { AppHeader } from "@/components/app-header";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { CapturePalette } from "@/components/capture-palette";
-import { DesktopRail } from "@/components/desktop-rail";
 import { NavShortcuts } from "@/components/nav-shortcuts";
 import { requireOwnerPage } from "@/lib/auth";
 
@@ -13,16 +13,19 @@ import { requireOwnerPage } from "@/lib/auth";
  */
 const SHELL = "app-shell flex h-[100dvh] flex-col pt-[env(safe-area-inset-top)]";
 
+/*
+ * The page frame. The header scrolls with the content rather than pinning: it
+ * is orientation, not a control surface you reach for mid-scroll, and Today's
+ * own sticky dateline is what has to survive scrolling on a phone.
+ */
+const FRAME = "mx-auto w-full max-w-md px-5 pb-28 pt-6 lg:max-w-6xl lg:px-11 lg:pb-20 lg:pt-8";
+
 function AuthedShellFallback() {
 	return (
 		<div className={SHELL}>
 			<div className="relative flex flex-1 flex-col overflow-hidden">
-				<main
-					id="main"
-					tabIndex={-1}
-					className="flex-1 w-full overflow-y-auto overscroll-contain lg:pl-60"
-				>
-					<div className="mx-auto w-full max-w-md px-5 pb-28 pt-6 lg:max-w-6xl lg:pb-12 lg:pt-10">
+				<main id="main" tabIndex={-1} className="flex-1 w-full overflow-y-auto overscroll-contain">
+					<div className={FRAME}>
 						<span role="status" className="sr-only">
 							Loading
 						</span>
@@ -39,7 +42,10 @@ function AuthedShellFallback() {
 }
 
 async function AuthedShell({ children }: { children: React.ReactNode }) {
-	const { claims } = await requireOwnerPage();
+	// Iron rule #2 — the shell is a page load, so the boundary runs here even
+	// though nothing below reads the claims any more: identity and sign-out
+	// moved to /more with the rest of the retired rail's footer.
+	await requireOwnerPage();
 
 	return (
 		<div className={SHELL}>
@@ -49,15 +55,13 @@ async function AuthedShell({ children }: { children: React.ReactNode }) {
 			>
 				Skip to content
 			</a>
-			{/* Theme comes from data-theme on <html> (boot script); rail is client. */}
-			<DesktopRail email={claims.email ?? ""} />
 			<div className="relative flex flex-1 flex-col overflow-hidden">
-				<main
-					id="main"
-					tabIndex={-1}
-					className="flex-1 w-full overflow-y-auto overscroll-contain lg:pl-60"
-				>
-					<div className="mx-auto w-full max-w-md px-5 pb-28 pt-6 lg:max-w-6xl lg:pb-12 lg:pt-10">
+				<main id="main" tabIndex={-1} className="flex-1 w-full overflow-y-auto overscroll-contain">
+					<div className={FRAME}>
+						{/* Theme comes from data-theme on <html> (boot script); the
+						 * header is client. Below `lg` it hides and the dock carries
+						 * the same five destinations. */}
+						<AppHeader />
 						{children}
 					</div>
 				</main>

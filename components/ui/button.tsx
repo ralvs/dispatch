@@ -10,12 +10,28 @@ import { tv, type VariantProps } from "./tv";
 export const button = tv({
 	base: [
 		"inline-flex items-center justify-center gap-1.5",
-		"rounded-control font-mono text-eyebrow uppercase tracking-widest",
 		"transition-colors active:opacity-70",
 		"disabled:pointer-events-none disabled:opacity-50",
 		"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
 	],
 	variants: {
+		/**
+		 * Two control voices, and they are not interchangeable.
+		 *
+		 * `control` is the quiet one the app is built from: mono, uppercase,
+		 * 12px, control radius. It is the default because every existing call
+		 * site expects it.
+		 *
+		 * `pill` is revision A's primary voice, lifted from the comps — sans,
+		 * sentence case, 14px at weight 500, fully rounded. It is reserved for
+		 * the shell's two standing actions (Ask and Capture) and the day nav's
+		 * Today reset. Spending it on ordinary row controls would flatten the
+		 * distinction it exists to make.
+		 */
+		shape: {
+			control: "rounded-control font-mono text-eyebrow uppercase tracking-widest",
+			pill: "rounded-pill font-sans text-sm font-medium",
+		},
 		variant: {
 			// Canvas ink on a filled control. Only survives the variant merge
 			// because ./tv registers the type scale — see the note there.
@@ -25,6 +41,10 @@ export const button = tv({
 				"border border-line-strong bg-transparent text-ink-3 hover:border-accent hover:text-ink",
 			tertiary:
 				"border border-line bg-transparent text-ink-3 hover:border-line-strong hover:text-ink",
+			// The comp's `.pill-ghost`: a hairline outline carrying full ink, the
+			// quiet half of the shell's action pair. Distinct from `secondary`,
+			// which mutes its label to ink-3 and reserves the accent for hover.
+			outline: "border border-line-strong bg-transparent text-ink hover:border-ink-4",
 			ghost: "bg-transparent text-ink-3 hover:bg-surface hover:text-ink",
 			danger: "border border-error/40 bg-transparent text-error hover:border-error",
 			"danger-soft": "bg-transparent text-ink-4 hover:text-accent-slip",
@@ -51,8 +71,17 @@ export const button = tv({
 		{ isIconOnly: true, size: "sm", class: "w-7" },
 		{ isIconOnly: true, size: "md", class: "w-9" },
 		{ isIconOnly: true, size: "lg", class: "w-11" },
+		// A pill is wider and taller than a control at the same nominal size:
+		// it carries sentence-case sans, which needs the room.
+		{ shape: "pill", size: "sm", class: "h-8 px-4 text-meta" },
+		{ shape: "pill", size: "md", class: "h-10 px-5" },
+		{ shape: "pill", size: "lg", class: "h-12 px-6" },
+		{ shape: "pill", isIconOnly: true, size: "sm", class: "w-8 px-0" },
+		{ shape: "pill", isIconOnly: true, size: "md", class: "w-10 px-0" },
+		{ shape: "pill", isIconOnly: true, size: "lg", class: "w-12 px-0" },
 	],
 	defaultVariants: {
+		shape: "control",
 		variant: "primary",
 		size: "md",
 		isIconOnly: false,
@@ -69,6 +98,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
 	};
 
 export function Button({
+	shape,
 	variant,
 	size,
 	isIconOnly,
@@ -85,7 +115,7 @@ export function Button({
 			type={type}
 			disabled={disabled || Boolean(isPending)}
 			aria-busy={isPending || undefined}
-			className={button({ variant, size, isIconOnly, fullWidth, isPending, className })}
+			className={button({ shape, variant, size, isIconOnly, fullWidth, isPending, className })}
 			{...props}
 		>
 			{children}

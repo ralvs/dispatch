@@ -6,11 +6,14 @@ import { isActive, TABS } from "@/components/nav-links";
 import { DOCK_ACTION_SLOT_ID, DOCK_HEIGHT, DOCK_SURFACE } from "@/lib/ui/dock";
 
 /**
- * The mobile dock (iOS-style): a compact tab pill and the capture button as one
- * centred row hovering over the scrolling content. Translucent surface +
+ * The mobile dock (revision A): the desktop header's tab pill, moved to the
+ * thumb, with capture as its own capsule beside it. Translucent surface +
  * backdrop blur, no extra dependency — the blur is `backdrop-filter` and
  * degrades to a near-opaque surface where unsupported. The row is fixed, so the
  * shell reserves room via `main`'s bottom padding.
+ *
+ * The active tab takes accent-soft with accent ink; capture takes solid ink
+ * (lib/ui/dock.ts). Two signals, and they can never be read as one.
  */
 export function BottomTabBar() {
 	const pathname = usePathname();
@@ -18,7 +21,7 @@ export function BottomTabBar() {
 	return (
 		<div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex items-center justify-center gap-2 px-4 pb-[max(env(safe-area-inset-bottom),0.5rem)] lg:hidden">
 			<nav aria-label="Primary" className="pointer-events-auto min-w-0">
-				<ul className={`flex items-center gap-0.5 p-1 ${DOCK_HEIGHT} ${DOCK_SURFACE}`}>
+				<ul className={`flex items-center gap-0.5 p-[5px] ${DOCK_HEIGHT} ${DOCK_SURFACE}`}>
 					{TABS.map((tab) => {
 						const active = isActive(tab, pathname);
 						return (
@@ -26,8 +29,8 @@ export function BottomTabBar() {
 								<Link
 									href={tab.href}
 									aria-current={active ? "page" : undefined}
-									className={`flex h-full items-center rounded-full px-2 text-center font-mono text-eyebrow uppercase tracking-normal transition-colors duration-200 active:opacity-70 ${
-										active ? "bg-accent-bg text-accent" : "text-ink-3"
+									className={`flex h-full items-center rounded-pill px-[9px] text-center font-mono text-[11px] uppercase tracking-[0.08em] transition-colors duration-200 active:opacity-70 ${
+										active ? "bg-accent-bg text-accent-ink" : "text-ink-3"
 									}`}
 								>
 									{tab.label}

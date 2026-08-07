@@ -1,8 +1,10 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { captureText } from "@/app/(authed)/capture/actions";
+import { Icon } from "@/components/ui/icon";
 import {
 	type CaptureEffect,
 	type CaptureEvent,
@@ -16,7 +18,7 @@ import { isBlank } from "@/lib/capture/submission";
 import { toastError } from "@/lib/client/toast";
 import { readCaptureIntent } from "@/lib/pwa/capture-intent";
 import type { CapturedRecord } from "@/lib/services/capture";
-import { DOCK_ACTION_SLOT_ID, DOCK_HEIGHT, DOCK_SURFACE } from "@/lib/ui/dock";
+import { DOCK_ACTION, DOCK_ACTION_SLOT_ID, DOCK_HEIGHT } from "@/lib/ui/dock";
 
 const FOCUSABLE = 'a[href],button:not([disabled]),textarea,input,[tabindex]:not([tabindex="-1"])';
 
@@ -230,9 +232,9 @@ export function CapturePalette() {
 
 	return (
 		<>
-			{/* Mobile trigger — the rail carries the desktop one. It portals into the
-			    dock row so it sits beside the tab pill, sharing its height and
-			    material. Hidden while the palette is open so it never becomes a
+			{/* Mobile trigger — the header carries the desktop one. It portals into
+			    the dock row so it sits beside the tab pill, sharing its height and
+			    geometry. Hidden while the palette is open so it never becomes a
 			    stray tab target behind it. */}
 			{dockSlot && !state.open
 				? createPortal(
@@ -240,9 +242,9 @@ export function CapturePalette() {
 							type="button"
 							aria-label="Capture a thought"
 							onClick={() => openCapturePalette()}
-							className={`pointer-events-auto flex aspect-square shrink-0 items-center justify-center font-serif text-2xl leading-none text-accent transition-opacity active:opacity-70 ${DOCK_HEIGHT} ${DOCK_SURFACE}`}
+							className={`pointer-events-auto flex items-center justify-center transition-opacity active:opacity-70 ${DOCK_HEIGHT} ${DOCK_ACTION}`}
 						>
-							<span aria-hidden="true">+</span>
+							<Icon icon={Plus} size="lg" strokeWidth={1.8} />
 						</button>,
 						dockSlot,
 					)
