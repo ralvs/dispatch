@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Day tape — verified against a real day</title>
+		<style>
+/* Dispatch — Today, revision A.
+ * Type + palette lifted exactly from bydefault.so:
+ *   Geist Sans, weights 400/500 ONLY, ramp 56/44/36/30/18/16/14/12,
+ *   h1 56px/500/-1.4px/1.04, ground neutral-50, warm stone ink, #f15a0f accent.
+ * Geometry (pills, large card radii) from collectiveos.vercel.app.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400;500&display=swap");
+
+:root {
+	--ground: #fafafa;
+	--ground-2: #f0efed;
+	--paper: #ffffff;
+
+	--ink: #2a2524;
+	--ink-2: #57534e;
+	--ink-3: #8c8681;
+	--ink-4: #b4aea8;
+	--rule: #e5e5e5;
+	--rule-2: #d6d3d0;
+
+	--accent: #f15a0f;
+	--accent-soft: #fdf0e8;
+	--accent-ink: #c2450a;
+
+	--engine: #f15a0f;
+	--health: #2f9e6f;
+	--family: #d4437e;
+	--spirit: #7b5cd6;
+	--finance: #1f7ae0;
+	--code: #0f9bb5;
+	--travel: #c98a10;
+
+	--r-card: 22px;
+	--r-md: 12px;
+	--r-pill: 999px;
+
+	--lift: 0 1px 2px rgba(41, 37, 36, 0.04), 0 10px 28px rgba(41, 37, 36, 0.05);
+
+	--sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+	--mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+[data-theme="dark"] {
+	--ground: #1a1817;
+	--ground-2: #2b2725;
+	--paper: #232020;
+
+	--ink: #f5f2ef;
+	--ink-2: #b8b1ab;
+	--ink-3: #8d8681;
+	--ink-4: #6b645f;
+	--rule: #322e2c;
+	--rule-2: #423d3a;
+
+	--accent: #ff6f2c;
+	--accent-soft: #33211a;
+	--accent-ink: #ff8f5c;
+
+	--engine: #ff6f2c;
+	--health: #3fbe88;
+	--family: #ef5f96;
+	--spirit: #9a7cf0;
+	--finance: #4f9bf0;
+	--code: #2bbcd6;
+	--travel: #e0a72a;
+
+	--lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.34);
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: var(--ground);
+	color: var(--ink);
+	font-family: var(--sans);
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+
+/* ── type ramp (bydefault): 56 / 44 / 36 / 30 / 18 / 16 / 14 / 12 ── */
+.t56 {
+	font-size: 56px;
+	font-weight: 500;
+	letter-spacing: -1.4px;
+	line-height: 1.04;
+}
+.t30 {
+	font-size: 30px;
+	font-weight: 500;
+	letter-spacing: -0.75px;
+	line-height: 1.15;
+}
+.t18 {
+	font-size: 18px;
+	font-weight: 400;
+	line-height: 1.7;
+	color: var(--ink-2);
+}
+.t16 {
+	font-size: 16px;
+	font-weight: 400;
+}
+.t14 {
+	font-size: 14px;
+	font-weight: 400;
+	color: var(--ink-2);
+}
+.t12 {
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--ink-3);
+}
+
+.eyebrow {
+	font-family: var(--mono);
+	font-size: 12px;
+	font-weight: 400;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+.num {
+	font-variant-numeric: tabular-nums;
+}
+
+/* ── chrome ── */
+.card {
+	background: var(--paper);
+	border: 1px solid var(--rule);
+	border-radius: var(--r-card);
+	box-shadow: var(--lift);
+}
+
+.pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 40px;
+	padding: 0 20px;
+	border: 0;
+	border-radius: var(--r-pill);
+	background: var(--ink);
+	color: var(--ground);
+	font-family: var(--sans);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+}
+.pill-ghost {
+	background: transparent;
+	border: 1px solid var(--rule-2);
+	color: var(--ink);
+	font-weight: 400;
+}
+.pill-accent {
+	background: var(--accent);
+	color: #fff;
+}
+
+/* header (from comp C) */
+.hdr {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+}
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 16px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+}
+.brand-mark {
+	width: 26px;
+	height: 26px;
+	border-radius: 8px;
+	background: var(--accent);
+	position: relative;
+	flex-shrink: 0;
+}
+.brand-mark::after {
+	content: "";
+	position: absolute;
+	inset: 8px 7px;
+	border-left: 2px solid #fff;
+	border-bottom: 2px solid #fff;
+	transform: rotate(-45deg) translate(1px, -1px);
+}
+.tabs {
+	display: flex;
+	gap: 2px;
+	background: var(--ground-2);
+	padding: 5px;
+	border-radius: var(--r-pill);
+}
+.tab {
+	padding: 7px 18px;
+	border-radius: var(--r-pill);
+	font-size: 14px;
+	color: var(--ink-3);
+}
+.tab.on {
+	background: var(--paper);
+	color: var(--ink);
+	font-weight: 500;
+	box-shadow: 0 1px 2px rgba(41, 37, 36, 0.06), 0 2px 8px rgba(41, 37, 36, 0.05);
+}
+
+/* marks */
+.dot {
+	display: inline-block;
+	width: 9px;
+	height: 9px;
+	border-radius: var(--r-pill);
+	flex-shrink: 0;
+}
+.check {
+	width: 19px;
+	height: 19px;
+	border: 1.5px solid var(--rule-2);
+	border-radius: 7px;
+	flex-shrink: 0;
+	background: var(--paper);
+	position: relative;
+}
+.check.on {
+	background: var(--ink);
+	border-color: var(--ink);
+}
+.check.on::after {
+	content: "";
+	position: absolute;
+	left: 5.5px;
+	top: 2.5px;
+	width: 5px;
+	height: 9.5px;
+	border: solid var(--paper);
+	border-width: 0 1.75px 1.75px 0;
+	transform: rotate(45deg);
+}
+
+/* routines progress bar (from comp B) */
+.meter {
+	height: 7px;
+	border-radius: var(--r-pill);
+	background: var(--ground-2);
+	overflow: hidden;
+}
+.meter i {
+	display: block;
+	height: 100%;
+	border-radius: var(--r-pill);
+	background: var(--ink);
+}
+
+/* headline row — counters ride on the right, off the headline's baseline */
+.head-row {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 48px;
+}
+.counters {
+	display: grid;
+	gap: 7px;
+	text-align: right;
+	flex-shrink: 0;
+	padding-bottom: 6px;
+}
+.counters div {
+	font-size: 14px;
+	color: var(--ink-2);
+	white-space: nowrap;
+}
+.counters b {
+	font-weight: 500;
+	font-size: 16px;
+	color: var(--ink);
+	font-variant-numeric: tabular-nums;
+	margin-right: 5px;
+}
+.counters .late,
+.counters .late b {
+	color: var(--accent);
+}
+
+/* ── day tape ──────────────────────────────────────────────────────────
+ * Span is 06:00–22:00 = 960 min. left% = (start-360)/9.6, width% = mins/9.6.
+ * Start times ride ABOVE the track so a 15-minute block never has to carry
+ * text; the block itself only has to stay visible, which a min-width buys.
+ */
+.tape-times {
+	position: relative;
+	height: 16px;
+	margin-bottom: 5px;
+}
+.tape-times span {
+	position: absolute;
+	transform: translateX(-1px);
+	font-family: var(--mono);
+	font-size: 11px;
+	color: var(--ink-3);
+	white-space: nowrap;
+}
+.measure-track {
+	position: relative;
+	height: 46px;
+	background: var(--ground-2);
+	border-radius: 12px;
+}
+.blk {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	min-width: 7px;
+	display: flex;
+	align-items: center;
+	padding: 0 10px;
+	border-radius: 8px;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 500;
+	letter-spacing: -0.01em;
+	white-space: nowrap;
+	overflow: hidden;
+}
+/* a scheduled task is a point in time, not a span: an outlined tick that
+   still carries its own domain colour. */
+.blk.task {
+	background: transparent !important;
+	border: 2px solid currentColor;
+	padding: 0;
+	min-width: 9px;
+}
+.nowmark {
+	position: absolute;
+	top: -6px;
+	bottom: -6px;
+	width: 2px;
+	background: var(--ink);
+	border-radius: 2px;
+	z-index: 3;
+}
+.ticks {
+	position: relative;
+	margin-top: 9px;
+	height: 16px;
+}
+.ticks > span {
+	position: absolute;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-4);
+	transform: translateX(-50%);
+}
+.ticks > span:first-child {
+	transform: none;
+}
+.ticks .now-label {
+	color: var(--ink);
+	font-weight: 500;
+	transform: translateX(-50%);
+}
+
+/* Event marker: a calendar glyph sits in the checkbox's column, so events and
+   tasks line up in one band. Mirrors the shipped ScheduleRow. */
+.cal {
+	width: 19px;
+	height: 19px;
+	flex-shrink: 0;
+	color: var(--ink-3);
+	display: grid;
+	place-items: center;
+}
+.cal svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Empty band placeholder */
+.empty-band {
+	padding: 26px 0 30px;
+	color: var(--ink-3);
+	font-size: 16px;
+	font-style: italic;
+	border-bottom: 1px solid var(--rule);
+}
+.empty-band span {
+	font-style: normal;
+	display: block;
+	margin-top: 6px;
+	font-size: 14px;
+	color: var(--ink-4);
+}
+
+/* Resurfaced quote */
+.quote blockquote {
+	margin: 12px 0 0;
+	font-size: 18px;
+	line-height: 1.55;
+	font-style: italic;
+	letter-spacing: -0.01em;
+	color: var(--ink);
+}
+.quote .attrib {
+	margin: 10px 0 0;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+}
+.quote .acts {
+	margin-top: 18px;
+	display: flex;
+	gap: 20px;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+}
+
+/* Completion ring (routines top level + projects) */
+.ring {
+	border-radius: 50%;
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	position: relative;
+}
+.ring > .hole {
+	position: absolute;
+	border-radius: 50%;
+	background: var(--paper);
+}
+.ring > .val {
+	position: relative;
+	font-family: var(--mono);
+	font-variant-numeric: tabular-nums;
+	color: var(--ink-2);
+}
+
+/* Seven-day streak trail — tiny squares, one per day */
+.trail {
+	display: flex;
+	gap: 3px;
+	align-items: center;
+}
+.trail i {
+	width: 6px;
+	height: 6px;
+	border-radius: 2px;
+	background: var(--rule-2);
+	display: block;
+}
+.trail i.on {
+	background: var(--ink-2);
+}
+.streak {
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+	width: 30px;
+	text-align: right;
+}
+.streak.hot {
+	color: var(--accent);
+}
+
+.wrap {
+	max-width: 1180px;
+	margin: 0 auto;
+	padding: 30px 44px 80px;
+}
+.cols {
+	display: grid;
+	grid-template-columns: 1.5fr 1fr;
+	gap: 40px;
+	align-items: start;
+}
+h2.sec {
+	font-size: 16px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+	margin: 0;
+}
+.sec-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+.panel {
+	padding: 22px 24px;
+}
+.stack > * + * {
+	margin-top: 16px;
+}
+
+</style>
+		<style>
+			.lab {
+				max-width: 1180px;
+				margin: 0 auto;
+				padding: 40px 44px 90px;
+			}
+			.case {
+				margin-top: 54px;
+			}
+			.case h3 {
+				font-size: 18px;
+				font-weight: 500;
+				letter-spacing: -0.02em;
+				margin: 0 0 4px;
+			}
+			.case p.note {
+				margin: 0 0 22px;
+				font-size: 14px;
+				color: var(--ink-2);
+				max-width: 72ch;
+			}
+			.verdict {
+				display: inline-block;
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				padding: 3px 9px;
+				border-radius: var(--r-pill);
+				margin-left: 10px;
+				vertical-align: 2px;
+			}
+			.v-bad {
+				background: #fdecea;
+				color: #b3261e;
+			}
+			.v-ok {
+				background: #e9f5ee;
+				color: #1e6b45;
+			}
+			.v-mid {
+				background: var(--ground-2);
+				color: var(--ink-2);
+			}
+			[data-theme="dark"] .v-bad {
+				background: #3a1d1a;
+				color: #ff8f85;
+			}
+			[data-theme="dark"] .v-ok {
+				background: #16301f;
+				color: #6ad39b;
+			}
+
+			/* T3 — labels outside, staggered under the tape */
+			.outside {
+				position: relative;
+				height: 46px;
+				margin-top: 8px;
+			}
+			.outside span {
+				position: absolute;
+				font-size: 13px;
+				letter-spacing: -0.01em;
+				white-space: nowrap;
+				color: var(--ink-2);
+				padding-left: 8px;
+				border-left: 2px solid var(--rule-2);
+			}
+			.outside span b {
+				font-family: var(--mono);
+				font-size: 11px;
+				font-weight: 400;
+				color: var(--ink-3);
+				display: block;
+			}
+
+			table.m {
+				border-collapse: collapse;
+				margin-top: 14px;
+				font-family: var(--mono);
+				font-size: 12px;
+			}
+			table.m th,
+			table.m td {
+				text-align: left;
+				padding: 6px 20px 6px 0;
+				border-bottom: 1px solid var(--rule);
+				color: var(--ink-2);
+			}
+			table.m th {
+				color: var(--ink-3);
+				font-weight: 400;
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				font-size: 11px;
+			}
+			td.fail {
+				color: #b3261e;
+			}
+			[data-theme="dark"] td.fail {
+				color: #ff8f85;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="lab">
+			<p class="eyebrow">Day tape · verification</p>
+			<h1 class="t30" style="margin: 8px 0 10px">A real Thursday, three ways</h1>
+			<p class="t18" style="max-width: 70ch; margin: 0">
+				Six real entries spanning 15, 30, 45, 60 and 90 minutes, plus one point-in-time task, on a
+				06:00–22:00 tape. The now-mark sits at 11:40, inside a live meeting.
+			</p>
+
+			<!-- ── T1: titles inside the block ── -->
+			<div class="case">
+				<h3>1 · Titles inside the block <span class="verdict v-bad">fails</span></h3>
+				<p class="note">
+					What the earlier comps did. At this width the tape is ~1.27px per minute, so a 30-minute
+					meeting gets ~38px and a 15-minute standup ~19px. Everything under about 75 minutes
+					truncates to nothing or clips mid-word.
+				</p>
+				<div class="tape-times">
+					<span style="left: 18.75%">09:00</span><span style="left: 25%">10:00</span
+					><span style="left: 34.375%">11:30</span><span style="left: 50%">14:00</span
+					><span style="left: 59.375%">15:30</span><span style="left: 75%">18:00</span>
+				</div>
+				<div class="measure-track" id="t1">
+					<div class="blk" style="left: 18.75%; width: 4.6875%; background: var(--code)">
+						Deploy review
+					</div>
+					<div class="blk" style="left: 25%; width: 1.5625%; background: var(--code)">
+						Daily standup
+					</div>
+					<div class="blk" style="left: 34.375%; width: 3.125%; background: var(--engine)">
+						1:1 com o Pedro
+					</div>
+					<div class="blk" style="left: 50%; width: 9.375%; background: var(--family)">
+						Almoço com a Ana
+					</div>
+					<div class="blk task" style="left: 59.375%; color: var(--finance)"></div>
+					<div class="blk" style="left: 75%; width: 6.25%; background: var(--health)">Treino</div>
+					<div class="nowmark" style="left: 35.4167%"></div>
+				</div>
+				<div class="ticks">
+					<span style="left: 0">06:00</span><span style="left: 18.75%">09:00</span>
+					<span class="now-label" style="left: 35.4167%">11:40</span>
+					<span style="left: 56.25%">15:00</span><span style="left: 75%">18:00</span
+					><span style="left: 93.75%">21:00</span>
+				</div>
+			</div>
+
+			<!-- ── T2: tape is shape, titles live in the list ── -->
+			<div class="case">
+				<h3>2 · Tape is shape; start times above <span class="verdict v-ok">works</span></h3>
+				<p class="note">
+					The block only has to stay visible and true to its position, which a 7px minimum
+					guarantees. Start times ride above the track where width costs nothing, and every title is
+					already one line below in the Timeline list. Nothing is lost and nothing can truncate.
+				</p>
+				<div class="tape-times">
+					<span style="left: 18.75%">09:00</span><span style="left: 25%">10:00</span
+					><span style="left: 34.375%">11:30</span><span style="left: 50%">14:00</span
+					><span style="left: 59.375%">15:30</span><span style="left: 75%">18:00</span>
+				</div>
+				<div class="measure-track" id="t2">
+					<div class="blk" style="left: 18.75%; width: 4.6875%; background: var(--code)"></div>
+					<div class="blk" style="left: 25%; width: 1.5625%; background: var(--code)"></div>
+					<div class="blk" style="left: 34.375%; width: 3.125%; background: var(--engine)"></div>
+					<div class="blk" style="left: 50%; width: 9.375%; background: var(--family)"></div>
+					<div class="blk task" style="left: 59.375%; color: var(--finance)"></div>
+					<div class="blk" style="left: 75%; width: 6.25%; background: var(--health)"></div>
+					<div class="nowmark" style="left: 35.4167%"></div>
+				</div>
+				<div class="ticks">
+					<span style="left: 0">06:00</span><span style="left: 18.75%">09:00</span>
+					<span class="now-label" style="left: 35.4167%">11:40</span>
+					<span style="left: 56.25%">15:00</span><span style="left: 75%">18:00</span
+					><span style="left: 93.75%">21:00</span>
+				</div>
+			</div>
+
+			<!-- ── T3: titles outside, staggered ── -->
+			<div class="case">
+				<h3>3 · Titles outside, staggered below <span class="verdict v-mid">works, costs height</span></h3>
+				<p class="note">
+					Your "put the title on the outside" idea. Labels hang off each block's left edge on two
+					alternating rows so neighbours don't collide. It reads well on a quiet day and it is the
+					first thing to break on a busy one — five morning meetings and the rows overlap again,
+					needing a third row or dropped labels.
+				</p>
+				<div class="tape-times">
+					<span style="left: 18.75%">09:00</span><span style="left: 25%">10:00</span
+					><span style="left: 34.375%">11:30</span><span style="left: 50%">14:00</span
+					><span style="left: 59.375%">15:30</span><span style="left: 75%">18:00</span>
+				</div>
+				<div class="measure-track">
+					<div class="blk" style="left: 18.75%; width: 4.6875%; background: var(--code)"></div>
+					<div class="blk" style="left: 25%; width: 1.5625%; background: var(--code)"></div>
+					<div class="blk" style="left: 34.375%; width: 3.125%; background: var(--engine)"></div>
+					<div class="blk" style="left: 50%; width: 9.375%; background: var(--family)"></div>
+					<div class="blk task" style="left: 59.375%; color: var(--finance)"></div>
+					<div class="blk" style="left: 75%; width: 6.25%; background: var(--health)"></div>
+					<div class="nowmark" style="left: 35.4167%"></div>
+				</div>
+				<div class="outside">
+					<span style="left: 18.75%; top: 0">Deploy review</span>
+					<span style="left: 25%; top: 23px">Daily standup</span>
+					<span style="left: 34.375%; top: 0">1:1 com o Pedro</span>
+					<span style="left: 50%; top: 0">Almoço com a Ana</span>
+					<span style="left: 59.375%; top: 23px">Relatório mensal</span>
+					<span style="left: 75%; top: 0">Treino</span>
+				</div>
+				<div class="ticks" style="margin-top: 4px">
+					<span style="left: 0">06:00</span><span style="left: 18.75%">09:00</span>
+					<span class="now-label" style="left: 35.4167%">11:40</span>
+					<span style="left: 56.25%">15:00</span><span style="left: 75%">18:00</span
+					><span style="left: 93.75%">21:00</span>
+				</div>
+			</div>
+
+			<div class="case">
+				<h3>Measured</h3>
+				<p class="note">Live from this page, at this viewport.</p>
+				<table class="m" id="out"></table>
+			</div>
+		</div>
+
+		<script>
+			const rows = [
+				["Daily standup", 15],
+				["1:1 com o Pedro", 30],
+				["Deploy review", 45],
+				["Treino", 60],
+				["Almoço com a Ana", 90],
+			];
+			const track = document.getElementById("t1");
+			const pxPerMin = track.getBoundingClientRect().width / 960;
+			const blocks = [...document.querySelectorAll("#t1 .blk")];
+			// width the title actually needs
+			const probe = document.createElement("span");
+			probe.style.cssText =
+				"position:absolute;visibility:hidden;white-space:nowrap;font-size:14px;font-weight:500;letter-spacing:-0.01em;font-family:Geist,ui-sans-serif,system-ui,sans-serif";
+			document.body.appendChild(probe);
+			let html =
+				"<tr><th>entry</th><th>duration</th><th>block width</th><th>title needs</th><th>fits?</th></tr>";
+			for (const [name, mins] of rows) {
+				probe.textContent = name;
+				const need = Math.ceil(probe.getBoundingClientRect().width) + 20; // + padding
+				const got = Math.round(mins * pxPerMin);
+				const ok = got >= need;
+				html += `<tr><td>${name}</td><td>${mins} min</td><td>${got}px</td><td>${need}px</td><td class="${ok ? "" : "fail"}">${ok ? "yes" : "no — truncates"}</td></tr>`;
+			}
+			html += `<tr><td>scale</td><td colspan="4">${pxPerMin.toFixed(2)} px per minute at ${Math.round(track.getBoundingClientRect().width)}px wide</td></tr>`;
+			document.getElementById("out").innerHTML = html;
+			probe.remove();
+		</script>
+	</body>
+</html>

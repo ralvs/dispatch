@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Day tape — verified against a real day</title>
+		<link rel="stylesheet" href="_a.css" />
+		<style>
+			.lab {
+				max-width: 1180px;
+				margin: 0 auto;
+				padding: 40px 44px 90px;
+			}
+			.case {
+				margin-top: 54px;
+			}
+			.case h3 {
+				font-size: 18px;
+				font-weight: 500;
+				letter-spacing: -0.02em;
+				margin: 0 0 4px;
+			}
+			.case p.note {
+				margin: 0 0 22px;
+				font-size: 14px;
+				color: var(--ink-2);
+				max-width: 72ch;
+			}
+			.verdict {
+				display: inline-block;
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				padding: 3px 9px;
+				border-radius: var(--r-pill);
+				margin-left: 10px;
+				vertical-align: 2px;
+			}
+			.v-bad {
+				background: #fdecea;
+				color: #b3261e;
+			}
+			.v-ok {
+				background: #e9f5ee;
+				color: #1e6b45;
+			}
+			.v-mid {
+				background: var(--ground-2);
+				color: var(--ink-2);
+			}
+			[data-theme="dark"] .v-bad {
+				background: #3a1d1a;
+				color: #ff8f85;
+			}
+			[data-theme="dark"] .v-ok {
+				background: #16301f;
+				color: #6ad39b;
+			}
+
+			/* T3 — labels outside, staggered under the tape */
+			.outside {
+				position: relative;
+				height: 46px;
+				margin-top: 8px;
+			}
+			.outside span {
+				position: absolute;
+				font-size: 13px;
+				letter-spacing: -0.01em;
+				white-space: nowrap;
+				color: var(--ink-2);
+				padding-left: 8px;
+				border-left: 2px solid var(--rule-2);
+			}
+			.outside span b {
+				font-family: var(--mono);
+				font-size: 11px;
+				font-weight: 400;
+				color: var(--ink-3);
+				display: block;
+			}
+
+			table.m {
+				border-collapse: collapse;
+				margin-top: 14px;
+				font-family: var(--mono);
+				font-size: 12px;
+			}
+			table.m th,
+			table.m td {
+				text-align: left;
+				padding: 6px 20px 6px 0;
+				border-bottom: 1px solid var(--rule);
+				color: var(--ink-2);
+			}
+			table.m th {
+				color: var(--ink-3);
+				font-weight: 400;
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				font-size: 11px;
+			}
+			td.fail {
+				color: #b3261e;
+			}
+			[data-theme="dark"] td.fail {
+				color: #ff8f85;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="lab">
+			<p class="eyebrow">Day tape · verification</p>
+			<h1 class="t30" style="margin: 8px 0 10px">A real Thursday, three ways</h1>
+			<p class="t18" style="max-width: 70ch; margin: 0">
+				Six real entries spanning 15, 30, 45, 60 and 90 minutes, plus one point-in-time task, on a
+				06:00–22:00 tape. The now-mark sits at 11:40, inside a live meeting.
+			</p>
+
+			<!-- ── T1: titles inside the block ── -->
+			<div class="case">
+				<h3>1 · Titles inside the block <span class="verdict v-bad">fails</span></h3>
+				<p class="note">
+					What the earlier comps did. At this width the tape is ~1.27px per minute, so a 30-minute
+					meeting gets ~38px and a 15-minute standup ~19px. Everything under about 75 minutes
+					truncates to nothing or clips mid-word.
+				</p>
+				<div class="tape-times">
+					<span style="left: 18.75%">09:00</span><span style="left: 25%">10:00</span
+					><span style="left: 34.375%">11:30</span><span style="left: 50%">14:00</span
+					><span style="left: 59.375%">15:30</span><span style="left: 75%">18:00</span>
+				</div>
+				<div class="measure-track" id="t1">
+					<div class="blk" style="left: 18.75%; width: 4.6875%; background: var(--code)">
+						Deploy review
+					</div>
+					<div class="blk" style="left: 25%; width: 1.5625%; background: var(--code)">
+						Daily standup
+					</div>
+					<div class="blk" style="left: 34.375%; width: 3.125%; background: var(--engine)">
+						1:1 com o Pedro
+					</div>
+					<div class="blk" style="left: 50%; width: 9.375%; background: var(--family)">
+						Almoço com a Ana
+					</div>
+					<div class="blk task" style="left: 59.375%; color: var(--finance)"></div>
+					<div class="blk" style="left: 75%; width: 6.25%; background: var(--health)">Treino</div>
+					<div class="nowmark" style="left: 35.4167%"></div>
+				</div>
+				<div class="ticks">
+					<span style="left: 0">06:00</span><span style="left: 18.75%">09:00</span>
+					<span class="now-label" style="left: 35.4167%">11:40</span>
+					<span style="left: 56.25%">15:00</span><span style="left: 75%">18:00</span
+					><span style="left: 93.75%">21:00</span>
+				</div>
+			</div>
+
+			<!-- ── T2: tape is shape, titles live in the list ── -->
+			<div class="case">
+				<h3>2 · Tape is shape; start times above <span class="verdict v-ok">works</span></h3>
+				<p class="note">
+					The block only has to stay visible and true to its position, which a 7px minimum
+					guarantees. Start times ride above the track where width costs nothing, and every title is
+					already one line below in the Timeline list. Nothing is lost and nothing can truncate.
+				</p>
+				<div class="tape-times">
+					<span style="left: 18.75%">09:00</span><span style="left: 25%">10:00</span
+					><span style="left: 34.375%">11:30</span><span style="left: 50%">14:00</span
+					><span style="left: 59.375%">15:30</span><span style="left: 75%">18:00</span>
+				</div>
+				<div class="measure-track" id="t2">
+					<div class="blk" style="left: 18.75%; width: 4.6875%; background: var(--code)"></div>
+					<div class="blk" style="left: 25%; width: 1.5625%; background: var(--code)"></div>
+					<div class="blk" style="left: 34.375%; width: 3.125%; background: var(--engine)"></div>
+					<div class="blk" style="left: 50%; width: 9.375%; background: var(--family)"></div>
+					<div class="blk task" style="left: 59.375%; color: var(--finance)"></div>
+					<div class="blk" style="left: 75%; width: 6.25%; background: var(--health)"></div>
+					<div class="nowmark" style="left: 35.4167%"></div>
+				</div>
+				<div class="ticks">
+					<span style="left: 0">06:00</span><span style="left: 18.75%">09:00</span>
+					<span class="now-label" style="left: 35.4167%">11:40</span>
+					<span style="left: 56.25%">15:00</span><span style="left: 75%">18:00</span
+					><span style="left: 93.75%">21:00</span>
+				</div>
+			</div>
+
+			<!-- ── T3: titles outside, staggered ── -->
+			<div class="case">
+				<h3>3 · Titles outside, staggered below <span class="verdict v-mid">works, costs height</span></h3>
+				<p class="note">
+					Your "put the title on the outside" idea. Labels hang off each block's left edge on two
+					alternating rows so neighbours don't collide. It reads well on a quiet day and it is the
+					first thing to break on a busy one — five morning meetings and the rows overlap again,
+					needing a third row or dropped labels.
+				</p>
+				<div class="tape-times">
+					<span style="left: 18.75%">09:00</span><span style="left: 25%">10:00</span
+					><span style="left: 34.375%">11:30</span><span style="left: 50%">14:00</span
+					><span style="left: 59.375%">15:30</span><span style="left: 75%">18:00</span>
+				</div>
+				<div class="measure-track">
+					<div class="blk" style="left: 18.75%; width: 4.6875%; background: var(--code)"></div>
+					<div class="blk" style="left: 25%; width: 1.5625%; background: var(--code)"></div>
+					<div class="blk" style="left: 34.375%; width: 3.125%; background: var(--engine)"></div>
+					<div class="blk" style="left: 50%; width: 9.375%; background: var(--family)"></div>
+					<div class="blk task" style="left: 59.375%; color: var(--finance)"></div>
+					<div class="blk" style="left: 75%; width: 6.25%; background: var(--health)"></div>
+					<div class="nowmark" style="left: 35.4167%"></div>
+				</div>
+				<div class="outside">
+					<span style="left: 18.75%; top: 0">Deploy review</span>
+					<span style="left: 25%; top: 23px">Daily standup</span>
+					<span style="left: 34.375%; top: 0">1:1 com o Pedro</span>
+					<span style="left: 50%; top: 0">Almoço com a Ana</span>
+					<span style="left: 59.375%; top: 23px">Relatório mensal</span>
+					<span style="left: 75%; top: 0">Treino</span>
+				</div>
+				<div class="ticks" style="margin-top: 4px">
+					<span style="left: 0">06:00</span><span style="left: 18.75%">09:00</span>
+					<span class="now-label" style="left: 35.4167%">11:40</span>
+					<span style="left: 56.25%">15:00</span><span style="left: 75%">18:00</span
+					><span style="left: 93.75%">21:00</span>
+				</div>
+			</div>
+
+			<div class="case">
+				<h3>Measured</h3>
+				<p class="note">Live from this page, at this viewport.</p>
+				<table class="m" id="out"></table>
+			</div>
+		</div>
+
+		<script>
+			const rows = [
+				["Daily standup", 15],
+				["1:1 com o Pedro", 30],
+				["Deploy review", 45],
+				["Treino", 60],
+				["Almoço com a Ana", 90],
+			];
+			const track = document.getElementById("t1");
+			const pxPerMin = track.getBoundingClientRect().width / 960;
+			const blocks = [...document.querySelectorAll("#t1 .blk")];
+			// width the title actually needs
+			const probe = document.createElement("span");
+			probe.style.cssText =
+				"position:absolute;visibility:hidden;white-space:nowrap;font-size:14px;font-weight:500;letter-spacing:-0.01em;font-family:Geist,ui-sans-serif,system-ui,sans-serif";
+			document.body.appendChild(probe);
+			let html =
+				"<tr><th>entry</th><th>duration</th><th>block width</th><th>title needs</th><th>fits?</th></tr>";
+			for (const [name, mins] of rows) {
+				probe.textContent = name;
+				const need = Math.ceil(probe.getBoundingClientRect().width) + 20; // + padding
+				const got = Math.round(mins * pxPerMin);
+				const ok = got >= need;
+				html += `<tr><td>${name}</td><td>${mins} min</td><td>${got}px</td><td>${need}px</td><td class="${ok ? "" : "fail"}">${ok ? "yes" : "no — truncates"}</td></tr>`;
+			}
+			html += `<tr><td>scale</td><td colspan="4">${pxPerMin.toFixed(2)} px per minute at ${Math.round(track.getBoundingClientRect().width)}px wide</td></tr>`;
+			document.getElementById("out").innerHTML = html;
+			probe.remove();
+		</script>
+	</body>
+</html>

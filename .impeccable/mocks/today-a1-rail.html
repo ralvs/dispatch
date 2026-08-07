@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Today — A1: Rail</title>
+		<link rel="stylesheet" href="_a.css" />
+		<style>
+			.row {
+				display: flex;
+				align-items: center;
+				gap: 13px;
+				padding: 14px 0;
+				border-bottom: 1px solid var(--rule);
+			}
+			.row:last-child {
+				border-bottom: 0;
+			}
+			.row .time {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-3);
+				width: 44px;
+				flex-shrink: 0;
+			}
+			.row .title {
+				flex: 1;
+				font-size: 16px;
+				letter-spacing: -0.01em;
+			}
+			.row .title.done {
+				color: var(--ink-4);
+				text-decoration: line-through;
+			}
+			.row.past {
+				opacity: 0.5;
+			}
+
+			/* PRIORITY AS A LEFT RAIL — height and weight encode urgency, so the
+			   left edge reads as a ragged skyline you scan, not as text. */
+			.rail {
+				width: 3px;
+				border-radius: 2px;
+				background: var(--ink);
+				flex-shrink: 0;
+			}
+			.rail.p1 {
+				height: 24px;
+			}
+			.rail.p2 {
+				height: 15px;
+				opacity: 0.42;
+			}
+			.rail.p3 {
+				height: 8px;
+				opacity: 0.22;
+			}
+			.rail.none {
+				height: 24px;
+				opacity: 0;
+			}
+
+			.due {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+				flex-shrink: 0;
+			}
+			.due.late {
+				color: var(--accent);
+			}
+
+			.legend {
+				display: flex;
+				align-items: center;
+				gap: 14px;
+			}
+			.legend span {
+				display: flex;
+				align-items: center;
+				gap: 6px;
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+			}
+
+			.rt {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				padding: 10px 0;
+			}
+			.rt .t {
+				flex: 1;
+				font-size: 16px;
+			}
+			.rt.done .t {
+				color: var(--ink-4);
+			}
+
+			.prj {
+				padding: 13px 0;
+				border-bottom: 1px solid var(--rule);
+			}
+			.prj:last-child {
+				border-bottom: 0;
+			}
+			.prj-top {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				font-size: 16px;
+			}
+			.prj-top .n {
+				margin-left: auto;
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-3);
+			}
+			.prj .bar {
+				height: 4px;
+				border-radius: 3px;
+				background: var(--ground-2);
+				margin-top: 8px;
+				overflow: hidden;
+			}
+			.prj .bar i {
+				display: block;
+				height: 100%;
+				border-radius: 3px;
+			}
+
+			.t3 {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				padding: 12px 0;
+				border-bottom: 1px solid var(--rule);
+			}
+			.t3:last-child {
+				border-bottom: 0;
+			}
+			.t3 .rank {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+			}
+			.t3 .title {
+				flex: 1;
+				font-size: 16px;
+				letter-spacing: -0.01em;
+			}
+			.t3 .title.done {
+				color: var(--ink-4);
+				text-decoration: line-through;
+			}
+			.t3 .empty {
+				color: var(--ink-4);
+				font-style: italic;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="wrap">
+			<header class="hdr">
+				<div class="brand"><span class="brand-mark"></span> Dispatch</div>
+				<nav class="tabs">
+					<span class="tab on">Today</span><span class="tab">Tasks</span><span class="tab">Inbox</span
+					><span class="tab">Notes</span><span class="tab">Library</span>
+				</nav>
+				<div style="display: flex; gap: 10px">
+					<button class="pill pill-ghost">Ask</button>
+					<button class="pill">Capture</button>
+				</div>
+			</header>
+
+			<div class="head-row" style="margin-top: 66px">
+				<div>
+					<p class="eyebrow" style="margin: 0 0 16px">Thursday, 6 August 2026</p>
+					<h1 class="t56" style="margin: 0; max-width: 16ch">
+				Next up at 14:00 — <span style="color: var(--ink-4)">Almoço com a Ana.</span>
+			</h1>
+				</div>
+				<div class="counters">
+					<div><b>5</b> events</div>
+					<div><b>11</b> open</div>
+					<div class="late"><b>2</b> overdue</div>
+					<div><b>4</b> in the inbox</div>
+				</div>
+			</div>
+			<div style="margin-top: 40px">
+				<div class="tape-times">
+					<span style="left: 18.75%">09:00</span><span style="left: 25%">10:00</span
+					><span style="left: 34.375%">11:30</span><span style="left: 50%">14:00</span
+					><span style="left: 59.375%">15:30</span><span style="left: 75%">18:00</span>
+				</div>
+				<div class="measure-track">
+					<div class="blk" style="left: 18.75%; width: 4.6875%; background: var(--code)"></div>
+					<div class="blk" style="left: 25%; width: 1.5625%; background: var(--code)"></div>
+					<div class="blk" style="left: 34.375%; width: 3.125%; background: var(--engine)"></div>
+					<div class="blk" style="left: 50%; width: 9.375%; background: var(--family)"></div>
+					<div class="blk task" style="left: 59.375%; color: var(--finance)"></div>
+					<div class="blk" style="left: 75%; width: 6.25%; background: var(--health)"></div>
+					<div class="nowmark" style="left: 44.79%"></div>
+				</div>
+				<div class="ticks">
+					<span style="left: 0">06:00</span><span style="left: 18.75%">09:00</span
+					><span class="now-label" style="left: 44.79%">13:10</span
+					><span style="left: 62.5%">16:00</span><span style="left: 81.25%">19:00</span
+					><span style="left: 93.75%">21:00</span>
+				</div>
+			</div>
+
+			<div class="cols" style="margin-top: 52px">
+				<div>
+					<div class="sec-head"><h2 class="sec">Timeline</h2></div>
+					<div class="row past"><span class="rail none"></span><span class="time num">09:00</span><span class="cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--code)"></span><span class="title">Deploy review</span></div>
+					<div class="row past"><span class="rail none"></span><span class="time num">10:00</span><span class="cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--code)"></span><span class="title">Daily standup</span></div>
+					<div class="row past"><span class="rail none"></span><span class="time num">11:30</span><span class="cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--engine)"></span><span class="title">1:1 com o Pedro</span></div>
+					<div class="row"><span class="rail none"></span><span class="time num">14:00</span><span class="cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--family)"></span><span class="title">Almoço com a Ana</span></div>
+					<div class="row"><span class="rail p2"></span><span class="time num">15:30</span><span class="check"></span><span class="dot" style="background: var(--finance)"></span><span class="title">Enviar o relatório mensal</span></div>
+					<div class="row"><span class="rail none"></span><span class="time num">18:00</span><span class="cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></span><span class="dot" style="background: var(--health)"></span><span class="title">Treino</span></div>
+
+					<div class="sec-head" style="margin-top: 40px">
+						<h2 class="sec">Open</h2>
+						<div class="legend">
+							<span><i class="rail p1" style="height: 12px"></i> high</span>
+							<span><i class="rail p2" style="height: 9px"></i> medium</span>
+							<span><i class="rail p3" style="height: 6px"></i> low</span>
+						</div>
+					</div>
+					<div class="row">
+						<span class="rail p1"></span><span class="check"></span>
+						<span class="dot" style="background: var(--engine)"></span>
+						<span class="title">Renew the CalDAV app password</span><span class="due late num">6d late</span>
+					</div>
+					<div class="row">
+						<span class="rail p1"></span><span class="check"></span>
+						<span class="dot" style="background: var(--finance)"></span>
+						<span class="title">Reconciliar cartão de crédito de julho</span><span class="due late num">2d late</span>
+					</div>
+					<div class="row">
+						<span class="rail p2"></span><span class="check"></span>
+						<span class="dot" style="background: var(--travel)"></span>
+						<span class="title">Draft the Q3 travel plan</span><span class="due num">Fri</span>
+					</div>
+					<div class="row">
+						<span class="rail p3"></span><span class="check"></span>
+						<span class="dot" style="background: var(--spirit)"></span>
+						<span class="title">Pick the next book</span>
+					</div>
+					<div class="row">
+						<span class="rail p2"></span><span class="check on"></span>
+						<span class="dot" style="background: var(--code)"></span>
+						<span class="title done">Push the capture-parser fix</span>
+					</div>
+
+					<div class="card panel quote" style="margin-top: 40px">
+						<h2 class="eyebrow" style="margin: 0">Resurfaced</h2>
+						<blockquote>“You have power over your mind — not outside events.”</blockquote>
+						<p class="attrib">Marcus Aurelius · Meditations</p>
+						<div class="acts"><span>Open in Quotes →</span><span>Next →</span></div>
+					</div>
+				</div>
+
+				<div class="stack">
+					<section class="card panel">
+						<div class="sec-head" style="margin-bottom: 4px">
+							<h2 class="sec">Top 3 today</h2><span class="t12">1 slot open</span>
+						</div>
+						<div class="t3">
+							<span class="rank num">01</span><span class="check"></span>
+							<span class="dot" style="background: var(--engine)"></span>
+							<span class="title">Ship the Today refactor</span>
+						</div>
+						<div class="t3">
+							<span class="rank num">02</span><span class="check on"></span>
+							<span class="dot" style="background: var(--finance)"></span>
+							<span class="title done">Call the accountant</span>
+						</div>
+						<div class="t3">
+							<span class="rank num">03</span><span class="title empty">Star a task to pin it</span>
+						</div>
+					</section>
+
+					<section class="card panel">
+						<div class="sec-head"><h2 class="sec">Routines</h2><span class="t12 num">5 of 8</span></div>
+						<div class="meter" style="margin: 10px 0 16px"><i style="width: 62.5%"></i></div>
+
+						<p class="eyebrow" style="margin: 0 0 2px">Morning</p>
+						<div class="rt done">
+							<span class="check on"></span><span class="t">Leitura</span>
+							<span class="trail"
+								><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i
+								><i class="on"></i><i class="on"></i><i class="on"></i
+							></span>
+							<span class="streak hot num">41</span>
+						</div>
+						<div class="rt done">
+							<span class="check on"></span><span class="t">Journal</span>
+							<span class="trail"
+								><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i
+								><i></i><i class="on"></i
+							></span>
+							<span class="streak num">2</span>
+						</div>
+
+						<p class="eyebrow" style="margin: 14px 0 2px">Evening</p>
+						<div class="rt">
+							<span class="check"></span><span class="t">Inbox to zero</span>
+							<span class="trail"
+								><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i
+								><i class="on"></i><i></i
+							></span>
+							<span class="streak num">0</span>
+						</div>
+					</section>
+
+					<section class="card panel">
+						<div class="sec-head"><h2 class="sec">Projects</h2><span class="t12">All ›</span></div>
+						<div class="prj">
+							<div class="prj-top">
+								<span class="dot" style="background: var(--engine)"></span> Dispatch v2
+								<span class="n num">6 open</span>
+							</div>
+							<div class="bar"><i style="width: 64%; background: var(--engine)"></i></div>
+						</div>
+						<div class="prj">
+							<div class="prj-top">
+								<span class="dot" style="background: var(--travel)"></span> Portugal trip
+								<span class="n num">3 open</span>
+							</div>
+							<div class="bar"><i style="width: 28%; background: var(--travel)"></i></div>
+						</div>
+						<div class="prj">
+							<div class="prj-top">
+								<span class="dot" style="background: var(--finance)"></span> Tax year close
+								<span class="n num">2 open</span>
+							</div>
+							<div class="bar"><i style="width: 80%; background: var(--finance)"></i></div>
+						</div>
+					</section>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
