@@ -63,25 +63,11 @@ function MeasureLine({ items }: { items: Measure[] }) {
 
 export function PageHeader({
 	title,
-	titleAction,
 	measure,
 	action,
 	subtitle,
 }: {
 	title: string;
-	/**
-	 * An action that belongs to the *name* rather than to the page's right edge
-	 * — an icon-only control set immediately beside the title.
-	 *
-	 * `/tasks` is why it exists. Its one standing action is "write a task", and
-	 * a labelled `+ New task` across the header read as a second Capture beside
-	 * the shell's own; a bare `+` on the title's shoulder says the same thing
-	 * without competing with it. Shape carries it instead of a word, which is
-	 * only legible because the page is named directly to its left.
-	 *
-	 * Use `action` for anything that needs a label.
-	 */
-	titleAction?: ReactNode;
 	/** The page's own reading. Omit it rather than inventing a count to fill it. */
 	measure?: Measure[];
 	/** One standing action, right-aligned on the title's baseline. */
@@ -89,22 +75,25 @@ export function PageHeader({
 	/** Only where it carries an instruction — not as a tagline. */
 	subtitle?: ReactNode;
 }) {
-	const hasRight = (measure && measure.length > 0) || Boolean(action);
+	const hasMeasure = Boolean(measure && measure.length > 0);
+	const hasRight = hasMeasure || Boolean(action);
 
 	return (
 		<header className="mb-[26px] lg:mb-[30px]">
 			<div className="flex flex-wrap items-baseline justify-between gap-3 lg:flex-nowrap lg:gap-8">
-				{/* items-center, not baseline: a circular glyph has no baseline worth
-				    sitting on, so it centres against the title's line box. The
-				    wrapper keeps its own first-line baseline, so the measure and
-				    the right-hand action still align to the h1 exactly as before. */}
-				<div className="flex min-w-0 items-center gap-3">
-					<h1 className="m-0 text-pretty text-t30 text-ink lg:text-t36">{title}</h1>
-					{titleAction}
-				</div>
+				<h1 className="m-0 text-pretty text-t30 text-ink lg:text-t36">{title}</h1>
 				{hasRight && (
-					<div className="flex w-full items-baseline justify-between gap-5 lg:w-auto lg:shrink-0 lg:justify-end">
-						{measure && measure.length > 0 && <MeasureLine items={measure} />}
+					// Below lg the cluster takes its own row under the title, and what
+					// it does there depends on what is in it. With a measure, the two
+					// spread to the row's edges. With an action alone, `justify-between`
+					// would park it hard left — the one place in the header where a
+					// control jumps sides between breakpoints — so it stays right.
+					<div
+						className={`flex w-full items-baseline gap-5 lg:w-auto lg:shrink-0 lg:justify-end ${
+							hasMeasure ? "justify-between" : "justify-end"
+						}`}
+					>
+						{hasMeasure && measure && <MeasureLine items={measure} />}
 						{/* Baseline alignment would drop a 36px-tall control below the
 						    text line; centre it and nudge, so its cap-height rides the
 						    h1's baseline instead. */}

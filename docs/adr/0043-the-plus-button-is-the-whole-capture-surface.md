@@ -27,35 +27,45 @@ The owner's framing: capture already does this, and the page-level line is a
 shortcut to use less AI. That makes it an implementation detail wearing the
 clothes of a feature.
 
-## Decision 1 — one action, and it sits on the title's shoulder
+## Decision 1 — one action, unlabelled, in the header's action slot
 
-The capture line is deleted. `/tasks` takes a single **unlabelled `+`** set
-immediately beside the page's name: 32px, fully round, transparent on a
-`line-strong` hairline, an `ink-3` glyph. It opens the task dialog.
+The capture line is deleted. `/tasks` takes a single **unlabelled `+`** in the
+page header's right-hand action slot (ADR-0042): 32px, fully round, transparent
+on a `line-strong` hairline, an `ink-3` glyph. It opens the task dialog.
 
-It was first built as a labelled `+ New task` in the header's right-hand action
-slot, matching `/notes`. That was wrong here for a reason `/notes` does not
-have: the shell's **Capture** pill sits in the same corner region, and a second
-labelled create action a few pixels below it reads as a second Capture — which
-is precisely the confusion this decision exists to remove. Moving it to the
-title and dropping the word removes the competition. Shape carries the meaning
-instead of a label, and that is only legible because the page is named twelve
-pixels to its left.
+Two things were tried and rejected on the way, and both are worth keeping:
 
-The voice still matters. The pill is reserved for the shell's two standing
+- **A labelled `+ New task`**, matching `/notes`. Wrong here for a reason
+  `/notes` does not have: the shell's **Capture** pill sits in the same corner
+  region, and a second labelled create action a few pixels below it reads as a
+  second Capture — the confusion this decision exists to remove. Dropping the
+  word removes the competition; shape carries the meaning, and that is legible
+  because the header names the page.
+- **The bare `+` beside the title**, on the name's shoulder. It read well, and
+  it was rejected on the owner's judgement rather than on an argument: the
+  right edge is where a standing action is looked for, and `/tasks` should not
+  be the one page that puts it somewhere else.
+
+The voice matters either way. The pill is reserved for the shell's two standing
 actions (DESIGN.md, Buttons), and this is not one — it is round because
-DESIGN.md makes anything a thumb reaches for a full pill, and it carries no
-sans label to make it the pill *voice*. The word survives in `aria-label`, so
-the control is named for anyone who cannot see the glyph.
+DESIGN.md makes anything a thumb reaches for a full pill, and it carries no sans
+label to make it the pill *voice*. The word survives in `aria-label`, so the
+control is named for anyone who cannot see the glyph.
 
-`PageHeader` grows a `titleAction` slot for it — an action belonging to the name
-rather than to the right edge. The h1 keeps its own first-line baseline inside
-the new wrapper, so the measure and the right-hand action still align as before
-and `/notes` is untouched.
+One fix to `PageHeader` came with it. Below `lg` the right-hand cluster takes
+its own row under the title, and it was laid out with `justify-between` — right
+for a measure and an action, but it parked a *lone* action hard left, so the
+control changed sides between breakpoints. It now right-aligns when there is no
+measure beside it. `/notes` has a measure and is unaffected.
 
 It also settles a complaint the Pass 1 comps raised against the chosen header:
 with no measure and no action, `/tasks` opened with 36px of name over an empty
 baseline. It now carries exactly one control, and it is the one the page is for.
+
+**Known, accepted:** at phone width the header's `+` and the dock's Capture `+`
+are both on screen and both wordless. They are far apart and drawn differently —
+an outlined circle against a filled ink capsule — but this is the closest the
+two actions have ever sat. Worth revisiting if it reads as one control in use.
 
 ## Decision 2 — the parser moves into the dialog, behind one rule
 

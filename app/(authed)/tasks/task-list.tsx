@@ -143,8 +143,8 @@ export function TaskList({
 	);
 	const run = useTaskIntentRunner(dispatchOptimistic);
 
-	// The header's `+ New task`. One standing action rather than the standing
-	// capture line it replaced (docs/adr/0043).
+	// The header's `+`. One standing action, right-aligned on the title's
+	// baseline, rather than the standing capture line it replaced (docs/adr/0043).
 	const [creating, setCreating] = useState(false);
 
 	// Ids of tasks created optimistically in this session — always shown
@@ -287,7 +287,7 @@ export function TaskList({
 			    other pages that a count there is sometimes clickable. */}
 			<PageHeader
 				title="Tasks"
-				titleAction={
+				action={
 					<Button
 						type="button"
 						shape="pill"
@@ -387,7 +387,7 @@ export function TaskList({
 					<section className="mt-8" aria-label="Open tasks">
 						<SectionHead title="Open" />
 						{filteredOpen.length === 0 ? (
-							<EmptyState hint="Write one with the + beside the page's name, or capture a thought and let it file itself.">
+							<EmptyState hint="Write one with the + at the top of the page, or capture a thought and let it file itself.">
 								Nothing on the docket.
 							</EmptyState>
 						) : (
