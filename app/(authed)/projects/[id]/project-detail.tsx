@@ -335,12 +335,14 @@ function MilestonesSection({
 							</Button>
 						}
 					>
-						<span
-							className={`${ROW_TITLE_CLASS} ${m.status === "done" ? "text-ink-4 line-through" : ""}`}
-						>
-							{m.title}
-						</span>
-						<span className="ml-2 font-mono text-meta text-ink-4">w{m.weight}</span>
+						<div className="flex min-w-0 items-baseline gap-2">
+							<span
+								className={`${ROW_TITLE_CLASS} ${m.status === "done" ? "text-ink-4 line-through" : ""}`}
+							>
+								{m.title}
+							</span>
+							<span className="shrink-0 font-mono text-meta text-ink-4">w{m.weight}</span>
+						</div>
 					</ListRow>
 				))}
 			</ul>
