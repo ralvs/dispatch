@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
+import { EmptyState, PageHeader } from "@/components/ui";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { TaskRow } from "@/lib/services/tasks";
 import {
@@ -272,10 +273,14 @@ export function TaskList({
 		// The whole page lives in here, header included: the count strip is the
 		// status filter now, so it has to read the same client state the list does.
 		<div>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Tasks</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">The docket</h1>
-				<div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+			{/* Header only, in this pass. The measure slot is deliberately empty:
+			    the status strip below is a count that is also the filter, and
+			    whether it belongs on the title's baseline is Pass 1's question.
+			    Answering it here would settle it without the comps. */}
+			<PageHeader title="Tasks" />
+
+			<div className="mb-6">
+				<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
 					<TaskStatusStrip
 						status={status}
 						onStatusChange={setStatus}
@@ -297,7 +302,7 @@ export function TaskList({
 						{inboxCount} in the inbox →
 					</Link>
 				)}
-			</header>
+			</div>
 
 			<CaptureBar
 				domains={domains}
@@ -343,9 +348,7 @@ export function TaskList({
 					<section className="mt-8" aria-label="Open tasks">
 						<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Open</h2>
 						{filteredOpen.length === 0 ? (
-							<p className="py-8 text-center font-serif italic text-ink-3">
-								Nothing on the docket. Capture something.
-							</p>
+							<EmptyState>Nothing on the docket. Capture something.</EmptyState>
 						) : (
 							// Everything open may already be starred, in which case the band
 							// above carries the lot and this one renders nothing at all.
@@ -397,7 +400,7 @@ export function TaskList({
 				<section className="mt-8" aria-label="Tasks due today">
 					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Today</h2>
 					{todayTasks.length === 0 ? (
-						<p className="py-8 text-center font-serif italic text-ink-3">Nothing due today.</p>
+						<EmptyState>Nothing due today.</EmptyState>
 					) : (
 						<ul className="mt-2">
 							{todayTasks.map((t) => (
@@ -422,7 +425,7 @@ export function TaskList({
 				<section className="mt-8" aria-label="Overdue tasks">
 					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Overdue</h2>
 					{overdueTasks.length === 0 ? (
-						<p className="py-8 text-center font-serif italic text-ink-3">Nothing overdue.</p>
+						<EmptyState>Nothing overdue.</EmptyState>
 					) : (
 						<ul className="mt-2">
 							{overdueTasks.map((t) => (

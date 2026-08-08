@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { ChatThread } from "./chat-thread";
 
@@ -6,13 +7,10 @@ export default async function ChatPage() {
 
 	return (
 		<div>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Ask</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">Chat</h1>
-				<p className="mt-1 font-mono text-meta text-ink-4">
-					Read-only over your tasks, notes, quotes, projects
-				</p>
-			</header>
+			{/* "Ask" is what the shell's action calls this, so it is the name.
+			    The subtitle states the boundary — read-only — which is the one
+			    thing worth knowing before typing. */}
+			<PageHeader title="Ask" subtitle="Read-only over your tasks, notes, quotes and projects." />
 
 			<ChatThread />
 		</div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/ui";
 
 /*
  * Where `notFound()` from an authed page lands — a deleted note still linked
@@ -15,15 +16,12 @@ import Link from "next/link";
 export default function AuthedNotFound() {
 	return (
 		<div>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Not found</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">Nothing at this address</h1>
-				<p className="mt-1 text-meta text-ink-3">
-					It was deleted, or the link points somewhere that never existed.
-				</p>
-			</header>
+			<PageHeader
+				title="Nothing at this address"
+				subtitle="It was deleted, or the link points somewhere that never existed."
+			/>
 
-			<nav aria-label="Go elsewhere" className="mt-6 flex flex-wrap gap-2">
+			<nav aria-label="Go elsewhere" className="flex flex-wrap gap-2">
 				{[
 					{ href: "/today", label: "Today" },
 					{ href: "/tasks", label: "Tasks" },

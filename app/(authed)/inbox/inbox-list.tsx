@@ -3,6 +3,7 @@
 import { useOptimistic, useTransition } from "react";
 import { assignDomainAction, deleteTaskAction } from "@/app/(authed)/tasks/actions";
 import { ColorDot } from "@/components/color-dot";
+import { EmptyState } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { TaskRow } from "@/lib/services/tasks";
 import { InboxRow } from "./inbox-row";
@@ -44,11 +45,7 @@ export function InboxList({
 	}
 
 	if (rows.length === 0) {
-		return (
-			<p className="py-10 text-center font-serif italic text-ink-3">
-				The inbox is empty. Well kept.
-			</p>
-		);
+		return <EmptyState>The inbox is empty. Well kept.</EmptyState>;
 	}
 
 	return (

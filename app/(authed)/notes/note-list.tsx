@@ -4,6 +4,7 @@ import { Star } from "lucide-react";
 import Link from "next/link";
 import { useOptimistic, useTransition } from "react";
 import { setPinAction } from "@/app/(authed)/notes/actions";
+import { EmptyState } from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
@@ -23,7 +24,7 @@ function NoteLinkRow({
 	return (
 		<li className="hairline flex items-start">
 			<Link href={`/notes/${note.id}`} className="block flex-1 py-3 hover:bg-surface">
-				<span className="block truncate font-serif text-base text-ink">{displayTitle(note)}</span>
+				<span className="block truncate type-title text-base text-ink">{displayTitle(note)}</span>
 				<span className="mt-0.5 block font-mono text-meta text-ink-4">
 					{formatInstant(note.created_at, tz)}
 					{note.needs_review ? " · needs review" : ""}
@@ -62,7 +63,7 @@ function Section({
 		<section className="mt-6" aria-label={label}>
 			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">{label}</h2>
 			{notes.length === 0 ? (
-				<p className="py-8 text-center font-serif italic text-ink-3">{empty}</p>
+				<EmptyState>{empty}</EmptyState>
 			) : (
 				<ul className="mt-2">
 					{notes.map((n) => (

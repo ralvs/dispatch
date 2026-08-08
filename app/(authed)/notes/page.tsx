@@ -1,3 +1,4 @@
+import { Button, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedNoteLists } from "@/lib/cache/notes";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -15,20 +16,24 @@ export default async function NotesPage() {
 
 	return (
 		<div>
-			<header className="hairline-strong flex items-end justify-between pb-4">
-				<div>
-					<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Notes</p>
-					<h1 className="mt-1 font-serif text-3xl text-ink">Loose thoughts</h1>
-				</div>
-				<form action={createBlankNoteAction}>
-					<button
-						type="submit"
-						className="rounded-control border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-accent hover:text-ink active:opacity-70"
-					>
-						+ New note
-					</button>
-				</form>
-			</header>
+			<PageHeader
+				title="Notes"
+				measure={[
+					{ count: allNotes.length, label: allNotes.length === 1 ? "note" : "notes" },
+					// Only when there is something to review — a `0 need review`
+					// in the accent would spend the one orange on nothing.
+					...(needsReview.length > 0
+						? [{ count: needsReview.length, label: "need review", attention: true }]
+						: []),
+				]}
+				action={
+					<form action={createBlankNoteAction}>
+						<Button type="submit" variant="secondary">
+							+ New note
+						</Button>
+					</form>
+				}
+			/>
 
 			<NoteList needsReview={needsReview} allNotes={allNotes} tz={tz} />
 		</div>

@@ -1,3 +1,4 @@
+import { EmptyState, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { listPeople } from "@/lib/services/people";
 import { PersonForm } from "./person-form";
@@ -9,20 +10,18 @@ export default async function PeoplePage() {
 
 	return (
 		<div>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">People</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">Who matters</h1>
-			</header>
+			<PageHeader
+				title="People"
+				measure={[{ count: people.length, label: people.length === 1 ? "person" : "people" }]}
+			/>
 
-			<section className="mt-6">
+			<section>
 				<PersonForm />
 			</section>
 
 			<section className="mt-6" aria-label="People">
 				{people.length === 0 ? (
-					<p className="py-8 text-center font-serif italic text-ink-3">
-						No one here yet. Add someone.
-					</p>
+					<EmptyState>No one here yet. Add someone.</EmptyState>
 				) : (
 					<ul className="mt-2">
 						{people.map((p) => (

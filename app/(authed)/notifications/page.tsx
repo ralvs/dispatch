@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { listNotifications } from "@/lib/services/notifications";
 import { getAppTimezone } from "@/lib/services/settings";
@@ -13,10 +14,10 @@ export default async function NotificationsPage() {
 
 	return (
 		<div>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Notifications</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">The ledger</h1>
-			</header>
+			{/* No measure: the unread count flips client-side on dismissal, and a
+			    server-rendered figure beside it would be the stale one. The list
+			    keeps its own reading. */}
+			<PageHeader title="Notifications" />
 
 			{/* Subtitle, bulk actions, and rows live in the client list so unread
 			 * counts and dismissals flip before revalidation. */}

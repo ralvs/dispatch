@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Button } from "@/components/ui";
+import { Button, PageHeader } from "@/components/ui";
 
 export default function RouteError({
 	error,
@@ -18,13 +18,12 @@ export default function RouteError({
 
 	return (
 		<div>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Error</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">Something went sideways</h1>
-				<p className="mt-1 text-meta text-ink-3">Something went wrong loading this page.</p>
-			</header>
+			<PageHeader
+				title="Something went sideways"
+				subtitle="Something went wrong loading this page."
+			/>
 
-			<Button type="button" variant="primary" className="mt-6" onClick={reset}>
+			<Button type="button" variant="primary" onClick={reset}>
 				Try again
 			</Button>
 		</div>

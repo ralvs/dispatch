@@ -1,4 +1,5 @@
 import { PushToggle } from "@/components/push-toggle";
+import { EmptyState, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { listDomains } from "@/lib/services/domains";
 import { getAppTimezone, getReminderSettings } from "@/lib/services/settings";
@@ -20,19 +21,16 @@ export default async function SettingsPage() {
 
 	return (
 		<div>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Settings</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">The back office</h1>
-			</header>
+			<PageHeader title="Settings" />
 
-			<section className="mt-8" aria-label="Domains">
+			<section aria-label="Domains">
 				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Domains</h2>
 				<p className="mt-1 font-mono text-meta text-ink-4">What I'm stewarding.</p>
 				<div className="mt-3">
 					<DomainForm />
 				</div>
 				{active.length === 0 ? (
-					<p className="py-6 text-center font-serif italic text-ink-3">No active domains.</p>
+					<EmptyState>No active domains.</EmptyState>
 				) : (
 					<ul className="mt-2">
 						{active.map((d) => (

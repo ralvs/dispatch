@@ -5,6 +5,7 @@ import {
 	markAllNotificationsAction,
 	markNotificationAction,
 } from "@/app/(authed)/notifications/actions";
+import { EmptyState } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { NotificationRow as Row } from "@/lib/services/notifications";
 import { BulkActions } from "./bulk-actions";
@@ -68,9 +69,7 @@ export function NotificationList({
 			/>
 
 			{rows.length === 0 ? (
-				<p className="py-10 text-center font-serif italic text-ink-3">
-					Nothing to report. The wire is quiet.
-				</p>
+				<EmptyState>Nothing to report. The wire is quiet.</EmptyState>
 			) : (
 				<ul className="mt-4">
 					{rows.map((n) => (

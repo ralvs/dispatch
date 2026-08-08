@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { listDomains } from "@/lib/services/domains";
 import { listNoteIdsForTargets } from "@/lib/services/note-links";
@@ -19,13 +20,9 @@ export default async function InboxPage() {
 
 	return (
 		<div>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Inbox</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">The inbox</h1>
-				<p className="mt-1 text-meta text-ink-3">
-					Captured tasks without a home. Give each one a domain.
-				</p>
-			</header>
+			{/* The subtitle survives here because it is an instruction, not a
+			    tagline: filing is the whole job of the page. */}
+			<PageHeader title="Inbox" subtitle="Captured tasks without a home. Give each one a domain." />
 
 			<InboxList tasks={tasks} domains={domains} taskNoteIds={taskNoteIds} />
 		</div>

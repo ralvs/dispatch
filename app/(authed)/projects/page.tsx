@@ -1,3 +1,4 @@
+import { EmptyState, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { listDomains } from "@/lib/services/domains";
 import { listProjects } from "@/lib/services/projects";
@@ -14,17 +15,20 @@ export default async function ProjectsPage() {
 
 	return (
 		<div>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Projects</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">What's in motion</h1>
-			</header>
+			<PageHeader
+				title="Projects"
+				measure={[
+					{ count: projects.filter((p) => p.status === "active").length, label: "active" },
+					{ count: projects.filter((p) => p.status === "paused").length, label: "paused" },
+				]}
+			/>
 
-			<section className="mt-6">
+			<section>
 				<ProjectForm domains={domains} />
 			</section>
 
 			{projects.length === 0 ? (
-				<p className="py-8 text-center font-serif italic text-ink-3">No projects yet. Start one.</p>
+				<EmptyState>No projects yet. Start one.</EmptyState>
 			) : (
 				STATUS_GROUPS.map(({ status, label }) => {
 					const group = projects.filter((p) => p.status === status);

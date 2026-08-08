@@ -1,3 +1,4 @@
+import { EmptyState, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatDay, todayInTz } from "@/lib/dates";
 import { listEntries } from "@/lib/services/journal";
@@ -18,20 +19,18 @@ export default async function JournalPage() {
 
 	return (
 		<div>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Journal</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">Pages worth keeping</h1>
-			</header>
+			<PageHeader
+				title="Journal"
+				measure={[{ count: entries.length, label: entries.length === 1 ? "entry" : "entries" }]}
+			/>
 
-			<section className="mt-6">
+			<section>
 				<JournalForm todayIso={todayInTz(tz)} />
 			</section>
 
 			<section className="mt-6" aria-label="Journal entries">
 				{entries.length === 0 ? (
-					<p className="py-8 text-center font-serif italic text-ink-3">
-						Nothing written yet. Capture what happened today.
-					</p>
+					<EmptyState>Nothing written yet. Capture what happened today.</EmptyState>
 				) : (
 					[...groups.entries()].map(([date, dayEntries]) => (
 						<div key={date} className="mt-6 first:mt-2">

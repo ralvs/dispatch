@@ -1,3 +1,4 @@
+import { EmptyState, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedLinks } from "@/lib/cache/links";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -15,24 +16,25 @@ export default async function LinksPage() {
 
 	return (
 		<div>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Links</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">The reading pile</h1>
-				<p className="mt-1 text-meta text-ink-3">
-					{unread.length === 0
-						? "Links shared from the field. Nothing waiting."
-						: `Links shared from the field. ${unread.length} unread.`}
-				</p>
-			</header>
+			{/* The subtitle used to spell the unread count out in a sentence. The
+			    measure carries it now, so the sentence goes. */}
+			<PageHeader
+				title="Links"
+				// Unread takes no accent: a reading pile is a pile by design, not
+				// something late. The orange means "this needs you" and spending it
+				// here would make it mean "there is some".
+				measure={[
+					{ count: unread.length, label: "unread" },
+					{ count: read.length, label: "read" },
+				]}
+			/>
 
 			{unread.length === 0 && read.length === 0 ? (
-				<p className="py-10 text-center font-serif italic text-ink-3">
-					Nothing shared yet. Send a link and it lands here.
-				</p>
+				<EmptyState>Nothing shared yet. Send a link and it lands here.</EmptyState>
 			) : (
 				<>
 					{unread.length > 0 && (
-						<section className="mt-6" aria-label="Unread links">
+						<section aria-label="Unread links">
 							<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
 								Unread
 							</h2>

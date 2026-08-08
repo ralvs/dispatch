@@ -1,3 +1,4 @@
+import { EmptyState, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { shiftDay, todayInTz } from "@/lib/dates";
 import { computeRoutineStats, recentDaysGrid } from "@/lib/routine-stats";
@@ -22,20 +23,20 @@ export default async function RoutinesPage() {
 
 	return (
 		<div>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Routines</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">Daily habits</h1>
-			</header>
+			<PageHeader
+				title="Routines"
+				measure={[
+					{ count: routines.length, label: routines.length === 1 ? "routine" : "routines" },
+				]}
+			/>
 
-			<section className="mt-6">
+			<section>
 				<RoutineForm />
 			</section>
 
 			<section className="mt-6" aria-label="Routines">
 				{routines.length === 0 ? (
-					<p className="py-8 text-center font-serif italic text-ink-3">
-						No routines yet. Add something you want to do daily.
-					</p>
+					<EmptyState>No routines yet. Add something you want to do daily.</EmptyState>
 				) : (
 					<ul className="mt-2">
 						{routines.map((routine) => {
