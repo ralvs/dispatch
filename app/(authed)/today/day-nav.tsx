@@ -13,6 +13,17 @@ import { formatDay, shiftDay } from "@/lib/dates";
 const STEP =
 	"inline-flex size-7 shrink-0 items-center justify-center rounded-pill border border-line-strong text-ink-3 transition-colors hover:border-ink-4 hover:text-ink active:opacity-70 disabled:opacity-40";
 
+/** Every label variant stacks in the same grid cell. */
+const CELL = "col-start-1 row-start-1 min-w-0";
+
+/**
+ * The longest date the label can ever hold: the longest weekday, a two-digit
+ * day, the longest month. In a monospace face every date of that shape is
+ * exactly as wide, so this is the reservation, not an estimate. The desktop
+ * variant appends a four-digit year.
+ */
+const WIDEST_DAY = "WEDNESDAY, 00 SEPTEMBER";
+
 /**
  * The nav IS the dateline. A separate widget above the tape would state the day
  * twice, so the chevrons flank the date that was already there — the eyebrow on
@@ -51,14 +62,28 @@ export function DayNav({
 			>
 				<Icon icon={ChevronLeft} size="sm" strokeWidth={1.8} />
 			</button>
+			{/* A one-cell grid: the invisible widest-case date sets the width, the
+			    real one is laid over it. Measured rather than computed in `ch` so
+			    the reservation survives the font and the tracking changing under
+			    it. Every date is narrower, so the next chevron never moves. */}
 			<p
-				className="min-w-0 truncate font-mono text-eyebrow uppercase tracking-widest text-ink-3"
+				className="grid min-w-0 font-mono text-eyebrow uppercase tracking-widest text-ink-3"
 				aria-live="polite"
 			>
 				{/* Long form where there is room; the phone's app bar drops the year,
 				    which is the one part of the date nobody is checking. */}
-				<span className="lg:hidden">{formatDay(dateIso, "utc", "cccc, d LLLL")}</span>
-				<span className="hidden lg:inline">{formatDay(dateIso, "utc", "cccc, d LLLL yyyy")}</span>
+				<span className={`${CELL} truncate lg:hidden`}>
+					{formatDay(dateIso, "utc", "cccc, d LLLL")}
+				</span>
+				<span className={`${CELL} hidden truncate lg:block`}>
+					{formatDay(dateIso, "utc", "cccc, d LLLL yyyy")}
+				</span>
+				<span className={`${CELL} invisible lg:hidden`} aria-hidden="true">
+					{WIDEST_DAY}
+				</span>
+				<span className={`${CELL} invisible hidden lg:block`} aria-hidden="true">
+					{WIDEST_DAY} 0000
+				</span>
 			</p>
 			<button
 				type="button"
