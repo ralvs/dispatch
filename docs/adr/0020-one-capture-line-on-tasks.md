@@ -19,6 +19,15 @@ pre-selected P4 as a solid grey fill, which reads as *disabled*, not as
 
 ## Decision 1 — one field, two depths
 
+> **Superseded by ADR-0043.** The capture line is gone; `/tasks` writes tasks
+> through a single `+ New task` in the page header, and the parser moved into
+> the dialog behind one rule (title-only parses, anything else is literal).
+> Decisions 2, 3 and 4 below are untouched — the relative chips, the `data-empty`
+> date styling and the priority marking all live in `TaskMetaFields` and
+> `PriorityPicker`, which the dialog still composes. The first risk accepted
+> below is resolved rather than inherited: the two depths are now one form with
+> a stated, visible rule.
+
 The quick-add line is the only place a task gets written on `/tasks`
 (`app/(authed)/tasks/capture-bar.tsx`). It has two depths, not two fields:
 

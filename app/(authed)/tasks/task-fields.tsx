@@ -1,7 +1,7 @@
 "use client";
 
 import { RotateCcw } from "lucide-react";
-import { useId, useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { MentionTextarea, MentionTextInput } from "@/components/mention-input";
 import { Field, fieldControl, Icon, Input, Select } from "@/components/ui";
 import { shiftDay } from "@/lib/dates";
@@ -269,14 +269,18 @@ export function TaskMetaFields({
 
 /**
  * Title + optional notes + the meta row — the full surface, used by the task
- * dialog for both create and edit. The capture bar keeps its own bare title
- * line for quick-add, so it never renders a second title field beside this one.
+ * dialog for both create and edit, and since ADR-0043 the only place a task is
+ * written on this page at all. The standing capture line that used to sit above
+ * the list is gone; its natural-language path lives in the dialog's submit now,
+ * so there is one title field rather than two that had to be kept from
+ * appearing beside each other.
  */
 export function TaskFormFields({
 	domains,
 	todayIso,
 	defaults = {},
 	titlePlaceholder = "What needs doing?",
+	titleHint,
 	showNotes = false,
 	people = [],
 	autoFocusTitle = false,
@@ -285,6 +289,8 @@ export function TaskFormFields({
 	todayIso: string;
 	defaults?: TaskFieldDefaults;
 	titlePlaceholder?: string;
+	/** One quiet line under the title — the place the parser announces itself. */
+	titleHint?: ReactNode;
 	showNotes?: boolean;
 	/** @mention candidates (docs/adr/0030), threaded to both title and notes. */
 	people?: MentionCandidate[];
@@ -293,12 +299,15 @@ export function TaskFormFields({
 }) {
 	return (
 		<>
-			<TaskTitleField
-				defaultValue={defaults.title ?? ""}
-				placeholder={titlePlaceholder}
-				people={people}
-				autoFocus={autoFocusTitle}
-			/>
+			<div>
+				<TaskTitleField
+					defaultValue={defaults.title ?? ""}
+					placeholder={titlePlaceholder}
+					people={people}
+					autoFocus={autoFocusTitle}
+				/>
+				{titleHint && <p className="mt-2 font-mono text-meta text-ink-4">{titleHint}</p>}
+			</div>
 
 			{showNotes && <TaskNotesField defaultValue={defaults.notes ?? ""} people={people} />}
 

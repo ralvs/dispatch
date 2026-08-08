@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
-import { EmptyState, PageHeader } from "@/components/ui";
+import { Button, EmptyState, PageHeader } from "@/components/ui";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { TaskRow } from "@/lib/services/tasks";
 import {
@@ -22,7 +22,7 @@ import {
 	reopenTaskAction,
 	setTop3Action,
 } from "./actions";
-import { CaptureBar } from "./capture-bar";
+import { TaskDialog } from "./task-dialog";
 import type { TaskDomainOption } from "./task-fields";
 import {
 	type TaskFilterOption,
@@ -141,6 +141,10 @@ export function TaskList({
 		applyTaskLists(current, intent, ctx),
 	);
 	const run = useTaskIntentRunner(dispatchOptimistic);
+
+	// The header's `+ New task`. One standing action rather than the standing
+	// capture line it replaced (docs/adr/0043).
+	const [creating, setCreating] = useState(false);
 
 	// Ids of tasks created optimistically in this session — always shown
 	// regardless of the active filter, so a capture typed while "Domain: Work"
@@ -280,7 +284,34 @@ export function TaskList({
 			    a page's reading is also its control, the reading goes with the
 			    control. Putting it in the measure slot would have taught eleven
 			    other pages that a count there is sometimes clickable. */}
-			<PageHeader title="Tasks" />
+			<PageHeader
+				title="Tasks"
+				action={
+					<Button
+						type="button"
+						variant="secondary"
+						onClick={() => setCreating(true)}
+						aria-haspopup="dialog"
+					>
+						+ New task
+					</Button>
+				}
+			/>
+
+			{/* `onQuickAdd` is what makes this dialog the fast path too: a create
+			    carrying nothing but a title goes through the parser, anything
+			    else is taken literally (docs/adr/0043). The row-level dialogs
+			    are edit-mode and never see it. */}
+			<TaskDialog
+				open={creating}
+				onClose={() => setCreating(false)}
+				mode="create"
+				domains={domains}
+				todayIso={todayIso}
+				people={people}
+				onCreate={onCreate}
+				onQuickAdd={onQuickAdd}
+			/>
 
 			{/* Status left, the two scope narrows right — one bar, because they
 			    are one filter set and they narrow the same list. */}
@@ -308,14 +339,6 @@ export function TaskList({
 					</Link>
 				)}
 			</div>
-
-			<CaptureBar
-				domains={domains}
-				todayIso={todayIso}
-				onQuickAdd={onQuickAdd}
-				onCreate={onCreate}
-				people={people}
-			/>
 
 			{status === "open" && (
 				<>
