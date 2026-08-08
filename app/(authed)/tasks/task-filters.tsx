@@ -16,12 +16,19 @@ export type TaskFilterOption = { id: string; name: string };
 export const UNFILED = "none";
 
 /**
- * The header's count line doubles as the status filter — "13 open · 0 overdue ·
- * 1 today" is the same information a segmented Open/Done/Overdue control was
- * repeating one row below it, so the counts carry the state instead. There is
+ * The count line doubles as the status filter — "13 open · 0 overdue · 1 today"
+ * is the same information a segmented Open/Done/Overdue control was repeating
+ * one row below it, so the counts carry the state instead. There is
  * deliberately no Done filter: nothing pages the done list, so a few hundred
  * completed tasks would render in one go. The Open view's "Recently done" band
  * remains the way finished work is seen.
+ *
+ * It lives on a bar under the page header rather than in the header's measure
+ * slot, and that is the Pass 1 gate decision (.impeccable/mocks/tasks-lab.html,
+ * option T2). On eleven surfaces the measure is a readout; here the same phrase
+ * is a control, so it sits with the other controls and `/tasks` carries no
+ * measure at all. Stated as a rule: **where a page's reading is also its
+ * control, the reading goes with the control.**
  */
 export function TaskStatusStrip({
 	status,
@@ -47,9 +54,14 @@ export function TaskStatusStrip({
 			<legend className="sr-only">Filter tasks</legend>
 			{counts.map((c, i) => {
 				const active = status === c.value;
-				// Overdue keeps its alarm colour when there is something in it, but
-				// only the active filter gets the underline — two different signals
-				// on the same word, so they can't share one treatment.
+				// Overdue keeps its alarm colour when there is something in it, and
+				// the active filter is marked by the ink ladder plus a rule. Two
+				// different signals on the same word, so they can't share one
+				// treatment — and until Pass 1 they shared a colour, which is worse:
+				// the rule was `decoration-accent`, so the one orange said "you are
+				// here" and "this is late" on the same three words. It is `--ink`
+				// now, which leaves the accent on this bar meaning only what it
+				// means everywhere else (DESIGN.md, "The One Orange Rule").
 				const tone = active
 					? "text-ink"
 					: c.value === "overdue" && c.count > 0
@@ -67,7 +79,7 @@ export function TaskStatusStrip({
 							onClick={() => onStatusChange(c.value)}
 							aria-pressed={active}
 							className={`relative rounded-sm px-0.5 transition-colors after:absolute after:-inset-2 after:content-[''] hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${tone} ${
-								active ? "underline decoration-accent decoration-2 underline-offset-4" : ""
+								active ? "underline decoration-ink decoration-2 underline-offset-4" : ""
 							}`}
 						>
 							{c.count} {c.label}

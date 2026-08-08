@@ -273,13 +273,18 @@ export function TaskList({
 		// The whole page lives in here, header included: the count strip is the
 		// status filter now, so it has to read the same client state the list does.
 		<div>
-			{/* Header only, in this pass. The measure slot is deliberately empty:
-			    the status strip below is a count that is also the filter, and
-			    whether it belongs on the title's baseline is Pass 1's question.
-			    Answering it here would settle it without the comps. */}
+			{/* No measure, and that is the decision rather than an omission
+			    (Pass 1 gate, .impeccable/mocks/tasks-lab.html option T2). The
+			    status strip below is a count that is also the filter, so it sits
+			    with the other controls instead of on the title's baseline: where
+			    a page's reading is also its control, the reading goes with the
+			    control. Putting it in the measure slot would have taught eleven
+			    other pages that a count there is sometimes clickable. */}
 			<PageHeader title="Tasks" />
 
-			<div className="mb-6">
+			{/* Status left, the two scope narrows right — one bar, because they
+			    are one filter set and they narrow the same list. */}
+			<div>
 				<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
 					<TaskStatusStrip
 						status={status}
