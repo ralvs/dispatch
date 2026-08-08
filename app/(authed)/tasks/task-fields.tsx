@@ -142,7 +142,7 @@ export function TaskTitleField({
 			placeholder={placeholder}
 			aria-label="Task title"
 			data-autofocus={autoFocus || undefined}
-			className="field-shell h-auto w-full py-1.5 font-serif text-base text-ink placeholder:font-normal placeholder:text-ink-4"
+			className="field-shell h-auto w-full py-1.5 type-title text-base text-ink placeholder:font-normal placeholder:text-ink-4"
 		/>
 	);
 }

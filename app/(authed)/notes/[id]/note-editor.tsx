@@ -179,11 +179,11 @@ export function NoteEditor({
 					debouncedRef.current.schedule(e.target.value);
 				}}
 				onBlur={() => debouncedRef.current.flush()}
-				className="field-shell h-auto w-full py-2 font-serif text-2xl text-ink placeholder:text-ink-4"
+				className="field-shell h-auto w-full py-2 type-title text-2xl text-ink placeholder:text-ink-4"
 			/>
 			{/* Preflight strips heading/list styling; restore just enough for the
 			    markdown to read as formatted, matching the app's serif headings. */}
-			<div className="mt-4 [&_a]:cursor-pointer [&_a]:text-accent [&_a]:underline [&_a]:underline-offset-2 [&_a:hover]:text-ink [&_blockquote]:border-l-2 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_blockquote]:text-ink-2 [&_code]:font-mono [&_code]:text-[0.85em] [&_h1]:font-serif [&_h1]:text-2xl [&_h1]:text-ink [&_h2]:font-serif [&_h2]:text-xl [&_h2]:text-ink [&_h3]:font-serif [&_h3]:text-lg [&_h3]:text-ink [&_hr]:my-3 [&_hr]:border-line [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_ul[data-type=taskList]]:list-none [&_ul[data-type=taskList]]:pl-0 [&_ul[data-type=taskList]_ul[data-type=taskList]]:pl-5 [&_ul[data-type=taskList]_li]:flex [&_ul[data-type=taskList]_li]:items-baseline [&_ul[data-type=taskList]_li]:gap-2 [&_ul[data-type=taskList]_li>div]:flex-1 [&_ul[data-type=taskList]_input]:accent-accent">
+			<div className="mt-4 [&_a]:cursor-pointer [&_a]:text-accent [&_a]:underline [&_a]:underline-offset-2 [&_a:hover]:text-ink [&_blockquote]:border-l-2 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_blockquote]:text-ink-2 [&_code]:font-mono [&_code]:text-[0.85em] [&_h1]:font-medium [&_h1]:tracking-[-0.02em] [&_h1]:text-2xl [&_h1]:text-ink [&_h2]:font-medium [&_h2]:tracking-[-0.02em] [&_h2]:text-xl [&_h2]:text-ink [&_h3]:font-medium [&_h3]:tracking-[-0.02em] [&_h3]:text-lg [&_h3]:text-ink [&_hr]:my-3 [&_hr]:border-line [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_ul[data-type=taskList]]:list-none [&_ul[data-type=taskList]]:pl-0 [&_ul[data-type=taskList]_ul[data-type=taskList]]:pl-5 [&_ul[data-type=taskList]_li]:flex [&_ul[data-type=taskList]_li]:items-baseline [&_ul[data-type=taskList]_li]:gap-2 [&_ul[data-type=taskList]_li>div]:flex-1 [&_ul[data-type=taskList]_input]:accent-accent">
 				<EditorContent editor={editor} />
 			</div>
 			<p className="mt-3 font-mono text-meta text-ink-4">

@@ -76,7 +76,7 @@ export function CaptureBar({
 						placeholder={'Add a task — "pay rent every monday 9am"'}
 						aria-label="Task title"
 						wrapperClassName="min-w-0 flex-1"
-						className="w-full min-w-0 bg-transparent font-serif text-lg text-ink placeholder:font-normal placeholder:text-ink-4"
+						className="w-full min-w-0 bg-transparent type-title text-lg text-ink placeholder:font-normal placeholder:text-ink-4"
 					/>
 					{title && (
 						<span aria-hidden className="shrink-0 font-mono text-meta text-ink-4">

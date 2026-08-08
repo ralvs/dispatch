@@ -406,7 +406,7 @@ export function CurrentDesign({ day }: { day: CompareDay }) {
 							</a>
 						</div>
 					</div>
-					<h1 className="display-tight gradient-text-mesh mt-1 w-fit font-serif text-4xl">
+					<h1 className="display-tight gradient-text-mesh mt-1 w-fit type-title text-4xl">
 						Dispatch
 					</h1>
 				</header>
@@ -420,7 +420,7 @@ export function CurrentDesign({ day }: { day: CompareDay }) {
 						<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
 							{day.anchor.eventCount} event{day.anchor.eventCount === 1 ? "" : "s"} today
 						</p>
-						<p className="mt-2 font-serif text-lg leading-snug text-ink">
+						<p className="mt-2 type-title text-lg leading-snug text-ink">
 							Next up at <span className="tabular-nums">{day.anchor.nextEvent.time}</span>
 							{" — "}
 							{day.anchor.nextEvent.title}.
@@ -583,11 +583,11 @@ export function CurrentDesign({ day }: { day: CompareDay }) {
 							<ul>
 								{day.brief.map((b) => (
 									<li key={b.key} className="hairline flex items-center gap-4 py-3">
-										<span className="w-20 shrink-0 truncate font-serif text-sm text-ink">
+										<span className="w-20 shrink-0 truncate type-title text-sm text-ink">
 											{b.name}
 										</span>
 										<span
-											className={`shrink-0 whitespace-nowrap font-serif text-lg leading-none tabular-nums ${
+											className={`shrink-0 whitespace-nowrap type-title text-lg leading-none tabular-nums ${
 												b.slipping ? "text-accent-slip" : "text-ink"
 											}`}
 										>
@@ -615,7 +615,7 @@ export function CurrentDesign({ day }: { day: CompareDay }) {
 							<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
 								Resurfaced
 							</h2>
-							<blockquote className="mt-3 font-serif text-[19px] italic leading-snug text-ink">
+							<blockquote className="mt-3 type-title text-[19px] italic leading-snug text-ink">
 								“{day.resurfaced.text}”
 							</blockquote>
 							<p className="mt-2 font-mono text-meta text-ink-3">
@@ -646,7 +646,7 @@ export function CurrentDesign({ day }: { day: CompareDay }) {
 								<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
 									Latest quote
 								</h2>
-								<blockquote className="mt-3 font-serif text-[17px] italic leading-snug text-ink">
+								<blockquote className="mt-3 type-title text-[17px] italic leading-snug text-ink">
 									“{day.latestQuote.text}”
 								</blockquote>
 								<p className="mt-2 font-mono text-meta text-ink-3">

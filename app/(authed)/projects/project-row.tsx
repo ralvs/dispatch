@@ -10,7 +10,7 @@ export function ProjectRowItem({ project }: { project: ProjectRow }) {
 			<Link href={`/projects/${project.id}`} className="flex items-center justify-between gap-3">
 				<span className="flex min-w-0 items-center gap-2">
 					<ColorDot color={project.color} />
-					<span className="min-w-0 truncate font-serif text-base text-ink">{project.name}</span>
+					<span className="min-w-0 truncate type-title text-base text-ink">{project.name}</span>
 				</span>
 				{project.type && <Badge tone="neutral">{projectTypeLabel(project.type)}</Badge>}
 			</Link>

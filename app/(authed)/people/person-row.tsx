@@ -7,7 +7,7 @@ export function PersonRowItem({ person }: { person: PersonRow }) {
 	return (
 		<li className="hairline py-3">
 			<Link href={`/people/${person.id}`} className="flex items-center justify-between gap-3">
-				<span className="min-w-0 truncate font-serif text-base text-ink">{person.name}</span>
+				<span className="min-w-0 truncate type-title text-base text-ink">{person.name}</span>
 				{person.relationship_type && (
 					<Badge tone="neutral">{relationshipLabel(person.relationship_type)}</Badge>
 				)}

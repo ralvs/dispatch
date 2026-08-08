@@ -58,7 +58,7 @@ export function PersonDetail({
 		<div className={pending ? "opacity-50" : ""}>
 			<header className="hairline-strong pb-4">
 				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Person</p>
-				<h1 className="mt-1 font-serif text-3xl text-ink">{person.name}</h1>
+				<h1 className="mt-1 type-title text-3xl text-ink">{person.name}</h1>
 			</header>
 
 			<section className="mt-8" aria-label="Details">
@@ -183,7 +183,7 @@ function MentionedInSection({
 					<li key={`task-${task.id}`} className="hairline py-3">
 						<Link
 							href={`/tasks?edit=${task.id}`}
-							className="truncate font-serif text-sm text-ink hover:text-accent"
+							className="truncate type-title text-sm text-ink hover:text-accent"
 						>
 							{task.title}
 							{task.status === "done" ? " · done" : ""}
@@ -194,7 +194,7 @@ function MentionedInSection({
 					<li key={`note-${note.id}`} className="hairline py-3">
 						<Link
 							href={`/notes/${note.id}`}
-							className="truncate font-serif text-sm text-ink hover:text-accent"
+							className="truncate type-title text-sm text-ink hover:text-accent"
 						>
 							{displayTitle(note)}
 						</Link>

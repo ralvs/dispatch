@@ -51,7 +51,7 @@ export function RoutineRowItem({
 		<li className="hairline py-3">
 			<div className="flex items-start justify-between gap-3">
 				<div className="min-w-0">
-					<p className="truncate font-serif text-base text-ink">{routine.name}</p>
+					<p className="truncate type-title text-base text-ink">{routine.name}</p>
 					<p className="mt-0.5 font-mono text-meta text-ink-4">
 						{TIME_OF_DAY_LABELS[routine.time_of_day]} · streak {stats.current_streak} · best{" "}
 						{stats.longest_streak} · {stats.completions_7d}/7d

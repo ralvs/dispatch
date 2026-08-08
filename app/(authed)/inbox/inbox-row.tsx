@@ -22,7 +22,7 @@ export function InboxRow({
 }) {
 	return (
 		<li className="hairline py-3">
-			<p className="flex min-w-0 items-center gap-1.5 font-serif text-base text-ink">
+			<p className="flex min-w-0 items-center gap-1.5 type-title text-base text-ink">
 				<span className="min-w-0 truncate">{task.title}</span>
 				{noteId && (
 					<Link

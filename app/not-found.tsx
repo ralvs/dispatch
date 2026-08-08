@@ -14,7 +14,7 @@ export default function NotFound() {
 	return (
 		<main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6 pb-24">
 			<p className="font-mono text-eyebrow uppercase text-ink-3">Dispatch</p>
-			<h1 className="mt-1 font-serif text-3xl text-ink">Nothing at this address</h1>
+			<h1 className="mt-1 type-title text-3xl text-ink">Nothing at this address</h1>
 			<div className="hairline-strong mt-6" />
 			<p className="mt-6 text-meta text-ink-3">
 				That URL doesn't lead anywhere. It may have been mistyped, or it never existed.

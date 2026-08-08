@@ -101,7 +101,7 @@ export function TaskRowItem({
 		handlers.onDelete();
 	}
 
-	const titleClass = `relative block max-w-full text-left font-serif text-base after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] active:opacity-70 ${
+	const titleClass = `relative block max-w-full text-left type-title text-base after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] active:opacity-70 ${
 		done ? "text-ink-4 line-through" : "text-ink"
 	} ${canEdit || !manageable ? "hover:text-accent-ink" : ""}`;
 

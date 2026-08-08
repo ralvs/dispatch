@@ -464,7 +464,7 @@ export function LedgerDesign({ day }: { day: CompareDay }) {
 			<div className="mx-auto max-w-[1180px] px-4 py-10 @3xl:px-10">
 				<header className="hairline flex flex-wrap items-baseline justify-between gap-3 pb-5">
 					<div>
-						<p className="font-serif text-xl">{day.dateline}</p>
+						<p className="type-title text-xl">{day.dateline}</p>
 						<p className="mt-1 flex flex-wrap items-center gap-3 font-mono text-meta text-ink-3">
 							<span>{day.weekday}</span>
 							<span>ISO wk {day.isoWeek}</span>
@@ -497,7 +497,7 @@ export function LedgerDesign({ day }: { day: CompareDay }) {
 					<p className="text-eyebrow uppercase text-ink-3">
 						{day.anchor.eventCount === 1 ? "1 event" : `${day.anchor.eventCount} events`} today
 					</p>
-					<p className="mt-2 font-serif text-lg leading-snug">
+					<p className="mt-2 type-title text-lg leading-snug">
 						Next up at <span className="tabular-nums">{day.anchor.nextEvent.time}</span>
 						{" — "}
 						{day.anchor.nextEvent.title}.
@@ -520,8 +520,8 @@ export function LedgerDesign({ day }: { day: CompareDay }) {
 								<span
 									className={
 										c.slip
-											? "block font-serif text-2xl tabular-nums text-warning"
-											: "block font-serif text-2xl tabular-nums"
+											? "block type-title text-2xl tabular-nums text-warning"
+											: "block type-title text-2xl tabular-nums"
 									}
 								>
 									{c.big}
@@ -823,7 +823,7 @@ export function LedgerDesign({ day }: { day: CompareDay }) {
 								{day.projects.map((p) => (
 									<li key={p.id} className="hairline py-3.5">
 										<div className="flex items-baseline justify-between gap-3">
-											<span className="font-serif text-sm">{p.name}</span>
+											<span className="type-title text-sm">{p.name}</span>
 											<span className="font-mono text-meta tabular-nums text-ink-2">
 												{Math.round(p.progress * 100)}%
 											</span>
@@ -850,7 +850,7 @@ export function LedgerDesign({ day }: { day: CompareDay }) {
 							</h2>
 							<div className="mt-4">
 								<p className="text-eyebrow uppercase text-ink-3">Resurfaced</p>
-								<blockquote className="mt-2 font-serif text-base italic leading-snug">
+								<blockquote className="mt-2 type-title text-base italic leading-snug">
 									&ldquo;{day.resurfaced.text}&rdquo;
 								</blockquote>
 								<p className="mt-2 font-mono text-meta text-ink-3">
@@ -877,7 +877,7 @@ export function LedgerDesign({ day }: { day: CompareDay }) {
 							</div>
 							<div className="hairline mt-6 pt-6">
 								<p className="text-eyebrow uppercase text-ink-3">Latest</p>
-								<blockquote className="mt-2 font-serif text-sm italic leading-snug">
+								<blockquote className="mt-2 type-title text-sm italic leading-snug">
 									&ldquo;{day.latestQuote.text}&rdquo;
 								</blockquote>
 								<p className="mt-2 font-mono text-meta text-ink-3">

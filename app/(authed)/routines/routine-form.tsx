@@ -21,7 +21,7 @@ export function RoutineForm() {
 					required
 					aria-label="Routine name"
 					placeholder="Stretch, read, drink water…"
-					className="font-serif text-base"
+					className="type-title text-base"
 				/>
 			</Field>
 			<Field label="Time of day">

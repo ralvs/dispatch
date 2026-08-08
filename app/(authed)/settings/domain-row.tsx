@@ -110,7 +110,7 @@ export function DomainRowItem({
 		>
 			<span className="flex min-w-0 items-center gap-1.5">
 				<ColorDot color={domain.color} />
-				<span className="min-w-0 truncate font-serif text-base text-ink">{domain.name}</span>
+				<span className="min-w-0 truncate type-title text-base text-ink">{domain.name}</span>
 			</span>
 			{domain.description && <p className="mt-0.5 text-sm text-ink-3">{domain.description}</p>}
 			{domain.fruit_definition && (

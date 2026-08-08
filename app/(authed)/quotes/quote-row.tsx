@@ -40,7 +40,7 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 
 	return (
 		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>
-			<blockquote className="max-w-prose break-words font-serif text-base italic text-ink">
+			<blockquote className="max-w-prose break-words type-title text-base italic text-ink">
 				“{quote.text}”
 			</blockquote>
 			<p className="mt-1 font-mono text-meta text-ink-4">

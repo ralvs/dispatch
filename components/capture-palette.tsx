@@ -290,7 +290,7 @@ export function CapturePalette() {
 										<p
 											ref={receiptHeadingRef}
 											tabIndex={-1}
-											className={`font-serif text-lg ${
+											className={`type-title text-lg ${
 												state.receipt.tone === "needs_review" ? "text-accent" : "text-ink"
 											}`}
 										>
@@ -342,7 +342,7 @@ export function CapturePalette() {
 											rows={3}
 											placeholder="What's on your mind?"
 											aria-label="Capture text"
-											className="w-full resize-none border-b border-line bg-transparent pb-2 font-serif text-lg text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 placeholder:text-ink-4"
+											className="w-full resize-none border-b border-line bg-transparent pb-2 type-title text-lg text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 placeholder:text-ink-4"
 										/>
 
 										{/* role="status" so an error is announced too — this used to

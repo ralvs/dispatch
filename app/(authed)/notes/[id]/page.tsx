@@ -105,7 +105,7 @@ async function LinkSections({ sb, noteId }: { sb: Sb; noteId: string }) {
 						{backlinks.map((b) => (
 							<li key={b.id} className="hairline">
 								<Link href={`/notes/${b.note_id}`} className="block py-2 hover:bg-surface">
-									<span className="block truncate font-serif text-sm text-ink">
+									<span className="block truncate type-title text-sm text-ink">
 										{displayTitle(b)}
 									</span>
 								</Link>
@@ -134,13 +134,13 @@ async function LinkSections({ sb, noteId }: { sb: Sb; noteId: string }) {
 									{task ? (
 										<Link
 											href={`/tasks?edit=${task.id}`}
-											className="truncate font-serif text-sm text-ink hover:text-accent"
+											className="truncate type-title text-sm text-ink hover:text-accent"
 										>
 											{task.title}
 											{task.status === "done" ? " · done" : ""}
 										</Link>
 									) : (
-										<span className="truncate font-serif text-sm text-ink">
+										<span className="truncate type-title text-sm text-ink">
 											{event?.title} · {event ? formatInstant(event.start_at, tz) : ""}
 										</span>
 									)}

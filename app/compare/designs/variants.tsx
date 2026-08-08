@@ -51,7 +51,7 @@ export function VariantSurface({
 							</span>
 						</div>
 					</div>
-					<p className="display-tight gradient-text-mesh mt-1 w-fit font-serif text-4xl">
+					<p className="display-tight gradient-text-mesh mt-1 w-fit type-title text-4xl">
 						Dispatch
 					</p>
 					<p className="mt-2 font-mono text-meta text-ink-4">
@@ -112,7 +112,7 @@ export function VariantSurface({
 								<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
 									Edit person
 								</p>
-								<p className="mt-1 font-serif text-xl text-ink">Marina Costa</p>
+								<p className="mt-1 type-title text-xl text-ink">Marina Costa</p>
 							</div>
 							<Button variant="ghost" size="sm" isIconOnly aria-label="Close dialog">
 								<Icon icon={X} size="sm" />
@@ -241,14 +241,14 @@ export function VariantSurface({
 					<div className="mt-6 grid gap-5 sm:grid-cols-2">
 						<Card padding="comfortable">
 							<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Default</p>
-							<p className="mt-3 font-serif text-lg text-ink">Room to breathe.</p>
+							<p className="mt-3 type-title text-lg text-ink">Room to breathe.</p>
 							<p className="mt-2 text-sm text-ink-3">
 								rounded-card · elevation-card (white shadow on dark)
 							</p>
 						</Card>
 						<Card padding="compact">
 							<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Compact</p>
-							<p className="mt-3 font-serif text-lg text-ink">Same tokens, less air.</p>
+							<p className="mt-3 type-title text-lg text-ink">Same tokens, less air.</p>
 							<p className="mt-2 text-sm text-ink-3">p-4</p>
 						</Card>
 					</div>

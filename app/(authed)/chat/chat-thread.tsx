@@ -40,7 +40,7 @@ export function ChatThread() {
 									className={
 										message.role === "user"
 											? "text-right font-mono text-sm text-ink-2"
-											: "max-w-prose font-serif text-base text-ink"
+											: "max-w-prose type-title text-base text-ink"
 									}
 								>
 									{part.text}
@@ -74,7 +74,7 @@ export function ChatThread() {
 					value={input}
 					onChange={(e) => setInput(e.target.value)}
 					placeholder="Ask about your tasks, notes, quotes…"
-					className="field-shell h-auto w-full py-1.5 font-serif text-base text-ink placeholder:text-ink-4"
+					className="field-shell h-auto w-full py-1.5 type-title text-base text-ink placeholder:text-ink-4"
 				/>
 				{/* self-stretch so the button tracks the input's height rather than its
 				    own smaller mono line-box — the two sit on one line. */}

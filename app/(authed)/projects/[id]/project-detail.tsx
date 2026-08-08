@@ -52,7 +52,7 @@ export function ProjectDetail({
 		<div className={pending ? "opacity-50" : ""}>
 			<header className="hairline-strong pb-4">
 				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Project</p>
-				<h1 className="mt-1 flex items-center gap-2 font-serif text-3xl text-ink">
+				<h1 className="mt-1 flex items-center gap-2 type-title text-3xl text-ink">
 					<ColorDot color={project.color} />
 					{project.name}
 				</h1>

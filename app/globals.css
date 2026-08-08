@@ -168,10 +168,12 @@
 	--color-priority-high: var(--priority-high);
 	--color-priority-med: var(--priority-med);
 
-	/* One family: Geist. font-serif survives as the "display" slot — Geist
-	 * Sans at 500 with tight tracking (see .font-serif below). Nothing in
-	 * this system is heavier than 500. */
-	--font-serif: var(--font-geist), Arial, ui-sans-serif, sans-serif;
+	/* One family: Geist, and only Geist. There is no serif slot — the linen
+	 * era's display face is gone and `--font-serif` went with it, so
+	 * Tailwind's `font-serif` utility now resolves to its own ui-serif
+	 * default. That is deliberate: an accidental `font-serif` should look
+	 * wrong immediately rather than quietly aliasing back to Geist. What the
+	 * class actually did — 500 and tight tracking — is `.type-title` below. */
 	--font-sans: var(--font-geist), Arial, ui-sans-serif, sans-serif;
 	--font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
@@ -250,9 +252,19 @@ html[data-standalone] .app-shell {
 	outline-offset: 2px;
 }
 
-/* Display type: Geist 500 with the ramp's tight negative tracking. 500 is the
- * ceiling — the system has two weights and this is the heavier one. */
-.font-serif {
+/*
+ * The name a person wrote: a task's title, a note's, a project's, a person's.
+ * Geist 500 with the ramp's tight negative tracking — 500 is the ceiling, the
+ * system has two weights and this is the heavier one.
+ *
+ * It was called `.font-serif` through three visual identities, which stopped
+ * being true at the first one: there has been no serif in this app since the
+ * linen era, and a class named for a family it does not set hid every drift
+ * underneath it. The ramp's own steps (text-t30 and up) carry weight and
+ * tracking themselves — this is for the sizes below them, where a title still
+ * has to separate itself from the meta beside it.
+ */
+.type-title {
 	font-weight: 500;
 	letter-spacing: -0.02em;
 }
