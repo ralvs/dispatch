@@ -28,6 +28,7 @@ Serve them with `bun run` — or the `mocks` entry in `.claude/launch.json`
 | `palette-lab.html` | **The domain palette**, with the measurements that justify it. |
 | `tape-lab.html` | Why the day tape carries no event titles — measured against a real day. |
 | `chrome-header-lab.html` | **Pass 0.** The page header, four ways, over `/projects`, `/notes` and `/inbox`. Theme and width toggle in place. |
+| `tasks-lab.html` | **Pass 1.** `/tasks` whole, three ways, over the one seam Pass 0 left open. Theme and width toggle in place. |
 
 ## The page header (Pass 0)
 
@@ -74,6 +75,42 @@ action in these comps because its create form sits open at the top of the page,
 and **that form becomes a dialog in Pass 2**. When it does, `/projects` gains a
 `+ New project` action in exactly the slot `/notes` already uses. The header
 does not change shape for it — which is the point of it being a slot.
+
+## The Tasks page (Pass 1)
+
+`tasks-lab.html` is the decision surface for the seam ADR-0042 recorded and did
+not close. `PageHeader`'s measure slot carries a page's own reading, and on
+eleven surfaces that reading is informational. On `/tasks` the same phrase
+already exists and **it is the status filter** — `TaskStatusStrip` renders
+`open · overdue · today` with counts, and pressing a count narrows the list.
+
+One correction to the brief that opened this: the measure is **sans 14**, not
+mono; the strip is **mono 12**. They were never the same typeface. What they
+share is the slot and the shape of the phrase, which is enough.
+
+| | Status filter | Measure slot | Active mark |
+|---|---|---|---|
+| **T3 — Segmented control** ← recommended | trough + three cells, mono 12 uppercase, 36px | unused | paper + card lift |
+| T1 — Measure made interactive | in the measure slot, sans 14 | *is* the filter | ink + 2px accent underline |
+| T2 — Filter bar, as it ships | mono 12 text on a bar | unused | ink + 2px accent underline |
+
+**T3 is the recommendation, and the argument is the accent.** In T1 and T2 the
+orange says two things on one line — *you are here* (the active underline) and
+*this is late* (a non-zero overdue count). That is precisely the case the One
+Orange Rule forbids. Marking the active cell with the lift instead frees the
+orange to mean only what it means. DESIGN.md already assigns filters the
+mono-control voice, and the app already builds one exclusive segmented control
+in it (`PriorityPicker`), so T3 is the system's own idiom rather than a new one.
+
+T1's cost shows at 393pt: the header wraps its right cluster to a second row, so
+the order becomes title → status → scope, which is T2's layout with a wider gap.
+Whatever T1 wins, it wins on desktop only.
+
+The page body is **identical in all three** — capture line, groups, rows. Three
+row-level changes are drawn there and are not what is being voted on: the
+priority ring replaces the P1–P4 badge, the 9px domain dot moves into the left
+column beside the mark (holding its slot when a task is unfiled), and the title
+drops to 400 with P1 the one step up — all three converging on Today.
 
 ## A1 vs A2 — one axis
 

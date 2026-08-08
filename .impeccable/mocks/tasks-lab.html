@@ -1,0 +1,1379 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Tasks — the reading that is also the filter</title>
+		<link rel="stylesheet" href="_a.css" />
+		<style>
+			:root {
+				/* Priority is one hue at three intensities, not three hues — the
+				   domain dots already own the wheel. Same values as globals.css. */
+				--p-high: #d92d20;
+				--p-high-halo: rgba(217, 45, 32, 0.16);
+				--p-med: rgba(217, 45, 32, 0.42);
+			}
+			[data-theme="dark"] {
+				--p-high: #ff6a5e;
+				--p-high-halo: rgba(255, 106, 94, 0.2);
+				--p-med: rgba(255, 106, 94, 0.45);
+			}
+
+			/* ── lab chrome ─────────────────────────────────────────────────────
+			 * Not the design. It sits on --ground-2 so every specimen keeps the
+			 * real --ground beneath it, exactly as a page does.
+			 */
+			body {
+				background: var(--ground-2);
+			}
+			.lab {
+				max-width: 1300px;
+				margin: 0 auto;
+				padding: 40px 32px 120px;
+			}
+			.lab-head {
+				max-width: 68ch;
+			}
+			.lab-head h1 {
+				font-size: 36px;
+				font-weight: 500;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+				margin: 0;
+			}
+			.lab-head p {
+				font-size: 16px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 14px 0 0;
+			}
+			.lab-head p b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.lab-head code {
+				font-family: var(--mono);
+				font-size: 14px;
+			}
+
+			.controls {
+				position: sticky;
+				top: 0;
+				z-index: 10;
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				flex-wrap: wrap;
+				margin: 26px 0 8px;
+				padding: 14px 0;
+				background: var(--ground-2);
+			}
+			.controls .grp {
+				display: flex;
+				gap: 2px;
+				padding: 4px;
+				border-radius: var(--r-pill);
+				background: var(--paper);
+				border: 1px solid var(--rule);
+			}
+			.controls button {
+				border: 0;
+				background: transparent;
+				border-radius: var(--r-pill);
+				padding: 6px 14px;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+				cursor: pointer;
+			}
+			.controls button[aria-pressed="true"] {
+				background: var(--ink);
+				color: var(--ground);
+			}
+			.controls .note {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-3);
+			}
+
+			.opt {
+				margin-top: 48px;
+			}
+			.opt > header {
+				max-width: 74ch;
+				margin-bottom: 18px;
+			}
+			.opt > header h2 {
+				font-size: 30px;
+				font-weight: 500;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+				margin: 0;
+			}
+			.opt > header h2 em {
+				font-style: normal;
+				color: var(--ink-4);
+				margin-right: 12px;
+			}
+			.opt > header h2 .rec {
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--accent-ink);
+				margin-left: 14px;
+				vertical-align: 6px;
+			}
+			.opt > header .thesis {
+				font-size: 18px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 10px 0 0;
+			}
+			.opt > header .cost {
+				font-size: 16px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 10px 0 0;
+				padding-left: 14px;
+				border-left: 2px solid var(--rule-2);
+			}
+			.opt > header .cost b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.opt > header .spec {
+				font-family: var(--mono);
+				font-size: 12px;
+				line-height: 1.75;
+				color: var(--ink-3);
+				margin: 14px 0 0;
+			}
+			.opt > header .spec b {
+				font-weight: 400;
+				color: var(--ink-2);
+			}
+
+			/* ── specimen frames ────────────────────────────────────────────────
+			 * Desktop is the real 72rem frame less its 44px gutters; phone is
+			 * 393pt with the 20px gutter and the dock reserved at the foot.
+			 */
+			.specimens {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 18px;
+				align-items: flex-start;
+			}
+			.spec-frame {
+				flex-shrink: 0;
+				background: var(--ground);
+				border: 1px solid var(--rule);
+				border-radius: 18px;
+				overflow: hidden;
+			}
+			.spec-frame > .cap-bar {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				padding: 10px 16px;
+				border-bottom: 1px solid var(--rule);
+				background: var(--ground-2);
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.at-desk {
+				width: 1064px;
+			}
+			.at-desk .surface {
+				padding: 30px 44px 40px;
+			}
+			.at-phone {
+				width: 393px;
+			}
+			.at-phone .surface {
+				padding: 22px 20px 30px;
+			}
+			/* Width is a class here because both widths sit on one page. In the
+			   build every one of these is a max-width rule beside its desktop
+			   peer — one tree, never a fork. */
+			body[data-width="desk"] .at-phone,
+			body[data-width="phone"] .at-desk {
+				display: none;
+			}
+
+			/* shell stubs, so the header is judged in context */
+			.tabstub {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 16px;
+				padding: 0 0 64px;
+			}
+			.tabstub .tabs {
+				padding: 4px;
+			}
+			.tabstub .tab {
+				padding: 6px 14px;
+				font-size: 13px;
+			}
+			.tabstub .brand {
+				font-size: 15px;
+			}
+			.tabstub .brand-mark {
+				width: 22px;
+				height: 22px;
+			}
+			.tabstub .brand-mark::after {
+				inset: 7px 6px;
+				border-left-width: 1.5px;
+				border-bottom-width: 1.5px;
+			}
+			.tabstub .acts {
+				display: flex;
+				gap: 8px;
+			}
+			.tabstub .pill {
+				height: 34px;
+				padding: 0 16px;
+				font-size: 13px;
+			}
+			.dockstub {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 8px;
+				padding: 12px 16px 22px;
+			}
+			.dockstub ul {
+				display: flex;
+				align-items: center;
+				gap: 2px;
+				list-style: none;
+				margin: 0;
+				padding: 6px;
+				background: var(--paper);
+				border: 1px solid var(--rule);
+				border-radius: var(--r-pill);
+				box-shadow: var(--lift);
+			}
+			.dockstub li {
+				padding: 6px 9px;
+				border-radius: var(--r-pill);
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.dockstub li.on {
+				background: var(--accent-soft);
+				color: var(--accent-ink);
+			}
+			.dockstub .cap-btn {
+				display: grid;
+				place-items: center;
+				width: 54px;
+				height: 54px;
+				border-radius: var(--r-pill);
+				background: var(--ink);
+				color: var(--ground);
+				box-shadow: var(--lift);
+			}
+			.dockstub .cap-btn svg {
+				width: 22px;
+				height: 22px;
+			}
+
+			/* ── the page header (ADR-0042, option D) ───────────────────────── */
+			.ph {
+				margin-bottom: 30px;
+			}
+			.ph .top {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 32px;
+			}
+			.ph h1 {
+				margin: 0;
+				font-size: 36px;
+				font-weight: 500;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+				text-wrap: pretty;
+			}
+			.ph .right {
+				display: flex;
+				align-items: baseline;
+				gap: 20px;
+				flex-shrink: 0;
+			}
+			.at-phone .ph {
+				margin-bottom: 26px;
+			}
+			.at-phone .ph h1 {
+				font-size: 30px;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+			}
+			/* At 393pt the title keeps its own line and the right cluster takes
+			   the one below, rather than the measure shrinking. */
+			.at-phone .ph .top {
+				flex-wrap: wrap;
+				gap: 12px;
+			}
+			.at-phone .ph .right {
+				width: 100%;
+				justify-content: flex-start;
+			}
+
+			/* The measure as eleven other pages render it: sans 14, figure 500 at
+			   ink-2, word 400 at ink-3, attention in the one orange. */
+			.measure {
+				display: flex;
+				align-items: baseline;
+				flex-wrap: wrap;
+				gap: 4px 16px;
+				font-size: 14px;
+				color: var(--ink-3);
+			}
+			.measure > span {
+				white-space: nowrap;
+			}
+			.measure b {
+				font-weight: 500;
+				color: var(--ink-2);
+				font-variant-numeric: tabular-nums;
+				margin-right: 5px;
+			}
+			.measure .att,
+			.measure .att b {
+				color: var(--accent);
+			}
+
+			/* ── T1 · the measure, made interactive ─────────────────────────── */
+			.mstrip {
+				display: flex;
+				align-items: baseline;
+				gap: 12px;
+				font-size: 14px;
+			}
+			.mstrip button {
+				border: 0;
+				background: transparent;
+				padding: 2px 1px;
+				font-family: var(--sans);
+				font-size: 14px;
+				color: var(--ink-3);
+				cursor: pointer;
+				border-bottom: 2px solid transparent;
+			}
+			.mstrip button b {
+				font-weight: 500;
+				color: var(--ink-2);
+				font-variant-numeric: tabular-nums;
+				margin-right: 5px;
+			}
+			.mstrip button:hover,
+			.mstrip button:hover b {
+				color: var(--ink);
+			}
+			.mstrip button.on,
+			.mstrip button.on b {
+				color: var(--ink);
+			}
+			.mstrip button.on {
+				border-bottom-color: var(--accent);
+			}
+			.mstrip button.att,
+			.mstrip button.att b {
+				color: var(--accent);
+			}
+			.mstrip .sep {
+				color: var(--ink-4);
+			}
+
+			/* ── the filter bar ─────────────────────────────────────────────── */
+			.fbar {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				flex-wrap: wrap;
+				gap: 12px 24px;
+				margin-bottom: 8px;
+			}
+			.at-phone .fbar {
+				align-items: flex-start;
+			}
+			.at-phone .fbar .scope {
+				width: 100%;
+			}
+
+			/* T2 · the strip as it ships: mono text, accent underline for active */
+			.tstrip {
+				display: flex;
+				align-items: center;
+				gap: 6px;
+				font-family: var(--mono);
+				font-size: 12px;
+				font-variant-numeric: tabular-nums;
+			}
+			.tstrip button {
+				border: 0;
+				background: transparent;
+				padding: 1px 2px;
+				font-family: var(--mono);
+				font-size: 12px;
+				font-variant-numeric: tabular-nums;
+				color: var(--ink-3);
+				cursor: pointer;
+			}
+			.tstrip button:hover {
+				color: var(--ink);
+			}
+			.tstrip button.on {
+				color: var(--ink);
+				text-decoration: underline;
+				text-decoration-color: var(--accent);
+				text-decoration-thickness: 2px;
+				text-underline-offset: 4px;
+			}
+			.tstrip button.att {
+				color: var(--accent);
+			}
+			.tstrip .sep {
+				color: var(--ink-4);
+			}
+
+			/* T3 · a segmented control in the mono-control voice — the voice
+			   DESIGN.md already assigns to filters. Trough + lifted active cell
+			   is the tab group's mechanic at control geometry. */
+			.seg {
+				display: inline-flex;
+				align-items: center;
+				gap: 2px;
+				padding: 3px;
+				background: var(--ground-2);
+				border-radius: var(--r-md);
+			}
+			.seg button {
+				border: 0;
+				background: transparent;
+				height: 30px;
+				padding: 0 11px;
+				border-radius: 9px;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				font-variant-numeric: tabular-nums;
+				color: var(--ink-3);
+				cursor: pointer;
+				white-space: nowrap;
+			}
+			.seg button b {
+				font-weight: 400;
+				margin-right: 5px;
+				color: var(--ink-2);
+			}
+			.seg button:hover {
+				color: var(--ink);
+			}
+			.seg button.on {
+				background: var(--paper);
+				color: var(--ink);
+				box-shadow: 0 1px 2px rgba(41, 37, 36, 0.06), 0 2px 8px rgba(41, 37, 36, 0.05);
+			}
+			.seg button.on b {
+				color: var(--ink);
+			}
+			/* Orange means one thing here and only one: there is something late.
+			   It never marks which cell you are standing in. */
+			.seg button.att,
+			.seg button.att b {
+				color: var(--accent);
+			}
+			[data-theme="dark"] .seg button.on {
+				box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+			}
+
+			/* the two scope narrows — text until you reach for them */
+			.scope {
+				display: flex;
+				align-items: center;
+				gap: 14px;
+			}
+			.sel {
+				display: inline-flex;
+				align-items: center;
+				gap: 4px;
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+				cursor: pointer;
+			}
+			.sel:hover {
+				color: var(--ink);
+			}
+			.sel.set {
+				color: var(--accent-ink);
+			}
+			.sel svg {
+				width: 13px;
+				height: 13px;
+			}
+
+			.inboxlink {
+				display: inline-block;
+				margin-bottom: 4px;
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--accent-ink);
+				text-decoration: none;
+			}
+
+			/* ── the capture line ───────────────────────────────────────────────
+			 * The page's one standing action, and the only place a task is
+			 * written here (ADR-0020). A field is a single bottom rule, never a
+			 * box, so it reads as a line to write on rather than a second pill.
+			 */
+			.cap {
+				display: flex;
+				align-items: center;
+				gap: 16px;
+				margin: 32px 0 0;
+				padding: 8px 0;
+				border-bottom: 1px solid var(--rule-2);
+			}
+			.cap .fld {
+				flex: 1;
+				min-width: 0;
+				font-size: 18px;
+				font-weight: 500;
+				letter-spacing: -0.02em;
+				color: var(--ink-4);
+			}
+			.cap .ret {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+			}
+			.ctl {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				height: 36px;
+				padding: 0 12px;
+				border: 0;
+				border-radius: var(--r-md);
+				background: transparent;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+				cursor: pointer;
+				white-space: nowrap;
+			}
+			.ctl:hover {
+				color: var(--ink);
+			}
+
+			/* ── groups ─────────────────────────────────────────────────────── */
+			.grp-sec {
+				margin-top: 34px;
+			}
+			.shead {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 16px;
+				margin-bottom: 6px;
+			}
+			.shead h2 {
+				margin: 0;
+				font-size: 16px;
+				font-weight: 500;
+				letter-spacing: -0.02em;
+				color: var(--ink);
+			}
+			.shead .aside {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-3);
+				white-space: nowrap;
+			}
+			.grp-sec.done .shead h2 {
+				color: var(--ink-2);
+			}
+			ul.rows {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+
+			/* ── the task row ───────────────────────────────────────────────────
+			 * Not Today's row and not trying to be. Today asks "what is my day"
+			 * and dropped the meta line; this row asks "what is this task" and is
+			 * built around it. What converges is the encoding, not the shape:
+			 * the priority ring, `6d late`, and the 9px domain dot in the same
+			 * left column Today puts it in.
+			 *
+			 *   [ ring ] [ dot ] title ................. [ note ] [ ☆ ]
+			 *                    meta · meta · meta
+			 */
+			.trow {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				min-height: 48px;
+				padding: 11px 0;
+				border-bottom: 1px solid var(--rule);
+			}
+			.trow:last-child {
+				border-bottom: 0;
+			}
+			/* The dot holds its slot when a task is unfiled, so nineteen titles
+			   keep one left edge (DESIGN.md, "The Invisible Slot Rule"). */
+			.trow > .dot {
+				visibility: hidden;
+			}
+			.trow > .dot.set {
+				visibility: visible;
+			}
+			.trow .bd {
+				flex: 1;
+				min-width: 0;
+			}
+			.trow .ttl {
+				margin: 0;
+				font-size: 16px;
+				font-weight: 400;
+				letter-spacing: -0.01em;
+				line-height: 1.35;
+				color: var(--ink);
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+			/* The one weight step in the list, and it is the same step Today
+			   takes: P1 only. If every title were 500 the step would say nothing. */
+			.trow .ttl.p1 {
+				font-weight: 500;
+			}
+			.trow.is-done .ttl {
+				color: var(--ink-4);
+				text-decoration: line-through;
+			}
+			.trow .meta {
+				margin: 2px 0 0;
+				display: flex;
+				align-items: center;
+				flex-wrap: wrap;
+				gap: 0 6px;
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+			}
+			.trow .meta .late {
+				color: var(--accent);
+			}
+			.trow .meta .sep {
+				color: var(--ink-4);
+			}
+			.trow .ctls {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				flex-shrink: 0;
+			}
+			.trow .glyph {
+				display: grid;
+				place-items: center;
+				width: 16px;
+				height: 16px;
+				color: var(--ink-4);
+			}
+			.trow .glyph svg {
+				width: 15px;
+				height: 15px;
+			}
+			.trow .star {
+				color: var(--ink-4);
+			}
+			.trow .star.on {
+				color: var(--accent);
+			}
+			.trow.is-done .star {
+				visibility: hidden;
+			}
+			.chip-mention {
+				display: inline-flex;
+				align-items: center;
+				height: 18px;
+				padding: 0 7px;
+				border-radius: 6px;
+				background: var(--ground-2);
+				font-family: var(--mono);
+				font-size: 11px;
+				color: var(--ink-3);
+			}
+
+			/* priority as a ring on the mark — the signal sits on the thing you
+			   reach for. Shared with Today through components/ui/checkbox.tsx. */
+			.check.p1 {
+				border-color: var(--p-high);
+				border-width: 2px;
+				box-shadow: 0 0 0 3.5px var(--p-high-halo);
+			}
+			.check.p2 {
+				border-color: var(--p-med);
+				border-width: 2px;
+			}
+			.check.p3 {
+				border-color: var(--rule-2);
+			}
+
+			.legend {
+				display: flex;
+				align-items: center;
+				gap: 16px;
+			}
+			.legend span {
+				display: flex;
+				align-items: center;
+				gap: 7px;
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+			}
+			.legend i {
+				width: 13px;
+				height: 13px;
+				border-radius: 5px;
+				display: block;
+				border: 2px solid var(--rule-2);
+				flex-shrink: 0;
+			}
+			.legend i.l1 {
+				border-color: var(--p-high);
+				box-shadow: 0 0 0 3px var(--p-high-halo);
+			}
+			.legend i.l2 {
+				border-color: var(--p-med);
+			}
+
+			/* an empty group says so in words, left-aligned on the row edge */
+			.empty {
+				margin: 0;
+				padding: 32px 0;
+				font-size: 16px;
+				font-style: italic;
+				color: var(--ink-3);
+			}
+			.empty span {
+				display: block;
+				margin-top: 6px;
+				font-size: 14px;
+				font-style: normal;
+				color: var(--ink-4);
+			}
+		</style>
+	</head>
+	<body data-width="desk">
+		<div class="lab">
+			<div class="lab-head">
+				<h1>Tasks — the reading that is also the filter</h1>
+				<p>
+					Pass 0 settled the page header and left <b>one seam open</b>, on this page.
+					<code>PageHeader</code>’s measure slot carries a page’s own reading —
+					<code>14 open&nbsp;&nbsp;3 paused</code> — and on eleven surfaces that reading is
+					informational. On <code>/tasks</code> the same three words already exist and
+					<b>they are the status filter</b>: <code>TaskStatusStrip</code> renders
+					<code>open · overdue · today</code> with counts, and pressing a count narrows the list.
+					The header is delegated to the client component for exactly that reason.
+				</p>
+				<p>
+					So: same idiom, same slot, two different contracts. Three ways out are drawn below over
+					the whole page — capture line, filter bar, groups, rows — at both widths and in both
+					themes. <b>The page body is identical in all three.</b> Only the header and the filter
+					bar move.
+				</p>
+				<p>
+					One correction to the brief that opened this: the measure is <b>sans 14</b>, not mono.
+					The strip is mono 12. They were never the same typeface — what they share is the slot
+					and the shape of the phrase, which is enough for the collision to be real.
+				</p>
+			</div>
+
+			<div class="controls">
+				<div class="grp">
+					<button type="button" data-theme-set="light" aria-pressed="true">Light</button>
+					<button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+				</div>
+				<div class="grp">
+					<button type="button" data-width-set="desk" aria-pressed="true">Desktop</button>
+					<button type="button" data-width-set="phone" aria-pressed="false">393pt</button>
+				</div>
+				<span class="note">19 open · 2 overdue · 2 today · 5 domains · 1 unfiled</span>
+			</div>
+
+			<!-- ══════════════════════════════════════════════════════════════ T1 -->
+			<section class="opt">
+				<header>
+					<h2><em>T1</em>The measure, made interactive</h2>
+					<p class="thesis">
+						The strip takes the measure slot and the header accepts that on this one page the
+						reading is a control. Counts drop the mono and adopt the measure’s own sans-14 —
+						figure at 500, word at 400 — so nothing teaches the reader that “mono means
+						clickable”. Pressing one narrows the list; the active count takes ink and an accent
+						underline. The scope narrows keep a bar of their own below.
+					</p>
+					<p class="cost">
+						<b>What it costs.</b> One filter set, split across the header boundary: status rides
+						the title’s baseline as a header slot, project and domain sit on a bar of their own
+						below it — two owners for two halves of one control that narrow the same list. At
+						393pt this quietly collapses: the header wraps its right cluster onto a second row,
+						so the order becomes title → status → scope, which is <em>exactly</em> T2’s layout
+						with 26px between the two halves instead of 12 — <b>T1 degrades into T2 on a phone,
+						minus the shared bar.</b> And on both widths the underline spends the accent on
+						“you are here” while the overdue count spends it on “this is late”: two things
+						orange for two different reasons, on the same three words.
+					</p>
+					<p class="spec">
+						measure slot <b>interactive</b> · counts sans <b>14 / 500 + 400</b> · active
+						<b>ink + 2px accent underline</b> · scope narrows on their own bar · header measure
+						changes under the scope filters
+					</p>
+				</header>
+				<div class="specimens" data-opt="t1"></div>
+			</section>
+
+			<!-- ══════════════════════════════════════════════════════════════ T2 -->
+			<section class="opt">
+				<header>
+					<h2><em>T2</em>The filter bar, as it ships</h2>
+					<p class="thesis">
+						The measure slot goes unused and the header is the page’s name alone. Everything
+						that filters sits on one bar below it: the status strip exactly as it ships — mono
+						12, an accent underline on the active count, the alarm colour on a non-zero overdue
+						— with the two scope narrows at the far end. The smallest change of the three.
+					</p>
+					<p class="cost">
+						<b>What it costs.</b> The strip still looks like a readout. It is bare text on the
+						page’s quietest register, and nothing about it says press me until the cursor is
+						over it — which is the same complaint that put this on a gate, just moved 40px
+						down. The accent still does double duty: the active underline and the overdue alarm
+						are the same orange on the same line. And a 36px headline with nothing on its
+						baseline is a wide empty line on the app’s second-busiest page.
+					</p>
+					<p class="spec">
+						measure slot <b>empty</b> · strip mono <b>12</b>, unchanged · active
+						<b>ink + 2px accent underline</b> · overdue <b>accent when non-zero</b> · one bar,
+						status left, scope right
+					</p>
+				</header>
+				<div class="specimens" data-opt="t2"></div>
+			</section>
+
+			<!-- ══════════════════════════════════════════════════════════════ T3 -->
+			<section class="opt">
+				<header>
+					<h2>
+						<em>T3</em>The segmented control<span class="rec">recommended</span>
+					</h2>
+					<p class="thesis">
+						The strip stops borrowing the measure’s clothes and becomes what it is. DESIGN.md
+						already names the voice filters speak in — <em>“Control — mono, uppercase, 12px,
+						12px radius, 36px tall… row actions, form buttons, filters”</em> — and the app
+						already builds one segmented control in it: <code>PriorityPicker</code>, four
+						exclusive cells in the task dialog. Status is the same interaction, so it takes the
+						same geometry: a <code>surface-2</code> trough, three cells, the active one lifted
+						onto paper. The measure slot stays unused, and that becomes the rule —
+						<b>where a page’s reading is also its control, the reading goes with the
+						control.</b>
+					</p>
+					<p class="cost">
+						<b>What it buys, and what it costs.</b> Buys: the accent is freed to mean one thing
+						again. The active cell is marked by the lift, so orange on this bar only ever says
+						<em>there is something late</em> — which is the One Orange Rule kept rather than
+						bent. Costs: it is the loudest of the three, a filled object where the page had
+						only text, and it borrows the shell tab group’s mechanic one level down — three
+						views of the docket sitting under five views of the app.
+					</p>
+					<p class="spec">
+						measure slot <b>empty</b> · trough <b>--ground-2</b>, radius <b>12</b>, cells
+						<b>30px</b> · labels mono <b>12 / 0.1em / uppercase</b>, figure leads · active
+						<b>paper + card lift</b>, never accent · overdue <b>accent when non-zero</b>
+					</p>
+				</header>
+				<div class="specimens" data-opt="t3"></div>
+			</section>
+
+			<!-- ═════════════════════════════════════════════════════════ empties -->
+			<section class="opt">
+				<header>
+					<h2><em>·</em>The empties</h2>
+					<p class="thesis">
+						Drawn under T3, because the empty states do not vary with the choice. Left: the
+						docket with nothing on it — the header still reads, the capture line still stands,
+						and the group says so in words on the same left edge its rows would use. Right: the
+						Overdue view with nothing in it, where the filter that is showing has a zero in it
+						and the strip has to survive reading <code>0 OVERDUE</code> while active.
+					</p>
+					<p class="spec">
+						<b>EmptyState</b> · left-aligned · <b>italic, ink-3</b> · upright hint at
+						<b>ink-4</b> · no divider at page level
+					</p>
+				</header>
+				<div class="specimens" data-opt="empty"></div>
+			</section>
+
+			<section class="opt">
+				<header>
+					<h2>What to look for</h2>
+					<p class="spec">
+						1 · <b>Switch to 393pt on T1</b> — it becomes T2 with a wider gap. Whatever T1 wins,
+						it wins on desktop only.<br />
+						2 · <b>The orange, on each option’s filter row</b> — count how many different things
+						it is saying. T1 and T2 say two; T3 says one.<br />
+						3 · <b>T2’s header on desktop</b> — 36px of name with an empty baseline, and whether
+						that reads as calm or as unfinished.<br />
+						4 · <b>The rows, in all three</b> — the ring replaces the P1–P4 badge, the domain dot
+						moves into the left column beside the mark, and the title drops to 400 with P1 the
+						one step up. Identical everywhere; not what is being voted on, but say so now if it
+						is wrong.<br />
+						5 · <b>Dark, on T3</b> — the trough is <code>--ground-2</code> (#2b2725) and the
+						active cell is <code>--paper</code> (#232020), so on dark the selected cell is
+						<em>darker</em> than its trough rather than lighter. That inversion is the tokens
+						working as designed and the shell’s tab group already lives with it, but here it
+						means the shadow is doing most of the marking. Judge whether it still reads.
+					</p>
+				</header>
+			</section>
+		</div>
+
+		<script>
+			/* ── the load ───────────────────────────────────────────────────────
+			 * One realistic docket, rendered identically under all three options.
+			 * 19 open across five domains and one unfiled, two of them late, two
+			 * due today, a Top 3 holding two of its three slots, and the
+			 * "Recently done" band.
+			 */
+			const TOP3 = [
+				{
+					t: "Fechar o relatório do trimestre",
+					dom: "finance",
+					domName: "Finance",
+					proj: "Fechamento Q3",
+					p: 1,
+					late: "6d late",
+					star: true,
+				},
+				{
+					t: "Rever a proposta do bridge de calendário",
+					dom: "code",
+					domName: "Code",
+					proj: "Dispatch",
+					p: 2,
+					due: "due today",
+					star: true,
+					note: true,
+				},
+			];
+
+			const OPEN = [
+				{
+					t: "Renovar o seguro do carro",
+					dom: "finance",
+					domName: "Finance",
+					p: 1,
+					late: "2d late",
+				},
+				{
+					t: "Escrever o ADR do header da página",
+					dom: "engine",
+					domName: "Engine",
+					proj: "Dispatch",
+					p: 2,
+					due: "due in 1d",
+				},
+				{
+					t: "Responder ao e-mail do contador",
+					dom: "finance",
+					domName: "Finance",
+					p: 2,
+					due: "due today",
+				},
+				{
+					t: "Review PR #482 — listas otimistas de tarefas",
+					dom: "code",
+					domName: "Code",
+					proj: "Dispatch",
+					p: 2,
+					mention: "Ana",
+				},
+				{
+					t: "Testar o dock em 393pt",
+					dom: "engine",
+					domName: "Engine",
+					proj: "Dispatch",
+					p: 2,
+				},
+				{
+					t: "Escrever o resumo da retro",
+					dom: "engine",
+					domName: "Engine",
+					proj: "Dispatch",
+					p: 3,
+					due: "due in 3d",
+					note: true,
+				},
+				{
+					t: "Pagar o condomínio",
+					dom: "finance",
+					domName: "Finance",
+					p: 3,
+					due: "due in 4d",
+					rec: "Monthly",
+				},
+				{
+					t: "Ligar para a Ana sobre o fim de semana",
+					dom: "family",
+					domName: "Family",
+					p: 3,
+					due: "due in 2d",
+				},
+				{
+					t: "Migrar o parser de captura pro serviço novo",
+					dom: "code",
+					domName: "Code",
+					proj: "Dispatch",
+					p: 3,
+					note: true,
+				},
+				{
+					t: "Comprar presente de aniversário da mãe",
+					dom: "family",
+					domName: "Family",
+					p: 3,
+					due: "due in 5d",
+				},
+				{
+					t: "Confirmar o hotel de outubro",
+					dom: "family",
+					domName: "Family",
+					p: 3,
+					due: "due in 9d",
+					mention: "Ana",
+				},
+				{
+					t: "Refatorar applyTaskLists",
+					dom: "code",
+					domName: "Code",
+					proj: "Dispatch",
+					p: 3,
+				},
+				{ t: "Agendar o check-up anual", dom: "health", domName: "Health", p: 4 },
+				{
+					t: "Ler o capítulo 4 de Sabbath",
+					dom: "spirit",
+					domName: "Spirit",
+					p: 4,
+					rec: "Daily",
+				},
+				{ t: "Organizar as fotos de julho", dom: "family", domName: "Family", p: 4 },
+				{
+					t: "Limpar as regras do Biome que ninguém usa",
+					dom: "code",
+					domName: "Code",
+					p: 4,
+				},
+				/* unfiled — the dot holds its slot rather than shifting the title */
+				{ t: "Atualizar o currículo", p: 4 },
+			];
+
+			const DONE = [
+				{
+					t: "Deploy da revisão A na Vercel",
+					dom: "engine",
+					domName: "Engine",
+					proj: "Dispatch",
+					p: 2,
+					at: "14:32",
+				},
+				{
+					t: "Revisar o palette-lab e re-medir os nove",
+					dom: "code",
+					domName: "Code",
+					proj: "Dispatch",
+					p: 3,
+					at: "11:08",
+				},
+				{ t: "Comprar café", dom: "family", domName: "Family", p: 4, at: "09:04" },
+			];
+
+			const COUNTS = { open: 19, overdue: 2, today: 2 };
+
+			const esc = (s) =>
+				String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+
+			const ICON = {
+				note: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h8M8 17h5"/></svg>`,
+				star: `<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z"/></svg>`,
+				chevron: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`,
+				plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg>`,
+			};
+
+			/* The meta line: what this task is, in words. The dot is not repeated
+			   here — it is in the row's left column, and the name beneath it is
+			   what pairs the colour with a word. */
+			function metaHtml(task) {
+				const bits = [];
+				bits.push(esc(task.domName ?? "—"));
+				if (task.proj) bits.push(esc(task.proj));
+				if (task.late) bits.push(`<span class="late">${esc(task.late)}</span>`);
+				else if (task.due) bits.push(esc(task.due));
+				if (task.rec) bits.push(`↻ ${esc(task.rec)}`);
+				if (task.at) bits.push(esc(task.at));
+				const line = bits.join(`<span class="sep">·</span>`);
+				const chip = task.mention
+					? `<span class="chip-mention">@${esc(task.mention)}</span>`
+					: "";
+				return `<p class="meta">${line}${chip}</p>`;
+			}
+
+			function rowHtml(task, opts = {}) {
+				const done = Boolean(opts.done);
+				const ring = done ? "" : ` p${Math.min(task.p, 3)}`;
+				const dot = task.dom
+					? `<span class="dot set" style="background: var(--${task.dom})"></span>`
+					: `<span class="dot"></span>`;
+				const note = task.note ? `<span class="glyph">${ICON.note}</span>` : "";
+				const star = `<span class="glyph star${task.star ? " on" : ""}">${ICON.star}</span>`;
+				return `<li class="trow${done ? " is-done" : ""}">
+					<span class="check${done ? " on" : ring}"></span>
+					${dot}
+					<div class="bd">
+						<p class="ttl${task.p === 1 && !done ? " p1" : ""}">${esc(task.t)}</p>
+						${metaHtml(task)}
+					</div>
+					<div class="ctls">${note}${star}</div>
+				</li>`;
+			}
+
+			function sheadHtml(title, aside, cls = "") {
+				return `<div class="shead${cls}"><h2>${esc(title)}</h2>${
+					aside ? `<div class="aside">${aside}</div>` : ""
+				}</div>`;
+			}
+
+			const LEGEND = `<div class="legend"><span><i class="l1"></i>high</span><span><i class="l2"></i>med</span><span><i></i>low</span></div>`;
+
+			function captureHtml() {
+				return `<form class="cap">
+					<span class="fld">Add a task — “pay rent every monday 9am”</span>
+					<span class="ret">↵</span>
+					<button type="button" class="ctl">Details</button>
+				</form>`;
+			}
+
+			function bodyHtml(mode) {
+				if (mode === "empty-all") {
+					return `${captureHtml()}
+						<section class="grp-sec">
+							${sheadHtml("Open")}
+							<p class="empty">Nothing on the docket.<span>Capture something on the line above.</span></p>
+						</section>`;
+				}
+				if (mode === "empty-overdue") {
+					return `${captureHtml()}
+						<section class="grp-sec">
+							${sheadHtml("Overdue")}
+							<p class="empty">Nothing overdue.<span>Everything with a date on it still has time.</span></p>
+						</section>`;
+				}
+				return `${captureHtml()}
+					<section class="grp-sec">
+						${sheadHtml("Top 3 today", "1 slot open")}
+						<ul class="rows">${TOP3.map((t) => rowHtml(t)).join("")}</ul>
+					</section>
+					<section class="grp-sec">
+						${sheadHtml("Open", LEGEND)}
+						<ul class="rows">${OPEN.map((t) => rowHtml(t)).join("")}</ul>
+					</section>
+					<section class="grp-sec done">
+						${sheadHtml("Recently done")}
+						<ul class="rows">${DONE.map((t) => rowHtml(t, { done: true })).join("")}</ul>
+					</section>`;
+			}
+
+			/* ── the three chromes ─────────────────────────────────────────────
+			 * `active` is which status is showing, so the empties can put a zero
+			 * under the cell that is standing selected.
+			 */
+			function selHtml(label, set) {
+				return `<span class="sel${set ? " set" : ""}">${esc(label)}${ICON.chevron}</span>`;
+			}
+
+			function scopeHtml() {
+				return `<div class="scope">${selHtml("All projects")}${selHtml("All domains")}</div>`;
+			}
+
+			function inboxHtml() {
+				return `<a class="inboxlink" href="#">1 in the inbox →</a>`;
+			}
+
+			function chrome(opt, active = "open") {
+				const c = COUNTS;
+				const cells = [
+					{ k: "open", n: c.open, w: "open" },
+					{ k: "overdue", n: c.overdue, w: "overdue" },
+					{ k: "today", n: c.today, w: "today" },
+				];
+
+				if (opt === "t1") {
+					const strip = cells
+						.map((x, i) => {
+							const on = x.k === active;
+							const att = x.k === "overdue" && x.n > 0 && !on;
+							return `${i > 0 ? '<span class="sep">·</span>' : ""}<button type="button" class="${
+								on ? "on" : att ? "att" : ""
+							}"><b>${x.n}</b>${x.w}</button>`;
+						})
+						.join("");
+					return `<div class="ph">
+							<div class="top">
+								<h1>Tasks</h1>
+								<div class="right"><div class="mstrip">${strip}</div></div>
+							</div>
+						</div>
+						<div class="fbar">${scopeHtml()}</div>
+						${inboxHtml()}`;
+				}
+
+				if (opt === "t2") {
+					const strip = cells
+						.map((x, i) => {
+							const on = x.k === active;
+							const att = x.k === "overdue" && x.n > 0 && !on;
+							return `${i > 0 ? '<span class="sep">·</span>' : ""}<button type="button" class="${
+								on ? "on" : att ? "att" : ""
+							}">${x.n} ${x.w}</button>`;
+						})
+						.join("");
+					return `<div class="ph"><div class="top"><h1>Tasks</h1></div></div>
+						<div class="fbar"><div class="tstrip">${strip}</div>${scopeHtml()}</div>
+						${inboxHtml()}`;
+				}
+
+				const seg = cells
+					.map((x) => {
+						const on = x.k === active;
+						const att = x.k === "overdue" && x.n > 0 && !on;
+						return `<button type="button" class="${on ? "on" : att ? "att" : ""}"><b>${
+							x.n
+						}</b>${x.w}</button>`;
+					})
+					.join("");
+				return `<div class="ph"><div class="top"><h1>Tasks</h1></div></div>
+					<div class="fbar"><div class="seg">${seg}</div>${scopeHtml()}</div>
+					${inboxHtml()}`;
+			}
+
+			const TABS = ["Today", "Tasks", "Notes", "Links", "More"];
+
+			function tabstub() {
+				const tabs = TABS.map((t) => `<div class="tab${t === "Tasks" ? " on" : ""}">${t}</div>`).join(
+					"",
+				);
+				return `<div class="tabstub">
+					<div class="brand"><span class="brand-mark"></span>Dispatch</div>
+					<div class="tabs">${tabs}</div>
+					<div class="acts"><button type="button" class="pill pill-ghost">Ask</button><button type="button" class="pill">Capture</button></div>
+				</div>`;
+			}
+
+			function dockstub() {
+				const tabs = TABS.map((t) => `<li${t === "Tasks" ? ' class="on"' : ""}>${t}</li>`).join("");
+				return `<div class="dockstub"><ul>${tabs}</ul><div class="cap-btn">${ICON.plus}</div></div>`;
+			}
+
+			function frame({ opt, width, label, mode = "full", active = "open" }) {
+				const isDesk = width === "desk";
+				const el = document.createElement("div");
+				el.className = `spec-frame at-${isDesk ? "desk" : "phone"}`;
+				el.innerHTML = `
+					<div class="cap-bar"><span>${esc(label)}</span><span>${isDesk ? "1064px" : "393pt"}</span></div>
+					<div class="surface">
+						${isDesk ? tabstub() : ""}
+						${chrome(opt, active)}
+						${bodyHtml(mode)}
+					</div>
+					${isDesk ? "" : dockstub()}
+				`;
+				return el;
+			}
+
+			for (const rail of document.querySelectorAll(".specimens")) {
+				const opt = rail.dataset.opt;
+				if (opt === "empty") {
+					rail.append(frame({ opt: "t3", width: "desk", label: "/tasks — nothing open", mode: "empty-all" }));
+					rail.append(
+						frame({
+							opt: "t3",
+							width: "desk",
+							label: "/tasks?status=overdue — nothing late",
+							mode: "empty-overdue",
+							active: "overdue",
+						}),
+					);
+					rail.append(frame({ opt: "t3", width: "phone", label: "/tasks — nothing open", mode: "empty-all" }));
+					rail.append(
+						frame({
+							opt: "t3",
+							width: "phone",
+							label: "/tasks?status=overdue",
+							mode: "empty-overdue",
+							active: "overdue",
+						}),
+					);
+					continue;
+				}
+				rail.append(frame({ opt, width: "desk", label: "/tasks" }));
+				rail.append(frame({ opt, width: "phone", label: "/tasks" }));
+				rail.append(
+					frame({ opt, width: "desk", label: "/tasks?status=overdue", mode: "full", active: "overdue" }),
+				);
+			}
+
+			function press(buttons, attr, value) {
+				for (const b of buttons) b.setAttribute("aria-pressed", String(b.dataset[attr] === value));
+			}
+
+			const themeBtns = document.querySelectorAll("[data-theme-set]");
+			for (const b of themeBtns) {
+				b.addEventListener("click", () => {
+					const v = b.dataset.themeSet;
+					document.documentElement.setAttribute("data-theme", v);
+					press(themeBtns, "themeSet", v);
+				});
+			}
+
+			const widthBtns = document.querySelectorAll("[data-width-set]");
+			for (const b of widthBtns) {
+				b.addEventListener("click", () => {
+					const v = b.dataset.widthSet;
+					document.body.setAttribute("data-width", v);
+					press(widthBtns, "widthSet", v);
+				});
+			}
+		</script>
+	</body>
+</html>
