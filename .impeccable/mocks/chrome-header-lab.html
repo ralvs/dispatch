@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Page header — three options</title>
+		<title>Page header — the options</title>
 		<link rel="stylesheet" href="_a.css" />
 		<style>
 			/* ── lab chrome ─────────────────────────────────────────────────────
@@ -357,6 +357,60 @@
 				color: var(--ink-2);
 			}
 
+			/* ── D · Headline, measured — THE PICK ───────────────────────────────
+			 * A's room and B's right-hand reading, without B's hairline. The 64px
+			 * the shell already puts above the header is the separation; a rule
+			 * under it was the one piece of the legacy silhouette that survived
+			 * into B, and it does not survive into the build.
+			 */
+			.ph-d {
+				margin-bottom: 30px;
+			}
+			.ph-d .top {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 32px;
+			}
+			.ph-d h1 {
+				margin: 0;
+				font-size: 36px;
+				font-weight: 500;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+				text-wrap: pretty;
+			}
+			.ph-d .right {
+				display: flex;
+				align-items: baseline;
+				gap: 20px;
+				flex-shrink: 0;
+			}
+			/* baseline alignment drops a 36px-tall control below the text line;
+			   centre it and nudge, so its cap-height rides the h1's baseline. */
+			.ph-d .right .ctl {
+				align-self: center;
+				transform: translateY(3px);
+			}
+			.at-phone .ph-d {
+				margin-bottom: 26px;
+			}
+			.at-phone .ph-d h1 {
+				font-size: 30px;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+			}
+			/* At 393pt the title and the reading cannot share a line, so the right
+			   cluster takes its own row rather than shrinking the measure. */
+			.at-phone .ph-d .top {
+				flex-wrap: wrap;
+				gap: 12px;
+			}
+			.at-phone .ph-d .right {
+				width: 100%;
+				justify-content: space-between;
+			}
+
 			/* ── A · Headline ───────────────────────────────────────────────── */
 			.ph-a {
 				margin-bottom: 30px;
@@ -593,8 +647,13 @@
 					is a coarse locator and the page header is the fine one; the header is not redundant on
 					desktop, and the desktop/phone asymmetry the brief anticipated does not exist. What is
 					genuinely open is only <b>how much room the page name gets</b>, and that is the single
-					axis these three options move along — loud, balanced, silent. Every option carries the
-					same four slots: <b>title · measure · subtitle · action</b>.
+					axis these options move along — loud, balanced, silent. Every option carries the same
+					four slots: <b>title · measure · subtitle · action</b>.
+				</p>
+				<p>
+					<b>D is the pick, and it is what Phase 1 builds.</b> A, B and C are the three the axis
+					was drawn with and are kept below as the record; D is A’s 36px headline with B’s measure
+					moved onto its baseline and B’s hairline dropped.
 				</p>
 				<p>
 					Two decisions are the same in all three, so they are not being voted on here — say so if
@@ -616,8 +675,28 @@
 					<button type="button" data-width-set="desk" aria-pressed="true">Desktop</button>
 					<button type="button" data-width-set="phone" aria-pressed="false">Phone</button>
 				</div>
-				<span class="note">3 options · /projects · /notes · /inbox</span>
+				<span class="note">D is the pick · /projects · /notes · /inbox</span>
 			</div>
+
+			<!-- ══════════════════════════════════════════════════════════════ D -->
+			<section class="opt">
+				<header>
+					<h2><em>D</em>Headline, measured — the pick</h2>
+					<p class="thesis">
+						A’s room with B’s reading, and no rule. The <code>h1</code> keeps 36px — one ramp step
+						below Today’s hero, so a list page can never out-shout the day — and the measure moves
+						up onto its baseline on the right, in Today’s own counters idiom. The hairline goes:
+						the 64px the shell already puts above the header is the separation, and a rule under it
+						was the last piece of the legacy silhouette still standing.
+					</p>
+					<p class="spec">
+						h1 <b>36 / 500 / −0.9px</b>, phone <b>30 / 500 / −0.75px</b> · measure + action on the
+						baseline, taking their own row at 393pt · <b>no divider</b> · <b>30px</b> to first
+						content
+					</p>
+				</header>
+				<div class="specimens" data-opt="d"></div>
+			</section>
 
 			<!-- ══════════════════════════════════════════════════════════════ A -->
 			<section class="opt">
@@ -850,6 +929,15 @@
 			}
 
 			function header(opt, p) {
+				if (opt === "d") {
+					return `<div class="ph-d">
+						<div class="top">
+							<h1>${esc(p.title)}</h1>
+							<div class="right">${measureHtml(p.measure)}${actionHtml(p.action)}</div>
+						</div>
+						${subHtml(p.sub)}
+					</div>`;
+				}
 				if (opt === "a") {
 					return `<div class="ph-a">
 						<div class="top"><h1>${esc(p.title)}</h1>${actionHtml(p.action)}</div>
@@ -911,6 +999,11 @@
 				return el;
 			}
 
+			/* /projects has no trailing action today because its create form sits
+			   open at the top of the page. That form becomes a dialog in Pass 2,
+			   at which point /projects gains a "+ New project" action in exactly
+			   the slot /notes already uses — the header does not change shape for
+			   it, which is the point of the slot. */
 			for (const rail of document.querySelectorAll(".specimens")) {
 				const opt = rail.dataset.opt;
 				for (const p of PAGES) {

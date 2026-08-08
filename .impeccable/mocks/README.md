@@ -27,7 +27,7 @@ Serve them with `bun run` — or the `mocks` entry in `.claude/launch.json`
 | `today-a1-rail-quiet.html` | Alternate, empty states. |
 | `palette-lab.html` | **The domain palette**, with the measurements that justify it. |
 | `tape-lab.html` | Why the day tape carries no event titles — measured against a real day. |
-| `chrome-header-lab.html` | **Pass 0.** The page header, three ways, over `/projects`, `/notes` and `/inbox`. Theme and width toggle in place. |
+| `chrome-header-lab.html` | **Pass 0.** The page header, four ways, over `/projects`, `/notes` and `/inbox`. Theme and width toggle in place. |
 
 ## The page header (Pass 0)
 
@@ -45,9 +45,17 @@ name gets**, and the three options move along that one axis.
 
 | | Title | Measure | Divider |
 |---|---|---|---|
-| **A — Headline** | 36px sans, 30px on phone | quiet line beneath | none |
-| **B — Measured** | 30px sans, unchanged on phone | on the title's baseline, Today's counters idiom | 1px `--line` |
-| **C — Label bar** | mono 12 uppercase, the whole header is one bar | inline, mono 12 | 1px `--line` |
+| **D — Headline, measured** ← chosen | 36px sans, 30px on phone | on the title's baseline, Today's counters idiom | none |
+| A — Headline | 36px sans, 30px on phone | quiet line beneath | none |
+| B — Measured | 30px sans, unchanged on phone | on the title's baseline | 1px `--line` |
+| C — Label bar | mono 12 uppercase, the whole header is one bar | inline, mono 12 | 1px `--line` |
+
+**D is the build.** A, B and C are the three the axis was drawn with and stay
+as the record; D is A's 36px headline with B's measure moved onto its baseline
+and B's hairline dropped — the 64px the shell already puts above the header is
+the separation, and the rule was the last piece of the legacy silhouette still
+standing. At 393pt the title keeps its own line and the measure and action take
+the one below.
 
 All three carry the same four slots — **title · measure · subtitle · action** —
 and two decisions are constant across them, so neither is being voted on: the
@@ -60,6 +68,12 @@ composition minus `font-serif` — because passes 2–4 are what redesign them.
 That is deliberate: it is what exposes C's collision, where the page title
 `PROJECTS` and the group label `ACTIVE` are the same 12px mono a few pixels
 apart, separated only by `ink` against `ink-4`.
+
+One consequence is recorded here rather than built: `/projects` has no trailing
+action in these comps because its create form sits open at the top of the page,
+and **that form becomes a dialog in Pass 2**. When it does, `/projects` gains a
+`+ New project` action in exactly the slot `/notes` already uses. The header
+does not change shape for it — which is the point of it being a slot.
 
 ## A1 vs A2 — one axis
 
