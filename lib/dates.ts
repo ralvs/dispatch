@@ -160,3 +160,29 @@ export function formatDueLabel(dueDateIso: string, todayIso: string): string {
 	if (days < 0) return `overdue ${-days}d`;
 	return `due in ${days}d`;
 }
+
+/**
+ * How late something is, as the comps' `6d late`. Null when the date has not
+ * passed, so a caller can render it or not from one expression.
+ *
+ * The app said this two ways until Pass 1. Today rendered `6d late` from a
+ * private helper in day-row.tsx; the Tasks row prepended the word "Overdue " to
+ * `formatDueLabel`, which independently returned `overdue 1d` for the same
+ * task — so an overdue row on /tasks read `Overdue overdue 1d`. Converging on
+ * Today's wording fixes the duplication and the divergence together, and the
+ * label lives here because every other date string in the app does (iron
+ * rule #1).
+ *
+ * The caller still owns the *question* of whether the task is late — that is
+ * `isOverdue`, which also knows a done task is never overdue. This only
+ * formats the gap.
+ */
+export function formatLateLabel(dueDateIso: string, todayIso: string): string | null {
+	const days = Math.round(
+		DateTime.fromISO(todayIso, { zone: "utc" }).diff(
+			DateTime.fromISO(dueDateIso, { zone: "utc" }),
+			"days",
+		).days,
+	);
+	return days > 0 ? `${days}d late` : null;
+}

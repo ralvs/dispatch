@@ -3,7 +3,7 @@
 import { RotateCcw } from "lucide-react";
 import { useId, useState } from "react";
 import { MentionTextarea, MentionTextInput } from "@/components/mention-input";
-import { Badge, Field, fieldControl, Icon, Input, Select } from "@/components/ui";
+import { Field, fieldControl, Icon, Input, Select } from "@/components/ui";
 import { shiftDay } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
@@ -67,40 +67,16 @@ const PRIORITY_CELL: Record<number, string> = {
 	4: "peer-checked:text-ink-2",
 };
 
-const PRIORITY_TONE: Record<number, "error" | "warning" | "accent" | "muted"> = {
-	1: "error",
-	2: "warning",
-	3: "accent",
-	4: "muted",
-};
-
-const PRIORITY_META: Record<number, { label: string; title: string }> = {
-	1: { label: "P1", title: "Critical" },
-	2: { label: "P2", title: "High" },
-	3: { label: "P3", title: "Normal" },
-	4: { label: "P4", title: "Someday" },
-};
-
-function priorityMeta(priority: number) {
-	return PRIORITY_META[priority] ?? PRIORITY_META[4];
-}
-
-/** Compact P-badge for task rows (tasks list + today). */
-export function PriorityBadge({
-	priority,
-	className = "",
-}: {
-	priority: number;
-	className?: string;
-}) {
-	const meta = priorityMeta(priority);
-	const tone = PRIORITY_TONE[priority] ?? PRIORITY_TONE[4];
-	return (
-		<Badge tone={tone} title={meta.title} className={`tabular-nums ${className}`}>
-			{meta.label}
-		</Badge>
-	);
-}
+/*
+ * `PriorityBadge` used to live here — a P1–P4 chip in one of four tones, drawn
+ * at the head of a task row's meta line. Pass 1 moved priority onto the
+ * checkbox as a ring, which put the signal on the thing you actually reach for
+ * and let one encoding serve both Today and Tasks. That left the badge with no
+ * call sites, so it is gone rather than kept warm.
+ *
+ * The four tones are not lost: `PriorityPicker` below still colours the chosen
+ * cell, which is the one place a priority is stated rather than read.
+ */
 
 export type TaskFieldDefaults = {
 	title?: string;

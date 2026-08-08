@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
-import { formatDueLabel } from "@/lib/dates";
+import { formatDueLabel, formatLateLabel } from "@/lib/dates";
 import { colorSlugVar, isColorSlug } from "@/lib/schemas/color";
 import type { TaskRow } from "@/lib/services/tasks";
 import type { DayScheduleItem } from "@/lib/services/today";
@@ -32,13 +32,17 @@ import { createMeetingNoteForEventAction } from "./actions";
  * same 19px column — that glyph is what says "this is not yours to tick".
  */
 
-/** Days late, as the comps' `6d late`. Null when the task is not overdue. */
+/**
+ * Days late, as the comps' `6d late`. Null when the task is not overdue.
+ *
+ * The formatting moved to lib/dates.ts in Pass 1 so the Tasks row could stop
+ * saying the same thing in different words. This wrapper stays because the
+ * predicate and the format are two questions: `isOverdue` also knows that a
+ * done task is never late.
+ */
 function lateLabel(task: TaskRow, todayIso: string): string | null {
 	if (!task.due_date || !isOverdue(task, todayIso)) return null;
-	const days = Math.round(
-		(Date.parse(`${todayIso}T00:00:00Z`) - Date.parse(`${task.due_date}T00:00:00Z`)) / 86_400_000,
-	);
-	return days > 0 ? `${days}d late` : null;
+	return formatLateLabel(task.due_date, todayIso);
 }
 
 function DomainDot({ color }: { color: string }) {

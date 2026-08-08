@@ -3,18 +3,18 @@
 import { FileText, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ColorDot } from "@/components/color-dot";
 import { MentionChip } from "@/components/mention-chip";
 import { Checkbox } from "@/components/ui";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
-import { formatDay, formatDueLabel, formatInstant } from "@/lib/dates";
+import { formatDay, formatDueLabel, formatInstant, formatLateLabel } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_GLYPH, recurrenceLabel } from "@/lib/recurrence";
+import { colorSlugVar, isColorSlug } from "@/lib/schemas/color";
 import type { TaskRow } from "@/lib/services/tasks";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
 import { TaskDialog } from "./task-dialog";
-import { PriorityBadge, type TaskDomainOption } from "./task-fields";
+import type { TaskDomainOption } from "./task-fields";
 import { TaskNotePopover } from "./task-note-popover";
 
 export type { TaskDomainOption };
@@ -27,6 +27,53 @@ export type TaskRowHandlers = {
 };
 
 /**
+ * The domain's colour, in the same left column Today puts it in.
+ *
+ * It holds its slot when a task is unfiled rather than collapsing, because this
+ * list runs to twenty rows and a dot that comes and goes gives every unfiled
+ * title a different left edge (DESIGN.md, "The Invisible Slot Rule"). Today's
+ * lists are short enough not to need that; this one is not.
+ *
+ * The colour resolves from the stored slug through `var(--domain-<slug>)` and
+ * never from a stored hex — a hex cannot theme-switch (DESIGN.md, "The Stored
+ * Slug Rule"). The name still rides the meta line beneath, which is what pairs
+ * the colour with a word: nine domains are not decodable by hue alone.
+ */
+function DomainDot({ slug }: { slug: string | null | undefined }) {
+	return (
+		<span
+			aria-hidden="true"
+			className={`inline-block size-[9px] shrink-0 rounded-full ${
+				isColorSlug(slug) ? "" : "invisible"
+			}`}
+			style={isColorSlug(slug) ? { background: colorSlugVar(slug) } : undefined}
+		/>
+	);
+}
+
+/**
+ * The Tasks page's row, and deliberately not Today's.
+ *
+ * The two forked on presentation and converge on behaviour — `bindTaskHandlers`,
+ * the intent runner, the same server actions — because they answer different
+ * questions: Today asks "what is my day" and dropped the meta line, and the
+ * meta line is what this row is built around. `TaskDayRow` imports exactly one
+ * thing from this file, the handlers type, and that seam is the point.
+ *
+ * What must not fork is the *encoding*, since a visual language cannot mean two
+ * things in one app. Three things converged in Pass 1:
+ *
+ *  - **Priority is the ring on the checkbox**, not the P1–P4 text badge this row
+ *    used to lead its meta line with. The signal belongs on the thing you reach
+ *    for, and `components/ui/checkbox.tsx` already drew it for Today. The badge
+ *    had no other call site and is gone.
+ *  - **Overdue is `6d late`**, in the accent, from `formatLateLabel`. This row
+ *    used to render `Overdue overdue 1d` — the word prepended here, the phrase
+ *    from `formatDueLabel` — which was a bug and a divergence at once.
+ *  - **The title is 400**, with P1 the one step to 500. It was 500 throughout,
+ *    which spent the only weight step in the system on every row equally and so
+ *    said nothing (DESIGN.md, "The Two Weights Rule").
+ *
  * Passing `timeLabel` places the row inside one of Today's schedule bands: it
  * gains a clock column (null renders the all-day dash) and drops the due-date
  * meta, since its position on the day already says when it is due.
@@ -77,6 +124,10 @@ export function TaskRowItem({
 	const rowRef = useRef<HTMLLIElement>(null);
 	const done = task.status === "done";
 	const overdue = isOverdue(task, todayIso);
+	// `isOverdue` owns the question (and knows a done task is never late);
+	// `formatLateLabel` only formats the gap. Null on a same-day due date, which
+	// is why the due branch below still has to fall through to formatDueLabel.
+	const late = overdue && task.due_date ? formatLateLabel(task.due_date, todayIso) : null;
 	const starTarget = starDateIso ?? todayIso;
 	const starred = isTop3Today(task, starTarget);
 	// The star acts on whichever day the surface is showing, so the label has to
@@ -101,12 +152,21 @@ export function TaskRowItem({
 		handlers.onDelete();
 	}
 
-	const titleClass = `relative block max-w-full text-left type-title text-base after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] active:opacity-70 ${
+	// Body size at 400 is what DESIGN.md gives every row title; P1 takes the one
+	// step up, which is the same step Today's row takes and the only reason the
+	// step still carries information.
+	const titleClass = `relative block max-w-full text-left text-base leading-[1.35] tracking-[-0.01em] after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] active:opacity-70 ${
 		done ? "text-ink-4 line-through" : "text-ink"
-	} ${canEdit || !manageable ? "hover:text-accent-ink" : ""}`;
+	} ${task.priority === 1 && !done ? "font-medium" : ""} ${
+		canEdit || !manageable ? "hover:text-accent-ink" : ""
+	}`;
 
 	return (
-		<li ref={rowRef} className="hairline flex items-center gap-3 py-3" data-task-id={task.id}>
+		<li
+			ref={rowRef}
+			className="hairline flex min-h-12 items-center gap-3 py-3"
+			data-task-id={task.id}
+		>
 			{canEdit && (
 				<TaskDialog
 					open={editing}
@@ -135,10 +195,12 @@ export function TaskRowItem({
 			)}
 			<Checkbox
 				checked={done}
+				priority={task.priority}
 				aria-label={done ? `Reopen "${task.title}"` : `Complete "${task.title}"`}
 				onChange={handlers.onToggleDone}
 				className="shrink-0"
 			/>
+			<DomainDot slug={task.domain?.color} />
 			<div className="min-w-0 flex-1">
 				<p className="flex min-w-0 items-baseline gap-1.5">
 					{/* The hit-target expansion lives on the control itself (button/link),
@@ -168,21 +230,22 @@ export function TaskRowItem({
 						)}
 					</span>
 				</p>
+				{/* The row's description of itself, in words. The domain's dot is
+				    not repeated here — it leads the row in the left column, and
+				    this is the name that pairs the colour with a word. */}
 				<p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-meta text-ink-4">
-					<PriorityBadge priority={task.priority} className={done ? "opacity-50" : undefined} />
 					<span>
-						<span className="inline-flex items-center gap-1">
-							<ColorDot color={task.domain?.color} />
-							{task.domain?.name ?? "—"}
-						</span>
+						{task.domain?.name ?? "—"}
 						{task.project?.name ? ` · ${task.project.name}` : ""}
 						{!scheduled && task.due_date && (
 							<span className={overdue ? "text-accent-slip" : ""}>
 								{" · "}
-								{/* Overdue is never color-only — a text label carries the
-								    signal the same way PriorityBadge pairs color with P1–P4. */}
-								{overdue && "Overdue "}
-								{formatDueLabel(task.due_date, todayIso)}
+								{/* Late is never colour-only — the word carries the signal
+								    alongside the orange, and it is the same word Today
+								    uses. `late` is null on a date that has not passed, and
+								    on the same-day edge, so the due phrase is the fallback
+								    rather than the exception. */}
+								{late ?? formatDueLabel(task.due_date, todayIso)}
 								{task.due_time ? ` ${task.due_time.slice(0, 5)}` : ""}
 							</span>
 						)}
