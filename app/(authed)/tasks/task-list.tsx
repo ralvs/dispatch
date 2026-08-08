@@ -1,9 +1,10 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
-import { Button, EmptyState, PageHeader } from "@/components/ui";
+import { Button, EmptyState, Icon, PageHeader, SectionHead } from "@/components/ui";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { TaskRow } from "@/lib/services/tasks";
 import {
@@ -286,14 +287,19 @@ export function TaskList({
 			    other pages that a count there is sometimes clickable. */}
 			<PageHeader
 				title="Tasks"
-				action={
+				titleAction={
 					<Button
 						type="button"
+						shape="pill"
 						variant="secondary"
+						size="sm"
+						isIconOnly
 						onClick={() => setCreating(true)}
 						aria-haspopup="dialog"
+						aria-label="New task"
+						title="New task"
 					>
-						+ New task
+						<Icon icon={Plus} size="md" />
 					</Button>
 				}
 			/>
@@ -347,10 +353,20 @@ export function TaskList({
 					 * both read from the one optimistic list. */}
 					{top3.length > 0 && (
 						<section className="mt-8" aria-label="Today's top 3">
-							<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-								Top 3 · today
-							</h2>
-							<ul className="mt-2">
+							{/* The same head Today's Top3Section carries, down to the
+							    aside: the two surfaces disagreeing about how many slots
+							    are open would be the one thing worth reading twice. */}
+							<SectionHead
+								title="Top 3 today"
+								aside={
+									slotsOpen > 0 ? (
+										<span className="font-mono text-meta text-ink-3">
+											{slotsOpen} slot{slotsOpen === 1 ? "" : "s"} open
+										</span>
+									) : undefined
+								}
+							/>
+							<ul>
 								{top3.map((t) => (
 									<TaskRowItem
 										key={t.id}
@@ -365,22 +381,19 @@ export function TaskList({
 									/>
 								))}
 							</ul>
-							{slotsOpen > 0 && (
-								<p className="mt-2 font-mono text-meta text-ink-4">
-									{slotsOpen} slot{slotsOpen === 1 ? "" : "s"} open · tap ☆ on a row to pin
-								</p>
-							)}
 						</section>
 					)}
 
 					<section className="mt-8" aria-label="Open tasks">
-						<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Open</h2>
+						<SectionHead title="Open" />
 						{filteredOpen.length === 0 ? (
-							<EmptyState>Nothing on the docket. Capture something.</EmptyState>
+							<EmptyState hint="Add one with + New task, or capture a thought and let it file itself.">
+								Nothing on the docket.
+							</EmptyState>
 						) : (
 							// Everything open may already be starred, in which case the band
 							// above carries the lot and this one renders nothing at all.
-							<ul className="mt-2">
+							<ul>
 								{rest.map((t) => (
 									<TaskRowItem
 										key={t.id}
@@ -400,10 +413,8 @@ export function TaskList({
 
 					{recentDoneBand.length > 0 && (
 						<section className="mt-10" aria-label="Recently completed">
-							<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-								Recently done
-							</h2>
-							<ul className="mt-2">
+							<SectionHead title="Recently done" />
+							<ul>
 								{recentDoneBand.map((t) => (
 									<TaskRowItem
 										key={t.id}
@@ -426,11 +437,11 @@ export function TaskList({
 
 			{status === "today" && (
 				<section className="mt-8" aria-label="Tasks due today">
-					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Today</h2>
+					<SectionHead title="Today" />
 					{todayTasks.length === 0 ? (
 						<EmptyState>Nothing due today.</EmptyState>
 					) : (
-						<ul className="mt-2">
+						<ul>
 							{todayTasks.map((t) => (
 								<TaskRowItem
 									key={t.id}
@@ -451,11 +462,13 @@ export function TaskList({
 
 			{status === "overdue" && (
 				<section className="mt-8" aria-label="Overdue tasks">
-					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Overdue</h2>
+					<SectionHead title="Overdue" />
 					{overdueTasks.length === 0 ? (
-						<EmptyState>Nothing overdue.</EmptyState>
+						<EmptyState hint="Everything with a date on it still has time.">
+							Nothing overdue.
+						</EmptyState>
 					) : (
-						<ul className="mt-2">
+						<ul>
 							{overdueTasks.map((t) => (
 								<TaskRowItem
 									key={t.id}
