@@ -968,6 +968,97 @@ h2.sec {
 				color: var(--accent);
 			}
 
+			/* ── T4 · the filter column ─────────────────────────────────────────
+			 * A two-by-two, and the split is by *kind* rather than by slot:
+			 * everything that names or acts is on the left, everything that
+			 * filters is on the right. The inbox link stops floating under the
+			 * filter bar — it is the one thing on that row that navigates
+			 * somewhere rather than narrowing something — and takes the
+			 * subtitle's position under the page's name.
+			 *
+			 *   Tasks                       19 open · 2 overdue · 2 today
+			 *   1 in the inbox →             All projects ⌄  All domains ⌄
+			 *
+			 * Grid rather than two stacked flex rows, because the second row has
+			 * a 36px headline above it on one side and a 24px strip on the
+			 * other: only a shared grid row makes the inbox link and the scope
+			 * narrows sit on one line.
+			 */
+			.ph4 {
+				display: grid;
+				grid-template-columns: 1fr auto;
+				align-items: baseline;
+				row-gap: 13px;
+				column-gap: 32px;
+				margin-bottom: 30px;
+			}
+			.ph4 h1 {
+				grid-column: 1;
+				grid-row: 1;
+				margin: 0;
+				font-size: 36px;
+				font-weight: 500;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+				text-wrap: pretty;
+			}
+			.ph4 .r-status {
+				grid-column: 2;
+				grid-row: 1;
+				justify-self: end;
+			}
+			.ph4 .r-inbox {
+				grid-column: 1;
+				grid-row: 2;
+			}
+			.ph4 .r-scope {
+				grid-column: 2;
+				grid-row: 2;
+				justify-self: end;
+			}
+			.ph4 .inboxlink {
+				margin-bottom: 0;
+			}
+			/* The segmented control is 36px tall against a 24px strip, so it
+			   would drag the whole first row down if it sat on the baseline. */
+			.ph4 .r-status:has(.seg) {
+				align-self: center;
+				transform: translateY(2px);
+			}
+			/* 1fr + auto cannot hold a 351px scope row beside the inbox link at
+			   393pt, so the two columns become one and the order is stated
+			   rather than inherited: name, action, then the two filters. */
+			.at-phone .ph4 {
+				grid-template-columns: 1fr;
+				row-gap: 11px;
+				margin-bottom: 26px;
+			}
+			.at-phone .ph4 h1 {
+				font-size: 30px;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+			}
+			.at-phone .ph4 .r-inbox {
+				grid-column: 1;
+				grid-row: 2;
+			}
+			.at-phone .ph4 .r-status {
+				grid-column: 1;
+				grid-row: 3;
+				justify-self: start;
+			}
+			.at-phone .ph4 .r-scope {
+				grid-column: 1;
+				grid-row: 4;
+				justify-self: start;
+			}
+
+			/* T4's active mark: the ink ladder and a neutral rule, so the one
+			   orange on this row is only ever the overdue alarm. */
+			.tstrip.neutral button.on {
+				text-decoration-color: var(--ink);
+			}
+
 			/* ── T1 · the measure, made interactive ─────────────────────────── */
 			.mstrip {
 				display: flex;
@@ -1315,11 +1406,17 @@ h2.sec {
 				width: 15px;
 				height: 15px;
 			}
+			/* Hollow is the resting state and it is the affordance: an unstarred
+			   row is offering the Top 3 slot. Only a row already pinned to today
+			   fills, and it fills in the one orange. */
 			.trow .star {
 				color: var(--ink-4);
 			}
 			.trow .star.on {
 				color: var(--accent);
+			}
+			.trow .star.on svg {
+				fill: currentColor;
 			}
 			.trow.is-done .star {
 				visibility: hidden;
@@ -1411,10 +1508,17 @@ h2.sec {
 					The header is delegated to the client component for exactly that reason.
 				</p>
 				<p>
-					So: same idiom, same slot, two different contracts. Three ways out are drawn below over
+					So: same idiom, same slot, two different contracts. Four ways out are drawn below over
 					the whole page — capture line, filter bar, groups, rows — at both widths and in both
-					themes. <b>The page body is identical in all three.</b> Only the header and the filter
+					themes. <b>The page body is identical in all four.</b> Only the header and the filter
 					bar move.
+				</p>
+				<p>
+					<b>T4 comes first because it reframes the question.</b> T1, T2 and T3 all argue about
+					which slot the status counts belong in. T4 asks instead what each control <em>is</em>,
+					and splits the header by kind — naming and acting on the left, filtering on the right.
+					It is a placement rather than a voice, so it is drawn with both the plain strip and the
+					segmented control in the same slot.
 				</p>
 				<p>
 					One correction to the brief that opened this: the measure is <b>sans 14</b>, not mono.
@@ -1434,6 +1538,47 @@ h2.sec {
 				</div>
 				<span class="note">19 open · 2 overdue · 2 today · 5 domains · 1 unfiled</span>
 			</div>
+
+			<!-- ══════════════════════════════════════════════════════════════ T4 -->
+			<section class="opt">
+				<header>
+					<h2>
+						<em>T4</em>The filter column<span class="rec">owner’s proposal</span>
+					</h2>
+					<p class="thesis">
+						Split the header block by <b>kind</b> rather than by slot. Everything that names the
+						page or acts on it goes left; everything that filters it goes right, in two rows
+						that share a grid. The status counts ride the title’s baseline, the two scope
+						narrows sit directly beneath them on the same right edge, and
+						<code>1 in the inbox →</code> — the one thing on that row that <em>navigates</em>
+						rather than narrows — moves out from under the filters and takes the subtitle’s
+						position under the page’s name.
+					</p>
+					<p class="cost">
+						<b>What it settles that T1–T3 did not.</b> Those three all argued about which slot
+						the status counts belong in and left the inbox link where it was: a mono-12 accent
+						link parked below a bar of filters, reading like a fourth filter. T4 is the only
+						one that asks what each control <em>is</em>. The right column then has one job, the
+						two filter rows read as one object without needing a box drawn around them, and the
+						measure slot question dissolves — the right column <em>is</em> the measure slot,
+						widened to hold what this page actually keeps there.
+					</p>
+					<p class="cost">
+						<b>And it is a placement, not a voice</b> — which is why it is drawn twice. Frame 1
+						puts the strip in the slot with the active count marked by the ink ladder and a
+						<em>neutral</em> rule; frame 2 puts T3’s segmented control in the same slot. Both
+						free the accent, because in both the active mark stopped being orange. Frame 3 is
+						the common case with an empty inbox, where the left cell goes but the scope narrows
+						must not rise into the title’s row.
+					</p>
+					<p class="spec">
+						grid <b>1fr / auto</b>, two rows, baseline-aligned · status right on the title’s
+						baseline · scope right beneath it · inbox link left, under the title · at 393pt one
+						column, ordered <b>name → action → status → scope</b>
+					</p>
+				</header>
+				<div class="specimens" data-opt="t4"></div>
+			</section>
 
 			<!-- ══════════════════════════════════════════════════════════════ T1 -->
 			<section class="opt">
@@ -1550,6 +1695,10 @@ h2.sec {
 				<header>
 					<h2>What to look for</h2>
 					<p class="spec">
+						0 · <b>T4’s two frames against each other</b> — same placement, two voices. Does the
+						filled trough hold the title’s baseline, or does the strip’s quiet leave the right
+						column reading as one column of controls where the trough reads as one control and
+						two leftovers?<br />
 						1 · <b>Switch to 393pt on T1</b> — it becomes T2 with a wider gap. Whatever T1 wins,
 						it wins on desktop only.<br />
 						2 · <b>The orange, on each option’s filter row</b> — count how many different things
@@ -1737,7 +1886,7 @@ h2.sec {
 
 			const ICON = {
 				note: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h8M8 17h5"/></svg>`,
-				star: `<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z"/></svg>`,
+				star: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z"/></svg>`,
 				chevron: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`,
 				plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg>`,
 			};
@@ -1841,13 +1990,48 @@ h2.sec {
 				return `<a class="inboxlink" href="#">1 in the inbox →</a>`;
 			}
 
-			function chrome(opt, active = "open") {
+			function chrome(opt, active = "open", showInbox = true) {
 				const c = COUNTS;
 				const cells = [
 					{ k: "open", n: c.open, w: "open" },
 					{ k: "overdue", n: c.overdue, w: "overdue" },
 					{ k: "today", n: c.today, w: "today" },
 				];
+
+				/* mono-12 text; `neutral` marks the active count with the ink
+				   ladder and an ink rule instead of the accent. */
+				const stripHtml = (neutral) =>
+					`<div class="tstrip${neutral ? " neutral" : ""}">${cells
+						.map((x, i) => {
+							const on = x.k === active;
+							const att = x.k === "overdue" && x.n > 0 && !on;
+							return `${i > 0 ? '<span class="sep">·</span>' : ""}<button type="button" class="${
+								on ? "on" : att ? "att" : ""
+							}">${x.n} ${x.w}</button>`;
+						})
+						.join("")}</div>`;
+
+				const segHtml = () =>
+					`<div class="seg">${cells
+						.map((x) => {
+							const on = x.k === active;
+							const att = x.k === "overdue" && x.n > 0 && !on;
+							return `<button type="button" class="${on ? "on" : att ? "att" : ""}"><b>${
+								x.n
+							}</b>${x.w}</button>`;
+						})
+						.join("")}</div>`;
+
+				/* T4 · the split is by kind: naming and acting on the left,
+				   filtering on the right, in two rows that share a grid. */
+				if (opt === "t4" || opt === "t4seg") {
+					return `<div class="ph4">
+							<h1>Tasks</h1>
+							<div class="r-status">${opt === "t4seg" ? segHtml() : stripHtml(true)}</div>
+							<div class="r-inbox">${showInbox ? inboxHtml() : ""}</div>
+							<div class="r-scope">${scopeHtml()}</div>
+						</div>`;
+				}
 
 				if (opt === "t1") {
 					const strip = cells
@@ -1870,31 +2054,13 @@ h2.sec {
 				}
 
 				if (opt === "t2") {
-					const strip = cells
-						.map((x, i) => {
-							const on = x.k === active;
-							const att = x.k === "overdue" && x.n > 0 && !on;
-							return `${i > 0 ? '<span class="sep">·</span>' : ""}<button type="button" class="${
-								on ? "on" : att ? "att" : ""
-							}">${x.n} ${x.w}</button>`;
-						})
-						.join("");
 					return `<div class="ph"><div class="top"><h1>Tasks</h1></div></div>
-						<div class="fbar"><div class="tstrip">${strip}</div>${scopeHtml()}</div>
+						<div class="fbar">${stripHtml(false)}${scopeHtml()}</div>
 						${inboxHtml()}`;
 				}
 
-				const seg = cells
-					.map((x) => {
-						const on = x.k === active;
-						const att = x.k === "overdue" && x.n > 0 && !on;
-						return `<button type="button" class="${on ? "on" : att ? "att" : ""}"><b>${
-							x.n
-						}</b>${x.w}</button>`;
-					})
-					.join("");
 				return `<div class="ph"><div class="top"><h1>Tasks</h1></div></div>
-					<div class="fbar"><div class="seg">${seg}</div>${scopeHtml()}</div>
+					<div class="fbar">${segHtml()}${scopeHtml()}</div>
 					${inboxHtml()}`;
 			}
 
@@ -1916,7 +2082,7 @@ h2.sec {
 				return `<div class="dockstub"><ul>${tabs}</ul><div class="cap-btn">${ICON.plus}</div></div>`;
 			}
 
-			function frame({ opt, width, label, mode = "full", active = "open" }) {
+			function frame({ opt, width, label, mode = "full", active = "open", inbox = true }) {
 				const isDesk = width === "desk";
 				const el = document.createElement("div");
 				el.className = `spec-frame at-${isDesk ? "desk" : "phone"}`;
@@ -1924,7 +2090,7 @@ h2.sec {
 					<div class="cap-bar"><span>${esc(label)}</span><span>${isDesk ? "1064px" : "393pt"}</span></div>
 					<div class="surface">
 						${isDesk ? tabstub() : ""}
-						${chrome(opt, active)}
+						${chrome(opt, active, inbox)}
 						${bodyHtml(mode)}
 					</div>
 					${isDesk ? "" : dockstub()}
@@ -1934,6 +2100,31 @@ h2.sec {
 
 			for (const rail of document.querySelectorAll(".specimens")) {
 				const opt = rail.dataset.opt;
+
+				/* T4 is a placement, and placement is independent of voice — so it
+				   is drawn in both: the strip with a neutral active rule, and the
+				   segmented control in the same slot. The empty inbox row is the
+				   third frame, because a zero inbox is the common case and the
+				   scope narrows must not rise into the title's row when it goes. */
+				if (opt === "t4") {
+					rail.append(frame({ opt: "t4", width: "desk", label: "/tasks — strip" }));
+					rail.append(frame({ opt: "t4seg", width: "desk", label: "/tasks — segmented" }));
+					rail.append(
+						frame({ opt: "t4", width: "desk", label: "/tasks — inbox empty", inbox: false }),
+					);
+					rail.append(frame({ opt: "t4", width: "phone", label: "/tasks — strip" }));
+					rail.append(frame({ opt: "t4seg", width: "phone", label: "/tasks — segmented" }));
+					rail.append(
+						frame({
+							opt: "t4",
+							width: "desk",
+							label: "/tasks?status=overdue",
+							active: "overdue",
+						}),
+					);
+					continue;
+				}
+
 				if (opt === "empty") {
 					rail.append(frame({ opt: "t3", width: "desk", label: "/tasks — nothing open", mode: "empty-all" }));
 					rail.append(

@@ -90,27 +90,45 @@ share is the slot and the shape of the phrase, which is enough.
 
 | | Status filter | Measure slot | Active mark |
 |---|---|---|---|
-| **T3 — Segmented control** ← recommended | trough + three cells, mono 12 uppercase, 36px | unused | paper + card lift |
+| **T4 — Filter column** ← owner's proposal | right, on the title's baseline; scope beneath it | *is* the right column | ink + neutral rule, or the lift |
+| T3 — Segmented control | trough + three cells, mono 12 uppercase, 36px | unused | paper + card lift |
 | T1 — Measure made interactive | in the measure slot, sans 14 | *is* the filter | ink + 2px accent underline |
 | T2 — Filter bar, as it ships | mono 12 text on a bar | unused | ink + 2px accent underline |
 
-**T3 is the recommendation, and the argument is the accent.** In T1 and T2 the
-orange says two things on one line — *you are here* (the active underline) and
-*this is late* (a non-zero overdue count). That is precisely the case the One
-Orange Rule forbids. Marking the active cell with the lift instead frees the
-orange to mean only what it means. DESIGN.md already assigns filters the
-mono-control voice, and the app already builds one exclusive segmented control
-in it (`PriorityPicker`), so T3 is the system's own idiom rather than a new one.
+**T4 reframes the question and is drawn first.** T1–T3 all argue about which
+slot the status counts belong in and leave the inbox link where it was — a
+mono-12 accent link parked below a bar of filters, reading like a fourth filter.
+T4 asks instead what each control *is*, and splits the header block by kind:
+everything that names the page or acts on it goes left, everything that filters
+it goes right, in two rows on a shared grid. The inbox link — the one control
+there that navigates rather than narrows — takes the subtitle's position under
+the page's name. The measure-slot question then dissolves: the right column *is*
+the measure slot, widened to hold what this page actually keeps there.
+
+T4 is a **placement, not a voice**, so it is drawn twice: once with the strip
+(active count marked by the ink ladder and a neutral rule) and once with T3's
+segmented control in the same slot. A third frame shows the common case with an
+empty inbox.
+
+**The accent is the argument against T1 and T2.** In both, the orange says two
+things on one line — *you are here* (the active underline) and *this is late* (a
+non-zero overdue count). That is precisely the case the One Orange Rule forbids.
+T3 and both T4 variants mark the active state without the accent, so the orange
+on that row only ever means late.
 
 T1's cost shows at 393pt: the header wraps its right cluster to a second row, so
 the order becomes title → status → scope, which is T2's layout with a wider gap.
 Whatever T1 wins, it wins on desktop only.
 
-The page body is **identical in all three** — capture line, groups, rows. Three
-row-level changes are drawn there and are not what is being voted on: the
+The page body is **identical in all four** — capture line, groups, rows. Three
+row-level changes are drawn there and are settled rather than voted on: the
 priority ring replaces the P1–P4 badge, the 9px domain dot moves into the left
 column beside the mark (holding its slot when a task is unfiled), and the title
 drops to 400 with P1 the one step up — all three converging on Today.
+
+The star is hollow at `ink-4` by default and fills in the accent only for a row
+already pinned to today's Top 3. Hollow is the affordance: an unstarred row is
+offering the slot.
 
 ## A1 vs A2 — one axis
 
