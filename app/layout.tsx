@@ -24,7 +24,11 @@ export const metadata: Metadata = {
 		statusBarStyle: "black-translucent",
 	},
 	icons: {
-		icon: "/icons/icon-192.png",
+		// Two sizes so a tab doesn't downscale the 192 and mush the chevron.
+		icon: [
+			{ url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+			{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+		],
 		apple: "/icons/apple-touch-icon-180.png",
 	},
 };
