@@ -368,12 +368,18 @@ section heading can sit at body size and still read as a heading.
 something is not standing out enough, it needs to be bigger, in a different
 colour, or in the mono register — never heavier.
 
+**Row names rest at 400.** Pass 2 Gate A (`.impeccable/mocks/lists-lab.html`,
+option A1). Every list-row name is body size at 400 — project, person, note,
+routine, quote, link, notification, task. Hierarchy on a list comes from
+colour, position, and the mono meta, not from weight. The system's only weight
+step is reserved for the things that earn it: **P1 on a task** (the one step
+to 500), a `SectionHead`, a page title. `.type-title` (500 at −0.02em) is no
+longer the row-name class; `ROW_TITLE_CLASS` on `ListRow` is.
+
 **The Named vs Labelled Rule.** If a person wrote it, it is sans. If the system
 labelled it, it is uppercase mono. A row's title is sans; the time beside it is
 mono. This is why the page reads as two columns of meaning without any rules
-being drawn. The sans side of it has a name — `.type-title`, 500 at −0.02em —
-for the sizes below the ramp's own steps, where a title still has to separate
-itself from the meta beside it.
+being drawn.
 
 **The Eyebrow Never Crowns Rule.** The uppercase mono eyebrow labels a region —
 a dateline, `ALL DAY`, a bucket name, a card's section label. It never sits
@@ -486,12 +492,37 @@ earned (ADR-0042).
   It takes the accent only for what is genuinely late, never to mark that a
   count is non-zero.
 - **Action:** one standing control, centred against the title's baseline.
+  On an object list this is where create lives — labelled `+ New …`, the notes
+  pattern (Pass 2 Gate B / B1). `/tasks` is the exception: a bare `+` on the
+  title's shoulder (`titleAction`), because a second labelled create next to
+  Capture was the confusion ADR-0043 removed.
 - **Subtitle:** only where it carries an instruction. Not a tagline.
 - **No divider, no eyebrow, no second title.** The 64px the shell puts above the
   header is the separation.
 
 Today is the deliberate exception: its `h1` is a sentence about the day and its
 dateline is the day nav, so it has no page header at all.
+
+### List rows
+
+`ListRow` carries only geometry: hairline, `min-h-12`, `py-3`, `gap-3`, and the
+leading / body / trailing columns. Rows keep their own composition — a
+`variant` prop per surface is the failure mode.
+
+- **Domain leads left** and holds its slot when absent (Invisible Slot Rule).
+  One colour meaning per row: a project's own colour is not a second dot on
+  the list (it may appear on the detail header).
+- **Name at 400** via `ROW_TITLE_CLASS`. See Two Weights above.
+- **Group labels** are `SectionHead` (16px / 500), not the mono eyebrow.
+
+### Creating an object
+
+**A list of objects opens as a list.** Creating an object is one action on the
+page header; the form is a dialog. Standing `CollapsibleForm` furniture above
+the first row is gone from `/projects`, `/people`, `/quotes`, `/routines`
+(Pass 2 Gate B / B1; ADR-0043 generalised). `/journal` is the exception that
+proves the rule: writing the entry *is* the page, so standing furniture is
+correct there — Pass 3 applies it.
 
 ### Empty States
 
