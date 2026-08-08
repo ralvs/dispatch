@@ -237,7 +237,13 @@ export function TaskRowItem({
 					<span>
 						{task.domain?.name ?? "—"}
 						{task.project?.name ? ` · ${task.project.name}` : ""}
-						{!scheduled && task.due_date && (
+						{/* A finished task has no due phrase. `formatDueLabel` is
+						    purely relative to today, so a task completed last week
+						    read `overdue 9d` in the "Recently done" band — an
+						    assertion that it is late, about a task that is done.
+						    The completion time two fields along already answers
+						    "when", and it answers it truthfully. */}
+						{!scheduled && !done && task.due_date && (
 							<span className={overdue ? "text-accent-slip" : ""}>
 								{" · "}
 								{/* Late is never colour-only — the word carries the signal
