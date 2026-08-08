@@ -40,6 +40,10 @@ colors, and dark mode stays the default.
 - Components keep referencing semantic tokens; the reskin lives in
   `app/globals.css` + `app/layout.tsx` plus mechanical radius edits.
 - `font-serif` no longer means serif; it means "display tier". A later
-  cleanup could rename the classes.
+  cleanup could rename the classes. **It did, three identities later:
+  [0042](./0042-the-page-header-is-the-fine-locator.md) deletes the class and
+  moves its 53 call sites to `.type-title`.** The cost of deferring it is on the
+  record — a class that set no family, named for a family the system did not
+  have, made every untouched page look plausible for two more restyles.
 - Geist has no italic — `italic` on quotes renders browser-synthesized
   oblique. Acceptable for now.

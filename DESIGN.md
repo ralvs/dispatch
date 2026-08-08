@@ -371,7 +371,15 @@ colour, or in the mono register — never heavier.
 **The Named vs Labelled Rule.** If a person wrote it, it is sans. If the system
 labelled it, it is uppercase mono. A row's title is sans; the time beside it is
 mono. This is why the page reads as two columns of meaning without any rules
-being drawn.
+being drawn. The sans side of it has a name — `.type-title`, 500 at −0.02em —
+for the sizes below the ramp's own steps, where a title still has to separate
+itself from the meta beside it.
+
+**The Eyebrow Never Crowns Rule.** The uppercase mono eyebrow labels a region —
+a dateline, `ALL DAY`, a bucket name, a card's section label. It never sits
+above a heading. Stacked over an `h1` it names the same thing twice in two
+voices, and that stack was the legacy silhouette every page wore before
+ADR-0042.
 
 **The Tabular Rule.** Every number that can change under the reader — a clock,
 a count, a streak, a percentage — is `tabular-nums`. Digits that reflow while
@@ -463,6 +471,38 @@ distinguishes *instances*. Colour is never the only thing separating two things
 that behave differently.
 
 ## Components
+
+### Page Header
+
+Every surface but Today opens with it. Four slots in one line where there is
+room — **title · measure · action** — with a subtitle beneath where one is
+earned (ADR-0042).
+
+- **Title:** the ramp's Headline step, 36px / 500 / −0.9px, dropping to 30px on
+  a phone. One step below Today's hero, so a list page can never out-shout the
+  day.
+- **Measure:** the page's own reading on the title's baseline — `14 open`,
+  `3 paused` — figure at 500 in `ink-2`, word at 400 in `ink-3`, both at 14px.
+  It takes the accent only for what is genuinely late, never to mark that a
+  count is non-zero.
+- **Action:** one standing control, centred against the title's baseline.
+- **Subtitle:** only where it carries an instruction. Not a tagline.
+- **No divider, no eyebrow, no second title.** The 64px the shell puts above the
+  header is the separation.
+
+Today is the deliberate exception: its `h1` is a sentence about the day and its
+dateline is the day nav, so it has no page header at all.
+
+### Empty States
+
+A list with nothing in it says so in words rather than collapsing. Left-aligned
+on the same edge as the rows it stands in for, `text-base` italic at `ink-3`,
+with an optional upright hint beneath in `ink-4` — the roman is what says the
+hint is an instruction rather than more of the sentence. Inside a card, where
+the empty stands in a row's position, it keeps the row's bottom hairline.
+
+This is the only italic in the chrome, and it is what separates a sentence the
+app is saying from a title a person wrote.
 
 ### Buttons
 
@@ -591,3 +631,11 @@ compositions. Reverting the whole page from rings to bars is one line there.
 - **Don't** move anything on hover. Hover is a colour change.
 - **Don't** draw a ring at 0% for something with nothing to measure — that is
   furniture, not a reading.
+- **Don't** give a page a second title under its name. The header names it once;
+  a display line that renames it is a mood, not information.
+- **Don't** restate a page header inside its `loading.tsx`. Render the real one
+  through `PageSkeleton` — a page's name is not data, and a hand-copied header
+  drifts the moment the real one changes.
+- **Don't** put a figure in the measure slot that the page cannot stand behind.
+  A count that flips client-side belongs with the thing that owns it, and a
+  placeholder count is the one thing on a loading screen that lies.
