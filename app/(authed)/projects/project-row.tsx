@@ -1,26 +1,31 @@
 import Link from "next/link";
 import { ColorDot } from "@/components/color-dot";
-import { Badge } from "@/components/ui";
+import { Badge, ListRow, ROW_TITLE_CLASS } from "@/components/ui";
 import type { ProjectRow } from "@/lib/services/projects";
 import { projectTypeLabel } from "./constants";
 
+/**
+ * Domain leads left and holds its slot when unassigned — same encoding as
+ * task-row / day-row. The project's own colour is not a second dot on the row;
+ * two dots of different meaning is what the measured palette exists to prevent
+ * (Pass 2 / Gate A lab). Project colour still lives on the detail header.
+ */
 export function ProjectRowItem({ project }: { project: ProjectRow }) {
+	const domainColor = project.domain?.color ?? null;
+	const domainName = project.domain?.name ?? "—";
+	const meta = project.target_date ? `${domainName} · Target ${project.target_date}` : domainName;
+
 	return (
-		<li className="hairline py-3">
-			<Link href={`/projects/${project.id}`} className="flex items-center justify-between gap-3">
-				<span className="flex min-w-0 items-center gap-2">
-					<ColorDot color={project.color} />
-					<span className="min-w-0 truncate type-title text-base text-ink">{project.name}</span>
-				</span>
-				{project.type && <Badge tone="neutral">{projectTypeLabel(project.type)}</Badge>}
+		<ListRow
+			leading={<ColorDot color={domainColor} hold />}
+			trailing={
+				project.type ? <Badge tone="neutral">{projectTypeLabel(project.type)}</Badge> : undefined
+			}
+		>
+			<Link href={`/projects/${project.id}`} className="block min-w-0 hover:text-accent-ink">
+				<span className={ROW_TITLE_CLASS}>{project.name}</span>
+				<p className="mt-0.5 font-mono text-meta text-ink-4">{meta}</p>
 			</Link>
-			<p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-meta text-ink-4">
-				<span className="inline-flex items-center gap-1">
-					<ColorDot color={project.domain?.color} />
-					{project.domain?.name ?? "—"}
-				</span>
-				{project.target_date && ` · Target ${project.target_date}`}
-			</p>
-		</li>
+		</ListRow>
 	);
 }

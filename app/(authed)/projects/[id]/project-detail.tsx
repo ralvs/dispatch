@@ -2,7 +2,19 @@
 
 import { useRef, useState, useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
-import { Button, Card, Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
+import {
+	Button,
+	Card,
+	Checkbox,
+	Field,
+	Input,
+	ListRow,
+	PageHeader,
+	ROW_TITLE_CLASS,
+	SectionHead,
+	Select,
+	Textarea,
+} from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { DomainRow } from "@/lib/services/domains";
 import type { MilestoneRow, ProjectRow } from "@/lib/services/projects";
@@ -37,6 +49,7 @@ export function ProjectDetail({
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
 	const domain = domains.find((d) => d.id === project.domain_id);
+	const doneCount = milestones.filter((m) => m.status === "done").length;
 
 	function saveDetails(formData: FormData) {
 		startTransition(async () => {
@@ -50,23 +63,28 @@ export function ProjectDetail({
 
 	return (
 		<div className={pending ? "opacity-50" : ""}>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Project</p>
-				<h1 className="mt-1 flex items-center gap-2 type-title text-3xl text-ink">
-					<ColorDot color={project.color} />
-					{project.name}
-				</h1>
-				<p className="mt-1 flex items-center gap-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-					{statusLabel(project.status)}
-					{domain && (
-						<>
-							{" · "}
+			{/* Name is the title; type badge + milestone count take the measure
+			    slot (ADR-0042). Domain rides the subtitle with its colour —
+			    the list row already settled that domain, not project colour,
+			    is the colour that leads. */}
+			<PageHeader
+				title={project.name}
+				measure={[
+					...(project.type ? [{ count: projectTypeLabel(project.type), label: "" }] : []),
+					{ count: statusLabel(project.status), label: "" },
+					...(milestones.length > 0
+						? [{ count: `${doneCount}/${milestones.length}`, label: "milestones" }]
+						: []),
+				]}
+				subtitle={
+					domain ? (
+						<span className="inline-flex items-center gap-1.5">
 							<ColorDot color={domain.color} />
 							{domain.name}
-						</>
-					)}
-				</p>
-			</header>
+						</span>
+					) : undefined
+				}
+			/>
 
 			<section className="mt-8" aria-label="Details">
 				{editing ? (
@@ -265,10 +283,7 @@ function MilestonesSection({
 
 	return (
 		<section className="mt-14" aria-label="Milestones">
-			<div className="flex items-center justify-between">
-				<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Milestones</h2>
-				<span className="font-mono text-meta text-ink-4">{Math.round(progress * 100)}%</span>
-			</div>
+			<SectionHead title="Milestones" aside={`${Math.round(progress * 100)}%`} />
 			<div
 				className="mt-2 h-1.5 w-full bg-line"
 				role="progressbar"
@@ -282,8 +297,9 @@ function MilestonesSection({
 
 			<ul className="mt-3">
 				{milestones.map((m) => (
-					<li key={m.id} className="hairline flex items-center justify-between gap-3 py-3">
-						<div className="flex items-center gap-2">
+					<ListRow
+						key={m.id}
+						leading={
 							<Checkbox
 								checked={m.status === "done"}
 								disabled={pending}
@@ -297,33 +313,35 @@ function MilestonesSection({
 									});
 								}}
 								aria-label={`Mark milestone "${m.title}" ${m.status === "done" ? "open" : "done"}`}
+							/>
+						}
+						trailing={
+							<Button
+								type="button"
+								variant="danger-soft"
+								size="sm"
+								aria-label={`Delete milestone "${m.title}"`}
+								disabled={pending}
+								onClick={() =>
+									startTransition(async () => {
+										await runAction(
+											() => deleteMilestoneAction(projectId, m.id),
+											"Couldn't delete milestone.",
+										);
+									})
+								}
 							>
-								<span
-									className={`text-sm ${m.status === "done" ? "text-ink-4 line-through" : "text-ink"}`}
-								>
-									{m.title}
-								</span>
-							</Checkbox>
-							<span className="font-mono text-meta text-ink-4">w{m.weight}</span>
-						</div>
-						<Button
-							type="button"
-							variant="danger-soft"
-							size="sm"
-							aria-label={`Delete milestone "${m.title}"`}
-							disabled={pending}
-							onClick={() =>
-								startTransition(async () => {
-									await runAction(
-										() => deleteMilestoneAction(projectId, m.id),
-										"Couldn't delete milestone.",
-									);
-								})
-							}
+								Delete
+							</Button>
+						}
+					>
+						<span
+							className={`${ROW_TITLE_CLASS} ${m.status === "done" ? "text-ink-4 line-through" : ""}`}
 						>
-							Delete
-						</Button>
-					</li>
+							{m.title}
+						</span>
+						<span className="ml-2 font-mono text-meta text-ink-4">w{m.weight}</span>
+					</ListRow>
 				))}
 			</ul>
 

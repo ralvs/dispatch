@@ -4,7 +4,7 @@ import { shiftDay, todayInTz } from "@/lib/dates";
 import { computeRoutineStats, recentDaysGrid } from "@/lib/routine-stats";
 import { listCompletionsForRoutines, listRoutines } from "@/lib/services/routines";
 import { getAppTimezone } from "@/lib/services/settings";
-import { RoutineForm } from "./routine-form";
+import { RoutineCreateButton } from "./routine-form";
 import { RoutineRowItem } from "./routine-row";
 
 export default async function RoutinesPage() {
@@ -28,17 +28,14 @@ export default async function RoutinesPage() {
 				measure={[
 					{ count: routines.length, label: routines.length === 1 ? "routine" : "routines" },
 				]}
+				action={<RoutineCreateButton />}
 			/>
 
-			<section>
-				<RoutineForm />
-			</section>
-
-			<section className="mt-6" aria-label="Routines">
+			<section aria-label="Routines">
 				{routines.length === 0 ? (
 					<EmptyState>No routines yet. Add something you want to do daily.</EmptyState>
 				) : (
-					<ul className="mt-2">
+					<ul>
 						{routines.map((routine) => {
 							const dates = (completionsByRoutine[routine.id] ?? []).map((c) => c.completed_date);
 							const stats = computeRoutineStats(dates, todayIso);

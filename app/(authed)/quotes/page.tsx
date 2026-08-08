@@ -1,7 +1,7 @@
 import { EmptyState, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { listQuotes } from "@/lib/services/quotes";
-import { QuoteForm } from "./quote-form";
+import { QuoteCreateButton } from "./quote-form";
 import { QuoteRowItem } from "./quote-row";
 
 export default async function QuotesPage() {
@@ -10,17 +10,17 @@ export default async function QuotesPage() {
 
 	return (
 		<div>
-			<PageHeader title="Quotes" measure={[{ count: quotes.length, label: "saved" }]} />
+			<PageHeader
+				title="Quotes"
+				measure={[{ count: quotes.length, label: "saved" }]}
+				action={<QuoteCreateButton />}
+			/>
 
-			<section>
-				<QuoteForm />
-			</section>
-
-			<section className="mt-6" aria-label="Quotes">
+			<section aria-label="Quotes">
 				{quotes.length === 0 ? (
 					<EmptyState>Nothing saved yet. Capture something you read or heard.</EmptyState>
 				) : (
-					<ul className="mt-2">
+					<ul>
 						{quotes.map((q) => (
 							<QuoteRowItem key={q.id} quote={q} />
 						))}

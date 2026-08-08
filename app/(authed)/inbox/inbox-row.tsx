@@ -3,11 +3,22 @@
 import { FileText } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ListRow, ROW_TITLE_CLASS } from "@/components/ui";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import type { TaskRow } from "@/lib/services/tasks";
 
+/**
+ * The third rendering of a task — title, note chip, domain buttons.
+ *
+ * Stays separate from TaskRowItem on purpose. That row is built around a meta
+ * line, a priority ring, a star and an edit dialog; none of that is the inbox's
+ * job. Filing is one-way (ADR-0024): give a domain and the row leaves. The
+ * optimistic removal in inbox-list.tsx is behaviour this pass does not touch.
+ *
+ * What converges is encoding: ListRow geometry, name at 400, note chip class.
+ */
 export function InboxRow({
 	task,
 	noteId,
@@ -21,9 +32,9 @@ export function InboxRow({
 	onDelete: () => void;
 }) {
 	return (
-		<li className="hairline py-3">
-			<p className="flex min-w-0 items-center gap-1.5 type-title text-base text-ink">
-				<span className="min-w-0 truncate">{task.title}</span>
+		<ListRow align="start">
+			<p className="flex min-w-0 items-center gap-1.5">
+				<span className={ROW_TITLE_CLASS}>{task.title}</span>
 				{noteId && (
 					<Link
 						href={`/notes/${noteId}`}
@@ -49,6 +60,6 @@ export function InboxRow({
 					Delete
 				</Button>
 			</div>
-		</li>
+		</ListRow>
 	);
 }

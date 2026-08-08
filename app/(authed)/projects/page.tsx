@@ -1,9 +1,9 @@
-import { EmptyState, PageHeader } from "@/components/ui";
+import { EmptyState, PageHeader, SectionHead } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { listDomains } from "@/lib/services/domains";
 import { listProjects } from "@/lib/services/projects";
 import { STATUS_GROUPS } from "./constants";
-import { ProjectForm } from "./project-form";
+import { ProjectCreateButton } from "./project-form";
 import { ProjectRowItem } from "./project-row";
 
 export default async function ProjectsPage() {
@@ -21,11 +21,8 @@ export default async function ProjectsPage() {
 					{ count: projects.filter((p) => p.status === "active").length, label: "active" },
 					{ count: projects.filter((p) => p.status === "paused").length, label: "paused" },
 				]}
+				action={<ProjectCreateButton domains={domains} />}
 			/>
-
-			<section>
-				<ProjectForm domains={domains} />
-			</section>
 
 			{projects.length === 0 ? (
 				<EmptyState>No projects yet. Start one.</EmptyState>
@@ -34,11 +31,9 @@ export default async function ProjectsPage() {
 					const group = projects.filter((p) => p.status === status);
 					if (group.length === 0) return null;
 					return (
-						<section key={status} className="mt-8" aria-label={label}>
-							<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-								{label}
-							</h2>
-							<ul className="mt-2">
+						<section key={status} className="mt-8 first:mt-0" aria-label={label}>
+							<SectionHead title={label} aside={String(group.length)} />
+							<ul>
 								{group.map((p) => (
 									<ProjectRowItem key={p.id} project={p} />
 								))}

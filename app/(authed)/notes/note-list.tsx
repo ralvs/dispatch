@@ -4,7 +4,7 @@ import { Star } from "lucide-react";
 import Link from "next/link";
 import { useOptimistic, useTransition } from "react";
 import { setPinAction } from "@/app/(authed)/notes/actions";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, ListRow, ROW_TITLE_CLASS, SectionHead } from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
@@ -22,25 +22,28 @@ function NoteLinkRow({
 }) {
 	const pinned = note.pinned_at !== null;
 	return (
-		<li className="hairline flex items-start">
-			<Link href={`/notes/${note.id}`} className="block flex-1 py-3 hover:bg-surface">
-				<span className="block truncate type-title text-base text-ink">{displayTitle(note)}</span>
+		<ListRow
+			trailing={
+				<button
+					type="button"
+					aria-label={pinned ? "Unpin note" : "Pin note"}
+					aria-pressed={pinned}
+					onClick={onTogglePin}
+					className={`shrink-0 font-mono text-meta active:opacity-70 ${pinned ? "text-accent" : "text-ink-4 hover:text-ink"}`}
+				>
+					<Icon icon={Star} size="sm" fill={pinned ? "currentColor" : "none"} />
+				</button>
+			}
+		>
+			<Link href={`/notes/${note.id}`} className="block min-w-0 hover:text-accent-ink">
+				<span className={ROW_TITLE_CLASS}>{displayTitle(note)}</span>
 				<span className="mt-0.5 block font-mono text-meta text-ink-4">
 					{formatInstant(note.created_at, tz)}
 					{note.needs_review ? " · needs review" : ""}
 					{note.tags.length > 0 ? ` · ${note.tags.join(", ")}` : ""}
 				</span>
 			</Link>
-			<button
-				type="button"
-				aria-label={pinned ? "Unpin note" : "Pin note"}
-				aria-pressed={pinned}
-				onClick={onTogglePin}
-				className={`shrink-0 px-2 py-3 font-mono text-meta active:opacity-70 ${pinned ? "text-accent" : "text-ink-4 hover:text-ink"}`}
-			>
-				<Icon icon={Star} size="sm" fill={pinned ? "currentColor" : "none"} />
-			</button>
-		</li>
+		</ListRow>
 	);
 }
 
@@ -60,12 +63,12 @@ function Section({
 }) {
 	if (notes.length === 0 && !empty) return null;
 	return (
-		<section className="mt-6" aria-label={label}>
-			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">{label}</h2>
+		<section className="mt-6 first:mt-0" aria-label={label}>
+			<SectionHead title={label} aside={notes.length > 0 ? String(notes.length) : undefined} />
 			{notes.length === 0 ? (
 				<EmptyState>{empty}</EmptyState>
 			) : (
-				<ul className="mt-2">
+				<ul>
 					{notes.map((n) => (
 						<NoteLinkRow key={n.id} note={n} tz={tz} onTogglePin={() => onTogglePin(n)} />
 					))}

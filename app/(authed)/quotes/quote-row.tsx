@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button, Textarea } from "@/components/ui";
+import { Button, ListRow, Textarea } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { QuoteAnnotationRow, QuoteRow } from "@/lib/services/quotes";
 import { createAnnotationAction, deleteQuoteAction, listAnnotationsAction } from "./actions";
@@ -39,8 +39,8 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 	}
 
 	return (
-		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>
-			<blockquote className="max-w-prose break-words type-title text-base italic text-ink">
+		<ListRow align="start" className={pending ? "opacity-50" : ""}>
+			<blockquote className="max-w-prose break-words text-base font-normal italic leading-[1.45] text-ink">
 				“{quote.text}”
 			</blockquote>
 			<p className="mt-1 font-mono text-meta text-ink-4">
@@ -105,6 +105,6 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 					</div>
 				</div>
 			)}
-		</li>
+		</ListRow>
 	);
 }

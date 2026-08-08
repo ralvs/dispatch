@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button, ListRow } from "@/components/ui";
 import { formatInstant } from "@/lib/dates";
 import type { NotificationRow as Row } from "@/lib/services/notifications";
 
@@ -18,20 +18,24 @@ export function NotificationRow({
 	const unread = notification.status === "unread";
 
 	return (
-		<li className="hairline py-3">
-			<div className="flex items-center justify-between gap-4">
-				<p className="flex items-center gap-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-					{unread && (
-						<span aria-hidden className="inline-block h-1.5 w-1.5 rounded-pill bg-accent" />
-					)}
-					{notification.type}
-					{unread && <span className="sr-only"> (unread)</span>}
-				</p>
+		<ListRow
+			align="start"
+			trailing={
 				<p className="shrink-0 font-mono text-meta text-ink-4">
 					{formatInstant(notification.created_at, tz)}
 				</p>
-			</div>
-			<p className={`mt-1 text-sm ${unread ? "text-ink" : "text-ink-2"}`}>{notification.title}</p>
+			}
+		>
+			<p className="flex items-center gap-1.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+				{unread && <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-pill bg-accent" />}
+				{notification.type}
+				{unread && <span className="sr-only"> (unread)</span>}
+			</p>
+			<p
+				className={`mt-1 text-base font-normal leading-[1.35] tracking-[-0.01em] ${unread ? "text-ink" : "text-ink-2"}`}
+			>
+				{notification.title}
+			</p>
 			{notification.body && <p className="mt-1 text-meta text-ink-3">{notification.body}</p>}
 			<div className="mt-2 flex items-center gap-2">
 				{notification.source_url && (
@@ -51,6 +55,6 @@ export function NotificationRow({
 					Dismiss
 				</Button>
 			</div>
-		</li>
+		</ListRow>
 	);
 }

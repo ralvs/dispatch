@@ -1,18 +1,30 @@
 import Link from "next/link";
-import { Badge } from "@/components/ui";
+import { ColorDot } from "@/components/color-dot";
+import { Badge, ListRow, ROW_TITLE_CLASS } from "@/components/ui";
 import type { PersonRow } from "@/lib/services/people";
 import { relationshipLabel } from "./constants";
 
+/**
+ * Simplest row in the app — name, optional badge, optional company. The domain
+ * slot is held empty so People and Projects share one left edge when they
+ * appear under the same visual language (Invisible Slot Rule).
+ */
 export function PersonRowItem({ person }: { person: PersonRow }) {
 	return (
-		<li className="hairline py-3">
-			<Link href={`/people/${person.id}`} className="flex items-center justify-between gap-3">
-				<span className="min-w-0 truncate type-title text-base text-ink">{person.name}</span>
-				{person.relationship_type && (
+		<ListRow
+			leading={<ColorDot color={null} hold />}
+			trailing={
+				person.relationship_type ? (
 					<Badge tone="neutral">{relationshipLabel(person.relationship_type)}</Badge>
+				) : undefined
+			}
+		>
+			<Link href={`/people/${person.id}`} className="block min-w-0 hover:text-accent-ink">
+				<span className={ROW_TITLE_CLASS}>{person.name}</span>
+				{person.company && (
+					<p className="mt-0.5 font-mono text-meta text-ink-4">{person.company}</p>
 				)}
 			</Link>
-			{person.company && <p className="mt-0.5 text-meta text-ink-4">{person.company}</p>}
-		</li>
+		</ListRow>
 	);
 }

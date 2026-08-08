@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "@/components/ui";
+import { EmptyState, PageHeader, SectionHead } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedLinks } from "@/lib/cache/links";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -35,10 +35,8 @@ export default async function LinksPage() {
 				<>
 					{unread.length > 0 && (
 						<section aria-label="Unread links">
-							<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-								Unread
-							</h2>
-							<ul className="mt-1">
+							<SectionHead title="Unread" aside={String(unread.length)} />
+							<ul>
 								{unread.map((link) => (
 									<LinkRowItem key={link.id} link={link} tz={tz} />
 								))}
@@ -48,8 +46,8 @@ export default async function LinksPage() {
 
 					{read.length > 0 && (
 						<section className="mt-8" aria-label="Read links">
-							<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Read</h2>
-							<ul className="mt-1">
+							<SectionHead title="Read" aside={String(read.length)} />
+							<ul>
 								{read.map((link) => (
 									<LinkRowItem key={link.id} link={link} tz={tz} />
 								))}

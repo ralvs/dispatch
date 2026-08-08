@@ -2,7 +2,18 @@
 
 import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
-import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
+import {
+	Button,
+	Card,
+	Field,
+	Input,
+	ListRow,
+	PageHeader,
+	ROW_TITLE_CLASS,
+	SectionHead,
+	Select,
+	Textarea,
+} from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
@@ -56,10 +67,18 @@ export function PersonDetail({
 
 	return (
 		<div className={pending ? "opacity-50" : ""}>
-			<header className="hairline-strong pb-4">
-				<p className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">Person</p>
-				<h1 className="mt-1 type-title text-3xl text-ink">{person.name}</h1>
-			</header>
+			{/* Name is the title; relationship + company take the measure slot
+			    (ADR-0042). Last two legacy hairline-strong headers leave here. */}
+			<PageHeader
+				title={person.name}
+				measure={[
+					...(person.relationship_type
+						? [{ count: relationshipLabel(person.relationship_type), label: "" }]
+						: []),
+					...(person.company ? [{ count: person.company, label: "" }] : []),
+					{ count: facts.length, label: facts.length === 1 ? "fact" : "facts" },
+				]}
+			/>
 
 			<section className="mt-8" aria-label="Details">
 				{editing ? (
@@ -177,28 +196,25 @@ function MentionedInSection({
 
 	return (
 		<section className="mt-14" aria-label="Mentioned in">
-			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Mentioned in</h2>
-			<ul className="mt-2">
+			<SectionHead title="Mentioned in" aside={String(tasks.length + notes.length)} />
+			<ul>
 				{tasks.map((task) => (
-					<li key={`task-${task.id}`} className="hairline py-3">
+					<ListRow key={`task-${task.id}`}>
 						<Link
 							href={`/tasks?edit=${task.id}`}
-							className="truncate type-title text-sm text-ink hover:text-accent"
+							className={`${ROW_TITLE_CLASS} hover:text-accent-ink`}
 						>
 							{task.title}
 							{task.status === "done" ? " · done" : ""}
 						</Link>
-					</li>
+					</ListRow>
 				))}
 				{notes.map((note) => (
-					<li key={`note-${note.id}`} className="hairline py-3">
-						<Link
-							href={`/notes/${note.id}`}
-							className="truncate type-title text-sm text-ink hover:text-accent"
-						>
+					<ListRow key={`note-${note.id}`}>
+						<Link href={`/notes/${note.id}`} className={`${ROW_TITLE_CLASS} hover:text-accent-ink`}>
 							{displayTitle(note)}
 						</Link>
-					</li>
+					</ListRow>
 				))}
 			</ul>
 		</section>
@@ -221,32 +237,37 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 
 	return (
 		<section className="mt-14" aria-label="Facts">
-			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Facts</h2>
-			<ul className="mt-2">
+			<SectionHead title="Facts" aside={facts.length > 0 ? String(facts.length) : undefined} />
+			<ul>
 				{facts.map((f) => (
-					<li key={f.id} className="hairline flex items-center justify-between gap-3 py-3">
-						<div>
-							<p className="text-sm text-ink">{f.fact_value}</p>
-							<p className="mt-0.5 font-mono text-meta text-ink-4">
-								{factTypeLabel(f.fact_type)}
-								{f.date_relevant ? ` · ${f.date_relevant}` : ""}
-							</p>
-						</div>
-						<Button
-							type="button"
-							variant="danger-soft"
-							size="sm"
-							aria-label={`Delete fact "${f.fact_value}"`}
-							disabled={pending}
-							onClick={() =>
-								startTransition(async () => {
-									await runAction(() => deleteFactAction(personId, f.id), "Couldn't delete fact.");
-								})
-							}
-						>
-							Delete
-						</Button>
-					</li>
+					<ListRow
+						key={f.id}
+						trailing={
+							<Button
+								type="button"
+								variant="danger-soft"
+								size="sm"
+								aria-label={`Delete fact "${f.fact_value}"`}
+								disabled={pending}
+								onClick={() =>
+									startTransition(async () => {
+										await runAction(
+											() => deleteFactAction(personId, f.id),
+											"Couldn't delete fact.",
+										);
+									})
+								}
+							>
+								Delete
+							</Button>
+						}
+					>
+						<p className={ROW_TITLE_CLASS}>{f.fact_value}</p>
+						<p className="mt-0.5 font-mono text-meta text-ink-4">
+							{factTypeLabel(f.fact_type)}
+							{f.date_relevant ? ` · ${f.date_relevant}` : ""}
+						</p>
+					</ListRow>
 				))}
 			</ul>
 			{open ? (
@@ -327,36 +348,39 @@ function InteractionsSection({
 
 	return (
 		<section className="mt-14" aria-label="Interactions">
-			<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">Interactions</h2>
-			<ul className="mt-2">
+			<SectionHead
+				title="Interactions"
+				aside={interactions.length > 0 ? String(interactions.length) : undefined}
+			/>
+			<ul>
 				{interactions.map((i) => (
-					<li key={i.id} className="hairline flex items-center justify-between gap-3 py-3">
-						<div>
-							<p className="text-sm text-ink">
-								{i.notes ?? interactionTypeLabel(i.interaction_type)}
-							</p>
-							<p className="mt-0.5 font-mono text-meta text-ink-4">
-								{interactionTypeLabel(i.interaction_type)} · {formatInstant(i.occurred_at, tz)}
-							</p>
-						</div>
-						<Button
-							type="button"
-							variant="danger-soft"
-							size="sm"
-							aria-label="Delete interaction"
-							disabled={pending}
-							onClick={() =>
-								startTransition(async () => {
-									await runAction(
-										() => deleteInteractionAction(personId, i.id),
-										"Couldn't delete interaction.",
-									);
-								})
-							}
-						>
-							Delete
-						</Button>
-					</li>
+					<ListRow
+						key={i.id}
+						trailing={
+							<Button
+								type="button"
+								variant="danger-soft"
+								size="sm"
+								aria-label="Delete interaction"
+								disabled={pending}
+								onClick={() =>
+									startTransition(async () => {
+										await runAction(
+											() => deleteInteractionAction(personId, i.id),
+											"Couldn't delete interaction.",
+										);
+									})
+								}
+							>
+								Delete
+							</Button>
+						}
+					>
+						<p className={ROW_TITLE_CLASS}>{i.notes ?? interactionTypeLabel(i.interaction_type)}</p>
+						<p className="mt-0.5 font-mono text-meta text-ink-4">
+							{interactionTypeLabel(i.interaction_type)} · {formatInstant(i.occurred_at, tz)}
+						</p>
+					</ListRow>
 				))}
 			</ul>
 			{open ? (

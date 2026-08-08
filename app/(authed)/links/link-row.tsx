@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { setLinkStatusAction } from "@/app/(authed)/links/actions";
+import { ListRow, ROW_TITLE_CLASS } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import type { LinkRow } from "@/lib/services/links";
@@ -25,23 +26,28 @@ export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
 		});
 
 	return (
-		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>
-			<div className="flex items-baseline justify-between gap-4">
-				<a
-					href={link.url}
-					target="_blank"
-					rel="noreferrer noopener"
-					className={`min-w-0 flex-1 text-sm hover:text-accent ${unread ? "text-ink" : "text-ink-2"}`}
-				>
+		<ListRow
+			align="start"
+			className={pending ? "opacity-50" : ""}
+			trailing={
+				<p className="shrink-0 font-mono text-meta text-ink-4">
+					{formatInstant(link.created_at, tz)}
+				</p>
+			}
+		>
+			<a
+				href={link.url}
+				target="_blank"
+				rel="noreferrer noopener"
+				className={`block min-w-0 hover:text-accent-ink ${unread ? "text-ink" : "text-ink-2"}`}
+			>
+				<span className={`${ROW_TITLE_CLASS} ${unread ? "" : "text-ink-2"}`}>
 					{displayTitle(link)}
 					<span aria-hidden className="ml-1.5 font-mono text-meta text-ink-4">
 						↗
 					</span>
-				</a>
-				<p className="shrink-0 font-mono text-meta text-ink-4">
-					{formatInstant(link.created_at, tz)}
-				</p>
-			</div>
+				</span>
+			</a>
 
 			{link.description && <p className="mt-1 text-meta text-ink-3">{link.description}</p>}
 
@@ -70,6 +76,6 @@ export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
 					</button>
 				)}
 			</div>
-		</li>
+		</ListRow>
 	);
 }

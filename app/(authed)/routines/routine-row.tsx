@@ -1,7 +1,7 @@
 "use client";
 
 import { useOptimistic, useTransition } from "react";
-import { Button } from "@/components/ui";
+import { Button, ListRow, ROW_TITLE_CLASS } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { RoutineStats } from "@/lib/routine-stats";
 import { TIME_OF_DAY_LABELS } from "@/lib/schemas/routine";
@@ -48,15 +48,9 @@ export function RoutineRowItem({
 	}
 
 	return (
-		<li className="hairline py-3">
-			<div className="flex items-start justify-between gap-3">
-				<div className="min-w-0">
-					<p className="truncate type-title text-base text-ink">{routine.name}</p>
-					<p className="mt-0.5 font-mono text-meta text-ink-4">
-						{TIME_OF_DAY_LABELS[routine.time_of_day]} · streak {stats.current_streak} · best{" "}
-						{stats.longest_streak} · {stats.completions_7d}/7d
-					</p>
-				</div>
+		<ListRow
+			align="start"
+			trailing={
 				<div className="flex shrink-0 gap-2">
 					<Button
 						type="button"
@@ -83,7 +77,13 @@ export function RoutineRowItem({
 						Delete
 					</Button>
 				</div>
-			</div>
+			}
+		>
+			<p className={ROW_TITLE_CLASS}>{routine.name}</p>
+			<p className="mt-0.5 font-mono text-meta text-ink-4">
+				{TIME_OF_DAY_LABELS[routine.time_of_day]} · streak {stats.current_streak} · best{" "}
+				{stats.longest_streak} · {stats.completions_7d}/7d
+			</p>
 			<div
 				className="mt-2 flex gap-0.5"
 				role="img"
@@ -104,6 +104,6 @@ export function RoutineRowItem({
 					);
 				})}
 			</div>
-		</li>
+		</ListRow>
 	);
 }
