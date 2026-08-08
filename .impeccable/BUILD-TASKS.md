@@ -4,8 +4,7 @@ Paste the block below into a fresh Claude Code session at the repo root, on
 branch `design/impeccable`. Everything it needs is on disk; it should not need
 this file's prose.
 
-**Pass 0 is landed** (commits `a1de3b0`, `57013b6`, `dd7340f`, `d1a2f4e`), so
-this is ready to run.
+**Pass 0 is landed** (`a1de3b0` → `8107447`), so this is ready to run.
 
 ---
 
