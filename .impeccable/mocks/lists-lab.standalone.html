@@ -1,0 +1,1945 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Lists — weight, and where write sits</title>
+		<style>
+/* inlined from _a.css */
+/* Dispatch — Today, revision A.
+ * Type + palette lifted exactly from bydefault.so:
+ *   Geist Sans, weights 400/500 ONLY, ramp 56/44/36/30/18/16/14/12,
+ *   h1 56px/500/-1.4px/1.04, ground neutral-50, warm stone ink, #f15a0f accent.
+ * Geometry (pills, large card radii) from collectiveos.vercel.app.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400;500&display=swap");
+
+:root {
+	--ground: #fafafa;
+	--ground-2: #f0efed;
+	--paper: #ffffff;
+
+	--ink: #2a2524;
+	--ink-2: #57534e;
+	--ink-3: #8c8681;
+	--ink-4: #b4aea8;
+	--rule: #e5e5e5;
+	--rule-2: #d6d3d0;
+
+	--accent: #f15a0f;
+	--accent-soft: #fdf0e8;
+	--accent-ink: #c2450a;
+
+	/* ── domain colours ────────────────────────────────────────────────
+	 * Nine slots: the seven seeded stewardship domains plus two spares. Green,
+	 * Blue, Indigo and Yellow are Apple's system colours; Orchid and Rose are
+	 * ours; Clay, Teal and Cyan were computed to fill what those six left open.
+	 * Every pair clears ΔEok 0.12 at 9px, every one clears 0.15 from the accent
+	 * and the priority ring, and all clear 3:1 on their own ground — except
+	 * Travel, exempt on purpose so the yellow can be a full yellow rather than
+	 * a mustard. Evidence and the method: palette-lab.html. Retune there.
+	 */
+	--spirit: #8b6031; /* Clay */
+	--travel: #ffcc0f; /* Yellow — 1.45:1, exempt */
+	--health: #2aa649; /* Green — Apple */
+	--pine: #158266; /* Teal, spare */
+	--code: #1b93ba; /* Cyan */
+	--finance: #0a7cfe; /* Blue — Apple */
+	--engine: #514ad4; /* Indigo — Apple */
+	--family: #c345fc; /* Orchid */
+	--burgundy: #db149b; /* Rose, spare */
+
+	--r-card: 22px;
+	--r-md: 12px;
+	--r-pill: 999px;
+
+	--lift: 0 1px 2px rgba(41, 37, 36, 0.04), 0 10px 28px rgba(41, 37, 36, 0.05);
+
+	--sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+	--mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+[data-theme="dark"] {
+	--ground: #1a1817;
+	--ground-2: #2b2725;
+	--paper: #232020;
+
+	--ink: #f5f2ef;
+	--ink-2: #b8b1ab;
+	--ink-3: #8d8681;
+	--ink-4: #6b645f;
+	--rule: #322e2c;
+	--rule-2: #423d3a;
+
+	--accent: #ff6f2c;
+	--accent-soft: #33211a;
+	--accent-ink: #ff8f5c;
+
+	/* Same hues; only lightness and chroma move between themes. */
+	--spirit: #a5733c;
+	--travel: #ffd60a;
+	--health: #30d158;
+	--pine: #21b18c;
+	--code: #2cc9fc;
+	--finance: #318ffe;
+	--engine: #5e5ae6;
+	--family: #c756fc;
+	--burgundy: #fc2cb4;
+
+	--lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.34);
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: var(--ground);
+	color: var(--ink);
+	font-family: var(--sans);
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+
+/* ── type ramp (bydefault): 56 / 44 / 36 / 30 / 18 / 16 / 14 / 12 ── */
+.t56 {
+	font-size: 56px;
+	font-weight: 500;
+	letter-spacing: -1.4px;
+	line-height: 1.04;
+}
+.t30 {
+	font-size: 30px;
+	font-weight: 500;
+	letter-spacing: -0.75px;
+	line-height: 1.15;
+}
+.t18 {
+	font-size: 18px;
+	font-weight: 400;
+	line-height: 1.7;
+	color: var(--ink-2);
+}
+.t16 {
+	font-size: 16px;
+	font-weight: 400;
+}
+.t14 {
+	font-size: 14px;
+	font-weight: 400;
+	color: var(--ink-2);
+}
+.t12 {
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--ink-3);
+}
+
+.eyebrow {
+	font-family: var(--mono);
+	font-size: 12px;
+	font-weight: 400;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+.num {
+	font-variant-numeric: tabular-nums;
+}
+
+/* ── chrome ── */
+.card {
+	background: var(--paper);
+	border: 1px solid var(--rule);
+	border-radius: var(--r-card);
+	box-shadow: var(--lift);
+}
+
+.pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 40px;
+	padding: 0 20px;
+	border: 0;
+	border-radius: var(--r-pill);
+	background: var(--ink);
+	color: var(--ground);
+	font-family: var(--sans);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+}
+.pill-ghost {
+	background: transparent;
+	border: 1px solid var(--rule-2);
+	color: var(--ink);
+	font-weight: 400;
+}
+.pill-accent {
+	background: var(--accent);
+	color: #fff;
+}
+
+/* header (from comp C) */
+.hdr {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+}
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 16px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+}
+.brand-mark {
+	width: 26px;
+	height: 26px;
+	border-radius: 8px;
+	background: var(--accent);
+	position: relative;
+	flex-shrink: 0;
+}
+.brand-mark::after {
+	content: "";
+	position: absolute;
+	inset: 8px 7px;
+	border-left: 2px solid #fff;
+	border-bottom: 2px solid #fff;
+	transform: rotate(-45deg) translate(1px, -1px);
+}
+.tabs {
+	display: flex;
+	gap: 2px;
+	background: var(--ground-2);
+	padding: 5px;
+	border-radius: var(--r-pill);
+}
+.tab {
+	padding: 7px 18px;
+	border-radius: var(--r-pill);
+	font-size: 14px;
+	color: var(--ink-3);
+}
+.tab.on {
+	background: var(--paper);
+	color: var(--ink);
+	font-weight: 500;
+	box-shadow: 0 1px 2px rgba(41, 37, 36, 0.06), 0 2px 8px rgba(41, 37, 36, 0.05);
+}
+
+/* marks */
+.dot {
+	display: inline-block;
+	width: 9px;
+	height: 9px;
+	border-radius: var(--r-pill);
+	flex-shrink: 0;
+}
+.check {
+	width: 19px;
+	height: 19px;
+	border: 1.5px solid var(--rule-2);
+	border-radius: 7px;
+	flex-shrink: 0;
+	background: var(--paper);
+	position: relative;
+}
+.check.on {
+	background: var(--ink);
+	border-color: var(--ink);
+}
+.check.on::after {
+	content: "";
+	position: absolute;
+	left: 5.5px;
+	top: 2.5px;
+	width: 5px;
+	height: 9.5px;
+	border: solid var(--paper);
+	border-width: 0 1.75px 1.75px 0;
+	transform: rotate(45deg);
+}
+
+/* routines progress bar (from comp B) */
+.meter {
+	height: 7px;
+	border-radius: var(--r-pill);
+	background: var(--ground-2);
+	overflow: hidden;
+}
+.meter i {
+	display: block;
+	height: 100%;
+	border-radius: var(--r-pill);
+	background: var(--ink);
+}
+
+/* headline row — counters ride on the right, off the headline's baseline */
+.head-row {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 48px;
+}
+.counters {
+	display: grid;
+	gap: 7px;
+	text-align: right;
+	flex-shrink: 0;
+	padding-bottom: 6px;
+}
+.counters div {
+	font-size: 14px;
+	color: var(--ink-2);
+	white-space: nowrap;
+}
+.counters b {
+	font-weight: 500;
+	font-size: 16px;
+	color: var(--ink);
+	font-variant-numeric: tabular-nums;
+	margin-right: 5px;
+}
+.counters .late,
+.counters .late b {
+	color: var(--accent);
+}
+
+/* ── day tape ──────────────────────────────────────────────────────────
+ * Span is 06:00–22:00 = 960 min. left% = (start-360)/9.6, width% = mins/9.6.
+ * Start times ride ABOVE the track so a 15-minute block never has to carry
+ * text; the block itself only has to stay visible, which a min-width buys.
+ */
+.tape-times {
+	position: relative;
+	height: 16px;
+	margin-bottom: 5px;
+}
+.tape-times span {
+	position: absolute;
+	transform: translateX(-1px);
+	font-family: var(--mono);
+	font-size: 11px;
+	color: var(--ink-3);
+	white-space: nowrap;
+}
+.measure-track {
+	position: relative;
+	height: 46px;
+	background: var(--ground-2);
+	border-radius: 12px;
+}
+.blk {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	min-width: 7px;
+	display: flex;
+	align-items: center;
+	padding: 0 10px;
+	border-radius: 8px;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 500;
+	letter-spacing: -0.01em;
+	white-space: nowrap;
+	overflow: hidden;
+}
+/* a scheduled task is a point in time, not a span: an outlined tick that
+   still carries its own domain colour. */
+.blk.task {
+	background: transparent !important;
+	border: 2px solid currentColor;
+	padding: 0;
+	min-width: 9px;
+}
+.nowmark {
+	position: absolute;
+	top: -6px;
+	bottom: -6px;
+	width: 2px;
+	background: var(--ink);
+	border-radius: 2px;
+	z-index: 3;
+}
+.ticks {
+	position: relative;
+	margin-top: 9px;
+	height: 16px;
+}
+.ticks > span {
+	position: absolute;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-4);
+	transform: translateX(-50%);
+}
+.ticks > span:first-child {
+	transform: none;
+}
+.ticks .now-label {
+	color: var(--ink);
+	font-weight: 500;
+	transform: translateX(-50%);
+}
+
+/* Event marker: a calendar glyph sits in the checkbox's column, so events and
+   tasks line up in one band. Mirrors the shipped ScheduleRow. */
+.cal {
+	width: 19px;
+	height: 19px;
+	flex-shrink: 0;
+	color: var(--ink-3);
+	display: grid;
+	place-items: center;
+}
+.cal svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Empty band placeholder */
+.empty-band {
+	padding: 26px 0 30px;
+	color: var(--ink-3);
+	font-size: 16px;
+	font-style: italic;
+	border-bottom: 1px solid var(--rule);
+}
+.empty-band span {
+	font-style: normal;
+	display: block;
+	margin-top: 6px;
+	font-size: 14px;
+	color: var(--ink-4);
+}
+
+/* Resurfaced quote */
+.quote blockquote {
+	margin: 12px 0 0;
+	font-size: 18px;
+	line-height: 1.55;
+	font-style: italic;
+	letter-spacing: -0.01em;
+	color: var(--ink);
+}
+.quote .attrib {
+	margin: 10px 0 0;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+}
+.quote .acts {
+	margin-top: 18px;
+	display: flex;
+	gap: 20px;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+}
+
+/* Completion ring (routines top level + projects) */
+.ring {
+	border-radius: 50%;
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	position: relative;
+}
+.ring > .hole {
+	position: absolute;
+	border-radius: 50%;
+	background: var(--paper);
+}
+.ring > .val {
+	position: relative;
+	font-family: var(--mono);
+	font-variant-numeric: tabular-nums;
+	color: var(--ink-2);
+}
+
+/* Seven-day streak trail — tiny squares, one per day */
+.trail {
+	display: flex;
+	gap: 3px;
+	align-items: center;
+}
+.trail i {
+	width: 6px;
+	height: 6px;
+	border-radius: 2px;
+	background: var(--rule-2);
+	display: block;
+}
+.trail i.on {
+	background: var(--ink-2);
+}
+.streak {
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+	width: 30px;
+	text-align: right;
+}
+.streak.hot {
+	color: var(--accent);
+}
+
+.wrap {
+	max-width: 1180px;
+	margin: 0 auto;
+	padding: 30px 44px 80px;
+}
+.cols {
+	display: grid;
+	grid-template-columns: 1.5fr 1fr;
+	gap: 40px;
+	align-items: start;
+}
+h2.sec {
+	font-size: 16px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+	margin: 0;
+}
+.sec-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+.panel {
+	padding: 22px 24px;
+}
+.stack > * + * {
+	margin-top: 16px;
+}
+
+/* ── day navigation ────────────────────────────────────────────────────
+ * The nav IS the dateline. A separate widget above the tape would state the
+ * day twice, so the chevrons flank the date that was already there.
+ *
+ * The label always names the real date — never "TOMORROW". Being off today is
+ * carried by the reset pill existing at all, which keeps the label purely
+ * informative instead of switching voice with the mode.
+ */
+.daynav {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.step {
+	width: 28px;
+	height: 28px;
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	padding: 0;
+	border: 1px solid var(--rule-2);
+	border-radius: var(--r-pill);
+	background: transparent;
+	color: var(--ink-3);
+	cursor: pointer;
+}
+.step:hover {
+	color: var(--ink);
+	border-color: var(--ink-4);
+}
+.step svg {
+	width: 15px;
+	height: 15px;
+}
+.daynav .daylabel {
+	white-space: nowrap;
+}
+/* Holds its slot on today so the chevrons never shift when the day changes. */
+.today-reset {
+	height: 28px;
+	padding: 0 12px;
+	font-size: 12px;
+	margin-left: 4px;
+}
+.today-reset[hidden] {
+	display: inline-flex;
+	visibility: hidden;
+}
+/* Stepping a day dims the payload the nav owns — tape, all-day, timeline —
+   and nothing else. Mirrors the shipped `pending` transition. */
+.day-owned {
+	transition: opacity 0.18s ease;
+}
+[data-pending] .day-owned {
+	opacity: 0.55;
+}
+
+/* ── all-day band ──────────────────────────────────────────────────────
+ * Everything that belongs to the day but has no hour, so the tape is
+ * structurally incapable of showing it. It caps the tape from above for
+ * exactly that reason: together they are the whole day.
+ */
+.allday {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	margin-bottom: 14px;
+}
+.allday > .eyebrow {
+	flex-shrink: 0;
+}
+.ad {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 30px;
+	padding: 0 13px;
+	border: 1px solid var(--rule-2);
+	border-radius: var(--r-md);
+	font-size: 14px;
+	color: var(--ink);
+	white-space: nowrap;
+}
+.ad .dot {
+	width: 7px;
+	height: 7px;
+}
+
+</style>
+		<style>
+			/* ── lab chrome ─────────────────────────────────────────────────────
+			 * Scaffolding only. Specimens sit on real --ground.
+			 */
+			body {
+				background: var(--ground-2);
+			}
+			.lab {
+				max-width: 1380px;
+				margin: 0 auto;
+				padding: 40px 32px 140px;
+			}
+			.lab-head {
+				max-width: 72ch;
+			}
+			.lab-head h1 {
+				font-size: 36px;
+				font-weight: 500;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+				margin: 0;
+			}
+			.lab-head p {
+				font-size: 16px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 14px 0 0;
+			}
+			.lab-head p b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.lab-head code {
+				font-family: var(--mono);
+				font-size: 14px;
+			}
+
+			.controls {
+				position: sticky;
+				top: 0;
+				z-index: 10;
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				flex-wrap: wrap;
+				margin: 26px 0 8px;
+				padding: 14px 0;
+				background: var(--ground-2);
+			}
+			.controls .grp {
+				display: flex;
+				gap: 2px;
+				padding: 4px;
+				border-radius: var(--r-pill);
+				background: var(--paper);
+				border: 1px solid var(--rule);
+			}
+			.controls button {
+				border: 0;
+				background: transparent;
+				border-radius: var(--r-pill);
+				padding: 6px 14px;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+				cursor: pointer;
+			}
+			.controls button[aria-pressed="true"] {
+				background: var(--ink);
+				color: var(--ground);
+			}
+			.controls .note {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-3);
+			}
+
+			.gate {
+				margin-top: 56px;
+				padding-top: 8px;
+				border-top: 1px solid var(--rule);
+			}
+			.gate > .gate-head {
+				max-width: 74ch;
+				margin-bottom: 8px;
+			}
+			.gate > .gate-head h2 {
+				font-size: 30px;
+				font-weight: 500;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+				margin: 0;
+			}
+			.gate > .gate-head p {
+				font-size: 16px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 12px 0 0;
+			}
+			.gate > .gate-head p b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.gate > .gate-head code {
+				font-family: var(--mono);
+				font-size: 13px;
+			}
+
+			.opt {
+				margin-top: 40px;
+			}
+			.opt > header {
+				max-width: 74ch;
+				margin-bottom: 18px;
+			}
+			.opt > header h3 {
+				font-size: 24px;
+				font-weight: 500;
+				letter-spacing: -0.5px;
+				line-height: 1.2;
+				margin: 0;
+			}
+			.opt > header h3 em {
+				font-style: normal;
+				color: var(--ink-4);
+				margin-right: 12px;
+			}
+			.opt > header h3 .rec {
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--accent-ink);
+				margin-left: 12px;
+				vertical-align: 3px;
+			}
+			.opt > header .thesis {
+				font-size: 17px;
+				line-height: 1.55;
+				color: var(--ink-2);
+				margin: 10px 0 0;
+			}
+			.opt > header .cost {
+				font-size: 15px;
+				line-height: 1.55;
+				color: var(--ink-2);
+				margin: 10px 0 0;
+				padding-left: 14px;
+				border-left: 2px solid var(--rule-2);
+			}
+			.opt > header .cost b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.opt > header .spec {
+				font-family: var(--mono);
+				font-size: 12px;
+				line-height: 1.75;
+				color: var(--ink-3);
+				margin: 12px 0 0;
+			}
+			.opt > header .spec b {
+				font-weight: 400;
+				color: var(--ink-2);
+			}
+
+			/* ── specimen frames ──────────────────────────────────────────────── */
+			.pair {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 18px;
+				align-items: flex-start;
+			}
+			.spec-frame {
+				flex-shrink: 0;
+				background: var(--ground);
+				border: 1px solid var(--rule);
+				border-radius: 18px;
+				overflow: hidden;
+			}
+			.spec-frame > .cap-bar {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				padding: 10px 16px;
+				border-bottom: 1px solid var(--rule);
+				background: var(--ground-2);
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.spec-frame > .cap-bar .w {
+				color: var(--ink-4);
+			}
+			.at-desk {
+				width: 520px;
+			}
+			.at-desk .surface {
+				padding: 28px 28px 36px;
+			}
+			/* Side-by-side desk pairs are half-width so both pages fit one row.
+			   Full-width is reserved for empty-state and the phone pair. */
+			.at-desk.full {
+				width: 1064px;
+			}
+			.at-desk.full .surface {
+				padding: 30px 44px 40px;
+			}
+			.at-phone {
+				width: 393px;
+			}
+			.at-phone .surface {
+				padding: 22px 20px 28px;
+			}
+			body[data-width="desk"] .at-phone,
+			body[data-width="phone"] .at-desk {
+				display: none;
+			}
+
+			/* shell stubs */
+			.tabstub {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				padding: 0 0 48px;
+			}
+			.tabstub .tabs {
+				padding: 3px;
+			}
+			.tabstub .tab {
+				padding: 5px 11px;
+				font-size: 12px;
+			}
+			.tabstub .brand {
+				font-size: 14px;
+			}
+			.tabstub .brand-mark {
+				width: 20px;
+				height: 20px;
+			}
+			.tabstub .brand-mark::after {
+				inset: 6px 5px;
+				border-left-width: 1.5px;
+				border-bottom-width: 1.5px;
+			}
+			.tabstub .acts {
+				display: flex;
+				gap: 6px;
+			}
+			.tabstub .pill {
+				height: 32px;
+				padding: 0 14px;
+				font-size: 12px;
+			}
+			.dockstub {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 8px;
+				padding: 12px 16px 20px;
+			}
+			.dockstub ul {
+				display: flex;
+				align-items: center;
+				gap: 2px;
+				list-style: none;
+				margin: 0;
+				padding: 6px;
+				background: var(--paper);
+				border: 1px solid var(--rule);
+				border-radius: var(--r-pill);
+				box-shadow: var(--lift);
+			}
+			.dockstub li {
+				padding: 6px 9px;
+				border-radius: var(--r-pill);
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.dockstub li.on {
+				background: var(--accent-soft);
+				color: var(--accent-ink);
+			}
+			.dockstub .cap-btn {
+				display: grid;
+				place-items: center;
+				width: 54px;
+				height: 54px;
+				border-radius: var(--r-pill);
+				background: var(--ink);
+				color: var(--ground);
+				box-shadow: var(--lift);
+			}
+			.dockstub .cap-btn svg {
+				width: 22px;
+				height: 22px;
+			}
+
+			/* ── page header (ADR-0042 D) ─────────────────────────────────────── */
+			.ph {
+				margin-bottom: 26px;
+			}
+			.ph .top {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 20px;
+			}
+			.ph .name {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				min-width: 0;
+			}
+			.ph h1 {
+				margin: 0;
+				font-size: 30px;
+				font-weight: 500;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+				text-wrap: pretty;
+			}
+			.at-desk.full .ph h1 {
+				font-size: 36px;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+			}
+			.ph .right {
+				display: flex;
+				align-items: baseline;
+				gap: 16px;
+				flex-shrink: 0;
+			}
+			.at-phone .ph {
+				margin-bottom: 22px;
+			}
+			.at-phone .ph h1 {
+				font-size: 30px;
+			}
+			.at-phone .ph .top {
+				flex-wrap: wrap;
+				gap: 10px;
+			}
+			.at-phone .ph .right {
+				width: 100%;
+				justify-content: flex-start;
+			}
+
+			.measure {
+				display: flex;
+				align-items: baseline;
+				flex-wrap: wrap;
+				gap: 4px 14px;
+				font-size: 14px;
+				color: var(--ink-3);
+			}
+			.measure > span {
+				white-space: nowrap;
+			}
+			.measure b {
+				font-weight: 500;
+				color: var(--ink-2);
+				font-variant-numeric: tabular-nums;
+				margin-right: 4px;
+			}
+
+			/* Control voice — mono, not the shell pill. */
+			.ctl {
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+				height: 36px;
+				padding: 0 12px;
+				flex-shrink: 0;
+				border: 1px solid var(--rule-2);
+				border-radius: var(--r-md);
+				background: transparent;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.ctl:hover {
+				border-color: var(--ink-4);
+				color: var(--ink);
+			}
+			/* Bare + on the title's shoulder — ADR-0043's shape for /tasks.
+			   Drawn once here so Gate B can put it next to the labelled notes-
+			   style control and the difference is visible, not described. */
+			.plus-round {
+				display: grid;
+				place-items: center;
+				width: 32px;
+				height: 32px;
+				flex-shrink: 0;
+				border: 1px solid var(--rule-2);
+				border-radius: var(--r-pill);
+				background: transparent;
+				color: var(--ink-3);
+			}
+			.plus-round svg {
+				width: 16px;
+				height: 16px;
+			}
+
+			/* Standing create form — the CollapsibleForm silhouette. */
+			.pform {
+				display: flex;
+				flex-direction: column;
+				gap: 12px;
+				margin: 0 0 22px;
+				padding: 18px 18px 16px;
+				background: var(--paper);
+				border: 1px solid var(--rule);
+				border-radius: var(--r-card);
+				box-shadow: var(--lift);
+			}
+			.pform .fld {
+				display: flex;
+				flex-direction: column;
+				gap: 4px;
+			}
+			.pform .fld span {
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-4);
+			}
+			.pform .fld i {
+				font-style: normal;
+				font-size: 16px;
+				font-weight: 400;
+				color: var(--ink-4);
+				padding: 6px 0 8px;
+				border-bottom: 1px solid var(--rule-2);
+			}
+			.pform .row2 {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 12px;
+			}
+			.pform .foot {
+				display: flex;
+				justify-content: flex-end;
+				gap: 8px;
+				padding-top: 4px;
+			}
+			.pform .foot .ctl.pri {
+				background: var(--ink);
+				color: var(--ground);
+				border-color: var(--ink);
+			}
+			/* Collapsed trigger, full-width tertiary — the resting state of the
+			   same form. Drawn so B2 can show "open cost" vs "closed cost". */
+			.pform-trig {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				width: 100%;
+				height: 40px;
+				margin: 0 0 18px;
+				border: 1px dashed var(--rule-2);
+				border-radius: var(--r-md);
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+
+			/* SectionHead — Pass 1 precedent: 16/500, not the mono eyebrow. */
+			.shead {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 12px;
+				margin: 0 0 6px;
+			}
+			.shead:not(:first-child) {
+				margin-top: 28px;
+			}
+			.shead h2 {
+				margin: 0;
+				font-size: 16px;
+				font-weight: 500;
+				letter-spacing: -0.02em;
+				color: var(--ink);
+			}
+			.shead .aside {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+				font-variant-numeric: tabular-nums;
+			}
+
+			/* ── list rows ─────────────────────────────────────────────────────
+			 * Geometry shared; weight is the Gate A variable (.w400 / .w500).
+			 * Domain dot leads in the left column and holds its slot when absent
+			 * (task-row / day-row doctrine). Project's own colour does not also
+			 * sit on the name — two dots of different meaning is what the
+			 * measured palette exists to prevent.
+			 */
+			ul.rows {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+			.lrow {
+				display: grid;
+				grid-template-columns: 9px 1fr auto;
+				align-items: center;
+				column-gap: 12px;
+				min-height: 48px;
+				padding: 12px 0;
+				border-bottom: 1px solid var(--rule);
+			}
+			.lrow:last-child {
+				border-bottom: 0;
+			}
+			/* People have no domain, so the left slot is held empty rather than
+			   collapsing — same Invisible Slot Rule as unfiled tasks. */
+			.lrow > .dot {
+				width: 9px;
+				height: 9px;
+				border-radius: 999px;
+				flex-shrink: 0;
+				align-self: start;
+				margin-top: 7px;
+			}
+			.lrow > .dot.hold {
+				visibility: hidden;
+			}
+			.lrow .bd {
+				min-width: 0;
+			}
+			.lrow .ttl {
+				margin: 0;
+				font-size: 16px;
+				letter-spacing: -0.01em;
+				line-height: 1.35;
+				color: var(--ink);
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+			/* Gate A: the only weight variable on the page. */
+			.opt[data-weight="400"] .lrow .ttl {
+				font-weight: 400;
+			}
+			.opt[data-weight="500"] .lrow .ttl {
+				font-weight: 500;
+			}
+			.lrow .meta {
+				margin: 2px 0 0;
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+			.lrow .meta .late {
+				color: var(--accent);
+			}
+			.lrow .trail {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				flex-shrink: 0;
+				align-self: center;
+			}
+			.badge {
+				display: inline-flex;
+				align-items: center;
+				height: 22px;
+				padding: 0 8px;
+				border: 1px solid var(--rule-2);
+				border-radius: 7px;
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.04em;
+				color: var(--ink-3);
+				white-space: nowrap;
+			}
+
+			.empty {
+				margin: 0;
+				padding: 32px 0;
+				font-size: 16px;
+				font-style: italic;
+				color: var(--ink-3);
+			}
+			.empty span {
+				display: block;
+				margin-top: 6px;
+				font-size: 14px;
+				font-style: normal;
+				color: var(--ink-4);
+			}
+
+			/* Reference strip: the Tasks row at 400, so Gate A has an anchor. */
+			.refstrip {
+				margin: 18px 0 0;
+				padding: 16px 18px;
+				background: var(--paper);
+				border: 1px solid var(--rule);
+				border-radius: 14px;
+				max-width: 720px;
+			}
+			.refstrip .lab {
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--ink-4);
+				margin: 0 0 10px;
+				padding: 0;
+			}
+			.refstrip .trow {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				min-height: 40px;
+			}
+			.refstrip .check {
+				width: 18px;
+				height: 18px;
+				border: 2px solid var(--rule-2);
+				border-radius: 6px;
+				flex-shrink: 0;
+			}
+			.refstrip .check.p1 {
+				border-color: #d92d20;
+				box-shadow: 0 0 0 3.5px rgba(217, 45, 32, 0.16);
+			}
+			[data-theme="dark"] .refstrip .check.p1 {
+				border-color: #ff6a5e;
+				box-shadow: 0 0 0 3.5px rgba(255, 106, 94, 0.2);
+			}
+			.refstrip .dot {
+				width: 9px;
+				height: 9px;
+				border-radius: 999px;
+				background: var(--engine);
+				flex-shrink: 0;
+			}
+			.refstrip .ttl {
+				font-size: 16px;
+				font-weight: 400;
+				letter-spacing: -0.01em;
+				line-height: 1.35;
+				color: var(--ink);
+			}
+			.refstrip .ttl.p1 {
+				font-weight: 500;
+			}
+			.refstrip .note {
+				margin: 8px 0 0;
+				font-size: 13px;
+				line-height: 1.5;
+				color: var(--ink-3);
+			}
+			.refstrip .note b {
+				font-weight: 500;
+				color: var(--ink-2);
+			}
+
+			/* Weight callout under each pair — reads the rendered weight so the
+			   eye is not left guessing at a 100-unit step. */
+			.weight-chip {
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+				flex-basis: 100%;
+				margin-top: 4px;
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-3);
+			}
+			.weight-chip i {
+				font-style: normal;
+				padding: 2px 8px;
+				border-radius: 6px;
+				background: var(--paper);
+				border: 1px solid var(--rule);
+				color: var(--ink-2);
+			}
+
+			/* Journal rule callout — Gate B settles the rule; Pass 3 applies it. */
+			.rule-card {
+				margin-top: 28px;
+				max-width: 74ch;
+				padding: 18px 20px;
+				background: var(--paper);
+				border: 1px solid var(--rule);
+				border-radius: 14px;
+			}
+			.rule-card h4 {
+				margin: 0;
+				font-size: 16px;
+				font-weight: 500;
+				letter-spacing: -0.02em;
+			}
+			.rule-card p {
+				margin: 8px 0 0;
+				font-size: 15px;
+				line-height: 1.55;
+				color: var(--ink-2);
+			}
+			.rule-card p b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.rule-card code {
+				font-family: var(--mono);
+				font-size: 13px;
+			}
+
+			.look {
+				margin-top: 56px;
+				max-width: 74ch;
+			}
+			.look h2 {
+				font-size: 24px;
+				font-weight: 500;
+				letter-spacing: -0.5px;
+				margin: 0;
+			}
+			.look p {
+				font-size: 15px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 12px 0 0;
+			}
+			.look p b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+		</style>
+	</head>
+	<body data-width="desk">
+		<div class="lab">
+			<div class="lab-head">
+				<h1>Lists — weight, and where write sits</h1>
+				<p>
+					Pass 2 Phase 0. Pass 1 answered both of these for <code>/tasks</code> alone.
+					Neither answer generalises on its own, and eight list surfaces are about to be
+					written either way. <b>Pick once, here.</b> Do not build past this line until
+					both gates are closed.
+				</p>
+				<p>
+					Under every option: <b>/projects</b> (create form + two colours to resolve) and
+					<b>/people</b> (the simplest row in the app — nothing to hide a weight decision
+					behind). Desktop and phone, light and dark. Encoding already settled in Pass 1
+					is drawn, not re-voted: domain leads left and holds its slot; group labels are
+					<code>SectionHead</code> at 16/500; project’s own colour is not a second dot on
+					the row.
+				</p>
+			</div>
+
+			<div class="controls" role="toolbar" aria-label="Lab controls">
+				<div class="grp" role="group" aria-label="Theme">
+					<button type="button" data-theme-btn="light" aria-pressed="true">Light</button>
+					<button type="button" data-theme-btn="dark" aria-pressed="false">Dark</button>
+				</div>
+				<div class="grp" role="group" aria-label="Width">
+					<button type="button" data-width-btn="desk" aria-pressed="true">Desk</button>
+					<button type="button" data-width-btn="phone" aria-pressed="false">Phone</button>
+				</div>
+				<span class="note">Theme · width · both gates below</span>
+			</div>
+
+			<!-- ═══════════════════════════════════════════════════════════════
+			     GATE A — what weight is a name?
+			     ═══════════════════════════════════════════════════════════════ -->
+			<section class="gate" id="gate-a">
+				<div class="gate-head">
+					<h2>Gate A — what weight is a name?</h2>
+					<p>
+						Pass 1 dropped the task title to <b>400</b>, with P1 the single step to 500:
+						<em>“It was 500 on every row, which spends the system’s only weight step
+						equally everywhere and so says nothing.”</em> Every other row is still 500
+						via <code>.type-title</code>. Either the argument generalises, or
+						<code>/tasks</code> is the exception and that exception gets stated as a rule.
+					</p>
+					<div class="refstrip" aria-label="Tasks row reference">
+						<p class="lab">Reference · /tasks as it ships</p>
+						<div class="trow">
+							<span class="check p1" aria-hidden="true"></span>
+							<span class="dot" aria-hidden="true"></span>
+							<span class="ttl p1">Ship the lists pass before Friday</span>
+						</div>
+						<div class="trow" style="margin-top: 6px">
+							<span class="check" aria-hidden="true"></span>
+							<span class="dot" aria-hidden="true"></span>
+							<span class="ttl">Reply to Ana about the retro notes</span>
+						</div>
+						<p class="note">
+							Top row is P1 at <b>500</b>. Bottom is ordinary at <b>400</b>. That step is
+							the only weight signal the system has left.
+						</p>
+					</div>
+				</div>
+
+				<!-- A1 -->
+				<section class="opt" data-weight="400" data-opt="a1">
+					<header>
+						<h3><em>A1</em>Rest — every name is 400 <span class="rec">recommend</span></h3>
+						<p class="thesis">
+							The Two Weights Rule generalises. Hierarchy on a list comes from colour,
+							position, and the mono meta — not from weight. <code>.type-title</code>
+							loses most of its ~24 call sites; the 500 step is reserved for the one
+							thing that still earns it (P1 on a task, a section head, a page name).
+						</p>
+						<p class="cost">
+							<b>Cost:</b> a project name and a person name no longer shout relative to
+							their own meta. If the list feels flat, the flatness is honest — there is
+							no priority on these objects to spend the step on.
+						</p>
+						<p class="spec">
+							name <b>16 / 400 / −0.01em</b> · domain dot left, holds when absent ·
+							SectionHead <b>16 / 500</b> · furniture held constant (B1) so weight is the
+							only variable
+						</p>
+					</header>
+					<div class="pair" data-mount="a1"></div>
+				</section>
+
+				<!-- A2 -->
+				<section class="opt" data-weight="500" data-opt="a2">
+					<header>
+						<h3><em>A2</em>Exception — object names stay 500</h3>
+						<p class="thesis">
+							<code>/tasks</code> is the one list with a priority worth spending the step
+							on. Everything else keeps 500 because a name is a name, and a row of names
+							is what these pages are. The exception is written as a rule: <b>task titles
+							are 400; object titles are 500.</b>
+						</p>
+						<p class="cost">
+							<b>Cost:</b> two weights for one kind of thing (a 16px row name) live in
+							the same visual language, two rows apart when Today and Projects share a
+							screen in memory. The rule has to be remembered; it cannot be read off the
+							page.
+						</p>
+						<p class="spec">
+							name <b>16 / 500 / −0.01em</b> · same geometry as A1 · same furniture ·
+							the difference is only the weight
+						</p>
+					</header>
+					<div class="pair" data-mount="a2"></div>
+				</section>
+			</section>
+
+			<!-- ═══════════════════════════════════════════════════════════════
+			     GATE B — do the inline forms follow ADR-0043?
+			     ═══════════════════════════════════════════════════════════════ -->
+			<section class="gate" id="gate-b">
+				<div class="gate-head">
+					<h2>Gate B — do the inline forms follow ADR-0043?</h2>
+					<p>
+						Five surfaces open with a <code>CollapsibleForm</code> above the list:
+						<code>/projects</code>, <code>/people</code>, <code>/quotes</code>,
+						<code>/routines</code>, <code>/journal</code>. ADR-0043 deleted exactly this
+						shape from <code>/tasks</code> and moved the write behind one control on the
+						title. <b>/projects is already recorded</b> as this pass’s job (it gains a
+						create action in the slot <code>/notes</code> already uses). What is not
+						decided is the <em>rule</em> the other four fall under — and whether
+						<code>/journal</code> is the same kind of thing.
+					</p>
+					<p>
+						Weight held at <b>A1 (400)</b> so furniture is the only variable. Look at how
+						much list you can see before the fold, and whether a create action competes
+						with the shell’s Capture pill.
+					</p>
+				</div>
+
+				<!-- B1 -->
+				<section class="opt" data-weight="400" data-opt="b1">
+					<header>
+						<h3><em>B1</em>Write behind the header <span class="rec">recommend</span></h3>
+						<p class="thesis">
+							<strong>Rule:</strong> a list of objects opens as a list. Creating an object
+							is one action on the page’s name (or its right edge), never standing
+							furniture above the first row. The form becomes a dialog — same move
+							ADR-0043 made, and the one the Pass 0 comps already recorded for
+							<code>/projects</code>.
+						</p>
+						<p class="cost">
+							<b>Applies to:</b> <code>/projects</code>, <code>/people</code>,
+							<code>/quotes</code>, <code>/routines</code> — each creates an object beside
+							a list of the same objects. <b>Control voice:</b> labelled
+							<code>+ New …</code> in the action slot, matching <code>/notes</code>. The
+							bare title-shoulder <code>+</code> stays <code>/tasks</code>’s, where a
+							second labelled create next to Capture was the confusion ADR-0043 removed.
+						</p>
+						<p class="spec">
+							no CollapsibleForm on the page · action <b>mono control, “+ New project /
+							person”</b> · form is a dialog (not drawn — the absence is the point) ·
+							weight 400
+						</p>
+					</header>
+					<div class="pair" data-mount="b1"></div>
+				</section>
+
+				<!-- B2 -->
+				<section class="opt" data-weight="400" data-opt="b2">
+					<header>
+						<h3><em>B2</em>Standing form stays</h3>
+						<p class="thesis">
+							<strong>Rule:</strong> ADR-0043 was local to <code>/tasks</code> because that
+							page already had Capture and a second write path. Object lists keep the
+							collapsible create card — it is how these pages have always written, and the
+							fields are few enough that an inline form is not a second Capture.
+						</p>
+						<p class="cost">
+							<b>Cost:</b> two shapes for one kind of action ship in the same app: dialog
+							behind <code>+</code> on Tasks/Notes/Projects (if Projects still moves), and
+							a card that opens in place on People/Quotes/Routines. The list’s first rows
+							start ~180px lower whenever the form is open — which, on create-heavy days,
+							is most of the time you are on the page.
+						</p>
+						<p class="spec">
+							CollapsibleForm open (the expensive state) · no header action · weight 400 ·
+							<code>/projects</code> drawn the same way for the comparison, even though
+							Pass 0 already recorded it moving
+						</p>
+					</header>
+					<div class="pair" data-mount="b2"></div>
+				</section>
+
+				<!-- B1 empty state -->
+				<section class="opt" data-weight="400" data-opt="b1-empty">
+					<header>
+						<h3><em>B1·∅</em>Empty, under the recommended rule</h3>
+						<p class="thesis">
+							A list with nothing in it still has one write path, and it is the same
+							control as a full list. The empty sentence sits on the row edge; the
+							header action is how you leave the empty state.
+						</p>
+						<p class="spec">
+							EmptyState italic at ink-3 · upright hint at ink-4 · action still on the
+							header
+						</p>
+					</header>
+					<div class="pair" data-mount="b1-empty"></div>
+				</section>
+
+				<div class="rule-card">
+					<h4>Where <code>/journal</code> falls</h4>
+					<p>
+						Under <b>B1’s rule</b>, journal is the exception that proves it:
+						<strong>writing the entry is the page</strong>, not a create action beside a
+						list of entries. Standing furniture is correct there for the same reason the
+						capture line was wrong on <code>/tasks</code>. Pass 3 applies this; this gate
+						only settles that journal is not an object-list.
+					</p>
+					<p>
+						Under <b>B2’s rule</b>, journal needs no special pleading — it already matches
+						the other four. The cost is that the rule cannot later explain why Tasks and
+						Notes write one way and the rest another.
+					</p>
+				</div>
+			</section>
+
+			<section class="look">
+				<h2>What to look for</h2>
+				<p>
+					1 · <b>A1 vs A2 on /people</b> — the simplest row. If you cannot feel the weight
+					step without the chip under the frame, A2 is spending a signal nobody will read.
+				</p>
+				<p>
+					2 · <b>A1 vs the Tasks reference</b> — at 400, a project name and a P4 task title
+					are the same weight. That is either the system becoming one language, or the
+					task list losing its only hierarchy tool. P1 still steps to 500 either way.
+				</p>
+				<p>
+					3 · <b>B2 open on phone</b> — the form eats the first screen. Count how many
+					rows you can see before scrolling. That is the cost of standing furniture.
+				</p>
+				<p>
+					4 · <b>B1 against Capture</b> — on desktop the shell’s Capture pill sits top-right.
+					A labelled <code>+ New project</code> is the notes pattern and lives under More,
+					so it does not compete the way a second <code>+ New task</code> did. If it still
+					reads as a second Capture to you, the bare title-shoulder <code>+</code> is the
+					escape hatch — say so.
+				</p>
+				<p>
+					5 · <b>Two dots, gone</b> — every project row carries one domain dot on the left,
+					not a project colour before the name and a domain colour in the meta. That is
+					not on the ballot; it is the encoding Pass 1 already settled.
+				</p>
+			</section>
+		</div>
+
+		<script>
+			const ICON = {
+				plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg>`,
+			};
+
+			const PROJECTS = {
+				active: [
+					{ t: "Dispatch — revision A", dom: "engine", domName: "Engine", badge: "Internal", meta: "Target 12 Sep" },
+					{ t: "Fechamento trimestral", dom: "finance", domName: "Finance", badge: "Client", meta: "6d late", late: true },
+					{ t: "Migração do bridge de calendário", dom: "code", domName: "Code", badge: "Internal", meta: "Target 30 Sep" },
+					{ t: "Casa — reforma da varanda", dom: "family", domName: "Family", meta: "—" },
+					{ t: "Onboarding do novo hire", dom: "engine", domName: "Engine", badge: "Internal", meta: "Target 18 Aug" },
+					{ t: "Leitura: Deep Work, cap. 4–6", dom: "spirit", domName: "Spirituality", badge: "Content", meta: "—" },
+					{ t: "Rotina de força — ciclo 3", dom: "health", domName: "Health", meta: "—" },
+					{ t: "Tokyo, outubro — roteiro", dom: "travel", domName: "Travel", badge: "Content", meta: "Target 04 Oct" },
+				],
+				paused: [
+					{ t: "Newsletter quinzenal", dom: "code", domName: "Code", badge: "Content", meta: "—" },
+					{ t: "Refinanciamento do apto", dom: "finance", domName: "Finance", badge: "Client", meta: "—" },
+					{ t: "Arquivo de fotos da família", dom: "family", domName: "Family", meta: "—" },
+				],
+				done: [
+					{ t: "Taxas 2025", dom: "finance", domName: "Finance", badge: "Internal", meta: "Done 22 Jul" },
+				],
+			};
+
+			const PEOPLE = [
+				{ t: "Ana Ribeiro", rel: "Team", co: "Engine" },
+				{ t: "Marcus Chen", rel: "Client", co: "Northline" },
+				{ t: "Juliana Costa", rel: "Friend" },
+				{ t: "Diego Martins", rel: "Vendor", co: "Vercel" },
+				{ t: "Sofia Almeida", rel: "Family" },
+				{ t: "Priya Nair", rel: "Team", co: "Engine" },
+				{ t: "Tomás Oliveira", co: "Freelance" },
+				{ t: "Helen Park", rel: "Client", co: "Lumen" },
+				{ t: "Rafael Souza", rel: "Other" },
+				{ t: "Camila Borges", rel: "Friend", co: "Studio CB" },
+				{ t: "James Whitfield", rel: "Vendor", co: "Supabase" },
+				{ t: "Luiza Mendes", rel: "Team", co: "Engine" },
+			];
+
+			const esc = (s) =>
+				String(s).replace(/[&<>"']/g, (c) => ({
+					"&": "&amp;",
+					"<": "&lt;",
+					">": "&gt;",
+					'"': "&quot;",
+					"'": "&#39;",
+				})[c]);
+
+			function tabstub(active) {
+				/* Half-desk frames are ~520px — five tabs + Ask/Capture do not fit.
+				   Keep the claim under test (Capture lives top-right; page is under
+				   More) without the full chrome the full-width labs draw. */
+				return `<div class="tabstub">
+					<div class="brand"><span class="brand-mark"></span>Dispatch</div>
+					<div class="tabs"><span class="tab on">${esc(active)}</span></div>
+					<div class="acts"><span class="pill">Capture</span></div>
+				</div>`;
+			}
+
+			function dockstub(active) {
+				const tabs = ["Today", "Tasks", "Notes", "Links", "More"]
+					.map((t) => `<li class="${t === active ? "on" : ""}">${t}</li>`)
+					.join("");
+				return `<div class="dockstub"><ul>${tabs}</ul><div class="cap-btn">${ICON.plus}</div></div>`;
+			}
+
+			function measureHtml(items) {
+				return `<div class="measure">${items
+					.map(([n, l]) => `<span><b>${esc(n)}</b>${esc(l)}</span>`)
+					.join("")}</div>`;
+			}
+
+			function headerHtml({ title, measure, action, titlePlus }) {
+				/* titlePlus sits on the name (ADR-0043); labelled action sits right
+				   (notes pattern). They are not used together in this lab. */
+				const right =
+					measure || action
+						? `<div class="right">${measure ? measureHtml(measure) : ""}${
+								action ? `<span class="ctl">${esc(action)}</span>` : ""
+							}</div>`
+						: "";
+				return `<header class="ph">
+					<div class="top">
+						<div class="name">
+							<h1>${esc(title)}</h1>
+							${titlePlus ? `<span class="plus-round" title="New" aria-label="New">${ICON.plus}</span>` : ""}
+						</div>
+						${right}
+					</div>
+				</header>`;
+			}
+
+			function shead(title, aside) {
+				return `<div class="shead"><h2>${esc(title)}</h2>${
+					aside ? `<div class="aside">${esc(aside)}</div>` : ""
+				}</div>`;
+			}
+
+			function projectRow(p) {
+				const meta = p.late
+					? `${esc(p.domName)} · <span class="late">${esc(p.meta)}</span>`
+					: p.meta && p.meta !== "—"
+						? `${esc(p.domName)} · ${esc(p.meta)}`
+						: esc(p.domName);
+				const badge = p.badge ? `<span class="badge">${esc(p.badge)}</span>` : "";
+				return `<li class="lrow">
+					<span class="dot" style="background: var(--${p.dom})" aria-hidden="true"></span>
+					<div class="bd">
+						<p class="ttl">${esc(p.t)}</p>
+						<p class="meta">${meta}</p>
+					</div>
+					<div class="trail">${badge}</div>
+				</li>`;
+			}
+
+			function personRow(p) {
+				const badge = p.rel ? `<span class="badge">${esc(p.rel)}</span>` : "";
+				const meta = p.co ? `<p class="meta">${esc(p.co)}</p>` : "";
+				return `<li class="lrow">
+					<span class="dot hold" aria-hidden="true"></span>
+					<div class="bd">
+						<p class="ttl">${esc(p.t)}</p>
+						${meta}
+					</div>
+					<div class="trail">${badge}</div>
+				</li>`;
+			}
+
+			function formHtml(kind) {
+				if (kind === "project") {
+					return `<div class="pform" aria-label="New project form">
+						<div class="fld"><span>Name</span><i>Project name</i></div>
+						<div class="fld"><span>Description</span><i>Optional</i></div>
+						<div class="row2">
+							<div class="fld"><span>Domain</span><i>Engine</i></div>
+							<div class="fld"><span>Type</span><i>Internal</i></div>
+							<div class="fld"><span>Kind</span><i>Project</i></div>
+							<div class="fld"><span>Target date</span><i>dd/mm/yyyy</i></div>
+						</div>
+						<div class="foot">
+							<span class="ctl">Cancel</span>
+							<span class="ctl pri">Add project</span>
+						</div>
+					</div>`;
+				}
+				return `<div class="pform" aria-label="New person form">
+					<div class="fld"><span>Name</span><i>Name</i></div>
+					<div class="row2">
+						<div class="fld"><span>Relationship</span><i>Client</i></div>
+						<div class="fld"><span>Company</span><i>Optional</i></div>
+						<div class="fld"><span>Email</span><i>Optional</i></div>
+						<div class="fld"><span>Phone</span><i>Optional</i></div>
+					</div>
+					<div class="foot">
+						<span class="ctl">Cancel</span>
+						<span class="ctl pri">Add person</span>
+					</div>
+				</div>`;
+			}
+
+			function projectsBody(mode) {
+				if (mode === "empty") {
+					return `<p class="empty">No projects yet. Start one.<span>The + above opens the form.</span></p>`;
+				}
+				const active = PROJECTS.active.map(projectRow).join("");
+				const paused = PROJECTS.paused.map(projectRow).join("");
+				const done = PROJECTS.done.map(projectRow).join("");
+				const form = mode === "form" ? formHtml("project") : "";
+				return `${form}
+					${shead("Active", String(PROJECTS.active.length))}
+					<ul class="rows">${active}</ul>
+					${shead("Paused", String(PROJECTS.paused.length))}
+					<ul class="rows">${paused}</ul>
+					${shead("Done", String(PROJECTS.done.length))}
+					<ul class="rows">${done}</ul>`;
+			}
+
+			function peopleBody(mode) {
+				if (mode === "empty") {
+					return `<p class="empty">No one here yet. Add someone.<span>The + above opens the form.</span></p>`;
+				}
+				const rows = PEOPLE.map(personRow).join("");
+				const form = mode === "form" ? formHtml("person") : "";
+				return `${form}
+					<ul class="rows">${rows}</ul>`;
+			}
+
+			function frame({ page, mode, width, furniture }) {
+				const isPhone = width === "phone";
+				const isProjects = page === "projects";
+				const title = isProjects ? "Projects" : "People";
+				const dock = "More";
+				const measure = isProjects
+					? [
+							["8", "active"],
+							["3", "paused"],
+						]
+					: [["12", "people"]];
+				const emptyMeasure = isProjects
+					? [
+							["0", "active"],
+							["0", "paused"],
+						]
+					: [["0", "people"]];
+
+				let action = null;
+				let titlePlus = false;
+				if (furniture === "action") {
+					action = isProjects ? "+ New project" : "+ New person";
+				} else if (furniture === "plus") {
+					titlePlus = true;
+				}
+				/* form / empty-with-action still use action */
+				if (mode === "empty") {
+					action = isProjects ? "+ New project" : "+ New person";
+				}
+
+				const m = mode === "empty" ? emptyMeasure : measure;
+				const body = isProjects ? projectsBody(mode) : peopleBody(mode);
+				const shell = isPhone ? "" : tabstub(dock);
+				const dockEl = isPhone ? dockstub(dock) : "";
+				const widthClass = isPhone ? "at-phone" : "at-desk";
+				const weightNote =
+					document.querySelector(`[data-mount]`) && false
+						? ""
+						: ""; /* filled by parent */
+
+				return `<div class="spec-frame ${widthClass}">
+					<div class="cap-bar">
+						<span>${esc(title)} · ${isPhone ? "393pt" : "half desk"}</span>
+						<span class="w">${esc(mode === "form" ? "standing form" : mode === "empty" ? "empty" : furniture === "action" ? "header action" : "list")}</span>
+					</div>
+					<div class="surface">
+						${shell}
+						${headerHtml({ title, measure: m, action, titlePlus })}
+						${body}
+					</div>
+					${dockEl}
+				</div>`;
+			}
+
+			function weightChip(w) {
+				return `<div class="weight-chip">Rendered name weight <i>${w}</i></div>`;
+			}
+
+			function mountPair(el, { mode, furniture, weight }) {
+				const desk = ["projects", "people"]
+					.map((page) => frame({ page, mode, width: "desk", furniture }))
+					.join("");
+				const phone = ["projects", "people"]
+					.map((page) => frame({ page, mode, width: "phone", furniture }))
+					.join("");
+				el.innerHTML = desk + phone + weightChip(weight);
+			}
+
+			/* Gate A — furniture held at B1 (header action), weight varies. */
+			mountPair(document.querySelector('[data-mount="a1"]'), {
+				mode: "list",
+				furniture: "action",
+				weight: "400",
+			});
+			mountPair(document.querySelector('[data-mount="a2"]'), {
+				mode: "list",
+				furniture: "action",
+				weight: "500",
+			});
+
+			/* Gate B — weight held at 400, furniture varies. */
+			mountPair(document.querySelector('[data-mount="b1"]'), {
+				mode: "list",
+				furniture: "action",
+				weight: "400",
+			});
+			mountPair(document.querySelector('[data-mount="b2"]'), {
+				mode: "form",
+				furniture: "none",
+				weight: "400",
+			});
+			mountPair(document.querySelector('[data-mount="b1-empty"]'), {
+				mode: "empty",
+				furniture: "action",
+				weight: "400",
+			});
+
+			/* Controls */
+			const root = document.documentElement;
+			const body = document.body;
+
+			document.querySelectorAll("[data-theme-btn]").forEach((btn) => {
+				btn.addEventListener("click", () => {
+					const t = btn.getAttribute("data-theme-btn");
+					if (t === "dark") root.setAttribute("data-theme", "dark");
+					else root.removeAttribute("data-theme");
+					document.querySelectorAll("[data-theme-btn]").forEach((b) => {
+						b.setAttribute(
+							"aria-pressed",
+							b.getAttribute("data-theme-btn") === t ? "true" : "false",
+						);
+					});
+				});
+			});
+
+			document.querySelectorAll("[data-width-btn]").forEach((btn) => {
+				btn.addEventListener("click", () => {
+					const w = btn.getAttribute("data-width-btn");
+					body.setAttribute("data-width", w);
+					document.querySelectorAll("[data-width-btn]").forEach((b) => {
+						b.setAttribute(
+							"aria-pressed",
+							b.getAttribute("data-width-btn") === w ? "true" : "false",
+						);
+					});
+				});
+			});
+		</script>
+	</body>
+</html>

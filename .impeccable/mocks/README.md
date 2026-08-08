@@ -29,6 +29,7 @@ Serve them with `bun run` — or the `mocks` entry in `.claude/launch.json`
 | `tape-lab.html` | Why the day tape carries no event titles — measured against a real day. |
 | `chrome-header-lab.html` | **Pass 0.** The page header, four ways, over `/projects`, `/notes` and `/inbox`. Theme and width toggle in place. |
 | `tasks-lab.html` | **Pass 1.** `/tasks` whole, three ways, over the one seam Pass 0 left open. Theme and width toggle in place. |
+| `lists-lab.html` | **Pass 2 Phase 0.** The two gates: name weight (A1/A2) and create furniture (B1/B2). `/projects` and `/people` side by side under each option. Theme and width toggle in place. |
 
 ## The page header (Pass 0)
 
@@ -139,6 +140,31 @@ drops to 400 with P1 the one step up — all three converging on Today.
 The star is hollow at `ink-4` by default and fills in the accent only for a row
 already pinned to today's Top 3. Hollow is the affordance: an unstarred row is
 offering the slot.
+
+## The list family (Pass 2 Phase 0)
+
+`lists-lab.html` is the decision surface for the two questions Pass 1 answered
+only for `/tasks`. Eight list surfaces are about to be written either way, so
+both are closed here before any row is extracted.
+
+| | Name weight | Create furniture |
+|---|---|---|
+| **A1 — Rest** | every row name **400**; P1 (tasks only) still steps to 500 | held at B1 |
+| A2 — Exception | object names stay **500**; tasks are the special case | held at B1 |
+| **B1 — Write behind the header** | held at 400 | standing `CollapsibleForm` gone; labelled `+ New …` in the action slot (notes pattern) |
+| B2 — Standing form stays | held at 400 | form open above the list (the expensive state) |
+| B1·∅ | held at 400 | empty state under B1 |
+
+**Chosen: A1 + B1.** Built in Pass 2. The Two Weights Rule generalises; every
+row name is 400 (`ROW_TITLE_CLASS`). Object-create lists follow ADR-0043’s move
+of the form into a dialog behind a labelled `+ New …` in the action slot.
+`/journal` is not an object-list — writing the entry *is* the page — so standing
+furniture stays there; Pass 3 applies that half of the rule.
+
+`/projects` was already recorded in the Pass 0 comps as gaining a create action
+in the notes slot; B1 is that shape built. Encoding not on the ballot and also
+built: domain leads left and holds its slot; a project’s own colour is not a
+second dot on the row; group labels are `SectionHead` at 16/500.
 
 ## A1 vs A2 — one axis
 

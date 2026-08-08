@@ -6,16 +6,36 @@ import { colorSlugVar, isColorSlug } from "@/lib/schemas/color";
  * (`var(--domain-<slug>)`) rather than painted as a stored hex — see
  * lib/schemas/color.ts for why storage changed shape.
  *
- * A value that is not one of the nine slots renders nothing. That is the
- * honest fallback: a row written before the migration would otherwise paint a
- * colour from an identity two visual worlds ago.
+ * A value that is not one of the nine slots renders nothing — unless `hold` is
+ * set, in which case the 9px slot stays (invisible) so a list of mixed filed
+ * and unfiled rows keeps one left edge (DESIGN.md, Invisible Slot Rule). That
+ * is the honest fallback for a pre-migration value too: better a held gap than
+ * a colour from an identity two visual worlds ago.
+ *
+ * Size is 9px, the measured floor the palette was tuned against
+ * (.impeccable/mocks/palette-lab.html).
  */
-export function ColorDot({ color }: { color?: string | null }) {
-	if (!isColorSlug(color)) return null;
+export function ColorDot({
+	color,
+	hold = false,
+}: {
+	color?: string | null;
+	/** Keep the 9px slot when the colour is absent. */
+	hold?: boolean;
+}) {
+	if (!isColorSlug(color)) {
+		if (!hold) return null;
+		return (
+			<span
+				aria-hidden="true"
+				className="inline-block size-[9px] shrink-0 rounded-full invisible"
+			/>
+		);
+	}
 	return (
 		<span
 			aria-hidden="true"
-			className="inline-block size-2.5 shrink-0 rounded-full"
+			className="inline-block size-[9px] shrink-0 rounded-full"
 			style={{ backgroundColor: colorSlugVar(color) }}
 		/>
 	);
