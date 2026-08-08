@@ -121,46 +121,58 @@ Nine slots: the seven seeded stewardship domains plus two spares. Defined in
 `lib/schemas/color.ts` is discarded outright — it was tuned for the warm linen
 ground of the *first* rejected identity, two visual worlds ago.
 
-| Token | Name | Domain | Light | Dark |
-|---|---|---|---|---|
-| `--burgundy` | Burgundy | *spare* | `#7f002c` | `#bf2f52` |
-| `--spirit` | Clay | Spirituality | `#86634f` | `#a8836e` |
-| `--travel` | Brass | Travel | `#9e8400` | `#d1b64a` |
-| `--health` | Fern | Health | `#1f8d54` | `#54b97d` |
-| `--pine` | Pine | *spare* | `#005a52` | `#298b81` |
-| `--code` | Cyan | Code | `#009fac` | `#5ad5e3` |
-| `--finance` | Azure | Finance | `#0d6abb` | `#4a9cf1` |
-| `--engine` | Iris | Engine | `#623ca8` | `#8f6ddd` |
-| `--family` | Orchid | Family | `#bf4ea4` | `#da67bd` |
+| Token | Name | Domain | Light | Dark | Origin |
+|---|---|---|---|---|---|
+| `--spirit` | Clay | Spirituality | `#8b6031` | `#a5733c` | computed |
+| `--travel` | Yellow | Travel | `#ffcc0f` | `#ffd60a` | Apple `systemYellow` |
+| `--health` | Green | Health | `#2aa649` | `#30d158` | Apple `systemGreen` |
+| `--pine` | Teal | *spare* | `#158266` | `#21b18c` | computed |
+| `--code` | Cyan | Code | `#1b93ba` | `#2cc9fc` | computed |
+| `--finance` | Blue | Finance | `#0a7cfe` | `#318ffe` | Apple `systemBlue` |
+| `--engine` | Indigo | Engine | `#514ad4` | `#5e5ae6` | Apple `systemIndigo` |
+| `--family` | Orchid | Family | `#c345fc` | `#c756fc` | chosen |
+| `--burgundy` | Rose | *spare* | `#db149b` | `#fc2cb4` | chosen |
+
+The slug is the identity and it is persisted, so a colour can be renamed without
+a migration — which is why `--pine` is called Teal and `--burgundy` is Rose.
 
 ### How they were chosen
 
-Generated in OKLCH and measured, never eyeballed. Three floors, all met in both
-themes:
+Six were **picked**, three were **computed to fit around them**. Apple's Green,
+Blue and Indigo are byte-for-byte in dark and within 0.02 lightness in light —
+that shift is what buys Green its 3:1. Yellow is Apple's `#FFCC00`. Orchid and
+Rose are ours.
+
+Clay, Teal and Cyan then filled what the six left open:
+
+- **Clay** is the set's one low-chroma slot, so a domain can be quiet without
+  going grey — which suits Spirituality. At h66 it is clear of the accent's h41
+  and of Yellow's h90.
+- **Teal** and **Cyan** fill the 110° hole between Green (h147) and Blue (h257).
+  Without them the palette reads as two clusters, and the day tape shows the gap
+  as a visible seam.
+
+Hue is shared across themes; only lightness and chroma differ. Three floors, met
+in both:
 
 - **ΔE<sub>ok</sub> ≥ 0.12 between any two**, because a domain colour's smallest
-  form is a 9px dot. Worst pair is Fern/Cyan at 0.125.
+  form is a 9px dot. Worst pair is Teal/Cyan at **0.128**.
 - **ΔE<sub>ok</sub> ≥ 0.15 from the accent and the priority ring** — a higher bar,
   because confusing a domain with a *state* is worse than confusing two domains.
-  Worst is Clay/priority at 0.152.
-- **≥ 3:1 against its own ground**, the non-text contrast line. Worst is
-  Cyan on light at 3.07:1.
+  Worst is Clay/priority at **0.159**.
+- **≥ 3:1 against its own ground**, the non-text contrast line. Worst is Green on
+  light at **3.03:1** — and Travel is exempt.
 
-Hue alone could not carry nine colours outside the band the accent already owns,
-so **lightness does half the work**: Pine and Burgundy are deep, Cyan and Brass
-are light. Two slots are deliberate exceptions to hue-spacing:
+### The one broken rule
 
-- **Clay** sits at the accent's own hue (h50 vs h41) and is told apart by being
-  *muted* — chroma 0.055 against the accent's 0.199. It is the quiet one on
-  purpose, which suits Spirituality.
-- **Burgundy** is at h12, inside the reserved red band, and clears the priority
-  ring on lightness alone (L 0.38 against the ring's 0.58). A hue-spacing search
-  said there was no room; a lightness search found the best slot in the palette.
+**Travel is 1.45:1 on the light ground**, and that is a decision, not an
+oversight. A full yellow and 3:1 on `#fafafa` are mutually exclusive: the
+brightest yellow that clears the floor is a mustard, and the brief was a full
+bright yellow. Brightness won. In dark it is 12.53:1, so the exemption exists
+only on the light ground. Do not "fix" it.
 
 ### What this fixes
 
-`--engine` used to be `#f15a0f` — **byte-identical to the accent**. Engine is the
-most frequent domain, so every Engine dot and every Engine block on the tape was
-reading as "interactive" or "overdue". It is now Iris, 0.29 away from the accent.
-Two other pairs were indistinguishable at dot size: engine/travel (18° apart) and
-code/finance (20°).
+`--engine` was once `#f15a0f` — **byte-identical to the accent**. Engine is the
+most frequent domain, so every Engine dot and block on the tape read as
+"interactive" or "overdue". It is now Indigo, well clear of the accent.

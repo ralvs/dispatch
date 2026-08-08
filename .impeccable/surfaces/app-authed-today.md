@@ -142,15 +142,19 @@ Nine slots — the seven seeded stewardship domains plus two spares — defined 
 eight-swatch palette in `lib/schemas/color.ts` is discarded: it was tuned for
 the warm linen ground of the first rejected identity, two visual worlds ago.
 
-Engine · Iris, Health · Fern, Family · Orchid, Spirituality · Clay,
-Finance · Azure, Code · Cyan, Travel · Brass, plus Pine and Burgundy spare.
+Engine · Indigo, Health · Green, Family · Orchid, Spirituality · Clay,
+Finance · Blue, Code · Cyan, Travel · Yellow, plus Teal and Rose spare. Green,
+Blue, Indigo and Yellow are Apple's system colours; Orchid and Rose are ours;
+Clay, Teal and Cyan were computed to fill what those six left open.
 
-Generated in OKLCH against three measured floors, met in both themes: ΔEok
-≥ 0.12 between any two (a domain's smallest form is a 9px dot), ≥ 0.15 from the
-accent and the priority ring (confusing a domain with a *state* is worse), and
-≥ 3:1 on its own ground. Hue alone could not carry nine colours outside the band
-the accent owns, so lightness does half the work — and two slots separate by
-chroma or lightness rather than hue at all. **Retune in the lab, never by hand.**
+Measured against three floors, met in both themes: ΔEok ≥ 0.12 between any two
+(a domain's smallest form is a 9px dot, worst 0.128), ≥ 0.15 from the accent and
+the priority ring (confusing a domain with a *state* is worse, worst 0.159), and
+≥ 3:1 on its own ground (worst 3.03:1). Hue is shared across themes; only
+lightness and chroma differ. **Travel is exempt from the contrast floor** — a
+full yellow is 1.45:1 on the light ground and the brightest yellow clearing 3:1
+is a mustard, so brightness won; in dark it is 12.53:1. Do not "fix" it.
+**Retune in the lab, never by hand.**
 
 **This fixes a live defect:** `--engine` was `#f15a0f`, byte-identical to the
 accent, so every Engine dot and Engine block on the tape read as "interactive"

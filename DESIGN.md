@@ -19,15 +19,15 @@ colors:
   success: "#1f8d54"
   priority-high: "#d92d20"
   priority-med: "rgba(217, 45, 32, 0.42)"
-  domain-engine: "#623ca8"
-  domain-health: "#1f8d54"
-  domain-family: "#bf4ea4"
-  domain-spirit: "#86634f"
-  domain-finance: "#0d6abb"
-  domain-code: "#009fac"
-  domain-travel: "#9e8400"
-  domain-pine: "#005a52"
-  domain-burgundy: "#7f002c"
+  domain-engine: "#514ad4"
+  domain-health: "#2aa649"
+  domain-family: "#c345fc"
+  domain-spirit: "#8b6031"
+  domain-finance: "#0a7cfe"
+  domain-code: "#1b93ba"
+  domain-travel: "#ffcc0f"
+  domain-pine: "#158266"
+  domain-burgundy: "#db149b"
   dark-bg: "#1a1817"
   dark-surface: "#232020"
   dark-surface-2: "#2b2725"
@@ -45,15 +45,15 @@ colors:
   dark-success: "#54b97d"
   dark-priority-high: "#ff6a5e"
   dark-priority-med: "rgba(255, 106, 94, 0.45)"
-  dark-domain-engine: "#8f6ddd"
-  dark-domain-health: "#54b97d"
-  dark-domain-family: "#da67bd"
-  dark-domain-spirit: "#a8836e"
-  dark-domain-finance: "#4a9cf1"
-  dark-domain-code: "#5ad5e3"
-  dark-domain-travel: "#d1b64a"
-  dark-domain-pine: "#298b81"
-  dark-domain-burgundy: "#bf2f52"
+  dark-domain-engine: "#5e5ae6"
+  dark-domain-health: "#30d158"
+  dark-domain-family: "#c756fc"
+  dark-domain-spirit: "#a5733c"
+  dark-domain-finance: "#318ffe"
+  dark-domain-code: "#2cc9fc"
+  dark-domain-travel: "#ffd60a"
+  dark-domain-pine: "#21b18c"
+  dark-domain-burgundy: "#fc2cb4"
 typography:
   hero:
     fontFamily: "Geist, Arial, ui-sans-serif, sans-serif"
@@ -282,21 +282,27 @@ to the chrome.
 
 ### Tertiary
 
-- **The domain palette** (`domain-*`): nine slots — Iris, Fern, Orchid, Clay,
-  Azure, Cyan, Brass, Pine, Burgundy. They are **not** part of the chrome and
-  are never chosen by eye. They were generated in OKLCH and measured against
-  three floors, met in both themes: ΔEok ≥ 0.12 between any two, because a
-  domain's smallest form is a 9px dot; ΔEok ≥ 0.15 from the accent and the
-  priority ring, because mistaking a domain for a *state* is worse than
-  mistaking two domains; and ≥ 3:1 against their own ground. Hue alone could
-  not carry nine colours outside the band the accent owns, so lightness does
-  half the work — Pine and Burgundy are deep, Cyan and Brass are light. Clay
-  sits at the accent's own hue and separates by chroma instead, which is why it
-  reads muted, which suits Spirituality.
+- **The domain palette** (`domain-*`): nine slots — Clay, Yellow, Green, Teal,
+  Cyan, Blue, Indigo, Orchid, Rose. They are **not** part of the chrome. Six of
+  them were chosen: Green, Blue and Indigo are Apple's system colours, Yellow is
+  Apple's `#FFCC00`, and Orchid and Rose are ours. The other three were computed
+  to fill what those six left open — Clay as the one low-chroma slot, so a domain
+  can be quiet without going grey, and Teal and Cyan across the 110° hole between
+  Green (h147) and Blue (h257), which would otherwise split the set into two
+  clusters and show on the day tape as a seam.
+  All nine are then measured against three floors, met in both themes: ΔEok ≥
+  0.12 between any two, because a domain's smallest form is a 9px dot (worst
+  0.128); ΔEok ≥ 0.15 from the accent and the priority ring, because mistaking a
+  domain for a *state* is worse than mistaking two domains (worst 0.159); and ≥
+  3:1 against their own ground (worst 3.03:1). Hue is shared across themes —
+  only lightness and chroma may differ, never hue.
+  **Travel is the one exemption, on purpose.** A full yellow is 1.45:1 on the
+  light ground and the brightest yellow clearing 3:1 is a mustard, so brightness
+  won. In dark it is 12.53:1. Do not "fix" it.
 - **The priority ramp** (`priority-high`, `priority-med`): one red at three
   intensities — solid with a halo, the same red at 42%, then the plain grey
   rule. Not three hues: the domain dots already own the wheel, and a third hue
-  would collide with Brass.
+  would collide with Travel's yellow.
 
 ### Named Rules
 

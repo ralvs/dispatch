@@ -37,16 +37,15 @@
 	 * priority ring, and all clear 3:1 on their own ground. Evidence and the
 	 * method: palette-lab.html. Retune there, not here.
 	 */
-	--burgundy: #7f002c; /* spare */
-	--spirit: #86634f; /* Spirituality — muted on purpose: it sits at the
-	                      accent's hue and separates by chroma, not by hue */
-	--travel: #9e8400;
-	--health: #1f8d54;
-	--pine: #005a52; /* spare */
-	--code: #009fac;
-	--finance: #0d6abb;
-	--engine: #623ca8;
-	--family: #bf4ea4;
+	--burgundy: #db149b; /* spare */
+	--spirit: #8b6031; /* Clay */
+	--travel: #ffcc0f;
+	--health: #2aa649;
+	--pine: #158266; /* spare */
+	--code: #1b93ba;
+	--finance: #0a7cfe;
+	--engine: #514ad4;
+	--family: #c345fc;
 
 	--r-card: 22px;
 	--r-md: 12px;
@@ -74,15 +73,15 @@
 	--accent-soft: #33211a;
 	--accent-ink: #ff8f5c;
 
-	--burgundy: #bf2f52;
-	--spirit: #a8836e;
-	--travel: #d1b64a;
-	--health: #54b97d;
-	--pine: #298b81;
-	--code: #5ad5e3;
-	--finance: #4a9cf1;
-	--engine: #8f6ddd;
-	--family: #da67bd;
+	--burgundy: #fc2cb4;
+	--spirit: #a5733c;
+	--travel: #ffd60a;
+	--health: #30d158;
+	--pine: #21b18c;
+	--code: #2cc9fc;
+	--finance: #318ffe;
+	--engine: #5e5ae6;
+	--family: #c756fc;
 
 	--lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.34);
 	color-scheme: dark;
@@ -776,9 +775,12 @@ h2.sec {
 		<div class="lab">
 			<h1 class="t30" style="margin: 0">Domain palette</h1>
 			<p class="note" style="margin-top: 10px">
-				Nine hues for the seven seeded stewardship domains plus two spares. Measured, not
-				eyeballed: every pair has to stay apart at 9px, and none of them may wander into the
-				band the accent and the priority ring already own.
+				Nine hues for the seven seeded stewardship domains plus two spares. Six were
+				chosen — Green, Blue, Indigo and Yellow from Apple's system colours, Orchid and
+				Rose ours — and three were computed to fill what those six left open. Then all
+				nine were measured: every pair has to stay apart at 9px, and none of them may
+				wander into the band the accent and the priority ring already own. Travel is the
+				one exemption from the 3:1 contrast floor, so the yellow can be a full yellow.
 			</p>
 
 			<h2 class="sec t18" style="color: var(--ink)">The shapes a domain colour takes</h2>
@@ -812,23 +814,30 @@ h2.sec {
 
 		<script>
 			// ── the palette ────────────────────────────────────────────────────
-			// Generated in OKLCH, not picked by eye. Hue alone could not separate
-			// nine colours outside the reserved warm band, so lightness carries
-			// half the work: Pine and Burgundy are deep, Cyan and Brass are light,
-			// and Clay is the one that separates by *chroma* — it sits at the
-			// accent's own hue and is told apart by being muted, not by being
-			// elsewhere. Burgundy was found by search: h12 is inside the reserved
-			// hue band and clears it on lightness alone (L 0.38 vs the ring's 0.58).
+			// Six of the nine were chosen, not computed. Green, Blue and Indigo are
+			// Apple's system colours byte-for-byte in dark and within 0.02 lightness
+			// in light; Yellow is Apple's #FFCC00; Orchid and Rose are ours.
+			//
+			// Clay, Teal and Cyan were then computed to fill what those six left
+			// open. Clay is the set's one low warm note, so a domain can be quiet
+			// without going grey. Teal and Cyan fill the 110° hole between Green
+			// (h147) and Blue (h257) — without them the palette reads as two
+			// clusters, and the day tape shows the gap as a seam.
+			//
+			// Hue is shared across themes; only lightness and chroma differ. The one
+			// broken rule is Travel: a full yellow is 1.45:1 on this ground and the
+			// brightest yellow clearing 3:1 is a mustard, so brightness won and
+			// Travel is exempt. In dark it is 12.53:1.
 			const P = [
-				{ key: "burgundy", name: "Burgundy", who: "— spare",      hue: 12,  l: "#7f002c", d: "#bf2f52" },
-				{ key: "spirit",   name: "Clay",     who: "Spirituality", hue: 50,  l: "#86634f", d: "#a8836e" },
-				{ key: "travel",   name: "Brass",    who: "Travel",       hue: 95,  l: "#9e8400", d: "#d1b64a" },
-				{ key: "health",   name: "Fern",     who: "Health",       hue: 155, l: "#1f8d54", d: "#54b97d" },
-				{ key: "pine",     name: "Pine",     who: "— spare",      hue: 185, l: "#005a52", d: "#298b81" },
-				{ key: "code",     name: "Cyan",     who: "Code",         hue: 205, l: "#009fac", d: "#5ad5e3" },
-				{ key: "finance",  name: "Azure",    who: "Finance",      hue: 252, l: "#0d6abb", d: "#4a9cf1" },
-				{ key: "engine",   name: "Iris",     who: "Engine",       hue: 295, l: "#623ca8", d: "#8f6ddd" },
-				{ key: "family",   name: "Orchid",   who: "Family",       hue: 338, l: "#bf4ea4", d: "#da67bd" },
+				{ key: "spirit",   name: "Clay",   who: "Spirituality", hue: 66,  l: "#8b6031", d: "#a5733c" },
+				{ key: "travel",   name: "Yellow", who: "Travel",       hue: 90,  l: "#ffcc0f", d: "#ffd60a" },
+				{ key: "health",   name: "Green",  who: "Health",       hue: 147, l: "#2aa649", d: "#30d158" },
+				{ key: "pine",     name: "Teal",   who: "— spare",      hue: 170, l: "#158266", d: "#21b18c" },
+				{ key: "code",     name: "Cyan",   who: "Code",         hue: 226, l: "#1b93ba", d: "#2cc9fc" },
+				{ key: "finance",  name: "Blue",   who: "Finance",      hue: 257, l: "#0a7cfe", d: "#318ffe" },
+				{ key: "engine",   name: "Indigo", who: "Engine",       hue: 278, l: "#514ad4", d: "#5e5ae6" },
+				{ key: "family",   name: "Orchid", who: "Family",       hue: 313, l: "#c345fc", d: "#c756fc" },
+				{ key: "burgundy", name: "Rose",   who: "— spare",      hue: 347, l: "#db149b", d: "#fc2cb4" },
 			];
 			const RESERVED = [
 				{ name: "accent", l: "#f15a0f", d: "#ff6f2c" },

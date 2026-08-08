@@ -84,57 +84,57 @@
       },
       "domain-engine": {
         "role": "tertiary",
-        "displayName": "Iris — Engine",
-        "canonical": "#623ca8",
-        "tonalRamp": ["#1d1233", "#2c1b4d", "#412873", "#623ca8", "#8f6ddd", "#b39cea", "#d5c9f4", "#eee9fb"]
+        "displayName": "Indigo — Engine",
+        "canonical": "#514ad4",
+        "tonalRamp": ["#0b082f", "#1c175a", "#352d99", "#514ad4", "#5e5ae6", "#c5c9e2", "#dfe1ea", "#f3f3f5"]
       },
       "domain-health": {
         "role": "tertiary",
-        "displayName": "Fern — Health",
-        "canonical": "#1f8d54",
-        "tonalRamp": ["#082c1a", "#0d4327", "#155e37", "#1f8d54", "#54b97d", "#86d0a3", "#bde6cd", "#e4f6ec"]
+        "displayName": "Green — Health",
+        "canonical": "#2aa649",
+        "tonalRamp": ["#032108", "#0a4118", "#1a7230", "#2aa649", "#30d158", "#89e395", "#c8edcb", "#eff5ef"]
       },
       "domain-family": {
         "role": "tertiary",
         "displayName": "Orchid — Family",
-        "canonical": "#bf4ea4",
-        "tonalRamp": ["#3b1732", "#58224b", "#82346f", "#bf4ea4", "#da67bd", "#e896d3", "#f3c4e7", "#fbeaf6"]
+        "canonical": "#c345fc",
+        "tonalRamp": ["#2b013c", "#520470", "#8d0dbd", "#c345fc", "#c756fc", "#dabeeb", "#e7dded", "#f4f3f6"]
       },
       "domain-spirit": {
         "role": "tertiary",
         "displayName": "Clay — Spirituality",
-        "canonical": "#86634f",
-        "tonalRamp": ["#291e18", "#3e2e24", "#5c4438", "#86634f", "#a8836e", "#c4a794", "#ddc9bd", "#f0e7e0"]
+        "canonical": "#8b6031",
+        "tonalRamp": ["#1a0e04", "#36230e", "#5f401f", "#8b6031", "#a5733c", "#e3c4a6", "#eadfd5", "#f5f3f1"]
       },
       "domain-finance": {
         "role": "tertiary",
-        "displayName": "Azure — Finance",
-        "canonical": "#0d6abb",
-        "tonalRamp": ["#04203a", "#063158", "#094a85", "#0d6abb", "#4a9cf1", "#83bcf6", "#b8d8fa", "#e3effd"]
+        "displayName": "Blue — Finance",
+        "canonical": "#0a7cfe",
+        "tonalRamp": ["#001638", "#002f69", "#0254b1", "#0a7cfe", "#318ffe", "#b7cceb", "#dae2ed", "#f2f3f6"]
       },
       "domain-code": {
         "role": "tertiary",
         "displayName": "Cyan — Code",
-        "canonical": "#009fac",
-        "tonalRamp": ["#003035", "#004a51", "#006e78", "#009fac", "#5ad5e3", "#8ee2ec", "#c0eff4", "#e6fafc"]
+        "canonical": "#1b93ba",
+        "tonalRamp": ["#011c26", "#05394a", "#0f6480", "#1b93ba", "#2cc9fc", "#a1d4ea", "#d3e5ed", "#f1f4f6"]
       },
       "domain-travel": {
         "role": "tertiary",
-        "displayName": "Brass — Travel",
-        "canonical": "#9e8400",
-        "tonalRamp": ["#302800", "#4a3d00", "#6e5c00", "#9e8400", "#d1b64a", "#e0cd80", "#eee2b6", "#f9f4e0"]
+        "displayName": "Yellow — Travel",
+        "canonical": "#ffcc0f",
+        "tonalRamp": ["#382b00", "#695202", "#b18d06", "#ffcc0f", "#ffd60a", "#f8eccd", "#ede1bf", "#f6f3ed"]
       },
       "domain-pine": {
         "role": "tertiary",
-        "displayName": "Pine — spare",
-        "canonical": "#005a52",
-        "tonalRamp": ["#001b18", "#002a26", "#003f39", "#005a52", "#298b81", "#67b1a9", "#a5d3ce", "#dcefec"]
+        "displayName": "Teal — spare",
+        "canonical": "#158266",
+        "tonalRamp": ["#011710", "#033225", "#0b5844", "#158266", "#21b18c", "#85e0c1", "#c0eddc", "#eef6f2"]
       },
       "domain-burgundy": {
         "role": "tertiary",
-        "displayName": "Burgundy — spare",
-        "canonical": "#7f002c",
-        "tonalRamp": ["#26000d", "#3b0015", "#59001f", "#7f002c", "#bf2f52", "#d9718a", "#eab0bf", "#f8e2e8"]
+        "displayName": "Rose — spare",
+        "canonical": "#db149b",
+        "tonalRamp": ["#2f011e", "#59033d", "#970a6a", "#db149b", "#fc2cb4", "#ebbad3", "#eddce4", "#f6f2f4"]
       }
     },
     "typographyMeta": {
@@ -241,7 +241,7 @@
       "kind": "custom",
       "refersTo": "",
       "description": "The signature. A pinned 06:00-22:00 measure: filled blocks are events, an outlined tick is a scheduled task, and the now-mark carries its own hour.",
-      "html": "<div class=\"ds-tape\"><div class=\"ds-track\"><i class=\"ds-blk\" style=\"left:18.75%;width:4.4%;background:var(--domain-code,#009fac)\"></i><i class=\"ds-blk\" style=\"left:34.4%;width:2.9%;background:var(--domain-engine,#623ca8)\"></i><i class=\"ds-blk\" style=\"left:50%;width:9.1%;background:var(--domain-family,#bf4ea4)\"></i><i class=\"ds-blk ds-blk-task\" style=\"left:59.4%;color:var(--domain-finance,#0d6abb)\"></i><i class=\"ds-now\" style=\"left:44.8%\"></i></div><div class=\"ds-ticks\"><span style=\"left:0\">06:00</span><span class=\"ds-now-label\" style=\"left:44.8%\">13:10</span><span class=\"ds-end\">22:00</span></div></div>",
+      "html": "<div class=\"ds-tape\"><div class=\"ds-track\"><i class=\"ds-blk\" style=\"left:18.75%;width:4.4%;background:var(--domain-code,#1b93ba)\"></i><i class=\"ds-blk\" style=\"left:34.4%;width:2.9%;background:var(--domain-engine,#514ad4)\"></i><i class=\"ds-blk\" style=\"left:50%;width:9.1%;background:var(--domain-family,#c345fc)\"></i><i class=\"ds-blk ds-blk-task\" style=\"left:59.4%;color:var(--domain-finance,#0a7cfe)\"></i><i class=\"ds-now\" style=\"left:44.8%\"></i></div><div class=\"ds-ticks\"><span style=\"left:0\">06:00</span><span class=\"ds-now-label\" style=\"left:44.8%\">13:10</span><span class=\"ds-end\">22:00</span></div></div>",
       "css": ".ds-tape { width: 100%; } .ds-track { position: relative; height: 46px; border-radius: 12px; background: var(--surface-2, #f0efed); } .ds-blk { position: absolute; top: 0; bottom: 0; min-width: 7px; border-radius: 8px; } .ds-blk-task { background: transparent; border: 2px solid currentColor; min-width: 9px; width: 0; } .ds-now { position: absolute; top: -6px; bottom: -6px; width: 2px; border-radius: 2px; background: var(--ink, #2a2524); z-index: 3; } .ds-ticks { position: relative; height: 16px; margin-top: 9px; } .ds-ticks > span { position: absolute; transform: translateX(-50%); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-4, #b4aea8); } .ds-ticks > span:first-child { transform: none; } .ds-ticks .ds-end { left: auto; right: 0; transform: none; } .ds-ticks .ds-now-label { color: var(--ink, #2a2524); font-weight: 500; }"
     },
     {
@@ -257,7 +257,7 @@
       "kind": "chip",
       "refersTo": "chip-allday",
       "description": "Everything that belongs to the day but has no hour. Chips wrap rather than scroll — a hidden chip is a missed commitment.",
-      "html": "<span class=\"ds-chip\"><i class=\"ds-dot\" style=\"background:var(--domain-travel,#9e8400)\"></i>Voo para o Porto</span>",
+      "html": "<span class=\"ds-chip\"><i class=\"ds-dot\" style=\"background:var(--domain-travel,#ffcc0f)\"></i>Voo para o Porto</span>",
       "css": ".ds-chip { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 13px; border: 1px solid var(--line-strong, #d6d3d0); border-radius: 12px; font-family: Geist, Arial, sans-serif; font-size: 14px; color: var(--ink, #2a2524); white-space: nowrap; } .ds-dot { width: 7px; height: 7px; border-radius: 9999px; flex-shrink: 0; }"
     },
     {

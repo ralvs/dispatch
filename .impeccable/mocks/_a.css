@@ -24,22 +24,23 @@
 	--accent-ink: #c2450a;
 
 	/* ── domain colours ────────────────────────────────────────────────
-	 * Nine slots: the seven seeded stewardship domains plus two spares.
-	 * Generated in OKLCH and measured, never eyeballed — every pair clears
-	 * ΔEok 0.12 at 9px, every one clears 0.15 from the accent and the
-	 * priority ring, and all clear 3:1 on their own ground. Evidence and the
-	 * method: palette-lab.html. Retune there, not here.
+	 * Nine slots: the seven seeded stewardship domains plus two spares. Green,
+	 * Blue, Indigo and Yellow are Apple's system colours; Orchid and Rose are
+	 * ours; Clay, Teal and Cyan were computed to fill what those six left open.
+	 * Every pair clears ΔEok 0.12 at 9px, every one clears 0.15 from the accent
+	 * and the priority ring, and all clear 3:1 on their own ground — except
+	 * Travel, exempt on purpose so the yellow can be a full yellow rather than
+	 * a mustard. Evidence and the method: palette-lab.html. Retune there.
 	 */
-	--burgundy: #7f002c; /* spare */
-	--spirit: #86634f; /* Spirituality — muted on purpose: it sits at the
-	                      accent's hue and separates by chroma, not by hue */
-	--travel: #9e8400;
-	--health: #1f8d54;
-	--pine: #005a52; /* spare */
-	--code: #009fac;
-	--finance: #0d6abb;
-	--engine: #623ca8;
-	--family: #bf4ea4;
+	--spirit: #8b6031; /* Clay */
+	--travel: #ffcc0f; /* Yellow — 1.45:1, exempt */
+	--health: #2aa649; /* Green — Apple */
+	--pine: #158266; /* Teal, spare */
+	--code: #1b93ba; /* Cyan */
+	--finance: #0a7cfe; /* Blue — Apple */
+	--engine: #514ad4; /* Indigo — Apple */
+	--family: #c345fc; /* Orchid */
+	--burgundy: #db149b; /* Rose, spare */
 
 	--r-card: 22px;
 	--r-md: 12px;
@@ -67,15 +68,16 @@
 	--accent-soft: #33211a;
 	--accent-ink: #ff8f5c;
 
-	--burgundy: #bf2f52;
-	--spirit: #a8836e;
-	--travel: #d1b64a;
-	--health: #54b97d;
-	--pine: #298b81;
-	--code: #5ad5e3;
-	--finance: #4a9cf1;
-	--engine: #8f6ddd;
-	--family: #da67bd;
+	/* Same hues; only lightness and chroma move between themes. */
+	--spirit: #a5733c;
+	--travel: #ffd60a;
+	--health: #30d158;
+	--pine: #21b18c;
+	--code: #2cc9fc;
+	--finance: #318ffe;
+	--engine: #5e5ae6;
+	--family: #c756fc;
+	--burgundy: #fc2cb4;
 
 	--lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.34);
 	color-scheme: dark;

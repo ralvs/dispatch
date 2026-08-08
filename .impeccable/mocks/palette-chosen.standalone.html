@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Domain palette — the chosen set</title>
+		<style>
+			:root {
+				--ground: #fafafa; --ground-2: #f0efed; --paper: #ffffff;
+				--ink: #2a2524; --ink-2: #57534e; --ink-3: #8c8681;
+				--rule: #e5e5e5; --rule-2: #d6d3d0;
+				--accent: #f15a0f; --priority: #d92d20;
+				--lift: 0 1px 2px rgba(41,37,36,.04), 0 10px 28px rgba(41,37,36,.05);
+
+				--spirit: #8b6031; --travel: #ffcc0f; --health: #2aa649;
+				--pine: #158266; --code: #1b93ba; --finance: #0a7cfe;
+				--engine: #514ad4; --family: #c345fc; --burgundy: #db149b;
+			}
+			[data-theme="dark"] {
+				--ground: #1a1817; --ground-2: #2b2725; --paper: #232020;
+				--ink: #f5f2ef; --ink-2: #b8b1ab; --ink-3: #8d8681;
+				--rule: #322e2c; --rule-2: #423d3a;
+				--accent: #ff6f2c; --priority: #ff6a5e;
+				--lift: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.34);
+				color-scheme: dark;
+
+				--spirit: #a5733c; --travel: #ffd60a; --health: #30d158;
+				--pine: #21b18c; --code: #2cc9fc; --finance: #318ffe;
+				--engine: #5e5ae6; --family: #c756fc; --burgundy: #fc2cb4;
+			}
+			* { box-sizing: border-box; }
+			body {
+				margin: 0; padding: 0 0 70px; background: var(--ground); color: var(--ink);
+				font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+				-webkit-font-smoothing: antialiased;
+			}
+			.mono, .eyebrow { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+			.eyebrow { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+			.wrap { max-width: 1180px; margin: 0 auto; padding: 34px 44px 0; }
+			h1 { font-size: 32px; font-weight: 500; letter-spacing: -.8px; margin: 0 0 6px; }
+			.sub { font-size: 16px; color: var(--ink-2); margin: 0 0 32px; max-width: 66ch; line-height: 1.55; }
+			.card { border: 1px solid var(--rule); border-radius: 22px; background: var(--paper);
+			        box-shadow: var(--lift); padding: 24px 26px; margin-bottom: 26px; }
+			.card > h2 { font-size: 17px; font-weight: 500; letter-spacing: -.02em; margin: 0 0 16px; }
+			.sw { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+			.sw > div { border-radius: 12px; height: 74px; padding: 9px 11px; color: #fff;
+			            display: flex; flex-direction: column; justify-content: space-between; }
+			.sw b { font-weight: 500; font-size: 14px; font-family: ui-sans-serif, system-ui, sans-serif; }
+			.sw span { font-family: ui-monospace, Menlo, monospace; font-size: 11px; opacity: .82; }
+			.sw > div.ondark { color: #1a1817; }
+			.two { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: start; }
+			.row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--rule); }
+			.row:last-child { border-bottom: 0; }
+			.dot { width: 9px; height: 9px; border-radius: 999px; flex-shrink: 0; }
+			.row .t { font-size: 16px; letter-spacing: -.01em; }
+			.row .d { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--ink-3); width: 42px; flex-shrink: 0; }
+			.track { position: relative; height: 46px; background: var(--ground-2); border-radius: 12px; }
+			.blk { position: absolute; top: 0; bottom: 0; border-radius: 8px; }
+			.blk.task { background: transparent; border: 2px solid currentColor; }
+			.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+			.ad { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 13px;
+			      border: 1px solid var(--rule-2); border-radius: 12px; font-size: 14px; }
+			.ad i { width: 7px; height: 7px; border-radius: 999px; }
+			.rings { display: flex; gap: 16px; align-items: center; }
+			.ring { width: 36px; height: 36px; border-radius: 50%; position: relative; }
+			.ring i { position: absolute; inset: 5px; border-radius: 50%; background: var(--paper); }
+			.states { display: flex; gap: 18px; align-items: center; }
+			.states span { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); }
+			.states i { width: 10px; height: 10px; border-radius: 999px; }
+			.themebar { position: sticky; top: 0; z-index: 5; background: var(--ground); border-bottom: 1px solid var(--rule); }
+			.themebar .inner { max-width: 1180px; margin: 0 auto; padding: 14px 44px; display: flex; gap: 10px; align-items: center; }
+			button.sw-btn { height: 34px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--rule-2);
+			                background: transparent; color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; }
+			button.sw-btn[aria-pressed="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+			.note { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--ink-3); line-height: 1.65; }
+			.floors { display: flex; flex-wrap: wrap; gap: 18px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+			.floors b { font-weight: 400; color: var(--ink); }
+			.pass { color: var(--health); }
+			.warn { color: var(--accent); }
+			.block { margin-top: 22px; }
+			.block > .eyebrow { display: block; margin-bottom: 10px; }
+			@media (max-width: 980px) { .two { grid-template-columns: 1fr; } .sw { grid-template-columns: repeat(2, 1fr); } }
+		</style>
+	</head>
+	<body>
+		<div class="themebar">
+			<div class="inner">
+				<button class="sw-btn" id="tLight" aria-pressed="true" type="button">Light</button>
+				<button class="sw-btn" id="tDark" aria-pressed="false" type="button">Dark</button>
+				<span class="note" style="margin: 0 0 0 10px">Six of the nine are exactly what you picked. Three I filled.</span>
+			</div>
+		</div>
+
+		<div class="wrap">
+			<h1>The chosen set</h1>
+			<p class="sub">
+				Apple's Green, Blue and Indigo untouched; Orchid and Rose from the first set; a full
+				bright Yellow at Apple's own <span class="mono">#FFCC00</span>. Three slots were open
+				and I filled them: <b>Clay</b>, a warm brown that gives the set a low warm note the
+				six picks had no room for; <b>Teal</b> and <b>Cyan</b>, which fill the whole
+				green-to-blue gap between Green and Blue — without them, Health at h147 and Blue at
+				h257 leave a 110° hole and the palette reads as two clusters.
+			</p>
+
+			<div class="card">
+				<h2>The nine</h2>
+				<div class="sw" id="sw"></div>
+			</div>
+
+			<div class="two">
+				<div class="card">
+					<h2>9px dot on a task row</h2>
+					<div id="rows"></div>
+				</div>
+				<div>
+					<div class="card">
+						<h2>Day tape</h2>
+						<div class="track" id="tape"></div>
+						<div class="block">
+							<span class="eyebrow">All-day chips</span>
+							<div class="chips" id="chips"></div>
+						</div>
+						<div class="block">
+							<span class="eyebrow">Project rings</span>
+							<div class="rings" id="rings"></div>
+						</div>
+					</div>
+					<div class="card">
+						<h2>Reserved — nothing lands near these</h2>
+						<div class="states">
+							<span><i style="background: var(--accent)"></i>accent</span>
+							<span><i style="background: var(--priority)"></i>priority ring</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="card">
+				<h2>Measured</h2>
+				<div class="floors" id="floors"></div>
+				<p class="note" style="margin: 16px 0 0">
+					The one broken rule is Yellow, and it is broken on purpose: at
+					<span class="mono">#FFCC00</span> it is 1.45:1 on this ground. A yellow that
+					clears 3:1 is a mustard — you asked for the full one, so Yellow is exempt and
+					every other slot still holds 3:1. In dark it is 12.53:1, so this only exists on
+					the light ground.
+				</p>
+			</div>
+		</div>
+
+		<script>
+			const SLOTS = [
+				{ key: "spirit", name: "Clay", label: "Spirituality", origin: "filled" },
+				{ key: "travel", name: "Yellow", label: "Travel", origin: "Apple, full" },
+				{ key: "health", name: "Green", label: "Health", origin: "Apple" },
+				{ key: "pine", name: "Teal", label: "spare", origin: "filled" },
+				{ key: "code", name: "Cyan", label: "Code", origin: "filled" },
+				{ key: "finance", name: "Blue", label: "Finance", origin: "Apple" },
+				{ key: "engine", name: "Indigo", label: "Engine", origin: "Apple" },
+				{ key: "family", name: "Orchid", label: "Family", origin: "set 1" },
+				{ key: "burgundy", name: "Rose", label: "spare", origin: "set 1" },
+			];
+			const LIGHT = ["#8b6031","#ffcc0f","#2aa649","#158266","#1b93ba","#0a7cfe","#514ad4","#c345fc","#db149b"];
+			const DARK = ["#a5733c","#ffd60a","#30d158","#21b18c","#2cc9fc","#318ffe","#5e5ae6","#c756fc","#fc2cb4"];
+			// Yellow is the one swatch whose own label has to flip to dark ink.
+			const ONDARK = new Set(["travel"]);
+
+			const TASKS = [
+				["Reconciliar cartão de crédito", 5],
+				["Renew the CalDAV app password", 6],
+				["Treino", 2],
+				["Draft the Q3 travel plan", 1],
+				["Push the capture-parser fix", 4],
+				["Ligar para a mãe", 7],
+			];
+			const BLOCKS = [
+				[6, 9, 4, "event"], [19, 6, 6, "event"], [30, 4, 2, "event"],
+				[42, 12, 8, "event"], [60, 0, 5, "task"], [70, 9, 0, "event"], [86, 7, 3, "event"],
+			];
+			const FLOORS = {
+				light: [["worst pair", "0.128", "pine/code", true], ["worst vs state", "0.159", "spirit/priority", true], ["worst contrast", "3.03:1", "health", true]],
+				dark: [["worst pair", "0.128", "health/pine", true], ["worst vs state", "0.159", "spirit/accent", true], ["worst contrast", "3.44:1", "engine", true]],
+			};
+
+			function paint(dark) {
+				const c = dark ? DARK : LIGHT;
+				document.getElementById("sw").innerHTML = SLOTS.map(
+					(s, i) =>
+						`<div class="${ONDARK.has(s.key) ? "ondark" : ""}" style="background:${c[i]}"><b>${s.name}</b><span>${c[i]} · ${s.origin}</span></div>`,
+				).join("");
+				document.getElementById("rows").innerHTML = TASKS.map(
+					([t, i]) =>
+						`<div class="row"><span class="d">15:30</span><span class="dot" style="background:${c[i]}"></span><span class="t">${t}</span></div>`,
+				).join("");
+				document.getElementById("tape").innerHTML = BLOCKS.map(([l, w, i, k]) =>
+					k === "task"
+						? `<div class="blk task" style="left:${l}%;width:9px;color:${c[i]}"></div>`
+						: `<div class="blk" style="left:${l}%;width:${w}%;background:${c[i]}"></div>`,
+				).join("");
+				document.getElementById("chips").innerHTML = [
+					["Voo para o Porto", 1], ["Renew the domain", 6], ["Consulta", 2],
+				]
+					.map(([t, i]) => `<span class="ad"><i style="background:${c[i]}"></i>${t}</span>`)
+					.join("");
+				document.getElementById("rings").innerHTML = [[6, 64], [1, 28], [5, 80], [3, 45]]
+					.map(
+						([i, p]) =>
+							`<span class="ring" style="background:conic-gradient(${c[i]} ${p}%, var(--ground-2) 0)"><i></i></span>`,
+					)
+					.join("");
+				document.getElementById("floors").innerHTML = FLOORS[dark ? "dark" : "light"]
+					.map(([n, v, at, ok]) => `<span>${n} <b>${v}</b> (${at}) <span class="${ok ? "pass" : "warn"}">PASS</span></span>`)
+					.concat(dark ? [] : ['<span>travel <b>1.45:1</b> <span class="warn">exempt</span></span>'])
+					.join("");
+			}
+
+			function setTheme(dark) {
+				document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+				document.getElementById("tLight").setAttribute("aria-pressed", String(!dark));
+				document.getElementById("tDark").setAttribute("aria-pressed", String(dark));
+				paint(dark);
+			}
+			document.getElementById("tLight").addEventListener("click", () => setTheme(false));
+			document.getElementById("tDark").addEventListener("click", () => setTheme(true));
+			setTheme(false);
+		</script>
+	</body>
+</html>

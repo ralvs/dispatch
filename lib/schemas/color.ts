@@ -8,12 +8,15 @@ import { z } from "zod";
  * light/dark pair via `var(--domain-<slug>)`. Retuning a colour becomes a
  * token edit rather than an UPDATE.
  *
- * Nine slots: the seven seeded stewardship domains plus two spares. They were
- * generated in OKLCH and measured against three floors — ΔEok ≥ 0.12 between
- * any two (the smallest form is a 9px dot), ≥ 0.15 from the accent and the
- * priority ring (confusing a domain with a *state* is worse than confusing two
- * domains), and ≥ 3:1 on their own ground — met in both themes. Evidence and
- * method: .impeccable/mocks/palette-lab.html. Retune there, never by hand.
+ * Nine slots: the seven seeded stewardship domains plus two spares. Green,
+ * Blue, Indigo and Yellow are Apple's system colours, Orchid and Rose are ours,
+ * and Clay, Teal and Cyan were computed to fill what those six left open. All
+ * nine are measured against three floors — ΔEok ≥ 0.12 between any two (the
+ * smallest form is a 9px dot), ≥ 0.15 from the accent and the priority ring
+ * (confusing a domain with a *state* is worse than confusing two domains), and
+ * ≥ 3:1 on their own ground — met in both themes, with Travel exempt from the
+ * last one so the yellow can be a full yellow. Evidence and method:
+ * .impeccable/mocks/palette-lab.html. Retune there, never by hand.
  *
  * The eight-hex palette this replaces was tuned for the warm linen ground of
  * an identity two visual worlds ago, and its rust was byte-identical to the
@@ -35,17 +38,21 @@ export type ColorSlug = (typeof COLOR_SLUGS)[number];
 
 export const ColorSlugSchema = z.enum(COLOR_SLUGS);
 
-/** Human labels for the picker. The slug is the identity; this is the name. */
+/**
+ * Human labels for the picker. The slug is the identity and it is persisted, so
+ * a colour can be renamed without a migration — which is why `pine` is labelled
+ * Teal and `burgundy` is labelled Rose.
+ */
 export const COLOR_SLUG_LABELS: Record<ColorSlug, string> = {
-	engine: "Iris",
-	health: "Fern",
+	engine: "Indigo",
+	health: "Green",
 	family: "Orchid",
 	spirit: "Clay",
-	finance: "Azure",
+	finance: "Blue",
 	code: "Cyan",
-	travel: "Brass",
-	pine: "Pine",
-	burgundy: "Burgundy",
+	travel: "Yellow",
+	pine: "Teal",
+	burgundy: "Rose",
 };
 
 /**

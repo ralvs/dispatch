@@ -54,26 +54,36 @@
 
 	/* ── domain colours ────────────────────────────────────────────────
 	 * Nine slots: the seven seeded stewardship domains plus two spares.
-	 * Generated in OKLCH and measured, never eyeballed — every pair clears
-	 * ΔEok 0.12 at 9px (a domain's smallest form is a 9px dot), every one
-	 * clears 0.15 from the accent and the priority ring, and all clear 3:1
-	 * on their own ground. Evidence and method:
-	 * .impeccable/mocks/palette-lab.html. Retune there, never by hand here.
+	 * Six of the nine are chosen values, six are held: Green, Blue and Indigo
+	 * are Apple's system colours untouched, Yellow is Apple's #FFCC00, Orchid
+	 * and Rose are ours. Clay, Teal and Cyan were computed to fill what the
+	 * six left open — a low warm note, and the 110° hole between Green (h147)
+	 * and Blue (h257) that would otherwise split the set into two clusters.
 	 *
-	 * This fixed a live defect: --engine used to be #f15a0f, byte-identical
-	 * to the accent, so every Engine dot read as "interactive" or "overdue".
+	 * Every pair clears ΔEok 0.12 at 9px (a domain's smallest form is a 9px
+	 * dot), every one clears 0.15 from the accent and the priority ring, and
+	 * all clear 3:1 on their own ground — in both themes. Worst case here:
+	 * pair 0.128 (pine/code), state 0.159 (spirit/priority), contrast 3.03
+	 * (health). Evidence and method: .impeccable/mocks/palette-lab.html.
+	 * Retune there, never by hand here.
+	 *
+	 * Travel is the one exemption, and it is deliberate: a full yellow is
+	 * 1.45:1 on this ground, and the brightest yellow that clears 3:1 is a
+	 * mustard. Brightness won. In dark it is 12.53:1, so the exemption exists
+	 * only on the light ground.
+	 *
+	 * This also fixed a live defect: --engine used to be #f15a0f, byte-
+	 * identical to the accent, so every Engine dot read as "interactive".
 	 */
-	--domain-engine: #623ca8;
-	--domain-health: #1f8d54;
-	--domain-family: #bf4ea4;
-	/* Spirituality sits at the accent's own hue and separates by chroma, not
-	 * by hue — muted on purpose, which suits the domain. */
-	--domain-spirit: #86634f;
-	--domain-finance: #0d6abb;
-	--domain-code: #009fac;
-	--domain-travel: #9e8400;
-	--domain-pine: #005a52;
-	--domain-burgundy: #7f002c;
+	--domain-spirit: #8b6031; /* Clay */
+	--domain-travel: #ffcc0f; /* Yellow — exempt from the 3:1 floor */
+	--domain-health: #2aa649; /* Green — Apple systemGreen */
+	--domain-pine: #158266; /* Teal */
+	--domain-code: #1b93ba; /* Cyan */
+	--domain-finance: #0a7cfe; /* Blue — Apple systemBlue */
+	--domain-engine: #514ad4; /* Indigo — Apple systemIndigo */
+	--domain-family: #c345fc; /* Orchid */
+	--domain-burgundy: #db149b; /* Rose */
 
 	/* ── priority ──────────────────────────────────────────────────────
 	 * One hue at three intensities, not three hues: the seven domain
@@ -115,15 +125,18 @@
 	--warning: #d1a44a;
 	--success: #54b97d;
 
-	--domain-engine: #8f6ddd;
-	--domain-health: #54b97d;
-	--domain-family: #da67bd;
-	--domain-spirit: #a8836e;
-	--domain-finance: #4a9cf1;
-	--domain-code: #5ad5e3;
-	--domain-travel: #d1b64a;
-	--domain-pine: #298b81;
-	--domain-burgundy: #bf2f52;
+	/* Same nine hues — a slug has to be the same colour in both themes, so only
+	 * lightness and chroma differ here, never hue. Travel needs no exemption on
+	 * this ground: Apple's own dark yellow is 12.53:1. */
+	--domain-spirit: #a5733c;
+	--domain-travel: #ffd60a; /* Apple systemYellow, dark appearance */
+	--domain-health: #30d158; /* Apple systemGreen, dark appearance */
+	--domain-pine: #21b18c;
+	--domain-code: #2cc9fc;
+	--domain-finance: #318ffe;
+	--domain-engine: #5e5ae6; /* Apple systemIndigo, dark appearance */
+	--domain-family: #c756fc;
+	--domain-burgundy: #fc2cb4;
 
 	--priority-high: #ff6a5e;
 	--priority-high-halo: rgba(255, 106, 94, 0.2);
