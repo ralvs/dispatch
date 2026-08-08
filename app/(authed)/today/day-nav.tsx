@@ -14,7 +14,7 @@ const STEP =
 	"inline-flex size-7 shrink-0 items-center justify-center rounded-pill border border-line-strong text-ink-3 transition-colors hover:border-ink-4 hover:text-ink active:opacity-70 disabled:opacity-40";
 
 /** Every label variant stacks in the same grid cell. */
-const CELL = "col-start-1 row-start-1 min-w-0";
+const CELL = "col-start-1 row-start-1 min-w-0 text-center";
 
 /**
  * The longest date the label can ever hold: the longest weekday, a two-digit
