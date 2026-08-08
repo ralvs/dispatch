@@ -36,20 +36,22 @@ type MentionState = {
 
 const CLOSED: MentionState = { open: false, start: 0, items: [], selected: 0 };
 
-/** Shared caret-driven autocomplete state, used by both field wrappers below. */
+/**
+ * Shared caret-driven autocomplete state, used by both field wrappers below.
+ *
+ * Deliberately takes no `value`: every helper reads `el.value` instead.
+ * `recompute` runs synchronously inside onChange, one React tick BEFORE the
+ * prop catches up, so the prop is always one keystroke stale there — it would
+ * compute the suggestions for what was typed a moment ago (typing "@Th" offered
+ * the candidates for "@T", and the keystroke before that offered all of them).
+ * The DOM element is the only source that is current in every handler.
+ */
 function useMentionAutocomplete(
-	value: string,
 	people: MentionCandidate[],
 	onValueChange: (value: string) => void,
 ) {
 	const [state, setState] = useState<MentionState>(CLOSED);
 
-	// Both helpers read `el.value`, never the `value` prop. `recompute` runs
-	// synchronously inside onChange, one React tick BEFORE the prop catches up,
-	// so the prop is always one keystroke stale there — it would compute the
-	// suggestions for what was typed a moment ago (typing "@Th" offered the
-	// candidates for "@T", and the keystroke before that offered all of them).
-	// The DOM element is the only source that is current in every handler.
 	function recompute(el: FieldEl | null) {
 		if (!el) return;
 		const current = el.value;
@@ -190,7 +192,6 @@ export function MentionTextInput({
 	const ref = useRef<HTMLInputElement>(null);
 	const listId = useId();
 	const { state, recompute, accept, onKeyDown, close } = useMentionAutocomplete(
-		value,
 		people,
 		onValueChange,
 	);
@@ -251,7 +252,6 @@ export function MentionTextarea({
 	const ref = useRef<HTMLTextAreaElement>(null);
 	const listId = useId();
 	const { state, recompute, accept, onKeyDown, close } = useMentionAutocomplete(
-		value,
 		people,
 		onValueChange,
 	);
