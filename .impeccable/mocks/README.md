@@ -1,8 +1,8 @@
-# Today comps
+# Design comps
 
-Design comps for the Today refactor. Throwaway HTML, not app code — the shared
-world lives in `_a.css`, and each `*.standalone.html` inlines it so the file
-opens anywhere.
+Comps for the Today refactor and the passes that follow it. Throwaway HTML, not
+app code — the shared world lives in `_a.css`, and each `*.standalone.html`
+inlines it so the file opens anywhere.
 
 Serve them with `bun run` — or the `mocks` entry in `.claude/launch.json`
 (`python3 -m http.server 4500 --directory .impeccable/mocks`).
@@ -27,6 +27,39 @@ Serve them with `bun run` — or the `mocks` entry in `.claude/launch.json`
 | `today-a1-rail-quiet.html` | Alternate, empty states. |
 | `palette-lab.html` | **The domain palette**, with the measurements that justify it. |
 | `tape-lab.html` | Why the day tape carries no event titles — measured against a real day. |
+| `chrome-header-lab.html` | **Pass 0.** The page header, three ways, over `/projects`, `/notes` and `/inbox`. Theme and width toggle in place. |
+
+## The page header (Pass 0)
+
+`chrome-header-lab.html` is the decision surface for the one piece of real
+design in the shared-chrome pass. Twelve surfaces repeat one header and Today
+cannot answer what replaces it — Today has no page header at all.
+
+One measured fact reframes the question the brief asked. The desktop tab group
+has five tabs (Today / Tasks / Notes / Links / More) and **eight of the twelve
+pages sit behind More**, so on `/projects` the active pill says "More", which
+names nothing. The tab group is a coarse locator and the page header is the fine
+one; the header is not redundant on desktop, and the desktop/phone asymmetry the
+brief anticipated does not exist. What is open is only **how much room the page
+name gets**, and the three options move along that one axis.
+
+| | Title | Measure | Divider |
+|---|---|---|---|
+| **A — Headline** | 36px sans, 30px on phone | quiet line beneath | none |
+| **B — Measured** | 30px sans, unchanged on phone | on the title's baseline, Today's counters idiom | 1px `--line` |
+| **C — Label bar** | mono 12 uppercase, the whole header is one bar | inline, mono 12 | 1px `--line` |
+
+All three carry the same four slots — **title · measure · subtitle · action** —
+and two decisions are constant across them, so neither is being voted on: the
+linen-era second title ("What's in motion", "Loose thoughts") is gone, and the
+eyebrow never sits above a heading again. It stays alive everywhere it is a
+system label; the *stack* is what this pass deletes.
+
+The bodies are drawn as Pass 0 will actually leave them — the legacy
+composition minus `font-serif` — because passes 2–4 are what redesign them.
+That is deliberate: it is what exposes C's collision, where the page title
+`PROJECTS` and the group label `ACTIVE` are the same 12px mono a few pixels
+apart, separated only by `ink` against `ink-4`.
 
 ## A1 vs A2 — one axis
 

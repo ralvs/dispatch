@@ -1,0 +1,1557 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Page header — three options</title>
+		<style>
+/* Dispatch — Today, revision A.
+ * Type + palette lifted exactly from bydefault.so:
+ *   Geist Sans, weights 400/500 ONLY, ramp 56/44/36/30/18/16/14/12,
+ *   h1 56px/500/-1.4px/1.04, ground neutral-50, warm stone ink, #f15a0f accent.
+ * Geometry (pills, large card radii) from collectiveos.vercel.app.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400;500&display=swap");
+
+:root {
+	--ground: #fafafa;
+	--ground-2: #f0efed;
+	--paper: #ffffff;
+
+	--ink: #2a2524;
+	--ink-2: #57534e;
+	--ink-3: #8c8681;
+	--ink-4: #b4aea8;
+	--rule: #e5e5e5;
+	--rule-2: #d6d3d0;
+
+	--accent: #f15a0f;
+	--accent-soft: #fdf0e8;
+	--accent-ink: #c2450a;
+
+	/* ── domain colours ────────────────────────────────────────────────
+	 * Nine slots: the seven seeded stewardship domains plus two spares. Green,
+	 * Blue, Indigo and Yellow are Apple's system colours; Orchid and Rose are
+	 * ours; Clay, Teal and Cyan were computed to fill what those six left open.
+	 * Every pair clears ΔEok 0.12 at 9px, every one clears 0.15 from the accent
+	 * and the priority ring, and all clear 3:1 on their own ground — except
+	 * Travel, exempt on purpose so the yellow can be a full yellow rather than
+	 * a mustard. Evidence and the method: palette-lab.html. Retune there.
+	 */
+	--spirit: #8b6031; /* Clay */
+	--travel: #ffcc0f; /* Yellow — 1.45:1, exempt */
+	--health: #2aa649; /* Green — Apple */
+	--pine: #158266; /* Teal, spare */
+	--code: #1b93ba; /* Cyan */
+	--finance: #0a7cfe; /* Blue — Apple */
+	--engine: #514ad4; /* Indigo — Apple */
+	--family: #c345fc; /* Orchid */
+	--burgundy: #db149b; /* Rose, spare */
+
+	--r-card: 22px;
+	--r-md: 12px;
+	--r-pill: 999px;
+
+	--lift: 0 1px 2px rgba(41, 37, 36, 0.04), 0 10px 28px rgba(41, 37, 36, 0.05);
+
+	--sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+	--mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+[data-theme="dark"] {
+	--ground: #1a1817;
+	--ground-2: #2b2725;
+	--paper: #232020;
+
+	--ink: #f5f2ef;
+	--ink-2: #b8b1ab;
+	--ink-3: #8d8681;
+	--ink-4: #6b645f;
+	--rule: #322e2c;
+	--rule-2: #423d3a;
+
+	--accent: #ff6f2c;
+	--accent-soft: #33211a;
+	--accent-ink: #ff8f5c;
+
+	/* Same hues; only lightness and chroma move between themes. */
+	--spirit: #a5733c;
+	--travel: #ffd60a;
+	--health: #30d158;
+	--pine: #21b18c;
+	--code: #2cc9fc;
+	--finance: #318ffe;
+	--engine: #5e5ae6;
+	--family: #c756fc;
+	--burgundy: #fc2cb4;
+
+	--lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.34);
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: var(--ground);
+	color: var(--ink);
+	font-family: var(--sans);
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+
+/* ── type ramp (bydefault): 56 / 44 / 36 / 30 / 18 / 16 / 14 / 12 ── */
+.t56 {
+	font-size: 56px;
+	font-weight: 500;
+	letter-spacing: -1.4px;
+	line-height: 1.04;
+}
+.t30 {
+	font-size: 30px;
+	font-weight: 500;
+	letter-spacing: -0.75px;
+	line-height: 1.15;
+}
+.t18 {
+	font-size: 18px;
+	font-weight: 400;
+	line-height: 1.7;
+	color: var(--ink-2);
+}
+.t16 {
+	font-size: 16px;
+	font-weight: 400;
+}
+.t14 {
+	font-size: 14px;
+	font-weight: 400;
+	color: var(--ink-2);
+}
+.t12 {
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--ink-3);
+}
+
+.eyebrow {
+	font-family: var(--mono);
+	font-size: 12px;
+	font-weight: 400;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+.num {
+	font-variant-numeric: tabular-nums;
+}
+
+/* ── chrome ── */
+.card {
+	background: var(--paper);
+	border: 1px solid var(--rule);
+	border-radius: var(--r-card);
+	box-shadow: var(--lift);
+}
+
+.pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 40px;
+	padding: 0 20px;
+	border: 0;
+	border-radius: var(--r-pill);
+	background: var(--ink);
+	color: var(--ground);
+	font-family: var(--sans);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+}
+.pill-ghost {
+	background: transparent;
+	border: 1px solid var(--rule-2);
+	color: var(--ink);
+	font-weight: 400;
+}
+.pill-accent {
+	background: var(--accent);
+	color: #fff;
+}
+
+/* header (from comp C) */
+.hdr {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+}
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 16px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+}
+.brand-mark {
+	width: 26px;
+	height: 26px;
+	border-radius: 8px;
+	background: var(--accent);
+	position: relative;
+	flex-shrink: 0;
+}
+.brand-mark::after {
+	content: "";
+	position: absolute;
+	inset: 8px 7px;
+	border-left: 2px solid #fff;
+	border-bottom: 2px solid #fff;
+	transform: rotate(-45deg) translate(1px, -1px);
+}
+.tabs {
+	display: flex;
+	gap: 2px;
+	background: var(--ground-2);
+	padding: 5px;
+	border-radius: var(--r-pill);
+}
+.tab {
+	padding: 7px 18px;
+	border-radius: var(--r-pill);
+	font-size: 14px;
+	color: var(--ink-3);
+}
+.tab.on {
+	background: var(--paper);
+	color: var(--ink);
+	font-weight: 500;
+	box-shadow: 0 1px 2px rgba(41, 37, 36, 0.06), 0 2px 8px rgba(41, 37, 36, 0.05);
+}
+
+/* marks */
+.dot {
+	display: inline-block;
+	width: 9px;
+	height: 9px;
+	border-radius: var(--r-pill);
+	flex-shrink: 0;
+}
+.check {
+	width: 19px;
+	height: 19px;
+	border: 1.5px solid var(--rule-2);
+	border-radius: 7px;
+	flex-shrink: 0;
+	background: var(--paper);
+	position: relative;
+}
+.check.on {
+	background: var(--ink);
+	border-color: var(--ink);
+}
+.check.on::after {
+	content: "";
+	position: absolute;
+	left: 5.5px;
+	top: 2.5px;
+	width: 5px;
+	height: 9.5px;
+	border: solid var(--paper);
+	border-width: 0 1.75px 1.75px 0;
+	transform: rotate(45deg);
+}
+
+/* routines progress bar (from comp B) */
+.meter {
+	height: 7px;
+	border-radius: var(--r-pill);
+	background: var(--ground-2);
+	overflow: hidden;
+}
+.meter i {
+	display: block;
+	height: 100%;
+	border-radius: var(--r-pill);
+	background: var(--ink);
+}
+
+/* headline row — counters ride on the right, off the headline's baseline */
+.head-row {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 48px;
+}
+.counters {
+	display: grid;
+	gap: 7px;
+	text-align: right;
+	flex-shrink: 0;
+	padding-bottom: 6px;
+}
+.counters div {
+	font-size: 14px;
+	color: var(--ink-2);
+	white-space: nowrap;
+}
+.counters b {
+	font-weight: 500;
+	font-size: 16px;
+	color: var(--ink);
+	font-variant-numeric: tabular-nums;
+	margin-right: 5px;
+}
+.counters .late,
+.counters .late b {
+	color: var(--accent);
+}
+
+/* ── day tape ──────────────────────────────────────────────────────────
+ * Span is 06:00–22:00 = 960 min. left% = (start-360)/9.6, width% = mins/9.6.
+ * Start times ride ABOVE the track so a 15-minute block never has to carry
+ * text; the block itself only has to stay visible, which a min-width buys.
+ */
+.tape-times {
+	position: relative;
+	height: 16px;
+	margin-bottom: 5px;
+}
+.tape-times span {
+	position: absolute;
+	transform: translateX(-1px);
+	font-family: var(--mono);
+	font-size: 11px;
+	color: var(--ink-3);
+	white-space: nowrap;
+}
+.measure-track {
+	position: relative;
+	height: 46px;
+	background: var(--ground-2);
+	border-radius: 12px;
+}
+.blk {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	min-width: 7px;
+	display: flex;
+	align-items: center;
+	padding: 0 10px;
+	border-radius: 8px;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 500;
+	letter-spacing: -0.01em;
+	white-space: nowrap;
+	overflow: hidden;
+}
+/* a scheduled task is a point in time, not a span: an outlined tick that
+   still carries its own domain colour. */
+.blk.task {
+	background: transparent !important;
+	border: 2px solid currentColor;
+	padding: 0;
+	min-width: 9px;
+}
+.nowmark {
+	position: absolute;
+	top: -6px;
+	bottom: -6px;
+	width: 2px;
+	background: var(--ink);
+	border-radius: 2px;
+	z-index: 3;
+}
+.ticks {
+	position: relative;
+	margin-top: 9px;
+	height: 16px;
+}
+.ticks > span {
+	position: absolute;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-4);
+	transform: translateX(-50%);
+}
+.ticks > span:first-child {
+	transform: none;
+}
+.ticks .now-label {
+	color: var(--ink);
+	font-weight: 500;
+	transform: translateX(-50%);
+}
+
+/* Event marker: a calendar glyph sits in the checkbox's column, so events and
+   tasks line up in one band. Mirrors the shipped ScheduleRow. */
+.cal {
+	width: 19px;
+	height: 19px;
+	flex-shrink: 0;
+	color: var(--ink-3);
+	display: grid;
+	place-items: center;
+}
+.cal svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Empty band placeholder */
+.empty-band {
+	padding: 26px 0 30px;
+	color: var(--ink-3);
+	font-size: 16px;
+	font-style: italic;
+	border-bottom: 1px solid var(--rule);
+}
+.empty-band span {
+	font-style: normal;
+	display: block;
+	margin-top: 6px;
+	font-size: 14px;
+	color: var(--ink-4);
+}
+
+/* Resurfaced quote */
+.quote blockquote {
+	margin: 12px 0 0;
+	font-size: 18px;
+	line-height: 1.55;
+	font-style: italic;
+	letter-spacing: -0.01em;
+	color: var(--ink);
+}
+.quote .attrib {
+	margin: 10px 0 0;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+}
+.quote .acts {
+	margin-top: 18px;
+	display: flex;
+	gap: 20px;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+}
+
+/* Completion ring (routines top level + projects) */
+.ring {
+	border-radius: 50%;
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	position: relative;
+}
+.ring > .hole {
+	position: absolute;
+	border-radius: 50%;
+	background: var(--paper);
+}
+.ring > .val {
+	position: relative;
+	font-family: var(--mono);
+	font-variant-numeric: tabular-nums;
+	color: var(--ink-2);
+}
+
+/* Seven-day streak trail — tiny squares, one per day */
+.trail {
+	display: flex;
+	gap: 3px;
+	align-items: center;
+}
+.trail i {
+	width: 6px;
+	height: 6px;
+	border-radius: 2px;
+	background: var(--rule-2);
+	display: block;
+}
+.trail i.on {
+	background: var(--ink-2);
+}
+.streak {
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+	width: 30px;
+	text-align: right;
+}
+.streak.hot {
+	color: var(--accent);
+}
+
+.wrap {
+	max-width: 1180px;
+	margin: 0 auto;
+	padding: 30px 44px 80px;
+}
+.cols {
+	display: grid;
+	grid-template-columns: 1.5fr 1fr;
+	gap: 40px;
+	align-items: start;
+}
+h2.sec {
+	font-size: 16px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+	margin: 0;
+}
+.sec-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+.panel {
+	padding: 22px 24px;
+}
+.stack > * + * {
+	margin-top: 16px;
+}
+
+/* ── day navigation ────────────────────────────────────────────────────
+ * The nav IS the dateline. A separate widget above the tape would state the
+ * day twice, so the chevrons flank the date that was already there.
+ *
+ * The label always names the real date — never "TOMORROW". Being off today is
+ * carried by the reset pill existing at all, which keeps the label purely
+ * informative instead of switching voice with the mode.
+ */
+.daynav {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.step {
+	width: 28px;
+	height: 28px;
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	padding: 0;
+	border: 1px solid var(--rule-2);
+	border-radius: var(--r-pill);
+	background: transparent;
+	color: var(--ink-3);
+	cursor: pointer;
+}
+.step:hover {
+	color: var(--ink);
+	border-color: var(--ink-4);
+}
+.step svg {
+	width: 15px;
+	height: 15px;
+}
+.daynav .daylabel {
+	white-space: nowrap;
+}
+/* Holds its slot on today so the chevrons never shift when the day changes. */
+.today-reset {
+	height: 28px;
+	padding: 0 12px;
+	font-size: 12px;
+	margin-left: 4px;
+}
+.today-reset[hidden] {
+	display: inline-flex;
+	visibility: hidden;
+}
+/* Stepping a day dims the payload the nav owns — tape, all-day, timeline —
+   and nothing else. Mirrors the shipped `pending` transition. */
+.day-owned {
+	transition: opacity 0.18s ease;
+}
+[data-pending] .day-owned {
+	opacity: 0.55;
+}
+
+/* ── all-day band ──────────────────────────────────────────────────────
+ * Everything that belongs to the day but has no hour, so the tape is
+ * structurally incapable of showing it. It caps the tape from above for
+ * exactly that reason: together they are the whole day.
+ */
+.allday {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	margin-bottom: 14px;
+}
+.allday > .eyebrow {
+	flex-shrink: 0;
+}
+.ad {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 30px;
+	padding: 0 13px;
+	border: 1px solid var(--rule-2);
+	border-radius: var(--r-md);
+	font-size: 14px;
+	color: var(--ink);
+	white-space: nowrap;
+}
+.ad .dot {
+	width: 7px;
+	height: 7px;
+}
+		</style>
+		<style>
+			/* ── lab chrome ─────────────────────────────────────────────────────
+			 * The scaffolding around the comps is deliberately not the design: it
+			 * sits on --ground-2 so the specimens keep the real --ground beneath
+			 * them, exactly as a page does.
+			 */
+			body {
+				background: var(--ground-2);
+			}
+			.lab {
+				max-width: 1300px;
+				margin: 0 auto;
+				padding: 40px 32px 120px;
+			}
+			.lab-head {
+				max-width: 68ch;
+				margin-bottom: 12px;
+			}
+			.lab-head h1 {
+				font-size: 36px;
+				font-weight: 500;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+				margin: 0;
+			}
+			.lab-head p {
+				font-size: 16px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 14px 0 0;
+			}
+			.lab-head p b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+
+			.controls {
+				position: sticky;
+				top: 0;
+				z-index: 10;
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				flex-wrap: wrap;
+				margin: 26px 0 8px;
+				padding: 14px 0;
+				background: var(--ground-2);
+			}
+			.controls .grp {
+				display: flex;
+				gap: 2px;
+				padding: 4px;
+				border-radius: var(--r-pill);
+				background: var(--paper);
+				border: 1px solid var(--rule);
+			}
+			.controls button {
+				border: 0;
+				background: transparent;
+				border-radius: var(--r-pill);
+				padding: 6px 14px;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+				cursor: pointer;
+			}
+			.controls button[aria-pressed="true"] {
+				background: var(--ink);
+				color: var(--ground);
+			}
+			.controls .note {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-3);
+			}
+
+			.opt {
+				margin-top: 44px;
+			}
+			.opt > header {
+				max-width: 72ch;
+				margin-bottom: 18px;
+			}
+			.opt > header h2 {
+				font-size: 30px;
+				font-weight: 500;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+				margin: 0;
+			}
+			.opt > header h2 em {
+				font-style: normal;
+				color: var(--ink-4);
+				margin-right: 12px;
+			}
+			.opt > header .thesis {
+				font-size: 18px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 10px 0 0;
+			}
+			.opt > header .spec {
+				font-family: var(--mono);
+				font-size: 12px;
+				line-height: 1.75;
+				color: var(--ink-3);
+				margin: 14px 0 0;
+			}
+			.opt > header .spec b {
+				font-weight: 400;
+				color: var(--ink-2);
+			}
+
+			/* ── the specimen frames ────────────────────────────────────────────
+			 * Each specimen is a real page region on the real ground. The desktop
+			 * one is the 72rem frame's inner width; the phone one is 393pt with
+			 * the same 20px gutter and the dock reserved at the bottom, because
+			 * whether the dock is the only locator is half the argument.
+			 */
+			.specimens {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 18px;
+				align-items: flex-start;
+			}
+			.spec-frame {
+				flex-shrink: 0;
+				background: var(--ground);
+				border: 1px solid var(--rule);
+				border-radius: 18px;
+				overflow: hidden;
+			}
+			.spec-frame > .cap {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				padding: 10px 16px;
+				border-bottom: 1px solid var(--rule);
+				background: var(--ground-2);
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			/* The real frame: max-width 72rem less 44px of gutter each side. */
+			.at-desk {
+				width: 1064px;
+			}
+			.at-desk .surface {
+				padding: 30px 44px 40px;
+			}
+			.at-phone {
+				width: 393px;
+			}
+			.at-phone .surface {
+				padding: 22px 20px 30px;
+			}
+
+			/* Width is a class, not a media query, because both widths are on the
+			   same page here. In the build every one of these is a max-width rule
+			   sitting beside its desktop peer — one tree, never a fork. */
+			body[data-width="desk"] .at-phone,
+			body[data-width="phone"] .at-desk {
+				display: none;
+			}
+
+			/* The desktop tab group, shown at reduced fidelity above the specimen,
+			   because "the tabs already name the page" is the claim under test. */
+			.tabstub {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 16px;
+				padding: 0 0 64px;
+			}
+			.tabstub .tabs {
+				padding: 4px;
+			}
+			.tabstub .tab {
+				padding: 6px 14px;
+				font-size: 13px;
+			}
+			.tabstub .brand {
+				font-size: 15px;
+			}
+			.tabstub .brand-mark {
+				width: 22px;
+				height: 22px;
+			}
+			.tabstub .brand-mark::after {
+				inset: 7px 6px;
+				border-left-width: 1.5px;
+				border-bottom-width: 1.5px;
+			}
+			.tabstub .acts {
+				display: flex;
+				gap: 8px;
+			}
+			.tabstub .pill {
+				height: 34px;
+				padding: 0 16px;
+				font-size: 13px;
+			}
+
+			/* The dock, reserved at the foot of every phone specimen. */
+			.dockstub {
+				display: flex;
+				justify-content: center;
+				gap: 8px;
+				padding: 14px 12px 16px;
+			}
+			.dockstub ul {
+				display: flex;
+				align-items: center;
+				gap: 2px;
+				margin: 0;
+				padding: 5px;
+				list-style: none;
+				height: 54px;
+				border-radius: var(--r-pill);
+				background: var(--paper);
+				border: 1px solid var(--rule-2);
+				box-shadow:
+					0 2px 6px rgba(41, 37, 36, 0.06),
+					0 14px 34px rgba(41, 37, 36, 0.16);
+			}
+			[data-theme="dark"] .dockstub ul {
+				box-shadow:
+					0 2px 6px rgba(0, 0, 0, 0.5),
+					0 14px 34px rgba(0, 0, 0, 0.45);
+			}
+			.dockstub li {
+				display: flex;
+				align-items: center;
+				height: 100%;
+				padding: 0 9px;
+				border-radius: var(--r-pill);
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.dockstub li.on {
+				background: var(--accent-soft);
+				color: var(--accent-ink);
+			}
+			.dockstub .cap-btn {
+				width: 54px;
+				height: 54px;
+				flex-shrink: 0;
+				display: grid;
+				place-items: center;
+				border-radius: var(--r-pill);
+				background: var(--ink);
+				color: var(--ground);
+				box-shadow:
+					0 2px 6px rgba(41, 37, 36, 0.06),
+					0 14px 34px rgba(41, 37, 36, 0.16);
+			}
+			.dockstub .cap-btn svg {
+				width: 21px;
+				height: 21px;
+			}
+
+			/* ══ THE OBJECT UNDER TEST ═════════════════════════════════════════
+			 * Four slots in every option, and only their arrangement changes:
+			 *   title (h1) · measure · subtitle · action
+			 */
+
+			/* the control voice: mono, uppercase, 12px, 12px radius, 36px tall.
+			   Not the pill — the pill is spent on Ask and Capture (DESIGN.md). */
+			.ctl {
+				display: inline-flex;
+				align-items: center;
+				gap: 7px;
+				height: 36px;
+				padding: 0 12px;
+				flex-shrink: 0;
+				border: 1px solid var(--rule-2);
+				border-radius: var(--r-md);
+				background: transparent;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+				cursor: pointer;
+			}
+			.ctl:hover {
+				border-color: var(--ink-4);
+				color: var(--ink);
+			}
+			.ctl.sm {
+				height: 30px;
+				padding: 0 10px;
+				font-size: 11px;
+			}
+
+			/* The measure. Today's counters, laid on one line instead of stacked:
+			   the numeral is ink at 500, the word is ink-2 at 14, and anything
+			   that needs you takes the one orange. */
+			.measure {
+				display: flex;
+				align-items: baseline;
+				flex-wrap: wrap;
+				gap: 4px 18px;
+				font-size: 14px;
+				color: var(--ink-2);
+			}
+			.measure span {
+				white-space: nowrap;
+			}
+			.measure b {
+				font-weight: 500;
+				font-size: 16px;
+				color: var(--ink);
+				font-variant-numeric: tabular-nums;
+				margin-right: 5px;
+			}
+			.measure .att,
+			.measure .att b {
+				color: var(--accent);
+			}
+			/* C's bar is 12px mono throughout, so the measure joins it rather than
+			   importing a second size into a one-line label. */
+			.measure.mono {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-3);
+				gap: 0 14px;
+			}
+			.measure.mono b {
+				font-family: var(--mono);
+				font-size: 12px;
+				font-weight: 400;
+				color: var(--ink-2);
+				margin-right: 4px;
+			}
+
+			.ph-sub {
+				margin: 10px 0 0;
+				max-width: 62ch;
+				font-size: 14px;
+				line-height: 1.55;
+				color: var(--ink-2);
+			}
+
+			/* ── A · Headline ───────────────────────────────────────────────── */
+			.ph-a {
+				margin-bottom: 30px;
+			}
+			.ph-a .top {
+				display: flex;
+				align-items: flex-end;
+				justify-content: space-between;
+				gap: 24px;
+			}
+			.ph-a h1 {
+				margin: 0;
+				font-size: 36px;
+				font-weight: 500;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+				text-wrap: pretty;
+			}
+			.ph-a .measure {
+				margin-top: 12px;
+			}
+			.at-phone .ph-a h1 {
+				font-size: 30px;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+			}
+			.at-phone .ph-a {
+				margin-bottom: 26px;
+			}
+
+			/* ── B · Measured ───────────────────────────────────────────────── */
+			.ph-b {
+				margin-bottom: 24px;
+				padding-bottom: 16px;
+				border-bottom: 1px solid var(--rule);
+			}
+			.ph-b .top {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 28px;
+			}
+			.ph-b h1 {
+				margin: 0;
+				font-size: 30px;
+				font-weight: 500;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+				text-wrap: pretty;
+			}
+			.ph-b .right {
+				display: flex;
+				align-items: baseline;
+				gap: 20px;
+				flex-shrink: 0;
+			}
+			/* baseline alignment puts the control's box low; nudge it back up so
+			   its cap-height sits on the h1's baseline rather than its box. */
+			.ph-b .right .ctl {
+				align-self: center;
+				transform: translateY(2px);
+			}
+			.at-phone .ph-b .top {
+				flex-wrap: wrap;
+				gap: 12px;
+			}
+			.at-phone .ph-b .right {
+				width: 100%;
+				justify-content: space-between;
+			}
+
+			/* ── C · Label bar ──────────────────────────────────────────────── */
+			.ph-c {
+				margin-bottom: 22px;
+				padding-bottom: 11px;
+				border-bottom: 1px solid var(--rule);
+				display: flex;
+				align-items: center;
+				gap: 16px;
+			}
+			.ph-c h1 {
+				margin: 0;
+				flex-shrink: 0;
+				font-family: var(--mono);
+				font-size: 12px;
+				font-weight: 400;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--ink);
+			}
+			.ph-c .measure {
+				margin-left: auto;
+			}
+			.ph-c .ctl {
+				margin-left: 4px;
+			}
+			.ph-c + .ph-sub {
+				margin: -10px 0 22px;
+			}
+			.at-phone .ph-c {
+				flex-wrap: wrap;
+				gap: 8px 12px;
+			}
+			.at-phone .ph-c .measure {
+				order: 3;
+				width: 100%;
+				margin-left: 0;
+			}
+			.at-phone .ph-c .ctl {
+				margin-left: auto;
+			}
+
+			/* ── page bodies ────────────────────────────────────────────────────
+			 * Rendered as Pass 0 will actually leave them: the legacy composition
+			 * minus font-serif, because passes 2–4 are what redesign the bodies.
+			 * The group labels are therefore still the mono eyebrow at ink-4 —
+			 * which is precisely the collision option C has to survive.
+			 */
+			.grouplab {
+				margin: 26px 0 6px;
+				font-family: var(--mono);
+				font-size: 12px;
+				font-weight: 400;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--ink-4);
+			}
+			.grouplab:first-child {
+				margin-top: 0;
+			}
+			.lrows {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+			/* ListRow geometry, extracted from TaskDayRow: min-h 48, hairline
+			   between, 12px gap, leading / title / meta / trailing. */
+			.lrow {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				min-height: 48px;
+				padding: 11px 0;
+				border-bottom: 1px solid var(--rule);
+			}
+			.lrow:last-child {
+				border-bottom: 0;
+			}
+			.lrow .t {
+				flex: 1;
+				min-width: 0;
+				font-size: 16px;
+				letter-spacing: -0.01em;
+				line-height: 1.35;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+			.lrow .m {
+				flex-shrink: 0;
+				font-family: var(--mono);
+				font-size: 12px;
+				font-variant-numeric: tabular-nums;
+				color: var(--ink-4);
+			}
+			.lrow .m.att {
+				color: var(--accent);
+			}
+			.badge {
+				flex-shrink: 0;
+				height: 22px;
+				display: inline-flex;
+				align-items: center;
+				padding: 0 8px;
+				border: 1px solid var(--rule-2);
+				border-radius: 7px;
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.06em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+
+			/* The project form, as it stands: a row of bottom-ruled fields. */
+			.pform {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: flex-end;
+				gap: 12px 16px;
+				margin-bottom: 8px;
+			}
+			.pform .f {
+				flex: 1 1 150px;
+				min-width: 0;
+			}
+			.pform .f > span {
+				display: block;
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+				margin-bottom: 3px;
+			}
+			.pform .f > i {
+				display: block;
+				height: 36px;
+				line-height: 36px;
+				border-bottom: 1px solid var(--rule-2);
+				font-style: normal;
+				font-size: 16px;
+				color: var(--ink-4);
+			}
+
+			.stray {
+				margin-top: 30px;
+			}
+		</style>
+	</head>
+	<body data-width="desk">
+		<div class="lab">
+			<div class="lab-head">
+				<h1>The page header, three ways</h1>
+				<p>
+					Twelve surfaces repeat one header. Today cannot answer what replaces it — Today has no
+					page header at all: its <code>h1</code> is a sentence about the day and its dateline is
+					the day nav. So the question is open, and it is settled once here rather than twelve
+					times downstream.
+				</p>
+				<p>
+					<b>One measured fact reframes it.</b> The desktop tab group has five tabs — Today, Tasks,
+					Notes, Links, More — and <b>eight of the twelve pages sit behind More</b>. On
+					<code>/projects</code> the active pill says “More”, which names nothing. So the tab group
+					is a coarse locator and the page header is the fine one; the header is not redundant on
+					desktop, and the desktop/phone asymmetry the brief anticipated does not exist. What is
+					genuinely open is only <b>how much room the page name gets</b>, and that is the single
+					axis these three options move along — loud, balanced, silent. Every option carries the
+					same four slots: <b>title · measure · subtitle · action</b>.
+				</p>
+				<p>
+					Two decisions are the same in all three, so they are not being voted on here — say so if
+					either is wrong. <b>The editorial second title is gone.</b> “What’s in motion”, “Loose
+					thoughts”, “The inbox” are linen-era copy: a poetic restatement for an operator who knows
+					every route. The page is called Projects. <b>The eyebrow never sits above the heading
+					again</b> — it stays alive everywhere it is a system label (the dateline, the tape
+					heading, group labels), but stacking it over an <code>h1</code> is the composition this
+					pass is deleting.
+				</p>
+			</div>
+
+			<div class="controls">
+				<div class="grp" role="group" aria-label="Theme">
+					<button type="button" data-theme-set="light" aria-pressed="true">Light</button>
+					<button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+				</div>
+				<div class="grp" role="group" aria-label="Width">
+					<button type="button" data-width-set="desk" aria-pressed="true">Desktop</button>
+					<button type="button" data-width-set="phone" aria-pressed="false">Phone</button>
+				</div>
+				<span class="note">3 options · /projects · /notes · /inbox</span>
+			</div>
+
+			<!-- ══════════════════════════════════════════════════════════════ A -->
+			<section class="opt">
+				<header>
+					<h2><em>A</em>Headline</h2>
+					<p class="thesis">
+						The page announces itself. <code>h1</code> at 36px — one ramp step below Today’s hero,
+						so a list page can never out-shout the day — with the measure as a quiet line beneath
+						and the action riding the headline’s baseline. No rule: the 64px the shell already
+						puts above is the separation.
+					</p>
+					<p class="spec">
+						h1 <b>36 / 500 / −0.9px</b>, phone <b>30 / 500 / −0.75px</b> · measure under the title
+						· action baseline-right · no divider · <b>30px</b> to first content
+					</p>
+				</header>
+				<div class="specimens" data-opt="a"></div>
+			</section>
+
+			<!-- ══════════════════════════════════════════════════════════════ B -->
+			<section class="opt">
+				<header>
+					<h2><em>B</em>Measured</h2>
+					<p class="thesis">
+						The page opens with a reading, not just a name. <code>h1</code> drops to 30px so the
+						measure can sit on its baseline in Today’s own counters idiom — the numeral in ink at
+						500, the word at 14, anything late in the one orange. A single hairline closes the
+						block, which is the only structure the legacy header had that was worth keeping.
+					</p>
+					<p class="spec">
+						h1 <b>30 / 500 / −0.75px</b>, unchanged on phone · measure + action on the baseline,
+						wrapping to their own row at 393pt · <b>1px --line</b> divider · <b>24px</b> to first
+						content
+					</p>
+				</header>
+				<div class="specimens" data-opt="b"></div>
+			</section>
+
+			<!-- ══════════════════════════════════════════════════════════════ C -->
+			<section class="opt">
+				<header>
+					<h2><em>C</em>Label bar</h2>
+					<p class="thesis">
+						No display type at all. The route name is something the system labelled, not something
+						a person wrote, so it takes the mono eyebrow and the whole header collapses to one
+						12px bar over a hairline — name, measure, action. The page starts at its content. The
+						densest option, and the one that trusts the operator most.
+					</p>
+					<p class="spec">
+						h1 <b>mono 12 / 0.1em / uppercase / ink</b> · measure joins the bar in mono 12 ·
+						action inline · <b>1px --line</b> divider · <b>22px</b> to first content
+					</p>
+				</header>
+				<div class="specimens" data-opt="c"></div>
+			</section>
+
+			<section class="opt stray">
+				<header>
+					<h2>What to look for</h2>
+					<p class="thesis">
+						Switch the width and the theme with the controls above; the three pages are the same
+						in every panel.
+					</p>
+					<p class="spec">
+						1 · <b>/projects at phone</b> — nothing above the page names it but the header, and
+						the dock says “More”.<br />
+						2 · <b>C against the group labels</b> — “PROJECTS” and “ACTIVE” are the same 12px
+						mono seven pixels apart. C’s title is ink and the labels are ink-4, which is the only
+						thing separating them.<br />
+						3 · <b>/inbox</b> — no measure to show, so each option has to degrade to
+						title + subtitle without looking unfinished.<br />
+						4 · <b>/notes</b> — the trailing action, and whether it reads as belonging to the
+						page or to the first row beneath it.<br />
+						5 · <b>A on desktop</b> — 36px twelve times, and whether it earns the room on a page
+						whose content is 16px rows.
+					</p>
+				</header>
+			</section>
+		</div>
+
+		<template id="tpl-projects-body">
+			<div class="pform">
+				<label class="f"><span>Name</span><i>New project</i></label>
+				<label class="f"><span>Domain</span><i>Engine</i></label>
+				<label class="f"><span>Kind</span><i>Project</i></label>
+				<button type="button" class="ctl">Add</button>
+			</div>
+			<h2 class="grouplab">Active</h2>
+			<ul class="lrows">
+				<li class="lrow">
+					<span class="dot" style="background: var(--engine)"></span>
+					<span class="t">Dispatch — revision A</span>
+					<span class="badge">Internal</span>
+					<span class="m">Target 12 Sep</span>
+				</li>
+				<li class="lrow">
+					<span class="dot" style="background: var(--finance)"></span>
+					<span class="t">Fechamento trimestral</span>
+					<span class="badge">Client</span>
+					<span class="m att">6d late</span>
+				</li>
+				<li class="lrow">
+					<span class="dot" style="background: var(--code)"></span>
+					<span class="t">Migração do bridge de calendário</span>
+					<span class="badge">Internal</span>
+					<span class="m">Target 30 Sep</span>
+				</li>
+				<li class="lrow">
+					<span class="dot" style="background: var(--family)"></span>
+					<span class="t">Casa — reforma da varanda</span>
+					<span class="m">—</span>
+				</li>
+			</ul>
+			<h2 class="grouplab">Paused</h2>
+			<ul class="lrows">
+				<li class="lrow">
+					<span class="dot" style="background: var(--spirit)"></span>
+					<span class="t">Leituras de domingo</span>
+					<span class="m">—</span>
+				</li>
+				<li class="lrow">
+					<span class="dot" style="background: var(--travel)"></span>
+					<span class="t">Japão, outubro</span>
+					<span class="badge">Content</span>
+					<span class="m">Target 04 Oct</span>
+				</li>
+			</ul>
+		</template>
+
+		<template id="tpl-notes-body">
+			<h2 class="grouplab">Pinned</h2>
+			<ul class="lrows">
+				<li class="lrow">
+					<span class="t">Stewardship domains — the definition of tended well</span>
+					<span class="m">12 Aug 09:14</span>
+				</li>
+				<li class="lrow">
+					<span class="t">Reunião com a Ana — pontos abertos</span>
+					<span class="m">08 Aug 16:02</span>
+				</li>
+			</ul>
+			<h2 class="grouplab">All notes</h2>
+			<ul class="lrows">
+				<li class="lrow">
+					<span class="t">Ideia: o tape podia viver no /tasks também</span>
+					<span class="m att">needs review</span>
+				</li>
+				<li class="lrow">
+					<span class="t">Retro do sprint — o que travou</span>
+					<span class="m">Yesterday 18:40</span>
+				</li>
+				<li class="lrow">
+					<span class="t">Reading queue, September</span>
+					<span class="m">05 Aug 07:55</span>
+				</li>
+				<li class="lrow">
+					<span class="t">Checklist de deploy na Vercel</span>
+					<span class="m">02 Aug 11:20</span>
+				</li>
+			</ul>
+		</template>
+
+		<template id="tpl-inbox-body">
+			<!-- Today's placeholder is the precedent and it survives: left-aligned,
+			     italic at ink-3, closed by a hairline, with an optional upright
+			     hint beneath. The centred serif italic does not. -->
+			<p class="empty-band">
+				Inbox is clear.
+				<span>Anything captured without a domain lands here.</span>
+			</p>
+		</template>
+
+		<script>
+			/* Every specimen is the same three pages under a different header, so
+			   the headers are authored once here and the bodies are cloned. */
+			const PAGES = [
+				{
+					slug: "projects",
+					title: "Projects",
+					dock: "More",
+					tab: "More",
+					measure: [
+						["14", "open"],
+						["3", "paused"],
+					],
+					action: null,
+				},
+				{
+					slug: "notes",
+					title: "Notes",
+					dock: "Notes",
+					tab: "Notes",
+					measure: [
+						["128", "notes"],
+						["3", "need review", true],
+					],
+					action: "+ New note",
+				},
+				{
+					slug: "inbox",
+					title: "Inbox",
+					dock: "Tasks",
+					tab: "Tasks",
+					sub: "Captured tasks without a home. Give each one a domain.",
+					measure: null,
+					action: null,
+				},
+			];
+
+			const TABS = ["Today", "Tasks", "Notes", "Links", "More"];
+
+			const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+
+			function measureHtml(items, mono) {
+				if (!items) return "";
+				const cls = mono ? "measure mono" : "measure";
+				const parts = items
+					.map(([n, w, att]) => `<span${att ? ' class="att"' : ""}><b>${esc(n)}</b>${esc(w)}</span>`)
+					.join("");
+				return `<div class="${cls}">${parts}</div>`;
+			}
+
+			function actionHtml(label, sm) {
+				if (!label) return "";
+				return `<button type="button" class="ctl${sm ? " sm" : ""}">${esc(label)}</button>`;
+			}
+
+			function subHtml(sub) {
+				return sub ? `<p class="ph-sub">${esc(sub)}</p>` : "";
+			}
+
+			function header(opt, p) {
+				if (opt === "a") {
+					return `<div class="ph-a">
+						<div class="top"><h1>${esc(p.title)}</h1>${actionHtml(p.action)}</div>
+						${subHtml(p.sub)}
+						${measureHtml(p.measure)}
+					</div>`;
+				}
+				if (opt === "b") {
+					return `<div class="ph-b">
+						<div class="top">
+							<h1>${esc(p.title)}</h1>
+							<div class="right">${measureHtml(p.measure)}${actionHtml(p.action)}</div>
+						</div>
+						${subHtml(p.sub)}
+					</div>`;
+				}
+				return `<div class="ph-c">
+						<h1>${esc(p.title)}</h1>
+						${measureHtml(p.measure, true)}
+						${actionHtml(p.action, true)}
+					</div>${subHtml(p.sub)}`;
+			}
+
+			const CHEVRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg>`;
+
+			function tabstub(active) {
+				const tabs = TABS.map(
+					(t) => `<div class="tab${t === active ? " on" : ""}">${t}</div>`,
+				).join("");
+				return `<div class="tabstub">
+					<div class="brand"><span class="brand-mark"></span>Dispatch</div>
+					<div class="tabs">${tabs}</div>
+					<div class="acts"><button type="button" class="pill pill-ghost">Ask</button><button type="button" class="pill">Capture</button></div>
+				</div>`;
+			}
+
+			function dockstub(active) {
+				const tabs = TABS.map(
+					(t) => `<li${t === active ? ' class="on"' : ""}>${t}</li>`,
+				).join("");
+				return `<div class="dockstub"><ul>${tabs}</ul><div class="cap-btn">${CHEVRON}</div></div>`;
+			}
+
+			function frame(opt, p, width) {
+				const isDesk = width === "desk";
+				const el = document.createElement("div");
+				el.className = `spec-frame at-${isDesk ? "desk" : "phone"}`;
+				el.innerHTML = `
+					<div class="cap"><span>/${p.slug}</span><span>${isDesk ? "1092px" : "393pt"}</span></div>
+					<div class="surface">
+						${isDesk ? tabstub(p.tab) : ""}
+						${header(opt, p)}
+						<div class="body"></div>
+					</div>
+					${isDesk ? "" : dockstub(p.dock)}
+				`;
+				const tpl = document.getElementById(`tpl-${p.slug}-body`);
+				el.querySelector(".body").append(tpl.content.cloneNode(true));
+				return el;
+			}
+
+			for (const rail of document.querySelectorAll(".specimens")) {
+				const opt = rail.dataset.opt;
+				for (const p of PAGES) {
+					rail.append(frame(opt, p, "desk"));
+					rail.append(frame(opt, p, "phone"));
+				}
+			}
+
+			function press(buttons, attr, value) {
+				for (const b of buttons) b.setAttribute("aria-pressed", String(b.dataset[attr] === value));
+			}
+
+			const themeBtns = document.querySelectorAll("[data-theme-set]");
+			for (const b of themeBtns) {
+				b.addEventListener("click", () => {
+					const v = b.dataset.themeSet;
+					document.documentElement.setAttribute("data-theme", v);
+					press(themeBtns, "themeSet", v);
+				});
+			}
+
+			const widthBtns = document.querySelectorAll("[data-width-set]");
+			for (const b of widthBtns) {
+				b.addEventListener("click", () => {
+					const v = b.dataset.widthSet;
+					document.body.setAttribute("data-width", v);
+					press(widthBtns, "widthSet", v);
+				});
+			}
+		</script>
+	</body>
+</html>
