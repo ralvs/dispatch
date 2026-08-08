@@ -42,17 +42,15 @@ export function DayNav({
 			aria-label="Day navigation"
 			aria-busy={pending || undefined}
 		>
-			<span className="hit-area inline-flex [--hit-x:8.5px] [--hit-y:8.5px]">
-				<button
-					type="button"
-					className={STEP}
-					aria-label="Previous day"
-					disabled={pending}
-					onClick={() => onSelect(shiftDay(dateIso, -1))}
-				>
-					<Icon icon={ChevronLeft} size="sm" strokeWidth={1.8} />
-				</button>
-			</span>
+			<button
+				type="button"
+				className={`${STEP} hit-area [--hit-x:8.5px] [--hit-y:8.5px]`}
+				aria-label="Previous day"
+				disabled={pending}
+				onClick={() => onSelect(shiftDay(dateIso, -1))}
+			>
+				<Icon icon={ChevronLeft} size="sm" strokeWidth={1.8} />
+			</button>
 			<p
 				className="min-w-0 truncate font-mono text-eyebrow uppercase tracking-widest text-ink-3"
 				aria-live="polite"
@@ -62,17 +60,15 @@ export function DayNav({
 				<span className="lg:hidden">{formatDay(dateIso, "utc", "cccc, d LLLL")}</span>
 				<span className="hidden lg:inline">{formatDay(dateIso, "utc", "cccc, d LLLL yyyy")}</span>
 			</p>
-			<span className="hit-area inline-flex [--hit-x:8.5px] [--hit-y:8.5px]">
-				<button
-					type="button"
-					className={STEP}
-					aria-label="Next day"
-					disabled={pending}
-					onClick={() => onSelect(shiftDay(dateIso, 1))}
-				>
-					<Icon icon={ChevronRight} size="sm" strokeWidth={1.8} />
-				</button>
-			</span>
+			<button
+				type="button"
+				className={`${STEP} hit-area [--hit-x:8.5px] [--hit-y:8.5px]`}
+				aria-label="Next day"
+				disabled={pending}
+				onClick={() => onSelect(shiftDay(dateIso, 1))}
+			>
+				<Icon icon={ChevronRight} size="sm" strokeWidth={1.8} />
+			</button>
 			{/* Holds its slot on today — visibility, not display — so the chevrons
 			    and the label never shift when the day changes under them. */}
 			<button
