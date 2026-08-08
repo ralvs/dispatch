@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/components/ui";
+import { Card, EmptyState, SectionHead } from "@/components/ui";
 import type { TaskRow } from "@/lib/services/tasks";
 import type { DaySchedule } from "@/lib/services/today";
 import { TOP3_SLOTS } from "@/lib/task-predicates";
@@ -32,15 +32,6 @@ type Placement = {
 	taskNoteIds?: Record<string, string>;
 };
 
-function SectionHead({ title, aside }: { title: string; aside?: React.ReactNode }) {
-	return (
-		<div className="mb-1.5 flex items-baseline justify-between gap-4">
-			<h2 className="m-0 text-base font-medium tracking-[-0.02em] text-ink">{title}</h2>
-			{aside}
-		</div>
-	);
-}
-
 /**
  * The priority legend, and it earns its place only when priority is actually
  * drawn: three ring swatches under the `ring` variant, and nothing under
@@ -70,13 +61,16 @@ function PriorityLegend() {
 	);
 }
 
-/** A band with nothing in it says so in words rather than collapsing. */
+/**
+ * A band with nothing in it says so in words rather than collapsing. The
+ * divider is what makes it stand in the position of a row: the band below still
+ * needs its rule.
+ */
 function Placeholder({ lead, hint }: { lead: string; hint?: string }) {
 	return (
-		<p className="border-b border-line pt-6 pb-7 text-base italic text-ink-3">
+		<EmptyState divider hint={hint}>
 			{lead}
-			{hint && <span className="mt-1.5 block text-sm not-italic text-ink-4">{hint}</span>}
-		</p>
+		</EmptyState>
 	);
 }
 
