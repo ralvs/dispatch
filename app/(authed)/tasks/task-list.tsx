@@ -387,10 +387,7 @@ export function TaskList({
 					<section className="mt-8" aria-label="Open tasks">
 						<SectionHead title="Open" />
 						{filteredOpen.length === 0 ? (
-							{/* Names the control by position, not by label: the header's +
-						    carries no word, so quoting one would quote something that
-						    is not on screen. */}
-						<EmptyState hint="Write one with the + beside the page's name, or capture a thought and let it file itself.">
+							<EmptyState hint="Write one with the + beside the page's name, or capture a thought and let it file itself.">
 								Nothing on the docket.
 							</EmptyState>
 						) : (
@@ -436,64 +433,59 @@ export function TaskList({
 						</section>
 					)}
 				</>
-			)
-}
-
-{
-	status === "today" && (
-		<section className="mt-8" aria-label="Tasks due today">
-			<SectionHead title="Today" />
-			{todayTasks.length === 0 ? (
-				<EmptyState>Nothing due today.</EmptyState>
-			) : (
-				<ul>
-					{todayTasks.map((t) => (
-						<TaskRowItem
-							key={t.id}
-							task={t}
-							todayIso={todayIso}
-							domains={domains}
-							initialEditing={editTaskId === t.id}
-							handlers={handlersFor(t)}
-							noteId={taskNoteIds?.[t.id]}
-							people={people}
-							mentions={taskMentions?.[t.id]}
-						/>
-					))}
-				</ul>
 			)}
-		</section>
-	);
-}
 
-{
-	status === "overdue" && (
-		<section className="mt-8" aria-label="Overdue tasks">
-			<SectionHead title="Overdue" />
-			{overdueTasks.length === 0 ? (
-				<EmptyState hint="Everything with a date on it still has time.">
-					Nothing overdue.
-				</EmptyState>
-			) : (
-				<ul>
-					{overdueTasks.map((t) => (
-						<TaskRowItem
-							key={t.id}
-							task={t}
-							todayIso={todayIso}
-							domains={domains}
-							initialEditing={editTaskId === t.id}
-							handlers={handlersFor(t)}
-							noteId={taskNoteIds?.[t.id]}
-							people={people}
-							mentions={taskMentions?.[t.id]}
-						/>
-					))}
-				</ul>
+			{status === "today" && (
+				<section className="mt-8" aria-label="Tasks due today">
+					<SectionHead title="Today" />
+					{todayTasks.length === 0 ? (
+						<EmptyState>Nothing due today.</EmptyState>
+					) : (
+						<ul>
+							{todayTasks.map((t) => (
+								<TaskRowItem
+									key={t.id}
+									task={t}
+									todayIso={todayIso}
+									domains={domains}
+									initialEditing={editTaskId === t.id}
+									handlers={handlersFor(t)}
+									noteId={taskNoteIds?.[t.id]}
+									people={people}
+									mentions={taskMentions?.[t.id]}
+								/>
+							))}
+						</ul>
+					)}
+				</section>
 			)}
-		</section>
+
+			{status === "overdue" && (
+				<section className="mt-8" aria-label="Overdue tasks">
+					<SectionHead title="Overdue" />
+					{overdueTasks.length === 0 ? (
+						<EmptyState hint="Everything with a date on it still has time.">
+							Nothing overdue.
+						</EmptyState>
+					) : (
+						<ul>
+							{overdueTasks.map((t) => (
+								<TaskRowItem
+									key={t.id}
+									task={t}
+									todayIso={todayIso}
+									domains={domains}
+									initialEditing={editTaskId === t.id}
+									handlers={handlersFor(t)}
+									noteId={taskNoteIds?.[t.id]}
+									people={people}
+									mentions={taskMentions?.[t.id]}
+								/>
+							))}
+						</ul>
+					)}
+				</section>
+			)}
+		</div>
 	);
-}
-</div>
-	)
 }
