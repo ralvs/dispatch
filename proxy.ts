@@ -91,8 +91,6 @@ export const config = {
 		// deliberately INCLUDED so token refresh happens here, serially.
 		// /sign-in stays out so the recovery client on that page can refresh
 		// without a proxy redirect loop (docs/adr/0032).
-		// TEMPORARY: /compare is the UI bake-off surface — static mock data, no
-		// user content. Remove this exemption together with app/compare/.
-		"/((?!_next/static|_next/image|favicon.ico|sign-in|compare|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+		"/((?!_next/static|_next/image|favicon.ico|sign-in|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
 	],
 };

@@ -12,6 +12,9 @@ Dispatch had no UI primitive layer — every control was a hand-typed
 three badge radii, six primary-button recipes, competing input languages
 (bottom-line vs boxed), and ad-hoc elevation. A `/compare` bake-off ran
 field shape (line | box) × elevation (flat | depth) over shared primitives.
+(That route is gone — it was deleted after the revision A refactor, along with
+the proxy matcher exemption that kept it unauthenticated. The decision below
+stands on its own; the surface was scaffolding.)
 
 Winner: **line fields · depth elevation**.
 
