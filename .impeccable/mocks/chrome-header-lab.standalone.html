@@ -920,26 +920,29 @@ h2.sec {
 				font-size: 11px;
 			}
 
-			/* The measure. Today's counters, laid on one line instead of stacked:
-			   the numeral is ink at 500, the word is ink-2 at 14, and anything
-			   that needs you takes the one orange. */
+			/* The measure. Today's counters, laid on one line instead of stacked
+			   and stepped down one notch: Today's 16/14 pair was sized against a
+			   56px hero and read as a second headline beside a 36px title. At
+			   14/14 the numeral still leads — weight and the ink ladder carry
+			   that on their own, which is what the two-weights rule is for — and
+			   anything that needs you takes the one orange. */
 			.measure {
 				display: flex;
 				align-items: baseline;
 				flex-wrap: wrap;
-				gap: 4px 18px;
+				gap: 4px 16px;
 				font-size: 14px;
-				color: var(--ink-2);
+				color: var(--ink-3);
 			}
 			.measure span {
 				white-space: nowrap;
 			}
 			.measure b {
 				font-weight: 500;
-				font-size: 16px;
-				color: var(--ink);
+				font-size: 14px;
+				color: var(--ink-2);
 				font-variant-numeric: tabular-nums;
-				margin-right: 5px;
+				margin-right: 4px;
 			}
 			.measure .att,
 			.measure .att b {
@@ -1297,14 +1300,16 @@ h2.sec {
 					<p class="thesis">
 						A’s room with B’s reading, and no rule. The <code>h1</code> keeps 36px — one ramp step
 						below Today’s hero, so a list page can never out-shout the day — and the measure moves
-						up onto its baseline on the right, in Today’s own counters idiom. The hairline goes:
+						up onto its baseline on the right, in Today’s own counters idiom stepped down to a
+						flat 14 — Today sized 16/14 against a 56px hero, and beside a 36px title that read as
+						a second headline rather than a reading. The hairline goes:
 						the 64px the shell already puts above the header is the separation, and a rule under it
 						was the last piece of the legacy silhouette still standing.
 					</p>
 					<p class="spec">
-						h1 <b>36 / 500 / −0.9px</b>, phone <b>30 / 500 / −0.75px</b> · measure + action on the
-						baseline, taking their own row at 393pt · <b>no divider</b> · <b>30px</b> to first
-						content
+						h1 <b>36 / 500 / −0.9px</b>, phone <b>30 / 500 / −0.75px</b> · measure <b>14 / 500
+						ink-2</b> + <b>14 / 400 ink-3</b> · measure + action on the baseline, taking their own
+						row at 393pt · <b>no divider</b> · <b>30px</b> to first content
 					</p>
 				</header>
 				<div class="specimens" data-opt="d"></div>
@@ -1334,8 +1339,9 @@ h2.sec {
 					<h2><em>B</em>Measured</h2>
 					<p class="thesis">
 						The page opens with a reading, not just a name. <code>h1</code> drops to 30px so the
-						measure can sit on its baseline in Today’s own counters idiom — the numeral in ink at
-						500, the word at 14, anything late in the one orange. A single hairline closes the
+						measure can sit on its baseline in Today’s own counters idiom — both at 14, the
+						numeral leading on weight and the ink ladder, anything late in the one orange. A
+						single hairline closes the
 						block, which is the only structure the legacy header had that was worth keeping.
 					</p>
 					<p class="spec">
