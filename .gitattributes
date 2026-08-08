@@ -1,0 +1,8 @@
+# Vendored tooling — not our code, not product code.
+# `linguist-vendored` keeps it out of GitHub's language breakdown;
+# `linguist-generated` collapses it by default in pull request diffs.
+.claude/skills/** linguist-vendored linguist-generated
+
+# Design comps are emitted by the Impeccable mock pipeline. The `.html` sources
+# stay reviewable; the `.standalone.*` bundles are the inlined build output.
+.impeccable/mocks/*.standalone.html linguist-generated
