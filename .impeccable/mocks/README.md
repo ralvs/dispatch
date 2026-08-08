@@ -90,10 +90,20 @@ share is the slot and the shape of the phrase, which is enough.
 
 | | Status filter | Measure slot | Active mark |
 |---|---|---|---|
-| **T4 — Filter column** ← owner's proposal | right, on the title's baseline; scope beneath it | *is* the right column | ink + neutral rule, or the lift |
+| **T2 — Filter bar, as it ships** ← built | mono 12 text on a bar | unused | ink + 2px **neutral** rule |
+| T4 — Filter column | right, on the title's baseline; scope beneath it | *is* the right column | ink + neutral rule, or the lift |
 | T3 — Segmented control | trough + three cells, mono 12 uppercase, 36px | unused | paper + card lift |
 | T1 — Measure made interactive | in the measure slot, sans 14 | *is* the filter | ink + 2px accent underline |
-| T2 — Filter bar, as it ships | mono 12 text on a bar | unused | ink + 2px accent underline |
+
+**T2 is what shipped**, with one change carried over from the argument against
+it: the active mark is a neutral rule rather than an accent underline, so the
+orange on that bar means only "this is late". T4 was drawn at the owner's
+proposal and read better in theory than on screen. T3 was the recommendation
+and lost on volume — it is a filled object where the page had only text.
+
+Two things landed with it that the comps do not show, both from the owner
+mid-build: the standing capture line is gone in favour of a bare `+` beside the
+page's name (ADR-0043), and the star is hollow until a row is pinned.
 
 **T4 reframes the question and is drawn first.** T1–T3 all argue about which
 slot the status counts belong in and leave the inbox link where it was — a

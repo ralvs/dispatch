@@ -27,21 +27,35 @@ The owner's framing: capture already does this, and the page-level line is a
 shortcut to use less AI. That makes it an implementation detail wearing the
 clothes of a feature.
 
-## Decision 1 — one action, and it is the header's
+## Decision 1 — one action, and it sits on the title's shoulder
 
-The capture line is deleted. `/tasks` takes a single `+ New task` in the page
-header's action slot (ADR-0042), in the mono control voice `/notes` already uses
-for `+ New note`. It opens the task dialog.
+The capture line is deleted. `/tasks` takes a single **unlabelled `+`** set
+immediately beside the page's name: 32px, fully round, transparent on a
+`line-strong` hairline, an `ink-3` glyph. It opens the task dialog.
 
-This is what the action slot is for, and it settles a complaint the Pass 1 comps
-raised against the chosen header: with no measure and no action, `/tasks` opened
-with 36px of name over an empty baseline. It now carries exactly one control,
-and it is the one the page is for.
+It was first built as a labelled `+ New task` in the header's right-hand action
+slot, matching `/notes`. That was wrong here for a reason `/notes` does not
+have: the shell's **Capture** pill sits in the same corner region, and a second
+labelled create action a few pixels below it reads as a second Capture — which
+is precisely the confusion this decision exists to remove. Moving it to the
+title and dropping the word removes the competition. Shape carries the meaning
+instead of a label, and that is only legible because the page is named twelve
+pixels to its left.
 
-The voice matters. The shell's Capture is a **pill**, and the pill is reserved
-for the shell's two standing actions (DESIGN.md, Buttons). A second pill in the
-same corner region would read as a second Capture, which is the confusion this
-decision exists to remove. The page's action is the quiet mono control.
+The voice still matters. The pill is reserved for the shell's two standing
+actions (DESIGN.md, Buttons), and this is not one — it is round because
+DESIGN.md makes anything a thumb reaches for a full pill, and it carries no
+sans label to make it the pill *voice*. The word survives in `aria-label`, so
+the control is named for anyone who cannot see the glyph.
+
+`PageHeader` grows a `titleAction` slot for it — an action belonging to the name
+rather than to the right edge. The h1 keeps its own first-line baseline inside
+the new wrapper, so the measure and the right-hand action still align as before
+and `/notes` is untouched.
+
+It also settles a complaint the Pass 1 comps raised against the chosen header:
+with no measure and no action, `/tasks` opened with 36px of name over an empty
+baseline. It now carries exactly one control, and it is the one the page is for.
 
 ## Decision 2 — the parser moves into the dialog, behind one rule
 

@@ -35,6 +35,13 @@ folding it in is a separate change.
 
 ## Decision 2 — `TaskDialog` is the only task form
 
+> **Amended by ADR-0043**, which strengthens this rather than replacing it. The
+> capture bar is gone, so its `Details` is no longer an entry point and the
+> dialog is the *only* place a task is written on `/tasks` — reached from the
+> header's `+`, a row's title, or `?edit=`. The natural-language parser moved
+> into this form behind one rule: a create carrying nothing but a title parses,
+> anything else is literal. The keyboard contract below is unchanged.
+
 `app/(authed)/tasks/task-dialog.tsx` renders `TaskFormFields` (title, notes,
 meta) for both modes. Create and edit differ in three strings and two
 optional props — `onCreate` (the list's optimistic wrapper), `taskId` and
