@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PageHeader } from "@/components/ui";
+import { button, PageHeader } from "@/components/ui";
 
 /*
  * Where `notFound()` from an authed page lands — a deleted note still linked
@@ -12,14 +12,14 @@ import { PageHeader } from "@/components/ui";
  * the app is single-user and behind auth, and the service worker never caches
  * authed HTML (public/sw.js) — so this file's job is the visible half: say
  * what happened in the app's own voice instead of Next's default black slab.
+ *
+ * Pass 5 / B: missing is a page, not an empty. PageHeader names it; recovery
+ * is navigation, not a primary action (nothing to retry).
  */
 export default function AuthedNotFound() {
 	return (
 		<div>
-			<PageHeader
-				title="Nothing at this address"
-				subtitle="It was deleted, or the link points somewhere that never existed."
-			/>
+			<PageHeader title="Nothing here" subtitle="Deleted, or the link never pointed here." />
 
 			<nav aria-label="Go elsewhere" className="flex flex-wrap gap-2">
 				{[
@@ -27,11 +27,7 @@ export default function AuthedNotFound() {
 					{ href: "/tasks", label: "Tasks" },
 					{ href: "/notes", label: "Notes" },
 				].map(({ href, label }) => (
-					<Link
-						key={href}
-						href={href}
-						className="rounded-md border border-line-strong px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-accent hover:text-ink active:opacity-70"
-					>
+					<Link key={href} href={href} className={button({ variant: "secondary" })}>
 						{label}
 					</Link>
 				))}

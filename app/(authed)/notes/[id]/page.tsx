@@ -59,6 +59,12 @@ async function EditorSection({
 	return <NoteEditor note={note} noteTitles={noteTitles} people={people} />;
 }
 
+/*
+ * Content-shaped pulse, deliberately not PageSkeleton. The note page declined
+ * PageHeader in Pass 3 (title is content, breadcrumb is the locator), so a
+ * skeleton that invents a header would lie. Waiting is not failure and not
+ * absence — Pass 5 / B asked this pair and kept the shape.
+ */
 function EditorFallback() {
 	return (
 		<div className="measure-prose">
@@ -181,6 +187,7 @@ async function LinkSections({ sb, noteId }: { sb: Sb; noteId: string }) {
 	);
 }
 
+/** Rail twin of EditorFallback — section heads + rows, not a page skeleton. */
 function LinkSectionsFallback() {
 	return (
 		<div className="space-y-6" aria-hidden="true">

@@ -3,6 +3,11 @@
 import { useEffect } from "react";
 import { Button, PageHeader } from "@/components/ui";
 
+/**
+ * Route-level fault. Pass 5 / B: failure owns the page — PageHeader names it,
+ * plain operational English, primary recovery. Raw error stays in the console
+ * (it may carry provider or network wording) and never in the UI.
+ */
 export default function RouteError({
 	error,
 	reset,
@@ -10,18 +15,13 @@ export default function RouteError({
 	error: Error & { digest?: string };
 	reset: () => void;
 }) {
-	// Keep the raw error out of the UI (it may carry provider/network wording)
-	// but still surface it to devtools for debugging.
 	useEffect(() => {
 		console.error(error);
 	}, [error]);
 
 	return (
 		<div>
-			<PageHeader
-				title="Something went sideways"
-				subtitle="Something went wrong loading this page."
-			/>
+			<PageHeader title="Couldn't load" subtitle="Something failed while opening this page." />
 
 			<Button type="button" variant="primary" onClick={reset}>
 				Try again
