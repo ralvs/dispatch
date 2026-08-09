@@ -32,6 +32,7 @@ Serve them with `bun run` — or the `mocks` entry in `.claude/launch.json`
 | `lists-lab.html` | **Pass 2 Phase 0.** The two gates: name weight (A1/A2) and create furniture (B1/B2). `/projects` and `/people` side by side under each option. Theme and width toggle in place. |
 | `writing-lab.html` | **Pass 3 Phase 0.** One gate, three packages: measure + type scale + leftover width. `/notes/[id]` and `/chat` under each. Theme, width, and measure-guide toggles. |
 | `config-lab.html` | **Pass 4 Phase 0.** Gate closed on **C4**: `/domains` Library page · `/settings` knobs + account · More is a menu (not a route). Theme and width toggle. |
+| `system-lab.html` | **Pass 4.5 Phase 0.** Two gates: measure vs facts on the page header (A/B), and section rhythm (doc band vs named three-tier vs PageBody). `/projects/[id]`, `/people/[id]`, `/domains`. Theme and width toggle. |
 
 ## The page header (Pass 0)
 
@@ -217,6 +218,28 @@ supersedes ADR-0011’s domain half).
 
 Phases 1–4 in `.impeccable/BUILD-CONFIG.md`. Lab misalignments get fixed in the
 build, not another lab polish loop.
+
+## The system pass (Pass 4.5 Phase 0)
+
+`system-lab.html` is the decision surface for two questions that are not
+route-scoped: what the header measure may carry, and what the vertical rhythm
+between sections actually is.
+
+| | Measure / facts | Section rhythm |
+|---|---|---|
+| **A** | `PageHeader` gains plain `facts` (ink-3, no tabular-nums) beside counts | — |
+| **B** | Measure keeps only real counts; attributes live in Details | — |
+| **1** | — | Doc wins: 36px between every section |
+| **2** | — | Code wins, named: 32 list / 56 major detail / 24 tight |
+| **3** | — | Delivery: `PageBody` owns gap; pairs with 1 or 2 |
+
+As-shipped frames (A0 / B0) are drawn first so the defect is visible, not only
+described. Recommendations in the lab: **B** and **2** (optionally **+3**).
+Do not build past Phase 0 until both gates close.
+
+Phases in `.impeccable/BUILD-SYSTEM.md`. Decided without a gate: More menu
+desktop `max-h` reset, pending-dimming rule in `DESIGN.md`, two efficiency
+leave-alones.
 
 ## A1 vs A2 — one axis
 

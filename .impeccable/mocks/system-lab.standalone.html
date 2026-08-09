@@ -1,0 +1,2349 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>System — measure vs facts, vertical rhythm</title>
+		<style>
+/* inlined from _a.css */
+/* Dispatch — Today, revision A.
+ * Type + palette lifted exactly from bydefault.so:
+ *   Geist Sans, weights 400/500 ONLY, ramp 56/44/36/30/18/16/14/12,
+ *   h1 56px/500/-1.4px/1.04, ground neutral-50, warm stone ink, #f15a0f accent.
+ * Geometry (pills, large card radii) from collectiveos.vercel.app.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400;500&display=swap");
+
+:root {
+	--ground: #fafafa;
+	--ground-2: #f0efed;
+	--paper: #ffffff;
+
+	--ink: #2a2524;
+	--ink-2: #57534e;
+	--ink-3: #8c8681;
+	--ink-4: #b4aea8;
+	--rule: #e5e5e5;
+	--rule-2: #d6d3d0;
+
+	--accent: #f15a0f;
+	--accent-soft: #fdf0e8;
+	--accent-ink: #c2450a;
+
+	/* ── domain colours ────────────────────────────────────────────────
+	 * Nine slots: the seven seeded stewardship domains plus two spares. Green,
+	 * Blue, Indigo and Yellow are Apple's system colours; Orchid and Rose are
+	 * ours; Clay, Teal and Cyan were computed to fill what those six left open.
+	 * Every pair clears ΔEok 0.12 at 9px, every one clears 0.15 from the accent
+	 * and the priority ring, and all clear 3:1 on their own ground — except
+	 * Travel, exempt on purpose so the yellow can be a full yellow rather than
+	 * a mustard. Evidence and the method: palette-lab.html. Retune there.
+	 */
+	--spirit: #8b6031; /* Clay */
+	--travel: #ffcc0f; /* Yellow — 1.45:1, exempt */
+	--health: #2aa649; /* Green — Apple */
+	--pine: #158266; /* Teal, spare */
+	--code: #1b93ba; /* Cyan */
+	--finance: #0a7cfe; /* Blue — Apple */
+	--engine: #514ad4; /* Indigo — Apple */
+	--family: #c345fc; /* Orchid */
+	--burgundy: #db149b; /* Rose, spare */
+
+	--r-card: 22px;
+	--r-md: 12px;
+	--r-pill: 999px;
+
+	--lift: 0 1px 2px rgba(41, 37, 36, 0.04), 0 10px 28px rgba(41, 37, 36, 0.05);
+
+	--sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+	--mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+[data-theme="dark"] {
+	--ground: #1a1817;
+	--ground-2: #2b2725;
+	--paper: #232020;
+
+	--ink: #f5f2ef;
+	--ink-2: #b8b1ab;
+	--ink-3: #8d8681;
+	--ink-4: #6b645f;
+	--rule: #322e2c;
+	--rule-2: #423d3a;
+
+	--accent: #ff6f2c;
+	--accent-soft: #33211a;
+	--accent-ink: #ff8f5c;
+
+	/* Same hues; only lightness and chroma move between themes. */
+	--spirit: #a5733c;
+	--travel: #ffd60a;
+	--health: #30d158;
+	--pine: #21b18c;
+	--code: #2cc9fc;
+	--finance: #318ffe;
+	--engine: #5e5ae6;
+	--family: #c756fc;
+	--burgundy: #fc2cb4;
+
+	--lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.34);
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: var(--ground);
+	color: var(--ink);
+	font-family: var(--sans);
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+
+/* ── type ramp (bydefault): 56 / 44 / 36 / 30 / 18 / 16 / 14 / 12 ── */
+.t56 {
+	font-size: 56px;
+	font-weight: 500;
+	letter-spacing: -1.4px;
+	line-height: 1.04;
+}
+.t30 {
+	font-size: 30px;
+	font-weight: 500;
+	letter-spacing: -0.75px;
+	line-height: 1.15;
+}
+.t18 {
+	font-size: 18px;
+	font-weight: 400;
+	line-height: 1.7;
+	color: var(--ink-2);
+}
+.t16 {
+	font-size: 16px;
+	font-weight: 400;
+}
+.t14 {
+	font-size: 14px;
+	font-weight: 400;
+	color: var(--ink-2);
+}
+.t12 {
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--ink-3);
+}
+
+.eyebrow {
+	font-family: var(--mono);
+	font-size: 12px;
+	font-weight: 400;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+.num {
+	font-variant-numeric: tabular-nums;
+}
+
+/* ── chrome ── */
+.card {
+	background: var(--paper);
+	border: 1px solid var(--rule);
+	border-radius: var(--r-card);
+	box-shadow: var(--lift);
+}
+
+.pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 40px;
+	padding: 0 20px;
+	border: 0;
+	border-radius: var(--r-pill);
+	background: var(--ink);
+	color: var(--ground);
+	font-family: var(--sans);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+}
+.pill-ghost {
+	background: transparent;
+	border: 1px solid var(--rule-2);
+	color: var(--ink);
+	font-weight: 400;
+}
+.pill-accent {
+	background: var(--accent);
+	color: #fff;
+}
+
+/* header (from comp C) */
+.hdr {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+}
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 16px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+}
+.brand-mark {
+	width: 26px;
+	height: 26px;
+	border-radius: 8px;
+	background: var(--accent);
+	position: relative;
+	flex-shrink: 0;
+}
+.brand-mark::after {
+	content: "";
+	position: absolute;
+	inset: 8px 7px;
+	border-left: 2px solid #fff;
+	border-bottom: 2px solid #fff;
+	transform: rotate(-45deg) translate(1px, -1px);
+}
+.tabs {
+	display: flex;
+	gap: 2px;
+	background: var(--ground-2);
+	padding: 5px;
+	border-radius: var(--r-pill);
+}
+.tab {
+	padding: 7px 18px;
+	border-radius: var(--r-pill);
+	font-size: 14px;
+	color: var(--ink-3);
+}
+.tab.on {
+	background: var(--paper);
+	color: var(--ink);
+	font-weight: 500;
+	box-shadow: 0 1px 2px rgba(41, 37, 36, 0.06), 0 2px 8px rgba(41, 37, 36, 0.05);
+}
+
+/* marks */
+.dot {
+	display: inline-block;
+	width: 9px;
+	height: 9px;
+	border-radius: var(--r-pill);
+	flex-shrink: 0;
+}
+.check {
+	width: 19px;
+	height: 19px;
+	border: 1.5px solid var(--rule-2);
+	border-radius: 7px;
+	flex-shrink: 0;
+	background: var(--paper);
+	position: relative;
+}
+.check.on {
+	background: var(--ink);
+	border-color: var(--ink);
+}
+.check.on::after {
+	content: "";
+	position: absolute;
+	left: 5.5px;
+	top: 2.5px;
+	width: 5px;
+	height: 9.5px;
+	border: solid var(--paper);
+	border-width: 0 1.75px 1.75px 0;
+	transform: rotate(45deg);
+}
+
+/* routines progress bar (from comp B) */
+.meter {
+	height: 7px;
+	border-radius: var(--r-pill);
+	background: var(--ground-2);
+	overflow: hidden;
+}
+.meter i {
+	display: block;
+	height: 100%;
+	border-radius: var(--r-pill);
+	background: var(--ink);
+}
+
+/* headline row — counters ride on the right, off the headline's baseline */
+.head-row {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 48px;
+}
+.counters {
+	display: grid;
+	gap: 7px;
+	text-align: right;
+	flex-shrink: 0;
+	padding-bottom: 6px;
+}
+.counters div {
+	font-size: 14px;
+	color: var(--ink-2);
+	white-space: nowrap;
+}
+.counters b {
+	font-weight: 500;
+	font-size: 16px;
+	color: var(--ink);
+	font-variant-numeric: tabular-nums;
+	margin-right: 5px;
+}
+.counters .late,
+.counters .late b {
+	color: var(--accent);
+}
+
+/* ── day tape ──────────────────────────────────────────────────────────
+ * Span is 06:00–22:00 = 960 min. left% = (start-360)/9.6, width% = mins/9.6.
+ * Start times ride ABOVE the track so a 15-minute block never has to carry
+ * text; the block itself only has to stay visible, which a min-width buys.
+ */
+.tape-times {
+	position: relative;
+	height: 16px;
+	margin-bottom: 5px;
+}
+.tape-times span {
+	position: absolute;
+	transform: translateX(-1px);
+	font-family: var(--mono);
+	font-size: 11px;
+	color: var(--ink-3);
+	white-space: nowrap;
+}
+.measure-track {
+	position: relative;
+	height: 46px;
+	background: var(--ground-2);
+	border-radius: 12px;
+}
+.blk {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	min-width: 7px;
+	display: flex;
+	align-items: center;
+	padding: 0 10px;
+	border-radius: 8px;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 500;
+	letter-spacing: -0.01em;
+	white-space: nowrap;
+	overflow: hidden;
+}
+/* a scheduled task is a point in time, not a span: an outlined tick that
+   still carries its own domain colour. */
+.blk.task {
+	background: transparent !important;
+	border: 2px solid currentColor;
+	padding: 0;
+	min-width: 9px;
+}
+.nowmark {
+	position: absolute;
+	top: -6px;
+	bottom: -6px;
+	width: 2px;
+	background: var(--ink);
+	border-radius: 2px;
+	z-index: 3;
+}
+.ticks {
+	position: relative;
+	margin-top: 9px;
+	height: 16px;
+}
+.ticks > span {
+	position: absolute;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-4);
+	transform: translateX(-50%);
+}
+.ticks > span:first-child {
+	transform: none;
+}
+.ticks .now-label {
+	color: var(--ink);
+	font-weight: 500;
+	transform: translateX(-50%);
+}
+
+/* Event marker: a calendar glyph sits in the checkbox's column, so events and
+   tasks line up in one band. Mirrors the shipped ScheduleRow. */
+.cal {
+	width: 19px;
+	height: 19px;
+	flex-shrink: 0;
+	color: var(--ink-3);
+	display: grid;
+	place-items: center;
+}
+.cal svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Empty band placeholder */
+.empty-band {
+	padding: 26px 0 30px;
+	color: var(--ink-3);
+	font-size: 16px;
+	font-style: italic;
+	border-bottom: 1px solid var(--rule);
+}
+.empty-band span {
+	font-style: normal;
+	display: block;
+	margin-top: 6px;
+	font-size: 14px;
+	color: var(--ink-4);
+}
+
+/* Resurfaced quote */
+.quote blockquote {
+	margin: 12px 0 0;
+	font-size: 18px;
+	line-height: 1.55;
+	font-style: italic;
+	letter-spacing: -0.01em;
+	color: var(--ink);
+}
+.quote .attrib {
+	margin: 10px 0 0;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+}
+.quote .acts {
+	margin-top: 18px;
+	display: flex;
+	gap: 20px;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+}
+
+/* Completion ring (routines top level + projects) */
+.ring {
+	border-radius: 50%;
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	position: relative;
+}
+.ring > .hole {
+	position: absolute;
+	border-radius: 50%;
+	background: var(--paper);
+}
+.ring > .val {
+	position: relative;
+	font-family: var(--mono);
+	font-variant-numeric: tabular-nums;
+	color: var(--ink-2);
+}
+
+/* Seven-day streak trail — tiny squares, one per day */
+.trail {
+	display: flex;
+	gap: 3px;
+	align-items: center;
+}
+.trail i {
+	width: 6px;
+	height: 6px;
+	border-radius: 2px;
+	background: var(--rule-2);
+	display: block;
+}
+.trail i.on {
+	background: var(--ink-2);
+}
+.streak {
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+	width: 30px;
+	text-align: right;
+}
+.streak.hot {
+	color: var(--accent);
+}
+
+.wrap {
+	max-width: 1180px;
+	margin: 0 auto;
+	padding: 30px 44px 80px;
+}
+.cols {
+	display: grid;
+	grid-template-columns: 1.5fr 1fr;
+	gap: 40px;
+	align-items: start;
+}
+h2.sec {
+	font-size: 16px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+	margin: 0;
+}
+.sec-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+.panel {
+	padding: 22px 24px;
+}
+.stack > * + * {
+	margin-top: 16px;
+}
+
+/* ── day navigation ────────────────────────────────────────────────────
+ * The nav IS the dateline. A separate widget above the tape would state the
+ * day twice, so the chevrons flank the date that was already there.
+ *
+ * The label always names the real date — never "TOMORROW". Being off today is
+ * carried by the reset pill existing at all, which keeps the label purely
+ * informative instead of switching voice with the mode.
+ */
+.daynav {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.step {
+	width: 28px;
+	height: 28px;
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	padding: 0;
+	border: 1px solid var(--rule-2);
+	border-radius: var(--r-pill);
+	background: transparent;
+	color: var(--ink-3);
+	cursor: pointer;
+}
+.step:hover {
+	color: var(--ink);
+	border-color: var(--ink-4);
+}
+.step svg {
+	width: 15px;
+	height: 15px;
+}
+.daynav .daylabel {
+	white-space: nowrap;
+}
+/* Holds its slot on today so the chevrons never shift when the day changes. */
+.today-reset {
+	height: 28px;
+	padding: 0 12px;
+	font-size: 12px;
+	margin-left: 4px;
+}
+.today-reset[hidden] {
+	display: inline-flex;
+	visibility: hidden;
+}
+/* Stepping a day dims the payload the nav owns — tape, all-day, timeline —
+   and nothing else. Mirrors the shipped `pending` transition. */
+.day-owned {
+	transition: opacity 0.18s ease;
+}
+[data-pending] .day-owned {
+	opacity: 0.55;
+}
+
+/* ── all-day band ──────────────────────────────────────────────────────
+ * Everything that belongs to the day but has no hour, so the tape is
+ * structurally incapable of showing it. It caps the tape from above for
+ * exactly that reason: together they are the whole day.
+ */
+.allday {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	margin-bottom: 14px;
+}
+.allday > .eyebrow {
+	flex-shrink: 0;
+}
+.ad {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 30px;
+	padding: 0 13px;
+	border: 1px solid var(--rule-2);
+	border-radius: var(--r-md);
+	font-size: 14px;
+	color: var(--ink);
+	white-space: nowrap;
+}
+.ad .dot {
+	width: 7px;
+	height: 7px;
+}
+
+</style>
+		<style>
+			/* ── lab chrome ───────────────────────────────────────────────────── */
+			body {
+				background: var(--ground-2);
+			}
+			.lab {
+				max-width: 1480px;
+				margin: 0 auto;
+				padding: 40px 32px 140px;
+			}
+			.lab-head {
+				max-width: 74ch;
+			}
+			.lab-head h1 {
+				font-size: 36px;
+				font-weight: 500;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+				margin: 0;
+			}
+			.lab-head p {
+				font-size: 16px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 14px 0 0;
+			}
+			.lab-head p b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.lab-head code {
+				font-family: var(--mono);
+				font-size: 13px;
+			}
+
+			.controls {
+				position: sticky;
+				top: 0;
+				z-index: 10;
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				flex-wrap: wrap;
+				margin: 26px 0 8px;
+				padding: 14px 0;
+				background: var(--ground-2);
+			}
+			.controls .grp {
+				display: flex;
+				gap: 2px;
+				padding: 4px;
+				border-radius: var(--r-pill);
+				background: var(--paper);
+				border: 1px solid var(--rule);
+			}
+			.controls button {
+				border: 0;
+				background: transparent;
+				border-radius: var(--r-pill);
+				padding: 6px 14px;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+				cursor: pointer;
+			}
+			.controls button[aria-pressed="true"] {
+				background: var(--ink);
+				color: var(--ground);
+			}
+			.controls .note {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-3);
+			}
+
+			.gate {
+				margin-top: 56px;
+				padding-top: 8px;
+				border-top: 1px solid var(--rule);
+			}
+			.gate > .gate-head {
+				max-width: 74ch;
+				margin-bottom: 8px;
+			}
+			.gate > .gate-head h2 {
+				font-size: 30px;
+				font-weight: 500;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+				margin: 0;
+			}
+			.gate > .gate-head p {
+				font-size: 16px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 12px 0 0;
+			}
+			.gate > .gate-head p b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.gate > .gate-head code {
+				font-family: var(--mono);
+				font-size: 13px;
+			}
+
+			.opt {
+				margin-top: 40px;
+			}
+			.opt > header {
+				max-width: 74ch;
+				margin-bottom: 16px;
+			}
+			.opt > header h3 {
+				font-size: 22px;
+				font-weight: 500;
+				letter-spacing: -0.45px;
+				line-height: 1.2;
+				margin: 0;
+			}
+			.opt > header h3 em {
+				font-style: normal;
+				color: var(--ink-4);
+				margin-right: 10px;
+			}
+			.opt > header h3 .rec {
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--accent-ink);
+				margin-left: 10px;
+				vertical-align: 2px;
+			}
+			.opt > header .thesis {
+				font-size: 16px;
+				line-height: 1.55;
+				color: var(--ink-2);
+				margin: 10px 0 0;
+			}
+			.opt > header .cost {
+				font-size: 15px;
+				line-height: 1.55;
+				color: var(--ink-2);
+				margin: 10px 0 0;
+				padding-left: 14px;
+				border-left: 2px solid var(--rule-2);
+			}
+			.opt > header .cost b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.opt > header .spec {
+				font-family: var(--mono);
+				font-size: 12px;
+				line-height: 1.75;
+				color: var(--ink-3);
+				margin: 10px 0 0;
+			}
+			.opt > header .spec b {
+				font-weight: 400;
+				color: var(--ink-2);
+			}
+
+			.pair {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 18px;
+				align-items: flex-start;
+			}
+
+			.spec-frame {
+				flex-shrink: 0;
+				background: var(--ground);
+				border: 1px solid var(--rule);
+				border-radius: 18px;
+				overflow: hidden;
+			}
+			.spec-frame > .cap-bar {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				padding: 10px 16px;
+				border-bottom: 1px solid var(--rule);
+				background: var(--ground-2);
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.spec-frame > .cap-bar .w {
+				color: var(--ink-4);
+				text-align: right;
+			}
+
+			.at-desk {
+				width: 560px;
+			}
+			.at-desk.wide {
+				width: 640px;
+			}
+			.at-desk .surface {
+				padding: 28px 28px 36px;
+			}
+			.at-phone {
+				width: 393px;
+			}
+			.at-phone .surface {
+				padding: 20px 20px 28px;
+				min-height: 520px;
+			}
+			body[data-width="desk"] .at-phone,
+			body[data-width="phone"] .at-desk {
+				display: none;
+			}
+
+			/* ── page header (ADR-0042 / D) ──────────────────────────────────── */
+			.ph {
+				margin-bottom: 26px;
+			}
+			.at-desk .ph {
+				margin-bottom: 30px;
+			}
+			.ph .top {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 16px;
+			}
+			.ph h1 {
+				margin: 0;
+				font-size: 36px;
+				font-weight: 500;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+				min-width: 0;
+			}
+			.at-phone .ph h1 {
+				font-size: 30px;
+				letter-spacing: -0.75px;
+			}
+			.at-phone .ph .top {
+				flex-wrap: wrap;
+				gap: 10px;
+			}
+			.ph .right {
+				display: flex;
+				align-items: baseline;
+				flex-wrap: wrap;
+				gap: 4px 14px;
+				flex-shrink: 0;
+			}
+			.at-phone .ph .right {
+				width: 100%;
+			}
+			.ph .sub {
+				margin: 10px 0 0;
+				font-size: 14px;
+				line-height: 1.55;
+				color: var(--ink-2);
+				display: flex;
+				align-items: center;
+				gap: 6px;
+			}
+			.ph .sub .dot {
+				width: 9px;
+				height: 9px;
+				border-radius: 999px;
+				background: var(--domain-code, #1b93ba);
+				flex-shrink: 0;
+			}
+
+			/* Measure: figure + word. Designed for numerals. */
+			.measure {
+				display: flex;
+				align-items: baseline;
+				flex-wrap: wrap;
+				gap: 4px 14px;
+				font-size: 14px;
+				color: var(--ink-3);
+			}
+			.measure > span {
+				white-space: nowrap;
+			}
+			.measure b {
+				font-weight: 500;
+				color: var(--ink-2);
+				font-variant-numeric: tabular-nums;
+				margin-right: 4px;
+			}
+			/* As-shipped abuse: attribute in the figure slot, empty label. */
+			.measure .empty-gap {
+				display: inline-block;
+				width: 0.35em;
+			}
+
+			/* Gate A option A: plain facts — no tabular-nums, ink-3 throughout */
+			.facts {
+				display: flex;
+				align-items: baseline;
+				flex-wrap: wrap;
+				gap: 4px 14px;
+				font-size: 14px;
+				color: var(--ink-3);
+			}
+			.facts > span {
+				white-space: nowrap;
+			}
+
+			/* ── SectionHead ─────────────────────────────────────────────────── */
+			.shead {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 12px;
+				margin: 0 0 8px;
+			}
+			.shead h2 {
+				margin: 0;
+				font-size: 16px;
+				font-weight: 500;
+				letter-spacing: -0.02em;
+				color: var(--ink);
+			}
+			.shead .aside {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+				font-variant-numeric: tabular-nums;
+			}
+
+			/* ── rhythm: section top margins (the Gate B variable) ───────────── */
+			/* as-shipped */
+			.rhythm-shipped .sec-list {
+				margin-top: 32px;
+			} /* mt-8 */
+			.rhythm-shipped .sec-list:first-of-type {
+				margin-top: 0;
+			}
+			.rhythm-shipped .sec-detail {
+				margin-top: 32px;
+			} /* first Details mt-8 */
+			.rhythm-shipped .sec-major {
+				margin-top: 56px;
+			} /* mt-14 major blocks */
+			.rhythm-shipped .sec-tight {
+				margin-top: 24px;
+			} /* mt-6 */
+
+			/* option 1 — doc band 36px everywhere */
+			.rhythm-doc .sec-list,
+			.rhythm-doc .sec-detail,
+			.rhythm-doc .sec-major,
+			.rhythm-doc .sec-tight {
+				margin-top: 36px;
+			}
+			.rhythm-doc .sec-list:first-of-type {
+				margin-top: 0;
+			}
+
+			/* option 2 — named three-tier */
+			.rhythm-named .sec-list {
+				margin-top: 32px;
+			}
+			.rhythm-named .sec-list:first-of-type {
+				margin-top: 0;
+			}
+			.rhythm-named .sec-detail {
+				margin-top: 32px;
+			}
+			.rhythm-named .sec-major {
+				margin-top: 56px;
+			}
+			.rhythm-named .sec-tight {
+				margin-top: 24px;
+			}
+
+			/* option 3 — parent owns space (no first-child hacks) */
+			.rhythm-body {
+				display: flex;
+				flex-direction: column;
+			}
+			.rhythm-body.tier-list {
+				gap: 32px;
+			}
+			.rhythm-body.tier-detail {
+				gap: 56px;
+			}
+			.rhythm-body.tier-doc {
+				gap: 36px;
+			}
+			.rhythm-body > .sec {
+				margin-top: 0 !important;
+			}
+
+			/* gap callouts — lab only, so the numbers can be seen */
+			.gap-tag {
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+				font-family: var(--mono);
+				font-size: 10px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--accent-ink);
+				margin: 0 0 6px;
+			}
+			.gap-tag::before {
+				content: "";
+				width: 18px;
+				height: 1px;
+				background: var(--accent);
+			}
+
+			/* ── details card / dl ───────────────────────────────────────────── */
+			.card {
+				background: var(--paper);
+				border: 1px solid var(--rule);
+				border-radius: var(--r-card);
+				box-shadow: var(--lift);
+				padding: 18px 20px;
+			}
+			.dl {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 10px 16px;
+				margin: 0;
+				font-size: 14px;
+				color: var(--ink);
+			}
+			.dl dt {
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+				margin: 0 0 2px;
+			}
+			.dl dd {
+				margin: 0;
+			}
+			.dl .span2 {
+				grid-column: 1 / -1;
+			}
+			.dl .hl {
+				/* attributes that just left (or still sit in) the measure */
+				color: var(--ink);
+			}
+			.acts {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				margin-top: 14px;
+			}
+			.ctl {
+				display: inline-flex;
+				align-items: center;
+				height: 32px;
+				padding: 0 12px;
+				border: 1px solid var(--rule-2);
+				border-radius: var(--r-md);
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+				line-height: 1;
+			}
+
+			/* ── list rows ───────────────────────────────────────────────────── */
+			ul.rows {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+			.lrow {
+				display: grid;
+				grid-template-columns: 9px minmax(0, 1fr) auto;
+				align-items: center;
+				column-gap: 12px;
+				min-height: 48px;
+				padding: 12px 0;
+				border-bottom: 1px solid var(--rule);
+			}
+			.lrow:last-child {
+				border-bottom: 0;
+			}
+			.lrow > .dot {
+				width: 9px;
+				height: 9px;
+				border-radius: 999px;
+			}
+			.lrow .ttl {
+				margin: 0;
+				font-size: 16px;
+				font-weight: 400;
+				letter-spacing: -0.01em;
+				line-height: 1.35;
+				color: var(--ink);
+			}
+			.lrow .meta {
+				margin: 2px 0 0;
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+			}
+			.lrow .badge {
+				font-family: var(--mono);
+				font-size: 11px;
+				color: var(--ink-3);
+			}
+
+			/* milestone-ish rows */
+			.mrow {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				min-height: 48px;
+				padding: 12px 0;
+				border-bottom: 1px solid var(--rule);
+				font-size: 16px;
+				color: var(--ink);
+			}
+			.mrow:last-child {
+				border-bottom: 0;
+			}
+			.mrow .box {
+				width: 19px;
+				height: 19px;
+				border: 1.5px solid var(--rule-2);
+				border-radius: 7px;
+				flex-shrink: 0;
+			}
+			.mrow.done {
+				color: var(--ink-4);
+				text-decoration: line-through;
+			}
+			.mrow.done .box {
+				background: var(--ink);
+				border-color: var(--ink);
+			}
+			.prog {
+				margin: 0 0 10px;
+				height: 6px;
+				background: var(--rule);
+				border-radius: 999px;
+				overflow: hidden;
+			}
+			.prog > i {
+				display: block;
+				height: 100%;
+				width: 38%;
+				background: var(--ink);
+			}
+
+			.inv {
+				margin: 20px 0 0;
+				padding: 14px 16px;
+				background: var(--paper);
+				border: 1px solid var(--rule);
+				border-radius: 12px;
+				font-family: var(--mono);
+				font-size: 12px;
+				line-height: 1.7;
+				color: var(--ink-3);
+				max-width: 74ch;
+			}
+			.inv b {
+				font-weight: 400;
+				color: var(--ink-2);
+			}
+		</style>
+	</head>
+	<body data-theme="light" data-width="desk">
+		<div class="lab">
+			<div class="lab-head">
+				<h1>Pass 4.5 — the system pass</h1>
+				<p>
+					No new surfaces. Two gates that every page already lives under, and
+					neither has a module that owns the answer. <b>Gate A</b> is what the
+					header measure is allowed to carry. <b>Gate B</b> is the space between
+					sections — the written rule matches almost nothing in the tree.
+				</p>
+				<p>
+					<code>/projects/[id]</code> and <code>/people/[id]</code> are the only
+					pages that carry both gates at once. One list page
+					(<code>/domains</code>) sits beside them so list rhythm and detail
+					rhythm can be seen against each other rather than argued about.
+				</p>
+			</div>
+
+			<div class="controls" role="toolbar" aria-label="Lab controls">
+				<div class="grp" role="group" aria-label="Theme">
+					<button type="button" data-set="theme" data-val="light" aria-pressed="true">Light</button>
+					<button type="button" data-set="theme" data-val="dark" aria-pressed="false">Dark</button>
+				</div>
+				<div class="grp" role="group" aria-label="Width">
+					<button type="button" data-set="width" data-val="desk" aria-pressed="true">Desk</button>
+					<button type="button" data-set="width" data-val="phone" aria-pressed="false">Phone</button>
+				</div>
+				<span class="note">Pass 4.5 · Phase 0 · stop here for a pick</span>
+			</div>
+
+			<!-- ════════════════════════════════════════════════════════════════
+			     GATE A — measure slot
+			     ════════════════════════════════════════════════════════════════ -->
+			<section class="gate" id="gate-a">
+				<div class="gate-head">
+					<h2>Gate A — the measure slot</h2>
+					<p>
+						<code>PageHeader</code> documents Measure as
+						<b>"a figure and the word it counts"</b> and renders the figure in
+						tabular-nums. Two detail pages pass plain attributes with an
+						<b>empty label</b> — so <code>Internal</code> and a person's
+						employer render as numerals with a label-less gap. Both pages
+						already have a Details card carrying the same attributes.
+					</p>
+				</div>
+
+				<!-- ── A0 as shipped ─────────────────────────────────────────── -->
+				<div class="opt">
+					<header>
+						<h3><em>A0</em> As shipped — attributes in the figure slot</h3>
+						<p class="thesis">
+							What the tree does today. The type absorbed the hatch
+							(<code>count: number | string</code>); the modelling problem is
+							what is left.
+						</p>
+						<p class="spec">
+							<b>Project:</b> measure = Internal · Active · 3/8 milestones<br />
+							<b>Person:</b> measure = Colleague · Engine · 4 facts<br />
+							Figures get tabular-nums + medium weight even when they are words.
+						</p>
+					</header>
+					<div class="pair">
+						<!-- project as shipped -->
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/projects/[id] · as shipped</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right measure">
+											<span><b>Internal</b><span class="empty-gap"></span></span>
+											<span><b>Active</b><span class="empty-gap"></span></span>
+											<span><b>3/8</b>milestones</span>
+										</div>
+									</div>
+									<p class="sub"><span class="dot"></span> Code</p>
+								</header>
+								<section class="sec-detail" style="margin-top: 0">
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Type</dt><dd>Internal</dd></div>
+											<div><dt>Kind</dt><dd>Build</dd></div>
+											<div><dt>Engagement</dt><dd>Ongoing</dd></div>
+											<div><dt>Quoted hours</dt><dd>—</dd></div>
+										</dl>
+										<div class="acts"><span class="ctl">Edit</span></div>
+									</div>
+								</section>
+							</div>
+						</div>
+						<!-- person as shipped -->
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/people/[id] · as shipped</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Ana Ribeiro</h1>
+										<div class="right measure">
+											<span><b>Colleague</b><span class="empty-gap"></span></span>
+											<span><b>Engine</b><span class="empty-gap"></span></span>
+											<span><b>4</b>facts</span>
+										</div>
+									</div>
+								</header>
+								<section class="sec-detail" style="margin-top: 0">
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Relationship</dt><dd>Colleague</dd></div>
+											<div><dt>Company</dt><dd>Engine</dd></div>
+											<div><dt>Email</dt><dd>ana@…</dd></div>
+											<div><dt>Phone</dt><dd>—</dd></div>
+										</dl>
+										<div class="acts"><span class="ctl">Edit</span></div>
+									</div>
+								</section>
+							</div>
+						</div>
+						<!-- phone variants -->
+						<div class="spec-frame at-phone">
+							<div class="cap-bar">
+								<span>/projects/[id] · as shipped</span>
+								<span class="w">393</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right measure">
+											<span><b>Internal</b><span class="empty-gap"></span></span>
+											<span><b>Active</b><span class="empty-gap"></span></span>
+											<span><b>3/8</b>milestones</span>
+										</div>
+									</div>
+									<p class="sub"><span class="dot"></span> Code</p>
+								</header>
+								<section>
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Type</dt><dd>Internal</dd></div>
+											<div><dt>Kind</dt><dd>Build</dd></div>
+										</dl>
+									</div>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-phone">
+							<div class="cap-bar">
+								<span>/people/[id] · as shipped</span>
+								<span class="w">393</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Ana Ribeiro</h1>
+										<div class="right measure">
+											<span><b>Colleague</b><span class="empty-gap"></span></span>
+											<span><b>Engine</b><span class="empty-gap"></span></span>
+											<span><b>4</b>facts</span>
+										</div>
+									</div>
+								</header>
+								<section>
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Relationship</dt><dd>Colleague</dd></div>
+											<div><dt>Company</dt><dd>Engine</dd></div>
+										</dl>
+									</div>
+								</section>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- ── A — facts slot ────────────────────────────────────────── -->
+				<div class="opt">
+					<header>
+						<h3><em>A</em> Second reading type — <code>facts</code></h3>
+						<p class="thesis">
+							<code>PageHeader</code> gains <code>facts?: ReactNode[]</code>,
+							rendered plain at <code>ink-3</code>, no tabular-nums, beside the
+							measure. Attributes stay visible on the title's baseline; counts
+							keep the figure treatment they were designed for.
+						</p>
+						<p class="cost">
+							<b>Cost:</b> a second slot on every page that uses the header —
+							even if most never fill it. Order drawn here:
+							<b>facts before counts</b> (identity, then quantity).
+						</p>
+						<p class="spec">
+							<b>Project:</b> facts = Internal · Active &nbsp;|&nbsp; measure = 3/8 milestones<br />
+							<b>Person:</b> facts = Colleague · Engine &nbsp;|&nbsp; measure = 4 facts<br />
+							Details card still carries the full attribute set (unchanged).
+						</p>
+					</header>
+					<div class="pair">
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/projects/[id] · A facts</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right">
+											<div class="facts">
+												<span>Internal</span>
+												<span>Active</span>
+											</div>
+											<div class="measure">
+												<span><b>3/8</b>milestones</span>
+											</div>
+										</div>
+									</div>
+									<p class="sub"><span class="dot"></span> Code</p>
+								</header>
+								<section>
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Type</dt><dd>Internal</dd></div>
+											<div><dt>Kind</dt><dd>Build</dd></div>
+											<div><dt>Engagement</dt><dd>Ongoing</dd></div>
+											<div><dt>Quoted hours</dt><dd>—</dd></div>
+										</dl>
+										<div class="acts"><span class="ctl">Edit</span></div>
+									</div>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/people/[id] · A facts</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Ana Ribeiro</h1>
+										<div class="right">
+											<div class="facts">
+												<span>Colleague</span>
+												<span>Engine</span>
+											</div>
+											<div class="measure">
+												<span><b>4</b>facts</span>
+											</div>
+										</div>
+									</div>
+								</header>
+								<section>
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Relationship</dt><dd>Colleague</dd></div>
+											<div><dt>Company</dt><dd>Engine</dd></div>
+											<div><dt>Email</dt><dd>ana@…</dd></div>
+											<div><dt>Phone</dt><dd>—</dd></div>
+										</dl>
+										<div class="acts"><span class="ctl">Edit</span></div>
+									</div>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-phone">
+							<div class="cap-bar">
+								<span>/projects/[id] · A</span>
+								<span class="w">393</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right">
+											<div class="facts">
+												<span>Internal</span>
+												<span>Active</span>
+											</div>
+											<div class="measure">
+												<span><b>3/8</b>milestones</span>
+											</div>
+										</div>
+									</div>
+									<p class="sub"><span class="dot"></span> Code</p>
+								</header>
+								<section>
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Type</dt><dd>Internal</dd></div>
+											<div><dt>Kind</dt><dd>Build</dd></div>
+										</dl>
+									</div>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-phone">
+							<div class="cap-bar">
+								<span>/people/[id] · A</span>
+								<span class="w">393</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Ana Ribeiro</h1>
+										<div class="right">
+											<div class="facts">
+												<span>Colleague</span>
+												<span>Engine</span>
+											</div>
+											<div class="measure">
+												<span><b>4</b>facts</span>
+											</div>
+										</div>
+									</div>
+								</header>
+								<section>
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Relationship</dt><dd>Colleague</dd></div>
+											<div><dt>Company</dt><dd>Engine</dd></div>
+										</dl>
+									</div>
+								</section>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- ── B — attributes down ───────────────────────────────────── -->
+				<div class="opt">
+					<header>
+						<h3>
+							<em>B</em> Measure keeps only counts
+							<span class="rec">recommended</span>
+						</h3>
+						<p class="thesis">
+							Attributes leave the header. Measure is only real counts —
+							<code>3/8 milestones</code>, <code>4 facts</code>. The header gets
+							quieter; the Details card is the complete record of what the object
+							is. No new slot on <code>PageHeader</code>.
+						</p>
+						<p class="cost">
+							<b>Cost:</b> relationship and type are no longer on the title's
+							baseline — one glance loses them until the eye drops into Details.
+							On a person with no facts yet, the measure may be empty.
+						</p>
+						<p class="spec">
+							<b>Project:</b> measure = 3/8 milestones only<br />
+							<b>Person:</b> measure = 4 facts only<br />
+							Status / type / relationship live only in Details (highlighted).
+						</p>
+					</header>
+					<div class="pair">
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/projects/[id] · B counts only</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right measure">
+											<span><b>3/8</b>milestones</span>
+										</div>
+									</div>
+									<p class="sub"><span class="dot"></span> Code</p>
+								</header>
+								<section>
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div>
+												<dt>Type</dt>
+												<dd class="hl">Internal</dd>
+											</div>
+											<div>
+												<dt>Status</dt>
+												<dd class="hl">Active</dd>
+											</div>
+											<div><dt>Kind</dt><dd>Build</dd></div>
+											<div><dt>Engagement</dt><dd>Ongoing</dd></div>
+										</dl>
+										<div class="acts"><span class="ctl">Edit</span></div>
+									</div>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/people/[id] · B counts only</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Ana Ribeiro</h1>
+										<div class="right measure">
+											<span><b>4</b>facts</span>
+										</div>
+									</div>
+								</header>
+								<section>
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div>
+												<dt>Relationship</dt>
+												<dd class="hl">Colleague</dd>
+											</div>
+											<div>
+												<dt>Company</dt>
+												<dd class="hl">Engine</dd>
+											</div>
+											<div><dt>Email</dt><dd>ana@…</dd></div>
+											<div><dt>Phone</dt><dd>—</dd></div>
+										</dl>
+										<div class="acts"><span class="ctl">Edit</span></div>
+									</div>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-phone">
+							<div class="cap-bar">
+								<span>/projects/[id] · B</span>
+								<span class="w">393</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right measure">
+											<span><b>3/8</b>milestones</span>
+										</div>
+									</div>
+									<p class="sub"><span class="dot"></span> Code</p>
+								</header>
+								<section>
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Type</dt><dd class="hl">Internal</dd></div>
+											<div><dt>Status</dt><dd class="hl">Active</dd></div>
+										</dl>
+									</div>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-phone">
+							<div class="cap-bar">
+								<span>/people/[id] · B</span>
+								<span class="w">393</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Ana Ribeiro</h1>
+										<div class="right measure">
+											<span><b>4</b>facts</span>
+										</div>
+									</div>
+								</header>
+								<section>
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Relationship</dt><dd class="hl">Colleague</dd></div>
+											<div><dt>Company</dt><dd class="hl">Engine</dd></div>
+										</dl>
+									</div>
+								</section>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ════════════════════════════════════════════════════════════════
+			     GATE B — rhythm
+			     ════════════════════════════════════════════════════════════════ -->
+			<section class="gate" id="gate-b">
+				<div class="gate-head">
+					<h2>Gate B — the rhythm rule</h2>
+					<p>
+						<code>DESIGN.md</code> says <b>16px between cards, 34–40px between
+						sections, 64px under the header</b>. One call site in the app is
+						inside the band. The tree is an undocumented three-tier:
+						~32px on list pages, ~56px between major detail blocks, 24px in a
+						couple of tight stacks. "64px under the header" is also ambiguous —
+						that is <code>AppHeader</code>'s <code>mb-16</code>, not
+						<code>PageHeader</code>'s own bottom margin.
+					</p>
+					<p>
+						Gate A is held at <b>B (counts only)</b> below so the two questions
+						do not fight. Gap tags are lab chrome — they name the margin in px.
+					</p>
+				</div>
+
+				<!-- ── 0 as shipped ──────────────────────────────────────────── -->
+				<div class="opt">
+					<header>
+						<h3><em>B0</em> As shipped — three values, no name</h3>
+						<p class="thesis">
+							What the tree does. List groups at 32, detail major blocks at 56,
+							Details first section at 32. Three <code>first:mt-*</code>
+							cancellations exist because every page owns its own top margin.
+						</p>
+						<p class="spec">
+							mt-8 = 32 · mt-14 = 56 · mt-6 = 24 · first:mt-0 / first:mt-2 hacks
+						</p>
+					</header>
+					<div class="pair">
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/domains · list · as shipped</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface rhythm-shipped">
+								<header class="ph">
+									<div class="top">
+										<h1>Domains</h1>
+										<div class="right measure">
+											<span><b>7</b>active</span>
+										</div>
+									</div>
+								</header>
+								<section class="sec-list" style="margin-top: 0">
+									<div class="shead"><h2>Active</h2><span class="aside">5</span></div>
+									<ul class="rows">
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-code, #1b93ba)"></span>
+											<div>
+												<p class="ttl">Code</p>
+												<p class="meta">Stewardship · weekly</p>
+											</div>
+										</li>
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-health, #2aa649)"></span>
+											<div>
+												<p class="ttl">Health</p>
+												<p class="meta">Stewardship · weekly</p>
+											</div>
+										</li>
+									</ul>
+								</section>
+								<section class="sec-list">
+									<div class="gap-tag">32px · mt-8</div>
+									<div class="shead"><h2>Quiet</h2><span class="aside">2</span></div>
+									<ul class="rows">
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-spirit, #8b6031)"></span>
+											<div>
+												<p class="ttl">Spirituality</p>
+												<p class="meta">Stewardship · monthly</p>
+											</div>
+										</li>
+									</ul>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/projects/[id] · detail · as shipped</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface rhythm-shipped">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right measure">
+											<span><b>3/8</b>milestones</span>
+										</div>
+									</div>
+									<p class="sub"><span class="dot"></span> Code</p>
+								</header>
+								<section class="sec-detail" style="margin-top: 0">
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Type</dt><dd>Internal</dd></div>
+											<div><dt>Status</dt><dd>Active</dd></div>
+										</dl>
+									</div>
+								</section>
+								<section class="sec-major">
+									<div class="gap-tag">56px · mt-14</div>
+									<div class="shead"><h2>Milestones</h2><span class="aside">38%</span></div>
+									<div class="prog"><i></i></div>
+									<div class="mrow done"><span class="box"></span> Schema + iron rules</div>
+									<div class="mrow done"><span class="box"></span> Capture pipeline</div>
+									<div class="mrow"><span class="box"></span> Today ring</div>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-phone">
+							<div class="cap-bar">
+								<span>/domains · as shipped</span>
+								<span class="w">393</span>
+							</div>
+							<div class="surface rhythm-shipped">
+								<header class="ph">
+									<div class="top">
+										<h1>Domains</h1>
+										<div class="right measure"><span><b>7</b>active</span></div>
+									</div>
+								</header>
+								<section class="sec-list" style="margin-top: 0">
+									<div class="shead"><h2>Active</h2><span class="aside">5</span></div>
+									<ul class="rows">
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-code, #1b93ba)"></span>
+											<div><p class="ttl">Code</p></div>
+										</li>
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-health, #2aa649)"></span>
+											<div><p class="ttl">Health</p></div>
+										</li>
+									</ul>
+								</section>
+								<section class="sec-list">
+									<div class="gap-tag">32px</div>
+									<div class="shead"><h2>Quiet</h2><span class="aside">2</span></div>
+									<ul class="rows">
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-spirit, #8b6031)"></span>
+											<div><p class="ttl">Spirituality</p></div>
+										</li>
+									</ul>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-phone">
+							<div class="cap-bar">
+								<span>/projects/[id] · as shipped</span>
+								<span class="w">393</span>
+							</div>
+							<div class="surface rhythm-shipped">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right measure"><span><b>3/8</b>milestones</span></div>
+									</div>
+								</header>
+								<section class="sec-detail" style="margin-top: 0">
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Type</dt><dd>Internal</dd></div>
+											<div><dt>Status</dt><dd>Active</dd></div>
+										</dl>
+									</div>
+								</section>
+								<section class="sec-major">
+									<div class="gap-tag">56px</div>
+									<div class="shead"><h2>Milestones</h2><span class="aside">38%</span></div>
+									<div class="mrow"><span class="box"></span> Today ring</div>
+								</section>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- ── 1 doc wins ─────────────────────────────────────────────── -->
+				<div class="opt">
+					<header>
+						<h3><em>1</em> Doc wins — 36px everywhere</h3>
+						<p class="thesis">
+							Everything moves into the documented 34–40 band. Detail pages drop
+							from 56 to 36 — a visible change on every detail route. List pages
+							move 32 → 36 (subtle). One number, one mental model.
+						</p>
+						<p class="cost">
+							<b>Cost:</b> detail pages lose the breath between Details and the
+							next major block. The three-tier reading of "this is a different
+							kind of section" goes with it.
+						</p>
+						<p class="spec">All section tops: <b>36px</b>. first:mt hacks still needed unless paired with option 3.</p>
+					</header>
+					<div class="pair">
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/domains · option 1</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface rhythm-doc">
+								<header class="ph">
+									<div class="top">
+										<h1>Domains</h1>
+										<div class="right measure"><span><b>7</b>active</span></div>
+									</div>
+								</header>
+								<section class="sec-list" style="margin-top: 0">
+									<div class="shead"><h2>Active</h2><span class="aside">5</span></div>
+									<ul class="rows">
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-code, #1b93ba)"></span>
+											<div><p class="ttl">Code</p><p class="meta">Stewardship · weekly</p></div>
+										</li>
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-health, #2aa649)"></span>
+											<div><p class="ttl">Health</p><p class="meta">Stewardship · weekly</p></div>
+										</li>
+									</ul>
+								</section>
+								<section class="sec-list">
+									<div class="gap-tag">36px · doc band</div>
+									<div class="shead"><h2>Quiet</h2><span class="aside">2</span></div>
+									<ul class="rows">
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-spirit, #8b6031)"></span>
+											<div><p class="ttl">Spirituality</p></div>
+										</li>
+									</ul>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/projects/[id] · option 1 — flattens</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface rhythm-doc">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right measure"><span><b>3/8</b>milestones</span></div>
+									</div>
+									<p class="sub"><span class="dot"></span> Code</p>
+								</header>
+								<section class="sec-detail" style="margin-top: 0">
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Type</dt><dd>Internal</dd></div>
+											<div><dt>Status</dt><dd>Active</dd></div>
+										</dl>
+									</div>
+								</section>
+								<section class="sec-major">
+									<div class="gap-tag">36px · was 56</div>
+									<div class="shead"><h2>Milestones</h2><span class="aside">38%</span></div>
+									<div class="prog"><i></i></div>
+									<div class="mrow done"><span class="box"></span> Schema + iron rules</div>
+									<div class="mrow"><span class="box"></span> Today ring</div>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-phone">
+							<div class="cap-bar"><span>/domains · 1</span><span class="w">393</span></div>
+							<div class="surface rhythm-doc">
+								<header class="ph">
+									<div class="top">
+										<h1>Domains</h1>
+										<div class="right measure"><span><b>7</b>active</span></div>
+									</div>
+								</header>
+								<section class="sec-list" style="margin-top: 0">
+									<div class="shead"><h2>Active</h2></div>
+									<ul class="rows">
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-code, #1b93ba)"></span>
+											<div><p class="ttl">Code</p></div>
+										</li>
+									</ul>
+								</section>
+								<section class="sec-list">
+									<div class="gap-tag">36px</div>
+									<div class="shead"><h2>Quiet</h2></div>
+									<ul class="rows">
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-spirit, #8b6031)"></span>
+											<div><p class="ttl">Spirituality</p></div>
+										</li>
+									</ul>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-phone">
+							<div class="cap-bar"><span>/projects/[id] · 1</span><span class="w">393</span></div>
+							<div class="surface rhythm-doc">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right measure"><span><b>3/8</b>milestones</span></div>
+									</div>
+								</header>
+								<section class="sec-detail" style="margin-top: 0">
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Type</dt><dd>Internal</dd></div>
+										</dl>
+									</div>
+								</section>
+								<section class="sec-major">
+									<div class="gap-tag">36px · was 56</div>
+									<div class="shead"><h2>Milestones</h2></div>
+									<div class="mrow"><span class="box"></span> Today ring</div>
+								</section>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- ── 2 code wins ────────────────────────────────────────────── -->
+				<div class="opt">
+					<header>
+						<h3>
+							<em>2</em> Code wins, and gets named
+							<span class="rec">recommended</span>
+						</h3>
+						<p class="thesis">
+							The three-tier scale is deliberate: list sections share a tighter
+							stack than major detail blocks. Document it, normalise the strays
+							(mt-6 / mt-10) onto the named steps, leave detail pages breathing.
+						</p>
+						<p class="cost">
+							<b>Cost:</b> two (or three) numbers instead of one. Call sites still
+							pick a tier — unless paired with option 3.
+						</p>
+						<p class="spec">
+							<b>list / peer sections:</b> 32px (<code>mt-8</code>)<br />
+							<b>major detail blocks:</b> 56px (<code>mt-14</code>)<br />
+							<b>tight stacks</b> (rare): 24px (<code>mt-6</code>)<br />
+							Shell under AppHeader stays 64px; PageHeader keeps its own ~28px bottom.
+						</p>
+					</header>
+					<div class="pair">
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/domains · option 2</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface rhythm-named">
+								<header class="ph">
+									<div class="top">
+										<h1>Domains</h1>
+										<div class="right measure"><span><b>7</b>active</span></div>
+									</div>
+								</header>
+								<section class="sec-list" style="margin-top: 0">
+									<div class="shead"><h2>Active</h2><span class="aside">5</span></div>
+									<ul class="rows">
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-code, #1b93ba)"></span>
+											<div><p class="ttl">Code</p><p class="meta">Stewardship · weekly</p></div>
+										</li>
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-health, #2aa649)"></span>
+											<div><p class="ttl">Health</p><p class="meta">Stewardship · weekly</p></div>
+										</li>
+									</ul>
+								</section>
+								<section class="sec-list">
+									<div class="gap-tag">32px · list tier</div>
+									<div class="shead"><h2>Quiet</h2><span class="aside">2</span></div>
+									<ul class="rows">
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-spirit, #8b6031)"></span>
+											<div><p class="ttl">Spirituality</p></div>
+										</li>
+									</ul>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/projects/[id] · option 2 — keeps breath</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface rhythm-named">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right measure"><span><b>3/8</b>milestones</span></div>
+									</div>
+									<p class="sub"><span class="dot"></span> Code</p>
+								</header>
+								<section class="sec-detail" style="margin-top: 0">
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Type</dt><dd>Internal</dd></div>
+											<div><dt>Status</dt><dd>Active</dd></div>
+										</dl>
+									</div>
+								</section>
+								<section class="sec-major">
+									<div class="gap-tag">56px · major tier</div>
+									<div class="shead"><h2>Milestones</h2><span class="aside">38%</span></div>
+									<div class="prog"><i></i></div>
+									<div class="mrow done"><span class="box"></span> Schema + iron rules</div>
+									<div class="mrow"><span class="box"></span> Today ring</div>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-phone">
+							<div class="cap-bar"><span>/domains · 2</span><span class="w">393</span></div>
+							<div class="surface rhythm-named">
+								<header class="ph">
+									<div class="top">
+										<h1>Domains</h1>
+										<div class="right measure"><span><b>7</b>active</span></div>
+									</div>
+								</header>
+								<section class="sec-list" style="margin-top: 0">
+									<div class="shead"><h2>Active</h2></div>
+									<ul class="rows">
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-code, #1b93ba)"></span>
+											<div><p class="ttl">Code</p></div>
+										</li>
+									</ul>
+								</section>
+								<section class="sec-list">
+									<div class="gap-tag">32px</div>
+									<div class="shead"><h2>Quiet</h2></div>
+									<ul class="rows">
+										<li class="lrow">
+											<span class="dot" style="background: var(--domain-spirit, #8b6031)"></span>
+											<div><p class="ttl">Spirituality</p></div>
+										</li>
+									</ul>
+								</section>
+							</div>
+						</div>
+						<div class="spec-frame at-phone">
+							<div class="cap-bar"><span>/projects/[id] · 2</span><span class="w">393</span></div>
+							<div class="surface rhythm-named">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right measure"><span><b>3/8</b>milestones</span></div>
+									</div>
+								</header>
+								<section class="sec-detail" style="margin-top: 0">
+									<div class="shead"><h2>Details</h2></div>
+									<div class="card">
+										<dl class="dl">
+											<div><dt>Type</dt><dd>Internal</dd></div>
+										</dl>
+									</div>
+								</section>
+								<section class="sec-major">
+									<div class="gap-tag">56px</div>
+									<div class="shead"><h2>Milestones</h2></div>
+									<div class="mrow"><span class="box"></span> Today ring</div>
+								</section>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- ── 3 module owns it ───────────────────────────────────────── -->
+				<div class="opt">
+					<header>
+						<h3><em>3</em> Either of the above + a module that owns it</h3>
+						<p class="thesis">
+							A <code>PageBody</code> (or the authed layout) applies one
+							<code>gap</code> / <code>space-y</code> to the section stack.
+							Sections carry no top margin — so the first-child case cannot arise
+							and all three <code>first:mt-*</code> cancellations disappear.
+						</p>
+						<p class="cost">
+							<b>Cost:</b> every page that stacks sections migrates into the
+							wrapper. Mix of list-tier and major-tier on one page needs either
+							two wrappers or a per-section tier prop — drawn here as two bodies
+							with a single gap each (list 32 / detail 56), matching option 2's
+							numbers. Pair with option 1 by using 36 on both.
+						</p>
+						<p class="spec">
+							Parent: <code>display:flex; flex-direction:column; gap:…</code><br />
+							Children: <code>margin-top: 0</code>. No first-child rules.
+						</p>
+					</header>
+					<div class="pair">
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/domains · PageBody gap 32</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Domains</h1>
+										<div class="right measure"><span><b>7</b>active</span></div>
+									</div>
+								</header>
+								<div class="rhythm-body tier-list">
+									<section class="sec">
+										<div class="shead"><h2>Active</h2><span class="aside">5</span></div>
+										<ul class="rows">
+											<li class="lrow">
+												<span class="dot" style="background: var(--domain-code, #1b93ba)"></span>
+												<div><p class="ttl">Code</p><p class="meta">Stewardship · weekly</p></div>
+											</li>
+											<li class="lrow">
+												<span class="dot" style="background: var(--domain-health, #2aa649)"></span>
+												<div><p class="ttl">Health</p></div>
+											</li>
+										</ul>
+									</section>
+									<section class="sec">
+										<div class="gap-tag">gap 32 · no first:mt</div>
+										<div class="shead"><h2>Quiet</h2><span class="aside">2</span></div>
+										<ul class="rows">
+											<li class="lrow">
+												<span class="dot" style="background: var(--domain-spirit, #8b6031)"></span>
+												<div><p class="ttl">Spirituality</p></div>
+											</li>
+										</ul>
+									</section>
+								</div>
+							</div>
+						</div>
+						<div class="spec-frame at-desk wide">
+							<div class="cap-bar">
+								<span>/projects/[id] · PageBody gap 56</span>
+								<span class="w">desk</span>
+							</div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right measure"><span><b>3/8</b>milestones</span></div>
+									</div>
+									<p class="sub"><span class="dot"></span> Code</p>
+								</header>
+								<div class="rhythm-body tier-detail">
+									<section class="sec">
+										<div class="shead"><h2>Details</h2></div>
+										<div class="card">
+											<dl class="dl">
+												<div><dt>Type</dt><dd>Internal</dd></div>
+												<div><dt>Status</dt><dd>Active</dd></div>
+											</dl>
+										</div>
+									</section>
+									<section class="sec">
+										<div class="gap-tag">gap 56 · no first:mt</div>
+										<div class="shead"><h2>Milestones</h2><span class="aside">38%</span></div>
+										<div class="prog"><i></i></div>
+										<div class="mrow done"><span class="box"></span> Schema + iron rules</div>
+										<div class="mrow"><span class="box"></span> Today ring</div>
+									</section>
+								</div>
+							</div>
+						</div>
+						<div class="spec-frame at-phone">
+							<div class="cap-bar"><span>/domains · 3</span><span class="w">393</span></div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Domains</h1>
+										<div class="right measure"><span><b>7</b>active</span></div>
+									</div>
+								</header>
+								<div class="rhythm-body tier-list">
+									<section class="sec">
+										<div class="shead"><h2>Active</h2></div>
+										<ul class="rows">
+											<li class="lrow">
+												<span class="dot" style="background: var(--domain-code, #1b93ba)"></span>
+												<div><p class="ttl">Code</p></div>
+											</li>
+										</ul>
+									</section>
+									<section class="sec">
+										<div class="gap-tag">gap 32</div>
+										<div class="shead"><h2>Quiet</h2></div>
+										<ul class="rows">
+											<li class="lrow">
+												<span class="dot" style="background: var(--domain-spirit, #8b6031)"></span>
+												<div><p class="ttl">Spirituality</p></div>
+											</li>
+										</ul>
+									</section>
+								</div>
+							</div>
+						</div>
+						<div class="spec-frame at-phone">
+							<div class="cap-bar"><span>/projects/[id] · 3</span><span class="w">393</span></div>
+							<div class="surface">
+								<header class="ph">
+									<div class="top">
+										<h1>Dispatch rewrite</h1>
+										<div class="right measure"><span><b>3/8</b>milestones</span></div>
+									</div>
+								</header>
+								<div class="rhythm-body tier-detail">
+									<section class="sec">
+										<div class="shead"><h2>Details</h2></div>
+										<div class="card">
+											<dl class="dl">
+												<div><dt>Type</dt><dd>Internal</dd></div>
+											</dl>
+										</div>
+									</section>
+									<section class="sec">
+										<div class="gap-tag">gap 56</div>
+										<div class="shead"><h2>Milestones</h2></div>
+										<div class="mrow"><span class="box"></span> Today ring</div>
+									</section>
+								</div>
+							</div>
+						</div>
+					</div>
+					<p class="inv">
+						<b>Option 3 is not a third rhythm</b> — it is a delivery vehicle for 1
+						or 2. Pick the numbers first (1 or 2), then say whether a
+						<code>PageBody</code> owns them. Drawing 3 alone without 1/2 would
+						just re-hide the decision.
+					</p>
+				</div>
+			</section>
+
+			<div class="inv" style="margin-top: 48px">
+				<b>Decided already in this pass (not on the ballot):</b> More menu desktop
+				<code>max-h</code> reset · pending dimming rule in DESIGN.md · efficiency
+				findings left alone with comments. <b>Stop here.</b> Pick Gate A (A or B)
+				and Gate B (1, 2, and optionally +3).
+			</div>
+		</div>
+
+		<script>
+			document.querySelectorAll(".controls button[data-set]").forEach((btn) => {
+				btn.addEventListener("click", () => {
+					const set = btn.getAttribute("data-set");
+					const val = btn.getAttribute("data-val");
+					document.body.setAttribute(`data-${set}`, val);
+					document
+						.querySelectorAll(`.controls button[data-set="${set}"]`)
+						.forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+				});
+			});
+		</script>
+	</body>
+</html>
