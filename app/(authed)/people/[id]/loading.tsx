@@ -1,5 +1,7 @@
 import { PageSkeleton } from "@/components/ui";
 
+// No title: this route's h1 is the person's name, which is the data still in
+// flight. PageSkeleton holds the h1's geometry with a placeholder instead.
 export default function Loading() {
-	return <PageSkeleton title="Person" rows={5} />;
+	return <PageSkeleton rows={5} />;
 }

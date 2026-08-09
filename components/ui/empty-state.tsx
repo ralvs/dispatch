@@ -25,18 +25,16 @@ export function EmptyState({
 	children,
 	hint,
 	divider = false,
-	className = "",
 }: {
 	children: ReactNode;
 	hint?: ReactNode;
 	divider?: boolean;
-	className?: string;
 }) {
 	return (
 		<p
 			className={`text-base italic text-ink-3 ${
 				divider ? "border-b border-line pt-6 pb-7" : "py-8"
-			} ${className}`}
+			}`}
 		>
 			{children}
 			{hint && <span className="mt-1.5 block text-sm not-italic text-ink-4">{hint}</span>}

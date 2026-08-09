@@ -12,17 +12,9 @@ import type { ReactNode } from "react";
  * Promoted verbatim out of app/(authed)/today/day-bands.tsx, where it was
  * private to Today and is the shipped precedent.
  */
-export function SectionHead({
-	title,
-	aside,
-	className = "",
-}: {
-	title: string;
-	aside?: ReactNode;
-	className?: string;
-}) {
+export function SectionHead({ title, aside }: { title: string; aside?: ReactNode }) {
 	return (
-		<div className={`mb-1.5 flex items-baseline justify-between gap-4 ${className}`}>
+		<div className="mb-1.5 flex items-baseline justify-between gap-4">
 			<h2 className="m-0 text-base font-medium tracking-[-0.02em] text-ink">{title}</h2>
 			{aside}
 		</div>

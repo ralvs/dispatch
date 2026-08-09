@@ -18,14 +18,36 @@ import { PageHeader } from "./page-header";
  * it knows its own name — so leaving the slot empty would pop a control into
  * the header the moment data landed. Pass it disabled: the control is there,
  * it is simply not ready yet (DESIGN.md, "The Invisible Slot Rule").
+ *
+ * `title` is optional for the one case where the page's name *is* data: a
+ * detail route renders `person.name`, so there is no name to state yet. Those
+ * two routes used to pass the noun — `title="Person"` — which made the h1 say
+ * one thing and then another, the exact pop the action rule exists to prevent,
+ * and reinstated the eyebrow word ADR-0042 deleted. Omit it and the placeholder
+ * renders inside the real h1, where it cannot drift from the title's geometry.
  */
+function TitlePlaceholder() {
+	return (
+		<>
+			<span className="sr-only">Loading</span>
+			{/* inline-block, so the h1's line box still comes from its own strut and
+			    the header keeps the height it will have once the name arrives. */}
+			<span
+				aria-hidden="true"
+				className="inline-block h-[0.66em] w-[min(60%,18rem)] animate-pulse rounded bg-surface align-baseline"
+			/>
+		</>
+	);
+}
+
 export function PageSkeleton({
 	title,
 	subtitle,
 	action,
 	rows = 6,
 }: {
-	title: string;
+	/** Omit on a detail route, where the title is data rather than the page. */
+	title?: string;
 	subtitle?: string;
 	/** The route's standing action, rendered disabled. Holds its slot. */
 	action?: ReactNode;
@@ -33,7 +55,7 @@ export function PageSkeleton({
 }) {
 	return (
 		<div>
-			<PageHeader title={title} subtitle={subtitle} action={action} />
+			<PageHeader title={title ?? <TitlePlaceholder />} subtitle={subtitle} action={action} />
 			<span role="status" className="sr-only">
 				Loading
 			</span>

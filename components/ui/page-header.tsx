@@ -44,9 +44,13 @@ export type Measure = {
 function MeasureLine({ items }: { items: Measure[] }) {
 	return (
 		<div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm text-ink-3">
-			{items.map((item) => (
+			{items.map((item, i) => (
 				<span
-					key={item.label}
+					// Keyed by position: the two detail pages pass attribute readings
+					// with an empty label, so labels are not unique. The list is built
+					// in one place per page and never reordered.
+					// biome-ignore lint/suspicious/noArrayIndexKey: fixed, caller-ordered list.
+					key={i}
 					className={`whitespace-nowrap ${item.attention ? "text-accent" : ""}`}
 				>
 					<span
@@ -67,7 +71,9 @@ export function PageHeader({
 	action,
 	subtitle,
 }: {
-	title: string;
+	/** Usually the page's name. A node so a route whose title *is* data can hand
+	 *  in a placeholder that sits inside this same h1 (see PageSkeleton). */
+	title: ReactNode;
 	/** The page's own reading. Omit it rather than inventing a count to fill it. */
 	measure?: Measure[];
 	/** One standing action, right-aligned on the title's baseline. */
