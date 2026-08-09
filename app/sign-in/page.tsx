@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { BrandMark } from "@/components/brand-mark";
 import { Button, Field, Input } from "@/components/ui";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
@@ -25,6 +26,16 @@ function mapSignInError(message: string): string {
 	return "Couldn't sign in. Try again.";
 }
 
+/**
+ * The only unauthenticated UI. Pass 5: brand mark introduces the product,
+ * then a page-weight title — no mono eyebrow, no hairline (the silhouette
+ * ADR-0042 deleted; this page sat outside every prior sweep).
+ *
+ * Behaviour is load-bearing and is not a design concern: the checkingSession
+ * gate, recovery client, and redirect contract come from ADR-0025 and
+ * ADR-0032. proxy.ts keeps /sign-in outside the matcher so recovery can
+ * refresh without a redirect loop.
+ */
 export default function SignInPage() {
 	const router = useRouter();
 	const [serverError, setServerError] = useState<string | null>(null);
@@ -82,8 +93,11 @@ export default function SignInPage() {
 	if (checkingSession) {
 		return (
 			<main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6 pb-24">
-				<p className="font-mono text-eyebrow uppercase text-ink-3">Dispatch</p>
-				<p className="mt-4 type-title text-ink-3" role="status">
+				<div className="flex items-center gap-2.5">
+					<BrandMark size={22} />
+					<span className="text-[15px] font-medium text-ink">Dispatch</span>
+				</div>
+				<p className="mt-5 text-sm text-ink-3" role="status">
 					Checking session…
 				</p>
 			</main>
@@ -92,9 +106,12 @@ export default function SignInPage() {
 
 	return (
 		<main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6 pb-24">
-			<p className="font-mono text-eyebrow uppercase text-ink-3">Dispatch</p>
-			<h1 className="mt-1 type-title text-3xl text-ink">Sign in</h1>
-			<div className="hairline-strong mt-6" />
+			<div className="flex items-center gap-2.5">
+				<BrandMark size={22} />
+				<span className="text-[15px] font-medium text-ink">Dispatch</span>
+			</div>
+
+			<h1 className="mt-5 text-t30 text-ink">Sign in</h1>
 
 			<form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6" noValidate>
 				<Field label="Email" error={errors.email?.message} htmlFor="email">
@@ -120,7 +137,7 @@ export default function SignInPage() {
 				</Field>
 
 				{serverError && (
-					<p role="alert" className="text-meta text-error">
+					<p role="alert" className="text-sm text-error">
 						{serverError}
 					</p>
 				)}
@@ -128,8 +145,9 @@ export default function SignInPage() {
 				<Button
 					type="submit"
 					variant="primary"
+					shape="pill"
 					fullWidth
-					size="lg"
+					size="md"
 					isPending={isSubmitting}
 					disabled={isSubmitting}
 				>
