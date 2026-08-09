@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-07T18:00:00.000Z",
+  "generatedAt": "2026-08-09T22:42:19.129Z",
   "title": "Design System: Dispatch",
   "extensions": {
     "colorMeta": {
@@ -8,133 +8,331 @@
         "role": "neutral",
         "displayName": "Neutral Fifty",
         "canonical": "#fafafa",
-        "tonalRamp": ["#1a1817", "#2a2524", "#3f3937", "#57534e", "#8c8681", "#b4aea8", "#e5e5e5", "#fafafa"]
+        "tonalRamp": [
+          "#1a1817",
+          "#2a2524",
+          "#3f3937",
+          "#57534e",
+          "#8c8681",
+          "#b4aea8",
+          "#e5e5e5",
+          "#fafafa"
+        ]
       },
       "surface": {
         "role": "neutral",
         "displayName": "Paper",
         "canonical": "#ffffff",
-        "tonalRamp": ["#1a1817", "#232020", "#2b2725", "#57534e", "#8c8681", "#d6d3d0", "#f0efed", "#ffffff"]
+        "tonalRamp": [
+          "#1a1817",
+          "#232020",
+          "#2b2725",
+          "#57534e",
+          "#8c8681",
+          "#d6d3d0",
+          "#f0efed",
+          "#ffffff"
+        ]
       },
       "surface-2": {
         "role": "neutral",
         "displayName": "Ash",
         "canonical": "#f0efed",
-        "tonalRamp": ["#1a1817", "#2b2725", "#423d3a", "#57534e", "#8c8681", "#d6d3d0", "#f0efed", "#fafafa"]
+        "tonalRamp": [
+          "#1a1817",
+          "#2b2725",
+          "#423d3a",
+          "#57534e",
+          "#8c8681",
+          "#d6d3d0",
+          "#f0efed",
+          "#fafafa"
+        ]
       },
       "ink": {
         "role": "neutral",
         "displayName": "Stone",
         "canonical": "#2a2524",
-        "tonalRamp": ["#2a2524", "#3f3937", "#57534e", "#726c67", "#8c8681", "#b4aea8", "#d6d3d0", "#f5f2ef"]
+        "tonalRamp": [
+          "#2a2524",
+          "#3f3937",
+          "#57534e",
+          "#726c67",
+          "#8c8681",
+          "#b4aea8",
+          "#d6d3d0",
+          "#f5f2ef"
+        ]
       },
       "ink-2": {
         "role": "neutral",
         "displayName": "Stone Muted",
         "canonical": "#57534e",
-        "tonalRamp": ["#2a2524", "#3f3937", "#57534e", "#726c67", "#8c8681", "#b4aea8", "#d6d3d0", "#f5f2ef"]
+        "tonalRamp": [
+          "#2a2524",
+          "#3f3937",
+          "#57534e",
+          "#726c67",
+          "#8c8681",
+          "#b4aea8",
+          "#d6d3d0",
+          "#f5f2ef"
+        ]
       },
       "ink-3": {
         "role": "neutral",
         "displayName": "Stone Quiet",
         "canonical": "#8c8681",
-        "tonalRamp": ["#2a2524", "#3f3937", "#57534e", "#726c67", "#8c8681", "#b4aea8", "#d6d3d0", "#f5f2ef"]
+        "tonalRamp": [
+          "#2a2524",
+          "#3f3937",
+          "#57534e",
+          "#726c67",
+          "#8c8681",
+          "#b4aea8",
+          "#d6d3d0",
+          "#f5f2ef"
+        ]
       },
       "ink-4": {
         "role": "neutral",
         "displayName": "Stone Faint",
         "canonical": "#b4aea8",
-        "tonalRamp": ["#2a2524", "#3f3937", "#57534e", "#726c67", "#8c8681", "#b4aea8", "#d6d3d0", "#f5f2ef"]
+        "tonalRamp": [
+          "#2a2524",
+          "#3f3937",
+          "#57534e",
+          "#726c67",
+          "#8c8681",
+          "#b4aea8",
+          "#d6d3d0",
+          "#f5f2ef"
+        ]
       },
       "line": {
         "role": "neutral",
         "displayName": "Hairline",
         "canonical": "#e5e5e5",
-        "tonalRamp": ["#1a1817", "#322e2c", "#423d3a", "#6b645f", "#8c8681", "#d6d3d0", "#e5e5e5", "#fafafa"]
+        "tonalRamp": [
+          "#1a1817",
+          "#322e2c",
+          "#423d3a",
+          "#6b645f",
+          "#8c8681",
+          "#d6d3d0",
+          "#e5e5e5",
+          "#fafafa"
+        ]
       },
       "line-strong": {
         "role": "neutral",
         "displayName": "Hairline Strong",
         "canonical": "#d6d3d0",
-        "tonalRamp": ["#1a1817", "#322e2c", "#423d3a", "#6b645f", "#8c8681", "#d6d3d0", "#e5e5e5", "#fafafa"]
+        "tonalRamp": [
+          "#1a1817",
+          "#322e2c",
+          "#423d3a",
+          "#6b645f",
+          "#8c8681",
+          "#d6d3d0",
+          "#e5e5e5",
+          "#fafafa"
+        ]
       },
       "accent": {
         "role": "primary",
         "displayName": "Dispatch Orange",
         "canonical": "#f15a0f",
-        "tonalRamp": ["#3d1604", "#5c2106", "#8a320a", "#c2450a", "#f15a0f", "#ff8f5c", "#fbc4a4", "#fdf0e8"]
+        "tonalRamp": [
+          "#3d1604",
+          "#5c2106",
+          "#8a320a",
+          "#c2450a",
+          "#f15a0f",
+          "#ff8f5c",
+          "#fbc4a4",
+          "#fdf0e8"
+        ]
       },
       "accent-bg": {
         "role": "primary",
         "displayName": "Ember Wash",
         "canonical": "#fdf0e8",
-        "tonalRamp": ["#3d1604", "#5c2106", "#8a320a", "#c2450a", "#f15a0f", "#ff8f5c", "#fbc4a4", "#fdf0e8"]
+        "tonalRamp": [
+          "#3d1604",
+          "#5c2106",
+          "#8a320a",
+          "#c2450a",
+          "#f15a0f",
+          "#ff8f5c",
+          "#fbc4a4",
+          "#fdf0e8"
+        ]
       },
       "accent-ink": {
         "role": "primary",
         "displayName": "Ember Deep",
         "canonical": "#c2450a",
-        "tonalRamp": ["#3d1604", "#5c2106", "#8a320a", "#c2450a", "#f15a0f", "#ff8f5c", "#fbc4a4", "#fdf0e8"]
+        "tonalRamp": [
+          "#3d1604",
+          "#5c2106",
+          "#8a320a",
+          "#c2450a",
+          "#f15a0f",
+          "#ff8f5c",
+          "#fbc4a4",
+          "#fdf0e8"
+        ]
       },
       "priority-high": {
         "role": "secondary",
         "displayName": "Priority Red",
         "canonical": "#d92d20",
-        "tonalRamp": ["#3d0b07", "#5c110b", "#8a1a10", "#b02419", "#d92d20", "#ff6a5e", "#ffa79f", "#ffe4e1"]
+        "tonalRamp": [
+          "#3d0b07",
+          "#5c110b",
+          "#8a1a10",
+          "#b02419",
+          "#d92d20",
+          "#ff6a5e",
+          "#ffa79f",
+          "#ffe4e1"
+        ]
       },
       "domain-engine": {
         "role": "tertiary",
         "displayName": "Indigo — Engine",
         "canonical": "#514ad4",
-        "tonalRamp": ["#0b082f", "#1c175a", "#352d99", "#514ad4", "#5e5ae6", "#c5c9e2", "#dfe1ea", "#f3f3f5"]
+        "tonalRamp": [
+          "#0b082f",
+          "#1c175a",
+          "#352d99",
+          "#514ad4",
+          "#5e5ae6",
+          "#c5c9e2",
+          "#dfe1ea",
+          "#f3f3f5"
+        ]
       },
       "domain-health": {
         "role": "tertiary",
         "displayName": "Green — Health",
         "canonical": "#2aa649",
-        "tonalRamp": ["#032108", "#0a4118", "#1a7230", "#2aa649", "#30d158", "#89e395", "#c8edcb", "#eff5ef"]
+        "tonalRamp": [
+          "#032108",
+          "#0a4118",
+          "#1a7230",
+          "#2aa649",
+          "#30d158",
+          "#89e395",
+          "#c8edcb",
+          "#eff5ef"
+        ]
       },
       "domain-family": {
         "role": "tertiary",
         "displayName": "Orchid — Family",
         "canonical": "#c345fc",
-        "tonalRamp": ["#2b013c", "#520470", "#8d0dbd", "#c345fc", "#c756fc", "#dabeeb", "#e7dded", "#f4f3f6"]
+        "tonalRamp": [
+          "#2b013c",
+          "#520470",
+          "#8d0dbd",
+          "#c345fc",
+          "#c756fc",
+          "#dabeeb",
+          "#e7dded",
+          "#f4f3f6"
+        ]
       },
       "domain-spirit": {
         "role": "tertiary",
         "displayName": "Clay — Spirituality",
         "canonical": "#8b6031",
-        "tonalRamp": ["#1a0e04", "#36230e", "#5f401f", "#8b6031", "#a5733c", "#e3c4a6", "#eadfd5", "#f5f3f1"]
+        "tonalRamp": [
+          "#1a0e04",
+          "#36230e",
+          "#5f401f",
+          "#8b6031",
+          "#a5733c",
+          "#e3c4a6",
+          "#eadfd5",
+          "#f5f3f1"
+        ]
       },
       "domain-finance": {
         "role": "tertiary",
         "displayName": "Blue — Finance",
         "canonical": "#0a7cfe",
-        "tonalRamp": ["#001638", "#002f69", "#0254b1", "#0a7cfe", "#318ffe", "#b7cceb", "#dae2ed", "#f2f3f6"]
+        "tonalRamp": [
+          "#001638",
+          "#002f69",
+          "#0254b1",
+          "#0a7cfe",
+          "#318ffe",
+          "#b7cceb",
+          "#dae2ed",
+          "#f2f3f6"
+        ]
       },
       "domain-code": {
         "role": "tertiary",
         "displayName": "Cyan — Code",
         "canonical": "#1b93ba",
-        "tonalRamp": ["#011c26", "#05394a", "#0f6480", "#1b93ba", "#2cc9fc", "#a1d4ea", "#d3e5ed", "#f1f4f6"]
+        "tonalRamp": [
+          "#011c26",
+          "#05394a",
+          "#0f6480",
+          "#1b93ba",
+          "#2cc9fc",
+          "#a1d4ea",
+          "#d3e5ed",
+          "#f1f4f6"
+        ]
       },
       "domain-travel": {
         "role": "tertiary",
         "displayName": "Yellow — Travel",
         "canonical": "#ffcc0f",
-        "tonalRamp": ["#382b00", "#695202", "#b18d06", "#ffcc0f", "#ffd60a", "#f8eccd", "#ede1bf", "#f6f3ed"]
+        "tonalRamp": [
+          "#382b00",
+          "#695202",
+          "#b18d06",
+          "#ffcc0f",
+          "#ffd60a",
+          "#f8eccd",
+          "#ede1bf",
+          "#f6f3ed"
+        ]
       },
       "domain-pine": {
         "role": "tertiary",
         "displayName": "Teal — spare",
         "canonical": "#158266",
-        "tonalRamp": ["#011710", "#033225", "#0b5844", "#158266", "#21b18c", "#85e0c1", "#c0eddc", "#eef6f2"]
+        "tonalRamp": [
+          "#011710",
+          "#033225",
+          "#0b5844",
+          "#158266",
+          "#21b18c",
+          "#85e0c1",
+          "#c0eddc",
+          "#eef6f2"
+        ]
       },
       "domain-burgundy": {
         "role": "tertiary",
         "displayName": "Rose — spare",
         "canonical": "#db149b",
-        "tonalRamp": ["#2f011e", "#59033d", "#970a6a", "#db149b", "#fc2cb4", "#ebbad3", "#eddce4", "#f6f2f4"]
+        "tonalRamp": [
+          "#2f011e",
+          "#59033d",
+          "#970a6a",
+          "#db149b",
+          "#fc2cb4",
+          "#ebbad3",
+          "#eddce4",
+          "#f6f2f4"
+        ]
       }
     },
     "typographyMeta": {
@@ -142,17 +340,38 @@
         "displayName": "Hero",
         "purpose": "Today's headline on desktop, and nothing else. Steps to Headline at phone width."
       },
-      "display": { "displayName": "Display", "purpose": "On the ramp, currently unspent." },
-      "headline": { "displayName": "Headline", "purpose": "A page's h1; Today's headline on a phone." },
-      "title": { "displayName": "Title", "purpose": "A section title large enough to open a page region." },
-      "lead": { "displayName": "Lead", "purpose": "Pull-quotes and standfirst copy." },
-      "body": { "displayName": "Body", "purpose": "Every row title, task, and list item." },
+      "display": {
+        "displayName": "Display",
+        "purpose": "On the ramp, currently unspent."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "A page's h1; Today's headline on a phone."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "A section title large enough to open a page region; a note's own title; the h1 on /sign-in and the root 404."
+      },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "A pull-quote, standfirst copy, and an authored prose h2 inside a note body (Pass 3)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Every row title, task and list item, and long-form prose — note body, chat message, journal entry — capped at 65ch."
+      },
       "section": {
         "displayName": "Section",
-        "purpose": "A section heading. Body size — the weight step to 500 is the entire signal."
+        "purpose": "A section heading, and an authored prose h3 inside a note body. Body size — the weight step to 500 is the entire signal."
       },
-      "small": { "displayName": "Small", "purpose": "Chips, pill labels, supporting lines." },
-      "meta": { "displayName": "Meta", "purpose": "Clock times, counts, streaks, ruler hours. Always tabular." },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Chips, pill labels, supporting lines."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Clock times, counts, streaks, ruler hours. Always tabular."
+      },
       "eyebrow": {
         "displayName": "Eyebrow",
         "purpose": "Anything the system labelled rather than a person named — the dateline, ALL DAY, a bucket name."
@@ -192,89 +411,108 @@
       }
     ],
     "breakpoints": [
-      { "name": "lg", "value": "64rem" }
+      {
+        "name": "lg",
+        "value": "64rem"
+      }
     ]
   },
   "components": [
     {
-      "name": "Capture Pill",
-      "kind": "button",
-      "refersTo": "button-primary",
-      "description": "The shell's primary action. Ink-filled because capture is the one action the product exists to make cheap.",
-      "html": "<button class=\"ds-btn-primary\">Capture</button>",
-      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 20px; border: 0; border-radius: 9999px; background: var(--ink, #2a2524); color: var(--bg, #fafafa); font-family: Geist, Arial, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.15s ease; } .ds-btn-primary:hover { opacity: 0.9; } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #f15a0f); outline-offset: 2px; }"
+      "name": "Page Header",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "The fine locator every surface but Today and the note editor opens with: title · facts · measure · action on one baseline (ADR-0042; facts from Pass 4.5 Gate A).",
+      "html": "<header class=\"ds-page-header\">\n  <div class=\"ds-page-header__line\">\n    <h1 class=\"ds-page-header__title\">Dispatch rewrite</h1>\n    <div class=\"ds-page-header__right\">\n      <div class=\"ds-page-header__reading\">\n        <span class=\"ds-fact\">Internal</span>\n        <span class=\"ds-fact\">Active</span>\n        <span class=\"ds-measure\"><span class=\"ds-measure__figure\">3/8</span>milestones</span>\n      </div>\n      <div class=\"ds-page-header__action\"><button class=\"ds-btn-control-secondary\">+ New</button></div>\n    </div>\n  </div>\n</header>",
+      "css": ".ds-page-header { margin-bottom: 30px; font-family: var(--font-sans, Geist, Arial, sans-serif); }\n.ds-page-header__line { display: flex; align-items: baseline; justify-content: space-between; gap: 32px; flex-wrap: nowrap; }\n.ds-page-header__title { margin: 0; min-width: 0; font-size: 36px; font-weight: 500; line-height: 1.1; letter-spacing: -0.9px; color: var(--ink); text-wrap: pretty; }\n.ds-page-header__right { display: flex; align-items: baseline; justify-content: flex-end; gap: 20px; flex-shrink: 0; }\n.ds-page-header__reading { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 16px; row-gap: 4px; font-size: 14px; color: var(--ink-3); }\n.ds-fact { white-space: nowrap; }\n.ds-measure { white-space: nowrap; }\n.ds-measure__figure { margin-right: 4px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink-2); }\n.ds-page-header__action { transform: translateY(3px); align-self: center; }"
     },
     {
-      "name": "Ask Pill",
+      "name": "List Row",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Geometry only — hairline, min-height, leading/body/trailing columns. Rows keep their own composition; a per-surface variant prop is the failure mode (ADR-0044).",
+      "html": "<ul class=\"ds-list\">\n  <li class=\"ds-row\">\n    <span class=\"ds-row__dot\" style=\"background: var(--domain-engine)\"></span>\n    <div class=\"ds-row__body\"><span class=\"ds-row__title\">Rewrite the capture parser</span></div>\n    <span class=\"ds-row__meta\">14:00</span>\n  </li>\n  <li class=\"ds-row\">\n    <span class=\"ds-row__dot\" style=\"background: var(--domain-health)\"></span>\n    <div class=\"ds-row__body\"><span class=\"ds-row__title ds-row__title--done\">Book the dentist</span></div>\n    <span class=\"ds-row__meta\">Mon</span>\n  </li>\n</ul>",
+      "css": ".ds-list { list-style: none; margin: 0; padding: 0; font-family: var(--font-sans, Geist, Arial, sans-serif); }\n.ds-row { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 12px 0; border-bottom: 1px solid var(--line); }\n.ds-row__dot { flex-shrink: 0; width: 9px; height: 9px; border-radius: 9999px; }\n.ds-row__body { min-width: 0; flex: 1; }\n.ds-row__title { font-size: 16px; font-weight: 400; line-height: 1.35; letter-spacing: -0.01em; color: var(--ink); }\n.ds-row__title--done { color: var(--ink-4); text-decoration: line-through; }\n.ds-row__meta { font-family: var(--font-mono, 'Geist Mono', ui-monospace, monospace); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-3); }"
+    },
+    {
+      "name": "Empty State",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "A list with nothing in it says so in words rather than collapsing. Left-aligned on the rows' own edge; the only italic in the chrome.",
+      "html": "<p class=\"ds-empty\">Nothing here yet. Capture something.<span class=\"ds-empty__hint\">Write one with the + at the top of the page.</span></p>",
+      "css": ".ds-empty { margin: 0; padding: 32px 0; font-family: var(--font-sans, Geist, Arial, sans-serif); font-size: 16px; font-style: italic; color: var(--ink-3); }\n.ds-empty__hint { display: block; margin-top: 6px; font-size: 14px; font-style: normal; color: var(--ink-4); }"
+    },
+    {
+      "name": "Primary Pill",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Capture. Ink-filled because capture is the one action the whole product exists to make cheap. One of only three pills on a page.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg>Capture</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 20px; border: none; border-radius: 9999px; background: var(--ink); color: var(--bg); font-family: var(--font-sans, Geist, Arial, sans-serif); font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 150ms; }\n.ds-btn-primary:hover { opacity: 0.9; }\n.ds-btn-primary:active { opacity: 0.7; }\n.ds-btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
+    },
+    {
+      "name": "Outline Pill",
       "kind": "button",
       "refersTo": "button-outline",
-      "description": "The quiet half of the shell's action pair. A hairline outline carrying full ink.",
-      "html": "<button class=\"ds-btn-outline\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"/></svg>Ask</button>",
-      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 20px; border: 1px solid var(--line-strong, #d6d3d0); border-radius: 9999px; background: transparent; color: var(--ink, #2a2524); font-family: Geist, Arial, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: border-color 0.15s ease; } .ds-btn-outline:hover { border-color: var(--ink-4, #b4aea8); } .ds-btn-outline:focus-visible { outline: 2px solid var(--accent, #f15a0f); outline-offset: 2px; }"
+      "description": "Ask, and the day nav's Today reset. The quiet half of the pill pair — a hairline outline carrying full ink.",
+      "html": "<button class=\"ds-btn-outline\">Ask</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 20px; border: 1px solid var(--line-strong); border-radius: 9999px; background: transparent; color: var(--ink); font-family: var(--font-sans, Geist, Arial, sans-serif); font-size: 14px; font-weight: 500; cursor: pointer; transition: border-color 150ms; }\n.ds-btn-outline:hover { border-color: var(--ink-4); }\n.ds-btn-outline:active { opacity: 0.7; }\n.ds-btn-outline:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
     },
     {
       "name": "Control Button",
       "kind": "button",
       "refersTo": "button-control-secondary",
-      "description": "The quiet mono voice the rest of the app is built from: row actions, form buttons, filters.",
-      "html": "<button class=\"ds-btn-control\">Mark shipped</button>",
-      "css": ".ds-btn-control { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 12px; border: 1px solid var(--line-strong, #d6d3d0); border-radius: 12px; background: transparent; color: var(--ink-3, #8c8681); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: border-color 0.15s ease, color 0.15s ease; } .ds-btn-control:hover { border-color: var(--accent, #f15a0f); color: var(--ink, #2a2524); } .ds-btn-control:focus-visible { outline: 2px solid var(--accent, #f15a0f); outline-offset: 2px; }"
-    },
-    {
-      "name": "Tab Group",
-      "kind": "nav",
-      "refersTo": "tab-active",
-      "description": "The desktop header's segmented pill. The active tab lifts onto paper; the rest sit quiet in the trough.",
-      "html": "<nav class=\"ds-tabs\"><a class=\"ds-tab ds-tab-on\" href=\"#\">Today</a><a class=\"ds-tab\" href=\"#\">Tasks</a><a class=\"ds-tab\" href=\"#\">Notes</a></nav>",
-      "css": ".ds-tabs { display: inline-flex; gap: 2px; padding: 5px; border-radius: 9999px; background: var(--surface-2, #f0efed); } .ds-tab { padding: 7px 18px; border-radius: 9999px; font-family: Geist, Arial, sans-serif; font-size: 14px; color: var(--ink-3, #8c8681); text-decoration: none; transition: color 0.15s ease; } .ds-tab:hover { color: var(--ink-2, #57534e); } .ds-tab-on { background: var(--surface, #fff); color: var(--ink, #2a2524); font-weight: 500; box-shadow: 0 1px 2px rgba(41,37,36,0.04), 0 10px 28px rgba(41,37,36,0.05); }"
-    },
-    {
-      "name": "Priority Checkbox",
-      "kind": "custom",
-      "refersTo": "",
-      "description": "The most-repeated shape on the page. Priority is a ring on the box, because the signal sits on the thing you reach for.",
-      "html": "<span class=\"ds-checks\"><span class=\"ds-check ds-check-p1\"></span><span class=\"ds-check ds-check-p2\"></span><span class=\"ds-check\"></span><span class=\"ds-check ds-check-on\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg></span></span>",
-      "css": ".ds-checks { display: inline-flex; align-items: center; gap: 18px; } .ds-check { display: inline-grid; place-items: center; width: 19px; height: 19px; border: 1.5px solid var(--line-strong, #d6d3d0); border-radius: 7px; background: var(--surface, #fff); } .ds-check-p1 { border-width: 2px; border-color: var(--priority-high, #d92d20); box-shadow: 0 0 0 3.5px rgba(217,45,32,0.16); } .ds-check-p2 { border-width: 2px; border-color: rgba(217,45,32,0.42); } .ds-check-on { background: var(--ink, #2a2524); border-color: var(--ink, #2a2524); color: var(--surface, #fff); }"
-    },
-    {
-      "name": "Day Tape",
-      "kind": "custom",
-      "refersTo": "",
-      "description": "The signature. A pinned 06:00-22:00 measure: filled blocks are events, an outlined tick is a scheduled task, and the now-mark carries its own hour.",
-      "html": "<div class=\"ds-tape\"><div class=\"ds-track\"><i class=\"ds-blk\" style=\"left:18.75%;width:4.4%;background:var(--domain-code,#1b93ba)\"></i><i class=\"ds-blk\" style=\"left:34.4%;width:2.9%;background:var(--domain-engine,#514ad4)\"></i><i class=\"ds-blk\" style=\"left:50%;width:9.1%;background:var(--domain-family,#c345fc)\"></i><i class=\"ds-blk ds-blk-task\" style=\"left:59.4%;color:var(--domain-finance,#0a7cfe)\"></i><i class=\"ds-now\" style=\"left:44.8%\"></i></div><div class=\"ds-ticks\"><span style=\"left:0\">06:00</span><span class=\"ds-now-label\" style=\"left:44.8%\">13:10</span><span class=\"ds-end\">22:00</span></div></div>",
-      "css": ".ds-tape { width: 100%; } .ds-track { position: relative; height: 46px; border-radius: 12px; background: var(--surface-2, #f0efed); } .ds-blk { position: absolute; top: 0; bottom: 0; min-width: 7px; border-radius: 8px; } .ds-blk-task { background: transparent; border: 2px solid currentColor; min-width: 9px; width: 0; } .ds-now { position: absolute; top: -6px; bottom: -6px; width: 2px; border-radius: 2px; background: var(--ink, #2a2524); z-index: 3; } .ds-ticks { position: relative; height: 16px; margin-top: 9px; } .ds-ticks > span { position: absolute; transform: translateX(-50%); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-4, #b4aea8); } .ds-ticks > span:first-child { transform: none; } .ds-ticks .ds-end { left: auto; right: 0; transform: none; } .ds-ticks .ds-now-label { color: var(--ink, #2a2524); font-weight: 500; }"
-    },
-    {
-      "name": "Completion Ring",
-      "kind": "custom",
-      "refersTo": "",
-      "description": "One completion figure, drawn as a conic arc with an opaque punched centre that carries its own reading.",
-      "html": "<span class=\"ds-ring\" style=\"background:conic-gradient(var(--ink,#2a2524) 62.5%, var(--surface-2,#f0efed) 0)\"><span class=\"ds-hole\"></span><span class=\"ds-val\">5/8</span></span>",
-      "css": ".ds-ring { position: relative; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; } .ds-hole { position: absolute; inset: 6px; border-radius: 50%; background: var(--surface, #fff); } .ds-val { position: relative; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-2, #57534e); }"
-    },
-    {
-      "name": "All-day Chip",
-      "kind": "chip",
-      "refersTo": "chip-allday",
-      "description": "Everything that belongs to the day but has no hour. Chips wrap rather than scroll — a hidden chip is a missed commitment.",
-      "html": "<span class=\"ds-chip\"><i class=\"ds-dot\" style=\"background:var(--domain-travel,#ffcc0f)\"></i>Voo para o Porto</span>",
-      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 13px; border: 1px solid var(--line-strong, #d6d3d0); border-radius: 12px; font-family: Geist, Arial, sans-serif; font-size: 14px; color: var(--ink, #2a2524); white-space: nowrap; } .ds-dot { width: 7px; height: 7px; border-radius: 9999px; flex-shrink: 0; }"
+      "description": "The quiet voice the rest of the app is built from — row actions, form buttons, filters. Mono, uppercase, 12px radius.",
+      "html": "<button class=\"ds-btn-control-secondary\">+ New project</button>",
+      "css": ".ds-btn-control-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 12px; background: transparent; color: var(--ink-3); font-family: var(--font-mono, 'Geist Mono', ui-monospace, monospace); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: color 150ms, border-color 150ms; }\n.ds-btn-control-secondary:hover { border-color: var(--accent); color: var(--ink); }\n.ds-btn-control-secondary:active { opacity: 0.7; }\n.ds-btn-control-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
     },
     {
       "name": "Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "No box and no radius — a transparent field over a single bottom rule.",
-      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Expected cadence</span><input class=\"ds-input\" value=\"weekly minimum\" /></label>",
-      "css": ".ds-field { display: block; } .ds-field-label { display: block; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3, #8c8681); } .ds-input { width: 100%; height: 36px; padding: 0 10px; border: 0; border-bottom: 1px solid var(--line, #e5e5e5); border-radius: 0; background: transparent; color: var(--ink, #2a2524); font-family: Geist, Arial, sans-serif; font-size: 16px; } .ds-input:focus-visible { outline: 2px solid var(--accent, #f15a0f); outline-offset: 2px; }"
+      "description": "No box and no radius — a transparent field over a single bottom rule. The exception to a system of large radii.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field__label\">Name</span><input class=\"ds-field__control\" placeholder=\"Untitled\" /></label>",
+      "css": ".ds-field { display: block; font-family: var(--font-sans, Geist, Arial, sans-serif); }\n.ds-field__label { display: block; margin-bottom: 4px; font-family: var(--font-mono, 'Geist Mono', ui-monospace, monospace); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }\n.ds-field__control { width: 100%; height: 36px; padding: 0 10px; border: none; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--ink); font-family: inherit; font-size: 14px; outline: none; transition: border-color 150ms; }\n.ds-field__control::placeholder { color: var(--ink-4); }\n.ds-field__control:hover, .ds-field__control:focus { border-bottom-color: var(--line-strong); }\n.ds-field__control:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
     },
     {
-      "name": "Mobile Dock",
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The largest radius in the system (22px), paper on ground, on the barely-there warm card lift plus a hairline that keeps it visible on dark.",
+      "html": "<div class=\"ds-card\"><p class=\"ds-card__head\">Top 3</p><p class=\"ds-card__body\">Ship the capture parser</p></div>",
+      "css": ".ds-card { border: 1px solid var(--line-strong); border-radius: 22px; background: var(--surface); box-shadow: var(--elevation-card); padding: 20px; font-family: var(--font-sans, Geist, Arial, sans-serif); }\n.ds-card__head { margin: 0 0 6px; font-size: 16px; font-weight: 500; letter-spacing: -0.02em; color: var(--ink); }\n.ds-card__body { margin: 0; font-size: 16px; font-weight: 400; line-height: 1.35; letter-spacing: -0.01em; color: var(--ink); }"
+    },
+    {
+      "name": "All-day Chip",
+      "kind": "chip",
+      "refersTo": "chip-allday",
+      "description": "A stateless label in the all-day band, with its domain dot leading. Chips wrap rather than scroll — a hidden chip is a missed commitment.",
+      "html": "<span class=\"ds-chip\"><span class=\"ds-chip__dot\" style=\"background: var(--domain-family)\"></span>Anniversary</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 13px; border: 1px solid var(--line-strong); border-radius: 12px; background: transparent; color: var(--ink); font-family: var(--font-sans, Geist, Arial, sans-serif); font-size: 14px; }\n.ds-chip__dot { width: 7px; height: 7px; border-radius: 9999px; }"
+    },
+    {
+      "name": "Tab Group",
       "kind": "nav",
-      "refersTo": "dock-action",
-      "description": "The header's tabs moved to the thumb. The active tab takes the ember wash; capture takes ink. Two signals that can never be read as one.",
-      "html": "<div class=\"ds-dock\"><nav class=\"ds-dock-pill\"><a class=\"ds-dock-tab ds-dock-on\" href=\"#\">Today</a><a class=\"ds-dock-tab\" href=\"#\">Tasks</a><a class=\"ds-dock-tab\" href=\"#\">Notes</a></nav><button class=\"ds-dock-action\"><svg width=\"21\" height=\"21\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg></button></div>",
-      "css": ".ds-dock { display: flex; align-items: center; justify-content: center; gap: 8px; } .ds-dock-pill { display: flex; align-items: center; gap: 2px; height: 54px; padding: 5px; border: 1px solid var(--line-strong, #d6d3d0); border-radius: 9999px; background: color-mix(in srgb, var(--surface, #fff) 80%, transparent); backdrop-filter: saturate(1.8) blur(20px); box-shadow: 0 2px 6px rgba(41,37,36,0.06), 0 14px 34px rgba(41,37,36,0.16); } .ds-dock-tab { display: flex; align-items: center; height: 100%; padding: 0 9px; border-radius: 9999px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3, #8c8681); text-decoration: none; } .ds-dock-on { background: var(--accent-bg, #fdf0e8); color: var(--accent-ink, #c2450a); } .ds-dock-action { display: grid; place-items: center; width: 54px; height: 54px; border: 1px solid var(--ink, #2a2524); border-radius: 9999px; background: var(--ink, #2a2524); color: var(--bg, #fafafa); cursor: pointer; box-shadow: 0 2px 6px rgba(41,37,36,0.06), 0 14px 34px rgba(41,37,36,0.16); }"
+      "refersTo": "tab-active",
+      "description": "The desktop locator: a segmented pill group in an ash trough. The active tab lifts onto paper at 500 with the card shadow. More is a menu trigger, not a link (ADR-0045).",
+      "html": "<nav class=\"ds-tabs\"><a class=\"ds-tab ds-tab--active\">Today</a><a class=\"ds-tab\">Tasks</a><a class=\"ds-tab\">Notes</a><a class=\"ds-tab\">Links</a><a class=\"ds-tab\">More</a></nav>",
+      "css": ".ds-tabs { display: inline-flex; align-items: center; gap: 2px; padding: 5px; border-radius: 9999px; background: var(--surface-2); font-family: var(--font-sans, Geist, Arial, sans-serif); }\n.ds-tab { display: block; padding: 7px 18px; border-radius: 9999px; font-size: 14px; color: var(--ink-3); text-decoration: none; cursor: pointer; transition: color 150ms; }\n.ds-tab:hover { color: var(--ink-2); }\n.ds-tab--active { background: var(--surface); color: var(--ink); font-weight: 500; box-shadow: var(--elevation-card); }\n.ds-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
+    },
+    {
+      "name": "Priority Checkbox",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "A 7px squircle at 19px — the shape most repeated on the page, and the reason `mark` exists as its own radius step. High priority takes a solid red ring with a halo; medium the same red at 42%; low a plain grey rule.",
+      "html": "<div class=\"ds-checks\"><span class=\"ds-check ds-check--high\"></span><span class=\"ds-check ds-check--med\"></span><span class=\"ds-check ds-check--low\"></span></div>",
+      "css": ".ds-checks { display: flex; align-items: center; gap: 14px; }\n.ds-check { display: block; width: 19px; height: 19px; border-radius: 7px; border: 1.5px solid var(--line-strong); background: transparent; cursor: pointer; }\n.ds-check--high { border-color: var(--priority-high); box-shadow: 0 0 0 3.5px var(--priority-high-halo); }\n.ds-check--med { border-color: var(--priority-med); }\n.ds-check:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
+    },
+    {
+      "name": "Day Tape",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "The signature: a proportional measure of one day pinned at 06:00–22:00. An event is a filled block spanning its duration; a scheduled task is an outlined tick. The now-mark is a 2px ink rule carrying its own hour.",
+      "html": "<div class=\"ds-tape\"><div class=\"ds-tape__track\"><span class=\"ds-tape__block\" style=\"left:8%; width:14%; background: var(--domain-engine)\"></span><span class=\"ds-tape__block\" style=\"left:34%; width:9%; background: var(--domain-finance)\"></span><span class=\"ds-tape__tick\" style=\"left:56%; border-color: var(--domain-health)\"></span><span class=\"ds-tape__now\" style=\"left:47%\"></span></div><div class=\"ds-tape__ruler\"><span>06</span><span>22</span></div></div>",
+      "css": ".ds-tape { font-family: var(--font-mono, 'Geist Mono', ui-monospace, monospace); }\n.ds-tape__track { position: relative; height: 44px; border-radius: 12px; background: var(--surface-2); overflow: hidden; }\n.ds-tape__block { position: absolute; top: 0; bottom: 0; border-radius: 4px; }\n.ds-tape__tick { position: absolute; top: 6px; bottom: 6px; width: 7px; border: 1.5px solid; border-radius: 3px; background: var(--surface); }\n.ds-tape__now { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }\n.ds-tape__ruler { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; letter-spacing: 0.08em; font-variant-numeric: tabular-nums; color: var(--ink-3); }"
     }
   ],
   "narrative": {
@@ -296,17 +534,17 @@
       },
       {
         "name": "The Measured Palette Rule",
-        "body": "Domain colours are data. They are generated and measured in .impeccable/mocks/palette-lab.html against three floors. Retune them in the lab and re-measure, or not at all — never by hand, and never one at a time.",
+        "body": "Domain colours are data. They are generated and measured in `.impeccable/mocks/palette-lab.html` against the three floors above. Retune them in the lab and re-measure, or not at all — never by hand, and never one at a time.",
         "section": "colors"
       },
       {
         "name": "The Stored Slug Rule",
-        "body": "A domain's colour is stored as a palette slug (health), never as a hex. A stored hex cannot theme-switch, and dark is a full peer. Anything rendering a domain colour resolves it through var(--domain-<slug>).",
+        "body": "A domain's colour is stored as a palette slug (`health`), never as a hex. A stored hex cannot theme-switch, and dark is a full peer. Anything rendering a domain colour resolves it through `var(--domain-<slug>)`.",
         "section": "colors"
       },
       {
         "name": "The Recorded Contrast Tradeoff",
-        "body": "ink-3 (3.3:1) and ink-4 (2.0:1) miss WCAG AA at 12px on paper. That is the pinned palette and a recorded decision — fidelity over the contrast floor. Do not \"fix\" it locally; reversing it is a darkening of two tokens, which lands on every surface at once.",
+        "body": "`ink-3` (3.3:1) and `ink-4` (2.0:1) miss WCAG AA at 12px on paper. That is the pinned palette and a recorded decision — fidelity over the contrast floor. It affects the tape's ruler, `meta` counts, and the quote's actions. Do not \"fix\" it locally; reversing it is a darkening of two tokens here, which lands on every surface at once.",
         "section": "colors"
       },
       {
@@ -315,60 +553,98 @@
         "section": "typography"
       },
       {
+        "name": "Row names rest at 400",
+        "body": "Every list-row name is body size at 400 — project, person, note, routine, quote, link, notification, task. Hierarchy on a list comes from colour, position, and the mono meta, not from weight. The system's only weight step is reserved for the things that earn it: P1 on a task, a `SectionHead`, a page title. `rowTitle()` on `ListRow` is the row-name class. `.type-title` was retired in Pass 5 — below-ramp titles inline `font-medium tracking-tight` rather than a class that had three meanings.",
+        "section": "typography"
+      },
+      {
         "name": "The Named vs Labelled Rule",
         "body": "If a person wrote it, it is sans. If the system labelled it, it is uppercase mono. A row's title is sans; the time beside it is mono. This is why the page reads as two columns of meaning without any rules being drawn.",
         "section": "typography"
       },
       {
+        "name": "The Eyebrow Never Crowns Rule",
+        "body": "The uppercase mono eyebrow labels a region — a dateline, `ALL DAY`, a bucket name, a card's section label. It never sits above a heading. Stacked over an `h1` it names the same thing twice in two voices, and that stack was the legacy silhouette every page wore before ADR-0042.",
+        "section": "typography"
+      },
+      {
         "name": "The Tabular Rule",
-        "body": "Every number that can change under the reader — a clock, a count, a streak, a percentage — is tabular-nums. Digits that reflow while you look at them are a defect.",
+        "body": "Every number that can change under the reader — a clock, a count, a streak, a percentage — is `tabular-nums`. Digits that reflow while you look at them are a defect.",
         "section": "typography"
       },
       {
         "name": "The Closed Ramp Rule",
-        "body": "56/44/36/30/18/16/14/12, plus micro at 11px in three named sites. That is the whole ramp. A fourth 11px site, or any new size at all, is a signal that a layout is too dense — fix the layout, do not invent a step. If a new step is genuinely warranted, it lands in DESIGN.md first and in the code second.",
+        "body": "56/44/36/30/18/16/14/12, plus `micro` at 11px in the three sites named above. That is the whole ramp. A fourth 11px site, or any new size at all, is a signal that a layout is too dense — fix the layout, do not invent a step. If a new step is genuinely warranted, it lands here first and in the code second.",
+        "section": "typography"
+      },
+      {
+        "name": "The Prose Measure Rule",
+        "body": "Long-form reading and writing — a note body, a chat message, a journal entry — is capped at 65ch (`--measure-prose` / `.measure-prose`). A list is not prose: rows keep the full frame. One token owns the measure so a later package is a token change and a title step, not a rewrite of three surfaces. Body stays 16 either way.",
+        "section": "typography"
+      },
+      {
+        "name": "Authored prose is on the ramp",
+        "body": "A note's headings are content, not chrome — `#` in a markdown body is the writer's hierarchy, spent on existing steps rather than inventing 24/20. The note title is Title (30/500). In-body `h1` is Title (30/500), `h2` is Lead size at 500 (18), `h3` is Section (16/500). Body is Body (16/400, 1.6).",
+        "section": "typography"
+      },
+      {
+        "name": "Speaker registers in chat",
+        "body": "A person wrote the user message → sans body at 400, right-aligned, `ink-2`. The assistant's answer is running prose → sans body at 400, left-aligned, full `ink`, on the measure. Distinction is alignment + ink step, never mono-for-person / weight-for-machine.",
         "section": "typography"
       },
       {
         "name": "The One Tree Rule",
-        "body": "A phone layout is a max-width query beside its desktop peer, plus display: contents and order. If a <MobileX> component is being written, the layout is wrong.",
+        "body": "A phone layout is a max-width query beside its desktop peer, plus `display: contents` and `order`. If a `<MobileX>` component is being written, the layout is wrong.",
         "section": "layout"
       },
       {
         "name": "The Invisible Slot Rule",
-        "body": "A control that appears conditionally holds its slot with visibility, not display, so its neighbours never shift. The day nav's Today reset is the canonical case.",
+        "body": "A control that appears conditionally holds its slot with `visibility`, not `display`, so its neighbours never shift. The day nav's Today reset is the canonical case.",
         "section": "layout"
       },
       {
         "name": "The Warm Shadow Rule",
-        "body": "Shadows are cast in rgba(41,37,36,…), not in black. A neutral shadow on a warm ground reads as dirt.",
+        "body": "Shadows are cast in `rgba(41,37,36,…)`, not in black. A neutral shadow on a warm ground reads as dirt.",
         "section": "elevation"
       },
       {
         "name": "The Shape-Then-Colour Rule",
         "body": "Shape distinguishes kinds; colour distinguishes instances. Colour is never the only thing separating two things that behave differently.",
         "section": "shapes"
+      },
+      {
+        "name": "A list of objects opens as a list",
+        "body": "Creating an object is one action on the page header; the form is a dialog. Standing `CollapsibleForm` furniture above the first row is gone from /projects, /people, /quotes, /routines, /domains. /journal is the exception that proves the rule: writing the entry is the page.",
+        "section": "components"
+      },
+      {
+        "name": "Titles never go inside the blocks",
+        "body": "At 1092px the day tape runs 1.14px per minute, so a 30-minute meeting gets 34px against the 141px its title needs; at 393pt it is 11px. Start times ride above the track on desktop and go entirely on a phone. Every title is in the Timeline list directly below, which was always the tape's contract.",
+        "section": "components"
       }
     ],
     "dos": [
       "Do use size, colour, or the mono register to create hierarchy. Weight is not available: the ramp stops at 500.",
-      "Do resolve a domain colour through var(--domain-<slug>) from the stored slug. Never write a domain hex into a component.",
-      "Do pair colour with a shape or a word whenever it carries meaning — an outlined tick versus a filled block, a 6d late label beside the orange.",
-      "Do hold a conditional control's slot with visibility so its neighbours never shift.",
-      "Do write a phone layout as a max-width query beside its desktop peer, and reorder with display: contents + order.",
-      "Do give every number that can change under the reader tabular-nums.",
+      "Do resolve a domain colour through `var(--domain-<slug>)` from the stored slug. Never write a domain hex into a component.",
+      "Do pair colour with a shape or a word whenever it carries meaning — an outlined tick versus a filled block, a `6d late` label beside the orange.",
+      "Do hold a conditional control's slot with `visibility` so its neighbours never shift.",
+      "Do write a phone layout as a max-width query beside its desktop peer, and reorder with `display: contents` + `order`.",
+      "Do give every number that can change under the reader `tabular-nums`.",
       "Do let an empty band say so in words. Absent, never empty; a placeholder, never a collapse.",
-      "Do cast shadows in rgba(41,37,36,…) on light."
+      "Do cast shadows in `rgba(41,37,36,…)` on light."
     ],
     "donts": [
       "Don't introduce a second accent, or spend the orange on anything that is not \"this needs you\". Its rarity is the entire signal.",
-      "Don't retune a domain colour by hand. Change it in .impeccable/mocks/palette-lab.html, re-measure against the three floors, or leave it alone.",
-      "Don't \"fix\" the ink-3 / ink-4 contrast locally. It is a recorded tradeoff; reversing it is a change to two tokens in the theme.",
+      "Don't retune a domain colour by hand. Change it in `.impeccable/mocks/palette-lab.html`, re-measure against the three floors, or leave it alone.",
+      "Don't \"fix\" the `ink-3` / `ink-4` contrast locally. It is a recorded tradeoff; reversing it is a change to two tokens in the theme.",
       "Don't put a title inside a day-tape block. There is no width for it at either breakpoint, and the Timeline below already carries it.",
-      "Don't fork a component for the phone. If a <MobileX> is being written, the layout is wrong.",
+      "Don't fork a component for the phone. If a `<MobileX>` is being written, the layout is wrong.",
       "Don't spend the pill voice on ordinary controls. Two standing actions and the Today reset; everything else is the mono control.",
       "Don't move anything on hover. Hover is a colour change.",
-      "Don't draw a ring at 0% for something with nothing to measure — that is furniture, not a reading."
+      "Don't draw a ring at 0% for something with nothing to measure — that is furniture, not a reading.",
+      "Don't give a page a second title under its name. The header names it once; a display line that renames it is a mood, not information.",
+      "Don't restate a page header inside its `loading.tsx`. Render the real one through `PageSkeleton` — a page's name is not data, and a hand-copied header drifts the moment the real one changes.",
+      "Don't put a figure in the measure slot that the page cannot stand behind. A count that flips client-side belongs with the thing that owns it, and a placeholder count is the one thing on a loading screen that lies."
     ]
   }
 }
