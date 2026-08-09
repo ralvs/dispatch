@@ -1,10 +1,9 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
-import { Button, EmptyState, Icon, PageHeader, SectionHead } from "@/components/ui";
+import { EmptyState, PageHeader, SectionHead } from "@/components/ui";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { TaskRow } from "@/lib/services/tasks";
 import {
@@ -23,6 +22,7 @@ import {
 	reopenTaskAction,
 	setTop3Action,
 } from "./actions";
+import { NewTaskButton } from "./new-task-button";
 import { TaskDialog } from "./task-dialog";
 import type { TaskDomainOption } from "./task-fields";
 import {
@@ -285,24 +285,7 @@ export function TaskList({
 			    a page's reading is also its control, the reading goes with the
 			    control. Putting it in the measure slot would have taught eleven
 			    other pages that a count there is sometimes clickable. */}
-			<PageHeader
-				title="Tasks"
-				action={
-					<Button
-						type="button"
-						shape="pill"
-						variant="secondary"
-						size="sm"
-						isIconOnly
-						onClick={() => setCreating(true)}
-						aria-haspopup="dialog"
-						aria-label="New task"
-						title="New task"
-					>
-						<Icon icon={Plus} size="md" />
-					</Button>
-				}
-			/>
+			<PageHeader title="Tasks" action={<NewTaskButton onClick={() => setCreating(true)} />} />
 
 			{/* `onQuickAdd` is what makes this dialog the fast path too: a create
 			    carrying nothing but a title goes through the parser, anything

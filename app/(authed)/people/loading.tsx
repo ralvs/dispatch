@@ -1,14 +1,6 @@
-import { Button, PageSkeleton } from "@/components/ui";
+import { CreateTrigger } from "@/components/create-dialog";
+import { PageSkeleton } from "@/components/ui";
 
 export default function Loading() {
-	return (
-		<PageSkeleton
-			title="People"
-			action={
-				<Button type="button" variant="secondary" disabled>
-					+ New person
-				</Button>
-			}
-		/>
-	);
+	return <PageSkeleton title="People" action={<CreateTrigger label="+ New person" disabled />} />;
 }
