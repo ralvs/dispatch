@@ -26,7 +26,7 @@ export default async function SettingsPage() {
 				</div>
 			</section>
 
-			<section className="mt-8" aria-label="App">
+			<section className="mt-9" aria-label="App">
 				<SectionHead title="App" />
 				<TimezoneForm current={tz} />
 				<ReminderForm
@@ -35,7 +35,7 @@ export default async function SettingsPage() {
 				/>
 			</section>
 
-			<section className="mt-8" aria-label="Account">
+			<section className="mt-9" aria-label="Account">
 				<SectionHead title="Account" />
 				<div className="space-y-3 pt-1">
 					<ThemeToggle />

@@ -63,7 +63,7 @@ function Section({
 }) {
 	if (notes.length === 0 && !empty) return null;
 	return (
-		<section className="mt-6 first:mt-0" aria-label={label}>
+		<section className="mt-9 first:mt-0" aria-label={label}>
 			<SectionHead title={label} aside={notes.length > 0 ? String(notes.length) : undefined} />
 			{notes.length === 0 ? (
 				<EmptyState>{empty}</EmptyState>

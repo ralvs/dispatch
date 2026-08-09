@@ -45,7 +45,7 @@ export default async function LinksPage() {
 					)}
 
 					{read.length > 0 && (
-						<section className="mt-8" aria-label="Read links">
+						<section className="mt-9" aria-label="Read links">
 							<SectionHead title="Read" aside={String(read.length)} />
 							<ul>
 								{read.map((link) => (

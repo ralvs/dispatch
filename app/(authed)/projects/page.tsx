@@ -34,7 +34,7 @@ export default async function ProjectsPage() {
 					const group = projects.filter((p) => p.status === status);
 					if (group.length === 0) return null;
 					return (
-						<section key={status} className="mt-8 first:mt-0" aria-label={label}>
+						<section key={status} className="mt-9 first:mt-0" aria-label={label}>
 							<SectionHead title={label} aside={String(group.length)} />
 							<ul>
 								{group.map((p) => (

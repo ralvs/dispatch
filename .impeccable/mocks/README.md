@@ -234,8 +234,11 @@ between sections actually is.
 | **3** | — | Delivery: `PageBody` owns gap; pairs with 1 or 2 |
 
 As-shipped frames (A0 / B0) are drawn first so the defect is visible, not only
-described. Recommendations in the lab: **B** and **2** (optionally **+3**).
-Do not build past Phase 0 until both gates close.
+described.
+
+**Chosen: A + 1.** Built after Phase 0. `PageHeader.facts` carries plain
+attributes before the count measure; section stacks normalise to **36px**
+(`mt-9`). Option 3 (`PageBody`) was not taken.
 
 Phases in `.impeccable/BUILD-SYSTEM.md`. Decided without a gate: More menu
 desktop `max-h` reset, pending-dimming rule in `DESIGN.md`, two efficiency

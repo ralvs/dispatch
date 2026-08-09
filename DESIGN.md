@@ -445,9 +445,20 @@ right rail** on desktop and stack below on a phone — same tree, one max-width
 query. The leftover width of the 72rem frame is the rail, not empty ground.
 The rail collapses when a section has nothing to show (no empty furniture).
 
-Vertical rhythm runs on a coarse scale: 16px between stacked cards, 34–40px
-between sections, 64px under the header. Rows are ≥48px on touch and every
-checkbox carries a 44px hit slug it does not draw.
+Vertical rhythm is one band for page sections (Pass 4.5 Gate B / option 1):
+
+- **16px** between stacked cards inside a section
+- **36px** (`mt-9`) between peer sections — list groups, detail blocks, settings
+  chunks. One number; detail pages do not breathe more than list pages.
+- **64px** under the **app** header (`AppHeader`'s `mb-16`) before a page's own
+  content begins. That is not `PageHeader`'s bottom margin — the page header
+  adds its own ~28px (`mb-[26px] lg:mb-[30px]`) under the title line.
+- The first section after `PageHeader` carries no top margin; the header already
+  owns that gap (`first:mt-0` on list stacks).
+
+Rows are ≥48px on touch and every checkbox carries a 44px hit slug it does not
+draw. Today's internal grid (40px column gap, day-tape spacing) is its own
+composition and is not this rule.
 
 ### Named Rules
 
@@ -510,17 +521,22 @@ that behave differently.
 
 ### Page Header
 
-Every surface but Today and the note editor opens with it. Four slots in one
-line where there is room — **title · measure · action** — with a subtitle
-beneath where one is earned (ADR-0042).
+Every surface but Today and the note editor opens with it. Slots in one line
+where there is room — **title · facts · measure · action** — with a subtitle
+beneath where one is earned (ADR-0042; Pass 4.5 Gate A for facts).
 
 - **Title:** the ramp's Headline step, 36px / 500 / −0.9px, dropping to 30px on
   a phone. One step below Today's hero, so a list page can never out-shout the
   day.
-- **Measure:** the page's own reading on the title's baseline — `14 open`,
-  `3 paused` — figure at 500 in `ink-2`, word at 400 in `ink-3`, both at 14px.
-  It takes the accent only for what is genuinely late, never to mark that a
-  count is non-zero.
+- **Facts:** plain attribute readings on the title's baseline — type, status,
+  relationship, company — at 14px / 400 in `ink-3`, no tabular-nums. Sit
+  **before** the measure. Used when a detail page needs identity on the header
+  without abusing the count treatment (Pass 4.5 Gate A / option A).
+- **Measure:** the page's own **count** reading — `14 open`, `3 paused`,
+  `3/8 milestones` — figure at 500 in `ink-2` with tabular-nums, word at 400 in
+  `ink-3`, both at 14px. It takes the accent only for what is genuinely late,
+  never to mark that a count is non-zero. Never a plain attribute with an empty
+  label.
 - **Action:** one standing control, centred against the title's baseline.
   On an object list this is where create lives — labelled `+ New …`, the notes
   pattern (Pass 2 Gate B / B1). `/tasks` is the exception: a bare `+` on the

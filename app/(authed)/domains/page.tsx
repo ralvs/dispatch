@@ -45,7 +45,7 @@ export default async function DomainsPage() {
 			</section>
 
 			{archived.length > 0 && (
-				<section className="mt-8" aria-label="Archived domains">
+				<section className="mt-9" aria-label="Archived domains">
 					<SectionHead title="Archived" aside={String(archived.length)} />
 					<ul>
 						{archived.map((d) => (

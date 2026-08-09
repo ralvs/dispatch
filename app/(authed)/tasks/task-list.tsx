@@ -335,7 +335,7 @@ export function TaskList({
 					 * moves a row between the two groups on the same tick the star flips —
 					 * both read from the one optimistic list. */}
 					{top3.length > 0 && (
-						<section className="mt-8" aria-label="Today's top 3">
+						<section className="mt-9" aria-label="Today's top 3">
 							{/* The same head Today's Top3Section carries, down to the
 							    aside: the two surfaces disagreeing about how many slots
 							    are open would be the one thing worth reading twice. */}
@@ -367,7 +367,7 @@ export function TaskList({
 						</section>
 					)}
 
-					<section className="mt-8" aria-label="Open tasks">
+					<section className="mt-9" aria-label="Open tasks">
 						<SectionHead title="Open" />
 						{filteredOpen.length === 0 ? (
 							<EmptyState hint="Write one with the + at the top of the page, or capture a thought and let it file itself.">
@@ -395,7 +395,7 @@ export function TaskList({
 					</section>
 
 					{recentDoneBand.length > 0 && (
-						<section className="mt-10" aria-label="Recently completed">
+						<section className="mt-9" aria-label="Recently completed">
 							<SectionHead title="Recently done" />
 							<ul>
 								{recentDoneBand.map((t) => (
@@ -419,7 +419,7 @@ export function TaskList({
 			)}
 
 			{status === "today" && (
-				<section className="mt-8" aria-label="Tasks due today">
+				<section className="mt-9" aria-label="Tasks due today">
 					<SectionHead title="Today" />
 					{todayTasks.length === 0 ? (
 						<EmptyState>Nothing due today.</EmptyState>
@@ -444,7 +444,7 @@ export function TaskList({
 			)}
 
 			{status === "overdue" && (
-				<section className="mt-8" aria-label="Overdue tasks">
+				<section className="mt-9" aria-label="Overdue tasks">
 					<SectionHead title="Overdue" />
 					{overdueTasks.length === 0 ? (
 						<EmptyState hint="Everything with a date on it still has time.">

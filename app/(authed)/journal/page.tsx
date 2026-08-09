@@ -29,12 +29,12 @@ export default async function JournalPage() {
 				<JournalForm todayIso={todayInTz(tz)} />
 			</section>
 
-			<section className="mt-6" aria-label="Journal entries">
+			<section className="mt-9" aria-label="Journal entries">
 				{entries.length === 0 ? (
 					<EmptyState>Nothing written yet. Capture what happened today.</EmptyState>
 				) : (
 					[...groups.entries()].map(([date, dayEntries]) => (
-						<div key={date} className="mt-6 first:mt-2">
+						<div key={date} className="mt-9 first:mt-0">
 							<SectionHead title={formatDay(date, tz)} />
 							<ul>
 								{dayEntries.map((entry) => (
