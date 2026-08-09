@@ -125,7 +125,10 @@ export function NoteList({
 	}
 
 	return (
-		<>
+		// A real element, not a fragment: `first:mt-0` on a Section is `:first-child`,
+		// and against the page's div the header held that slot, so the first group
+		// kept its 36px and sat lower than every other page's (ADR-0046).
+		<div>
 			<Section label="Needs review" notes={review} tz={tz} onTogglePin={(n) => toggle(n, true)} />
 			<Section label="Pinned" notes={pinned} tz={tz} onTogglePin={(n) => toggle(n, false)} />
 			<Section
@@ -135,6 +138,6 @@ export function NoteList({
 				onTogglePin={(n) => toggle(n, false)}
 				empty="Nothing here yet. Capture something."
 			/>
-		</>
+		</div>
 	);
 }

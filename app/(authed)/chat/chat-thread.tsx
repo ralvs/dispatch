@@ -29,7 +29,7 @@ export function ChatThread() {
 			: "";
 
 	return (
-		<div className="mt-6 measure-prose">
+		<div className="measure-prose">
 			<ul className="space-y-4">
 				{messages.map((message) => (
 					<li key={message.id}>

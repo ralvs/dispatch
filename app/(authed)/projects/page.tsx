@@ -30,20 +30,26 @@ export default async function ProjectsPage() {
 			{projects.length === 0 ? (
 				<EmptyState>No projects yet. Start one.</EmptyState>
 			) : (
-				STATUS_GROUPS.map(({ status, label }) => {
-					const group = projects.filter((p) => p.status === status);
-					if (group.length === 0) return null;
-					return (
-						<section key={status} className="mt-9 first:mt-0" aria-label={label}>
-							<SectionHead title={label} aside={String(group.length)} />
-							<ul>
-								{group.map((p) => (
-									<ProjectRowItem key={p.id} project={p} />
-								))}
-							</ul>
-						</section>
-					);
-				})
+				// Wrapped so the groups are first children of their own stack —
+				// against the page's div the header held that slot and `first:mt-0`
+				// never fired (ADR-0046). Empty groups render null, so the first
+				// group that survives is the one that loses its margin.
+				<div>
+					{STATUS_GROUPS.map(({ status, label }) => {
+						const group = projects.filter((p) => p.status === status);
+						if (group.length === 0) return null;
+						return (
+							<section key={status} className="mt-9 first:mt-0" aria-label={label}>
+								<SectionHead title={label} aside={String(group.length)} />
+								<ul>
+									{group.map((p) => (
+										<ProjectRowItem key={p.id} project={p} />
+									))}
+								</ul>
+							</section>
+						);
+					})}
+				</div>
 			)}
 		</div>
 	);

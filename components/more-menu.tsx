@@ -98,10 +98,14 @@ export function MoreMenu() {
 					aria-hidden="true"
 					className="mx-auto mb-2 h-1 w-9 rounded-pill bg-line-strong lg:hidden"
 				/>
+				{/* Outside the nav so the groups are its only children — inside it,
+				    this held `:first-child` and the first group kept its mt-3.
+				    aria-labelledby resolves by id, so both the panel and the nav
+				    still name themselves from here. */}
+				<p id={titleId} className="sr-only">
+					More
+				</p>
 				<nav aria-labelledby={titleId}>
-					<p id={titleId} className="sr-only">
-						More
-					</p>
 					{MORE_SECTIONS.map((section) => (
 						<div key={section.title} className="mt-3 first:mt-0">
 							<p className="px-2 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-ink-4">

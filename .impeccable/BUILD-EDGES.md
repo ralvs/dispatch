@@ -212,6 +212,14 @@ something is wrong, loading, unauthenticated, or installed.
 >    exactly the class of bug a mobile-first cap produces when a desktop variant
 >    forgets to reset it.
 >
+>    **And:** every `first:` / `last:` variant is on an element that really is
+>    the first or last child. Pass 4.5 shipped three dead `first:mt-0`s — a
+>    `PageHeader` held `:first-child` on two pages and an `sr-only` label held it
+>    inside the More menu's `nav`, so the cancellation never fired and the first
+>    section sat 36px lower than on every other page. Both bugs in that pass were
+>    variants that silently do not apply, which no grep for a class name catches:
+>    read the computed value, not the class list.
+>
 >    **Audit the ADR record before regenerating anything.** Every gate is
 >    supposed to have one, and one is missing: **Pass 3's gate (W2) was never
 >    written up.** Its decisions — the 65ch prose measure, authored prose staying
