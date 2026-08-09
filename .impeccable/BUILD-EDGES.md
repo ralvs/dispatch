@@ -35,12 +35,22 @@ something is wrong, loading, unauthenticated, or installed.
 > - `app/not-found.tsx` (root, unauthenticated), `app/(authed)/error.tsx`,
 >   `app/(authed)/not-found.tsx`.
 > - `components/app-toaster.tsx` — the app's only feedback surface.
-> - `components/mention-input.tsx` (298 lines) and its suggestion popover.
+> - **The three suggestion popovers**, which are one object with three
+>   implementations: `components/mention-input.tsx` (298 lines) and its popover,
+>   plus `app/(authed)/notes/[id]/mention-suggestion.tsx` and
+>   `wikilink-suggestion.tsx`. Pass 3 restyled the note editor around them but
+>   left all three carrying the same hand-rolled
+>   `rounded-control border border-line bg-surface … elevation-overlay` string.
+>   They are unowned by any other pass.
 > - The PWA chrome: `app/manifest.ts`, `app/layout.tsx`'s metadata and boot
 >   scripts, `public/icons/*`, `components/sw-register.tsx`.
 > - **The `.type-title` question**, described below.
 >
-> **Out of scope:** every page surface. Passes 0–4 own them and they are done.
+> **Out of scope:** every page surface. Passes 0–4 own them and they are done —
+> with **one narrow exception**, described under the `.type-title` decision
+> below: two files under `/tasks` still carry that class, and a decision to
+> retire it cannot be executed without touching them. That touch is a class
+> swap and nothing else.
 >
 > ---
 >
@@ -116,8 +126,12 @@ something is wrong, loading, unauthenticated, or installed.
 > — but the two are close enough that the difference should be a decision.
 >
 > Decide the register for failure, and how far it is allowed to sit from the
-> register for absence. Then apply it to all four, plus the two `Suspense`
-> fallbacks in `notes/[id]` if Pass 3 left them hand-built.
+> register for absence. Then apply it to all four, plus the two hand-built
+> `Suspense` fallbacks in `notes/[id]` — `EditorFallback` and
+> `LinkSectionsFallback`, which Pass 3 left as bespoke pulse bars while every
+> route-level loading state in the app went through `PageSkeleton`. They are
+> waiting rather than failing, so they may well keep their own shape; what they
+> should not keep is being the only two that were never asked.
 >
 > Draw **two or three static comps** in `.impeccable/mocks/`, per
 > `.impeccable/mocks/README.md`. Desktop and phone, light and dark. Show all
@@ -143,31 +157,70 @@ something is wrong, loading, unauthenticated, or installed.
 >    and the error line. Both themes: this page is the first thing rendered on a
 >    cold install, before any cookie exists.
 >
-> 3. **`mention-input.tsx` and its popover.** 298 lines, used by the task dialog
->    and the capture palette, and its suggestion list is the last hand-rolled
->    popover in the app once Pass 3 has restyled the editor's two. The `@mention`
->    contract (ADR-0030) is behaviour — restyle the surface, not what it matches
->    or emits.
+> 3. **The three suggestion popovers.** `mention-input.tsx` (used by the task
+>    dialog and the capture palette) and the note editor's
+>    `mention-suggestion.tsx` and `wikilink-suggestion.tsx`. All three draw the
+>    same floating list from the same hand-rolled string, and all three have the
+>    same empty state. They are the last unsystematised overlay in the app.
+>
+>    Decide whether they become one shared primitive or stay three files sharing
+>    one style — three callers is the threshold ADR-0044's `ListRow` used, so
+>    the evidence is there if the behaviours actually match. They may not: the
+>    mention popover filters people, the wikilink popover filters note titles and
+>    can offer to create, and `mention-input` owns caret-driven state the other
+>    two get from TipTap. **If the state models differ, share the styling and not
+>    the component** — that is the same call `day-row` and `task-row` made.
+>
+>    The `@mention` contract (ADR-0030) and the wikilink resolution are
+>    behaviour — restyle the surface, not what they match or emit.
 >
 > 4. **The PWA chrome, `.type-title`, then the closing sweep.**
 >
 >    **The `.type-title` decision.** Pass 2 took it off list rows, Pass 3 took it
->    off the editor title and chat prose, and Pass 4 took it off the domain row.
->    Whatever is left — forms, `/sign-in`, the capture palette — is few enough to
->    look at as a whole. Either it still names something real, or it is one
->    declaration behind a class that three of its call sites use for three
->    different reasons, and it should be inlined and deleted. `.font-serif` is
->    the cautionary tale: a class that outlived its meaning made every page
->    under it look plausible for two identities. **Decide it deliberately and
->    record the answer either way** — including "it stays, and here is what it
->    means", which is a real outcome.
+>    off the editor title and chat prose, and Pass 4 took it off the domain row
+>    as that row moved to `/domains`. Verify against the tree rather than this
+>    list; as of the end of Pass 3 the survivors were:
+>
+>    | File | What it is |
+>    |---|---|
+>    | `app/sign-in/page.tsx` (×2) | the h1 and the "Checking session…" line — yours, phase 2 |
+>    | `components/capture-palette.tsx` (×2) | the verb label and the compose field — Pass 4's |
+>    | `app/not-found.tsx` | the root 404's h1 — yours, phase 1 |
+>    | `app/(authed)/settings/domain-row.tsx` | moves to `/domains` in Pass 4 |
+>    | `app/(authed)/tasks/task-fields.tsx` | the dialog's title field |
+>    | `app/(authed)/tasks/task-note-popover.tsx` | the note preview's body |
+>
+>    **The last two are the reason this pass may touch `/tasks`.** They are a
+>    finished surface, but the class cannot be retired while two call sites hold
+>    it, and neither belongs to any remaining pass. Swap the class; change
+>    nothing else in those files, and say so in the commit.
+>
+>    Either the class still names something real, or it is one declaration behind
+>    a name that its call sites use for three different reasons — a form field, a
+>    popover body, an h1 — and it should be inlined and deleted. `.font-serif` is
+>    the cautionary tale: a class that outlived its meaning made every page under
+>    it look plausible for two identities. **Decide it deliberately and record the
+>    answer either way** — including "it stays, and here is what it means", which
+>    is a real outcome.
 >
 >    Then the closing sweep. Screenshot **every** surface in the app in both
 >    themes at both widths. Grep for what should no longer exist:
 >    `hairline-strong pb-4`, `font-serif`, the mono eyebrow above any heading,
 >    any `text-2xl`/`text-3xl`/`text-xl` that is not the documented prose scale.
->    Regenerate `DESIGN.md` with `/impeccable document` and write the closing
->    ADR: what the five passes changed, what they deleted, and which decisions
+>
+>    **Audit the ADR record before regenerating anything.** Every gate is
+>    supposed to have one, and one is missing: **Pass 3's gate (W2) was never
+>    written up.** Its decisions — the 65ch prose measure, authored prose staying
+>    on the closed ramp rather than gaining 24/20, the note editor's column +
+>    rail, the chat speaker registers, and the note editor declining `PageHeader`
+>    — landed in `DESIGN.md` and in the commit message of `57495e8`, with no ADR
+>    beside 0042, 0043 and 0044. `DESIGN.md` states the rules; nothing states the
+>    options that lost or why. Write it (next number after Pass 4's domains ADR),
+>    sourcing it from `.impeccable/mocks/writing-lab.html` and that commit while
+>    both still mean something.
+>
+>    Then regenerate `DESIGN.md` with `/impeccable document` and write the
+>    closing ADR: what the passes changed, what they deleted, and which decisions
 >    are now load-bearing for anything built next.
 >
 > ---

@@ -4,8 +4,14 @@ Paste the block below into a fresh Claude Code session at the repo root, on
 branch `design/impeccable`. Everything it needs is on disk; it should not need
 this file's prose.
 
-**Passes 0–3 must be landed first.** This pass consumes the measure and the
-prose scale Pass 3 settles, and the `CreateTrigger` pattern Pass 2 built.
+**Passes 0–3 are landed.** This pass consumes the `CreateTrigger` pattern Pass 2
+built and the prose measure Pass 3 settled.
+
+One thing to know going in: **Pass 3's gate produced no ADR.** Its decisions
+live in `DESIGN.md` (the Prose Measure Rule, "Authored prose is on the ramp",
+the speaker registers, the note editor's exemption from `PageHeader`) and in
+commit `57495e8`. Read `DESIGN.md` for them; do not go looking for an ADR-0045.
+Pass 5's closing audit is where that record gets written.
 
 This is the pass where the owner has already made one call that reverses an
 existing ADR: **domains leave `/settings` and become their own page.**
@@ -147,8 +153,13 @@ existing ADR: **domains leave `/settings` and become their own page.**
 >    which came from `components/ui/dialog.tsx`.
 >
 >    Bring it onto the system: `Dialog` for the overlay if it fits, `Button` for
->    the capsules, `Field` for the input. **What must not change is the capture
->    contract** — iron rule #4. Capture is text-only, persists first, and
+>    the capsules, `Field` for the input. Its compose field is **prose being
+>    written**, so `.measure-prose` applies to it the way Pass 3 applied it to a
+>    journal entry — a capture is a sentence, not a row. Its two `.type-title`
+>    call sites are among the last in the app; Pass 5 decides the class's fate,
+>    so leave a note rather than inventing a local answer.
+>
+>    **What must not change is the capture contract** — iron rule #4. Capture is text-only, persists first, and
 >    degrades to a `needs_review` note rather than dropping input. The verb
 >    vocabulary (ADR-0008, ADR-0016, ADR-0023) and the palette bus
 >    (`lib/capture/palette-bus.ts`) are behaviour. If a visual change seems to
