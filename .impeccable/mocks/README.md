@@ -30,6 +30,7 @@ Serve them with `bun run` — or the `mocks` entry in `.claude/launch.json`
 | `chrome-header-lab.html` | **Pass 0.** The page header, four ways, over `/projects`, `/notes` and `/inbox`. Theme and width toggle in place. |
 | `tasks-lab.html` | **Pass 1.** `/tasks` whole, three ways, over the one seam Pass 0 left open. Theme and width toggle in place. |
 | `lists-lab.html` | **Pass 2 Phase 0.** The two gates: name weight (A1/A2) and create furniture (B1/B2). `/projects` and `/people` side by side under each option. Theme and width toggle in place. |
+| `writing-lab.html` | **Pass 3 Phase 0.** One gate, three packages: measure + type scale + leftover width. `/notes/[id]` and `/chat` under each. Theme, width, and measure-guide toggles. |
 
 ## The page header (Pass 0)
 
@@ -165,6 +166,36 @@ furniture stays there; Pass 3 applies that half of the rule.
 in the notes slot; B1 is that shape built. Encoding not on the ballot and also
 built: domain leads left and holds its slot; a project’s own colour is not a
 second dot on the row; group labels are `SectionHead` at 16/500.
+
+## The writing surfaces (Pass 3 Phase 0)
+
+`writing-lab.html` is the decision surface for the first questions the design
+system has never answered about prose: how wide a line may be, which ramp steps
+the editor spends, and what a 72rem frame does with leftover width when the
+content is a column rather than a row.
+
+One gate, three packages — measure + type + leftover layout travel together.
+`/notes/[id]` and `/chat` are drawn under each. Theme, desk/phone, and a dashed
+measure guide toggle in place.
+
+| | Measure | Type | Leftover width |
+|---|---|---|---|
+| W1 — Column left | 65ch left | title 30 · body 16 · h2 18 · h3 16 | empty ground |
+| **W2 — Column + rail** ← chosen | 65ch left | identical to W1 | backlinks / Linked as right rail |
+| W3 — Reading lead | 72ch centred | title 36 · body 18 · h2 30 · h3 18 | balanced ground |
+
+**Chosen: W2.** Built in Pass 3. Measure is `--measure-prose: 65ch`; authored
+prose is `.prose-authored` on the closed ramp; the note page is column + 260px
+rail. A possible later package — W3’s centred wider column **with body still
+16** — is a token + title-step change, not a third scale.
+
+Held off the ballot and drawn the same in every package: the breadcrumb is the
+editor’s header (editable title cannot sit in `PageHeader`); chat keeps its
+page header; chat speaker distinction is alignment + ink step at body 400 — not
+the current mono/title inversion; panel names rest at 400 with `SectionHead`
+labels; no new ramp sizes (the undocumented 24/20 leave everywhere).
+
+Phases 1–4 in `.impeccable/BUILD-WRITING.md`.
 
 ## A1 vs A2 — one axis
 

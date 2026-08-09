@@ -348,10 +348,13 @@ section heading can sit at body size and still read as a heading.
   phone width.
 - **Title** (500, 30px, 1.15, −0.75px): a section title large enough to open a
   page region.
-- **Lead** (400, 18px, 1.7): a pull-quote and standfirst copy.
-- **Body** (400, 16px, 1.5, −0.01em): every row title, every task, every list.
-- **Section** (500, 16px, −0.02em): a section heading. Same size as body — the
-  weight step is the entire signal, which is why it is enough.
+- **Lead** (400, 18px, 1.7): a pull-quote, standfirst copy, and an authored
+  prose `h2` inside a note body (Pass 3).
+- **Body** (400, 16px, 1.5–1.6, −0.01em): every row title, every task, every
+  list, and long-form prose (note body, chat message, journal entry).
+- **Section** (500, 16px, −0.02em): a section heading, and an authored prose
+  `h3` inside a note body. Same size as body — the weight step is the entire
+  signal, which is why it is enough.
 - **Small** (400, 14px): a chip, a pill's label, a supporting line.
 - **Meta** (mono, 400, 12px): clock times, counts, streaks, ruler hours.
 - **Eyebrow** (mono, 400, 12px, 0.1em, uppercase): the dateline, `ALL DAY`, a
@@ -397,6 +400,27 @@ new size at all, is a signal that a layout is too dense — fix the layout, do
 not invent a step. If a new step is genuinely warranted, it lands here first
 and in the code second.
 
+**The Prose Measure Rule.** Long-form reading and writing — a note body, a
+chat message, a journal entry — is capped at **`65ch`**
+(`--measure-prose` / `.measure-prose`). A list is not prose: rows keep the full
+frame. Pass 3 Gate W2 (`.impeccable/mocks/writing-lab.html`). The previous
+state ran the note body to the full 72rem frame (~150 characters per line);
+`max-w-prose` appeared only on chat's assistant and a few link rows. One token
+owns the measure so a later package (centred, slightly wider) is a token change
+and a title step, not a rewrite of three surfaces. Body stays 16 either way.
+
+**Authored prose is on the ramp.** A note's headings are content, not chrome —
+`#` in a markdown body is the writer's hierarchy, spent on existing steps
+rather than inventing 24/20. The note title is **Title** (30/500). In-body
+`h1` is Title (30/500), `h2` is Lead size at 500 (18), `h3` is Section
+(16/500). Body is Body (16/400, 1.6). `.prose-authored` is the class; the
+comment that once claimed "serif headings" is gone with the serif.
+
+**Speaker registers in chat.** A person wrote the user message → sans body at
+400, right-aligned, `ink-2`. The assistant's answer is running prose → sans
+body at 400, left-aligned, full `ink`, on the measure. Distinction is
+alignment + ink step, never mono-for-person / `type-title`-for-machine.
+
 ## Layout
 
 The shell owns the viewport: the document never scrolls, the content region
@@ -414,6 +438,12 @@ dissolve via `display: contents` and `order` re-sequences the same sections into
 one column, orientation-first — Top 3 and Routines rise above the long lists,
 because the phone is where things get ticked off. There is no separate mobile
 component tree and there must never be one.
+
+The note editor (`/notes/[id]`) is **column + rail** (Pass 3 / W2). The prose
+column is left-aligned on the measure; Backlinks and Linked take a **260px
+right rail** on desktop and stack below on a phone — same tree, one max-width
+query. The leftover width of the 72rem frame is the rail, not empty ground.
+The rail collapses when a section has nothing to show (no empty furniture).
 
 Vertical rhythm runs on a coarse scale: 16px between stacked cards, 34–40px
 between sections, 64px under the header. Rows are ≥48px on touch and every
@@ -480,9 +510,9 @@ that behave differently.
 
 ### Page Header
 
-Every surface but Today opens with it. Four slots in one line where there is
-room — **title · measure · action** — with a subtitle beneath where one is
-earned (ADR-0042).
+Every surface but Today and the note editor opens with it. Four slots in one
+line where there is room — **title · measure · action** — with a subtitle
+beneath where one is earned (ADR-0042).
 
 - **Title:** the ramp's Headline step, 36px / 500 / −0.9px, dropping to 30px on
   a phone. One step below Today's hero, so a list page can never out-shout the
@@ -500,8 +530,13 @@ earned (ADR-0042).
 - **No divider, no eyebrow, no second title.** The 64px the shell puts above the
   header is the separation.
 
-Today is the deliberate exception: its `h1` is a sentence about the day and its
-dateline is the day nav, so it has no page header at all.
+Two deliberate exceptions decline it:
+
+- **Today:** its `h1` is a sentence about the day and its dateline is the day
+  nav.
+- **The note editor** (`/notes/[id]`): the note's name is editable content and
+  cannot live in a static header. A mono breadcrumb (`← Notes`) is the way
+  back; the title input is the page's name.
 
 ### List rows
 

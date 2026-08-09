@@ -1,0 +1,1313 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Writing — measure, scale, leftover width</title>
+		<link rel="stylesheet" href="_a.css" />
+		<style>
+			/* ── lab chrome ───────────────────────────────────────────────────── */
+			body {
+				background: var(--ground-2);
+			}
+			.lab {
+				max-width: 1380px;
+				margin: 0 auto;
+				padding: 40px 32px 140px;
+			}
+			.lab-head {
+				max-width: 72ch;
+			}
+			.lab-head h1 {
+				font-size: 36px;
+				font-weight: 500;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+				margin: 0;
+			}
+			.lab-head p {
+				font-size: 16px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 14px 0 0;
+			}
+			.lab-head p b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.lab-head code {
+				font-family: var(--mono);
+				font-size: 14px;
+			}
+
+			.controls {
+				position: sticky;
+				top: 0;
+				z-index: 10;
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				flex-wrap: wrap;
+				margin: 26px 0 8px;
+				padding: 14px 0;
+				background: var(--ground-2);
+			}
+			.controls .grp {
+				display: flex;
+				gap: 2px;
+				padding: 4px;
+				border-radius: var(--r-pill);
+				background: var(--paper);
+				border: 1px solid var(--rule);
+			}
+			.controls button {
+				border: 0;
+				background: transparent;
+				border-radius: var(--r-pill);
+				padding: 6px 14px;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+				cursor: pointer;
+			}
+			.controls button[aria-pressed="true"] {
+				background: var(--ink);
+				color: var(--ground);
+			}
+			.controls .note {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-3);
+			}
+
+			.gate {
+				margin-top: 48px;
+				padding-top: 8px;
+				border-top: 1px solid var(--rule);
+			}
+			.gate > .gate-head {
+				max-width: 74ch;
+				margin-bottom: 8px;
+			}
+			.gate > .gate-head h2 {
+				font-size: 30px;
+				font-weight: 500;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+				margin: 0;
+			}
+			.gate > .gate-head p {
+				font-size: 16px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 12px 0 0;
+			}
+			.gate > .gate-head p b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.gate > .gate-head code {
+				font-family: var(--mono);
+				font-size: 13px;
+			}
+
+			.held {
+				margin-top: 18px;
+				max-width: 74ch;
+				padding: 14px 16px;
+				background: var(--paper);
+				border: 1px solid var(--rule);
+				border-radius: 12px;
+			}
+			.held h4 {
+				margin: 0;
+				font-size: 14px;
+				font-weight: 500;
+				letter-spacing: -0.02em;
+			}
+			.held p {
+				margin: 6px 0 0;
+				font-size: 14px;
+				line-height: 1.55;
+				color: var(--ink-2);
+			}
+			.held p b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.held code {
+				font-family: var(--mono);
+				font-size: 12px;
+			}
+
+			.opt {
+				margin-top: 44px;
+			}
+			.opt > header {
+				max-width: 74ch;
+				margin-bottom: 18px;
+			}
+			.opt > header h3 {
+				font-size: 24px;
+				font-weight: 500;
+				letter-spacing: -0.5px;
+				line-height: 1.2;
+				margin: 0;
+			}
+			.opt > header h3 em {
+				font-style: normal;
+				color: var(--ink-4);
+				margin-right: 12px;
+			}
+			.opt > header h3 .rec {
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--accent-ink);
+				margin-left: 12px;
+				vertical-align: 3px;
+			}
+			.opt > header .thesis {
+				font-size: 17px;
+				line-height: 1.55;
+				color: var(--ink-2);
+				margin: 10px 0 0;
+			}
+			.opt > header .cost {
+				font-size: 15px;
+				line-height: 1.55;
+				color: var(--ink-2);
+				margin: 10px 0 0;
+				padding-left: 14px;
+				border-left: 2px solid var(--rule-2);
+			}
+			.opt > header .cost b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.opt > header .spec {
+				font-family: var(--mono);
+				font-size: 12px;
+				line-height: 1.75;
+				color: var(--ink-3);
+				margin: 12px 0 0;
+			}
+			.opt > header .spec b {
+				font-weight: 400;
+				color: var(--ink-2);
+			}
+
+			/* ── specimen frames ──────────────────────────────────────────────── */
+			.pair {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 18px;
+				align-items: flex-start;
+			}
+			.spec-frame {
+				flex-shrink: 0;
+				background: var(--ground);
+				border: 1px solid var(--rule);
+				border-radius: 18px;
+				overflow: hidden;
+			}
+			.spec-frame > .cap-bar {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				padding: 10px 16px;
+				border-bottom: 1px solid var(--rule);
+				background: var(--ground-2);
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.spec-frame > .cap-bar .w {
+				color: var(--ink-4);
+			}
+			.at-desk {
+				width: 720px;
+			}
+			.at-desk .surface {
+				padding: 28px 32px 36px;
+			}
+			.at-desk.full {
+				width: 1092px;
+			}
+			.at-desk.full .surface {
+				padding: 28px 44px 40px;
+			}
+			.at-phone {
+				width: 393px;
+			}
+			.at-phone .surface {
+				padding: 22px 20px 28px;
+			}
+			body[data-width="desk"] .at-phone,
+			body[data-width="phone"] .at-desk {
+				display: none;
+			}
+
+			/* shell stubs */
+			.tabstub {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				padding: 0 0 40px;
+			}
+			.tabstub .tabs {
+				padding: 3px;
+			}
+			.tabstub .tab {
+				padding: 5px 11px;
+				font-size: 12px;
+			}
+			.tabstub .brand {
+				font-size: 14px;
+			}
+			.tabstub .brand-mark {
+				width: 20px;
+				height: 20px;
+			}
+			.tabstub .brand-mark::after {
+				inset: 6px 5px;
+				border-left-width: 1.5px;
+				border-bottom-width: 1.5px;
+			}
+			.tabstub .acts {
+				display: flex;
+				gap: 6px;
+			}
+			.tabstub .pill {
+				height: 32px;
+				padding: 0 14px;
+				font-size: 12px;
+			}
+			.dockstub {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 8px;
+				padding: 12px 16px 20px;
+			}
+			.dockstub ul {
+				display: flex;
+				align-items: center;
+				gap: 2px;
+				list-style: none;
+				margin: 0;
+				padding: 6px;
+				background: var(--paper);
+				border: 1px solid var(--rule);
+				border-radius: var(--r-pill);
+				box-shadow: var(--lift);
+			}
+			.dockstub li {
+				padding: 6px 9px;
+				border-radius: var(--r-pill);
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.dockstub li.on {
+				background: var(--accent-soft);
+				color: var(--accent-ink);
+			}
+			.dockstub .cap-btn {
+				display: grid;
+				place-items: center;
+				width: 54px;
+				height: 54px;
+				border-radius: var(--r-pill);
+				background: var(--ink);
+				color: var(--ground);
+				box-shadow: var(--lift);
+			}
+			.dockstub .cap-btn svg {
+				width: 22px;
+				height: 22px;
+			}
+
+			/* page header (chat only) */
+			.ph {
+				margin-bottom: 22px;
+			}
+			.ph .top {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 20px;
+			}
+			.ph h1 {
+				margin: 0;
+				font-size: 36px;
+				font-weight: 500;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+			}
+			.at-phone .ph h1 {
+				font-size: 30px;
+				letter-spacing: -0.75px;
+			}
+			.ph .sub {
+				margin: 8px 0 0;
+				font-size: 14px;
+				color: var(--ink-3);
+			}
+
+			/* SectionHead */
+			.shead {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 12px;
+				margin: 0 0 6px;
+			}
+			.shead h2 {
+				margin: 0;
+				font-size: 16px;
+				font-weight: 500;
+				letter-spacing: -0.02em;
+				color: var(--ink);
+			}
+			.shead .aside {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+				font-variant-numeric: tabular-nums;
+			}
+
+			/* Control voice */
+			.ctl {
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+				height: 36px;
+				padding: 0 12px;
+				flex-shrink: 0;
+				border: 1px solid var(--rule-2);
+				border-radius: var(--r-md);
+				background: transparent;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.ctl.danger {
+				color: var(--accent-ink);
+				border-color: color-mix(in srgb, var(--accent) 35%, var(--rule-2));
+			}
+
+			/* ── note specimen ────────────────────────────────────────────────── */
+			.crumb {
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+				margin: 0 0 18px;
+			}
+
+			/* Layout packages */
+			.note-stack {
+				display: flex;
+				flex-direction: column;
+			}
+			.note-rail {
+				display: grid;
+				grid-template-columns: minmax(0, 1fr) 260px;
+				gap: 40px;
+				align-items: start;
+			}
+			.at-phone .note-rail {
+				display: flex;
+				flex-direction: column;
+				gap: 28px;
+			}
+			.note-rail .rail {
+				position: sticky;
+				top: 0;
+			}
+			.note-center {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+			}
+			.note-center .prose-col,
+			.note-center .panels {
+				width: 100%;
+			}
+
+			/* Prose column — measure is the gate variable */
+			.prose-col {
+				min-width: 0;
+			}
+			.opt[data-measure="65"] .prose-col {
+				max-width: 65ch;
+			}
+			.opt[data-measure="72"] .prose-col {
+				max-width: 72ch;
+			}
+			.opt[data-align="center"] .prose-col {
+				margin-left: auto;
+				margin-right: auto;
+			}
+			/* W2: rail takes leftover; prose column is just the first grid cell */
+			.opt[data-layout="rail"] .note-rail .prose-col {
+				max-width: 65ch;
+			}
+
+			.note-title {
+				display: block;
+				width: 100%;
+				border: 0;
+				border-bottom: 1px solid transparent;
+				background: transparent;
+				color: var(--ink);
+				padding: 6px 0 10px;
+				margin: 0;
+				font-family: var(--sans);
+				font-weight: 500;
+				letter-spacing: -0.02em;
+				line-height: 1.15;
+			}
+			/* Type packages */
+			.opt[data-scale="ramp"] .note-title {
+				font-size: 30px;
+				letter-spacing: -0.75px;
+			}
+			.opt[data-scale="lead"] .note-title {
+				font-size: 36px;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+			}
+			.at-phone .opt[data-scale="lead"] .note-title {
+				font-size: 30px;
+				letter-spacing: -0.75px;
+			}
+
+			.prose {
+				margin-top: 14px;
+				color: var(--ink);
+			}
+			.opt[data-scale="ramp"] .prose {
+				font-size: 16px;
+				line-height: 1.6;
+				letter-spacing: -0.01em;
+			}
+			.opt[data-scale="lead"] .prose {
+				font-size: 18px;
+				line-height: 1.7;
+			}
+			.prose p {
+				margin: 0 0 1em;
+			}
+			.prose h2,
+			.prose h3 {
+				font-weight: 500;
+				letter-spacing: -0.02em;
+				color: var(--ink);
+				margin: 1.4em 0 0.5em;
+			}
+			/* h1 in body is rare in notes; treat as title-step */
+			.opt[data-scale="ramp"] .prose h2 {
+				font-size: 18px;
+				line-height: 1.35;
+				font-weight: 500;
+			}
+			.opt[data-scale="ramp"] .prose h3 {
+				font-size: 16px;
+				line-height: 1.35;
+			}
+			.opt[data-scale="lead"] .prose h2 {
+				font-size: 30px;
+				letter-spacing: -0.75px;
+				line-height: 1.2;
+			}
+			.opt[data-scale="lead"] .prose h3 {
+				font-size: 18px;
+				line-height: 1.35;
+			}
+			.prose ul,
+			.prose ol {
+				margin: 0 0 1em;
+				padding-left: 1.25em;
+			}
+			.prose li {
+				margin: 0.25em 0;
+			}
+			.prose ul.tasks {
+				list-style: none;
+				padding-left: 0;
+			}
+			.prose ul.tasks li {
+				display: flex;
+				align-items: baseline;
+				gap: 10px;
+			}
+			.prose ul.tasks .box {
+				width: 15px;
+				height: 15px;
+				border: 1.5px solid var(--rule-2);
+				border-radius: 4px;
+				flex-shrink: 0;
+				position: relative;
+				top: 2px;
+				background: var(--paper);
+			}
+			.prose ul.tasks .box.on {
+				background: var(--ink);
+				border-color: var(--ink);
+			}
+			.prose ul.tasks .box.on::after {
+				content: "";
+				position: absolute;
+				left: 4px;
+				top: 1px;
+				width: 4px;
+				height: 8px;
+				border: solid var(--paper);
+				border-width: 0 1.5px 1.5px 0;
+				transform: rotate(45deg);
+			}
+			.prose code {
+				font-family: var(--mono);
+				font-size: 0.88em;
+				background: var(--ground-2);
+				padding: 1px 5px;
+				border-radius: 4px;
+			}
+			.prose blockquote {
+				margin: 0 0 1em;
+				padding: 0 0 0 14px;
+				border-left: 2px solid var(--rule-2);
+				color: var(--ink-2);
+			}
+			.prose a {
+				color: var(--accent-ink);
+				text-decoration: underline;
+				text-underline-offset: 2px;
+			}
+			.prose .wl {
+				color: var(--accent-ink);
+				text-decoration: underline;
+				text-underline-offset: 2px;
+				cursor: pointer;
+			}
+
+			.meta-line {
+				margin: 16px 0 0;
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+			}
+			.meta-line .live {
+				color: var(--ink-3);
+			}
+			.actions {
+				display: flex;
+				gap: 8px;
+				margin-top: 16px;
+			}
+
+			/* Panels — list rows at rest (400) */
+			.panels {
+				margin-top: 36px;
+			}
+			.note-rail .panels {
+				margin-top: 0;
+			}
+			.panels .block + .block {
+				margin-top: 28px;
+			}
+			ul.rows {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+			.lrow {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				min-height: 44px;
+				padding: 10px 0;
+				border-bottom: 1px solid var(--rule);
+			}
+			.lrow:last-child {
+				border-bottom: 0;
+			}
+			.lrow .ttl {
+				margin: 0;
+				font-size: 16px;
+				font-weight: 400;
+				letter-spacing: -0.01em;
+				line-height: 1.35;
+				color: var(--ink);
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+			.lrow .meta {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+				flex-shrink: 0;
+			}
+			.lrow .x {
+				color: var(--ink-4);
+				font-size: 14px;
+				line-height: 1;
+				flex-shrink: 0;
+			}
+			.add-link {
+				margin-top: 10px;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+
+			/* measure guide — only on desk full frames, to make leftover visible */
+			.measure-guide {
+				display: none;
+			}
+			.at-desk.full .surface {
+				position: relative;
+			}
+			body[data-guide="on"] .at-desk.full .measure-guide {
+				display: block;
+				position: absolute;
+				pointer-events: none;
+				top: 100px;
+				bottom: 40px;
+				left: 44px;
+				border-right: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+				opacity: 0.55;
+			}
+			body[data-guide="on"] .opt[data-measure="65"] .at-desk.full .measure-guide {
+				width: 65ch;
+			}
+			body[data-guide="on"] .opt[data-measure="72"] .at-desk.full .measure-guide {
+				width: 72ch;
+			}
+			body[data-guide="on"] .opt[data-layout="rail"] .at-desk.full .measure-guide {
+				/* guide only on prose cell — approximate first column */
+				width: calc(100% - 44px - 44px - 40px - 260px);
+				max-width: 65ch;
+			}
+			body[data-guide="on"] .opt[data-align="center"] .at-desk.full .measure-guide {
+				left: 50%;
+				transform: translateX(-50%);
+				width: 72ch;
+			}
+
+			/* ── chat specimen ────────────────────────────────────────────────── */
+			.chat {
+				display: flex;
+				flex-direction: column;
+				gap: 18px;
+				margin-top: 4px;
+			}
+			.opt[data-measure="65"] .chat,
+			.opt[data-layout="rail"] .chat {
+				max-width: 65ch;
+			}
+			.opt[data-measure="72"] .chat {
+				max-width: 72ch;
+			}
+			.opt[data-align="center"] .chat {
+				margin-left: auto;
+				margin-right: auto;
+			}
+			.msg {
+				margin: 0;
+			}
+			/* Corrected registers: person = sans body; system = sans body quieter.
+			   Distinction is alignment + ink step, not mono-vs-title inversion. */
+			.msg.user {
+				text-align: right;
+				font-size: 16px;
+				font-weight: 400;
+				line-height: 1.5;
+				color: var(--ink-2);
+				letter-spacing: -0.01em;
+			}
+			.msg.asst {
+				text-align: left;
+				font-size: 16px;
+				font-weight: 400;
+				line-height: 1.6;
+				color: var(--ink);
+				letter-spacing: -0.01em;
+			}
+			.opt[data-scale="lead"] .msg.user,
+			.opt[data-scale="lead"] .msg.asst {
+				font-size: 18px;
+				line-height: 1.65;
+			}
+			.msg.asst p {
+				margin: 0 0 0.75em;
+			}
+			.msg.asst p:last-child {
+				margin-bottom: 0;
+			}
+			.msg.asst ul {
+				margin: 0.4em 0 0.75em;
+				padding-left: 1.2em;
+			}
+			.streaming {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-4);
+			}
+			.composer {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				margin-top: 8px;
+				padding: 12px 0;
+				border-top: 1px solid var(--rule);
+			}
+			.composer .field {
+				flex: 1;
+				border: 0;
+				border-bottom: 1px solid var(--rule-2);
+				background: transparent;
+				padding: 8px 0;
+				font-family: var(--sans);
+				font-size: 16px;
+				font-weight: 400;
+				color: var(--ink-4);
+			}
+
+			.look {
+				margin-top: 56px;
+				max-width: 74ch;
+			}
+			.look h2 {
+				font-size: 24px;
+				font-weight: 500;
+				letter-spacing: -0.5px;
+				margin: 0;
+			}
+			.look p {
+				font-size: 15px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 12px 0 0;
+			}
+			.look p b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.look code {
+				font-family: var(--mono);
+				font-size: 13px;
+			}
+		</style>
+	</head>
+	<body data-width="desk" data-guide="off">
+		<div class="lab">
+			<div class="lab-head">
+				<h1>Writing — measure, scale, leftover width</h1>
+				<p>
+					Pass 3 Phase 0. Passes 0–2 refined one object: a page of rows. Nothing they
+					settled says anything about a paragraph. At 1092px the note body currently runs
+					the full frame — roughly <b>150 characters per line</b>, about twice a
+					comfortable measure. The editor also invents three sizes the closed ramp never
+					named (24 / 20 / 18 for title and headings).
+				</p>
+				<p>
+					The two axes are <b>one gate</b>: a larger type scale demands a wider measure,
+					and a narrow measure makes a large scale look cramped. Each option below is a
+					package — measure + type + what the leftover frame does — not a menu of
+					independent knobs. Comp <b>/notes/[id]</b> and <b>/chat</b> under each.
+					Desktop and phone, light and dark.
+				</p>
+				<p>
+					Then <b>stop and pick</b>. Do not build past this line until the package is
+					closed.
+				</p>
+			</div>
+
+			<div class="controls" role="toolbar" aria-label="Lab controls">
+				<div class="grp" role="group" aria-label="Theme">
+					<button type="button" data-theme-btn="light" aria-pressed="true">Light</button>
+					<button type="button" data-theme-btn="dark" aria-pressed="false">Dark</button>
+				</div>
+				<div class="grp" role="group" aria-label="Width">
+					<button type="button" data-width-btn="desk" aria-pressed="true">Desk</button>
+					<button type="button" data-width-btn="phone" aria-pressed="false">Phone</button>
+				</div>
+				<div class="grp" role="group" aria-label="Measure guide">
+					<button type="button" data-guide-btn="off" aria-pressed="true">Guide off</button>
+					<button type="button" data-guide-btn="on" aria-pressed="false">Guide on</button>
+				</div>
+				<span class="note">Theme · width · measure guide · one package below</span>
+			</div>
+
+			<section class="gate" id="gate">
+				<div class="gate-head">
+					<h2>The gate — three packages</h2>
+					<p>
+						Every package answers three things together: <b>how wide a line of prose
+						may be</b>, <b>which ramp steps the editor spends</b>, and <b>what the
+						72rem frame does with the leftover width</b>. Chat inherits the same
+						measure and the same body size; its speaker distinction is fixed across
+						all three (see held decisions).
+					</p>
+				</div>
+
+				<div class="held">
+					<h4>Held constant — not on the ballot</h4>
+					<p>
+						<b>Header.</b> The breadcrumb <code>← Notes</code> is the editor’s header.
+						The note’s name is editable content and cannot live in a static
+						<code>PageHeader</code>. Today already sets the precedent that a surface
+						may decline the page header for a reason; this is that reason, written
+						down. <code>/chat</code> keeps its existing <code>PageHeader</code>
+						(“Ask”) — its title is not content.
+					</p>
+					<p>
+						<b>Chat registers.</b> A person wrote the user message → sans body at 400,
+						right-aligned, <code>ink-2</code>. The assistant’s answer is running prose
+						→ sans body at 400, left-aligned, full <code>ink</code>, on the measure.
+						The current inversion (user = mono labelled, assistant = <code>type-title</code>
+						500) is rejected in every package. Distinction is alignment + ink step,
+						not register swap.
+					</p>
+					<p>
+						<b>Panels as rows.</b> Backlink and Linked names rest at 400
+						(ADR-0044). Group labels are <code>SectionHead</code> 16/500, not mono
+						eyebrows. Resolve / Delete / Send are control-voice buttons.
+					</p>
+					<p>
+						<b>No new ramp sizes.</b> The undocumented 24 / 20 leave in every package.
+						W3 uses existing ramp steps more generously (Headline + Lead); it does not
+						invent a fourth size.
+					</p>
+				</div>
+
+				<!-- W1 -->
+				<section
+					class="opt"
+					data-opt="w1"
+					data-measure="65"
+					data-scale="ramp"
+					data-layout="stack"
+					data-align="left"
+				>
+					<header>
+						<h3><em>W1</em>Column left · body 16 · ground empty</h3>
+						<p class="thesis">
+							Prose is a 65ch column, left-aligned on the frame’s edge. The leftover
+							width is empty ground — breathing room, not a second region. Type stays
+							on the closed ramp at reading size: title at Title (30/500), body at
+							Body (16/400), in-body headings at Lead and Section (18/500 and 16/500).
+							Backlinks and Linked sit <b>below</b> the note at full frame width, as
+							list rows.
+						</p>
+						<p class="cost">
+							<b>Cost:</b> on a wide desk the right half of the frame is blank while
+							you write. Panels only appear after a long scroll past the body — the
+							same structural complaint as today, just with a readable measure. The
+							blank is honest; it is also unused.
+						</p>
+						<p class="spec">
+							measure <b>65ch left</b> · title <b>30 / 500</b> · body <b>16 / 400 /
+							1.6</b> · h2 <b>18 / 500</b> · h3 <b>16 / 500</b> · panels
+							<b>below, full frame</b> · leftover <b>empty ground</b>
+						</p>
+					</header>
+					<div class="pair" data-mount="w1"></div>
+				</section>
+
+				<!-- W2 -->
+				<section
+					class="opt"
+					data-opt="w2"
+					data-measure="65"
+					data-scale="ramp"
+					data-layout="rail"
+					data-align="left"
+				>
+					<header>
+						<h3>
+							<em>W2</em>Column + rail · body 16 · leftover earns its keep
+							<span class="rec">recommend</span>
+						</h3>
+						<p class="thesis">
+							Same measure and same type as W1. The leftover width stops being empty:
+							Backlinks and Linked become a <b>right rail</b> on desktop — secondary
+							navigation that sits beside the note instead of under it. On phone the
+							rail stacks below, same component tree. Chat has no panels, so it is
+							identical to W1 there; the package difference is entirely
+							<code>/notes/[id]</code>.
+						</p>
+						<p class="cost">
+							<b>Cost:</b> the first viewport of a note is busier. A short note with
+							many links will look panel-heavy; a long note with none will look like
+							W1 with a blank rail (the rail collapses when empty — drawn here
+							populated). Sticky rail on a long body is a real benefit and a real
+							temptation to fill it.
+						</p>
+						<p class="spec">
+							measure <b>65ch left</b> · type <b>identical to W1</b> · panels
+							<b>right rail 260px, stack on phone</b> · leftover <b>is the rail</b>
+						</p>
+					</header>
+					<div class="pair" data-mount="w2"></div>
+				</section>
+
+				<!-- W3 -->
+				<section
+					class="opt"
+					data-opt="w3"
+					data-measure="72"
+					data-scale="lead"
+					data-layout="stack"
+					data-align="center"
+				>
+					<header>
+						<h3><em>W3</em>Reading lead · body 18 · column centred</h3>
+						<p class="thesis">
+							A note is a document, not a form field. Body steps to Lead (18/400,
+							1.7) — already on the ramp, currently spent only on pull-quotes.
+							Title steps to Headline (36/500). In-body h2 takes Title (30/500); h3
+							takes Lead weight at 18. Measure widens to <b>72ch</b> so the larger
+							body does not feel pinched, and the column is <b>centred</b> in the
+							frame so the leftover ground balances on both sides. Panels stay below,
+							on the same centred measure.
+						</p>
+						<p class="cost">
+							<b>Cost:</b> body 18 is a different app register — denser lists at 16
+							and airy prose at 18 will be felt as two products if the jump is wrong.
+							Centring a left-to-right writing surface fights the shell’s left edge
+							and the breadcrumb. Headline 36 next to a breadcrumb can re-introduce
+							the “page title” silhouette the Pass 0 header deleted.
+						</p>
+						<p class="spec">
+							measure <b>72ch centred</b> · title <b>36 / 500</b> · body <b>18 / 400 /
+							1.7</b> · h2 <b>30 / 500</b> · h3 <b>18 / 500</b> · panels
+							<b>below, same measure</b> · leftover <b>balanced ground</b>
+						</p>
+					</header>
+					<div class="pair" data-mount="w3"></div>
+				</section>
+			</section>
+
+			<section class="look">
+				<h2>What to look for</h2>
+				<p>
+					1 · <b>Characters per line on the note body</b> — turn the measure guide on.
+					W1/W2 should land near 60–70 characters; if a line still feels like a
+					ruler, the measure is wrong regardless of package.
+				</p>
+				<p>
+					2 · <b>W1’s blank right</b> — is empty ground a feature (focus) or a defect
+					(unused frame)? That single feeling picks W1 vs W2.
+				</p>
+				<p>
+					3 · <b>W2 rail on a long body</b> — scroll the desk note. Do the panels stay
+					useful beside the prose, or do they nag?
+				</p>
+				<p>
+					4 · <b>W3 at body 18 next to chat</b> — the assistant’s long answer is the
+					same size as the note body. If 18 feels right for a note and heavy for chat
+					(or the reverse), the package is fighting itself.
+				</p>
+				<p>
+					5 · <b>Phone</b> — measure collapses to the content width on every package.
+					The only real phone difference is W2’s stack order (prose then panels). If
+					phone is the decider, the gate was the wrong gate.
+				</p>
+				<p>
+					6 · <b>Title vs breadcrumb</b> — W3’s 36px title is the one most likely to
+					feel like a page header. If it does, that is evidence against W3, not a
+					reason to add a real <code>PageHeader</code>.
+				</p>
+			</section>
+		</div>
+
+		<script>
+			const ICON = {
+				plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg>`,
+			};
+
+			const esc = (s) =>
+				String(s).replace(/[&<>"']/g, (c) => ({
+					"&": "&amp;",
+					"<": "&lt;",
+					">": "&gt;",
+					'"': "&quot;",
+					"'": "&#39;",
+				})[c]);
+
+			function tabstub(active) {
+				return `<div class="tabstub">
+					<div class="brand"><span class="brand-mark"></span>Dispatch</div>
+					<div class="tabs"><span class="tab on">${esc(active)}</span></div>
+					<div class="acts"><span class="pill pill-ghost">Ask</span><span class="pill">Capture</span></div>
+				</div>`;
+			}
+
+			function dockstub(active) {
+				const tabs = ["Today", "Tasks", "Notes", "Links", "More"]
+					.map((t) => `<li class="${t === active ? "on" : ""}">${t}</li>`)
+					.join("");
+				return `<div class="dockstub"><ul>${tabs}</ul><div class="cap-btn">${ICON.plus}</div></div>`;
+			}
+
+			/* ~520 words, two heading levels, list, task list, code, blockquote, wikilink. */
+			const NOTE_BODY = `
+				<p>Three decisions from last Thursday’s review still need to land before the
+				lists pass closes. Writing them down here so the note is the record, not the
+				thread.</p>
+
+				<h2>What shipped and what did not</h2>
+				<p>Pass 2 closed the two gates: row names rest at 400, and create furniture
+				moves behind a labelled header action on every object-list. That generalises
+				ADR-0043 off <code>/tasks</code> and onto projects, people, quotes and
+				routines. <span class="wl">[[Journal is the exception]]</span> — writing the
+				entry is the page — so standing furniture stays there. Do not re-open that
+				half in Pass 3.</p>
+				<p>What did not ship is the capture palette restyle and anything under
+				<code>/settings</code>. Those are Pass 4 on purpose: low risk, last mono
+				eyebrow group labels, and the moment to ask whether <code>.type-title</code>
+				still earns its name once the editor and chat stop using it for prose.</p>
+
+				<blockquote>A note’s headings are content, not chrome. <code>#</code> in a
+				markdown body is the writer’s own hierarchy, not the app’s. That is the
+				argument for spending Title and Lead on authored prose — and for refusing
+				to invent 24px and 20px just because the editor felt special.</blockquote>
+
+				<h2>Open threads for the writing pass</h2>
+				<p>The measure is the first question the design system has never answered.
+				At the full 72rem frame a line of body runs past 140 characters; the eye
+				loses the start of the next line. Chat already puts <code>max-w-prose</code>
+				on the assistant and nowhere else. That inconsistency is the evidence, not
+				the rule.</p>
+
+				<h3>Concrete checks before build</h3>
+				<ul>
+					<li>65ch at 16px versus 72ch at 18px — same decision, two sides</li>
+					<li>What the leftover width is for: empty ground, balanced centre, or rail</li>
+					<li>Backlinks and Linked as rows at rest weight, SectionHead labels</li>
+					<li>Resolve / Delete / Send as control-voice buttons, not hand-rolled borders</li>
+				</ul>
+
+				<ul class="tasks">
+					<li><span class="box on" aria-hidden="true"></span><span>Gate lab drawn — notes + chat, three packages</span></li>
+					<li><span class="box" aria-hidden="true"></span><span>Pick package; land measure + scale in DESIGN.md first</span></li>
+					<li><span class="box" aria-hidden="true"></span><span>Build <code>/notes/[id]</code>, then chat, then journal sweep</span></li>
+					<li><span class="box" aria-hidden="true"></span><span>Screenshot both themes at both widths; confirm lists untouched</span></li>
+				</ul>
+
+				<p>Autosave stays untouched: 2000ms debounce, blur and unmount flush, the
+				“Saving… / Saved” meta line. TipTap extensions stay untouched. This pass is
+				visual; if a layout seems to require restructuring either layer, stop and
+				say so rather than “just refactoring while we are here.”</p>
+
+				<p>Content language is load-bearing. This note mixes PT-BR and EN the way the
+				rest of the corpus does — <em>fechamento do trimestre</em>, the Engine
+				domain, a task title left exactly as captured. Iron rule #5: stored
+				verbatim, never translated. The chrome around it stays English.</p>
+			`;
+
+			function panelsHtml() {
+				return `
+					<div class="block">
+						<div class="shead"><h2>Linked from</h2><div class="aside">3</div></div>
+						<ul class="rows">
+							<li class="lrow"><p class="ttl">Pass 2 — lists gate notes</p></li>
+							<li class="lrow"><p class="ttl">ADR draft: measure for prose</p></li>
+							<li class="lrow"><p class="ttl">Retrospective — 07 Aug</p></li>
+						</ul>
+					</div>
+					<div class="block">
+						<div class="shead"><h2>Linked</h2><div class="aside">2</div></div>
+						<ul class="rows">
+							<li class="lrow">
+								<p class="ttl">Ship the writing pass before Friday</p>
+								<span class="meta">task</span>
+								<span class="x" aria-hidden="true">×</span>
+							</li>
+							<li class="lrow">
+								<p class="ttl">Review · design/impeccable</p>
+								<span class="meta">12 Aug · 14:00</span>
+								<span class="x" aria-hidden="true">×</span>
+							</li>
+						</ul>
+						<p class="add-link">+ Link task or event</p>
+					</div>`;
+			}
+
+			function noteArticle() {
+				return `
+					<p class="crumb">← Notes</p>
+					<div class="prose-col">
+						<div class="note-title" contenteditable="false">Writing surfaces — Pass 3 gate</div>
+						<div class="prose">${NOTE_BODY}</div>
+						<p class="meta-line">manual · design, writing<span class="live"> · Saving…</span></p>
+						<div class="actions">
+							<span class="ctl">Resolve</span>
+							<span class="ctl danger">Delete</span>
+						</div>
+					</div>`;
+			}
+
+			function noteBody(layout) {
+				const article = noteArticle();
+				const panels = panelsHtml();
+				if (layout === "rail") {
+					return `<div class="note-rail">
+						<div class="note-main">${article}</div>
+						<aside class="rail panels" aria-label="Links">${panels}</aside>
+					</div>`;
+				}
+				if (layout === "center") {
+					return `<div class="note-center">
+						${article}
+						<div class="panels prose-col">${panels}</div>
+					</div>`;
+				}
+				return `<div class="note-stack">
+					${article}
+					<div class="panels">${panels}</div>
+				</div>`;
+			}
+
+			function chatBody() {
+				return `
+					<header class="ph">
+						<div class="top"><h1>Ask</h1></div>
+						<p class="sub">Read-only over your tasks, notes, quotes and projects.</p>
+					</header>
+					<div class="chat">
+						<p class="msg user">What’s open on Engine this week?</p>
+						<div class="msg asst">
+							<p>Four open tasks under Engine, none overdue:</p>
+							<ul>
+								<li><b>Ship the writing pass before Friday</b> — P1, due Fri</li>
+								<li>Migração do bridge de calendário — no date</li>
+								<li>Onboarding do novo hire — target 18 Aug</li>
+								<li>Dispatch — revision A follow-ups — no date</li>
+							</ul>
+							<p>There is also one event: <b>Review · design/impeccable</b> on
+							Tue 12 Aug at 14:00. No Engine routines are late. The domain’s
+							ring on Today is 5/8 for the week so far.</p>
+							<p>If you want, I can pull the note that links the writing pass, or
+							list only the P1s across every domain.</p>
+						</div>
+						<p class="msg user">Pull the note — and does the calendar bridge block anything?</p>
+						<div class="msg asst">
+							<p>The note is <b>Writing surfaces — Pass 3 gate</b>. It records the
+							measure decision as still open, holds journal’s standing form as
+							settled, and lists four checks before build. It links the writing-pass
+							task and the Tue review.</p>
+							<p>The calendar bridge migration has no dependents filed against it
+							and no due date. Nothing in Today or the open Engine list is blocked
+							on it from what I can see — it reads as background work, not a gate.</p>
+						</div>
+						<div class="composer">
+							<span class="field">Ask about your tasks, notes, quotes…</span>
+							<span class="ctl">Send</span>
+						</div>
+					</div>`;
+			}
+
+			function frame({ page, width, layout }) {
+				const isPhone = width === "phone";
+				const isNote = page === "note";
+				const widthClass = isPhone ? "at-phone" : isNote ? "at-desk full" : "at-desk";
+				const shell = isPhone ? "" : tabstub(isNote ? "Notes" : "Ask");
+				const dock = isPhone ? dockstub(isNote ? "Notes" : "More") : "";
+				const body = isNote ? noteBody(layout) : chatBody();
+				const cap = isNote
+					? `Note · ${isPhone ? "393pt" : "1092 desk"}`
+					: `Ask · ${isPhone ? "393pt" : "720 desk"}`;
+				const guide = isNote && !isPhone ? `<div class="measure-guide" aria-hidden="true"></div>` : "";
+
+				return `<div class="spec-frame ${widthClass}">
+					<div class="cap-bar">
+						<span>${cap}</span>
+						<span class="w">${esc(layout)}</span>
+					</div>
+					<div class="surface">
+						${guide}
+						${shell}
+						${body}
+					</div>
+					${dock}
+				</div>`;
+			}
+
+			function mount(el, layout) {
+				const deskNote = frame({ page: "note", width: "desk", layout });
+				const deskChat = frame({ page: "chat", width: "desk", layout });
+				const phoneNote = frame({ page: "note", width: "phone", layout });
+				const phoneChat = frame({ page: "chat", width: "phone", layout });
+				el.innerHTML = deskNote + deskChat + phoneNote + phoneChat;
+			}
+
+			mount(document.querySelector('[data-mount="w1"]'), "stack");
+			mount(document.querySelector('[data-mount="w2"]'), "rail");
+			mount(document.querySelector('[data-mount="w3"]'), "center");
+
+			const root = document.documentElement;
+			const body = document.body;
+
+			document.querySelectorAll("[data-theme-btn]").forEach((btn) => {
+				btn.addEventListener("click", () => {
+					const t = btn.getAttribute("data-theme-btn");
+					if (t === "dark") root.setAttribute("data-theme", "dark");
+					else root.removeAttribute("data-theme");
+					document.querySelectorAll("[data-theme-btn]").forEach((b) => {
+						b.setAttribute(
+							"aria-pressed",
+							b.getAttribute("data-theme-btn") === t ? "true" : "false",
+						);
+					});
+				});
+			});
+
+			document.querySelectorAll("[data-width-btn]").forEach((btn) => {
+				btn.addEventListener("click", () => {
+					const w = btn.getAttribute("data-width-btn");
+					body.setAttribute("data-width", w);
+					document.querySelectorAll("[data-width-btn]").forEach((b) => {
+						b.setAttribute(
+							"aria-pressed",
+							b.getAttribute("data-width-btn") === w ? "true" : "false",
+						);
+					});
+				});
+			});
+
+			document.querySelectorAll("[data-guide-btn]").forEach((btn) => {
+				btn.addEventListener("click", () => {
+					const g = btn.getAttribute("data-guide-btn");
+					body.setAttribute("data-guide", g);
+					document.querySelectorAll("[data-guide-btn]").forEach((b) => {
+						b.setAttribute(
+							"aria-pressed",
+							b.getAttribute("data-guide-btn") === g ? "true" : "false",
+						);
+					});
+				});
+			});
+		</script>
+	</body>
+</html>
