@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { Button, Input } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import { attachLinkAction, searchLinkTargetsAction } from "../actions";
 
@@ -73,28 +74,30 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 
 	return (
 		<div className="mt-3">
-			<div className="flex gap-2">
-				<button
+			<div className="flex flex-wrap gap-2">
+				<Button
 					type="button"
+					variant="tertiary"
+					size="sm"
 					disabled={pending}
 					onClick={() => toggle("task")}
-					className="rounded-control border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					{LABELS.task}
-				</button>
-				<button
+				</Button>
+				<Button
 					type="button"
+					variant="tertiary"
+					size="sm"
 					disabled={pending}
 					onClick={() => toggle("event")}
-					className="rounded-control border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 				>
 					{LABELS.event}
-				</button>
+				</Button>
 			</div>
 
 			{open && (
 				<div className="mt-2">
-					<input
+					<Input
 						aria-label={open === "task" ? "Search tasks" : "Search events"}
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
@@ -102,7 +105,6 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 							if (e.key === "Escape") close();
 						}}
 						placeholder="Search by title…"
-						className="w-full rounded-control border border-line bg-transparent px-2 py-1 text-sm text-ink placeholder:text-ink-4"
 					/>
 					{results.length > 0 && (
 						<ul className="mt-1 border border-line">

@@ -9,6 +9,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Markdown, type MarkdownStorage } from "tiptap-markdown";
+import { Button } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import { createDebouncedSave } from "@/lib/debounced-save";
 import type { MentionCandidate } from "@/lib/mentions";
@@ -65,6 +66,9 @@ type SaveState = "idle" | "saving" | "saved";
 // always editable, markdown shortcuts format as you type, and saving is
 // autosave — debounced 2s, flushed on blur/unmount. The stored body stays
 // plain markdown text, verbatim (iron rule #5).
+//
+// Visual: Pass 3 / W2. Title is Title-step (text-t30). Body is `.prose-authored`
+// on the closed ramp inside `.measure-prose`. Autosave layer untouched.
 export function NoteEditor({
 	note,
 	noteTitles,
@@ -145,7 +149,7 @@ export function NoteEditor({
 				// need *some* focus cue, since a sighted keyboard user tabbing in
 				// otherwise sees nothing change. A subtle background tint stands
 				// in for the ring without boxing the whole editor.
-				class: "min-h-64 whitespace-pre-wrap text-sm text-ink focus:bg-surface",
+				class: "min-h-64 whitespace-pre-wrap focus:bg-surface",
 			},
 			handleClickOn: (_view, _pos, node) => {
 				if (node.type.name === "wikilink") {
@@ -169,7 +173,7 @@ export function NoteEditor({
 	});
 
 	return (
-		<article>
+		<article className="measure-prose">
 			<input
 				aria-label="Note title"
 				defaultValue={note.title ?? ""}
@@ -179,11 +183,11 @@ export function NoteEditor({
 					debouncedRef.current.schedule(e.target.value);
 				}}
 				onBlur={() => debouncedRef.current.flush()}
-				className="field-shell h-auto w-full py-2 type-title text-2xl text-ink placeholder:text-ink-4"
+				className="field-shell h-auto w-full py-2 text-t30 text-ink placeholder:text-ink-4"
 			/>
-			{/* Preflight strips heading/list styling; restore just enough for the
-			    markdown to read as formatted, matching the app's serif headings. */}
-			<div className="mt-4 [&_a]:cursor-pointer [&_a]:text-accent [&_a]:underline [&_a]:underline-offset-2 [&_a:hover]:text-ink [&_blockquote]:border-l-2 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_blockquote]:text-ink-2 [&_code]:font-mono [&_code]:text-[0.85em] [&_h1]:font-medium [&_h1]:tracking-[-0.02em] [&_h1]:text-2xl [&_h1]:text-ink [&_h2]:font-medium [&_h2]:tracking-[-0.02em] [&_h2]:text-xl [&_h2]:text-ink [&_h3]:font-medium [&_h3]:tracking-[-0.02em] [&_h3]:text-lg [&_h3]:text-ink [&_hr]:my-3 [&_hr]:border-line [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_ul[data-type=taskList]]:list-none [&_ul[data-type=taskList]]:pl-0 [&_ul[data-type=taskList]_ul[data-type=taskList]]:pl-5 [&_ul[data-type=taskList]_li]:flex [&_ul[data-type=taskList]_li]:items-baseline [&_ul[data-type=taskList]_li]:gap-2 [&_ul[data-type=taskList]_li>div]:flex-1 [&_ul[data-type=taskList]_input]:accent-accent">
+			{/* Authored markdown on the closed ramp — DESIGN.md Prose Measure +
+			    Authored prose rules. No serif; no off-ramp 24/20 sizes. */}
+			<div className="prose-authored mt-4">
 				<EditorContent editor={editor} />
 			</div>
 			<p className="mt-3 font-mono text-meta text-ink-4">
@@ -198,10 +202,13 @@ export function NoteEditor({
 			</p>
 			<div className="mt-4 flex gap-2">
 				{note.needs_review && (
-					<button
+					<Button
 						type="button"
+						variant="tertiary"
+						size="sm"
 						aria-label="Resolve needs-review flag"
 						disabled={pending}
+						isPending={pending}
 						onClick={() =>
 							startTransition(async () => {
 								await runAction(
@@ -210,24 +217,25 @@ export function NoteEditor({
 								);
 							})
 						}
-						className="rounded-control border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70"
 					>
 						Resolve
-					</button>
+					</Button>
 				)}
-				<button
+				<Button
 					type="button"
+					variant="danger"
+					size="sm"
 					aria-label="Delete note"
 					disabled={pending}
+					isPending={pending}
 					onClick={() =>
 						startTransition(async () => {
 							await runAction(() => deleteNoteAction(note.id), "Couldn't delete note.");
 						})
 					}
-					className="rounded-control border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-error hover:border-error active:opacity-70"
 				>
 					Delete
-				</button>
+				</Button>
 			</div>
 		</article>
 	);
