@@ -1,50 +1,9 @@
-import Link from "next/link";
-import { MORE_SECTIONS } from "@/components/nav-links";
-import { SignOutButton } from "@/components/sign-out-button";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { PageHeader } from "@/components/ui";
-import { requireOwnerPage } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-// Mobile's tail of the rail (ADR-0014). The five tabs carry the daily loop;
-// everything else lands here in rail order, plus the rail footer that a phone
-// otherwise never sees.
-export default async function MorePage() {
-	const { claims } = await requireOwnerPage();
-
-	return (
-		<div>
-			<PageHeader title="More" />
-
-			{MORE_SECTIONS.map((section) => (
-				<section key={section.title} className="mt-6 first:mt-0" aria-label={section.title}>
-					<h2 className="font-mono text-eyebrow uppercase tracking-widest text-ink-4">
-						{section.title}
-					</h2>
-					<ul className="mt-1">
-						{section.items.map((item) => (
-							<li key={item.key} className="hairline">
-								<Link
-									href={item.href}
-									className="flex items-baseline justify-between py-3 text-lg text-ink hover:text-accent"
-								>
-									{item.label}
-									<span aria-hidden="true" className="font-mono text-meta text-ink-4">
-										→
-									</span>
-								</Link>
-							</li>
-						))}
-					</ul>
-				</section>
-			))}
-
-			<section className="mt-8 space-y-3" aria-label="Account">
-				<ThemeToggle />
-				<p className="truncate text-meta text-ink-4" title={claims.email ?? ""}>
-					{claims.email}
-				</p>
-				<SignOutButton />
-			</section>
-		</div>
-	);
+/**
+ * /more is no longer a page (Pass 4 / C4). More is a menu. Old bookmarks and
+ * deep links land on Today rather than 404.
+ */
+export default function MoreRedirect() {
+	redirect("/today");
 }

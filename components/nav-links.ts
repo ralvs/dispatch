@@ -28,6 +28,10 @@ export const LIBRARY: NavItem[] = [
 	{ key: "routines", label: "Routines", href: "/routines" },
 	{ key: "quotes", label: "Quotes", href: "/quotes" },
 	{ key: "people", label: "People", href: "/people" },
+	// Domains left /settings when the five-tab pressure that put them there
+	// expired (Pass 4 / C4). They sit with Projects and People — records the
+	// app keeps — not with Settings knobs.
+	{ key: "domains", label: "Domains", href: "/domains" },
 ];
 
 export const SYSTEM: NavItem[] = [
@@ -35,16 +39,21 @@ export const SYSTEM: NavItem[] = [
 	{ key: "settings", label: "Settings", href: "/settings" },
 ];
 
-// What /more hosts: everything outside the four mobile tabs, in rail order.
-// Chat is Daily on desktop and lands here on mobile.
+// Destinations the More *menu* lists (not a /more page). Same three tiers as
+// the old rail; Chat is Daily on desktop and in the menu on both.
 export const MORE_SECTIONS: { title: string; items: NavItem[] }[] = [
 	{ title: "Daily", items: [CHAT] },
 	{ title: "Library", items: LIBRARY },
 	{ title: "System", items: SYSTEM },
 ];
 
-// The 5-tab mobile shell. More stays lit for every destination it hosts so the
-// bar always shows where you are.
+/** Every path the More menu reaches — used for the A1 active mark. */
+export const MORE_HOSTED_HREFS: string[] = MORE_SECTIONS.flatMap((s) => s.items.map((i) => i.href));
+
+// The 5-tab shell. More is a menu trigger, not a route (Pass 4 / C4). href is
+// a stable key for isActive aliases only — navigation goes through the menu.
+// A1: More stays lit for every destination it hosts so the bar always shows
+// where you are.
 export const TABS: NavItem[] = [
 	TODAY,
 	TASKS,
@@ -54,7 +63,7 @@ export const TABS: NavItem[] = [
 		key: "more",
 		label: "More",
 		href: "/more",
-		aliases: MORE_SECTIONS.flatMap((s) => s.items.map((i) => i.href)),
+		aliases: MORE_HOSTED_HREFS,
 	},
 ];
 

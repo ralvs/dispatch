@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { CapturePalette } from "@/components/capture-palette";
+import { MoreMenu } from "@/components/more-menu";
 import { NavShortcuts } from "@/components/nav-shortcuts";
 import { requireOwnerPage } from "@/lib/auth";
 
@@ -44,7 +45,7 @@ function AuthedShellFallback() {
 async function AuthedShell({ children }: { children: React.ReactNode }) {
 	// Iron rule #2 — the shell is a page load, so the boundary runs here even
 	// though nothing below reads the claims any more: identity and sign-out
-	// moved to /more with the rest of the retired rail's footer.
+	// live on /settings (Pass 4 / C4).
 	await requireOwnerPage();
 
 	return (
@@ -66,6 +67,7 @@ async function AuthedShell({ children }: { children: React.ReactNode }) {
 					</div>
 				</main>
 				<CapturePalette />
+				<MoreMenu />
 				<NavShortcuts />
 			</div>
 			<BottomTabBar />
