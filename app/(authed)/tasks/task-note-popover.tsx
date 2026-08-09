@@ -109,7 +109,7 @@ export function TaskNotePopover({ notes, title }: { notes: string; title: string
 					// Right-anchored: the glyph lives in the row's right-hand control
 					// column, so the panel opens back across the row rather than out
 					// past the page edge.
-					className="absolute right-0 top-full z-20 mt-1.5 block max-h-56 w-64 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain whitespace-pre-wrap break-words rounded-control border border-line-strong bg-surface px-3 py-2 text-left type-title text-sm leading-relaxed text-ink-2 elevation-overlay"
+					className="absolute right-0 top-full z-20 mt-1.5 block max-h-56 w-64 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain whitespace-pre-wrap break-words rounded-control border border-line-strong bg-surface px-3 py-2 text-left text-sm leading-relaxed text-ink-2 elevation-overlay"
 				>
 					{notes}
 				</span>

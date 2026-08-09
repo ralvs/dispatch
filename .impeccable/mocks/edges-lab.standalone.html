@@ -1,0 +1,2161 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Edges — failure register (Pass 5 gate) · standalone</title>
+		<style>
+/* inlined from _a.css */
+/* Dispatch — Today, revision A.
+ * Type + palette lifted exactly from bydefault.so:
+ *   Geist Sans, weights 400/500 ONLY, ramp 56/44/36/30/18/16/14/12,
+ *   h1 56px/500/-1.4px/1.04, ground neutral-50, warm stone ink, #f15a0f accent.
+ * Geometry (pills, large card radii) from collectiveos.vercel.app.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400;500&display=swap");
+
+:root {
+	--ground: #fafafa;
+	--ground-2: #f0efed;
+	--paper: #ffffff;
+
+	--ink: #2a2524;
+	--ink-2: #57534e;
+	--ink-3: #8c8681;
+	--ink-4: #b4aea8;
+	--rule: #e5e5e5;
+	--rule-2: #d6d3d0;
+
+	--accent: #f15a0f;
+	--accent-soft: #fdf0e8;
+	--accent-ink: #c2450a;
+
+	/* ── domain colours ────────────────────────────────────────────────
+	 * Nine slots: the seven seeded stewardship domains plus two spares. Green,
+	 * Blue, Indigo and Yellow are Apple's system colours; Orchid and Rose are
+	 * ours; Clay, Teal and Cyan were computed to fill what those six left open.
+	 * Every pair clears ΔEok 0.12 at 9px, every one clears 0.15 from the accent
+	 * and the priority ring, and all clear 3:1 on their own ground — except
+	 * Travel, exempt on purpose so the yellow can be a full yellow rather than
+	 * a mustard. Evidence and the method: palette-lab.html. Retune there.
+	 */
+	--spirit: #8b6031; /* Clay */
+	--travel: #ffcc0f; /* Yellow — 1.45:1, exempt */
+	--health: #2aa649; /* Green — Apple */
+	--pine: #158266; /* Teal, spare */
+	--code: #1b93ba; /* Cyan */
+	--finance: #0a7cfe; /* Blue — Apple */
+	--engine: #514ad4; /* Indigo — Apple */
+	--family: #c345fc; /* Orchid */
+	--burgundy: #db149b; /* Rose, spare */
+
+	--r-card: 22px;
+	--r-md: 12px;
+	--r-pill: 999px;
+
+	--lift: 0 1px 2px rgba(41, 37, 36, 0.04), 0 10px 28px rgba(41, 37, 36, 0.05);
+
+	--sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+	--mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+[data-theme="dark"] {
+	--ground: #1a1817;
+	--ground-2: #2b2725;
+	--paper: #232020;
+
+	--ink: #f5f2ef;
+	--ink-2: #b8b1ab;
+	--ink-3: #8d8681;
+	--ink-4: #6b645f;
+	--rule: #322e2c;
+	--rule-2: #423d3a;
+
+	--accent: #ff6f2c;
+	--accent-soft: #33211a;
+	--accent-ink: #ff8f5c;
+
+	/* Same hues; only lightness and chroma move between themes. */
+	--spirit: #a5733c;
+	--travel: #ffd60a;
+	--health: #30d158;
+	--pine: #21b18c;
+	--code: #2cc9fc;
+	--finance: #318ffe;
+	--engine: #5e5ae6;
+	--family: #c756fc;
+	--burgundy: #fc2cb4;
+
+	--lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.34);
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: var(--ground);
+	color: var(--ink);
+	font-family: var(--sans);
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+
+/* ── type ramp (bydefault): 56 / 44 / 36 / 30 / 18 / 16 / 14 / 12 ── */
+.t56 {
+	font-size: 56px;
+	font-weight: 500;
+	letter-spacing: -1.4px;
+	line-height: 1.04;
+}
+.t30 {
+	font-size: 30px;
+	font-weight: 500;
+	letter-spacing: -0.75px;
+	line-height: 1.15;
+}
+.t18 {
+	font-size: 18px;
+	font-weight: 400;
+	line-height: 1.7;
+	color: var(--ink-2);
+}
+.t16 {
+	font-size: 16px;
+	font-weight: 400;
+}
+.t14 {
+	font-size: 14px;
+	font-weight: 400;
+	color: var(--ink-2);
+}
+.t12 {
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--ink-3);
+}
+
+.eyebrow {
+	font-family: var(--mono);
+	font-size: 12px;
+	font-weight: 400;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+.num {
+	font-variant-numeric: tabular-nums;
+}
+
+/* ── chrome ── */
+.card {
+	background: var(--paper);
+	border: 1px solid var(--rule);
+	border-radius: var(--r-card);
+	box-shadow: var(--lift);
+}
+
+.pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 40px;
+	padding: 0 20px;
+	border: 0;
+	border-radius: var(--r-pill);
+	background: var(--ink);
+	color: var(--ground);
+	font-family: var(--sans);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+}
+.pill-ghost {
+	background: transparent;
+	border: 1px solid var(--rule-2);
+	color: var(--ink);
+	font-weight: 400;
+}
+.pill-accent {
+	background: var(--accent);
+	color: #fff;
+}
+
+/* header (from comp C) */
+.hdr {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+}
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 16px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+}
+.brand-mark {
+	width: 26px;
+	height: 26px;
+	border-radius: 8px;
+	background: var(--accent);
+	position: relative;
+	flex-shrink: 0;
+}
+.brand-mark::after {
+	content: "";
+	position: absolute;
+	inset: 8px 7px;
+	border-left: 2px solid #fff;
+	border-bottom: 2px solid #fff;
+	transform: rotate(-45deg) translate(1px, -1px);
+}
+.tabs {
+	display: flex;
+	gap: 2px;
+	background: var(--ground-2);
+	padding: 5px;
+	border-radius: var(--r-pill);
+}
+.tab {
+	padding: 7px 18px;
+	border-radius: var(--r-pill);
+	font-size: 14px;
+	color: var(--ink-3);
+}
+.tab.on {
+	background: var(--paper);
+	color: var(--ink);
+	font-weight: 500;
+	box-shadow: 0 1px 2px rgba(41, 37, 36, 0.06), 0 2px 8px rgba(41, 37, 36, 0.05);
+}
+
+/* marks */
+.dot {
+	display: inline-block;
+	width: 9px;
+	height: 9px;
+	border-radius: var(--r-pill);
+	flex-shrink: 0;
+}
+.check {
+	width: 19px;
+	height: 19px;
+	border: 1.5px solid var(--rule-2);
+	border-radius: 7px;
+	flex-shrink: 0;
+	background: var(--paper);
+	position: relative;
+}
+.check.on {
+	background: var(--ink);
+	border-color: var(--ink);
+}
+.check.on::after {
+	content: "";
+	position: absolute;
+	left: 5.5px;
+	top: 2.5px;
+	width: 5px;
+	height: 9.5px;
+	border: solid var(--paper);
+	border-width: 0 1.75px 1.75px 0;
+	transform: rotate(45deg);
+}
+
+/* routines progress bar (from comp B) */
+.meter {
+	height: 7px;
+	border-radius: var(--r-pill);
+	background: var(--ground-2);
+	overflow: hidden;
+}
+.meter i {
+	display: block;
+	height: 100%;
+	border-radius: var(--r-pill);
+	background: var(--ink);
+}
+
+/* headline row — counters ride on the right, off the headline's baseline */
+.head-row {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 48px;
+}
+.counters {
+	display: grid;
+	gap: 7px;
+	text-align: right;
+	flex-shrink: 0;
+	padding-bottom: 6px;
+}
+.counters div {
+	font-size: 14px;
+	color: var(--ink-2);
+	white-space: nowrap;
+}
+.counters b {
+	font-weight: 500;
+	font-size: 16px;
+	color: var(--ink);
+	font-variant-numeric: tabular-nums;
+	margin-right: 5px;
+}
+.counters .late,
+.counters .late b {
+	color: var(--accent);
+}
+
+/* ── day tape ──────────────────────────────────────────────────────────
+ * Span is 06:00–22:00 = 960 min. left% = (start-360)/9.6, width% = mins/9.6.
+ * Start times ride ABOVE the track so a 15-minute block never has to carry
+ * text; the block itself only has to stay visible, which a min-width buys.
+ */
+.tape-times {
+	position: relative;
+	height: 16px;
+	margin-bottom: 5px;
+}
+.tape-times span {
+	position: absolute;
+	transform: translateX(-1px);
+	font-family: var(--mono);
+	font-size: 11px;
+	color: var(--ink-3);
+	white-space: nowrap;
+}
+.measure-track {
+	position: relative;
+	height: 46px;
+	background: var(--ground-2);
+	border-radius: 12px;
+}
+.blk {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	min-width: 7px;
+	display: flex;
+	align-items: center;
+	padding: 0 10px;
+	border-radius: 8px;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 500;
+	letter-spacing: -0.01em;
+	white-space: nowrap;
+	overflow: hidden;
+}
+/* a scheduled task is a point in time, not a span: an outlined tick that
+   still carries its own domain colour. */
+.blk.task {
+	background: transparent !important;
+	border: 2px solid currentColor;
+	padding: 0;
+	min-width: 9px;
+}
+.nowmark {
+	position: absolute;
+	top: -6px;
+	bottom: -6px;
+	width: 2px;
+	background: var(--ink);
+	border-radius: 2px;
+	z-index: 3;
+}
+.ticks {
+	position: relative;
+	margin-top: 9px;
+	height: 16px;
+}
+.ticks > span {
+	position: absolute;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-4);
+	transform: translateX(-50%);
+}
+.ticks > span:first-child {
+	transform: none;
+}
+.ticks .now-label {
+	color: var(--ink);
+	font-weight: 500;
+	transform: translateX(-50%);
+}
+
+/* Event marker: a calendar glyph sits in the checkbox's column, so events and
+   tasks line up in one band. Mirrors the shipped ScheduleRow. */
+.cal {
+	width: 19px;
+	height: 19px;
+	flex-shrink: 0;
+	color: var(--ink-3);
+	display: grid;
+	place-items: center;
+}
+.cal svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Empty band placeholder */
+.empty-band {
+	padding: 26px 0 30px;
+	color: var(--ink-3);
+	font-size: 16px;
+	font-style: italic;
+	border-bottom: 1px solid var(--rule);
+}
+.empty-band span {
+	font-style: normal;
+	display: block;
+	margin-top: 6px;
+	font-size: 14px;
+	color: var(--ink-4);
+}
+
+/* Resurfaced quote */
+.quote blockquote {
+	margin: 12px 0 0;
+	font-size: 18px;
+	line-height: 1.55;
+	font-style: italic;
+	letter-spacing: -0.01em;
+	color: var(--ink);
+}
+.quote .attrib {
+	margin: 10px 0 0;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+}
+.quote .acts {
+	margin-top: 18px;
+	display: flex;
+	gap: 20px;
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+}
+
+/* Completion ring (routines top level + projects) */
+.ring {
+	border-radius: 50%;
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	position: relative;
+}
+.ring > .hole {
+	position: absolute;
+	border-radius: 50%;
+	background: var(--paper);
+}
+.ring > .val {
+	position: relative;
+	font-family: var(--mono);
+	font-variant-numeric: tabular-nums;
+	color: var(--ink-2);
+}
+
+/* Seven-day streak trail — tiny squares, one per day */
+.trail {
+	display: flex;
+	gap: 3px;
+	align-items: center;
+}
+.trail i {
+	width: 6px;
+	height: 6px;
+	border-radius: 2px;
+	background: var(--rule-2);
+	display: block;
+}
+.trail i.on {
+	background: var(--ink-2);
+}
+.streak {
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--ink-3);
+	width: 30px;
+	text-align: right;
+}
+.streak.hot {
+	color: var(--accent);
+}
+
+.wrap {
+	max-width: 1180px;
+	margin: 0 auto;
+	padding: 30px 44px 80px;
+}
+.cols {
+	display: grid;
+	grid-template-columns: 1.5fr 1fr;
+	gap: 40px;
+	align-items: start;
+}
+h2.sec {
+	font-size: 16px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+	margin: 0;
+}
+.sec-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+.panel {
+	padding: 22px 24px;
+}
+.stack > * + * {
+	margin-top: 16px;
+}
+
+/* ── day navigation ────────────────────────────────────────────────────
+ * The nav IS the dateline. A separate widget above the tape would state the
+ * day twice, so the chevrons flank the date that was already there.
+ *
+ * The label always names the real date — never "TOMORROW". Being off today is
+ * carried by the reset pill existing at all, which keeps the label purely
+ * informative instead of switching voice with the mode.
+ */
+.daynav {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.step {
+	width: 28px;
+	height: 28px;
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	padding: 0;
+	border: 1px solid var(--rule-2);
+	border-radius: var(--r-pill);
+	background: transparent;
+	color: var(--ink-3);
+	cursor: pointer;
+}
+.step:hover {
+	color: var(--ink);
+	border-color: var(--ink-4);
+}
+.step svg {
+	width: 15px;
+	height: 15px;
+}
+.daynav .daylabel {
+	white-space: nowrap;
+}
+/* Holds its slot on today so the chevrons never shift when the day changes. */
+.today-reset {
+	height: 28px;
+	padding: 0 12px;
+	font-size: 12px;
+	margin-left: 4px;
+}
+.today-reset[hidden] {
+	display: inline-flex;
+	visibility: hidden;
+}
+/* Stepping a day dims the payload the nav owns — tape, all-day, timeline —
+   and nothing else. Mirrors the shipped `pending` transition. */
+.day-owned {
+	transition: opacity 0.18s ease;
+}
+[data-pending] .day-owned {
+	opacity: 0.55;
+}
+
+/* ── all-day band ──────────────────────────────────────────────────────
+ * Everything that belongs to the day but has no hour, so the tape is
+ * structurally incapable of showing it. It caps the tape from above for
+ * exactly that reason: together they are the whole day.
+ */
+.allday {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	margin-bottom: 14px;
+}
+.allday > .eyebrow {
+	flex-shrink: 0;
+}
+.ad {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 30px;
+	padding: 0 13px;
+	border: 1px solid var(--rule-2);
+	border-radius: var(--r-md);
+	font-size: 14px;
+	color: var(--ink);
+	white-space: nowrap;
+}
+.ad .dot {
+	width: 7px;
+	height: 7px;
+}
+
+</style>
+		<style>
+			/* ── lab chrome ───────────────────────────────────────────────────── */
+			body {
+				background: var(--ground-2);
+			}
+			.lab {
+				max-width: 1560px;
+				margin: 0 auto;
+				padding: 40px 32px 160px;
+			}
+			.lab-head {
+				max-width: 76ch;
+			}
+			.lab-head h1 {
+				font-size: 36px;
+				font-weight: 500;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+				margin: 0;
+			}
+			.lab-head p {
+				font-size: 16px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 14px 0 0;
+			}
+			.lab-head p b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.lab-head code {
+				font-family: var(--mono);
+				font-size: 13px;
+			}
+
+			.controls {
+				position: sticky;
+				top: 0;
+				z-index: 10;
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				flex-wrap: wrap;
+				margin: 26px 0 8px;
+				padding: 14px 0;
+				background: var(--ground-2);
+			}
+			.controls .grp {
+				display: flex;
+				gap: 2px;
+				padding: 4px;
+				border-radius: var(--r-pill);
+				background: var(--paper);
+				border: 1px solid var(--rule);
+			}
+			.controls button {
+				border: 0;
+				background: transparent;
+				border-radius: var(--r-pill);
+				padding: 6px 14px;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+				cursor: pointer;
+			}
+			.controls button[aria-pressed="true"] {
+				background: var(--ink);
+				color: var(--ground);
+			}
+			.controls .note {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-3);
+			}
+
+			.spectrum {
+				display: grid;
+				grid-template-columns: 1fr 1fr 1fr;
+				gap: 10px;
+				max-width: 900px;
+				margin: 22px 0 0;
+			}
+			.spectrum > div {
+				padding: 14px 16px;
+				background: var(--paper);
+				border: 1px solid var(--rule);
+				border-radius: 12px;
+			}
+			.spectrum h3 {
+				margin: 0;
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--ink-4);
+			}
+			.spectrum p {
+				margin: 8px 0 0;
+				font-size: 14px;
+				line-height: 1.45;
+				color: var(--ink-2);
+			}
+			.spectrum b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+
+			.axis {
+				max-width: 76ch;
+				margin: 22px 0 0;
+				padding: 16px 18px;
+				background: var(--paper);
+				border: 1px solid var(--rule);
+				border-radius: 14px;
+			}
+			.axis h2 {
+				margin: 0;
+				font-size: 14px;
+				font-weight: 500;
+				letter-spacing: -0.02em;
+			}
+			.axis p {
+				margin: 8px 0 0;
+				font-size: 14px;
+				line-height: 1.55;
+				color: var(--ink-2);
+			}
+			.axis .bar {
+				display: grid;
+				grid-template-columns: 1fr 1fr 1fr;
+				gap: 6px;
+				margin-top: 14px;
+			}
+			.axis .bar span {
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				text-align: center;
+				padding: 8px 6px;
+				border-radius: 8px;
+				border: 1px solid var(--rule);
+				color: var(--ink-3);
+			}
+			.axis .bar span strong {
+				display: block;
+				font-weight: 500;
+				color: var(--ink);
+				letter-spacing: 0.04em;
+				margin-bottom: 2px;
+			}
+
+			.section {
+				margin-top: 52px;
+				padding-top: 8px;
+				border-top: 1px solid var(--rule);
+			}
+			.section > header {
+				max-width: 76ch;
+				margin-bottom: 18px;
+			}
+			.section > header h2 {
+				font-size: 30px;
+				font-weight: 500;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+				margin: 0;
+			}
+			.section > header h2 em {
+				font-style: normal;
+				color: var(--ink-4);
+				margin-right: 12px;
+			}
+			.section > header h2 .rec {
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--accent-ink);
+				margin-left: 10px;
+				vertical-align: 2px;
+			}
+			.section > header .thesis {
+				font-size: 17px;
+				line-height: 1.55;
+				color: var(--ink-2);
+				margin: 12px 0 0;
+			}
+			.section > header .cost {
+				font-size: 15px;
+				line-height: 1.55;
+				color: var(--ink-2);
+				margin: 10px 0 0;
+				padding-left: 14px;
+				border-left: 2px solid var(--rule-2);
+			}
+			.section > header .cost b {
+				font-weight: 500;
+				color: var(--ink);
+			}
+			.section > header .spec {
+				font-family: var(--mono);
+				font-size: 12px;
+				line-height: 1.75;
+				color: var(--ink-3);
+				margin: 12px 0 0;
+			}
+			.section > header .spec b {
+				font-weight: 400;
+				color: var(--ink-2);
+			}
+			.section.shipped > header h2 {
+				font-size: 22px;
+				letter-spacing: -0.4px;
+			}
+
+			.band-label {
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--ink-4);
+				margin: 22px 0 10px;
+			}
+			.band-label:first-child {
+				margin-top: 4px;
+			}
+			.band-label b {
+				color: var(--ink-3);
+				font-weight: 400;
+			}
+
+			.row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 16px;
+				align-items: flex-start;
+			}
+			.row + .row {
+				margin-top: 14px;
+			}
+
+			.spec-frame {
+				flex-shrink: 0;
+				background: var(--ground);
+				border: 1px solid var(--rule);
+				border-radius: 18px;
+				overflow: hidden;
+			}
+			.spec-frame > .cap-bar {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				padding: 10px 16px;
+				border-bottom: 1px solid var(--rule);
+				background: var(--ground-2);
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.spec-frame > .cap-bar .w {
+				color: var(--ink-4);
+				text-align: right;
+			}
+			.spec-frame.ref {
+				outline: 1px dashed var(--ink-4);
+				outline-offset: -1px;
+			}
+			.spec-frame.ref > .cap-bar {
+				color: var(--ink-4);
+			}
+			.spec-frame.wait > .cap-bar {
+				color: var(--ink-3);
+			}
+
+			.at-desk {
+				width: 520px;
+			}
+			.at-desk.wide {
+				width: 720px;
+			}
+			.at-desk.full {
+				width: 960px;
+			}
+			.at-desk .surface {
+				padding: 28px 28px 36px;
+				min-height: 300px;
+				position: relative;
+			}
+			.at-desk.full .surface,
+			.at-desk.wide .surface {
+				padding: 28px 36px 40px;
+			}
+			.at-phone {
+				width: 360px;
+			}
+			.at-phone .surface {
+				padding: 20px 20px 24px;
+				min-height: 360px;
+				position: relative;
+			}
+			body[data-width="desk"] .at-phone,
+			body[data-width="phone"] .at-desk {
+				display: none;
+			}
+
+			/* shell stubs */
+			.tabstub {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				padding: 0 0 48px;
+			}
+			.tabstub .tabs {
+				display: flex;
+				gap: 2px;
+				padding: 3px;
+				border-radius: var(--r-pill);
+				background: var(--paper);
+				border: 1px solid var(--rule);
+			}
+			.tabstub .tab {
+				padding: 5px 12px;
+				font-size: 12px;
+				color: var(--ink-3);
+				border-radius: var(--r-pill);
+			}
+			.tabstub .tab.on {
+				background: var(--ground);
+				color: var(--ink);
+				box-shadow: var(--lift);
+			}
+			.tabstub .brand {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				font-size: 14px;
+				font-weight: 500;
+			}
+			.brand-mark {
+				position: relative;
+				display: block;
+				width: 20px;
+				height: 20px;
+				border-radius: 6px;
+				background: var(--accent);
+				flex-shrink: 0;
+			}
+			.brand-mark::after {
+				content: "";
+				position: absolute;
+				inset: 6px 5px;
+				border-left: 1.5px solid #fff;
+				border-bottom: 1.5px solid #fff;
+				transform: rotate(-45deg) translate(0.5px, -0.5px);
+			}
+			.dockstub {
+				display: flex;
+				justify-content: center;
+				padding: 12px 8px 10px;
+				border-top: 1px solid var(--rule);
+				background: var(--ground);
+			}
+			.dockstub ul {
+				display: flex;
+				align-items: center;
+				gap: 2px;
+				margin: 0;
+				padding: 4px;
+				list-style: none;
+				height: 44px;
+				border-radius: var(--r-pill);
+				background: var(--paper);
+				border: 1px solid var(--rule-2);
+			}
+			.dockstub li {
+				display: flex;
+				align-items: center;
+				height: 100%;
+				padding: 0 8px;
+				border-radius: var(--r-pill);
+				font-family: var(--mono);
+				font-size: 10px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.dockstub li.on {
+				background: var(--accent-soft);
+				color: var(--accent-ink);
+			}
+
+			/* page header (ADR-0042 D) */
+			.ph {
+				margin-bottom: 22px;
+			}
+			.at-desk .ph {
+				margin-bottom: 26px;
+			}
+			.ph h1 {
+				margin: 0;
+				font-size: 30px;
+				font-weight: 500;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+			}
+			.at-desk .ph h1 {
+				font-size: 36px;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+			}
+			.ph .sub {
+				margin: 10px 0 0;
+				font-size: 14px;
+				line-height: 1.55;
+				color: var(--ink-2);
+				max-width: 42ch;
+			}
+			.ph .title-ph {
+				display: inline-block;
+				height: 0.66em;
+				width: min(60%, 18rem);
+				border-radius: 6px;
+				background: var(--paper);
+				vertical-align: baseline;
+				animation: pulse 1.6s ease-in-out infinite;
+			}
+
+			/* EmptyState — absence register (shipped) */
+			.empty {
+				margin: 0;
+				padding: 28px 0;
+				font-size: 16px;
+				line-height: 1.5;
+				font-style: italic;
+				color: var(--ink-3);
+			}
+			.empty .hint {
+				display: block;
+				margin-top: 6px;
+				font-size: 14px;
+				font-style: normal;
+				color: var(--ink-4);
+			}
+			.empty.tight {
+				padding: 8px 0 0;
+			}
+
+			/* actions */
+			.btn {
+				display: inline-flex;
+				align-items: center;
+				height: 40px;
+				padding: 0 20px;
+				border-radius: var(--r-pill);
+				font-size: 14px;
+				border: 0;
+				cursor: default;
+			}
+			.btn-ink {
+				background: var(--ink);
+				color: var(--ground);
+			}
+			.btn-ghost {
+				background: transparent;
+				color: var(--ink);
+				border: 1px solid var(--rule-2);
+			}
+			.nav-pills {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+			.nav-pill {
+				display: inline-flex;
+				align-items: center;
+				height: 36px;
+				padding: 0 12px;
+				border-radius: var(--r-md);
+				border: 1px solid var(--rule-2);
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+
+			/* unauthed frame */
+			.unauth {
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				min-height: 300px;
+				max-width: 22rem;
+				margin: 0 auto;
+			}
+			.at-phone .unauth {
+				min-height: 320px;
+			}
+			.unauth .intro {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				margin-bottom: 18px;
+			}
+			.unauth .intro .name {
+				font-size: 15px;
+				font-weight: 500;
+			}
+			.legacy-eyebrow {
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.legacy-title {
+				margin: 4px 0 0;
+				font-size: 30px;
+				font-weight: 500;
+				letter-spacing: -0.75px;
+			}
+			.legacy-rule {
+				height: 1px;
+				background: var(--rule-2);
+				margin: 22px 0;
+			}
+
+			/* toast — over a faint page so it reads as an overlay */
+			.toast-stage {
+				min-height: 200px;
+				position: relative;
+			}
+			.toast-stage .ghost-page {
+				opacity: 0.35;
+				pointer-events: none;
+			}
+			.toast-stage .ghost-page .ph h1 {
+				font-size: 30px;
+			}
+			.toast-float {
+				position: absolute;
+				top: 16px;
+				left: 50%;
+				transform: translateX(-50%);
+				width: min(100% - 24px, 360px);
+				z-index: 2;
+			}
+			.toast {
+				border-radius: var(--r-md);
+				border: 1px solid var(--rule-2);
+				background: var(--paper);
+				box-shadow: var(--lift);
+				padding: 12px 14px;
+				font-size: 14px;
+				line-height: 1.45;
+				color: var(--ink);
+			}
+			.toast .t-title {
+				font-weight: 500;
+			}
+			.toast .t-desc {
+				margin-top: 2px;
+				color: var(--ink-2);
+				font-size: 13px;
+			}
+			.toast.err {
+				border-color: color-mix(in srgb, #d92d20 40%, var(--rule-2));
+			}
+			[data-theme="dark"] .toast.err {
+				border-color: color-mix(in srgb, #ff6a5e 40%, var(--rule-2));
+			}
+			.toast.quiet {
+				background: var(--ground);
+				box-shadow: none;
+				border-color: var(--rule);
+			}
+			.toast.quiet .t-title {
+				font-weight: 400;
+				font-style: italic;
+				color: var(--ink-3);
+			}
+
+			/* C signal */
+			.signal {
+				padding-left: 14px;
+				border-left: 2px solid #d92d20;
+			}
+			[data-theme="dark"] .signal {
+				border-left-color: #ff6a5e;
+			}
+			.signal p {
+				margin: 0;
+				font-size: 14px;
+				line-height: 1.55;
+				color: var(--ink-2);
+			}
+
+			.acts {
+				margin-top: 18px;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				align-items: center;
+			}
+			.acts.tight {
+				margin-top: 12px;
+			}
+
+			/* list / skeleton */
+			.list-stub .row-stub {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				padding: 12px 0;
+				border-bottom: 1px solid var(--rule);
+				font-size: 15px;
+				color: var(--ink-4);
+			}
+			.list-stub .row-stub .dot {
+				width: 14px;
+				height: 14px;
+				border-radius: 4px;
+				border: 1.5px solid var(--rule-2);
+				flex-shrink: 0;
+			}
+
+			@keyframes pulse {
+				0%,
+				100% {
+					opacity: 1;
+				}
+				50% {
+					opacity: 0.45;
+				}
+			}
+			.pulse {
+				border-radius: 6px;
+				background: var(--paper);
+				animation: pulse 1.6s ease-in-out infinite;
+			}
+
+			/* PageSkeleton body rows */
+			.skel-rows {
+				display: flex;
+				flex-direction: column;
+				gap: 12px;
+			}
+			.skel-rows .pulse {
+				height: 16px;
+			}
+			.skel-rows .pulse:nth-child(1) {
+				width: 92%;
+			}
+			.skel-rows .pulse:nth-child(2) {
+				width: 78%;
+			}
+			.skel-rows .pulse:nth-child(3) {
+				width: 86%;
+			}
+			.skel-rows .pulse:nth-child(4) {
+				width: 64%;
+			}
+			.skel-rows .pulse:nth-child(5) {
+				width: 80%;
+			}
+			.skel-rows .pulse:nth-child(6) {
+				width: 70%;
+			}
+
+			/* note editor layout (Pass 3 W2) — waiting context */
+			.crumb {
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+				margin: 0 0 18px;
+			}
+			.note-layout {
+				display: grid;
+				grid-template-columns: minmax(0, 1fr) 200px;
+				gap: 36px;
+				align-items: start;
+			}
+			.at-phone .note-layout {
+				display: flex;
+				flex-direction: column;
+				gap: 28px;
+			}
+			.measure-prose {
+				max-width: 65ch;
+			}
+			.editor-fb .pulse {
+				height: 16px;
+			}
+			.editor-fb .pulse.title {
+				height: 32px;
+				width: 66%;
+				margin-bottom: 4px;
+			}
+			.editor-fb .pulse:nth-child(2) {
+				width: 100%;
+			}
+			.editor-fb .pulse:nth-child(3) {
+				width: 92%;
+			}
+			.editor-fb .pulse:nth-child(4) {
+				width: 80%;
+			}
+			.editor-fb .pulse:nth-child(5) {
+				width: 84%;
+			}
+			.editor-fb {
+				display: flex;
+				flex-direction: column;
+				gap: 12px;
+			}
+			.links-fb {
+				display: flex;
+				flex-direction: column;
+				gap: 22px;
+			}
+			.links-fb .block {
+				display: flex;
+				flex-direction: column;
+				gap: 8px;
+			}
+			.links-fb .pulse.head {
+				height: 14px;
+				width: 96px;
+			}
+			.links-fb .pulse.row {
+				height: 40px;
+				width: 100%;
+			}
+			.links-fb .block:nth-child(1) .pulse.head {
+				width: 88px;
+			}
+			.links-fb .block:nth-child(2) .pulse.head {
+				width: 56px;
+			}
+
+			/* waiting treated as quiet copy (only if a package chooses it) */
+			.wait-copy {
+				margin: 0;
+				font-size: 14px;
+				font-style: italic;
+				color: var(--ink-4);
+			}
+
+			.call {
+				max-width: 76ch;
+				margin: 14px 0 0;
+				font-size: 14px;
+				line-height: 1.55;
+				color: var(--ink-3);
+			}
+			.call b {
+				font-weight: 500;
+				color: var(--ink-2);
+			}
+
+			.toc {
+				max-width: 76ch;
+				margin: 18px 0 0;
+				padding: 0;
+				list-style: none;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px 18px;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.06em;
+				text-transform: uppercase;
+			}
+			.toc a {
+				color: var(--ink-3);
+				text-decoration: none;
+				border-bottom: 1px solid var(--rule-2);
+			}
+			.toc a:hover {
+				color: var(--ink);
+			}
+		</style>
+	</head>
+	<body data-width="both">
+		<div class="lab">
+			<header class="lab-head">
+				<h1>Edges — what the app says when something is wrong</h1>
+				<p>
+					Pass 5 Phase 0 gate. The app has three different moments at the edge of a
+					surface, and only one of them has ever been designed:
+				</p>
+				<div class="spectrum">
+					<div>
+						<h3>Waiting</h3>
+						<p>
+							Data in flight. <b>PageSkeleton</b> is the system answer.
+							<code>EditorFallback</code> + <code>LinkSectionsFallback</code> are the
+							only two that were never asked.
+						</p>
+					</div>
+					<div>
+						<h3>Absent</h3>
+						<p>
+							Nothing here yet. <b>EmptyState</b> — left-aligned italic
+							<code>ink-3</code>, upright hint beneath. Settled in Pass 0.
+						</p>
+					</div>
+					<div>
+						<h3>Broken / missing</h3>
+						<p>
+							Something failed, or the address is wrong.
+							<b>error · authed 404 · root 404 · toast</b> — migrated, never designed.
+						</p>
+					</div>
+				</div>
+				<p>
+					The gate is the register for <b>broken/missing</b>, and how far it may sit from
+					<b>absent</b>. Waiting is drawn with every package because the brief requires
+					the two note fallbacks to be asked — they may keep their own shape; what they
+					must not keep is being unconsidered.
+				</p>
+				<ul class="toc">
+					<li><a href="#shipped">As shipped</a></li>
+					<li><a href="#waiting">Waiting system</a></li>
+					<li><a href="#a">A · Near</a></li>
+					<li><a href="#b">B · Page</a></li>
+					<li><a href="#c">C · Signal</a></li>
+				</ul>
+			</header>
+
+			<div class="controls">
+				<div class="grp" role="group" aria-label="Theme">
+					<button type="button" data-theme-btn="light" aria-pressed="true">Light</button>
+					<button type="button" data-theme-btn="dark" aria-pressed="false">Dark</button>
+				</div>
+				<div class="grp" role="group" aria-label="Width">
+					<button type="button" data-width-btn="both" aria-pressed="true">Both</button>
+					<button type="button" data-width-btn="desk" aria-pressed="false">Desk</button>
+					<button type="button" data-width-btn="phone" aria-pressed="false">Phone</button>
+				</div>
+				<span class="note">One axis · three packages · pick one</span>
+			</div>
+
+			<div class="axis">
+				<h2>The axis (broken vs absent)</h2>
+				<p>
+					How far is failure allowed to sit from EmptyState? Type weight, PageHeader
+					yes/no, toast elevation, and whether recovery is a primary button all move
+					with that distance. Waiting is not on this axis — it is a third state drawn
+					beside it.
+				</p>
+				<div class="bar">
+					<span><strong>A · Near</strong>same register</span>
+					<span><strong>B · Page</strong>failure owns the page</span>
+					<span><strong>C · Signal</strong>broken ≠ empty</span>
+				</div>
+			</div>
+
+			<!-- ════════════════════════════════════════════════════════════════
+			     AS SHIPPED
+			     ════════════════════════════════════════════════════════════════ -->
+			<section class="section shipped" id="shipped">
+				<header>
+					<h2>As shipped — they do not agree</h2>
+					<p class="thesis">
+						Not an option. Every edge surface as it lives in the tree today, so the
+						disagreement is visible before the packages. Desk and phone under the
+						width toggle.
+					</p>
+				</header>
+				<div data-mount="shipped"></div>
+			</section>
+
+			<!-- ════════════════════════════════════════════════════════════════
+			     WAITING SYSTEM — the third state, drawn once
+			     ════════════════════════════════════════════════════════════════ -->
+			<section class="section" id="waiting">
+				<header>
+					<h2>Waiting — the system answer and the exception</h2>
+					<p class="thesis">
+						Route-level loading goes through <code>PageSkeleton</code>: real
+						<code>PageHeader</code>, no measure (counts would lie), body as pulse
+						rows. The note editor declined PageHeader in Pass 3, so its Suspense
+						boundaries hand-rolled content-shaped pulses —
+						<code>EditorFallback</code> (title + prose bars on the measure) and
+						<code>LinkSectionsFallback</code> (section heads + rows in the rail).
+					</p>
+					<p class="cost">
+						<b>They are waiting, not failing.</b> The question is only whether that
+						shape is still right once failure and absence have a register — keep the
+						content-shaped pulse (record why), or converge on something the packages
+						below also own.
+					</p>
+				</header>
+				<div data-mount="waiting"></div>
+			</section>
+
+			<!-- ════════════════════════════════════════════════════════════════
+			     A · NEAR
+			     ════════════════════════════════════════════════════════════════ -->
+			<section class="section" id="a">
+				<header>
+					<h2><em>A</em> Near — same register as EmptyState</h2>
+					<p class="thesis">
+						A failure is not a special page. It is a moment the content is unavailable.
+						Borrow EmptyState's quiet italic lead and upright next step; do not promote
+						the moment to headline weight.
+					</p>
+					<p class="cost">
+						<b>Wins:</b> one voice for "nothing useful here." The italic is already the
+						app speaking. Recovery is an instruction, not a ceremony.
+						<br />
+						<b>Costs:</b> a crashed route looks like an empty list. On a full page that
+						can under-announce a real problem.
+						<br />
+						<b>Waiting under A:</b> keep content-shaped pulses — waiting is not empty
+						copy, and A does not invent a loading sentence. The fallbacks stay shape,
+						with a recorded reason.
+					</p>
+					<p class="spec">
+						<b>broken:</b> no PageHeader · 16 italic ink-3 · 14 roman ink-4 hint ·
+						quiet action · toast flat/italic · root: brand + same quiet block
+						<br />
+						<b>absent:</b> EmptyState unchanged
+						<br />
+						<b>waiting:</b> EditorFallback + LinkSectionsFallback keep pulse geometry
+					</p>
+				</header>
+				<div data-mount="a"></div>
+			</section>
+
+			<!-- ════════════════════════════════════════════════════════════════
+			     B · PAGE
+			     ════════════════════════════════════════════════════════════════ -->
+			<section class="section" id="b">
+				<header>
+					<h2><em>B</em> Page — failure owns the route <span class="rec">leans</span></h2>
+					<p class="thesis">
+						When the route failed, the page is the failure. Name it at PageHeader
+						weight — the fine locator still works when the body has nothing to show —
+						and keep EmptyState as the in-list quiet form. Distance is structural:
+						page vs slot, not louder type.
+					</p>
+					<p class="cost">
+						<b>Wins:</b> matches every other authed surface. Root 404 drops the legacy
+						silhouette. Toast is a compact card in the same operational English. Empty
+						stays lighter because it never takes the h1.
+						<br />
+						<b>Costs:</b> a missing note still gets a 36px title. Wry copy ("sideways")
+						dies — the header will not oversell a shrug.
+						<br />
+						<b>Waiting under B:</b> PageSkeleton remains the route-level answer.
+						Note fallbacks keep content-shaped pulses because the note has no
+						PageHeader to hold — same call Pass 3 made, now explicit.
+					</p>
+					<p class="spec">
+						<b>broken:</b> PageHeader 36/30 · roman body · primary recovery on error ·
+						mono nav on 404 · root: brand + h1, no eyebrow/hairline · toast: surface
+						card, medium title, error border · plain operational English
+						<br />
+						<b>absent:</b> EmptyState unchanged
+						<br />
+						<b>waiting:</b> PageSkeleton on routes · note pulses keep shape
+					</p>
+				</header>
+				<div data-mount="b"></div>
+			</section>
+
+			<!-- ════════════════════════════════════════════════════════════════
+			     C · SIGNAL
+			     ════════════════════════════════════════════════════════════════ -->
+			<section class="section" id="c">
+				<header>
+					<h2><em>C</em> Signal — broken is not empty</h2>
+					<p class="thesis">
+						Conflating broken with empty trains the reader to ignore both. Failure
+						keeps page weight and adds one deliberate signal the empty register never
+						gets: a thin error-ink rule on the recovery block for <b>fault</b> only.
+						Missing (404) stays at page weight without the colour. Absence stays the
+						quiet italic. Waiting never takes the signal.
+					</p>
+					<p class="cost">
+						<b>Wins:</b> three-way split is visible without a banner. Toast and route
+						error share recovery grammar. EmptyState is protected.
+						<br />
+						<b>Costs:</b> spends error colour on chrome the app almost never uses.
+						Risks "alert UI." Not-found is not a crash — the signal must not fire there.
+						<br />
+						<b>Waiting under C:</b> same as B. Pulse bars stay uncoloured; a loading
+						state with an error rule would be a lie.
+					</p>
+					<p class="spec">
+						<b>broken (fault):</b> PageHeader · 2px error rule on recovery · primary
+						ink button · toast error border
+						<br />
+						<b>broken (missing):</b> PageHeader · quiet nav · no error rule
+						<br />
+						<b>absent / waiting:</b> EmptyState and pulses untouched by error colour
+					</p>
+				</header>
+				<div data-mount="c"></div>
+			</section>
+		</div>
+
+		<script>
+			/* ── shell helpers ─────────────────────────────────────────────────── */
+			function deskHdr(active = "More") {
+				const tabs = ["Today", "Tasks", "Notes", "Links", "More"]
+					.map(
+						(t) =>
+							`<span class="tab${t === active ? " on" : ""}">${t}</span>`,
+					)
+					.join("");
+				return `<div class="tabstub" aria-hidden="true">
+					<div class="brand"><span class="brand-mark"></span>Dispatch</div>
+					<div class="tabs">${tabs}</div>
+				</div>`;
+			}
+			function dock(active = "More") {
+				const items = ["Today", "Tasks", "Notes", "More"]
+					.map((t) => `<li class="${t === active ? "on" : ""}">${t}</li>`)
+					.join("");
+				return `<div class="dockstub" aria-hidden="true"><ul>${items}</ul></div>`;
+			}
+			function frame({
+				width,
+				cap,
+				sub,
+				body,
+				shell = false,
+				unauth = false,
+				wide = false,
+				full = false,
+				cls = "",
+				activeTab = "More",
+			}) {
+				const size =
+					width === "phone"
+						? "at-phone"
+						: full
+							? "at-desk full"
+							: wide
+								? "at-desk wide"
+								: "at-desk";
+				const w = width === "phone" ? "393pt" : full ? "full desk" : "desk";
+				const head = shell && width === "desk" ? deskHdr(activeTab) : "";
+				const foot = shell && width === "phone" ? dock(activeTab) : "";
+				const surface = unauth
+					? `<div class="surface"><div class="unauth">${body}</div></div>`
+					: `<div class="surface">${head}${body}</div>${foot}`;
+				return `<div class="spec-frame ${size} ${cls}">
+					<div class="cap-bar"><span>${cap}</span><span class="w">${sub || w}</span></div>
+					${surface}
+				</div>`;
+			}
+
+			const emptyBody = `<p class="empty">No open tasks.
+				<span class="hint">Write one with the + at the top of the page, or capture a thought and let it file itself.</span>
+			</p>`;
+
+			function emptyRef(width) {
+				return frame({
+					width,
+					cap: "EmptyState",
+					sub: "absent · ref",
+					shell: true,
+					cls: "ref",
+					activeTab: "Tasks",
+					body: `<div class="ph"><h1>Tasks</h1></div>
+						<div class="list-stub">
+							<div class="row-stub"><span class="dot"></span><span style="opacity:.4">row edge the empty keeps</span></div>
+						</div>
+						${emptyBody}`,
+				});
+			}
+
+			function pageSkeletonBody(title) {
+				const h = title
+					? `<h1>${title}</h1>`
+					: `<h1><span class="title-ph" aria-hidden="true"></span></h1>`;
+				return `<div class="ph">${h}</div>
+					<div class="skel-rows" aria-hidden="true">
+						<div class="pulse"></div><div class="pulse"></div><div class="pulse"></div>
+						<div class="pulse"></div><div class="pulse"></div><div class="pulse"></div>
+					</div>`;
+			}
+
+			function noteWaitingBody() {
+				return `<nav class="crumb" aria-label="Breadcrumb">← Notes</nav>
+					<div class="note-layout">
+						<div class="measure-prose editor-fb" aria-hidden="true">
+							<div class="pulse title"></div>
+							<div class="pulse"></div>
+							<div class="pulse"></div>
+							<div class="pulse"></div>
+							<div class="pulse"></div>
+						</div>
+						<aside class="links-fb" aria-hidden="true">
+							<div class="block">
+								<div class="pulse head"></div>
+								<div class="pulse row"></div>
+								<div class="pulse row"></div>
+							</div>
+							<div class="block">
+								<div class="pulse head"></div>
+								<div class="pulse row"></div>
+							</div>
+						</aside>
+					</div>`;
+			}
+
+			function toastStage(toastHtml, ghostTitle = "Tasks") {
+				return `<div class="toast-stage">
+					<div class="ghost-page">
+						<div class="ph"><h1>${ghostTitle}</h1></div>
+						<div class="skel-rows">
+							<div class="pulse"></div><div class="pulse"></div><div class="pulse"></div>
+						</div>
+					</div>
+					<div class="toast-float">${toastHtml}</div>
+				</div>`;
+			}
+
+			/* ── as shipped ────────────────────────────────────────────────────── */
+			function shippedPieces(width) {
+				const err = frame({
+					width,
+					cap: "error.tsx",
+					sub: "as shipped",
+					shell: true,
+					body: `<div class="ph">
+						<h1>Something went sideways</h1>
+						<p class="sub">Something went wrong loading this page.</p>
+					</div>
+					<div class="acts"><span class="btn btn-ink">Try again</span></div>`,
+				});
+				const nf = frame({
+					width,
+					cap: "(authed)/not-found",
+					sub: "as shipped",
+					shell: true,
+					body: `<div class="ph">
+						<h1>Nothing at this address</h1>
+						<p class="sub">It was deleted, or the link points somewhere that never existed.</p>
+					</div>
+					<div class="acts">
+						<div class="nav-pills">
+							<span class="nav-pill">Today</span>
+							<span class="nav-pill">Tasks</span>
+							<span class="nav-pill">Notes</span>
+						</div>
+					</div>`,
+				});
+				const root = frame({
+					width,
+					cap: "app/not-found",
+					sub: "legacy silhouette",
+					unauth: true,
+					body: `<p class="legacy-eyebrow">Dispatch</p>
+						<h1 class="legacy-title">Nothing at this address</h1>
+						<div class="legacy-rule"></div>
+						<p style="margin:0;font-size:13px;color:var(--ink-3);line-height:1.5">That URL doesn't lead anywhere. It may have been mistyped, or it never existed.</p>
+						<div class="acts"><span class="nav-pill">Go to Dispatch</span></div>`,
+				});
+				const toast = frame({
+					width,
+					cap: "toaster",
+					sub: "boots dark first",
+					shell: true,
+					body: toastStage(
+						`<div class="toast err"><div class="t-title">Something went wrong. Try again.</div></div>`,
+					),
+				});
+				const empty = emptyRef(width);
+				const noteWait = frame({
+					width,
+					cap: "notes/[id] Suspense",
+					sub: "Editor + LinkSections fallbacks",
+					shell: true,
+					wide: width === "desk",
+					cls: "wait",
+					activeTab: "Notes",
+					body: noteWaitingBody(),
+				});
+				const skel = frame({
+					width,
+					cap: "PageSkeleton",
+					sub: "route loading · system",
+					shell: true,
+					cls: "wait",
+					body: pageSkeletonBody("Projects"),
+				});
+				return { err, nf, root, toast, empty, noteWait, skel };
+			}
+
+			function mountShipped() {
+				const el = document.querySelector('[data-mount="shipped"]');
+				const d = shippedPieces("desk");
+				const p = shippedPieces("phone");
+				el.innerHTML = `
+					<p class="band-label">Broken / missing <b>· error · authed 404 · root 404 · toast</b></p>
+					<div class="row">${d.err}${d.nf}${d.root}${d.toast}</div>
+					<div class="row">${p.err}${p.nf}${p.root}${p.toast}</div>
+					<p class="band-label">Absent <b>· EmptyState (designed)</b></p>
+					<div class="row">${d.empty}${p.empty}</div>
+					<p class="band-label">Waiting <b>· PageSkeleton (system) · note Suspense (never asked)</b></p>
+					<div class="row">${d.skel}${d.noteWait}</div>
+					<div class="row">${p.skel}${p.noteWait}</div>
+					<p class="call"><b>Three registers, one designed.</b> Empty has a voice. PageSkeleton has a rule. The four broken surfaces and the two note pulses were never given either.</p>`;
+			}
+
+			/* ── waiting system (standalone compare) ───────────────────────────── */
+			function mountWaiting() {
+				const el = document.querySelector('[data-mount="waiting"]');
+				const pieces = (width) => {
+					const skelNamed = frame({
+						width,
+						cap: "PageSkeleton · named route",
+						sub: "title known",
+						shell: true,
+						cls: "wait",
+						body: pageSkeletonBody("Inbox"),
+					});
+					const skelDetail = frame({
+						width,
+						cap: "PageSkeleton · detail",
+						sub: "title is data",
+						shell: true,
+						cls: "wait",
+						body: pageSkeletonBody(null),
+					});
+					const note = frame({
+						width,
+						cap: "EditorFallback + LinkSectionsFallback",
+						sub: "as shipped",
+						shell: true,
+						wide: width === "desk",
+						cls: "wait",
+						activeTab: "Notes",
+						body: noteWaitingBody(),
+					});
+					return skelNamed + skelDetail + note;
+				};
+				el.innerHTML = `
+					<div class="row">${pieces("desk")}</div>
+					<div class="row">${pieces("phone")}</div>
+					<p class="call"><b>Keep shape is a valid answer</b> — the note page has no PageHeader, so a PageSkeleton would invent a title the route deliberately refuses. What the packages below must do is say that out loud for the fallbacks, the same way Pass 3 said it for the editor chrome.</p>`;
+			}
+
+			/* ── shared package mount ──────────────────────────────────────────── */
+			function mountPackage(id, bodies) {
+				const el = document.querySelector(`[data-mount="${id}"]`);
+				const row = (width) => {
+					const b = bodies(width);
+					return (
+						b.err +
+						b.nf +
+						b.root +
+						b.toast +
+						b.empty +
+						b.noteWait +
+						(b.skel || "")
+					);
+				};
+				el.innerHTML = `
+					<p class="band-label">Broken / missing + absent + waiting</p>
+					<div class="row">${row("desk")}</div>
+					<div class="row">${row("phone")}</div>
+					<p class="call">${bodies.call}</p>`;
+			}
+
+			/* ── A ─────────────────────────────────────────────────────────────── */
+			function bodiesA(width) {
+				if (width === "call") return;
+				return {
+					err: frame({
+						width,
+						cap: "error",
+						shell: true,
+						body: `<p class="empty tight">This page couldn't load.
+							<span class="hint">Try again, or go somewhere else.</span>
+						</p>
+						<div class="acts tight"><span class="nav-pill">Try again</span></div>`,
+					}),
+					nf: frame({
+						width,
+						cap: "authed 404",
+						shell: true,
+						body: `<p class="empty tight">Nothing at this address.
+							<span class="hint">Deleted, or the link never pointed here.</span>
+						</p>
+						<div class="acts tight">
+							<div class="nav-pills">
+								<span class="nav-pill">Today</span>
+								<span class="nav-pill">Tasks</span>
+								<span class="nav-pill">Notes</span>
+							</div>
+						</div>`,
+					}),
+					root: frame({
+						width,
+						cap: "root 404",
+						unauth: true,
+						body: `<div class="intro"><span class="brand-mark"></span><span class="name">Dispatch</span></div>
+							<p class="empty tight">Nothing at this address.
+								<span class="hint">Mistyped, or it never existed.</span>
+							</p>
+							<div class="acts tight"><span class="nav-pill">Go to Dispatch</span></div>`,
+					}),
+					toast: frame({
+						width,
+						cap: "toast",
+						shell: true,
+						body: toastStage(
+							`<div class="toast quiet"><div class="t-title">Couldn't save. Try again.</div></div>`,
+						),
+					}),
+					empty: emptyRef(width),
+					noteWait: frame({
+						width,
+						cap: "note waiting",
+						sub: "keep shape",
+						shell: true,
+						wide: width === "desk",
+						cls: "wait",
+						activeTab: "Notes",
+						body: noteWaitingBody(),
+					}),
+					skel: frame({
+						width,
+						cap: "PageSkeleton",
+						sub: "unchanged",
+						shell: true,
+						cls: "wait",
+						body: pageSkeletonBody("Projects"),
+					}),
+				};
+			}
+			bodiesA.call =
+				'<b>Look at EmptyState next to error.</b> Under A they share the object — only the next step differs. Waiting stays geometry, not copy: a pulse is not an italic sentence.';
+
+			/* ── B ─────────────────────────────────────────────────────────────── */
+			function bodiesB(width) {
+				return {
+					err: frame({
+						width,
+						cap: "error",
+						shell: true,
+						body: `<div class="ph">
+							<h1>Couldn't load</h1>
+							<p class="sub">Something failed while opening this page.</p>
+						</div>
+						<div class="acts"><span class="btn btn-ink">Try again</span></div>`,
+					}),
+					nf: frame({
+						width,
+						cap: "authed 404",
+						shell: true,
+						body: `<div class="ph">
+							<h1>Nothing here</h1>
+							<p class="sub">Deleted, or the link never pointed here.</p>
+						</div>
+						<div class="acts">
+							<div class="nav-pills">
+								<span class="nav-pill">Today</span>
+								<span class="nav-pill">Tasks</span>
+								<span class="nav-pill">Notes</span>
+							</div>
+						</div>`,
+					}),
+					root: frame({
+						width,
+						cap: "root 404",
+						unauth: true,
+						body: `<div class="intro"><span class="brand-mark"></span><span class="name">Dispatch</span></div>
+							<div class="ph" style="margin-bottom:14px"><h1>Nothing here</h1></div>
+							<p style="margin:0;font-size:14px;line-height:1.55;color:var(--ink-2);max-width:36ch">That URL doesn't lead anywhere. Mistyped, or it never existed.</p>
+							<div class="acts"><span class="btn btn-ghost">Go to Dispatch</span></div>`,
+					}),
+					toast: frame({
+						width,
+						cap: "toast",
+						shell: true,
+						body: toastStage(
+							`<div class="toast err"><div class="t-title">Couldn't delete note.</div><div class="t-desc">Try again.</div></div>`,
+						),
+					}),
+					empty: emptyRef(width),
+					noteWait: frame({
+						width,
+						cap: "note waiting",
+						sub: "keep shape · no PageHeader",
+						shell: true,
+						wide: width === "desk",
+						cls: "wait",
+						activeTab: "Notes",
+						body: noteWaitingBody(),
+					}),
+					skel: frame({
+						width,
+						cap: "PageSkeleton",
+						sub: "route waiting",
+						shell: true,
+						cls: "wait",
+						body: pageSkeletonBody("Projects"),
+					}),
+				};
+			}
+			bodiesB.call =
+				'<b>Distance is structural.</b> Empty never takes the h1. Failure always does on a route. Waiting is a third register: PageSkeleton holds the header when the name is known; note pulses hold the content shape when the page has no header. No "sideways."';
+
+			/* ── C ─────────────────────────────────────────────────────────────── */
+			function bodiesC(width) {
+				return {
+					err: frame({
+						width,
+						cap: "error · fault",
+						shell: true,
+						body: `<div class="ph"><h1>Couldn't load</h1></div>
+						<div class="signal">
+							<p>Something failed while opening this page.</p>
+							<div class="acts tight"><span class="btn btn-ink">Try again</span></div>
+						</div>`,
+					}),
+					nf: frame({
+						width,
+						cap: "authed 404 · missing",
+						shell: true,
+						body: `<div class="ph">
+							<h1>Nothing here</h1>
+							<p class="sub">Deleted, or the link never pointed here.</p>
+						</div>
+						<div class="acts">
+							<div class="nav-pills">
+								<span class="nav-pill">Today</span>
+								<span class="nav-pill">Tasks</span>
+								<span class="nav-pill">Notes</span>
+							</div>
+						</div>`,
+					}),
+					root: frame({
+						width,
+						cap: "root 404 · missing",
+						unauth: true,
+						body: `<div class="intro"><span class="brand-mark"></span><span class="name">Dispatch</span></div>
+							<div class="ph" style="margin-bottom:14px"><h1>Nothing here</h1></div>
+							<p style="margin:0;font-size:14px;line-height:1.55;color:var(--ink-2);max-width:36ch">That URL doesn't lead anywhere. Mistyped, or it never existed.</p>
+							<div class="acts"><span class="btn btn-ghost">Go to Dispatch</span></div>`,
+					}),
+					toast: frame({
+						width,
+						cap: "toast · fault",
+						shell: true,
+						body: toastStage(
+							`<div class="toast err"><div class="t-title">Couldn't delete note.</div><div class="t-desc">Try again.</div></div>`,
+						),
+					}),
+					empty: emptyRef(width),
+					noteWait: frame({
+						width,
+						cap: "note waiting",
+						sub: "no error colour",
+						shell: true,
+						wide: width === "desk",
+						cls: "wait",
+						activeTab: "Notes",
+						body: noteWaitingBody(),
+					}),
+					skel: frame({
+						width,
+						cap: "PageSkeleton",
+						sub: "no error colour",
+						shell: true,
+						cls: "wait",
+						body: pageSkeletonBody("Projects"),
+					}),
+				};
+			}
+			bodiesC.call =
+				'<b>The error rule is only on fault.</b> 404 (missing) stays at page weight without colour. Waiting never takes the rule — a pulse with an error mark would claim a failure that has not happened. Empty stays the quiet italic.';
+
+			function mountPkg(id, fn) {
+				const el = document.querySelector(`[data-mount="${id}"]`);
+				const row = (width) => {
+					const b = fn(width);
+					return b.err + b.nf + b.root + b.toast + b.empty + b.skel + b.noteWait;
+				};
+				el.innerHTML = `
+					<p class="band-label">Broken / missing · absent · waiting</p>
+					<div class="row">${row("desk")}</div>
+					<div class="row">${row("phone")}</div>
+					<p class="call">${fn.call}</p>`;
+			}
+
+			mountShipped();
+			mountWaiting();
+			mountPkg("a", bodiesA);
+			mountPkg("b", bodiesB);
+			mountPkg("c", bodiesC);
+
+			/* controls */
+			const root = document.documentElement;
+			const bodyEl = document.body;
+			document.querySelectorAll("[data-theme-btn]").forEach((btn) => {
+				btn.addEventListener("click", () => {
+					const t = btn.getAttribute("data-theme-btn");
+					if (t === "dark") root.setAttribute("data-theme", "dark");
+					else root.removeAttribute("data-theme");
+					document.querySelectorAll("[data-theme-btn]").forEach((b) => {
+						b.setAttribute(
+							"aria-pressed",
+							b.getAttribute("data-theme-btn") === t ? "true" : "false",
+						);
+					});
+				});
+			});
+			document.querySelectorAll("[data-width-btn]").forEach((btn) => {
+				btn.addEventListener("click", () => {
+					const w = btn.getAttribute("data-width-btn");
+					bodyEl.setAttribute("data-width", w);
+					document.querySelectorAll("[data-width-btn]").forEach((b) => {
+						b.setAttribute(
+							"aria-pressed",
+							b.getAttribute("data-width-btn") === w ? "true" : "false",
+						);
+					});
+				});
+			});
+		</script>
+	</body>
+</html>

@@ -33,6 +33,7 @@ Serve them with `bun run` — or the `mocks` entry in `.claude/launch.json`
 | `writing-lab.html` | **Pass 3 Phase 0.** One gate, three packages: measure + type scale + leftover width. `/notes/[id]` and `/chat` under each. Theme, width, and measure-guide toggles. |
 | `config-lab.html` | **Pass 4 Phase 0.** Gate closed on **C4**: `/domains` Library page · `/settings` knobs + account · More is a menu (not a route). Theme and width toggle. |
 | `system-lab.html` | **Pass 4.5 Phase 0.** Two gates: measure vs facts on the page header (A/B), and section rhythm (doc band vs named three-tier vs PageBody). `/projects/[id]`, `/people/[id]`, `/domains`. Theme and width toggle. |
+| `edges-lab.html` | **Pass 5 Phase 0.** Edge register gate: waiting · absent · broken. Four failure surfaces + EmptyState + PageSkeleton + note Suspense fallbacks under A/B/C. Theme and width toggle. |
 
 ## The page header (Pass 0)
 

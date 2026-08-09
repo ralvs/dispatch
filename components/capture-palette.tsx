@@ -26,11 +26,8 @@ import { DOCK_ACTION, DOCK_ACTION_SLOT_ID, DOCK_HEIGHT } from "@/lib/ui/dock";
  * captureMachine; this component dispatches and drains effects.
  *
  * Pass 4 brought the overlay onto Dialog / Button / Textarea. The compose
- * field is prose being written, so measure-prose applies (Pass 3).
- *
- * Pass 5 note: the receipt heading and compose field still use `.type-title`
- * (last call sites outside list rows). Fate of the class is Pass 5's call —
- * leave them rather than invent a local answer.
+ * field is prose being written, so measure-prose applies (Pass 3). Pass 5
+ * retired `.type-title`; compose and receipt use font-medium tracking-tight.
  *
  * Iron rule #4: capture path never throws into the UI; failures keep the draft
  * and toast. The verb vocabulary and palette bus are behaviour — do not change.
@@ -193,8 +190,7 @@ export function CapturePalette() {
 								<p
 									ref={receiptHeadingRef}
 									tabIndex={-1}
-									// Pass 5: last `.type-title` sites — leave for that pass.
-									className={`type-title text-lg ${
+									className={`text-lg font-medium tracking-tight ${
 										state.receipt.tone === "needs_review" ? "text-accent" : "text-ink"
 									}`}
 								>
@@ -228,7 +224,6 @@ export function CapturePalette() {
 						<DialogBody>
 							{/* Compose is a sentence being written — prose measure (Pass 3). */}
 							<div className="measure-prose">
-								{/* Pass 5: `.type-title` on compose — leave for that pass. */}
 								<Textarea
 									ref={textareaRef}
 									value={state.text}
@@ -245,7 +240,7 @@ export function CapturePalette() {
 									aria-label="Capture text"
 									size="lg"
 									data-autofocus
-									className="type-title text-lg"
+									className="text-lg font-medium tracking-tight"
 								/>
 							</div>
 							<div role="status" aria-live="polite">

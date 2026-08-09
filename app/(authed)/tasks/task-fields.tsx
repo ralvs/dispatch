@@ -118,7 +118,9 @@ export function TaskTitleField({
 			placeholder={placeholder}
 			aria-label="Task title"
 			data-autofocus={autoFocus || undefined}
-			className="field-shell h-auto w-full py-1.5 type-title text-base text-ink placeholder:font-normal placeholder:text-ink-4"
+			// Class swap only (Pass 5): .type-title → explicit weight/tracking.
+			// Behaviour and field geometry unchanged.
+			className="field-shell h-auto w-full py-1.5 text-base font-medium tracking-tight text-ink placeholder:font-normal placeholder:text-ink-4"
 		/>
 	);
 }

@@ -10,8 +10,12 @@ export default function manifest(): MetadataRoute.Manifest {
 		scope: "/",
 		display: "standalone",
 		orientation: "portrait",
-		background_color: "#0a0a0a",
-		theme_color: "#0a0a0a",
+		// Manifest cannot media-query the way the viewport themeColor export
+		// can. Light is the app default (THEME_BOOT, Pass 0), so the install
+		// splash and OS task-switcher card use the light ground — not the
+		// near-black Vercel/Geist leftover, and not the dark warm stone.
+		background_color: "#fafafa",
+		theme_color: "#fafafa",
 		lang: "en",
 		shortcuts: [{ name: "Capture", short_name: "Capture", url: "/today?capture=1" }],
 		icons: [

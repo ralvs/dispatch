@@ -376,8 +376,9 @@ option A1). Every list-row name is body size at 400 — project, person, note,
 routine, quote, link, notification, task. Hierarchy on a list comes from
 colour, position, and the mono meta, not from weight. The system's only weight
 step is reserved for the things that earn it: **P1 on a task** (the one step
-to 500), a `SectionHead`, a page title. `.type-title` (500 at −0.02em) is no
-longer the row-name class; `rowTitle()` on `ListRow` is.
+to 500), a `SectionHead`, a page title. `rowTitle()` on `ListRow` is the
+row-name class. `.type-title` was retired in Pass 5 — below-ramp titles inline
+`font-medium tracking-tight` rather than a class that had three meanings.
 
 **The Named vs Labelled Rule.** If a person wrote it, it is sans. If the system
 labelled it, it is uppercase mono. A row's title is sans; the time beside it is
@@ -419,7 +420,7 @@ comment that once claimed "serif headings" is gone with the serif.
 **Speaker registers in chat.** A person wrote the user message → sans body at
 400, right-aligned, `ink-2`. The assistant's answer is running prose → sans
 body at 400, left-aligned, full `ink`, on the measure. Distinction is
-alignment + ink step, never mono-for-person / `type-title`-for-machine.
+alignment + ink step, never mono-for-person / weight-for-machine.
 
 ## Layout
 
@@ -546,13 +547,32 @@ beneath where one is earned (ADR-0042; Pass 4.5 Gate A for facts).
 - **No divider, no eyebrow, no second title.** The 64px the shell puts above the
   header is the separation.
 
-Two deliberate exceptions decline it:
+Three deliberate exceptions decline it:
 
 - **Today:** its `h1` is a sentence about the day and its dateline is the day
   nav.
 - **The note editor** (`/notes/[id]`): the note's name is editable content and
   cannot live in a static header. A mono breadcrumb (`← Notes`) is the way
   back; the title input is the page's name.
+- **`/sign-in` and the root 404:** outside the app shell. Brand mark + wordmark
+  introduce the product; a Title-step h1 names the page. No mono eyebrow, no
+  hairline (Pass 5 / B).
+
+### Failure and absence
+
+Three edge registers, settled in Pass 5 (ADR-0048; gate `edges-lab.html` B):
+
+- **Broken (fault):** `PageHeader` + operational English + primary recovery.
+  Raw errors stay in the console, never in the UI.
+- **Broken (missing):** `PageHeader` + quiet nav. No error colour — missing is
+  not a crash.
+- **Absent:** `EmptyState` — left-aligned italic, upright hint. A slot inside
+  a page, never a page itself.
+- **Waiting:** `PageSkeleton` on routes; content-shaped pulses on the note
+  editor (no header to hold). Waiting is geometry, not copy and not fault.
+
+The toaster is a surface card (medium title, error border) and defaults to
+light, matching `THEME_BOOT`.
 
 ### List rows
 

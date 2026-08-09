@@ -172,8 +172,9 @@
 	 * era's display face is gone and `--font-serif` went with it, so
 	 * Tailwind's `font-serif` utility now resolves to its own ui-serif
 	 * default. That is deliberate: an accidental `font-serif` should look
-	 * wrong immediately rather than quietly aliasing back to Geist. What the
-	 * class actually did — 500 and tight tracking — is `.type-title` below. */
+	 * wrong immediately rather than quietly aliasing back to Geist. Display
+	 * weight and tracking live on the ramp steps (text-t30+) or are inlined
+	 * as font-medium tracking-tight (Pass 5 retired `.type-title`). */
 	--font-sans: var(--font-geist), Arial, ui-sans-serif, sans-serif;
 	--font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
@@ -259,21 +260,13 @@ html[data-standalone] .app-shell {
 }
 
 /*
- * The name a person wrote: a task's title, a note's, a project's, a person's.
- * Geist 500 with the ramp's tight negative tracking — 500 is the ceiling, the
- * system has two weights and this is the heavier one.
- *
- * It was called `.font-serif` through three visual identities, which stopped
- * being true at the first one: there has been no serif in this app since the
- * linen era, and a class named for a family it does not set hid every drift
- * underneath it. The ramp's own steps (text-t30 and up) carry weight and
- * tracking themselves — this is for the sizes below them, where a title still
- * has to separate itself from the meta beside it.
+ * `.type-title` was retired in Pass 5. It set weight 500 and tracking −0.02em
+ * for "a name a person wrote" below the display ramp — but call sites used it
+ * for three different reasons (form field, popover body, h1), the same drift
+ * that made `.font-serif` look plausible across three identities. Remaining
+ * sites inline `font-medium tracking-tight`. Ramp steps (text-t30 and up)
+ * already carry weight and tracking themselves.
  */
-.type-title {
-	font-weight: 500;
-	letter-spacing: -0.02em;
-}
 .display-tight {
 	letter-spacing: -0.025em;
 }
