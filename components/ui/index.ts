@@ -1,5 +1,8 @@
 export { Badge, badge, MENTION_CHIP_CLASS, NOTE_CHIP_CLASS } from "./badge";
-export { Button, button } from "./button";
+export { Button } from "./button";
+// From the recipe module, not ./button — every export of a "use client" file is
+// a client reference, re-exports included, and server components call button().
+export { type ButtonVariants, button } from "./button-variants";
 export { Card, card } from "./card";
 export { Checkbox, checkbox } from "./checkbox";
 export { Dialog, DialogBody, DialogFooter } from "./dialog";

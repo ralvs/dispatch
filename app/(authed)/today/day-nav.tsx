@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { button } from "@/components/ui/button";
+import { button } from "@/components/ui/button-variants";
 import { Icon } from "@/components/ui/icon";
 import { formatDay, shiftDay } from "@/lib/dates";
 

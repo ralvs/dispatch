@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "@/components/brand-mark";
 import { isActive, TABS } from "@/components/nav-links";
-import { button } from "@/components/ui/button";
+import { button } from "@/components/ui/button-variants";
 import { Icon } from "@/components/ui/icon";
 import { openCapturePalette } from "@/lib/capture/palette-bus";
 import { toggleMoreMenu } from "@/lib/more-menu-bus";
