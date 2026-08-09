@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { tv } from "./tv";
 
 /**
  * Shared list-row geometry — nothing else.
@@ -49,6 +50,41 @@ export function ListRow({
  * Body-size row name at 400. The system's only weight step is reserved for the
  * things that earn it — P1 on a task, a SectionHead, a page title — not every
  * name on every list (Gate A / A1, Pass 2; DESIGN.md Two Weights Rule).
+ *
+ * A variant function rather than a class string, for two reasons this pass
+ * found the hard way. Fusing type with layout meant the three rows that need a
+ * different box — the task row's hit-area link, Today's flex child, the
+ * notification's multi-line body — re-typed `leading-[1.35] tracking-[-0.01em]`
+ * by hand, so the ramp lived in four strings. And appending a colour to a class
+ * string that already carries `text-ink` only wins by stylesheet order, which
+ * is not a thing a call site can reason about: `tv` merges through
+ * tailwind-merge, so `tone` resolves deterministically instead.
+ *
+ * `tone` and `emphasis` together carry the done/P1 rule that task-row.tsx and
+ * day-row.tsx each spelled out separately.
  */
-export const ROW_TITLE_CLASS =
-	"block min-w-0 truncate text-base font-normal leading-[1.35] tracking-[-0.01em] text-ink";
+export const rowTitle = tv({
+	base: "text-base font-normal leading-[1.35] tracking-[-0.01em]",
+	variants: {
+		tone: {
+			default: "text-ink",
+			/** Read, seen, secondary — a name that is still a name. */
+			muted: "text-ink-2",
+			done: "text-ink-4 line-through",
+		},
+		/** The one weight step. Spend it only where DESIGN.md says it means something. */
+		emphasis: {
+			normal: "",
+			strong: "font-medium",
+		},
+		layout: {
+			/** The default row name: its own block, truncating at the row's edge. */
+			block: "block min-w-0 truncate",
+			/** A flex child taking the remaining width of its row. */
+			fill: "min-w-0 flex-1 truncate",
+			/** Caller owns the box — a multi-line body, or a link with a hit area. */
+			bare: "",
+		},
+	},
+	defaultVariants: { tone: "default", emphasis: "normal", layout: "block" },
+});

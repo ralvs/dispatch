@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ColorDot } from "@/components/color-dot";
-import { Badge, ListRow, ROW_TITLE_CLASS } from "@/components/ui";
+import { Badge, ListRow, rowTitle } from "@/components/ui";
 import type { ProjectRow } from "@/lib/services/projects";
 import { projectTypeLabel } from "./constants";
 
@@ -23,7 +23,7 @@ export function ProjectRowItem({ project }: { project: ProjectRow }) {
 			}
 		>
 			<Link href={`/projects/${project.id}`} className="block min-w-0 hover:text-accent-ink">
-				<span className={ROW_TITLE_CLASS}>{project.name}</span>
+				<span className={rowTitle()}>{project.name}</span>
 				<p className="mt-0.5 font-mono text-meta text-ink-4">{meta}</p>
 			</Link>
 		</ListRow>

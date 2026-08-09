@@ -3,12 +3,12 @@
 import { Calendar, FilePlus, FileText, Star } from "lucide-react";
 import Link from "next/link";
 import { useTransition } from "react";
-import { Checkbox } from "@/components/ui";
+import { ColorDot } from "@/components/color-dot";
+import { Checkbox, rowTitle } from "@/components/ui";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
 import { formatDueLabel, formatLateLabel } from "@/lib/dates";
-import { colorSlugVar, isColorSlug } from "@/lib/schemas/color";
 import type { TaskRow } from "@/lib/services/tasks";
 import type { DayScheduleItem } from "@/lib/services/today";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
@@ -45,7 +45,13 @@ function lateLabel(task: TaskRow, todayIso: string): string | null {
 	return formatLateLabel(task.due_date, todayIso);
 }
 
-function DomainDot({ color }: { color: string }) {
+/**
+ * A calendar's colour, which is not a palette slug — `eventColor` derives it
+ * from the calendar's name, so it cannot go through `ColorDot`. That is the one
+ * genuine second case; the domain dot beside it is `ColorDot` like everywhere
+ * else.
+ */
+function EventDot({ color }: { color: string }) {
 	return (
 		<span
 			aria-hidden="true"
@@ -174,15 +180,20 @@ export function TaskDayRow({
 				onChange={handlers.onToggleDone}
 				className="shrink-0"
 			/>
-			{isColorSlug(slug) && <DomainDot color={colorSlugVar(slug)} />}
+			{/* No `hold`: Today's lists are short enough that a dot which comes and
+			    goes costs nothing. /tasks runs to twenty rows and holds the slot. */}
+			<ColorDot color={slug} />
 			{/* Read-mostly surface: the title opens the task on Tasks rather than
 			    an editor here, which is what the incumbent row did too. */}
 			<Link
 				href={`/tasks?edit=${task.id}`}
 				aria-label={`Open task "${task.title}" for editing`}
-				className={`min-w-0 flex-1 truncate text-base leading-[1.35] tracking-[-0.01em] hover:text-accent-ink ${
-					done ? "text-ink-4 line-through" : "text-ink"
-				} ${task.priority === 1 && !done ? "font-medium" : ""}`}
+				className={rowTitle({
+					tone: done ? "done" : "default",
+					emphasis: task.priority === 1 && !done ? "strong" : "normal",
+					layout: "fill",
+					className: "hover:text-accent-ink",
+				})}
 			>
 				{task.title}
 			</Link>
@@ -234,10 +245,8 @@ export function EventDayRow({
 			<span className="grid size-[19px] shrink-0 place-items-center text-ink-3">
 				<Icon icon={Calendar} size="md" />
 			</span>
-			<DomainDot color={eventColor(event.calendar_name)} />
-			<span className="min-w-0 flex-1 truncate text-base leading-[1.35] tracking-[-0.01em] text-ink">
-				{event.title}
-			</span>
+			<EventDot color={eventColor(event.calendar_name)} />
+			<span className={rowTitle({ layout: "fill" })}>{event.title}</span>
 			<MeetingNoteGlyph eventId={event.id} noteId={noteId} />
 		</li>
 	);

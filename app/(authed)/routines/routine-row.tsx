@@ -1,7 +1,7 @@
 "use client";
 
 import { useOptimistic, useTransition } from "react";
-import { Button, ListRow, ROW_TITLE_CLASS } from "@/components/ui";
+import { Button, ListRow, rowTitle } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { RoutineStats } from "@/lib/routine-stats";
 import { TIME_OF_DAY_LABELS } from "@/lib/schemas/routine";
@@ -79,7 +79,7 @@ export function RoutineRowItem({
 				</div>
 			}
 		>
-			<p className={ROW_TITLE_CLASS}>{routine.name}</p>
+			<p className={rowTitle()}>{routine.name}</p>
 			<p className="mt-0.5 font-mono text-meta text-ink-4">
 				{TIME_OF_DAY_LABELS[routine.time_of_day]} · streak {stats.current_streak} · best{" "}
 				{stats.longest_streak} · {stats.completions_7d}/7d

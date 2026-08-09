@@ -3,7 +3,7 @@
 import { FileText } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ListRow, ROW_TITLE_CLASS } from "@/components/ui";
+import { ListRow, rowTitle } from "@/components/ui";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -34,7 +34,7 @@ export function InboxRow({
 	return (
 		<ListRow align="start">
 			<p className="flex min-w-0 items-center gap-1.5">
-				<span className={ROW_TITLE_CLASS}>{task.title}</span>
+				<span className={rowTitle()}>{task.title}</span>
 				{noteId && (
 					<Link
 						href={`/notes/${noteId}`}

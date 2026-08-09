@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { setLinkStatusAction } from "@/app/(authed)/links/actions";
-import { ListRow, ROW_TITLE_CLASS } from "@/components/ui";
+import { ListRow, rowTitle } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import type { LinkRow } from "@/lib/services/links";
@@ -41,7 +41,7 @@ export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
 				rel="noreferrer noopener"
 				className={`block min-w-0 hover:text-accent-ink ${unread ? "text-ink" : "text-ink-2"}`}
 			>
-				<span className={`${ROW_TITLE_CLASS} ${unread ? "" : "text-ink-2"}`}>
+				<span className={rowTitle({ tone: unread ? "default" : "muted" })}>
 					{displayTitle(link)}
 					<span aria-hidden className="ml-1.5 font-mono text-meta text-ink-4">
 						↗

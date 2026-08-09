@@ -4,7 +4,7 @@ import { Star } from "lucide-react";
 import Link from "next/link";
 import { useOptimistic, useTransition } from "react";
 import { setPinAction } from "@/app/(authed)/notes/actions";
-import { EmptyState, ListRow, ROW_TITLE_CLASS, SectionHead } from "@/components/ui";
+import { EmptyState, ListRow, rowTitle, SectionHead } from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
@@ -36,7 +36,7 @@ function NoteLinkRow({
 			}
 		>
 			<Link href={`/notes/${note.id}`} className="block min-w-0 hover:text-accent-ink">
-				<span className={ROW_TITLE_CLASS}>{displayTitle(note)}</span>
+				<span className={rowTitle()}>{displayTitle(note)}</span>
 				<span className="mt-0.5 block font-mono text-meta text-ink-4">
 					{formatInstant(note.created_at, tz)}
 					{note.needs_review ? " · needs review" : ""}

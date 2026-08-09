@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ColorDot } from "@/components/color-dot";
-import { Badge, ListRow, ROW_TITLE_CLASS } from "@/components/ui";
+import { Badge, ListRow, rowTitle } from "@/components/ui";
 import type { PersonRow } from "@/lib/services/people";
 import { relationshipLabel } from "./constants";
 
@@ -20,7 +20,7 @@ export function PersonRowItem({ person }: { person: PersonRow }) {
 			}
 		>
 			<Link href={`/people/${person.id}`} className="block min-w-0 hover:text-accent-ink">
-				<span className={ROW_TITLE_CLASS}>{person.name}</span>
+				<span className={rowTitle()}>{person.name}</span>
 				{person.company && (
 					<p className="mt-0.5 font-mono text-meta text-ink-4">{person.company}</p>
 				)}

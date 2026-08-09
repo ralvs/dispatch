@@ -6,7 +6,7 @@ export { Dialog, DialogBody, DialogFooter } from "./dialog";
 export { EmptyState } from "./empty-state";
 export { Field, fieldControl, Input, Select, Textarea } from "./field";
 export { ICON_SIZES, Icon, type IconSize } from "./icon";
-export { ListRow, ROW_TITLE_CLASS } from "./list-row";
+export { ListRow, rowTitle } from "./list-row";
 export { type Measure, PageHeader } from "./page-header";
 export { PageSkeleton } from "./page-skeleton";
 export { Progress } from "./progress";

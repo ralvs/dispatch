@@ -10,7 +10,7 @@ import {
 	Input,
 	ListRow,
 	PageHeader,
-	ROW_TITLE_CLASS,
+	rowTitle,
 	SectionHead,
 	Select,
 	Textarea,
@@ -336,9 +336,7 @@ function MilestonesSection({
 						}
 					>
 						<div className="flex min-w-0 items-baseline gap-2">
-							<span
-								className={`${ROW_TITLE_CLASS} ${m.status === "done" ? "text-ink-4 line-through" : ""}`}
-							>
+							<span className={rowTitle({ tone: m.status === "done" ? "done" : "default" })}>
 								{m.title}
 							</span>
 							<span className="shrink-0 font-mono text-meta text-ink-4">w{m.weight}</span>

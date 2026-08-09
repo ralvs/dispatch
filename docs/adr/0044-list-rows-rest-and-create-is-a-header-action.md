@@ -24,7 +24,7 @@ colour, position, and the mono meta — not from weight. The system's only
 weight step is reserved for what earns it: **P1 on a task**, a `SectionHead`,
 a page title.
 
-`.type-title` (500) is no longer the row-name class. `ROW_TITLE_CLASS` on
+`.type-title` (500) is no longer the row-name class. `rowTitle()` on
 `ListRow` is. `/tasks` is not an exception; it was the first application of a
 rule that generalises.
 

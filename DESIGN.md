@@ -374,7 +374,7 @@ routine, quote, link, notification, task. Hierarchy on a list comes from
 colour, position, and the mono meta, not from weight. The system's only weight
 step is reserved for the things that earn it: **P1 on a task** (the one step
 to 500), a `SectionHead`, a page title. `.type-title` (500 at −0.02em) is no
-longer the row-name class; `ROW_TITLE_CLASS` on `ListRow` is.
+longer the row-name class; `rowTitle()` on `ListRow` is.
 
 **The Named vs Labelled Rule.** If a person wrote it, it is sans. If the system
 labelled it, it is uppercase mono. A row's title is sans; the time beside it is
@@ -494,8 +494,8 @@ earned (ADR-0042).
 - **Action:** one standing control, centred against the title's baseline.
   On an object list this is where create lives — labelled `+ New …`, the notes
   pattern (Pass 2 Gate B / B1). `/tasks` is the exception: a bare `+` on the
-  title's shoulder (`titleAction`), because a second labelled create next to
-  Capture was the confusion ADR-0043 removed.
+  title's shoulder (`NewTaskButton` in the same `action` slot), because a second
+  labelled create next to Capture was the confusion ADR-0043 removed.
 - **Subtitle:** only where it carries an instruction. Not a tagline.
 - **No divider, no eyebrow, no second title.** The 64px the shell puts above the
   header is the separation.
@@ -512,7 +512,9 @@ leading / body / trailing columns. Rows keep their own composition — a
 - **Domain leads left** and holds its slot when absent (Invisible Slot Rule).
   One colour meaning per row: a project's own colour is not a second dot on
   the list (it may appear on the detail header).
-- **Name at 400** via `ROW_TITLE_CLASS`. See Two Weights above.
+- **Name at 400** via `rowTitle()`. Its `tone` / `emphasis` variants carry the
+  done and P1 cases, so a row never appends a colour by hand. See Two Weights
+  above.
 - **Group labels** are `SectionHead` (16px / 500), not the mono eyebrow.
 
 ### Creating an object

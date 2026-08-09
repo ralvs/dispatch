@@ -9,7 +9,7 @@ import {
 	Input,
 	ListRow,
 	PageHeader,
-	ROW_TITLE_CLASS,
+	rowTitle,
 	SectionHead,
 	Select,
 	Textarea,
@@ -202,7 +202,7 @@ function MentionedInSection({
 					<ListRow key={`task-${task.id}`}>
 						<Link
 							href={`/tasks?edit=${task.id}`}
-							className={`${ROW_TITLE_CLASS} hover:text-accent-ink`}
+							className={rowTitle({ className: "hover:text-accent-ink" })}
 						>
 							{task.title}
 							{task.status === "done" ? " · done" : ""}
@@ -211,7 +211,10 @@ function MentionedInSection({
 				))}
 				{notes.map((note) => (
 					<ListRow key={`note-${note.id}`}>
-						<Link href={`/notes/${note.id}`} className={`${ROW_TITLE_CLASS} hover:text-accent-ink`}>
+						<Link
+							href={`/notes/${note.id}`}
+							className={rowTitle({ className: "hover:text-accent-ink" })}
+						>
 							{displayTitle(note)}
 						</Link>
 					</ListRow>
@@ -262,7 +265,7 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 							</Button>
 						}
 					>
-						<p className={ROW_TITLE_CLASS}>{f.fact_value}</p>
+						<p className={rowTitle()}>{f.fact_value}</p>
 						<p className="mt-0.5 font-mono text-meta text-ink-4">
 							{factTypeLabel(f.fact_type)}
 							{f.date_relevant ? ` · ${f.date_relevant}` : ""}
@@ -376,7 +379,7 @@ function InteractionsSection({
 							</Button>
 						}
 					>
-						<p className={ROW_TITLE_CLASS}>{i.notes ?? interactionTypeLabel(i.interaction_type)}</p>
+						<p className={rowTitle()}>{i.notes ?? interactionTypeLabel(i.interaction_type)}</p>
 						<p className="mt-0.5 font-mono text-meta text-ink-4">
 							{interactionTypeLabel(i.interaction_type)} · {formatInstant(i.occurred_at, tz)}
 						</p>

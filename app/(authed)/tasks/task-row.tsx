@@ -3,14 +3,14 @@
 import { FileText, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { ColorDot } from "@/components/color-dot";
 import { MentionChip } from "@/components/mention-chip";
-import { Checkbox } from "@/components/ui";
+import { Checkbox, rowTitle } from "@/components/ui";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
 import { formatDay, formatDueLabel, formatInstant, formatLateLabel } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_GLYPH, recurrenceLabel } from "@/lib/recurrence";
-import { colorSlugVar, isColorSlug } from "@/lib/schemas/color";
 import type { TaskRow } from "@/lib/services/tasks";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
 import { TaskDialog } from "./task-dialog";
@@ -25,31 +25,6 @@ export type TaskRowHandlers = {
 	onToggleTop3: () => void;
 	onDelete?: () => void;
 };
-
-/**
- * The domain's colour, in the same left column Today puts it in.
- *
- * It holds its slot when a task is unfiled rather than collapsing, because this
- * list runs to twenty rows and a dot that comes and goes gives every unfiled
- * title a different left edge (DESIGN.md, "The Invisible Slot Rule"). Today's
- * lists are short enough not to need that; this one is not.
- *
- * The colour resolves from the stored slug through `var(--domain-<slug>)` and
- * never from a stored hex — a hex cannot theme-switch (DESIGN.md, "The Stored
- * Slug Rule"). The name still rides the meta line beneath, which is what pairs
- * the colour with a word: nine domains are not decodable by hue alone.
- */
-function DomainDot({ slug }: { slug: string | null | undefined }) {
-	return (
-		<span
-			aria-hidden="true"
-			className={`inline-block size-[9px] shrink-0 rounded-full ${
-				isColorSlug(slug) ? "" : "invisible"
-			}`}
-			style={isColorSlug(slug) ? { background: colorSlugVar(slug) } : undefined}
-		/>
-	);
-}
 
 /**
  * The Tasks page's row, and deliberately not Today's.
@@ -155,11 +130,16 @@ export function TaskRowItem({
 	// Body size at 400 is what DESIGN.md gives every row title; P1 takes the one
 	// step up, which is the same step Today's row takes and the only reason the
 	// step still carries information.
-	const titleClass = `relative block max-w-full text-left text-base leading-[1.35] tracking-[-0.01em] after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] active:opacity-70 ${
-		done ? "text-ink-4 line-through" : "text-ink"
-	} ${task.priority === 1 && !done ? "font-medium" : ""} ${
-		canEdit || !manageable ? "hover:text-accent-ink" : ""
-	}`;
+	const titleClass = rowTitle({
+		tone: done ? "done" : "default",
+		emphasis: task.priority === 1 && !done ? "strong" : "normal",
+		// The `after:` pseudo-element is this row's 44px touch target, which needs
+		// the link to be its own positioned box rather than a truncating block.
+		layout: "bare",
+		className: `relative block max-w-full text-left after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] active:opacity-70 ${
+			canEdit || !manageable ? "hover:text-accent-ink" : ""
+		}`,
+	});
 
 	return (
 		<li
@@ -200,7 +180,13 @@ export function TaskRowItem({
 				onChange={handlers.onToggleDone}
 				className="shrink-0"
 			/>
-			<DomainDot slug={task.domain?.color} />
+			{/* `hold` because this list runs to twenty rows: a dot that comes and
+			    goes gives every unfiled title a different left edge (DESIGN.md,
+			    "The Invisible Slot Rule"). Today's lists are short enough not to
+			    need it. The name still rides the meta line beneath, which is what
+			    pairs the colour with a word — nine domains are not decodable by
+			    hue alone. */}
+			<ColorDot color={task.domain?.color} hold />
 			<div className="min-w-0 flex-1">
 				<p className="flex min-w-0 items-baseline gap-1.5">
 					{/* The hit-target expansion lives on the control itself (button/link),

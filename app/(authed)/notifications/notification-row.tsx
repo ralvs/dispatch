@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, ListRow } from "@/components/ui";
+import { Button, ListRow, rowTitle } from "@/components/ui";
 import { formatInstant } from "@/lib/dates";
 import type { NotificationRow as Row } from "@/lib/services/notifications";
 
@@ -32,7 +32,12 @@ export function NotificationRow({
 				{unread && <span className="sr-only"> (unread)</span>}
 			</p>
 			<p
-				className={`mt-1 text-base font-normal leading-[1.35] tracking-[-0.01em] ${unread ? "text-ink" : "text-ink-2"}`}
+				className={rowTitle({
+					tone: unread ? "default" : "muted",
+					// The body wraps to as many lines as it needs; no truncation.
+					layout: "bare",
+					className: "mt-1",
+				})}
 			>
 				{notification.title}
 			</p>
