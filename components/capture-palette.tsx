@@ -1,9 +1,10 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { captureText } from "@/app/(authed)/capture/actions";
+import { Button, Dialog, DialogBody, DialogFooter, Textarea } from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
 import {
 	type CaptureEffect,
@@ -20,12 +21,21 @@ import { readCaptureIntent } from "@/lib/pwa/capture-intent";
 import type { CapturedRecord } from "@/lib/services/capture";
 import { DOCK_ACTION, DOCK_ACTION_SLOT_ID, DOCK_HEIGHT } from "@/lib/ui/dock";
 
-const FOCUSABLE = 'a[href],button:not([disabled]),textarea,input,[tabindex]:not([tabindex="-1"])';
-
+/**
+ * Capture palette — shell chrome only. Status/text/submit sequence lives in
+ * captureMachine; this component dispatches and drains effects.
+ *
+ * Pass 4 brought the overlay onto Dialog / Button / Textarea. The compose
+ * field is prose being written, so measure-prose applies (Pass 3).
+ *
+ * Pass 5 note: the receipt heading and compose field still use `.type-title`
+ * (last call sites outside list rows). Fate of the class is Pass 5's call —
+ * leave them rather than invent a local answer.
+ *
+ * Iron rule #4: capture path never throws into the UI; failures keep the draft
+ * and toast. The verb vocabulary and palette bus are behaviour — do not change.
+ */
 export function CapturePalette() {
-	// All status/text/submit-sequence logic lives in captureMachine
-	// (lib/capture/machine.ts); this component is a thin shell that dispatches
-	// events into it and drains the effects it emits.
 	const [state, setState] = useState(initialCaptureState);
 	const stateRef = useRef(state);
 	stateRef.current = state;
@@ -35,24 +45,14 @@ export function CapturePalette() {
 	});
 	const [, startTransition] = useTransition();
 
-	const overlayRef = useRef<HTMLDivElement>(null);
-	const dialogRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const receiptHeadingRef = useRef<HTMLParagraphElement>(null);
-	const restoreFocusRef = useRef<HTMLElement | null>(null);
 
-	const titleId = useId();
-
-	// The dock row renders in the same client tree; resolve its slot after mount
-	// so the trigger can portal into it (see lib/ui/dock.ts).
 	const [dockSlot, setDockSlot] = useState<HTMLElement | null>(null);
 	useEffect(() => {
 		setDockSlot(document.getElementById(DOCK_ACTION_SLOT_ID));
 	}, []);
 
-	// Plain callback (not a useReducer reducer) so dispatching is never
-	// double-invoked under StrictMode — each call runs the pure machine exactly
-	// once and queues whatever effects it emits for the drain effect below.
 	const dispatch = useCallback((event: CaptureEvent) => {
 		const { state: next, effects } = captureMachine(stateRef.current, event);
 		stateRef.current = next;
@@ -62,8 +62,6 @@ export function CapturePalette() {
 		}
 	}, []);
 
-	// The actual request behind a SUBMIT effect. Guards its completion via the
-	// seq the machine handed out, same as before.
 	const runSubmitEffect = useCallback(
 		(text: string, seq: number) => {
 			startTransition(async () => {
@@ -84,9 +82,6 @@ export function CapturePalette() {
 		[dispatch],
 	);
 
-	// Drain effects emitted by the most recent dispatch. Runs after commit, so
-	// FOCUS_RECEIPT/FOCUS_TEXTAREA can rely on the DOM already reflecting the
-	// state that produced them.
 	useEffect(() => {
 		for (const effect of effectsBatch.effects) {
 			switch (effect.type) {
@@ -100,7 +95,7 @@ export function CapturePalette() {
 					receiptHeadingRef.current?.focus();
 					break;
 				case "RESTORE_FOCUS":
-					restoreFocusRef.current?.focus();
+					// Dialog restores focus to the trigger on close.
 					break;
 			}
 		}
@@ -114,7 +109,6 @@ export function CapturePalette() {
 		[dispatch],
 	);
 
-	// Global open triggers: Cmd/Ctrl+J and the window event from other triggers.
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
 			if (isOpenShortcut(event)) {
@@ -130,9 +124,6 @@ export function CapturePalette() {
 		};
 	}, [dispatch, onOpenCaptureEvent]);
 
-	// Deep link from the manifest shortcut (?capture=1 or legacy ?capture=voice):
-	// open the palette on mount. Runs once; the ref guards against re-firing
-	// after the param is stripped.
 	const intentHandledRef = useRef(false);
 	useEffect(() => {
 		if (intentHandledRef.current) return;
@@ -143,47 +134,17 @@ export function CapturePalette() {
 		}
 	}, [dispatch]);
 
-	// Move focus into the palette on open, restore it on close.
-	useEffect(() => {
-		if (state.open) {
-			restoreFocusRef.current = document.activeElement as HTMLElement | null;
-			const textarea = textareaRef.current;
-			textarea?.focus();
-			// Land the caret after a chip's prefill, not in front of it.
-			textarea?.setSelectionRange(textarea.value.length, textarea.value.length);
-		}
-	}, [state.open]);
-
-	// Lock background scroll and `inert` everything outside the dialog while
-	// it's open — otherwise the app shell stays scrollable, clickable, and
-	// reachable by screen readers behind the modal. Body children are used
-	// (rather than a named shell element) since the palette itself is
-	// portalled to `document.body`, so its own overlay is always excluded.
-	// Live regions (the Sonner toast container, or anything else marked
-	// aria-live/status/alert) are also excluded so toasts raised while the
-	// palette is open stay visible and clickable to assistive tech. This is
-	// the single owner of both scroll-lock and inert — cleaned up on close
-	// and on unmount so a stray dismiss path can never leave the shell stuck.
+	// Land the caret after a chip's prefill once the dialog field exists.
 	useEffect(() => {
 		if (!state.open) return;
-		const previousOverflow = document.body.style.overflow;
-		document.body.style.overflow = "hidden";
-		const siblings = Array.from(document.body.children).filter(
-			(el): el is HTMLElement =>
-				el instanceof HTMLElement &&
-				el !== overlayRef.current &&
-				!el.matches('[data-sonner-toaster], [aria-live], [role="status"], [role="alert"]'),
-		);
-		for (const el of siblings) el.setAttribute("inert", "");
-		return () => {
-			document.body.style.overflow = previousOverflow;
-			for (const el of siblings) el.removeAttribute("inert");
-		};
+		const frame = requestAnimationFrame(() => {
+			const textarea = textareaRef.current;
+			textarea?.focus();
+			textarea?.setSelectionRange(textarea.value.length, textarea.value.length);
+		});
+		return () => cancelAnimationFrame(frame);
 	}, [state.open]);
 
-	// While an error is showing and the browser was offline for it, retry once
-	// automatically as soon as connectivity returns; ONLINE is a no-op in the
-	// machine for every other status.
 	useEffect(() => {
 		function onOnline() {
 			dispatch({ type: "ONLINE" });
@@ -204,38 +165,12 @@ export function CapturePalette() {
 		dispatch({ type: "CAPTURE_ANOTHER" });
 	}
 
-	function onDialogKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-		if (event.key === "Escape") {
-			event.stopPropagation();
-			closePalette();
-			return;
-		}
-		if (event.key !== "Tab" || !dialogRef.current) return;
-		// Minimal focus trap so Tab cycles within the modal.
-		const items = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
-		if (items.length === 0) return;
-		const first = items[0];
-		const last = items[items.length - 1];
-		if (event.shiftKey && document.activeElement === first) {
-			event.preventDefault();
-			last.focus();
-		} else if (!event.shiftKey && document.activeElement === last) {
-			event.preventDefault();
-			first.focus();
-		}
-	}
-
 	const pending = state.status === "submitting";
-	// A-lite: provisional receipt on submit, final receipt on settle.
 	const showReceipt =
 		state.receipt !== null && (state.status === "done" || state.status === "submitting");
 
 	return (
 		<>
-			{/* Mobile trigger — the header carries the desktop one. It portals into
-			    the dock row so it sits beside the tab pill, sharing its height and
-			    geometry. Hidden while the palette is open so it never becomes a
-			    stray tab target behind it. */}
 			{dockSlot && !state.open
 				? createPortal(
 						<button
@@ -250,130 +185,95 @@ export function CapturePalette() {
 					)
 				: null}
 
-			{state.open
-				? createPortal(
-						// biome-ignore lint/a11y/noStaticElementInteractions: backdrop is a click-to-dismiss convenience; Escape and the close button are the keyboard paths.
-						<div
-							ref={overlayRef}
-							className="fixed inset-0 z-50 flex items-start justify-center bg-bg/80 px-4 pt-[12vh] backdrop-blur-sm"
-							onClick={closePalette}
-							role="presentation"
-						>
-							<div
-								ref={dialogRef}
-								role="dialog"
-								aria-modal="true"
-								aria-labelledby={titleId}
-								onClick={(event) => event.stopPropagation()}
-								onKeyDown={onDialogKeyDown}
-								className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-card border border-line-strong bg-surface p-5 elevation-overlay"
-							>
-								<div className="mb-3 flex items-center justify-between">
-									<h2
-										id={titleId}
-										className="font-mono text-eyebrow uppercase tracking-widest text-ink-3"
-									>
-										Capture
-									</h2>
-									<button
-										type="button"
-										aria-label="Close capture palette"
-										onClick={closePalette}
-										className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:text-ink active:opacity-70"
-									>
-										Esc
-									</button>
-								</div>
-
-								{showReceipt && state.receipt ? (
-									<div role="status" aria-live="polite">
-										<p
-											ref={receiptHeadingRef}
-											tabIndex={-1}
-											className={`type-title text-lg ${
-												state.receipt.tone === "needs_review" ? "text-accent" : "text-ink"
-											}`}
-										>
-											{state.receipt.title}
-										</p>
-										<ul className="mt-1 space-y-0.5 text-sm text-ink-2">
-											{state.receipt.lines.map((line) => (
-												<li key={line}>{line}</li>
-											))}
-										</ul>
-										{state.status === "done" ? (
-											<div className="mt-4 flex gap-2">
-												<button
-													type="button"
-													onClick={captureAnother}
-													className="inline-flex h-9 items-center rounded-control bg-ink px-3 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70"
-												>
-													Capture another
-												</button>
-												<button
-													type="button"
-													onClick={closePalette}
-													className="px-3 py-2 font-mono text-eyebrow uppercase tracking-widest text-ink-3 transition-opacity hover:text-ink active:opacity-70"
-												>
-													Done
-												</button>
-											</div>
-										) : (
-											<p className="mt-4 font-mono text-meta uppercase tracking-widest text-ink-4">
-												Working…
-											</p>
-										)}
-									</div>
-								) : (
-									<div>
-										<textarea
-											ref={textareaRef}
-											value={state.text}
-											disabled={pending}
-											onChange={(event) =>
-												dispatch({ type: "TEXT_CHANGED", text: event.target.value })
-											}
-											onKeyDown={(event) => {
-												if (isSubmitShortcut(event)) {
-													event.preventDefault();
-													submit();
-												}
-											}}
-											rows={3}
-											placeholder="What's on your mind?"
-											aria-label="Capture text"
-											className="w-full resize-none border-b border-line bg-transparent pb-2 type-title text-lg text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 placeholder:text-ink-4"
-										/>
-
-										{/* role="status" so an error is announced too — this used to
-										    live outside the live region and was silently dropped. */}
-										<div role="status" aria-live="polite">
-											{state.status === "error" ? (
-												<p className="mt-2 text-sm text-error">
-													{state.offlineError
-														? "Offline — draft kept."
-														: "Couldn't save — your text is kept. Check your connection and retry."}
-												</p>
-											) : null}
-										</div>
-
-										<div className="mt-4 flex items-center justify-end">
-											<button
-												type="button"
-												onClick={submit}
-												disabled={pending || isBlank(state.text)}
-												className="inline-flex h-9 items-center rounded-control bg-ink px-3 font-mono text-eyebrow uppercase tracking-widest text-bg transition-opacity active:opacity-70 disabled:opacity-50"
-											>
-												{state.status === "error" ? "Retry" : pending ? "Capturing…" : "Capture"}
-											</button>
-										</div>
-									</div>
-								)}
+			<Dialog open={state.open} onClose={closePalette} title="Capture" size="md">
+				{showReceipt && state.receipt ? (
+					<>
+						<DialogBody>
+							<div role="status" aria-live="polite">
+								<p
+									ref={receiptHeadingRef}
+									tabIndex={-1}
+									// Pass 5: last `.type-title` sites — leave for that pass.
+									className={`type-title text-lg ${
+										state.receipt.tone === "needs_review" ? "text-accent" : "text-ink"
+									}`}
+								>
+									{state.receipt.title}
+								</p>
+								<ul className="mt-1 space-y-0.5 text-sm text-ink-2">
+									{state.receipt.lines.map((line) => (
+										<li key={line}>{line}</li>
+									))}
+								</ul>
 							</div>
-						</div>,
-						document.body,
-					)
-				: null}
+						</DialogBody>
+						<DialogFooter>
+							<span className="min-w-2 flex-1" />
+							{state.status === "done" ? (
+								<>
+									<Button variant="tertiary" size="sm" onClick={closePalette}>
+										Done
+									</Button>
+									<Button variant="primary" size="sm" onClick={captureAnother}>
+										Capture another
+									</Button>
+								</>
+							) : (
+								<p className="font-mono text-meta uppercase tracking-widest text-ink-4">Working…</p>
+							)}
+						</DialogFooter>
+					</>
+				) : (
+					<>
+						<DialogBody>
+							{/* Compose is a sentence being written — prose measure (Pass 3). */}
+							<div className="measure-prose">
+								{/* Pass 5: `.type-title` on compose — leave for that pass. */}
+								<Textarea
+									ref={textareaRef}
+									value={state.text}
+									disabled={pending}
+									onChange={(event) => dispatch({ type: "TEXT_CHANGED", text: event.target.value })}
+									onKeyDown={(event) => {
+										if (isSubmitShortcut(event)) {
+											event.preventDefault();
+											submit();
+										}
+									}}
+									rows={3}
+									placeholder="What's on your mind?"
+									aria-label="Capture text"
+									size="lg"
+									data-autofocus
+									className="type-title text-lg"
+								/>
+							</div>
+							<div role="status" aria-live="polite">
+								{state.status === "error" ? (
+									<p className="mt-2 text-sm text-error">
+										{state.offlineError
+											? "Offline — draft kept."
+											: "Couldn't save — your text is kept. Check your connection and retry."}
+									</p>
+								) : null}
+							</div>
+						</DialogBody>
+						<DialogFooter>
+							<span className="min-w-2 flex-1" />
+							<Button
+								type="button"
+								variant="primary"
+								size="sm"
+								onClick={submit}
+								disabled={pending || isBlank(state.text)}
+								isPending={pending}
+							>
+								{state.status === "error" ? "Retry" : pending ? "Capturing…" : "Capture"}
+							</Button>
+						</DialogFooter>
+					</>
+				)}
+			</Dialog>
 		</>
 	);
 }

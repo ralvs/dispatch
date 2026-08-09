@@ -3,6 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import {
 	createContext,
+	forwardRef,
 	type InputHTMLAttributes,
 	type ReactNode,
 	type SelectHTMLAttributes,
@@ -204,12 +205,16 @@ type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> &
 		invalid?: boolean;
 	};
 
-export function Textarea({ size = "md", invalid, className, id, ...props }: TextareaProps) {
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
+	{ size = "md", invalid, className, id, ...props },
+	ref,
+) {
 	const ctx = useFieldCtx();
 	const isInvalid = invalid ?? ctx?.invalid;
 
 	return (
 		<textarea
+			ref={ref}
 			id={id ?? ctx?.id}
 			data-invalid={isInvalid || undefined}
 			aria-invalid={isInvalid || undefined}
@@ -218,4 +223,4 @@ export function Textarea({ size = "md", invalid, className, id, ...props }: Text
 			{...props}
 		/>
 	);
-}
+});
