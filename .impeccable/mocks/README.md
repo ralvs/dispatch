@@ -31,6 +31,7 @@ Serve them with `bun run` — or the `mocks` entry in `.claude/launch.json`
 | `tasks-lab.html` | **Pass 1.** `/tasks` whole, three ways, over the one seam Pass 0 left open. Theme and width toggle in place. |
 | `lists-lab.html` | **Pass 2 Phase 0.** The two gates: name weight (A1/A2) and create furniture (B1/B2). `/projects` and `/people` side by side under each option. Theme and width toggle in place. |
 | `writing-lab.html` | **Pass 3 Phase 0.** One gate, three packages: measure + type scale + leftover width. `/notes/[id]` and `/chat` under each. Theme, width, and measure-guide toggles. |
+| `config-lab.html` | **Pass 4 Phase 0.** Gate closed on **C4**: `/domains` Library page · `/settings` knobs + account · More is a menu (not a route). Theme and width toggle. |
 
 ## The page header (Pass 0)
 
@@ -196,6 +197,26 @@ the current mono/title inversion; panel names rest at 400 with `SectionHead`
 labels; no new ramp sizes (the undocumented 24/20 leave everywhere).
 
 Phases 1–4 in `.impeccable/BUILD-WRITING.md`.
+
+## The configuration surfaces (Pass 4 Phase 0)
+
+`config-lab.html` is the decision surface for what remains after domains leave
+`/settings`. Domains becoming a Library page is **settled** (owner decision;
+supersedes ADR-0011’s domain half).
+
+**Chosen: C4.** More is chrome, not a page. Phone sheet settled.
+
+| | What |
+|---|---|
+| **`/domains`** | Library object list (ADR-0044) |
+| **`/settings`** | Knobs + account (theme, email, sign out). Options grow here. |
+| **More** | Menu only. Destinations only. **No `/more` route.** No rail on desk — header tabs only. |
+
+**Forks closed:** **A1** (More lit on hosted destinations while menu closed) ·
+**B1** (desk popover under the tab group). Phone sheet settled earlier.
+
+Phases 1–4 in `.impeccable/BUILD-CONFIG.md`. Lab misalignments get fixed in the
+build, not another lab polish loop.
 
 ## A1 vs A2 — one axis
 
