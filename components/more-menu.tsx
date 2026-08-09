@@ -86,10 +86,12 @@ export function MoreMenu() {
 				aria-labelledby={titleId}
 				className={[
 					"absolute z-10 overflow-y-auto border border-line bg-surface elevation-overlay",
-					// Phone: sheet above the dock
+					// Phone: sheet above the dock. Cap so a long list doesn't cover the page.
 					"inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-h-[min(420px,58dvh)] rounded-[18px] p-3",
-					// Desk: popover under the centered tab group (B1)
-					"lg:inset-x-auto lg:bottom-auto lg:left-1/2 lg:top-[4.75rem] lg:w-[280px] lg:-translate-x-1/2 lg:rounded-[14px] lg:p-3",
+					// Desk: popover under the centered tab group (B1). Must reset max-h —
+					// the sheet cap (58dvh ≈ 417px at 720 tall) otherwise clips the System
+					// group below the fold with free space still under the panel.
+					"lg:inset-x-auto lg:bottom-auto lg:left-1/2 lg:top-[4.75rem] lg:w-[280px] lg:max-h-[calc(100dvh-6rem)] lg:-translate-x-1/2 lg:rounded-[14px] lg:p-3",
 				].join(" ")}
 			>
 				<div

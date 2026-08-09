@@ -17,6 +17,9 @@ export default async function ProjectsPage() {
 		<div>
 			<PageHeader
 				title="Projects"
+				// Two .filter passes for the measure (plus one per status group
+				// below) is fine: server component, once per request, small array.
+				// A counts-map reduce costs more readability than it buys.
 				measure={[
 					{ count: projects.filter((p) => p.status === "active").length, label: "active" },
 					{ count: projects.filter((p) => p.status === "paused").length, label: "paused" },

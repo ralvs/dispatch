@@ -542,7 +542,8 @@ Two deliberate exceptions decline it:
 
 `ListRow` carries only geometry: hairline, `min-h-12`, `py-3`, `gap-3`, and the
 leading / body / trailing columns. Rows keep their own composition — a
-`variant` prop per surface is the failure mode.
+`variant` prop per surface is the failure mode. `className` is the sanctioned
+hatch for **state** (pending, selected), not for inventing a second row type.
 
 - **Domain leads left** and holds its slot when absent (Invisible Slot Rule).
   One colour meaning per row: a project's own colour is not a second dot on
@@ -587,6 +588,12 @@ Two voices, and they are not interchangeable.
 - **Hover / Focus:** colour only — a border darkens, a label steps up the ink
   ladder. Nothing moves. Focus is a 2px accent outline at 2px offset, applied
   globally and never removed without replacement.
+- **Pending:** an optimistic mutation in flight dims its own subtree to 50%
+  (`opacity-50`) and nothing else moves — no skeleton swap, no spinner, no
+  layout shift. `Button.isPending` is the canonical instance; the same dim
+  applies via `className` on a wrapping div or a `ListRow` when the whole
+  block is the unit in flight. One language, three call sites — not three
+  treatments.
 
 ### Chips
 

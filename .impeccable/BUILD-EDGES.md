@@ -207,6 +207,10 @@ something is wrong, loading, unauthenticated, or installed.
 >    themes at both widths. Grep for what should no longer exist:
 >    `hairline-strong pb-4`, `font-serif`, the mono eyebrow above any heading,
 >    any `text-2xl`/`text-3xl`/`text-xl` that is not the documented prose scale.
+>    **And:** every responsive override resets what it needs to — the More menu
+>    defect in Pass 4.5 (phone `max-h` leaking into the desktop popover) is
+>    exactly the class of bug a mobile-first cap produces when a desktop variant
+>    forgets to reset it.
 >
 >    **Audit the ADR record before regenerating anything.** Every gate is
 >    supposed to have one, and one is missing: **Pass 3's gate (W2) was never

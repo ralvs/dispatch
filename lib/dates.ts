@@ -178,6 +178,9 @@ export function formatDueLabel(dueDateIso: string, todayIso: string): string {
  * formats the gap.
  */
 export function formatLateLabel(dueDateIso: string, todayIso: string): string | null {
+	// Two DateTimes per overdue row is intentional: this file is the single
+	// Luxon home of date logic (iron rule #1 / ADR-0002). Epoch subtraction
+	// would shave nothing measurable on a list of tens and break that contract.
 	const days = Math.round(
 		DateTime.fromISO(todayIso, { zone: "utc" }).diff(
 			DateTime.fromISO(dueDateIso, { zone: "utc" }),

@@ -11,9 +11,15 @@ import { tv } from "./tv";
  *
  *   hairline · min-h-12 · py-3 · gap-3 · leading / body / trailing
  *
- * Rows keep their own composition. A `variant` prop per surface is the failure
- * mode — if a third one is about to be added, the abstraction is wrong and only
- * the geometry should have moved (day-row.tsx header comment; Pass 1 held it).
+ * Rows keep their own composition. Two hatches already on the shell:
+ *   - `align` — multi-line bodies need `start`.
+ *   - `className` — **state** only (pending dim at opacity-50, selected). The
+ *     pending language is system-wide (DESIGN.md, Button.isPending is the
+ *     canonical instance); do not add a second `pending` prop here.
+ *
+ * A per-surface `variant` prop remains the failure mode — if a third one is
+ * about to be added, the abstraction is wrong and only the geometry should
+ * have moved (day-row.tsx header comment; Pass 1 held it).
  *
  * The 44px touch target on a row control is the control's job (hit-area /
  * checkbox slug), not this shell's.
