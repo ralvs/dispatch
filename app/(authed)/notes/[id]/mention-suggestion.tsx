@@ -2,6 +2,7 @@ import { Extension } from "@tiptap/core";
 import { PluginKey } from "@tiptap/pm/state";
 import Suggestion, { type SuggestionProps } from "@tiptap/suggestion";
 import { createRoot, type Root } from "react-dom/client";
+import { suggestionEmpty, suggestionOption, suggestionPanel } from "@/components/ui";
 import { type MentionCandidate, normalizeName } from "@/lib/mentions";
 
 // Cloned from wikilink-suggestion.tsx (the template), swapped to `@` and the
@@ -31,15 +32,11 @@ function MentionMenu({
 	onSelect: (item: MentionCandidate) => void;
 }) {
 	if (items.length === 0) {
-		return (
-			<div className="rounded-control border border-line bg-surface px-3 py-2 font-mono text-meta text-ink-4 elevation-overlay">
-				No matching people
-			</div>
-		);
+		return <div className={suggestionEmpty}>No matching people</div>;
 	}
 
 	return (
-		<ul className="min-w-48 rounded-control border border-line bg-surface py-1 elevation-overlay">
+		<ul className={`min-w-48 ${suggestionPanel}`}>
 			{items.map((item, index) => (
 				<li key={item.id}>
 					<button
@@ -49,9 +46,7 @@ function MentionMenu({
 							e.preventDefault();
 							onSelect(item);
 						}}
-						className={`block w-full truncate px-3 py-1.5 text-left font-mono text-meta active:opacity-70 ${
-							index === selectedIndex ? "bg-accent-bg text-accent-ink" : "text-ink-2"
-						}`}
+						className={suggestionOption(index === selectedIndex)}
 					>
 						{item.name}
 					</button>

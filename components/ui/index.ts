@@ -12,3 +12,8 @@ export { PageSkeleton } from "./page-skeleton";
 export { Progress } from "./progress";
 export { Radio, radio } from "./radio";
 export { SectionHead } from "./section-head";
+export {
+	suggestionEmpty,
+	suggestionOption,
+	suggestionPanel,
+} from "./suggestion-surface";

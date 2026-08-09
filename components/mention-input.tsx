@@ -11,6 +11,7 @@
 // name into the field's value directly.
 
 import { type KeyboardEvent, useId, useRef, useState } from "react";
+import { suggestionOption, suggestionPanel } from "@/components/ui";
 import {
 	activeMentionQuery,
 	type MentionCandidate,
@@ -138,29 +139,31 @@ function MentionDropdown({
 			id={listId}
 			role="listbox"
 			aria-label="Matching people"
-			className="absolute left-0 top-full z-20 mt-1 min-w-40 max-w-64 rounded-control border border-line bg-surface py-1 elevation-overlay"
+			className={`absolute left-0 top-full z-20 mt-1 min-w-40 max-w-64 ${suggestionPanel}`}
 		>
-			{items.map((item, index) => (
-				<button
-					key={item.id}
-					type="button"
-					id={optionId(listId, index)}
-					role="option"
-					aria-selected={index === selected}
-					// Prevent the field from blurring before the click's mousedown
-					// resolves — a blur first would close the dropdown and drop
-					// the selection.
-					onMouseDown={(e) => {
-						e.preventDefault();
-						onPick(item);
-					}}
-					className={`block w-full truncate px-3 py-1.5 text-left font-mono text-meta ${
-						index === selected ? "bg-accent-bg text-accent-ink" : "text-ink-2"
-					}`}
-				>
-					{item.name}
-				</button>
-			))}
+			{items.length === 0 ? (
+				<div className="px-3 py-2 text-sm text-ink-4">No matching people</div>
+			) : (
+				items.map((item, index) => (
+					<button
+						key={item.id}
+						type="button"
+						id={optionId(listId, index)}
+						role="option"
+						aria-selected={index === selected}
+						// Prevent the field from blurring before the click's mousedown
+						// resolves — a blur first would close the dropdown and drop
+						// the selection.
+						onMouseDown={(e) => {
+							e.preventDefault();
+							onPick(item);
+						}}
+						className={suggestionOption(index === selected)}
+					>
+						{item.name}
+					</button>
+				))
+			)}
 		</div>
 	);
 }
