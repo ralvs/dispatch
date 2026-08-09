@@ -52,11 +52,20 @@ DESIGN.md makes anything a thumb reaches for a full pill, and it carries no sans
 label to make it the pill *voice*. The word survives in `aria-label`, so the
 control is named for anyone who cannot see the glyph.
 
-One fix to `PageHeader` came with it. Below `lg` the right-hand cluster takes
-its own row under the title, and it was laid out with `justify-between` — right
-for a measure and an action, but it parked a *lone* action hard left, so the
-control changed sides between breakpoints. It now right-aligns when there is no
-measure beside it. `/notes` has a measure and is unaffected.
+One fix to `PageHeader` came with it, in two goes. Below `lg` the right-hand
+cluster took its own row under the title with `justify-between`, which parked a
+*lone* action hard left — so the control changed sides between breakpoints.
+Right-aligning it fixed the side but not the shape: a 32px circle alone on a
+row under the title is an orphan, and it still moved relative to the title as
+the window changed.
+
+The rule is now keyed to the measure rather than the breakpoint. With a measure,
+the cluster wraps below the title as ADR-0042 chose. **With an action alone it
+never wraps** — it holds the title's line at every width, centred on the line
+box, with the `h1` taking `min-w-0` so a long name wraps its own text instead of
+pushing the control off the edge. Every other action-carrying page (`/notes`,
+`/projects`, `/people`, `/quotes`, `/routines`, and both detail pages) has a
+measure and is unaffected.
 
 It also settles a complaint the Pass 1 comps raised against the chosen header:
 with no measure and no action, `/tasks` opened with 36px of name over an empty

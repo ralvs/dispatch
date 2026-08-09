@@ -80,24 +80,43 @@ export function PageHeader({
 
 	return (
 		<header className="mb-[26px] lg:mb-[30px]">
-			<div className="flex flex-wrap items-baseline justify-between gap-3 lg:flex-nowrap lg:gap-8">
-				<h1 className="m-0 text-pretty text-t30 text-ink lg:text-t36">{title}</h1>
+			{/* Whether the right-hand cluster may leave the title's line is decided
+			    by what is in it, not by the breakpoint.
+
+			    A measure is running text and needs the width, so at 393pt it drops
+			    to its own row with the action beside it, which is what ADR-0042
+			    chose over shrinking the reading. An action on its own needs no
+			    width worth taking a row for — a 32px control that wraps below a
+			    30px title leaves a band of empty ground with one circle floating in
+			    it, and the control changes its relationship to the title depending
+			    on how wide the window is. So it never wraps: `flex-nowrap` holds it
+			    on the title's line at every width, and the h1 gives up the room. */}
+			<div
+				className={`flex items-baseline justify-between gap-3 lg:flex-nowrap lg:gap-8 ${
+					hasMeasure ? "flex-wrap" : "flex-nowrap"
+				}`}
+			>
+				{/* min-w-0 so a long name wraps its own text rather than pushing the
+				    action off the right edge — the h1 is the flexible half. */}
+				<h1 className="m-0 min-w-0 text-pretty text-t30 text-ink lg:text-t36">{title}</h1>
 				{hasRight && (
-					// Below lg the cluster takes its own row under the title, and what
-					// it does there depends on what is in it. With a measure, the two
-					// spread to the row's edges. With an action alone, `justify-between`
-					// would park it hard left — the one place in the header where a
-					// control jumps sides between breakpoints — so it stays right.
 					<div
-						className={`flex w-full items-baseline gap-5 lg:w-auto lg:shrink-0 lg:justify-end ${
-							hasMeasure ? "justify-between" : "justify-end"
-						}`}
+						className={
+							hasMeasure
+								? "flex w-full items-baseline justify-between gap-5 lg:w-auto lg:shrink-0 lg:justify-end"
+								: // No measure: the cluster is only as wide as its control and
+									// centres on the title's line box, which is what puts a
+									// circular glyph on the title's optical middle.
+									"flex shrink-0 items-center gap-5 self-center"
+						}
 					>
 						{hasMeasure && measure && <MeasureLine items={measure} />}
 						{/* Baseline alignment would drop a 36px-tall control below the
 						    text line; centre it and nudge, so its cap-height rides the
-						    h1's baseline instead. */}
-						{action && <div className="translate-y-[3px] self-center">{action}</div>}
+						    h1's baseline instead. Only needed where the measure sets the
+						    cluster's baseline — alone, the cluster is already centred. */}
+						{action &&
+							(hasMeasure ? <div className="translate-y-[3px] self-center">{action}</div> : action)}
 					</div>
 				)}
 			</div>

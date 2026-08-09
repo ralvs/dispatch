@@ -29,6 +29,15 @@ question was opened deliberately at a gate in Pass 0, drawn four ways over
 At 393pt the title keeps its own line and the measure and action take the one
 below, rather than the measure shrinking.
 
+**Refined in Pass 1:** that wrap is keyed to the *measure*, not to the
+breakpoint. A measure is running text and needs the width. An action on its own
+does not — a 32px control wrapping below a 30px title leaves a band of empty
+ground with one circle floating in it, and the control changes its relationship
+to the title depending on window width. So an action-only header never wraps: it
+holds the title's line at every width, centred on it, and the `h1` gives up the
+room. `/tasks` is the only page in that shape today; every other action-carrying
+page has a measure and is unaffected.
+
 ## Why the header is not redundant on desktop
 
 The brief that opened the gate assumed the desktop tab group already names the
