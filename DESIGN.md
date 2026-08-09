@@ -556,10 +556,10 @@ leading / body / trailing columns. Rows keep their own composition — a
 
 **A list of objects opens as a list.** Creating an object is one action on the
 page header; the form is a dialog. Standing `CollapsibleForm` furniture above
-the first row is gone from `/projects`, `/people`, `/quotes`, `/routines`
-(Pass 2 Gate B / B1; ADR-0043 generalised). `/journal` is the exception that
-proves the rule: writing the entry *is* the page, so standing furniture is
-correct there — Pass 3 applies it.
+the first row is gone from `/projects`, `/people`, `/quotes`, `/routines`,
+`/domains` (Pass 2 Gate B / B1; ADR-0043 generalised; domains joined in Pass 4).
+`/journal` is the exception that proves the rule: writing the entry *is* the
+page, so standing furniture is correct there — Pass 3 applies it.
 
 ### Empty States
 
@@ -622,6 +622,13 @@ Two voices, and they are not interchangeable.
   ember wash with ember-deep ink in 11px uppercase mono; capture sits beside it
   as a square ink capsule with a Lucide `Plus`. Two signals that can never be
   read as one — **the tab takes the accent, the action takes ink.**
+- **More is a menu, not a page** (Pass 4 / C4, ADR-0045). Destinations only
+  (Daily / Library / System). Desk: popover under the tab group. Phone: sheet
+  above the dock. Account chrome lives on `/settings`. More stays lit for every
+  destination it hosts (A1), so the coarse locator still answers on Projects,
+  Domains, Settings, etc.
+- **`/domains` is a Library page** — object list under the same rules as
+  Projects and People, not a settings section.
 
 ### The Day Tape (signature)
 
