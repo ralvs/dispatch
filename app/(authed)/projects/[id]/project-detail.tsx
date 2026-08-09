@@ -63,19 +63,21 @@ export function ProjectDetail({
 
 	return (
 		<div className={pending ? "opacity-50" : ""}>
-			{/* Name is the title; type badge + milestone count take the measure
-			    slot (ADR-0042). Domain rides the subtitle with its colour —
-			    the list row already settled that domain, not project colour,
-			    is the colour that leads. */}
+			{/* Name is the title; type + status are facts (plain), milestones
+			    the measure (Pass 4.5 Gate A). Domain rides the subtitle with its
+			    colour — the list row already settled that domain, not project
+			    colour, is the colour that leads. */}
 			<PageHeader
 				title={project.name}
-				measure={[
-					...(project.type ? [{ count: projectTypeLabel(project.type), label: "" }] : []),
-					{ count: statusLabel(project.status), label: "" },
-					...(milestones.length > 0
-						? [{ count: `${doneCount}/${milestones.length}`, label: "milestones" }]
-						: []),
+				facts={[
+					...(project.type ? [projectTypeLabel(project.type)] : []),
+					statusLabel(project.status),
 				]}
+				measure={
+					milestones.length > 0
+						? [{ count: `${doneCount}/${milestones.length}`, label: "milestones" }]
+						: undefined
+				}
 				subtitle={
 					domain ? (
 						<span className="inline-flex items-center gap-1.5">
@@ -86,7 +88,7 @@ export function ProjectDetail({
 				}
 			/>
 
-			<section className="mt-8" aria-label="Details">
+			<section aria-label="Details">
 				{editing ? (
 					<form action={saveDetails}>
 						<Card className="space-y-4" padding="default">
@@ -282,7 +284,7 @@ function MilestonesSection({
 	}
 
 	return (
-		<section className="mt-14" aria-label="Milestones">
+		<section className="mt-9" aria-label="Milestones">
 			<SectionHead title="Milestones" aside={`${Math.round(progress * 100)}%`} />
 			<div
 				className="mt-2 h-1.5 w-full bg-line"

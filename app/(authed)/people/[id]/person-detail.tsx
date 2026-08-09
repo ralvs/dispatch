@@ -67,20 +67,18 @@ export function PersonDetail({
 
 	return (
 		<div className={pending ? "opacity-50" : ""}>
-			{/* Name is the title; relationship + company take the measure slot
-			    (ADR-0042). Last two legacy hairline-strong headers leave here. */}
+			{/* Name is the title; relationship + company are facts (plain),
+			    fact count is the measure (Pass 4.5 Gate A). */}
 			<PageHeader
 				title={person.name}
-				measure={[
-					...(person.relationship_type
-						? [{ count: relationshipLabel(person.relationship_type), label: "" }]
-						: []),
-					...(person.company ? [{ count: person.company, label: "" }] : []),
-					{ count: facts.length, label: facts.length === 1 ? "fact" : "facts" },
+				facts={[
+					...(person.relationship_type ? [relationshipLabel(person.relationship_type)] : []),
+					...(person.company ? [person.company] : []),
 				]}
+				measure={[{ count: facts.length, label: facts.length === 1 ? "fact" : "facts" }]}
 			/>
 
-			<section className="mt-8" aria-label="Details">
+			<section aria-label="Details">
 				{editing ? (
 					<form action={saveDetails}>
 						<Card className="space-y-4" padding="default">
@@ -195,7 +193,7 @@ function MentionedInSection({
 	if (tasks.length === 0 && notes.length === 0) return null;
 
 	return (
-		<section className="mt-14" aria-label="Mentioned in">
+		<section className="mt-9" aria-label="Mentioned in">
 			<SectionHead title="Mentioned in" aside={String(tasks.length + notes.length)} />
 			<ul>
 				{tasks.map((task) => (
@@ -239,7 +237,7 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 	}
 
 	return (
-		<section className="mt-14" aria-label="Facts">
+		<section className="mt-9" aria-label="Facts">
 			<SectionHead title="Facts" aside={facts.length > 0 ? String(facts.length) : undefined} />
 			<ul>
 				{facts.map((f) => (
@@ -350,7 +348,7 @@ function InteractionsSection({
 	}
 
 	return (
-		<section className="mt-14" aria-label="Interactions">
+		<section className="mt-9" aria-label="Interactions">
 			<SectionHead
 				title="Interactions"
 				aside={interactions.length > 0 ? String(interactions.length) : undefined}

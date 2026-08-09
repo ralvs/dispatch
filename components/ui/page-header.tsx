@@ -4,11 +4,12 @@ import type { ReactNode } from "react";
  * The page header — revision A, option D, chosen at the Pass 0 gate
  * (.impeccable/mocks/chrome-header-lab.html, docs/adr/0042).
  *
- * Four slots, in one line where there is room: **title · measure · action**,
+ * Slots, in one line where there is room: **title · facts · measure · action**,
  * with an optional subtitle beneath.
  *
  *   Projects                              14 open   3 paused
  *   Notes                    128 notes  3 need review   [+ New note]
+ *   Dispatch rewrite         Internal  Active  3/8 milestones
  *
  * Three things it is not, each of them a deliberate deletion:
  *
@@ -26,6 +27,10 @@ import type { ReactNode } from "react";
  * The h1 is 36px — one ramp step below Today's 56px hero — so a list page can
  * never out-shout the day. On a phone it steps to 30 and the right-hand cluster
  * takes its own row rather than the measure shrinking.
+ *
+ * Pass 4.5 Gate A: attributes are `facts` (plain `ink-3`), counts are `measure`
+ * (tabular figure + word). Facts sit before measure. Do not stuff attributes
+ * into Measure with an empty label.
  */
 
 /**
@@ -33,7 +38,8 @@ import type { ReactNode } from "react";
  *
  * `attention` spends the one orange, and it means what it always means — this
  * needs you. `3 need review`, `2 overdue`. Never used to make a count look
- * important (DESIGN.md, "The One Orange Rule").
+ * important (DESIGN.md, "The One Orange Rule"). Never used for plain attributes
+ * — those are `facts`.
  */
 export type Measure = {
 	count: number | string;
@@ -43,12 +49,11 @@ export type Measure = {
 
 function MeasureLine({ items }: { items: Measure[] }) {
 	return (
-		<div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm text-ink-3">
+		<>
 			{items.map((item, i) => (
 				<span
-					// Keyed by position: the two detail pages pass attribute readings
-					// with an empty label, so labels are not unique. The list is built
-					// in one place per page and never reordered.
+					// Keyed by position: lists are built in one place per page and
+					// never reordered; labels alone are not always unique.
 					// biome-ignore lint/suspicious/noArrayIndexKey: fixed, caller-ordered list.
 					key={i}
 					className={`whitespace-nowrap ${item.attention ? "text-accent" : ""}`}
@@ -61,12 +66,26 @@ function MeasureLine({ items }: { items: Measure[] }) {
 					{item.label}
 				</span>
 			))}
-		</div>
+		</>
+	);
+}
+
+function FactsLine({ items }: { items: ReactNode[] }) {
+	return (
+		<>
+			{items.map((item, i) => (
+				// biome-ignore lint/suspicious/noArrayIndexKey: fixed, caller-ordered list.
+				<span key={i} className="whitespace-nowrap">
+					{item}
+				</span>
+			))}
+		</>
 	);
 }
 
 export function PageHeader({
 	title,
+	facts,
 	measure,
 	action,
 	subtitle,
@@ -74,32 +93,41 @@ export function PageHeader({
 	/** Usually the page's name. A node so a route whose title *is* data can hand
 	 *  in a placeholder that sits inside this same h1 (see PageSkeleton). */
 	title: ReactNode;
-	/** The page's own reading. Omit it rather than inventing a count to fill it. */
+	/**
+	 * Plain attribute readings on the title's baseline — relationship, type,
+	 * status — at body-small `ink-3`, no tabular-nums. Sit before the measure.
+	 * Pass 4.5 Gate A.
+	 */
+	facts?: ReactNode[];
+	/** The page's own count reading. Omit rather than inventing a count to fill it. */
 	measure?: Measure[];
 	/** One standing action, right-aligned on the title's baseline. */
 	action?: ReactNode;
 	/** Only where it carries an instruction — not as a tagline. */
 	subtitle?: ReactNode;
 }) {
+	const hasFacts = Boolean(facts && facts.length > 0);
 	const hasMeasure = Boolean(measure && measure.length > 0);
-	const hasRight = hasMeasure || Boolean(action);
+	const hasReading = hasFacts || hasMeasure;
+	const hasRight = hasReading || Boolean(action);
 
 	return (
 		<header className="mb-[26px] lg:mb-[30px]">
 			{/* Whether the right-hand cluster may leave the title's line is decided
 			    by what is in it, not by the breakpoint.
 
-			    A measure is running text and needs the width, so at 393pt it drops
-			    to its own row with the action beside it, which is what ADR-0042
-			    chose over shrinking the reading. An action on its own needs no
-			    width worth taking a row for — a 32px control that wraps below a
-			    30px title leaves a band of empty ground with one circle floating in
-			    it, and the control changes its relationship to the title depending
-			    on how wide the window is. So it never wraps: `flex-nowrap` holds it
-			    on the title's line at every width, and the h1 gives up the room. */}
+			    A reading (facts / measure) is running text and needs the width, so
+			    at 393pt it drops to its own row with the action beside it, which is
+			    what ADR-0042 chose over shrinking the reading. An action on its own
+			    needs no width worth taking a row for — a 32px control that wraps
+			    below a 30px title leaves a band of empty ground with one circle
+			    floating in it, and the control changes its relationship to the
+			    title depending on how wide the window is. So it never wraps:
+			    `flex-nowrap` holds it on the title's line at every width, and the
+			    h1 gives up the room. */}
 			<div
 				className={`flex items-baseline justify-between gap-3 lg:flex-nowrap lg:gap-8 ${
-					hasMeasure ? "flex-wrap" : "flex-nowrap"
+					hasReading ? "flex-wrap" : "flex-nowrap"
 				}`}
 			>
 				{/* min-w-0 so a long name wraps its own text rather than pushing the
@@ -108,21 +136,26 @@ export function PageHeader({
 				{hasRight && (
 					<div
 						className={
-							hasMeasure
+							hasReading
 								? "flex w-full items-baseline justify-between gap-5 lg:w-auto lg:shrink-0 lg:justify-end"
-								: // No measure: the cluster is only as wide as its control and
+								: // No reading: the cluster is only as wide as its control and
 									// centres on the title's line box, which is what puts a
 									// circular glyph on the title's optical middle.
 									"flex shrink-0 items-center gap-5 self-center"
 						}
 					>
-						{hasMeasure && measure && <MeasureLine items={measure} />}
+						{hasReading && (
+							<div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1 text-sm text-ink-3">
+								{hasFacts && facts && <FactsLine items={facts} />}
+								{hasMeasure && measure && <MeasureLine items={measure} />}
+							</div>
+						)}
 						{/* Baseline alignment would drop a 36px-tall control below the
 						    text line; centre it and nudge, so its cap-height rides the
-						    h1's baseline instead. Only needed where the measure sets the
+						    h1's baseline instead. Only needed where the reading sets the
 						    cluster's baseline — alone, the cluster is already centred. */}
 						{action &&
-							(hasMeasure ? <div className="translate-y-[3px] self-center">{action}</div> : action)}
+							(hasReading ? <div className="translate-y-[3px] self-center">{action}</div> : action)}
 					</div>
 				)}
 			</div>
