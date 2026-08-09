@@ -134,9 +134,10 @@ export function invalidationFor(kind: MutationKind, detail?: { id?: string }): I
 				paths: p("/notifications", "/today"),
 			};
 		case "settings.domain":
+			// Kind name kept for call-site stability; domains live on /domains now.
 			return {
 				tags: [CacheTag.settings, CacheTag.todayDigest, CacheTag.tasks],
-				paths: p("/settings", "/today", "/tasks"),
+				paths: p("/domains", "/today", "/tasks", "/projects"),
 			};
 		case "settings.timezone":
 			return {

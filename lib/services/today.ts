@@ -387,7 +387,7 @@ export function deriveBriefLines(
 			nextAction: domain.expected_cadence ?? "Give it some attention.",
 			// Deep-link the row so "Mark shipped" / cadence edit are one scroll away
 			// rather than dumping the owner at the top of Settings.
-			href: `/settings#domain-${domain.id}`,
+			href: `/domains#domain-${domain.id}`,
 			lastTouched: touched ? formatInstant(touched, tz, "d LLL") : null,
 		});
 	}

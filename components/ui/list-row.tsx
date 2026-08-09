@@ -24,6 +24,7 @@ export function ListRow({
 	trailing,
 	className = "",
 	align = "center",
+	id,
 }: {
 	/** Left column — domain dot, checkbox, mark. Holds width even when empty
 	 *  if the caller renders a held slot (DESIGN.md, Invisible Slot Rule). */
@@ -35,10 +36,12 @@ export function ListRow({
 	className?: string;
 	/** `start` for multi-line bodies (quotes, links, notifications). */
 	align?: "center" | "start";
+	/** Anchor target (e.g. domain deep-links). */
+	id?: string;
 }) {
 	const alignClass = align === "start" ? "items-start" : "items-center";
 	return (
-		<li className={`hairline flex min-h-12 gap-3 py-3 ${alignClass} ${className}`}>
+		<li id={id} className={`hairline flex min-h-12 gap-3 py-3 ${alignClass} ${className}`}>
 			{leading}
 			<div className="min-w-0 flex-1">{children}</div>
 			{trailing}

@@ -336,7 +336,7 @@ describe("deriveBriefLines", () => {
 			last_shipped_at: "2026-06-01T12:00:00.000Z",
 		});
 		const lines = deriveBriefLines([d], {}, TODAY, SP);
-		expect(lines[0].href).toBe("/settings#domain-abc-123");
+		expect(lines[0].href).toBe("/domains#domain-abc-123");
 	});
 
 	it("sets lastTouched for a domain with a real touch", () => {
