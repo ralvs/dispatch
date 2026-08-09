@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { Button } from "@/components/ui";
+import { Button, ListRow, rowTitle } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { JournalEntryRow } from "@/lib/services/journal";
 import { deleteEntryAction } from "./actions";
@@ -10,14 +10,10 @@ export function EntryRowItem({ entry }: { entry: JournalEntryRow }) {
 	const [pending, startTransition] = useTransition();
 
 	return (
-		<li className={`hairline py-3 ${pending ? "opacity-50" : ""}`}>
-			<p className="max-w-prose whitespace-pre-wrap break-words type-title text-base text-ink">
-				{entry.transcription_text}
-			</p>
-			<div className="mt-2 flex items-center justify-between">
-				<p className="font-mono text-meta text-ink-4">
-					{entry.tags.length > 0 ? entry.tags.join(", ") : "—"}
-				</p>
+		<ListRow
+			align="start"
+			className={pending ? "opacity-50" : ""}
+			trailing={
 				<Button
 					type="button"
 					variant="danger"
@@ -32,7 +28,19 @@ export function EntryRowItem({ entry }: { entry: JournalEntryRow }) {
 				>
 					Delete
 				</Button>
-			</div>
-		</li>
+			}
+		>
+			<p
+				className={rowTitle({
+					layout: "bare",
+					className: "measure-prose whitespace-pre-wrap break-words",
+				})}
+			>
+				{entry.transcription_text}
+			</p>
+			{entry.tags.length > 0 && (
+				<p className="mt-1 font-mono text-meta text-ink-4">{entry.tags.join(", ")}</p>
+			)}
+		</ListRow>
 	);
 }

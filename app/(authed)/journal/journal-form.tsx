@@ -21,7 +21,7 @@ export function JournalForm({ todayIso }: { todayIso: string }) {
 					rows={5}
 					aria-label="Journal entry"
 					placeholder="What happened today?"
-					className="type-title text-base"
+					className="text-base font-normal tracking-[-0.01em]"
 				/>
 			</Field>
 			<div className="grid grid-cols-2 gap-3">

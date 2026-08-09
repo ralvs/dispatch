@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "@/components/ui";
+import { EmptyState, PageHeader, SectionHead } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatDay, todayInTz } from "@/lib/dates";
 import { listEntries } from "@/lib/services/journal";
@@ -24,7 +24,8 @@ export default async function JournalPage() {
 				measure={[{ count: entries.length, label: entries.length === 1 ? "entry" : "entries" }]}
 			/>
 
-			<section>
+			{/* Standing form stays — writing the entry is the page (ADR-0044). */}
+			<section className="measure-prose">
 				<JournalForm todayIso={todayInTz(tz)} />
 			</section>
 
@@ -34,10 +35,8 @@ export default async function JournalPage() {
 				) : (
 					[...groups.entries()].map(([date, dayEntries]) => (
 						<div key={date} className="mt-6 first:mt-2">
-							<p className="font-mono text-meta uppercase tracking-widest text-ink-4">
-								{formatDay(date, tz)}
-							</p>
-							<ul className="mt-2">
+							<SectionHead title={formatDay(date, tz)} />
+							<ul>
 								{dayEntries.map((entry) => (
 									<EntryRowItem key={entry.id} entry={entry} />
 								))}
