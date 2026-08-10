@@ -9,11 +9,26 @@
  * roman at ink-4, not the EmptyState italic (this is a floating menu, not a
  * page band).
  */
-export const suggestionPanel =
-	"rounded-control border border-line-strong bg-surface py-1 elevation-overlay";
 
-export const suggestionEmpty =
-	"rounded-control border border-line-strong bg-surface px-3 py-2 text-sm text-ink-4 elevation-overlay";
+/**
+ * Chrome only. Every floating piece here carries it; nothing renders it twice,
+ * which is why it is a base rather than a fourth export.
+ */
+const suggestionChrome = "rounded-control border border-line-strong bg-surface elevation-overlay";
+
+export const suggestionPanel = `${suggestionChrome} py-1`;
+
+/**
+ * The empty line's copy, without chrome — for a dropdown that renders the
+ * panel itself and puts the empty state inside it (mention-input).
+ */
+export const suggestionEmptyText = "px-3 py-2 text-sm text-ink-4";
+
+/**
+ * A standalone empty state: the copy plus its own chrome, for menus that
+ * render the empty case *instead of* the panel (the two TipTap plugins).
+ */
+export const suggestionEmpty = `${suggestionChrome} ${suggestionEmptyText}`;
 
 export function suggestionOption(selected: boolean): string {
 	return `block w-full truncate px-3 py-1.5 text-left text-sm active:opacity-70 ${

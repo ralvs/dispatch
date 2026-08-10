@@ -118,8 +118,8 @@ export function TaskTitleField({
 			placeholder={placeholder}
 			aria-label="Task title"
 			data-autofocus={autoFocus || undefined}
-			// Class swap only (Pass 5): .type-title → explicit weight/tracking.
-			// Behaviour and field geometry unchanged.
+			// Pass 5 retired `.type-title`; weight and tracking are inlined.
+			// Tracking is now Tailwind's -0.025em rather than the class's -0.02em.
 			className="field-shell h-auto w-full py-1.5 text-base font-medium tracking-tight text-ink placeholder:font-normal placeholder:text-ink-4"
 		/>
 	);

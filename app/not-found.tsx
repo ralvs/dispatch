@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { BrandMark } from "@/components/brand-mark";
 import { button } from "@/components/ui";
+import { Wordmark } from "@/components/wordmark";
 
 /*
  * Unmatched URLs — no route segment claims them, so the router decides this
@@ -17,10 +17,7 @@ import { button } from "@/components/ui";
 export default function NotFound() {
 	return (
 		<main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6 pb-24">
-			<div className="flex items-center gap-2.5">
-				<BrandMark size={22} />
-				<span className="text-[15px] font-medium text-ink">Dispatch</span>
-			</div>
+			<Wordmark />
 
 			<h1 className="mt-5 text-t30 text-ink">Nothing here</h1>
 

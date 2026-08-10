@@ -11,7 +11,7 @@
 // name into the field's value directly.
 
 import { type KeyboardEvent, useId, useRef, useState } from "react";
-import { suggestionOption, suggestionPanel } from "@/components/ui";
+import { suggestionEmptyText, suggestionOption, suggestionPanel } from "@/components/ui";
 import {
 	activeMentionQuery,
 	type MentionCandidate,
@@ -142,7 +142,7 @@ function MentionDropdown({
 			className={`absolute left-0 top-full z-20 mt-1 min-w-40 max-w-64 ${suggestionPanel}`}
 		>
 			{items.length === 0 ? (
-				<div className="px-3 py-2 text-sm text-ink-4">No matching people</div>
+				<div className={suggestionEmptyText}>No matching people</div>
 			) : (
 				items.map((item, index) => (
 					<button

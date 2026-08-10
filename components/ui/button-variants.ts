@@ -7,8 +7,13 @@ import { tv, type VariantProps } from "./tv";
  * `"use client"` module's exports are client references — calling one during a
  * server render throws. `button()` is a pure string function with no such
  * need, and server components do call it (both not-found pages style a `Link`
- * with it). Keeping the recipe here lets either side compose it; `button.tsx`
- * re-exports it so existing imports are unchanged.
+ * with it). Keeping the recipe here lets either side compose it.
+ *
+ * `button.tsx` imports it for its own use and does not re-export it — that
+ * would hand server callers back the client reference this split exists to
+ * avoid. The barrel (`./index.ts`) re-exports it from here, so `@/components/ui`
+ * imports are unaffected; anything importing `button` from `./button` directly
+ * has to point at this module instead.
  */
 export const button = tv({
 	base: [

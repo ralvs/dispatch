@@ -266,6 +266,11 @@ html[data-standalone] .app-shell {
  * that made `.font-serif` look plausible across three identities. Remaining
  * sites inline `font-medium tracking-tight`. Ramp steps (text-t30 and up)
  * already carry weight and tracking themselves.
+ *
+ * Note the swap is not value-identical: `tracking-tight` is Tailwind's
+ * -0.025em (nothing overrides it in @theme), so those sites moved 0.005em
+ * tighter, onto the same value as `.display-tight`. Accepted rather than
+ * preserved — -0.02em now survives only as the literal in app-header.tsx.
  */
 .display-tight {
 	letter-spacing: -0.025em;

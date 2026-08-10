@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { BrandMark } from "@/components/brand-mark";
 import { Button, Field, Input } from "@/components/ui";
+import { Wordmark } from "@/components/wordmark";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 const SignInSchema = z.object({
@@ -93,10 +93,7 @@ export default function SignInPage() {
 	if (checkingSession) {
 		return (
 			<main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6 pb-24">
-				<div className="flex items-center gap-2.5">
-					<BrandMark size={22} />
-					<span className="text-[15px] font-medium text-ink">Dispatch</span>
-				</div>
+				<Wordmark />
 				<p className="mt-5 text-sm text-ink-3" role="status">
 					Checking session…
 				</p>
@@ -106,10 +103,7 @@ export default function SignInPage() {
 
 	return (
 		<main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6 pb-24">
-			<div className="flex items-center gap-2.5">
-				<BrandMark size={22} />
-				<span className="text-[15px] font-medium text-ink">Dispatch</span>
-			</div>
+			<Wordmark />
 
 			<h1 className="mt-5 text-t30 text-ink">Sign in</h1>
 
