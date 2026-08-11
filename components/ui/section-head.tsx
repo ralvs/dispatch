@@ -15,7 +15,7 @@ import type { ReactNode } from "react";
 export function SectionHead({ title, aside }: { title: string; aside?: ReactNode }) {
 	return (
 		<div className="mb-1.5 flex items-baseline justify-between gap-4">
-			<h2 className="m-0 text-base font-medium tracking-[-0.02em] text-ink">{title}</h2>
+			<h2 className="m-0 type-section text-ink">{title}</h2>
 			{aside}
 		</div>
 	);

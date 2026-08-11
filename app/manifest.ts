@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { GROUND_LIGHT } from "@/lib/ui/chrome-colors";
 
 export default function manifest(): MetadataRoute.Manifest {
 	return {
@@ -14,8 +15,8 @@ export default function manifest(): MetadataRoute.Manifest {
 		// can. Light is the app default (THEME_BOOT, Pass 0), so the install
 		// splash and OS task-switcher card use the light ground — not the
 		// near-black Vercel/Geist leftover, and not the dark warm stone.
-		background_color: "#fafafa",
-		theme_color: "#fafafa",
+		background_color: GROUND_LIGHT,
+		theme_color: GROUND_LIGHT,
 		lang: "en",
 		shortcuts: [{ name: "Capture", short_name: "Capture", url: "/today?capture=1" }],
 		icons: [

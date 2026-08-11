@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { AppToaster } from "@/components/app-toaster";
 import { SessionKeeper } from "@/components/session-keeper";
 import { SwRegister } from "@/components/sw-register";
+import { GROUND_DARK, GROUND_LIGHT } from "@/lib/ui/chrome-colors";
 import "./globals.css";
 
 const geist = Geist({
@@ -39,8 +40,8 @@ export const viewport: Viewport = {
 	// chrome and canvas can disagree when the user overrides the OS
 	// preference — a known, accepted limitation of a static viewport export.
 	themeColor: [
-		{ media: "(prefers-color-scheme: dark)", color: "#1a1817" },
-		{ media: "(prefers-color-scheme: light)", color: "#fafafa" },
+		{ media: "(prefers-color-scheme: dark)", color: GROUND_DARK },
+		{ media: "(prefers-color-scheme: light)", color: GROUND_LIGHT },
 	],
 	viewportFit: "cover",
 };

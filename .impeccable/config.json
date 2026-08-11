@@ -3,7 +3,8 @@
     "ignoreRules": [],
     "ignoreFiles": [
       ".impeccable/mocks",
-      ".impeccable/mocks/**"
+      ".impeccable/mocks/**",
+      "docs/*.html"
     ],
     "ignoreValues": []
   }

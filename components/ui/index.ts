@@ -7,11 +7,13 @@
  * component stays in the `.tsx`.
  *
  * `button` was moved after both not-found pages hit exactly that throw.
- * `checkbox`, `radio`, and `fieldControl` are still exported from `"use
- * client"` modules below and would throw the same way the first time a server
- * component reaches for them — `fieldControl` is the likeliest, since it is
- * already consumed as a bare class constant. Left as-is deliberately: no
- * server caller today, and the move is a refactor, not a cleanup.
+ * `fieldControl` followed, because its one caller invokes it at module scope
+ * — that runs at import time, so the throw would not even wait for a render.
+ *
+ * `checkbox` and `radio` are still exported from `"use client"` modules below
+ * and would throw the same way. Left there deliberately: neither has a caller
+ * outside its own module today, so moving them now would be speculative. If
+ * you give either one a server caller, move it first.
  */
 export { Badge, badge, MENTION_CHIP_CLASS, NOTE_CHIP_CLASS } from "./badge";
 export { Button } from "./button";
@@ -20,7 +22,8 @@ export { Card, card } from "./card";
 export { Checkbox, checkbox } from "./checkbox";
 export { Dialog, DialogBody, DialogFooter } from "./dialog";
 export { EmptyState } from "./empty-state";
-export { Field, fieldControl, Input, Select, Textarea } from "./field";
+export { Field, Input, Select, Textarea } from "./field";
+export { type FieldControlVariants, fieldControl } from "./field-variants";
 export { ICON_SIZES, Icon, type IconSize } from "./icon";
 export { ListRow, rowTitle } from "./list-row";
 export { type Measure, PageHeader } from "./page-header";

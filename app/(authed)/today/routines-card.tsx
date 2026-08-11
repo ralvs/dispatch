@@ -92,7 +92,7 @@ export function RoutinesCard({
 			<Card padding="none" className="px-6 py-5 lg:px-6 lg:py-[22px]">
 				<div className="flex items-center justify-between gap-4">
 					<div className="min-w-0">
-						<h2 className="m-0 text-base font-medium tracking-[-0.02em] text-ink">Routines</h2>
+						<h2 className="m-0 type-section text-ink">Routines</h2>
 						<p className="mt-1 font-mono text-meta text-ink-3">
 							{blocksLeft.length === 0
 								? "All clear"

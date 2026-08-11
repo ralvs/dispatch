@@ -271,12 +271,33 @@ html[data-standalone] .app-shell {
  * -0.025em (nothing overrides it in @theme), so those sites moved 0.005em
  * tighter, onto the same value as `.display-tight`.
  *
- * -0.02em itself is very much alive: it is DESIGN.md's `section` role
- * (16px/500/-0.02em), inlined as `tracking-[-0.02em]` by section-head,
- * app-header, projects-card and routines-card, and set by `.prose-authored`
- * h2/h3 below. That role still has no class of its own — the one real gap
- * `.type-title`'s retirement left behind.
+ * -0.02em itself is very much alive: it is `.type-section` below, and
+ * `.prose-authored` h2/h3 further down.
  */
+
+/*
+ * DESIGN.md's `section` role, given the class it never had: a heading inside
+ * a page — a list's group label, a Today card's title, the wordmark. The
+ * size/colour split does the hierarchical work, so a head can sit at 16px and
+ * still read as one.
+ *
+ * It was documented in DESIGN.md (Typography → section) from the start but
+ * only ever existed as `text-base font-medium tracking-[-0.02em]`, spelled
+ * out by hand at four call sites. That is what `.type-title`'s retirement
+ * actually left behind: not a missing title class, a documented role with no
+ * implementation and an arbitrary Tailwind value standing in for it.
+ *
+ * This owns the whole role, size included, so do not pair it with a `text-*`
+ * utility — these rules are unlayered and would win the cascade against one.
+ * A section head at another size is a different role; give it its own name.
+ */
+.type-section {
+	font-size: 16px;
+	line-height: 1.5;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+}
+
 .display-tight {
 	letter-spacing: -0.025em;
 }

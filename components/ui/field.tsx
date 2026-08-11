@@ -11,36 +11,15 @@ import {
 	useContext,
 	useId,
 } from "react";
+import { type FieldControlVariants, fieldControl } from "./field-variants";
 import { Icon } from "./icon";
-import { tv, type VariantProps } from "./tv";
+import { tv } from "./tv";
 
 /**
- * Field shape comes entirely from --field-* tokens (data-ui variant swap).
- * Every field — title or meta — uses the same shell. Size only changes height
- * and type scale; it never forks the chrome into "line vs box".
+ * The `fieldControl` recipe lives in ./field-variants — imported here, never
+ * re-exported, so server callers never receive a client reference. See the
+ * note there.
  */
-export const fieldControl = tv({
-	base: [
-		"field-shell w-full text-ink outline-none transition-colors",
-		"placeholder:text-ink-4",
-		"disabled:cursor-not-allowed disabled:opacity-50",
-		"hover:border-line-strong focus:border-line-strong",
-		"data-[invalid]:border-error",
-		"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-	],
-	variants: {
-		size: {
-			sm: "h-7 px-2.5 text-eyebrow",
-			md: "h-9 px-2.5 text-sm",
-			lg: "h-11 px-3 text-base",
-		},
-	},
-	defaultVariants: {
-		size: "md",
-	},
-});
-
-export type FieldControlVariants = VariantProps<typeof fieldControl>;
 
 const selectShell = tv({
 	extend: fieldControl,

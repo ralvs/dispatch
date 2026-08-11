@@ -29,10 +29,7 @@ export function AppHeader() {
 
 	return (
 		<header className="mb-16 hidden items-center justify-between gap-5 lg:flex">
-			<Link
-				href="/today"
-				className="flex items-center gap-2.5 text-base font-medium tracking-[-0.02em] text-ink"
-			>
+			<Link href="/today" className="flex items-center gap-2.5 type-section text-ink">
 				<BrandMark />
 				Dispatch
 			</Link>
