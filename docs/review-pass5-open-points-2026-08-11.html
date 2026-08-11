@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pass 5 — the five open points</title>
+<style>
+  :root {
+    --bg: #fbfaf9; --surface: #ffffff; --surface-2: #f4f2f0;
+    --ink: #1a1817; --ink-2: #45403c; --ink-3: #6b645e; --ink-4: #948c85;
+    --line: #e6e2de; --line-strong: #d3cdc7;
+    --accent: #b4541f; --accent-bg: #fbeee6;
+    --add-bg: #e8f3ec; --add-ink: #1c5433; --add-line: #a9d3bb;
+    --del-bg: #fbecec; --del-ink: #7a2222; --del-line: #e2b4b4;
+    --warn-bg: #fdf3e2; --warn-line: #e8cd9a; --warn-ink: #7a5410;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1817; --surface: #232120; --surface-2: #2c2927;
+      --ink: #f2efec; --ink-2: #cfc8c2; --ink-3: #a49c95; --ink-4: #7d746d;
+      --line: #35322f; --line-strong: #48433f;
+      --accent: #e0803f; --accent-bg: #33251a;
+      --add-bg: #1a2c21; --add-ink: #8fd0a8; --add-line: #2f5941;
+      --del-bg: #2f1e1e; --del-ink: #e5a2a2; --del-line: #5e3232;
+      --warn-bg: #2e2413; --warn-line: #574522; --warn-ink: #e0bd7c;
+    }
+  }
+  :root[data-theme="dark"] {
+      --bg: #1a1817; --surface: #232120; --surface-2: #2c2927;
+      --ink: #f2efec; --ink-2: #cfc8c2; --ink-3: #a49c95; --ink-4: #7d746d;
+      --line: #35322f; --line-strong: #48433f;
+      --accent: #e0803f; --accent-bg: #33251a;
+      --add-bg: #1a2c21; --add-ink: #8fd0a8; --add-line: #2f5941;
+      --del-bg: #2f1e1e; --del-ink: #e5a2a2; --del-line: #5e3232;
+      --warn-bg: #2e2413; --warn-line: #574522; --warn-ink: #e0bd7c;
+  }
+  :root[data-theme="light"] {
+    --bg: #fbfaf9; --surface: #ffffff; --surface-2: #f4f2f0;
+    --ink: #1a1817; --ink-2: #45403c; --ink-3: #6b645e; --ink-4: #948c85;
+    --line: #e6e2de; --line-strong: #d3cdc7;
+    --accent: #b4541f; --accent-bg: #fbeee6;
+    --add-bg: #e8f3ec; --add-ink: #1c5433; --add-line: #a9d3bb;
+    --del-bg: #fbecec; --del-ink: #7a2222; --del-line: #e2b4b4;
+    --warn-bg: #fdf3e2; --warn-line: #e8cd9a; --warn-ink: #7a5410;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 400 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 61rem; margin: 0 auto; padding: 3.5rem 1.5rem 6rem; }
+
+  header.top { margin-bottom: 2.5rem; }
+  .eyebrow {
+    font: 400 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 .6rem;
+  }
+  h1 { font-size: clamp(28px, 4.4vw, 38px); font-weight: 500; letter-spacing: -0.025em; line-height: 1.12; margin: 0 0 .7rem; }
+  .lede { color: var(--ink-2); font-size: 17px; max-width: 60ch; margin: 0; }
+
+  .callout {
+    margin: 1.75rem 0 0; padding: .9rem 1.1rem; border-radius: 10px;
+    background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink);
+    font-size: 14.5px; line-height: 1.55;
+  }
+  .callout strong { color: inherit; }
+
+  table.summary { width: 100%; border-collapse: collapse; margin: 2.5rem 0 0; font-size: 14.5px; }
+  table.summary th, table.summary td { text-align: left; padding: .65rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.summary th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); font-weight: 500; border-bottom-color: var(--line-strong); }
+  table.summary td:first-child { color: var(--ink-4); font-variant-numeric: tabular-nums; width: 2rem; }
+  .tbl-scroll { overflow-x: auto; }
+
+  .pill { display: inline-block; padding: .12rem .5rem; border-radius: 999px; font-size: 11.5px; font-weight: 500; letter-spacing: .02em; white-space: nowrap; border: 1px solid; }
+  .pill.do    { background: var(--add-bg); color: var(--add-ink); border-color: var(--add-line); }
+  .pill.ask   { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-line); }
+  .pill.later { background: var(--surface-2); color: var(--ink-3); border-color: var(--line-strong); }
+  .pill.fixed { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+
+  section.point { margin-top: 3.5rem; border-top: 1px solid var(--line-strong); padding-top: 1.75rem; }
+  section.point > h2 { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; margin: 0 0 .3rem; display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+  .num { font: 400 13px/1 ui-monospace, monospace; color: var(--ink-4); border: 1px solid var(--line-strong); border-radius: 5px; padding: .25rem .4rem; }
+  .sub { color: var(--ink-3); font-size: 14.5px; margin: 0 0 1.4rem; }
+
+  h3 { font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-3); margin: 1.6rem 0 .6rem; }
+  p { margin: 0 0 .85rem; color: var(--ink-2); }
+  p.tight { margin-bottom: .4rem; }
+  ul { margin: 0 0 .9rem; padding-left: 1.15rem; color: var(--ink-2); }
+  li { margin-bottom: .35rem; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .89em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: .08em .32em; }
+  strong { color: var(--ink); font-weight: 500; }
+
+  .ev { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .3rem 0; margin: 0 0 1rem; }
+  .ev-row { display: flex; gap: .9rem; padding: .45rem .95rem; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .ev-row:last-child { border-bottom: 0; }
+  .ev-row .loc { font-family: ui-monospace, monospace; font-size: 12.5px; color: var(--accent); white-space: nowrap; flex: 0 0 15rem; }
+  .ev-row .what { color: var(--ink-2); }
+  @media (max-width: 680px) { .ev-row { flex-direction: column; gap: .15rem; } .ev-row .loc { flex: none; } }
+
+  pre { margin: 0 0 1rem; padding: .85rem 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.8px; line-height: 1.65; color: var(--ink-2); }
+  pre .d { display: block; background: var(--del-bg); color: var(--del-ink); margin: 0 -1rem; padding: 0 1rem; }
+  pre .a { display: block; background: var(--add-bg); color: var(--add-ink); margin: 0 -1rem; padding: 0 1rem; }
+  pre .c { display: block; color: var(--ink-4); }
+  pre .f { display: block; color: var(--ink-4); border-bottom: 1px solid var(--line); margin: -.85rem -1rem .6rem; padding: .5rem 1rem; background: var(--surface-2); border-radius: 10px 10px 0 0; }
+
+  .verdict { display: flex; gap: .8rem; align-items: flex-start; background: var(--surface-2); border: 1px solid var(--line-strong); border-left: 3px solid var(--accent); border-radius: 8px; padding: .8rem 1rem; margin-top: 1.2rem; font-size: 14.5px; color: var(--ink-2); }
+  .verdict b { color: var(--ink); font-weight: 500; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+  .col h4 { margin: 0 0 .45rem; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); font-weight: 500; }
+  .col pre { margin-bottom: 0; height: 100%; }
+
+  footer { margin-top: 4rem; border-top: 1px solid var(--line-strong); padding-top: 1.25rem; color: var(--ink-4); font-size: 13.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">Dispatch · Pass 5 cleanup · follow-up</p>
+  <h1>The five open points, dug into</h1>
+  <p class="lede">
+    Everything below was deferred out of commit <code>7f6c0c3</code> rather than fixed.
+    This is the evidence for each, what I'd actually change, and where the call is yours rather than mine.
+  </p>
+
+  <div class="callout">
+    <strong>One correction first.</strong> A comment I committed in <code>app/globals.css</code> claimed
+    <em>“-0.02em now survives only as the literal in app-header.tsx.”</em> That is wrong.
+    <code>-0.02em</code> is inlined at <strong>four</strong> call sites, set by two <code>.prose-authored</code>
+    rules, and documented in <code>DESIGN.md</code> as a named role. I've corrected the comment; the finding it
+    was hiding turns out to be the most substantial of the five, and is point 1.
+  </div>
+</header>
+
+<div class="tbl-scroll">
+<table class="summary">
+  <thead><tr><th></th><th>Point</th><th>What digging changed</th><th>Verdict</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>The <code>section</code> role has no class</td><td>Much bigger than flagged — a documented role with 4 hand-inlined copies</td><td><span class="pill do">worth fixing</span></td></tr>
+    <tr><td>2</td><td><code>text-[15px]</code> off the ramp</td><td>Unchanged in size; the fix is clearer than expected</td><td><span class="pill ask">your call</span></td></tr>
+    <tr><td>3</td><td><code>-variants.ts</code> convention</td><td>Narrower — 3 recipes, and only 1 has any consumer</td><td><span class="pill later">comment may be enough</span></td></tr>
+    <tr><td>4</td><td>TipTap suggestion factory</td><td>Confirmed: 82% identical, 7 variation points</td><td><span class="pill later">own PR</span></td></tr>
+    <tr><td>5</td><td>Chrome colours hardcoded</td><td>Confirmed small; values currently agree</td><td><span class="pill later">low stakes</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+
+<section class="point">
+  <h2><span class="num">01</span> DESIGN.md's <code>section</code> role has no class — so it's inlined four times</h2>
+  <p class="sub">This is the real gap <code>.type-title</code>'s retirement left behind, and I missed it the first time.</p>
+
+  <h3>What I found</h3>
+  <p><code>DESIGN.md</code> documents a named type role — and nothing in CSS implements it:</p>
+  <pre><span class="f">DESIGN.md:95–100</span>  section:
+    fontFamily: "Geist, Arial, ui-sans-serif, sans-serif"
+    fontSize: "16px"
+    fontWeight: 500
+    lineHeight: 1.5
+    letterSpacing: "-0.02em"</pre>
+
+  <p>There is no <code>.type-section</code> class and no <code>--text-section</code> token. So every call site spells the role out by hand, using an arbitrary Tailwind value:</p>
+
+  <div class="ev">
+    <div class="ev-row"><span class="loc">components/ui/section-head.tsx:18</span><span class="what"><code>&lt;h2 class="m-0 text-base font-medium tracking-[-0.02em] text-ink"&gt;</code></span></div>
+    <div class="ev-row"><span class="loc">today/projects-card.tsx:23</span><span class="what">byte-identical to the above</span></div>
+    <div class="ev-row"><span class="loc">today/routines-card.tsx:95</span><span class="what">byte-identical to the above</span></div>
+    <div class="ev-row"><span class="loc">components/app-header.tsx:34</span><span class="what">same three utilities, on the wordmark link</span></div>
+    <div class="ev-row"><span class="loc">app/globals.css:311, :319</span><span class="what"><code>.prose-authored</code> h2/h3 set <code>-0.02em</code> directly</span></div>
+  </div>
+
+  <p>
+    So the retirement story is inverted from how I recorded it. <code>.type-title</code> (500 / <code>-0.02em</code>)
+    was <em>most of the documented <code>section</code> role</em>. Pass 5 deleted it and moved its former sites to
+    <code>tracking-tight</code>, which is <code>-0.025em</code> — <strong>away</strong> from the documented role and onto
+    <code>.display-tight</code>'s value. Meanwhile the role's actual value survives as an arbitrary literal in four places.
+  </p>
+
+  <h3>Suggestion — give the documented role a class</h3>
+  <pre><span class="f">app/globals.css — new, next to .display-tight</span><span class="a">+ /* DESIGN.md's `section` role: a heading inside a page, where the</span><span class="a">+  * size/colour split does the hierarchy and 16px still reads as a head.</span><span class="a">+  * A class because the role is documented and was being spelled out as</span><span class="a">+  * an arbitrary `tracking-[-0.02em]` at four call sites. */</span><span class="a">+ .type-section {</span><span class="a">+   font-size: 16px;</span><span class="a">+   font-weight: 500;</span><span class="a">+   letter-spacing: -0.02em;</span><span class="a">+ }</span></pre>
+
+  <pre><span class="f">components/ui/section-head.tsx:18 — and the three peers</span><span class="d">- &lt;h2 className="m-0 text-base font-medium tracking-[-0.02em] text-ink"&gt;{title}&lt;/h2&gt;</span><span class="a">+ &lt;h2 className="m-0 type-section text-ink"&gt;{title}&lt;/h2&gt;</span></pre>
+
+  <p>
+    Zero visual change — same three declarations, now named once. It also gives the next heading somewhere
+    correct to land, which is exactly what was missing when three cards each invented the same literal.
+  </p>
+
+  <h3>A second thing worth a look</h3>
+  <p>
+    <code>projects-card.tsx:23</code> and <code>routines-card.tsx:95</code> render the <em>exact</em> <code>h2</code>
+    that <code>SectionHead</code> already renders. They may be able to use the component outright rather than the class.
+    I did not verify their surrounding wrapper markup matches <code>SectionHead</code>'s
+    (<code>mb-1.5 flex items-baseline justify-between gap-4</code>), so treat this as a candidate, not a finding.
+  </p>
+
+  <div class="verdict">
+    <div><b>Verdict:</b> worth fixing — 1 CSS rule + 4 one-line edits, no visual change.
+    <b>Open question for you:</b> should the retired title sites (<code>task-fields</code>, <code>capture-palette</code> ×2)
+    come back to <code>-0.02em</code> as <code>type-section</code>'s tracking, or is the <code>-0.025em</code> they got in Pass 5 what you wanted?
+    Right now they sit on a third value that matches neither the role nor the old class.</div>
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">02</span> <code>text-[15px]</code> sits off the authored ramp</h2>
+  <p class="sub">Two sites. The interesting part is that the obvious fix also removes an unexplained inconsistency.</p>
+
+  <h3>What I found</h3>
+  <p>The ramp is pinned and closed — <code>56 / 44 / 36 / 30 / 18 / 16 / 14 / 12</code> (<code>app/globals.css:180–184</code>). 15 is not on it. Two sites use it:</p>
+  <div class="ev">
+    <div class="ev-row"><span class="loc">components/wordmark.tsx:18</span><span class="what">the unauth wordmark — mine, consolidated from the 3 copies Pass 5 created</span></div>
+    <div class="ev-row"><span class="loc">components/more-menu.tsx:123</span><span class="what">pre-existing menu row label</span></div>
+  </div>
+  <p>
+    The detail that decides it: <strong><code>app-header.tsx:34</code> renders the same wordmark at
+    <code>text-base</code> — 16px.</strong> So the product name is currently set at two different sizes depending on
+    whether you're signed in, with nothing recording why.
+  </p>
+
+  <h3>Suggestion — snap the wordmark to the ramp</h3>
+  <pre><span class="f">components/wordmark.tsx:18</span><span class="d">- &lt;span className="text-[15px] font-medium text-ink"&gt;Dispatch&lt;/span&gt;</span><span class="a">+ &lt;span className="type-section text-ink"&gt;Dispatch&lt;/span&gt;</span><span class="c">  // 16px/500/-0.02em — same as app-header's wordmark, and on the ramp</span></pre>
+  <p>
+    This lands on point 1's new class, unifies the two wordmarks, and clears the off-ramp value in one move.
+    The mark itself stays at <code>size={22}</code> vs the header's <code>26</code>, which is a defensible
+    difference — the header is chrome, the unauth page is an introduction.
+  </p>
+  <p><strong>This does change pixels</strong> (15 → 16 on both unauth pages), which is why I'm not doing it unasked.</p>
+  <p class="tight">Alternatives if you'd rather not:</p>
+  <ul>
+    <li>Add 15 to the ramp as a real step, and update <code>DESIGN.md</code>.</li>
+    <li>Sanction it as an exception via the impeccable hook, with a recorded reason.</li>
+  </ul>
+  <p><code>more-menu.tsx:123</code> is a separate judgement — menu rows are a different role, and 15px there may be deliberate.</p>
+
+  <div class="verdict"><div><b>Verdict:</b> your call, because it moves pixels. My recommendation is the snap to 16 — it's the only option that removes an inconsistency instead of documenting one.</div></div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">03</span> The <code>-variants.ts</code> convention for the remaining recipes</h2>
+  <p class="sub">Smaller than I reported. Two of the three "hazards" have no consumers at all.</p>
+
+  <h3>What I found</h3>
+  <p>The hazard is precise: <em>a <code>tv()</code> recipe re-exported through the barrel from a <code>"use client"</code> module.</em> Auditing all 13 UI modules:</p>
+  <div class="ev">
+    <div class="ev-row"><span class="loc">checkbox.tsx → <code>checkbox</code></span><span class="what">client + barrel-exported · <strong>0 external consumers</strong></span></div>
+    <div class="ev-row"><span class="loc">radio.tsx → <code>radio</code></span><span class="what">client + barrel-exported · <strong>0 external consumers</strong></span></div>
+    <div class="ev-row"><span class="loc">field.tsx → <code>fieldControl</code></span><span class="what">client + barrel-exported · <strong>1 consumer</strong>, at module scope</span></div>
+    <div class="ev-row"><span class="loc">dialog.tsx</span><span class="what">client, has a <code>tv()</code>, but exports no recipe → not a hazard</span></div>
+    <div class="ev-row"><span class="loc">badge / card / list-row</span><span class="what">export recipes but are server modules → safe, though only by accident</span></div>
+    <div class="ev-row"><span class="loc">checkbox.tsx → <code>priorityRing</code></span><span class="what">not in the barrel, internal only → not a hazard</span></div>
+  </div>
+
+  <p>The one live consumer is the sharpest shape of the problem, because it runs at <em>import</em> time:</p>
+  <pre><span class="f">app/(authed)/tasks/task-fields.tsx:24</span>export const CONTROL = fieldControl({ size: "md" });   <span class="c">← module scope</span></pre>
+  <p>
+    Safe today only because <code>task-fields.tsx</code> is itself <code>"use client"</code>. But a module-scope call
+    means the throw wouldn't wait for a render — the first server module that transitively imports this file
+    triggers it on import.
+  </p>
+
+  <h3>Suggestion</h3>
+  <p>Given the consumer counts, I'd narrow the original recommendation rather than do all three:</p>
+  <ul>
+    <li><strong>Move <code>fieldControl</code></strong> to <code>field-variants.ts</code> — it's the only one with a caller, and the only one already in the server-composable shape. 3 files.</li>
+    <li><strong>Leave <code>checkbox</code> and <code>radio</code></strong>. Zero consumers means zero drift; moving them now is speculative. The comment I added to the barrel already names them for whoever hits it.</li>
+  </ul>
+  <p>The alternative — move all three for uniformity — is defensible too, and is 7 files. I lean against it only because "we moved it before anyone needed it" tends to read as noise later.</p>
+
+  <div class="verdict"><div><b>Verdict:</b> the barrel comment probably suffices. If you want one thing done, make it <code>fieldControl</code>.</div></div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">04</span> A generic TipTap suggestion factory</h2>
+  <p class="sub">Confirmed at the numbers the review claimed. Real, and genuinely not a cleanup-pass job.</p>
+
+  <h3>What I found</h3>
+  <p>
+    <code>wikilink-suggestion.tsx</code> (173 lines) and <code>mention-suggestion.tsx</code> (171 lines):
+    <strong>62 of 344 lines differ — 82% identical.</strong> The file itself admits it at line 8:
+    <em>“Cloned from wikilink-suggestion.tsx (the template).”</em>
+  </p>
+  <p>Everything that differs is configuration. The whole ProseMirror scaffold — React root lifecycle, <code>destroyDropdown</code>, <code>renderMenu</code>, positioning, key handling, <code>onStart</code>/<code>onUpdate</code>/<code>onExit</code> — is duplicated verbatim. The seven variation points:</p>
+  <div class="ev">
+    <div class="ev-row"><span class="loc">pluginKey / name</span><span class="what"><code>wikilinkSuggestion</code> vs <code>mentionSuggestion</code></span></div>
+    <div class="ev-row"><span class="loc">char</span><span class="what"><code>"[["</code> vs <code>"@"</code></span></div>
+    <div class="ev-row"><span class="loc">matcher</span><span class="what"><code>displayTitle().includes()</code> + self-exclusion vs <code>normalizeName()</code></span></div>
+    <div class="ev-row"><span class="loc">label accessor</span><span class="what"><code>displayTitle(item)</code> vs <code>item.name</code></span></div>
+    <div class="ev-row"><span class="loc">empty copy</span><span class="what">“No matching notes” vs “No matching people”</span></div>
+    <div class="ev-row"><span class="loc">inserted node</span><span class="what"><code>wikilink</code> + sanitized label vs <code>mention</code> + name</span></div>
+  </div>
+
+  <h3>Suggestion — the shape it would take</h3>
+  <pre><span class="f">app/(authed)/notes/[id]/suggestion-extension.tsx — sketch</span>export function createSuggestionExtension&lt;T extends { id: string }&gt;(config: {
+  name: string;
+  char: string;
+  items: T[];
+  matches: (item: T, query: string) =&gt; boolean;
+  label: (item: T) =&gt; string;
+  emptyLabel: string;
+  toNode: (item: T) =&gt; { type: string; attrs: Record&lt;string, unknown&gt; };
+}) { <span class="c">/* the scaffold, once */</span> }</pre>
+  <pre><span class="f">then each call site collapses to roughly</span>createSuggestionExtension({
+  name: "mentionSuggestion",
+  char: "@",
+  items: people,
+  matches: (c, q) =&gt; normalizeName(c.name).includes(normalizeName(q)),
+  label: (c) =&gt; c.name,
+  emptyLabel: "No matching people",
+  toNode: (c) =&gt; ({ type: "mention", attrs: { id: c.id, name: c.name } }),
+});</pre>
+  <p>Roughly 344 lines → ~120 (factory) + ~25 each. It also fixes the <code>PluginKey</code> collision hazard structurally, by deriving the key from <code>name</code> instead of relying on two comments telling each other to stay distinct.</p>
+
+  <div class="verdict">
+    <div><b>Verdict:</b> its own PR. This moves behaviour, not classes — React root teardown and ProseMirror
+    key registration are the two things in this codebase most likely to fail quietly. It wants manual testing of
+    both menus, not a rubber-stamped cleanup commit.</div>
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">05</span> Chrome colours hardcoded in TypeScript</h2>
+  <p class="sub">Small, cheap, low stakes. Included for completeness.</p>
+
+  <h3>What I found</h3>
+  <p>The two ground colours appear in CSS as the real source, and again as literals in two TS files that can't read CSS:</p>
+  <div class="ev">
+    <div class="ev-row"><span class="loc">app/globals.css:36</span><span class="what"><code>--bg: #fafafa</code> — light, the source of truth</span></div>
+    <div class="ev-row"><span class="loc">app/globals.css:111</span><span class="what"><code>--bg: #1a1817</code> — dark, the source of truth</span></div>
+    <div class="ev-row"><span class="loc">app/layout.tsx:42–43</span><span class="what"><code>themeColor</code> — both literals</span></div>
+    <div class="ev-row"><span class="loc">app/manifest.ts:13–14</span><span class="what"><code>background_color</code> + <code>theme_color</code> — <code>#fafafa</code> twice</span></div>
+  </div>
+  <p>All four currently agree. That's five literal occurrences across two files, with no compiler link to the CSS.</p>
+
+  <h3>Suggestion</h3>
+  <pre><span class="f">lib/ui/chrome-colors.ts — new</span><span class="a">+ /* Mirrors --bg in app/globals.css. Static metadata exports cannot read</span><span class="a">+  * CSS custom properties, so the value is duplicated here on purpose —</span><span class="a">+  * once, rather than at each of the five call sites. */</span><span class="a">+ export const GROUND_LIGHT = "#fafafa";</span><span class="a">+ export const GROUND_DARK = "#1a1817";</span></pre>
+  <pre><span class="f">app/manifest.ts</span><span class="d">- background_color: "#fafafa",</span><span class="d">- theme_color: "#fafafa",</span><span class="a">+ background_color: GROUND_LIGHT,</span><span class="a">+ theme_color: GROUND_LIGHT,</span></pre>
+
+  <p>
+    <strong>Being honest about what this doesn't fix:</strong> <code>--bg</code> in the CSS is still the real source,
+    and a TS constant can drift from it just as silently as two TS constants can drift from each other. It reduces
+    five literals to two, it doesn't close the loop. Actually closing it means generating tokens from one file, which is
+    more machinery than this app warrants.
+  </p>
+
+  <div class="verdict"><div><b>Verdict:</b> low stakes — the failure mode is a stale splash screen colour, visible only after install. Worth doing if you're touching these files anyway; not worth a dedicated commit.</div></div>
+</section>
+
+
+<footer>
+  Scope: commit range <code>322421c..HEAD</code> plus <code>7f6c0c3</code>.
+  Verified against the working tree — file and line references were re-read for this document, not carried over from the review.
+</footer>
+
+</div>
+</body>
+</html>
