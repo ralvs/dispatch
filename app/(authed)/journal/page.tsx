@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader, SectionHead } from "@/components/ui";
+import { EmptyState, ListSection, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatDay, todayInTz } from "@/lib/dates";
 import { listEntries } from "@/lib/services/journal";
@@ -29,22 +29,27 @@ export default async function JournalPage() {
 				<JournalForm todayIso={todayInTz(tz)} />
 			</section>
 
-			<section className="mt-9" aria-label="Journal entries">
-				{entries.length === 0 ? (
+			{entries.length === 0 ? (
+				<div className="mt-9">
 					<EmptyState>Nothing written yet. Capture what happened today.</EmptyState>
-				) : (
-					[...groups.entries()].map(([date, dayEntries]) => (
-						<div key={date} className="mt-9 first:mt-0">
-							<SectionHead title={formatDay(date, tz)} />
-							<ul>
-								{dayEntries.map((entry) => (
-									<EntryRowItem key={entry.id} entry={entry} />
-								))}
-							</ul>
-						</div>
-					))
-				)}
-			</section>
+				</div>
+			) : (
+				// Wrapped so date groups are first children of their own stack —
+				// first:mt-0 can fire (ADR-0046).
+				<div className="mt-9">
+					<div>
+						{[...groups.entries()].map(([date, dayEntries]) => (
+							<ListSection key={date} title={formatDay(date, tz)} count={dayEntries.length}>
+								<ul>
+									{dayEntries.map((entry) => (
+										<EntryRowItem key={entry.id} entry={entry} />
+									))}
+								</ul>
+							</ListSection>
+						))}
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

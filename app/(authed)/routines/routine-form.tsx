@@ -5,11 +5,11 @@ import { Field, Input, Select } from "@/components/ui";
 import { TIME_OF_DAY_LABELS, TIME_OF_DAY_ORDER } from "@/lib/schemas/routine";
 import { createRoutineAction } from "./actions";
 
-/** Create a routine — dialog behind `+ New routine` (Gate B / B1). */
+/** Create a routine — dialog behind the header's `+` (Gate B / B1). */
 export function RoutineCreateButton() {
 	return (
 		<CreateDialogButton
-			label="+ New routine"
+			label="New routine"
 			title="New routine"
 			submitLabel="Add routine"
 			errorMessage="Couldn't add routine. Try again."

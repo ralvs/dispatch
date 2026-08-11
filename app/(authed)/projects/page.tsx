@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader, SectionHead } from "@/components/ui";
+import { EmptyState, ListSection, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { listDomains } from "@/lib/services/domains";
 import { listProjects } from "@/lib/services/projects";
@@ -39,14 +39,13 @@ export default async function ProjectsPage() {
 						const group = projects.filter((p) => p.status === status);
 						if (group.length === 0) return null;
 						return (
-							<section key={status} className="mt-9 first:mt-0" aria-label={label}>
-								<SectionHead title={label} aside={String(group.length)} />
+							<ListSection key={status} title={label} count={group.length}>
 								<ul>
 									{group.map((p) => (
 										<ProjectRowItem key={p.id} project={p} />
 									))}
 								</ul>
-							</section>
+							</ListSection>
 						);
 					})}
 				</div>

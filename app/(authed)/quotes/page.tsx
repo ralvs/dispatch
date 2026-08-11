@@ -16,17 +16,16 @@ export default async function QuotesPage() {
 				action={<QuoteCreateButton />}
 			/>
 
-			<section aria-label="Quotes">
-				{quotes.length === 0 ? (
-					<EmptyState>Nothing saved yet. Capture something you read or heard.</EmptyState>
-				) : (
-					<ul>
-						{quotes.map((q) => (
-							<QuoteRowItem key={q.id} quote={q} />
-						))}
-					</ul>
-				)}
-			</section>
+			{quotes.length === 0 ? (
+				<EmptyState>Nothing saved yet. Capture something you read or heard.</EmptyState>
+			) : (
+				// Single ungrouped list — header measure is the count.
+				<ul>
+					{quotes.map((q) => (
+						<QuoteRowItem key={q.id} quote={q} />
+					))}
+				</ul>
+			)}
 		</div>
 	);
 }

@@ -1,46 +1,42 @@
 "use client";
 
-// Shared choreography + chrome for the "+ New X" dialog that ADR-0044 made the
-// one way an object list creates an object. Pass 2 rebuilt it four times by
-// hand — people, projects, quotes and routines each carried the same `open` /
-// `useTransition` / `formRef` scaffold and the same two-button footer — which
-// is the same failure `collapsible-form.tsx` was extracted to end for the
-// inline-form era this replaced. The copies had already drifted apart in their
-// error strings before the pass shipped.
+// Shared choreography + chrome for the header `+` dialog that ADR-0044 made
+// the one way an object list creates an object. Pass 2 rebuilt it four times
+// by hand — people, projects, quotes and routines each carried the same
+// `open` / `useTransition` / `formRef` scaffold and the same two-button
+// footer — which is the same failure `collapsible-form.tsx` was extracted to
+// end for the inline-form era this replaced. The copies had already drifted
+// apart in their error strings before the pass shipped.
+//
+// The trigger is the bare pill `+` shared with `/tasks` (HeaderCreateButton),
+// not a labelled `+ New X`: every object list now carries the same control.
 
 import { type ReactNode, useRef, useState, useTransition } from "react";
-import { Button, Dialog, DialogBody, DialogFooter } from "@/components/ui";
+import { Button, Dialog, DialogBody, DialogFooter, HeaderCreateButton } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 
 /**
- * The standing `+ New X` control on its own, with no dialog behind it.
+ * The standing header `+` on its own, with no dialog behind it.
  *
  * Exported so a route's `loading.tsx` holds the slot with the *same* element
- * the loaded page will render (DESIGN.md, "The Invisible Slot Rule") rather
- * than a hand-built lookalike. The hand-built twins re-spelled the variant and
- * the label once per route and had already drifted: the Tasks skeleton's copy
- * lost the `aria-label` its live control carries.
+ * the loaded page will render (DESIGN.md, "The Invisible Slot Rule").
  */
 export function CreateTrigger({
 	label,
 	onClick,
 	disabled = false,
 }: {
-	/** The visible label — `+ New project`. */
+	/** Accessible name — `New project`. Not drawn; the glyph is the control. */
 	label: string;
 	onClick?: () => void;
 	/** Held but not yet ready, which is what a loading route wants. */
 	disabled?: boolean;
 }) {
-	return (
-		<Button variant="secondary" onClick={onClick} disabled={disabled} aria-haspopup="dialog">
-			{label}
-		</Button>
-	);
+	return <HeaderCreateButton label={label} onClick={onClick} disabled={disabled} />;
 }
 
 /**
- * Create an object: a header action that opens a dialog, runs a server action,
+ * Create an object: a header `+` that opens a dialog, runs a server action,
  * and closes on success (ADR-0044, DESIGN.md "Creating an object").
  *
  * A call site supplies its `<Field>`s and its four strings. Everything else —
@@ -60,7 +56,7 @@ export function CreateDialogButton({
 	size,
 	children,
 }: {
-	/** Trigger label — `+ New project`. */
+	/** Trigger accessible name — `New project`. The glyph is what is drawn. */
 	label: string;
 	/** Dialog heading — `New project`. */
 	title: string;

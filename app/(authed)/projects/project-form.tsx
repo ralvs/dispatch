@@ -7,14 +7,14 @@ import { createProjectAction } from "./actions";
 import { ENGAGEMENT_TYPES, KINDS, PROJECT_TYPES } from "./constants";
 
 /**
- * Create a project — dialog behind the header's `+ New project` (Gate B / B1,
- * ADR-0043 generalised to object lists). Standing CollapsibleForm above the
- * list is gone; the form is one action on the page, not furniture in it.
+ * Create a project — dialog behind the header's `+` (Gate B / B1, ADR-0043
+ * generalised to object lists). Standing CollapsibleForm above the list is
+ * gone; the form is one action on the page, not furniture in it.
  */
 export function ProjectCreateButton({ domains }: { domains: DomainRow[] }) {
 	return (
 		<CreateDialogButton
-			label="+ New project"
+			label="New project"
 			title="New project"
 			submitLabel="Add project"
 			errorMessage="Couldn't create project. Try again."

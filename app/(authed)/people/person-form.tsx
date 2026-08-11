@@ -6,13 +6,13 @@ import { createPersonAction } from "./actions";
 import { RELATIONSHIP_TYPES } from "./constants";
 
 /**
- * Create a person — dialog behind the header's `+ New person` (Gate B / B1).
+ * Create a person — dialog behind the header's `+` (Gate B / B1).
  * Same rule as projects/quotes/routines: a list of objects opens as a list.
  */
 export function PersonCreateButton() {
 	return (
 		<CreateDialogButton
-			label="+ New person"
+			label="New person"
 			title="New person"
 			submitLabel="Add person"
 			errorMessage="Couldn't add person. Try again."

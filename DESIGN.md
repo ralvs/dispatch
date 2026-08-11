@@ -539,10 +539,11 @@ beneath where one is earned (ADR-0042; Pass 4.5 Gate A for facts).
   never to mark that a count is non-zero. Never a plain attribute with an empty
   label.
 - **Action:** one standing control, centred against the title's baseline.
-  On an object list this is where create lives — labelled `+ New …`, the notes
-  pattern (Pass 2 Gate B / B1). `/tasks` is the exception: a bare `+` on the
-  title's shoulder (`NewTaskButton` in the same `action` slot), because a second
-  labelled create next to Capture was the confusion ADR-0043 removed.
+  On an object list this is where create lives — a bare pill `+`
+  (`HeaderCreateButton`), the same control `/tasks` settled in ADR-0043. The
+  page title names the collection; the glyph does not restate it. Dialog
+  create still opens behind it (Pass 2 Gate B / B1); only the trigger shape
+  is shared.
 - **Subtitle:** only where it carries an instruction. Not a tagline.
 - **No divider, no eyebrow, no second title.** The 64px the shell puts above the
   header is the separation.
@@ -592,11 +593,19 @@ hatch for **state** (pending, selected), not for inventing a second row type.
 ### Creating an object
 
 **A list of objects opens as a list.** Creating an object is one action on the
-page header; the form is a dialog. Standing `CollapsibleForm` furniture above
+page header — the shared bare pill `+` (`HeaderCreateButton`) — and the form
+is a dialog (`CreateDialogButton`). Standing `CollapsibleForm` furniture above
 the first row is gone from `/projects`, `/people`, `/quotes`, `/routines`,
 `/domains` (Pass 2 Gate B / B1; ADR-0043 generalised; domains joined in Pass 4).
 `/journal` is the exception that proves the rule: writing the entry *is* the
 page, so standing furniture is correct there — Pass 3 applies it.
+
+### List sections
+
+Grouped lists use `ListSection`: a `SectionHead` title, an optional mono meta
+count on the baseline, and either rows or an `EmptyState`. Peer groups share
+36px (`mt-9 first:mt-0`). Ungrouped lists (people, quotes, routines) skip the
+section head — the page header's measure already carries the count.
 
 ### Empty States
 

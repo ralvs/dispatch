@@ -16,17 +16,17 @@ export default async function PeoplePage() {
 				action={<PersonCreateButton />}
 			/>
 
-			<section aria-label="People">
-				{people.length === 0 ? (
-					<EmptyState>No one here yet. Add someone.</EmptyState>
-				) : (
-					<ul>
-						{people.map((p) => (
-							<PersonRowItem key={p.id} person={p} />
-						))}
-					</ul>
-				)}
-			</section>
+			{people.length === 0 ? (
+				<EmptyState>No one here yet. Add someone.</EmptyState>
+			) : (
+				// Single ungrouped list — no SectionHead. The header measure is
+				// the count; a lone "People" group label would restate the title.
+				<ul>
+					{people.map((p) => (
+						<PersonRowItem key={p.id} person={p} />
+					))}
+				</ul>
+			)}
 		</div>
 	);
 }

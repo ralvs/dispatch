@@ -6,13 +6,13 @@ import { Field, Input, Textarea } from "@/components/ui";
 import { createDomainAction } from "./actions";
 
 /**
- * Create a domain — dialog behind the header's `+ New domain` (ADR-0044).
+ * Create a domain — dialog behind the header's `+` (ADR-0044).
  * Standing CollapsibleForm above the list is gone with the move out of settings.
  */
 export function DomainCreateButton() {
 	return (
 		<CreateDialogButton
-			label="+ New domain"
+			label="New domain"
 			title="New domain"
 			submitLabel="Add domain"
 			errorMessage="Couldn't create domain. Try again."

@@ -14,11 +14,11 @@ const SOURCE_TYPES = [
 	{ value: "other", label: "Other" },
 ];
 
-/** Create a quote — dialog behind `+ New quote` (Gate B / B1). */
+/** Create a quote — dialog behind the header's `+` (Gate B / B1). */
 export function QuoteCreateButton() {
 	return (
 		<CreateDialogButton
-			label="+ New quote"
+			label="New quote"
 			title="New quote"
 			submitLabel="Add quote"
 			errorMessage="Couldn't save quote. Try again."

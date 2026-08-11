@@ -31,27 +31,26 @@ export default async function RoutinesPage() {
 				action={<RoutineCreateButton />}
 			/>
 
-			<section aria-label="Routines">
-				{routines.length === 0 ? (
-					<EmptyState>No routines yet. Add something you want to do daily.</EmptyState>
-				) : (
-					<ul>
-						{routines.map((routine) => {
-							const dates = (completionsByRoutine[routine.id] ?? []).map((c) => c.completed_date);
-							const stats = computeRoutineStats(dates, todayIso);
-							const recentDays = recentDaysGrid(dates, todayIso, 30);
-							return (
-								<RoutineRowItem
-									key={routine.id}
-									routine={routine}
-									stats={stats}
-									recentDays={recentDays}
-								/>
-							);
-						})}
-					</ul>
-				)}
-			</section>
+			{routines.length === 0 ? (
+				<EmptyState>No routines yet. Add something you want to do daily.</EmptyState>
+			) : (
+				// Single ungrouped list — header measure is the count.
+				<ul>
+					{routines.map((routine) => {
+						const dates = (completionsByRoutine[routine.id] ?? []).map((c) => c.completed_date);
+						const stats = computeRoutineStats(dates, todayIso);
+						const recentDays = recentDaysGrid(dates, todayIso, 30);
+						return (
+							<RoutineRowItem
+								key={routine.id}
+								routine={routine}
+								stats={stats}
+								recentDays={recentDays}
+							/>
+						);
+					})}
+				</ul>
+			)}
 		</div>
 	);
 }

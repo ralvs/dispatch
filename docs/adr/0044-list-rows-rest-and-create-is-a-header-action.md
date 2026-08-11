@@ -34,10 +34,11 @@ Creating an object is one action on the page header; the form is a dialog.
 Standing `CollapsibleForm` furniture above the first row is deleted from
 `/projects`, `/people`, `/quotes`, `/routines`.
 
-The control is a labelled `+ New …` in the action slot — the `/notes` pattern.
-The bare title-shoulder `+` stays `/tasks`'s: a second labelled create next to
-the shell's Capture was the confusion ADR-0043 removed, and these pages live
-behind More, not beside Capture.
+The control is the same bare pill `+` ADR-0043 settled for `/tasks`
+(`HeaderCreateButton`): the page title names the collection, so the glyph does
+not restate it. A labelled `+ New …` was the interim Pass 2 choice; it was
+folded into the tasks control once every object list carried a measure and the
+two shapes next to each other read as two systems.
 
 ### Where `/journal` falls
 

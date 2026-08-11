@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader, SectionHead } from "@/components/ui";
+import { EmptyState, ListSection, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedLinks } from "@/lib/cache/links";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -17,7 +17,8 @@ export default async function LinksPage() {
 	return (
 		<div>
 			{/* The subtitle used to spell the unread count out in a sentence. The
-			    measure carries it now, so the sentence goes. */}
+			    measure carries it now, so the sentence goes. No create action —
+			    links arrive through capture / webhook, not a header form. */}
 			<PageHeader
 				title="Links"
 				// Unread takes no accent: a reading pile is a pile by design, not
@@ -32,29 +33,27 @@ export default async function LinksPage() {
 			{unread.length === 0 && read.length === 0 ? (
 				<EmptyState>Nothing shared yet. Send a link and it lands here.</EmptyState>
 			) : (
-				<>
+				<div>
 					{unread.length > 0 && (
-						<section aria-label="Unread links">
-							<SectionHead title="Unread" aside={String(unread.length)} />
+						<ListSection title="Unread" count={unread.length}>
 							<ul>
 								{unread.map((link) => (
 									<LinkRowItem key={link.id} link={link} tz={tz} />
 								))}
 							</ul>
-						</section>
+						</ListSection>
 					)}
 
 					{read.length > 0 && (
-						<section className="mt-9" aria-label="Read links">
-							<SectionHead title="Read" aside={String(read.length)} />
+						<ListSection title="Read" count={read.length}>
 							<ul>
 								{read.map((link) => (
 									<LinkRowItem key={link.id} link={link} tz={tz} />
 								))}
 							</ul>
-						</section>
+						</ListSection>
 					)}
-				</>
+				</div>
 			)}
 		</div>
 	);

@@ -1,4 +1,4 @@
-import { Button, PageHeader } from "@/components/ui";
+import { HeaderCreateButton, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedNoteLists } from "@/lib/cache/notes";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -28,9 +28,7 @@ export default async function NotesPage() {
 				]}
 				action={
 					<form action={createBlankNoteAction}>
-						<Button type="submit" variant="secondary">
-							+ New note
-						</Button>
+						<HeaderCreateButton label="New note" type="submit" />
 					</form>
 				}
 			/>

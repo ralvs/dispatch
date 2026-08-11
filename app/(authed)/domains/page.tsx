@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader, SectionHead } from "@/components/ui";
+import { ListSection, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { listDomains } from "@/lib/services/domains";
 import { getAppTimezone } from "@/lib/services/settings";
@@ -26,39 +26,41 @@ export default async function DomainsPage() {
 				action={<DomainCreateButton />}
 			/>
 
-			<section aria-label="Active domains">
-				<SectionHead title="Active" aside={String(active.length)} />
-				{active.length === 0 ? (
-					<EmptyState>No active domains.</EmptyState>
-				) : (
-					<ul>
-						{active.map((d) => (
-							<DomainRowItem
-								key={d.id}
-								domain={d}
-								tz={tz}
-								cadenceDays={cadenceThresholdDays(d.failure_patterns)}
-							/>
-						))}
-					</ul>
-				)}
-			</section>
+			<div>
+				<ListSection
+					title="Active"
+					count={active.length}
+					empty={active.length === 0 ? "No active domains." : undefined}
+				>
+					{active.length > 0 ? (
+						<ul>
+							{active.map((d) => (
+								<DomainRowItem
+									key={d.id}
+									domain={d}
+									tz={tz}
+									cadenceDays={cadenceThresholdDays(d.failure_patterns)}
+								/>
+							))}
+						</ul>
+					) : undefined}
+				</ListSection>
 
-			{archived.length > 0 && (
-				<section className="mt-9" aria-label="Archived domains">
-					<SectionHead title="Archived" aside={String(archived.length)} />
-					<ul>
-						{archived.map((d) => (
-							<DomainRowItem
-								key={d.id}
-								domain={d}
-								tz={tz}
-								cadenceDays={cadenceThresholdDays(d.failure_patterns)}
-							/>
-						))}
-					</ul>
-				</section>
-			)}
+				{archived.length > 0 && (
+					<ListSection title="Archived" count={archived.length}>
+						<ul>
+							{archived.map((d) => (
+								<DomainRowItem
+									key={d.id}
+									domain={d}
+									tz={tz}
+									cadenceDays={cadenceThresholdDays(d.failure_patterns)}
+								/>
+							))}
+						</ul>
+					</ListSection>
+				)}
+			</div>
 		</div>
 	);
 }

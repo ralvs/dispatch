@@ -4,7 +4,7 @@ import { Star } from "lucide-react";
 import Link from "next/link";
 import { useOptimistic, useTransition } from "react";
 import { setPinAction } from "@/app/(authed)/notes/actions";
-import { EmptyState, ListRow, rowTitle, SectionHead } from "@/components/ui";
+import { ListRow, ListSection, rowTitle } from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
@@ -63,18 +63,19 @@ function Section({
 }) {
 	if (notes.length === 0 && !empty) return null;
 	return (
-		<section className="mt-9 first:mt-0" aria-label={label}>
-			<SectionHead title={label} aside={notes.length > 0 ? String(notes.length) : undefined} />
-			{notes.length === 0 ? (
-				<EmptyState>{empty}</EmptyState>
-			) : (
+		<ListSection
+			title={label}
+			count={notes.length > 0 ? notes.length : undefined}
+			empty={notes.length === 0 ? empty : undefined}
+		>
+			{notes.length > 0 ? (
 				<ul>
 					{notes.map((n) => (
 						<NoteLinkRow key={n.id} note={n} tz={tz} onTogglePin={() => onTogglePin(n)} />
 					))}
 				</ul>
-			)}
-		</section>
+			) : undefined}
+		</ListSection>
 	);
 }
 
@@ -125,9 +126,10 @@ export function NoteList({
 	}
 
 	return (
-		// A real element, not a fragment: `first:mt-0` on a Section is `:first-child`,
-		// and against the page's div the header held that slot, so the first group
-		// kept its 36px and sat lower than every other page's (ADR-0046).
+		// A real element, not a fragment: `first:mt-0` on a ListSection is
+		// `:first-child`, and against the page's div the header held that slot,
+		// so the first group kept its 36px and sat lower than every other page's
+		// (ADR-0046).
 		<div>
 			<Section label="Needs review" notes={review} tz={tz} onTogglePin={(n) => toggle(n, true)} />
 			<Section label="Pinned" notes={pinned} tz={tz} onTogglePin={(n) => toggle(n, false)} />
