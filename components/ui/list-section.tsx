@@ -8,8 +8,7 @@ import { SectionHead } from "./section-head";
  * Encodes the rhythm every list settled on after Pass 2 / ADR-0046:
  * - `mt-9 first:mt-0` so peer groups share 36px and the first after the
  *   header does not double the header's own gap
- * - count on the title's baseline in mono meta (the same voice as the
- *   page header's measure figures)
+ * - count sits beside the title (SectionHead), mono meta, not far-right
  * - empty as a slot inside the section, never a free-floating message
  *
  * Freeform `aside` still wins over `count` when a surface needs a phrase
@@ -24,9 +23,9 @@ export function ListSection({
 	label,
 }: {
 	title: string;
-	/** Right-aligned mono count. Omit rather than inventing zero for show. */
+	/** Mono count next to the title. Omit rather than inventing zero for show. */
 	count?: number;
-	/** Overrides `count` when the right side is a phrase or a control. */
+	/** Overrides `count` when the trailing bit is a phrase or a control. */
 	aside?: ReactNode;
 	children?: ReactNode;
 	/** When set, replaces `children` with an EmptyState of this content. */
@@ -34,15 +33,15 @@ export function ListSection({
 	/** `aria-label` when it should differ from the visible title. */
 	label?: string;
 }) {
-	const right =
+	const trailing =
 		aside ??
 		(count !== undefined ? (
-			<span className="font-mono text-meta tabular-nums text-ink-3">{count}</span>
+			<span className="font-mono text-meta tabular-nums text-ink-4">{count}</span>
 		) : undefined);
 
 	return (
 		<section className="mt-9 first:mt-0" aria-label={label ?? title}>
-			<SectionHead title={title} aside={right} />
+			<SectionHead title={title} aside={trailing} />
 			{empty != null ? <EmptyState>{empty}</EmptyState> : children}
 		</section>
 	);

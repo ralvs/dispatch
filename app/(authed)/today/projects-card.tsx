@@ -19,9 +19,9 @@ export function ProjectsCard({ projects }: { projects: ProjectBrief[] }) {
 	return (
 		<section className="t-sec-projects" aria-label="Active projects">
 			<Card padding="none" className="px-6 py-5 lg:px-6 lg:py-[22px]">
-				<div className="mb-1 flex items-baseline justify-between gap-4">
-					<h2 className="m-0 type-section text-ink">Projects</h2>
-					<Link href="/projects" className="font-mono text-meta text-ink-3 hover:text-ink-2">
+				<div className="mb-1 flex items-baseline gap-2">
+					<h2 className="m-0 type-section text-ink-3">Projects</h2>
+					<Link href="/projects" className="font-mono text-meta text-ink-4 hover:text-ink-2">
 						All →
 					</Link>
 				</div>

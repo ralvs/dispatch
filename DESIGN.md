@@ -588,7 +588,9 @@ hatch for **state** (pending, selected), not for inventing a second row type.
 - **Name at 400** via `rowTitle()`. Its `tone` / `emphasis` variants carry the
   done and P1 cases, so a row never appends a colour by hand. See Two Weights
   above.
-- **Group labels** are `SectionHead` (16px / 500), not the mono eyebrow.
+- **Group labels** are `SectionHead` (16px / 500 at `ink-3`), not the mono
+  eyebrow and not full `ink` — the rows carry the content weight. Any count
+  rides next to the title on the left, never pinned to the far right.
 
 ### Creating an object
 
@@ -602,10 +604,11 @@ page, so standing furniture is correct there — Pass 3 applies it.
 
 ### List sections
 
-Grouped lists use `ListSection`: a `SectionHead` title, an optional mono meta
-count on the baseline, and either rows or an `EmptyState`. Peer groups share
-36px (`mt-9 first:mt-0`). Ungrouped lists (people, quotes, routines) skip the
-section head — the page header's measure already carries the count.
+Grouped lists use `ListSection`: a quiet `SectionHead` title, an optional mono
+meta count **beside the title**, and either rows or an `EmptyState`. Peer
+groups share 36px (`mt-9 first:mt-0`). Ungrouped lists (people, quotes,
+routines) skip the section head — the page header's measure already carries
+the count.
 
 ### Empty States
 

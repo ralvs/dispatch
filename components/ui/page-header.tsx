@@ -117,16 +117,12 @@ export function PageHeader({
 			    by what is in it, not by the breakpoint.
 
 			    A reading (facts / measure) is running text and needs the width, so
-			    at 393pt it drops to its own row with the action beside it, which is
-			    what ADR-0042 chose over shrinking the reading. An action on its own
-			    needs no width worth taking a row for — a 32px control that wraps
-			    below a 30px title leaves a band of empty ground with one circle
-			    floating in it, and the control changes its relationship to the
-			    title depending on how wide the window is. So it never wraps:
-			    `flex-nowrap` holds it on the title's line at every width, and the
-			    h1 gives up the room. */}
+			    at 393pt it drops to its own row as one cluster with the action —
+			    never split measure left / action right across the full width.
+			    An action on its own never wraps: a lone 32px circle under the
+			    title is an orphan (ADR-0042). */}
 			<div
-				className={`flex items-baseline justify-between gap-3 lg:flex-nowrap lg:gap-8 ${
+				className={`flex items-center justify-between gap-3 lg:gap-8 ${
 					hasReading ? "flex-wrap" : "flex-nowrap"
 				}`}
 			>
@@ -134,28 +130,17 @@ export function PageHeader({
 				    action off the right edge — the h1 is the flexible half. */}
 				<h1 className="m-0 min-w-0 text-pretty text-t30 text-ink lg:text-t36">{title}</h1>
 				{hasRight && (
-					<div
-						className={
-							hasReading
-								? "flex w-full items-baseline justify-between gap-5 lg:w-auto lg:shrink-0 lg:justify-end"
-								: // No reading: the cluster is only as wide as its control and
-									// centres on the title's line box, which is what puts a
-									// circular glyph on the title's optical middle.
-									"flex shrink-0 items-center gap-5 self-center"
-						}
-					>
+					// Measure + action are one tight cluster, always. `items-center`
+					// keeps the pill + on the same optical middle as the count
+					// figures — baseline + translate-y was drifting them apart.
+					<div className="ml-auto flex shrink-0 items-center gap-3">
 						{hasReading && (
-							<div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1 text-sm text-ink-3">
+							<div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-3">
 								{hasFacts && facts && <FactsLine items={facts} />}
 								{hasMeasure && measure && <MeasureLine items={measure} />}
 							</div>
 						)}
-						{/* Baseline alignment would drop a 36px-tall control below the
-						    text line; centre it and nudge, so its cap-height rides the
-						    h1's baseline instead. Only needed where the reading sets the
-						    cluster's baseline — alone, the cluster is already centred. */}
-						{action &&
-							(hasReading ? <div className="translate-y-[3px] self-center">{action}</div> : action)}
+						{action}
 					</div>
 				)}
 			</div>
