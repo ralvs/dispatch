@@ -1,3 +1,6 @@
+"use client";
+
+import { type PointerEvent, useCallback, useState } from "react";
 import { colorSlugVar, isColorSlug } from "@/lib/schemas/color";
 import type { DayScheduleItem } from "@/lib/services/today";
 import { eventColor } from "@/lib/ui/event-color";
@@ -19,6 +22,9 @@ import { eventColor } from "@/lib/ui/event-color";
  * it is 11px. Start times ride above the track on desktop, and every title
  * lives in the Timeline list directly below — which was always the tape's
  * contract. Evidence: .impeccable/mocks/tape-lab.html.
+ *
+ * Hover (fine pointer only) draws a quiet scrub line with the wall-clock at
+ * that x. It is orientation, not data — nothing moves, nothing is selected.
  */
 
 /** The pinned window: 06:00–22:00, 960 minutes. */
@@ -111,6 +117,24 @@ function formatHour(h: number): string {
 	return `${String(Math.floor(h)).padStart(2, "0")}:00`;
 }
 
+/** Wall-clock label for a minute-of-day. Clamped to the calendar day. */
+export function formatTapeTime(totalMin: number): string {
+	const clamped = Math.max(0, Math.min(24 * 60, Math.round(totalMin)));
+	const h = Math.floor(clamped / 60);
+	const m = clamped % 60;
+	return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * Minute-of-day under a 0–1 position on the tape. Pure so the scrubber and any
+ * test share one rounding rule: nearest minute, edges inclusive.
+ */
+export function minutesFromRatio(ratio: number, startMin: number, endMin: number): number {
+	const t = Math.min(1, Math.max(0, ratio));
+	const span = endMin - startMin || 1;
+	return Math.round(startMin + t * span);
+}
+
 /**
  * A notional tape width, used only to turn a percentage into a comparable px
  * space for the collision rules below — never for layout. A fixed number
@@ -178,6 +202,27 @@ export function DayTape({
 	const showLabel = visibleTimeLabels(blocks.map((b) => at(b.startMin)));
 	const nowAt = nowMinutes === null ? null : at(nowMinutes);
 
+	// Quiet scrubber: mouse-only. Touch has no hover, and a finger scrub would
+	// fight day-nav / scroll without earning its keep.
+	const [hover, setHover] = useState<{ at: number; label: string } | null>(null);
+	const onPointerMove = useCallback(
+		(e: PointerEvent<HTMLDivElement>) => {
+			if (e.pointerType !== "mouse") return;
+			const rect = e.currentTarget.getBoundingClientRect();
+			if (rect.width <= 0) return;
+			const minutes = minutesFromRatio((e.clientX - rect.left) / rect.width, startMin, endMin);
+			const nextAt = pct(minutes, startMin, endMin);
+			const nextLabel = formatTapeTime(minutes);
+			setHover((prev) =>
+				prev !== null && prev.at === nextAt && prev.label === nextLabel
+					? prev
+					: { at: nextAt, label: nextLabel },
+			);
+		},
+		[startMin, endMin],
+	);
+	const onPointerLeave = useCallback(() => setHover(null), []);
+
 	return (
 		<section className="t-day-owned mt-10" aria-label="Day tape">
 			{allDay.length > 0 && (
@@ -211,7 +256,12 @@ export function DayTape({
 				</div>
 			)}
 
-			<div aria-hidden="true">
+			<div
+				aria-hidden="true"
+				className="t-tape-measure"
+				onPointerMove={onPointerMove}
+				onPointerLeave={onPointerLeave}
+			>
 				<div className="t-tape-times">
 					{blocks.map((b, i) =>
 						showLabel[i] ? (
@@ -243,6 +293,14 @@ export function DayTape({
 						/>
 					))}
 					{nowAt !== null && <div className="t-now" style={{ left: `${nowAt}%` }} />}
+					{hover !== null && (
+						<>
+							<div className="t-hover" style={{ left: `${hover.at}%` }} />
+							<span className="t-hover-label" style={{ left: `${hover.at}%` }}>
+								{hover.label}
+							</span>
+						</>
+					)}
 				</div>
 				<div className="t-ticks">
 					{ticks.map((h, i) => {

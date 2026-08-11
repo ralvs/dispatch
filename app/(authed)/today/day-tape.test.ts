@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { DayScheduleItem } from "@/lib/services/today";
-import { computeTapeWindow, TAPE_END_MIN, TAPE_START_MIN, tapeBlocks } from "./day-tape";
+import {
+	computeTapeWindow,
+	formatTapeTime,
+	minutesFromRatio,
+	TAPE_END_MIN,
+	TAPE_START_MIN,
+	tapeBlocks,
+} from "./day-tape";
 
 // The window is pinned at 06:00–22:00 and only ever widens. It replaces a
 // window that fitted itself to the day's contents — which made a 30-minute
@@ -73,6 +80,24 @@ function event(key: string, time: string, startAt: string, endAt: string): DaySc
 		} as DayScheduleItem extends { kind: "event"; event: infer E } ? E : never,
 	};
 }
+
+describe("minutesFromRatio / formatTapeTime", () => {
+	it("maps the edges to the window ends", () => {
+		expect(minutesFromRatio(0, TAPE_START_MIN, TAPE_END_MIN)).toBe(TAPE_START_MIN);
+		expect(minutesFromRatio(1, TAPE_START_MIN, TAPE_END_MIN)).toBe(TAPE_END_MIN);
+	});
+
+	it("rounds to the nearest minute in the middle of the day", () => {
+		// Halfway through 06:00–22:00 is 14:00 exactly.
+		expect(minutesFromRatio(0.5, TAPE_START_MIN, TAPE_END_MIN)).toBe(14 * 60);
+		expect(formatTapeTime(14 * 60 + 7)).toBe("14:07");
+	});
+
+	it("clamps ratios that fall outside 0–1", () => {
+		expect(minutesFromRatio(-0.2, TAPE_START_MIN, TAPE_END_MIN)).toBe(TAPE_START_MIN);
+		expect(minutesFromRatio(1.4, TAPE_START_MIN, TAPE_END_MIN)).toBe(TAPE_END_MIN);
+	});
+});
 
 describe("tapeBlocks", () => {
 	it("gives an event its real duration and a task no width at all", () => {

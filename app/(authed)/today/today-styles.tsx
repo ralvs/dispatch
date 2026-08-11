@@ -111,6 +111,35 @@ const TODAY_CSS = `
 	border-radius: 2px;
 	z-index: 3;
 }
+/* Hover scrub: quieter than the now-mark (1px ink-3, no weight), and pointer-
+   events none so it never steals the next move. Label rides above the track so
+   it never fights the now-label on the ruler. Fine-pointer only — touch has no
+   hover and a finger scrub would fight scroll. */
+.t-hover {
+	position: absolute;
+	top: -4px;
+	bottom: -4px;
+	width: 1px;
+	background: var(--ink-3);
+	z-index: 2;
+	pointer-events: none;
+}
+.t-hover-label {
+	position: absolute;
+	top: -18px;
+	transform: translateX(-50%);
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-3);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+	pointer-events: none;
+	z-index: 2;
+}
+@media (hover: none), (pointer: coarse) {
+	.t-hover,
+	.t-hover-label { display: none }
+}
 .t-ticks {
 	position: relative;
 	margin-top: 9px;
