@@ -183,7 +183,7 @@ export function NoteEditor({
 					debouncedRef.current.schedule(e.target.value);
 				}}
 				onBlur={() => debouncedRef.current.flush()}
-				className="field-shell field-shell-block h-auto w-full px-3.5 py-2.5 text-t30 text-ink placeholder:text-ink-4"
+				className="field-ghost h-auto w-full py-1 text-t30 text-ink placeholder:text-ink-4"
 			/>
 			{/* Authored markdown on the closed ramp — DESIGN.md Prose Measure +
 			    Authored prose rules. No serif; no off-ramp 24/20 sizes. */}

@@ -13,9 +13,8 @@ import { tv, type VariantProps } from "./tv";
  * render — so the throw would not wait for a component to be rendered, it
  * would fire the moment a server module pulled that file into its graph.
  *
- * Field shape comes entirely from --field-* tokens. Every field — title or
- * meta — uses the same trough. Size only changes height and type scale; it
- * never forks the chrome.
+ * Field shape comes entirely from --field-* tokens. Size changes height
+ * and type scale only.
  */
 export const fieldControl = tv({
 	base: [
@@ -25,9 +24,9 @@ export const fieldControl = tv({
 	],
 	variants: {
 		size: {
-			sm: "h-7 px-3 text-eyebrow",
-			md: "h-9 px-3.5 text-sm",
-			lg: "h-11 px-4 text-base",
+			sm: "h-7 px-0 text-eyebrow",
+			md: "h-9 px-0 text-sm",
+			lg: "h-11 px-0 text-base",
 		},
 	},
 	defaultVariants: {

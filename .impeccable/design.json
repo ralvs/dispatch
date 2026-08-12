@@ -470,9 +470,9 @@
       "name": "Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "A surface-2 trough with no hairline. Single-line fields are pills; textareas and display titles take the 22px card radius. Focus is an inset 2px accent ring that follows the curve.",
+      "description": "A 1px bottom rule, no trough, no ring. 12px caption above the value warms to accent-ink with the rule on focus. Display titles are ghost type.",
       "html": "<label class=\"ds-field\"><span class=\"ds-field__label\">Name</span><input class=\"ds-field__control\" placeholder=\"Untitled\" /></label>",
-      "css": ".ds-field { display: block; font-family: var(--font-sans, Geist, Arial, sans-serif); }\n.ds-field__label { display: block; margin-bottom: 8px; font-family: var(--font-mono, 'Geist Mono', ui-monospace, monospace); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }\n.ds-field__control { width: 100%; height: 36px; padding: 0 14px; border: none; border-radius: 9999px; background: var(--surface-2); color: var(--ink); font-family: inherit; font-size: 14px; outline: none; transition: background-color 160ms, box-shadow 160ms; }\n.ds-field__control::placeholder { color: var(--ink-4); }\n.ds-field__control:hover { background: color-mix(in srgb, var(--surface-2) 86%, var(--ink) 14%); }\n.ds-field__control:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }"
+      "css": ".ds-field { display: block; font-family: var(--font-sans, Geist, Arial, sans-serif); }\n.ds-field:focus-within .ds-field__label { color: var(--accent-ink); }\n.ds-field__label { display: block; margin-bottom: 8px; font-size: 12px; color: var(--ink-4); }\n.ds-field__control { width: 100%; height: 36px; padding: 0 0 6px; border: none; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--ink); font-family: inherit; font-size: 14px; outline: none; caret-color: var(--accent); transition: border-color 160ms; }\n.ds-field__control::placeholder { color: var(--ink-4); }\n.ds-field__control:hover { border-bottom-color: var(--line-strong); }\n.ds-field__control:focus-visible { outline: none; border-bottom-color: var(--accent); }"
     },
     {
       "name": "Card",

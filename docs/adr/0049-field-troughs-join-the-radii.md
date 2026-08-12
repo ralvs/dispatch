@@ -38,3 +38,5 @@ Changing the trough later is still a token edit in `app/globals.css`.
 - Line fields are retired. Call sites that only applied `.field-shell` inherit
   the trough; they do not retype chrome.
 - 0039's "winner: line fields" is obsolete. Depth elevation is not.
+
+Superseded for field shape by [0050](./0050-field-soft-rule.md).

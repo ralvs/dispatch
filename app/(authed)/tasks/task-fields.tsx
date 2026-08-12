@@ -15,7 +15,7 @@ export type TaskDomainOption = {
 };
 
 /** Label always stacks above its control (block, not inline beside). */
-const FIELD_LABEL = "block font-mono text-eyebrow uppercase text-ink-3";
+const FIELD_LABEL = "field-caption mb-2 block text-xs";
 
 /**
  * Shared field shell for non-primitive surfaces in this directory (mention
@@ -120,7 +120,7 @@ export function TaskTitleField({
 			data-autofocus={autoFocus || undefined}
 			// Pass 5 retired `.type-title`; weight and tracking are inlined.
 			// Tracking is now Tailwind's -0.025em rather than the class's -0.02em.
-			className="field-shell h-auto w-full px-3.5 py-2.5 text-base font-medium tracking-tight text-ink placeholder:font-normal placeholder:text-ink-4"
+			className="field-ghost h-auto w-full py-1.5 text-base font-medium tracking-tight text-ink placeholder:font-normal placeholder:text-ink-4"
 		/>
 	);
 }
@@ -162,7 +162,7 @@ export function TaskMetaFields({
 		// beside it. space-y-7 so the next row's label reads as that row's
 		// label, not as a caption on the control above it.
 		<div className="space-y-7">
-			<div className="min-w-0">
+			<div className="field-unit min-w-0">
 				<div className="flex items-center justify-between gap-3">
 					<span className={FIELD_LABEL}>Due</span>
 					{/* Not a relative day like the chips below — an action that clears
@@ -328,7 +328,7 @@ function TaskNotesField({
 	const [value, setValue] = useState(defaultValue);
 	const labelId = useId();
 	return (
-		<div className="block">
+		<div className="field-unit block">
 			<span id={labelId} className={FIELD_LABEL}>
 				Notes
 			</span>
@@ -339,7 +339,7 @@ function TaskNotesField({
 				onValueChange={setValue}
 				people={people}
 				aria-labelledby={labelId}
-				className={`${CONTROL} mt-2 block h-auto w-full py-3`}
+				className={`${CONTROL} mt-2 block h-auto w-full py-1.5`}
 			/>
 		</div>
 	);

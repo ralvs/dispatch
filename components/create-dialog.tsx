@@ -89,7 +89,7 @@ export function CreateDialogButton({
 			<CreateTrigger label={label} onClick={() => setOpen(true)} />
 			<Dialog open={open} onClose={() => setOpen(false)} title={title} size={size}>
 				<form ref={formRef} action={submit}>
-					<DialogBody className="space-y-4">{children}</DialogBody>
+					<DialogBody className="space-y-7">{children}</DialogBody>
 					<DialogFooter>
 						<span className="min-w-2 flex-1" />
 						<Button variant="tertiary" size="sm" disabled={pending} onClick={() => setOpen(false)}>

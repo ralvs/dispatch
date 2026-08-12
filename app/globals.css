@@ -95,17 +95,18 @@
 	--priority-high-halo: rgba(217, 45, 32, 0.16);
 	--priority-med: rgba(217, 45, 32, 0.42);
 
-	/* Fields sit in the same trough language as the tab group: surface-2
-	 * fill, curly corners, no box. Single-line is a pill; block fields
-	 * (textarea, display titles) take the card radius so they don't stadium. */
-	--field-bg: var(--surface-2);
-	--field-bg-hover: color-mix(in srgb, var(--surface-2) 86%, var(--ink) 14%);
-	--field-radius: 9999px;
-	--field-radius-block: 22px;
-	--field-border-width: 0;
+	/* B6: a 1px rule, no trough, no ring. Caption above warms with the
+	 * rule on focus (see .field-unit). Display titles are ghost type. */
+	--field-bg: transparent;
+	--field-bg-hover: transparent;
+	--field-radius: 0;
+	--field-radius-block: 0;
+	--field-border-width: 0 0 1px 0;
 	--field-shadow: none;
-	--field-focus-ring: inset 0 0 0 2px var(--accent);
-	--field-invalid-ring: inset 0 0 0 2px var(--error);
+	--field-rule: var(--line);
+	--field-rule-hover: var(--line-strong);
+	--field-rule-focus: var(--accent);
+	--field-rule-invalid: var(--error);
 	/* The comp's --lift. Warm-shadowed rather than neutral black. */
 	--elevation-card: 0 1px 2px rgba(41, 37, 36, 0.04), 0 10px 28px rgba(41, 37, 36, 0.05);
 	--elevation-overlay: 0 2px 6px rgba(41, 37, 36, 0.06), 0 14px 34px rgba(41, 37, 36, 0.16);
@@ -436,41 +437,59 @@ html[data-standalone] .app-shell {
 	box-shadow: var(--elevation-overlay);
 }
 
-/* Field shell — shape entirely from variant tokens (all fields, all sizes).
- * Focus replaces the global 2px/2px-offset outline: an inset ring that
- * follows the pill/card curve instead of drawing a square frame around it. */
+/* Field shell — 1px bottom rule. Focus is colour on that rule, never a ring. */
 .field-shell {
 	background: var(--field-bg);
 	border-style: solid;
-	border-color: transparent;
+	border-color: var(--field-rule);
 	border-width: var(--field-border-width);
 	border-radius: var(--field-radius);
 	box-shadow: var(--field-shadow);
-	transition:
-		background-color 160ms ease,
-		box-shadow 160ms ease;
-}
-
-textarea.field-shell,
-.field-shell-block {
-	border-radius: var(--field-radius-block);
+	caret-color: var(--accent);
+	transition: border-color 160ms ease;
 }
 
 .field-shell:hover:not(:disabled):not(:focus-visible) {
-	background: var(--field-bg-hover);
+	border-color: var(--field-rule-hover);
 }
 
 .field-shell:focus-visible {
 	outline: none;
-	box-shadow: var(--field-focus-ring);
+	border-color: var(--field-rule-focus);
 }
 
-.field-shell[data-invalid] {
-	box-shadow: var(--field-invalid-ring);
-}
-
+.field-shell[data-invalid],
 .field-shell[data-invalid]:focus-visible {
-	box-shadow: var(--field-invalid-ring);
+	border-color: var(--field-rule-invalid);
+	caret-color: var(--error);
+}
+
+/* Caption above the field warms with the rule. */
+.field-caption {
+	color: var(--ink-4);
+	transition: color 160ms ease;
+}
+
+.field-unit:focus-within .field-caption {
+	color: var(--accent-ink);
+}
+
+.field-unit:has([data-invalid]) .field-caption {
+	color: var(--error);
+}
+
+/* Display titles — type only, caret is the only focus signal. */
+.field-ghost {
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	outline: none;
+	caret-color: var(--accent);
+}
+
+.field-ghost:focus-visible {
+	outline: none;
 }
 
 /* Dialog / elevated panel — same surface as cards; depth only adds overlay shadow. */

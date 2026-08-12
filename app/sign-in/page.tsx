@@ -107,7 +107,7 @@ export default function SignInPage() {
 
 			<h1 className="mt-5 text-t30 text-ink">Sign in</h1>
 
-			<form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6" noValidate>
+			<form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-7" noValidate>
 				<Field label="Email" error={errors.email?.message} htmlFor="email">
 					<Input
 						id="email"

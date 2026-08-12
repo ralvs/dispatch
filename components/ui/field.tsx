@@ -23,7 +23,7 @@ import { tv } from "./tv";
 
 const selectShell = tv({
 	extend: fieldControl,
-	base: "appearance-none pr-9",
+	base: "appearance-none pr-7",
 });
 
 const textareaShell = tv({
@@ -31,7 +31,7 @@ const textareaShell = tv({
 		"field-shell w-full text-ink outline-none",
 		"placeholder:text-ink-4",
 		"disabled:cursor-not-allowed disabled:opacity-50",
-		"h-auto resize-none px-3.5 py-3 text-sm",
+		"h-auto resize-none px-0 py-1.5 text-sm",
 	],
 	variants: {
 		size: {
@@ -66,7 +66,7 @@ type FieldShellProps = {
 	className?: string;
 };
 
-/** Label + description/error wiring. Owns mono eyebrow label + a11y ids. */
+/** Label + description/error wiring. Owns the 12px caption + a11y ids. */
 export function Field({
 	label,
 	description,
@@ -82,12 +82,9 @@ export function Field({
 	const describedBy = [errId, descId].filter(Boolean).join(" ") || undefined;
 
 	return (
-		<div className={className}>
+		<div className={["field-unit", className].filter(Boolean).join(" ")}>
 			{label && (
-				<label
-					htmlFor={controlId}
-					className="mb-2 block font-mono text-eyebrow uppercase tracking-widest text-ink-3"
-				>
+				<label htmlFor={controlId} className="field-caption mb-2 block text-xs">
 					{label}
 				</label>
 			)}
@@ -169,7 +166,7 @@ export function Select({ size = "md", invalid, className, children, id, ...props
 			>
 				{children}
 			</select>
-			<span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-ink-3">
+			<span className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-ink-3">
 				<Icon icon={ChevronDown} size="sm" />
 			</span>
 		</div>

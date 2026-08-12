@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>B6 — labels on top</title>
+		<link rel="stylesheet" href="_a.css" />
+		<style>
+			body {
+				background: var(--ground-2);
+			}
+			.lab {
+				max-width: 1080px;
+				margin: 0 auto;
+				padding: 40px 32px 160px;
+			}
+			.lab-head h1 {
+				font-size: 36px;
+				font-weight: 500;
+				letter-spacing: -0.9px;
+				line-height: 1.1;
+				margin: 0;
+			}
+			.lab-head p {
+				font-size: 16px;
+				line-height: 1.6;
+				color: var(--ink-2);
+				margin: 14px 0 0;
+				max-width: 68ch;
+			}
+
+			.stage {
+				margin-top: 28px;
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 18px;
+			}
+			@media (max-width: 900px) {
+				.stage {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			.frame {
+				background: var(--paper);
+				border: 1px solid var(--rule);
+				border-radius: 18px;
+				overflow: hidden;
+			}
+			.frame.note {
+				background: var(--ground);
+			}
+			.frame .cap {
+				padding: 10px 16px;
+				border-bottom: 1px solid var(--rule);
+				background: var(--ground-2);
+				font-family: var(--mono);
+				font-size: 11px;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.frame .surface {
+				padding: 28px 28px 32px;
+			}
+
+			.crumb {
+				margin: 0 0 18px;
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--ink-4);
+			}
+			.hint {
+				margin: 10px 0 0;
+				font-size: 13px;
+				line-height: 1.45;
+				color: var(--ink-4);
+			}
+
+			.stack > .cell + .cell,
+			.stack > .lead + .cell,
+			.stack > .row2 {
+				margin-top: 28px;
+			}
+			.row2 {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 28px 20px;
+			}
+
+			input,
+			textarea,
+			select {
+				font-family: var(--sans);
+				color: var(--ink);
+				width: 100%;
+			}
+			input::placeholder,
+			textarea::placeholder {
+				color: var(--ink-4);
+			}
+			select {
+				appearance: none;
+			}
+
+			.title {
+				display: block;
+				width: 100%;
+				padding: 0;
+				border: 0;
+				background: transparent;
+				font-size: 30px;
+				font-weight: 500;
+				letter-spacing: -0.75px;
+				line-height: 1.15;
+				outline: none;
+				caret-color: var(--accent);
+			}
+
+			.cell {
+				display: flex;
+				flex-direction: column;
+			}
+			.lab-top {
+				margin: 0 0 8px;
+				font-family: var(--sans);
+				font-size: 12px;
+				color: var(--ink-4);
+				transition: color 160ms ease;
+			}
+			.meta {
+				display: block;
+				width: 100%;
+				height: 32px;
+				padding: 0 0 6px;
+				border: 0;
+				border-bottom: 1px solid var(--rule);
+				background: transparent;
+				font-size: 14px;
+				outline: none;
+				transition: border-color 160ms ease;
+			}
+			textarea.meta {
+				height: auto;
+				min-height: 64px;
+				padding: 0 0 8px;
+				resize: none;
+			}
+			.meta:focus {
+				border-bottom-color: var(--accent);
+				caret-color: var(--accent);
+			}
+			.cell:focus-within .lab-top {
+				color: var(--accent-ink);
+			}
+
+			.btn {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				height: 36px;
+				padding: 0 12px;
+				border: 1px solid var(--rule-2);
+				border-radius: var(--r-md);
+				background: transparent;
+				color: var(--ink);
+				font-family: var(--mono);
+				font-size: 12px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+			}
+			.btn.ink {
+				background: var(--ink);
+				border-color: var(--ink);
+				color: var(--ground);
+			}
+			.actions {
+				display: flex;
+				justify-content: flex-end;
+				gap: 8px;
+				margin-top: 32px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="lab">
+			<header class="lab-head">
+				<h1>B6, labels on top</h1>
+				<p>
+					12px caption above the value. 28px between one field’s rule and the
+					next caption. Focus warms the caption and the rule together. Page
+					title stays type.
+				</p>
+			</header>
+
+			<div class="stage">
+				<div class="frame note">
+					<div class="cap">Note title</div>
+					<div class="surface">
+						<p class="crumb">← Notes</p>
+						<input class="title" value="Homeopatia para limpeza da vacina" />
+					</div>
+				</div>
+				<div class="frame">
+					<div class="cap">Task form</div>
+					<div class="surface stack">
+						<div class="lead">
+							<input
+								class="meta"
+								placeholder='What needs doing? — "pay rent every monday 9am"'
+							/>
+							<p class="hint">A title on its own gets read for dates and repeats.</p>
+						</div>
+						<div class="cell">
+							<span class="lab-top">Notes</span>
+							<textarea class="meta"></textarea>
+						</div>
+						<div class="row2">
+							<div class="cell">
+								<span class="lab-top">Due</span>
+								<input class="meta" placeholder="mm/dd/yyyy" />
+							</div>
+							<div class="cell">
+								<span class="lab-top">Domain</span>
+								<select class="meta">
+									<option>Unfiled</option>
+									<option>Home</option>
+								</select>
+							</div>
+						</div>
+						<div class="actions">
+							<span class="btn">Cancel</span>
+							<span class="btn ink">Add task</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
