@@ -23,18 +23,15 @@ import { tv } from "./tv";
 
 const selectShell = tv({
 	extend: fieldControl,
-	base: "appearance-none pr-8",
+	base: "appearance-none pr-9",
 });
 
 const textareaShell = tv({
 	base: [
-		"field-shell w-full text-ink outline-none transition-colors",
+		"field-shell w-full text-ink outline-none",
 		"placeholder:text-ink-4",
 		"disabled:cursor-not-allowed disabled:opacity-50",
-		"hover:border-line-strong focus:border-line-strong",
-		"data-[invalid]:border-error",
-		"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-		"h-auto resize-none px-2.5 py-2 text-sm",
+		"h-auto resize-none px-3.5 py-3 text-sm",
 	],
 	variants: {
 		size: {
@@ -172,7 +169,7 @@ export function Select({ size = "md", invalid, className, children, id, ...props
 			>
 				{children}
 			</select>
-			<span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-ink-3">
+			<span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-ink-3">
 				<Icon icon={ChevronDown} size="sm" />
 			</span>
 		</div>

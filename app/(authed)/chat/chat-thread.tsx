@@ -68,7 +68,7 @@ export function ChatThread() {
 				</p>
 			)}
 
-			<form onSubmit={handleSubmit} className="hairline mt-6 flex items-center gap-2 py-3">
+			<form onSubmit={handleSubmit} className="hairline mt-6 flex items-stretch gap-2 py-3">
 				<label htmlFor="chat-input" className="sr-only">
 					Message
 				</label>
@@ -78,7 +78,7 @@ export function ChatThread() {
 					value={input}
 					onChange={(e) => setInput(e.target.value)}
 					placeholder="Ask about your tasks, notes, quotes…"
-					className="field-shell h-auto w-full py-1.5 text-base font-normal tracking-[-0.01em] text-ink placeholder:text-ink-4"
+					className="field-shell h-auto w-full px-3.5 py-2.5 text-base font-normal tracking-[-0.01em] text-ink placeholder:text-ink-4"
 				/>
 				{/* self-stretch so the button tracks the input's height rather than its
 				    own smaller mono line-box — the two sit on one line. */}

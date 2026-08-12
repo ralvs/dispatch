@@ -18,6 +18,9 @@ stands on its own; the surface was scaffolding.)
 
 Winner: **line fields · depth elevation**.
 
+Field shape was later superseded by [0049](./0049-field-troughs-join-the-radii.md)
+(troughs that share the pill / card radii). Elevation is unchanged.
+
 ## Decision
 
 ### Geometry

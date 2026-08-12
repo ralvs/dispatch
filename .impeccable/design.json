@@ -470,9 +470,9 @@
       "name": "Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "No box and no radius — a transparent field over a single bottom rule. The exception to a system of large radii.",
+      "description": "A surface-2 trough with no hairline. Single-line fields are pills; textareas and display titles take the 22px card radius. Focus is an inset 2px accent ring that follows the curve.",
       "html": "<label class=\"ds-field\"><span class=\"ds-field__label\">Name</span><input class=\"ds-field__control\" placeholder=\"Untitled\" /></label>",
-      "css": ".ds-field { display: block; font-family: var(--font-sans, Geist, Arial, sans-serif); }\n.ds-field__label { display: block; margin-bottom: 4px; font-family: var(--font-mono, 'Geist Mono', ui-monospace, monospace); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }\n.ds-field__control { width: 100%; height: 36px; padding: 0 10px; border: none; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--ink); font-family: inherit; font-size: 14px; outline: none; transition: border-color 150ms; }\n.ds-field__control::placeholder { color: var(--ink-4); }\n.ds-field__control:hover, .ds-field__control:focus { border-bottom-color: var(--line-strong); }\n.ds-field__control:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
+      "css": ".ds-field { display: block; font-family: var(--font-sans, Geist, Arial, sans-serif); }\n.ds-field__label { display: block; margin-bottom: 8px; font-family: var(--font-mono, 'Geist Mono', ui-monospace, monospace); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }\n.ds-field__control { width: 100%; height: 36px; padding: 0 14px; border: none; border-radius: 9999px; background: var(--surface-2); color: var(--ink); font-family: inherit; font-size: 14px; outline: none; transition: background-color 160ms, box-shadow 160ms; }\n.ds-field__control::placeholder { color: var(--ink-4); }\n.ds-field__control:hover { background: color-mix(in srgb, var(--surface-2) 86%, var(--ink) 14%); }\n.ds-field__control:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }"
     },
     {
       "name": "Card",

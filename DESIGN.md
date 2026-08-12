@@ -161,12 +161,18 @@ components:
     padding: "0 12px"
     height: "36px"
   input:
-    backgroundColor: "transparent"
+    backgroundColor: "{colors.surface-2}"
     textColor: "{colors.ink}"
     typography: "{typography.body}"
-    rounded: "{rounded.none}"
-    padding: "0 10px"
+    rounded: "{rounded.pill}"
+    padding: "0 14px"
     height: "36px"
+  input-block:
+    backgroundColor: "{colors.surface-2}"
+    textColor: "{colors.ink}"
+    typography: "{typography.body}"
+    rounded: "{rounded.card}"
+    padding: "12px 14px"
   card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
@@ -498,12 +504,12 @@ A neutral shadow on a warm ground reads as dirt.
 
 ## Shapes
 
-Large and soft, with one hard exception. Cards are 22px, controls and chips are
-12px, and anything a thumb reaches for is a full pill — the header's tabs, the
-Ask and Capture buttons, the day-nav chevrons, the dock and its capsules. The
-checkbox is a 7px squircle at 19px, which is the shape most repeated on the page
-and the reason `mark` exists as its own step. Fields are the exception: they
-have no radius at all, because they are a single bottom rule rather than a box.
+Large and soft. Cards are 22px, controls and chips are 12px, and anything a
+thumb reaches for is a full pill — the header's tabs, the Ask and Capture
+buttons, the day-nav chevrons, the dock and its capsules, and every single-line
+field. The checkbox is a 7px squircle at 19px, which is the shape most repeated
+on the page and the reason `mark` exists as its own step. Multi-line fields take
+the card radius so a textarea does not become a stadium.
 
 Two shapes carry meaning outright. On the day tape an **event is a filled block**
 spanning its duration and a **scheduled task is an outlined tick**, because a
@@ -661,9 +667,14 @@ Two voices, and they are not interchangeable.
 
 ### Inputs / Fields
 
-- **Style:** no box and no radius — a transparent field over a single 1px
-  bottom rule.
-- **Focus:** the global 2px accent outline.
+- **Style:** a `surface-2` trough, no hairline. Single-line fields are pills;
+  textareas and display titles take the 22px card radius. Same shell at every
+  size — height and type scale change, chrome does not.
+- **Hover:** colour only — the trough mixes a little ink into `surface-2`.
+  Nothing moves, no border appears.
+- **Focus:** an inset 2px accent ring that follows the curve. This *replaces*
+  the global 2px / 2px-offset outline, which would square a pill. Invalid
+  keeps the same inset ring in error.
 - **Empty:** native date/time skeletons dim to `ink-4` so an unset field does
   not read as filled.
 
