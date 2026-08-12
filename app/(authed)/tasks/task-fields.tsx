@@ -120,7 +120,7 @@ export function TaskTitleField({
 			data-autofocus={autoFocus || undefined}
 			// Pass 5 retired `.type-title`; weight and tracking are inlined.
 			// Tracking is now Tailwind's -0.025em rather than the class's -0.02em.
-			className="field-ghost h-auto w-full py-1.5 text-base font-medium tracking-tight text-ink placeholder:font-normal placeholder:text-ink-4"
+			className="field-shell h-auto w-full py-1.5 text-base font-medium tracking-tight text-ink placeholder:font-normal placeholder:text-ink-4"
 		/>
 	);
 }

@@ -144,12 +144,7 @@ export function NoteEditor({
 		editorProps: {
 			attributes: {
 				"aria-label": "Note body",
-				// The document has a visible text caret and is a large click
-				// target, so it doesn't need the global focus ring — but it does
-				// need *some* focus cue, since a sighted keyboard user tabbing in
-				// otherwise sees nothing change. A subtle background tint stands
-				// in for the ring without boxing the whole editor.
-				class: "min-h-64 whitespace-pre-wrap focus:bg-surface",
+				class: "min-h-64 whitespace-pre-wrap outline-none",
 			},
 			handleClickOn: (_view, _pos, node) => {
 				if (node.type.name === "wikilink") {
@@ -183,11 +178,11 @@ export function NoteEditor({
 					debouncedRef.current.schedule(e.target.value);
 				}}
 				onBlur={() => debouncedRef.current.flush()}
-				className="field-ghost h-auto w-full py-1 text-t30 text-ink placeholder:text-ink-4"
+				className="field-shell h-auto w-full py-1 text-t30 text-ink placeholder:text-ink-4"
 			/>
 			{/* Authored markdown on the closed ramp — DESIGN.md Prose Measure +
 			    Authored prose rules. No serif; no off-ramp 24/20 sizes. */}
-			<div className="prose-authored mt-4">
+			<div className="prose-authored field-shell mt-7 pb-2">
 				<EditorContent editor={editor} />
 			</div>
 			<p className="mt-3 font-mono text-meta text-ink-4">

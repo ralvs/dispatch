@@ -662,13 +662,13 @@ Two voices, and they are not interchangeable.
 ### Inputs / Fields
 
 - **Style:** no box — a transparent field over a single 1px bottom rule.
-  Display titles (note name, task title) are ghost type: no rule at rest.
+  Display titles (note name, task title) and the note body use the same rule.
 - **Caption:** 12px sans, `ink-4`, sentence case, above the value. 28px from
   the previous field's rule to the next caption.
 - **Hover:** the rule steps to `line-strong`. Nothing moves.
 - **Focus:** the rule and the caption warm together (accent / `accent-ink`).
   This *replaces* the global 2px / 2px-offset outline. Invalid uses the same
-  geometry in error. Ghost titles keep only the caret.
+  geometry in error. The note body warms via `:focus-within` — no box.
 - **Empty:** native date/time skeletons dim to `ink-4` so an unset field does
   not read as filled.
 

@@ -96,7 +96,7 @@
 	--priority-med: rgba(217, 45, 32, 0.42);
 
 	/* B6: a 1px rule, no trough, no ring. Caption above warms with the
-	 * rule on focus (see .field-unit). Display titles are ghost type. */
+	 * rule on focus (see .field-unit). Titles and the note body share it. */
 	--field-bg: transparent;
 	--field-bg-hover: transparent;
 	--field-radius: 0;
@@ -449,13 +449,18 @@ html[data-standalone] .app-shell {
 	transition: border-color 160ms ease;
 }
 
-.field-shell:hover:not(:disabled):not(:focus-visible) {
+.field-shell:hover:not(:disabled):not(:focus-visible):not(:focus-within) {
 	border-color: var(--field-rule-hover);
 }
 
-.field-shell:focus-visible {
+.field-shell:focus-visible,
+.field-shell:focus-within {
 	outline: none;
 	border-color: var(--field-rule-focus);
+}
+
+.field-shell .ProseMirror {
+	outline: none;
 }
 
 .field-shell[data-invalid],
@@ -476,20 +481,6 @@ html[data-standalone] .app-shell {
 
 .field-unit:has([data-invalid]) .field-caption {
 	color: var(--error);
-}
-
-/* Display titles — type only, caret is the only focus signal. */
-.field-ghost {
-	background: transparent;
-	border: 0;
-	border-radius: 0;
-	box-shadow: none;
-	outline: none;
-	caret-color: var(--accent);
-}
-
-.field-ghost:focus-visible {
-	outline: none;
 }
 
 /* Dialog / elevated panel — same surface as cards; depth only adds overlay shadow. */

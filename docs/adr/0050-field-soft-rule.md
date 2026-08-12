@@ -25,8 +25,9 @@ and warm the caption with the rule on focus.
 ```
 
 Focus is colour on that rule (`--accent`) plus the 12px caption
-(`--accent-ink`). Display titles use `.field-ghost` — type and a caret, no
-rule. Invalid uses the same geometry in `--error`.
+(`--accent-ink`). Display titles and the note body use the same rule;
+the body warms via `:focus-within`. Invalid uses the same geometry in
+`--error`.
 
 `.field-unit:focus-within > label` is how the caption warms. Forms that stack
 fields leave 28px (`space-y-7`) from one rule to the next caption.
