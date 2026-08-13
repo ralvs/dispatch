@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { deriveReceipt } from "@/lib/capture/receipt";
 import { env, isSupabaseConfigured } from "@/lib/env";
 import { fetchLinkMetadata } from "@/lib/links/metadata";
 import { afterExternalMutation } from "@/lib/mutation-feedback/invalidate";
@@ -27,6 +28,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // client (iron rule #3), one ledger row per action (iron rule #6), and the
 // ledger is best-effort (docs/adr/0015) — the row is already durable and
 // visible in-app, so a failed notification must not turn success into a 5xx.
+//
+// Both replies carry `summary`: one English sentence naming what the text
+// became. The Siri Shortcut speaks it, which is the only feedback a capture
+// dictated to a watch ever gets — `outcome: "executed"` told the sender that
+// something happened but never what.
 // ─────────────────────────────────────────────────────────────────────────
 
 const BodySchema = z.object({
@@ -73,6 +79,7 @@ export async function POST(request: Request) {
 		// nicety — fetchLinkMetadata never throws, so a dead host still saves.
 		const meta = await fetchLinkMetadata(url);
 		const link = await createLink(sb, { url, ...meta, source });
+		const label = link.title ?? new URL(link.url).hostname;
 
 		// The asymmetry this closes: the in-app capture action has always called
 		// afterMutation; this, the external surface writing the same rows, never
@@ -83,7 +90,7 @@ export async function POST(request: Request) {
 			await recordNotification(sb, {
 				type: "capture.link",
 				title: "Link saved",
-				body: link.title ?? new URL(link.url).hostname,
+				body: label,
 				source_ref: link.id,
 				source_url: link.url,
 			});
@@ -91,7 +98,10 @@ export async function POST(request: Request) {
 			// Stored and already on /links; the ledger row is the lesser loss.
 		}
 
-		return NextResponse.json({ kind: "link", id: link.id, status: link.status }, { status: 201 });
+		return NextResponse.json(
+			{ kind: "link", id: link.id, status: link.status, summary: `Link saved: ${label}` },
+			{ status: 201 },
+		);
 	}
 
 	const record = await capture(sb, {
@@ -124,6 +134,8 @@ export async function POST(request: Request) {
 			id: record.capturedId,
 			status: record.status,
 			outcome: record.outcome.kind,
+			// The same receipt the palette renders, flattened to one line.
+			summary: deriveReceipt(record).lines.join(" "),
 		},
 		{ status: 201 },
 	);

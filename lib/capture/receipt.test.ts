@@ -23,6 +23,67 @@ describe("deriveReceipt — executed", () => {
 		expect(receipt.lines).toEqual(["2 tasks added.", "1 note saved."]);
 	});
 
+	it("names every entity kind the executor can write, in a stable order", () => {
+		const receipt = deriveReceipt(
+			record({
+				kind: "executed",
+				results: [
+					{ action: "create_quote", ok: true, entity: { table: "quotes", id: "q1" } },
+					{
+						action: "create_journal_entry",
+						ok: true,
+						entity: { table: "journal_entries", id: "j1" },
+					},
+					{ action: "create_note", ok: true, entity: { table: "notes", id: "n1" } },
+					{ action: "create_event", ok: true, entity: { table: "calendar_events", id: "e1" } },
+					{ action: "create_task", ok: true, entity: { table: "tasks", id: "t1" } },
+				],
+			}),
+		);
+		expect(receipt.lines).toEqual([
+			"1 task added.",
+			"1 event added.",
+			"1 note saved.",
+			"1 quote saved.",
+			"1 journal entry saved.",
+		]);
+	});
+
+	it("does not call a booked event a note", () => {
+		const receipt = deriveReceipt(
+			record({
+				kind: "executed",
+				results: [
+					{ action: "create_event", ok: true, entity: { table: "calendar_events", id: "e1" } },
+					{ action: "create_event", ok: true, entity: { table: "calendar_events", id: "e2" } },
+				],
+			}),
+		);
+		expect(receipt.title).toBe("Captured");
+		expect(receipt.lines).toEqual(["2 events added."]);
+	});
+
+	it("pluralises journal entries irregularly", () => {
+		const receipt = deriveReceipt(
+			record({
+				kind: "executed",
+				results: [
+					{
+						action: "create_journal_entry",
+						ok: true,
+						entity: { table: "journal_entries", id: "j1" },
+					},
+					{
+						action: "create_journal_entry",
+						ok: true,
+						entity: { table: "journal_entries", id: "j2" },
+					},
+				],
+			}),
+		);
+		expect(receipt.lines).toEqual(["2 journal entries saved."]);
+	});
+
 	it("reports degraded actions as flagged for review", () => {
 		const receipt = deriveReceipt(
 			record({
