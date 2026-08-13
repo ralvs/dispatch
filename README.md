@@ -109,6 +109,33 @@ dentista amanhã de manhã"_ becomes a task with a due date, _"almoço com a Ana
 quinta ao meio-dia"_ becomes a calendar event, anything unclassifiable becomes
 a note you can sort from `/inbox`. Nothing is ever dropped (iron rule #4).
 
+#### Dictating a task straight into its domain
+
+The parser never infers routing — it sets `domain`/`project` **only** when you
+name one, and copies the name from the lists in its prompt (docs/adr/0019 D1).
+So "marcar dentista amanhã" is always unfiled; say the destination and it isn't.
+
+- **Name it anywhere in the sentence.** Prefix (`Health: marcar dentista`),
+  aside (`tarefa de Health, marcar dentista`), or trailing
+  (`marcar dentista, isso é Health`) all route the same. The routing words are
+  stripped from the title.
+- **Say it in Portuguese if that's what you're speaking.** `saúde` → Health,
+  `casa` → Home, `família` → Family, `finanças` → Finance, `viagem` → Travel,
+  `código` → Code. The model bridges to the listed English name, so you never
+  have to drop an English word into a Portuguese sentence for dictation to
+  mangle. The *resolver* is exact-match, but it only ever sees what the model
+  copied off the list.
+- **Naming a project gets the domain for free.** A resolved project inherits
+  its domain, so "no Dispatch, arrumar o parser" files under Code without
+  saying Code. Project names are proper nouns, which dictation handles better
+  than common words.
+- **A word that isn't on either list routes nothing** — "trabalho: revisar os
+  PRs" lands unfiled, because there is no Work domain. Check `/domains` for the
+  current list; add the domain rather than fighting the phrasing.
+- **Events take no domain at all.** `create_event` has no routing field; a
+  captured event's domain comes from which calendar it lands on. Naming a
+  domain while dictating an event is harmless but does nothing.
+
 Notes on this flow:
 
 - **Transcription is the device's job, never the app's** (docs/adr/0017). The
