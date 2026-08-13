@@ -3,12 +3,12 @@ import { COLOR_SLUGS, type ColorSlug, colorSlugVar, isColorSlug } from "@/lib/sc
 /**
  * A calendar event's colour on the day tape and in the Timeline.
  *
- * Events have no domain_id. When the calendar's name matches a stewardship
- * domain (case-insensitive), the event borrows that domain's live colour
- * slug — so retuning Engine on /domains retunes Engine events too. No match
- * (or a domain with no colour) falls back to hashing the calendar name into
- * the same nine palette slots, which keeps unmatched calendars distinct and
- * stable.
+ * Events have no domain_id. A calendar borrows a domain's live colour slug
+ * when its name matches a domain, or when it is listed in
+ * `CALENDAR_DOMAIN_ALIASES` (Renan → Home, Thais → Family). Retuning the
+ * domain on /domains retunes those events too. No match (or a domain with
+ * no colour) falls back to hashing the calendar name into the same nine
+ * palette slots, which keeps unmatched calendars distinct and stable.
  *
  * djb2 with the murmur3 finalizer, matching lib/services/today.ts's
  * `hashSeed`: djb2 alone clusters low bits for short, similar inputs, which
@@ -29,8 +29,19 @@ function hashSeed(str: string): number {
 
 export type DomainColorSource = { name: string; color: string | null };
 
+/** iCloud calendar titles that should wear a domain's colour without being renamed. */
+export const CALENDAR_DOMAIN_ALIASES: Record<string, string> = {
+	renan: "Home",
+	thais: "Family",
+};
+
 function namesMatch(a: string, b: string): boolean {
 	return a.trim().localeCompare(b.trim(), undefined, { sensitivity: "accent" }) === 0;
+}
+
+function domainNameForCalendar(calendarName: string): string {
+	const alias = CALENDAR_DOMAIN_ALIASES[calendarName.trim().toLowerCase()];
+	return alias ?? calendarName;
 }
 
 /** Palette slug for an event, or null when there is no calendar name. */
@@ -39,7 +50,8 @@ export function eventColorSlug(
 	domains: readonly DomainColorSource[] = [],
 ): ColorSlug | null {
 	if (!calendarName) return null;
-	const match = domains.find((d) => namesMatch(d.name, calendarName));
+	const target = domainNameForCalendar(calendarName);
+	const match = domains.find((d) => namesMatch(d.name, target));
 	if (match && isColorSlug(match.color)) return match.color;
 	return COLOR_SLUGS[hashSeed(calendarName) % COLOR_SLUGS.length];
 }

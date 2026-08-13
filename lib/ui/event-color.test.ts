@@ -16,9 +16,20 @@ describe("eventColorSlug", () => {
 		expect(hashed).toBeTruthy();
 	});
 
+	it("maps aliased calendars onto the named domain's live colour", () => {
+		const domains = [
+			engine,
+			{ name: "Home", color: "health" },
+			{ name: "Family", color: "burgundy" },
+		];
+		expect(eventColorSlug("Renan", domains)).toBe("health");
+		expect(eventColorSlug("thais", domains)).toBe("burgundy");
+		expect(eventColorSlug("Thais", [{ name: "Family", color: "pine" }])).toBe("pine");
+	});
+
 	it("hashes an unmatched calendar so it still gets a stable slot", () => {
-		const a = eventColorSlug("Thais", [engine]);
-		const b = eventColorSlug("Thais", [engine]);
+		const a = eventColorSlug("Nivers", [engine]);
+		const b = eventColorSlug("Nivers", [engine]);
 		expect(a).toBe(b);
 		expect(a).not.toBe("engine");
 	});
