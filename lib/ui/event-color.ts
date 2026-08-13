@@ -1,21 +1,14 @@
-import { COLOR_SLUGS, colorSlugVar } from "@/lib/schemas/color";
+import { COLOR_SLUGS, type ColorSlug, colorSlugVar, isColorSlug } from "@/lib/schemas/color";
 
 /**
  * A calendar event's colour on the day tape and in the Timeline.
  *
- * The comps colour every block by **domain**, but a calendar event has no
- * domain in this app — it has a `calendar_name` and nothing else that carries
- * meaning. Rather than draw half the day grey, an event takes its colour from
- * the calendar it came from, hashed into the same nine palette slots the
- * domains use.
- *
- * That is a real distinction, not a decoration: an operator with a work
- * calendar and a family calendar reads two stable colours on the tape, and
- * the assignment never moves because the hash is over the name.
- *
- * It does mean a calendar and a domain can land on the same slot. The shape
- * already separates them — an event is a filled block, a scheduled task an
- * outlined tick — so the colour is never the only thing telling them apart.
+ * Events have no domain_id. When the calendar's name matches a stewardship
+ * domain (case-insensitive), the event borrows that domain's live colour
+ * slug — so retuning Engine on /domains retunes Engine events too. No match
+ * (or a domain with no colour) falls back to hashing the calendar name into
+ * the same nine palette slots, which keeps unmatched calendars distinct and
+ * stable.
  *
  * djb2 with the murmur3 finalizer, matching lib/services/today.ts's
  * `hashSeed`: djb2 alone clusters low bits for short, similar inputs, which
@@ -34,8 +27,28 @@ function hashSeed(str: string): number {
 	return Math.abs(h);
 }
 
-/** A CSS colour for an event, stable for a given calendar name. */
-export function eventColor(calendarName: string | null | undefined): string {
-	if (!calendarName) return "var(--ink-3)";
-	return colorSlugVar(COLOR_SLUGS[hashSeed(calendarName) % COLOR_SLUGS.length]);
+export type DomainColorSource = { name: string; color: string | null };
+
+function namesMatch(a: string, b: string): boolean {
+	return a.trim().localeCompare(b.trim(), undefined, { sensitivity: "accent" }) === 0;
+}
+
+/** Palette slug for an event, or null when there is no calendar name. */
+export function eventColorSlug(
+	calendarName: string | null | undefined,
+	domains: readonly DomainColorSource[] = [],
+): ColorSlug | null {
+	if (!calendarName) return null;
+	const match = domains.find((d) => namesMatch(d.name, calendarName));
+	if (match && isColorSlug(match.color)) return match.color;
+	return COLOR_SLUGS[hashSeed(calendarName) % COLOR_SLUGS.length];
+}
+
+/** A CSS colour for an event, stable for a given calendar name + domain map. */
+export function eventColor(
+	calendarName: string | null | undefined,
+	domains: readonly DomainColorSource[] = [],
+): string {
+	const slug = eventColorSlug(calendarName, domains);
+	return slug ? colorSlugVar(slug) : "var(--ink-3)";
 }

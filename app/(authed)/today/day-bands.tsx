@@ -4,6 +4,7 @@ import { Card, EmptyState, SectionHead } from "@/components/ui";
 import type { TaskRow } from "@/lib/services/tasks";
 import type { DaySchedule } from "@/lib/services/today";
 import { TOP3_SLOTS } from "@/lib/task-predicates";
+import type { DomainColorSource } from "@/lib/ui/event-color";
 import { TODAY_VARIANT } from "@/lib/ui/variant";
 import type { TaskRowHandlers } from "../tasks/task-row";
 import { EventDayRow, TaskDayRow } from "./day-row";
@@ -30,6 +31,7 @@ type Placement = {
 	handlersFor: (task: TaskRow) => TaskRowHandlers;
 	eventNoteIds?: Record<string, string>;
 	taskNoteIds?: Record<string, string>;
+	domains?: readonly DomainColorSource[];
 };
 
 /**
@@ -135,6 +137,7 @@ export function TimelineSection({
 	handlersFor,
 	eventNoteIds,
 	taskNoteIds,
+	domains,
 	nowUtcIso,
 }: Placement & { nowUtcIso: string }) {
 	const { timeline } = schedule;
@@ -159,6 +162,7 @@ export function TimelineSection({
 								// sort alike by accident.
 								past={Date.parse(item.event.end_at) < Date.parse(nowUtcIso)}
 								noteId={eventNoteIds?.[item.event.id]}
+								domains={domains}
 							/>
 						) : (
 							<TaskDayRow

@@ -23,6 +23,7 @@ import {
 	type TaskIntent,
 } from "@/lib/task-interaction/apply-intent";
 import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
+import type { DomainColorSource } from "@/lib/ui/event-color";
 import { completeTaskAction, reopenTaskAction, setTop3Action } from "../tasks/actions";
 import { loadDayScheduleAction } from "./actions";
 import { OpenSection, TimelineSection, Top3Section } from "./day-bands";
@@ -82,6 +83,7 @@ export function DayView({
 	nowLabel,
 	eventNoteIds,
 	taskNoteIds,
+	domains = [],
 	counters,
 	aside,
 	quote,
@@ -96,6 +98,8 @@ export function DayView({
 	nowLabel: string | null;
 	eventNoteIds?: Record<string, string>;
 	taskNoteIds?: Record<string, string>;
+	/** Active domains — calendar names that match a domain borrow its colour. */
+	domains?: readonly DomainColorSource[];
 	/**
 	 * Today's own sections, rendered on the server and slotted into this
 	 * region's grid. They are passed in rather than rendered here because none
@@ -312,6 +316,7 @@ export function DayView({
 		handlersFor,
 		eventNoteIds: view.eventNoteIds,
 		taskNoteIds: view.taskNoteIds,
+		domains,
 	};
 
 	return (
@@ -336,7 +341,12 @@ export function DayView({
 				{counters}
 			</div>
 
-			<DayTape timeline={projected.timeline} allDay={projected.allDay} nowLabel={view.nowLabel} />
+			<DayTape
+				timeline={projected.timeline}
+				allDay={projected.allDay}
+				nowLabel={view.nowLabel}
+				domains={domains}
+			/>
 
 			{/* One tree, two compositions. The column wrappers dissolve below `lg`
 			    (display: contents) and `order` re-sequences the same sections

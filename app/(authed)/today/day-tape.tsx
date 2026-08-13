@@ -3,7 +3,7 @@
 import { type PointerEvent, useCallback, useState } from "react";
 import { colorSlugVar, isColorSlug } from "@/lib/schemas/color";
 import type { DayScheduleItem } from "@/lib/services/today";
-import { eventColor } from "@/lib/ui/event-color";
+import { type DomainColorSource, eventColor } from "@/lib/ui/event-color";
 
 /*
  * The day tape: a proportional measure of one day, 06:00–22:00. Committed time
@@ -84,7 +84,10 @@ export type TapeBlock = {
 };
 
 /** The day's timed items as positioned blocks. Pure, so SSR and the client agree. */
-export function tapeBlocks(timeline: DayScheduleItem[]): TapeBlock[] {
+export function tapeBlocks(
+	timeline: DayScheduleItem[],
+	domains: readonly DomainColorSource[] = [],
+): TapeBlock[] {
 	const blocks: TapeBlock[] = [];
 	for (const item of timeline) {
 		if (item.time === null) continue;
@@ -95,7 +98,7 @@ export function tapeBlocks(timeline: DayScheduleItem[]): TapeBlock[] {
 				kind: "event",
 				startMin: toMinutes(item.time),
 				durationMin: Number.isFinite(ms) ? Math.max(0, Math.round(ms / 60_000)) : 0,
-				color: eventColor(item.event.calendar_name),
+				color: eventColor(item.event.calendar_name, domains),
 				time: item.time,
 			});
 		} else {
@@ -186,13 +189,16 @@ export function DayTape({
 	timeline,
 	allDay,
 	nowLabel,
+	domains = [],
 }: {
 	timeline: DayScheduleItem[];
 	allDay: DayScheduleItem[];
 	/** Wall-clock "now", or null on any day but today — no now-mark off today. */
 	nowLabel: string | null;
+	/** Live domain colours so a calendar named like a domain follows that slug. */
+	domains?: readonly DomainColorSource[];
 }) {
-	const blocks = tapeBlocks(timeline);
+	const blocks = tapeBlocks(timeline, domains);
 	const nowMinutes = nowLabel === null ? null : toMinutes(nowLabel);
 	const { startMin, endMin, ticks } = computeTapeWindow(
 		blocks.flatMap((b) => [b.startMin, b.startMin + b.durationMin]),
@@ -235,7 +241,7 @@ export function DayTape({
 						const slug = item.kind === "task" ? item.task.domain?.color : null;
 						const color =
 							item.kind === "event"
-								? eventColor(item.event.calendar_name)
+								? eventColor(item.event.calendar_name, domains)
 								: isColorSlug(slug)
 									? colorSlugVar(slug)
 									: "var(--ink-3)";

@@ -12,7 +12,7 @@ import { formatDueLabel, formatLateLabel } from "@/lib/dates";
 import type { TaskRow } from "@/lib/services/tasks";
 import type { DayScheduleItem } from "@/lib/services/today";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
-import { eventColor } from "@/lib/ui/event-color";
+import { type DomainColorSource, eventColorSlug } from "@/lib/ui/event-color";
 import type { TaskRowHandlers } from "../tasks/task-row";
 import { createMeetingNoteForEventAction } from "./actions";
 
@@ -43,22 +43,6 @@ import { createMeetingNoteForEventAction } from "./actions";
 function lateLabel(task: TaskRow, todayIso: string): string | null {
 	if (!task.due_date || !isOverdue(task, todayIso)) return null;
 	return formatLateLabel(task.due_date, todayIso);
-}
-
-/**
- * A calendar's colour, which is not a palette slug — `eventColor` derives it
- * from the calendar's name, so it cannot go through `ColorDot`. That is the one
- * genuine second case; the domain dot beside it is `ColorDot` like everywhere
- * else.
- */
-function EventDot({ color }: { color: string }) {
-	return (
-		<span
-			aria-hidden="true"
-			className="inline-block size-[9px] shrink-0 rounded-full"
-			style={{ background: color }}
-		/>
-	);
 }
 
 /**
@@ -228,11 +212,13 @@ export function EventDayRow({
 	item,
 	past,
 	noteId,
+	domains = [],
 }: {
 	item: Extract<DayScheduleItem, { kind: "event" }>;
 	/** An event that has ended stays on the day — it just stops competing. */
 	past: boolean;
 	noteId?: string;
+	domains?: readonly DomainColorSource[];
 }) {
 	const { event, time } = item;
 
@@ -245,7 +231,7 @@ export function EventDayRow({
 			<span className="grid size-[19px] shrink-0 place-items-center text-ink-3">
 				<Icon icon={Calendar} size="md" />
 			</span>
-			<EventDot color={eventColor(event.calendar_name)} />
+			<ColorDot color={eventColorSlug(event.calendar_name, domains)} />
 			<span className={rowTitle({ layout: "fill" })}>{event.title}</span>
 			<MeetingNoteGlyph eventId={event.id} noteId={noteId} />
 		</li>

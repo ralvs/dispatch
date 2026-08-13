@@ -69,6 +69,7 @@ export async function TodayBody({
 				nowLabel={nowLabel}
 				eventNoteIds={eventNoteIds}
 				taskNoteIds={taskNoteIds}
+				domains={digest.domains.map((d) => ({ name: d.name, color: d.color }))}
 				counters={
 					<Counters
 						events={view.anchor.eventCount}
