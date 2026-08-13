@@ -64,11 +64,19 @@ export type CapturedRecord = {
 };
 
 export async function capture(sb: SupabaseClient, raw: CaptureInput): Promise<CapturedRecord> {
-	// Durability point — the only throw in the whole module.
-	const capturedId = await persistRaw(sb, raw);
+	const t0 = performance.now();
+	// Persist and context load are independent. Persist is still the only
+	// throw the caller sees — a context failure is contained below.
+	const [persistResult, contextResult] = await Promise.allSettled([
+		persistRaw(sb, raw),
+		loadCaptureContext(sb),
+	]);
+	if (persistResult.status === "rejected") throw persistResult.reason;
+	const capturedId = persistResult.value;
 
 	try {
-		return await process(sb, capturedId, raw);
+		if (contextResult.status === "rejected") throw contextResult.reason;
+		return await process(sb, capturedId, raw, contextResult.value, t0);
 	} catch {
 		// No-throw boundary. Processing failed after the raw row was persisted;
 		// best-effort leave a linked needs_review note so the content is visible.
@@ -76,15 +84,20 @@ export async function capture(sb: SupabaseClient, raw: CaptureInput): Promise<Ca
 	}
 }
 
+type LoadedContext = Awaited<ReturnType<typeof loadCaptureContext>>;
+
 /** The happy path. May throw anything; capture()'s boundary contains it. */
 async function process(
 	sb: SupabaseClient,
 	capturedId: string,
 	raw: CaptureInput,
+	loaded: LoadedContext,
+	t0: number,
 ): Promise<CapturedRecord> {
-	// Parse (typed fallback). Relative dates resolve against the app tz.
-	const { tz, routing, ctx } = await loadCaptureContext(sb);
+	const tContext = performance.now();
+	const { tz, routing, ctx } = loaded;
 	const parsed = await parse(raw.text, ctx);
+	const tParse = performance.now();
 
 	// A hard parser failure degrades the whole capture to one needs_review note,
 	// storing the transcript verbatim (no model in the loop).
@@ -97,6 +110,13 @@ async function process(
 			reason,
 		});
 		await markParsed(sb, capturedId);
+		console.info("⏱ capture", {
+			id: capturedId,
+			context: Math.round(tContext - t0),
+			parse: Math.round(tParse - tContext),
+			outcome: reason,
+			total: Math.round(performance.now() - t0),
+		});
 		return {
 			capturedId,
 			status: "parsed",
@@ -111,9 +131,17 @@ async function process(
 		? parsed.actions
 		: [{ action: "create_note", body: raw.text, source_type: "own_thought" }];
 	const results = await runActions(sb, actions, { capturedId, transcript: raw.text, tz, routing });
+	const tExec = performance.now();
 
 	// Terminal marker (best-effort — markParsed never throws).
 	await markParsed(sb, capturedId);
+	console.info("⏱ capture", {
+		id: capturedId,
+		context: Math.round(tContext - t0),
+		parse: Math.round(tParse - tContext),
+		execute: Math.round(tExec - tParse),
+		total: Math.round(performance.now() - t0),
+	});
 	return { capturedId, status: "parsed", outcome: { kind: "executed", results } };
 }
 

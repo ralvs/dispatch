@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import type { CreateTaskAction } from "@/lib/schemas/capture";
 import {
 	fetchRoutingLists,
+	loadCaptureContext,
 	type RoutingLists,
 	resolveTaskRouting,
 	taskInputFromAction,
@@ -10,9 +11,11 @@ import {
 
 vi.mock("@/lib/services/domains", () => ({ listDomains: vi.fn() }));
 vi.mock("@/lib/services/projects", () => ({ listProjects: vi.fn() }));
+vi.mock("@/lib/services/settings", () => ({ getAppTimezone: vi.fn() }));
 
 import { listDomains } from "@/lib/services/domains";
 import { listProjects } from "@/lib/services/projects";
+import { getAppTimezone } from "@/lib/services/settings";
 
 const sb = {} as SupabaseClient;
 
@@ -164,5 +167,29 @@ describe("fetchRoutingLists", () => {
 		const result = await fetchRoutingLists(sb);
 
 		expect(result).toEqual({ domains: [], projects: [] });
+	});
+});
+
+describe("loadCaptureContext", () => {
+	it("loads timezone and routing lists together", async () => {
+		(getAppTimezone as Mock).mockResolvedValue("America/Sao_Paulo");
+		(listDomains as Mock).mockResolvedValue([{ id: "dom-home", name: "Home" }]);
+		(listProjects as Mock).mockResolvedValue([
+			{ id: "proj-reviews", name: "Reviews", domain_id: "dom-work" },
+		]);
+
+		const result = await loadCaptureContext(sb);
+
+		expect(getAppTimezone).toHaveBeenCalledWith(sb);
+		expect(listDomains).toHaveBeenCalledWith(sb);
+		expect(listProjects).toHaveBeenCalledWith(sb, { status: "active" });
+		expect(result.tz).toBe("America/Sao_Paulo");
+		expect(result.routing).toEqual({
+			domains: [{ id: "dom-home", name: "Home" }],
+			projects: [{ id: "proj-reviews", name: "Reviews", domain_id: "dom-work" }],
+		});
+		expect(result.ctx.tz).toBe("America/Sao_Paulo");
+		expect(result.ctx.domains).toEqual(["Home"]);
+		expect(result.ctx.projects).toEqual(["Reviews"]);
 	});
 });

@@ -151,8 +151,7 @@ export async function fetchRoutingLists(sb: SupabaseClient): Promise<RoutingList
 export async function loadCaptureContext(
 	sb: SupabaseClient,
 ): Promise<{ tz: string; routing: RoutingLists; ctx: ParseContext }> {
-	const tz = await getAppTimezone(sb);
-	const routing = await fetchRoutingLists(sb);
+	const [tz, routing] = await Promise.all([getAppTimezone(sb), fetchRoutingLists(sb)]);
 	return {
 		tz,
 		routing,

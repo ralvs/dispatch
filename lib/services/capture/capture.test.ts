@@ -26,9 +26,18 @@ const RAW = { kind: "transcript", text: "ligar pro médico", via: "text" } as co
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	vi.spyOn(console, "info").mockImplementation(() => {});
 });
 
 describe("capture", () => {
+	it("rethrows when persistRaw fails — nothing was captured", async () => {
+		(persistRaw as Mock).mockRejectedValueOnce(new Error("db down"));
+
+		await expect(capture(sb, RAW)).rejects.toThrow("db down");
+		expect(parse).not.toHaveBeenCalled();
+		expect(runActions).not.toHaveBeenCalled();
+	});
+
 	it("persists raw first and marks parsed last", async () => {
 		(parse as Mock).mockResolvedValue({
 			ok: true,
