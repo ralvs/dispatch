@@ -24,27 +24,26 @@ const FIELD_LABEL = "field-caption mb-2 block text-xs";
 export const CONTROL = fieldControl({ size: "md" });
 
 /**
- * Borderless on purpose: five bordered boxes in a row (date, time, and three
- * shortcuts) read as five equal controls. The shortcuts are a shortcut to the
- * field beside them, so they keep the hit area and drop the chrome.
+ * Borderless on purpose: date, time, and the shortcut cluster would otherwise
+ * read as five equal boxed controls. The shortcuts keep the hit area and drop
+ * the chrome. Compact labels so reset can sit in the same row.
  */
 export const CHIP =
-	"h-9 whitespace-nowrap rounded-control px-2 font-mono text-eyebrow uppercase text-ink-3 transition-colors hover:bg-surface hover:text-ink";
+	"h-9 whitespace-nowrap rounded-control px-2 font-mono text-eyebrow text-ink-3 transition-colors hover:bg-surface hover:text-ink";
 export const CHIP_ON = "bg-accent-bg text-accent-ink hover:bg-accent-bg hover:text-accent-ink";
 /**
- * Reset clears rather than sets, so it sits with the group's label instead of
- * among the chips — an icon that is always present and only ever changes
- * state, so nothing beside it shifts when a date appears. Red on the way out:
- * it is the one control here that takes an answer away.
+ * Reset lives with the relative chips — same row, last in the cluster. Always
+ * rendered so neighbours never shift. Red when it can take an answer away;
+ * muted once there is nothing left to clear.
  */
 const RESET_BUTTON =
-	"inline-flex size-7 shrink-0 items-center justify-center rounded-control text-ink-4 transition-colors hover:bg-surface hover:text-error disabled:pointer-events-none disabled:opacity-30";
+	"inline-flex size-9 shrink-0 items-center justify-center rounded-control text-error transition-colors hover:bg-surface hover:text-error disabled:pointer-events-none disabled:text-ink-4 disabled:opacity-30 disabled:hover:bg-transparent";
 
 /** What a due date actually gets set to, nine times out of ten. */
 const RELATIVE_DAYS = [
-	{ label: "Today", days: 0 },
-	{ label: "Tomorrow", days: 1 },
-	{ label: "+1 week", days: 7 },
+	{ label: "today", title: "Today", days: 0 },
+	{ label: "+1d", title: "Tomorrow", days: 1 },
+	{ label: "+1w", title: "In one week", days: 7 },
 ] as const;
 
 export const PRIORITIES = [
@@ -156,65 +155,51 @@ export function TaskMetaFields({
 
 	return (
 		// Two deliberate rows rather than one that happens to wrap: "when" is
-		// wide (a date, a time, three shortcuts), "where/how often/how much"
-		// are three answers on one grid under it. Both rows run the full width
-		// of the surface — nothing sits in a fixed-width column with dead space
-		// beside it. space-y-7 so the next row's label reads as that row's
-		// label, not as a caption on the control above it.
-		<div className="space-y-7">
+		// wide (a date, a time, three shortcuts + reset), "where/how often/how
+		// much" are three answers on one grid under it. space-y-9 so each
+		// caption belongs to the control under it, not the rule above it.
+		<div className="space-y-9">
 			<div className="field-unit min-w-0">
-				<div className="flex items-center justify-between gap-3">
-					<span className={FIELD_LABEL}>Due</span>
-					{/* Not a relative day like the chips below — an action that clears
-					    date, time, and recurrence together ("no dates at all"). Always
-					    rendered so the controls under it never shift; disabled once
-					    there is nothing left to clear. */}
-					<button
-						type="button"
-						onClick={resetSchedule}
-						disabled={scheduleIsEmpty}
-						aria-label="Clear due date, time, and recurrence"
-						title="Clear due date, time, and recurrence"
-						className={RESET_BUTTON}
-					>
-						<Icon icon={RotateCcw} size="sm" />
-					</button>
-				</div>
-				<div className="mt-2 flex flex-wrap items-center gap-2">
-					<Input
-						type="date"
-						name="due_date"
-						value={due}
-						onChange={(event) => {
-							const next = event.target.value;
-							setDue(next);
-							// A time with no date to sit on is meaningless (DB check
-							// constraint) — clear it in the same gesture that clears the date.
-							if (next === "") setTime("");
-						}}
-						aria-label="Due date"
-						className="min-w-[9.5rem] flex-1"
-					/>
-					<Input
-						type="time"
-						name="due_time"
-						value={time}
-						disabled={due === ""}
-						onChange={(event) => setTime(event.target.value)}
-						aria-label="Due time"
-						className="min-w-[7.5rem] flex-1"
-					/>
-					{/* The chips take their own width and the two fields absorb whatever
-					    is left, so "+1 week" never breaks across two lines to make room
-					    for a date input that could have given it up. */}
+				<span className={FIELD_LABEL}>Due</span>
+				<div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+					<div className="flex min-w-0 flex-1 items-center gap-5">
+						<Input
+							type="date"
+							name="due_date"
+							value={due}
+							onChange={(event) => {
+								const next = event.target.value;
+								setDue(next);
+								// A time with no date to sit on is meaningless (DB check
+								// constraint) — clear it in the same gesture that clears the date.
+								if (next === "") setTime("");
+							}}
+							aria-label="Due date"
+							className="min-w-[9.5rem] flex-1"
+						/>
+						<Input
+							type="time"
+							name="due_time"
+							value={time}
+							disabled={due === ""}
+							onChange={(event) => setTime(event.target.value)}
+							aria-label="Due time"
+							className="min-w-[7.5rem] flex-1"
+						/>
+					</div>
+					{/* Compact relative chips + reset as one cluster. Reset is always
+					    rendered so the chips never shift; disabled once there is
+					    nothing left to clear. */}
 					<div className="flex shrink-0 items-center gap-1">
-						{RELATIVE_DAYS.map(({ label, days }) => {
+						{RELATIVE_DAYS.map(({ label, title, days }) => {
 							const target = shiftDay(todayIso, days);
 							const on = due === target;
 							return (
 								<button
 									key={label}
 									type="button"
+									title={title}
+									aria-label={title}
 									aria-pressed={on}
 									onClick={() => setDue(on ? "" : target)}
 									className={`${CHIP} ${on ? CHIP_ON : ""}`}
@@ -223,11 +208,21 @@ export function TaskMetaFields({
 								</button>
 							);
 						})}
+						<button
+							type="button"
+							onClick={resetSchedule}
+							disabled={scheduleIsEmpty}
+							aria-label="Clear due date, time, and recurrence"
+							title="Clear due date, time, and recurrence"
+							className={RESET_BUTTON}
+						>
+							<Icon icon={RotateCcw} size="sm" />
+						</button>
 					</div>
 				</div>
 			</div>
 
-			<div className="grid grid-cols-1 gap-x-6 gap-y-7 sm:grid-cols-3">
+			<div className="grid grid-cols-1 gap-x-8 gap-y-9 sm:grid-cols-3">
 				<Field label="Domain" className="min-w-0">
 					{/* No color dot on <option> — styling native option elements is
 					    unreliable cross-browser, so this stays a plain name list. */}
@@ -353,10 +348,10 @@ function TaskNotesField({
  */
 export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) {
 	return (
-		<fieldset className="block min-w-0">
-			<legend className={FIELD_LABEL}>Priority</legend>
+		<div className="field-unit min-w-0">
+			<span className={FIELD_LABEL}>Priority</span>
 			<div
-				className="mt-2 flex h-9 w-full overflow-hidden rounded-control border border-line"
+				className="flex h-9 w-full overflow-hidden rounded-control border border-line"
 				role="radiogroup"
 				aria-label="Priority"
 			>
@@ -381,6 +376,6 @@ export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) 
 					</label>
 				))}
 			</div>
-		</fieldset>
+		</div>
 	);
 }
