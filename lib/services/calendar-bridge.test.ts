@@ -4,7 +4,12 @@ import { syncBridgeEvents } from "@/lib/services/calendar-bridge";
 import { ServiceError } from "@/lib/services/errors";
 
 type StubOpts = {
-	existingRows?: { caldav_uid: string; caldav_etag: string; start_at: string }[];
+	existingRows?: {
+		caldav_uid: string;
+		caldav_etag: string;
+		start_at: string;
+		calendar_name?: string;
+	}[];
 };
 
 function stubSupabase(opts: StubOpts = {}) {
@@ -104,19 +109,41 @@ describe("syncBridgeEvents", () => {
 		});
 	});
 
-	it("skips unchanged etag+start", async () => {
+	it("skips unchanged etag+start+calendar", async () => {
 		const { sb, upserts } = stubSupabase({
 			existingRows: [
 				{
 					caldav_uid: "ek-1",
 					caldav_etag: "etag-1",
 					start_at: "2026-07-21T15:00:00.000Z",
+					calendar_name: "Work",
 				},
 			],
 		});
 		const result = await syncBridgeEvents(sb, { events: [event()], ...WINDOW });
 		expect(result.pulled).toBe(0);
 		expect(upserts.find((u) => u.table === "calendar_events")).toBeUndefined();
+	});
+
+	it("rewrites calendar_name when the Apple calendar is renamed", async () => {
+		const { sb, upserts } = stubSupabase({
+			existingRows: [
+				{
+					caldav_uid: "ek-1",
+					caldav_etag: "etag-1",
+					start_at: "2026-07-21T15:00:00.000Z",
+					calendar_name: "renan.alves@engine.com",
+				},
+			],
+		});
+		const result = await syncBridgeEvents(sb, {
+			events: [event({ calendar_name: "Engine" })],
+			...WINDOW,
+		});
+		expect(result.pulled).toBe(1);
+		expect(upserts.find((u) => u.table === "calendar_events")?.row).toMatchObject({
+			calendar_name: "Engine",
+		});
 	});
 
 	it("set-difference deletes unseen google rows in window", async () => {

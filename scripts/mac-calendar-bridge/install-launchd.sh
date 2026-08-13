@@ -22,7 +22,7 @@ DISPATCH_BASE_URL=https://YOUR_DEPLOYMENT
 CALENDAR_BRIDGE_SECRET=
 # Exact Apple Calendar titles for Engine calendars (comma-separated).
 # Run: ./calendar-bridge once without this set is not supported; list titles
-# in Calendar.app sidebar, e.g. renan.alves@engine.com
+# in Calendar.app sidebar, e.g. Engine
 DISPATCH_BRIDGE_CALENDAR_TITLES=
 EOF
 	chmod 600 "$ENV_FILE"

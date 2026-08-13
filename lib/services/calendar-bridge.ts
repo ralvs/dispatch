@@ -38,9 +38,14 @@ export async function syncBridgeEvents(
 	const existingRows = (unwrap(
 		await sb
 			.from("calendar_events")
-			.select("caldav_uid, caldav_etag, start_at")
+			.select("caldav_uid, caldav_etag, start_at, calendar_name")
 			.eq("source", "google"),
-	) ?? []) as { caldav_uid: string | null; caldav_etag: string | null; start_at: string }[];
+	) ?? []) as {
+		caldav_uid: string | null;
+		caldav_etag: string | null;
+		start_at: string;
+		calendar_name: string | null;
+	}[];
 	const knownByUid = new Map(
 		existingRows.filter((r) => r.caldav_uid !== null).map((r) => [r.caldav_uid as string, r]),
 	);
@@ -61,7 +66,8 @@ export async function syncBridgeEvents(
 		if (
 			known &&
 			known.caldav_etag === etag &&
-			Date.parse(known.start_at) === Date.parse(event.start_at)
+			Date.parse(known.start_at) === Date.parse(event.start_at) &&
+			known.calendar_name === event.calendar_name
 		) {
 			continue;
 		}
