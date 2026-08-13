@@ -63,46 +63,45 @@ curl -sS -X POST https://your-app.vercel.app/api/capture -H "Authorization: Bear
 A `201` with `{"kind":"capture",…}` means the text path ran; post a bare URL
 instead and you should get `{"kind":"link",…}` and a new row at `/links`.
 
-**3. Build the share-sheet Shortcut.** In the Shortcuts app, create a new
-shortcut named _Dispatch_:
+**3. Build the poster.** One shortcut owns the secret and the endpoint; every
+other way of capturing calls it. In the Shortcuts app:
 
 | Step | Action | Settings |
 | --- | --- | --- |
-| 1 | — | Enable **Show in Share Sheet**; accept _Text_ and _URLs_ |
-| 2 | Text | `Shortcut Input` |
-| 3 | Get Contents of URL | See below |
+| 1 | — | Enable **Show in Share Sheet**; accept _Text_, _Rich Text_, _URLs_ |
+| 2 | Text | your secret, pasted |
+| 3 | Set Variable | `token` = the output of step 2 |
+| 4 | Get Contents of URL | See below |
 
-Configure step 3:
+Configure step 4:
 
 - **URL** — `https://your-app.vercel.app/api/capture`
 - **Method** — `POST`
-- **Headers** — `Authorization: Bearer <your secret>`, `Content-Type: application/json`
-- **Request Body** — JSON, one field: `text` (Text) = the output of step 2
+- **Headers** — `Authorization: Bearer <token>`, `Content-Type: application/json`
+- **Request Body** — JSON, one field: `text` (Text) = `Shortcut Input`
 
-Share anything to _Dispatch_ and it lands.
+The token lives in step 2 and nowhere else, so rotating the secret is one
+paste in one shortcut. Share anything to it and it lands.
 
-**4. Build the Siri Shortcut** (dictate from iPhone or Watch). A second
-shortcut, named _Add to Dispatch_ — the name **is** the Siri phrase, so pick
-one you can say cleanly and keep it distinct from the share-sheet shortcut:
+**4. Add dictation on top** (Siri, iPhone, or Watch). Rather than copying the
+token into a second shortcut, make a two-action one that calls the poster.
+Name it for how you want to say it — the shortcut's name **is** the Siri
+phrase, e.g. _Add to Dispatch_:
 
 | Step | Action | Settings |
 | --- | --- | --- |
 | 1 | Dictate Text | Language: your speaking language · Stop Listening: **After Pause** |
-| 2 | Get Contents of URL | Same URL, method, and headers as above |
-| 3 | Get Dictionary Value | Get **Value** for key `summary` in `Contents of URL` |
+| 2 | Run Shortcut | Run the poster, with **Input** = `Dictated Text` |
+| 3 | Get Dictionary Value | Get **Value** for key `summary` in `Shortcut Result` |
 | 4 | Show Result | `Dictionary Value` |
 
-The request body in step 2 is JSON with three Text fields:
+_Run Shortcut_ hands its input to the poster as `Shortcut Input` and returns
+the poster's last output, so the dictated words reach the endpoint and the
+reply comes back — one copy of the secret, one URL, one place to change.
 
-| Key | Value |
-| --- | --- |
-| `text` | `Dictated Text` (the variable from step 1) |
-| `via` | `voice` |
-| `source` | `watch` |
-
-Then, in the shortcut's details pane: turn **Show on Apple Watch** on, and
-turn **Show When Run** off on the _Get Contents of URL_ action so a Siri run
-never stops to show you a sheet.
+Then, in the dictation shortcut's details pane: turn **Show on Apple Watch**
+on, and turn **Show When Run** off on _Run Shortcut_ so a Siri run never stops
+to show you a sheet.
 
 Say _"Hey Siri, Add to Dispatch"_, dictate a sentence, and Siri reads back what
 it became. The whole utterance goes to the parser: _"lembrar de ligar pro
@@ -113,10 +112,14 @@ a note you can sort from `/inbox`. Nothing is ever dropped (iron rule #4).
 Notes on this flow:
 
 - **Transcription is the device's job, never the app's** (docs/adr/0017). The
-  Shortcut sends words, not audio; `via: "voice"` is provenance only.
-- **`source: "watch"`** just labels the ledger row. Use `webhook` instead if
-  you would rather not distinguish them — those are the only two values the
-  endpoint accepts.
+  Shortcut sends words, not audio.
+- **Drop the poster's clipboard fallback** if it has one. "If there's no input:
+  Get Clipboard" is right for a share sheet and wrong for dictation — a silent
+  Watch mic would capture whatever you last copied.
+- **Provenance costs a second copy of the token.** The body's optional `via`
+  (`voice`/`text`) and `source` (`webhook`/`watch`) fields only label the
+  ledger row. To set them per-entry, duplicate the poster instead of chaining
+  to it and hardcode them there; chaining is worth more than the label.
 - **Bilingual** — dictate in PT-BR or EN and the content is stored verbatim in
   the language you spoke (iron rule #5). _Dictate Text_ takes one language per
   shortcut, so duplicate it if you want a dedicated phrase per language.
