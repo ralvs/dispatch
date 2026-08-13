@@ -75,6 +75,18 @@ describe("parse", () => {
 		});
 	});
 
+	it("caps retries, output tokens, and wall time on the model call", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+
+		await parse("hmm", CTX);
+
+		const call = (generateObject as Mock).mock.calls[0][0];
+		expect(call.maxRetries).toBe(1);
+		expect(call.maxOutputTokens).toBe(400);
+		expect(call.abortSignal).toBeInstanceOf(AbortSignal);
+	});
+
 	it("omits the routing block when no domains/projects are given", async () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
 		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
@@ -138,6 +150,18 @@ describe("parseTaskCapture", () => {
 			ok: true,
 			task: { action: "create_task", title: "pagar aluguel" },
 		});
+	});
+
+	it("uses the same call budget as parse()", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { task: null } });
+
+		await parseTaskCapture("hmm", CTX);
+
+		const call = (generateObject as Mock).mock.calls[0][0];
+		expect(call.maxRetries).toBe(1);
+		expect(call.maxOutputTokens).toBe(400);
+		expect(call.abortSignal).toBeInstanceOf(AbortSignal);
 	});
 });
 

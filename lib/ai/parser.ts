@@ -82,6 +82,20 @@ function routingBlock(ctx: ParseContext): string[] {
 	return lines;
 }
 
+// Shared generateObject budget. Default retries (2) can triple a schema miss;
+// a runaway object should not sit until the function times out.
+const PARSE_MAX_RETRIES = 1;
+const PARSE_MAX_OUTPUT_TOKENS = 400;
+const PARSE_TIMEOUT_MS = 8_000;
+
+function parseCallOptions() {
+	return {
+		maxRetries: PARSE_MAX_RETRIES,
+		maxOutputTokens: PARSE_MAX_OUTPUT_TOKENS,
+		abortSignal: AbortSignal.timeout(PARSE_TIMEOUT_MS),
+	};
+}
+
 function systemPrompt(ctx: ParseContext): string {
 	return [
 		"You convert ONE spoken or typed utterance into a JSON array of actions.",
@@ -134,6 +148,7 @@ export async function parse(text: string, ctx: ParseContext): Promise<ParseResul
 			schema: z.object({ actions: CaptureActionsSchema }),
 			system: systemPrompt(ctx),
 			prompt: text,
+			...parseCallOptions(),
 		});
 		if (object.actions.length === 0) return { ok: false, reason: "empty", raw: text };
 		return { ok: true, actions: object.actions };
@@ -180,6 +195,7 @@ export async function parseTaskCapture(text: string, ctx: ParseContext): Promise
 			schema: z.object({ task: CreateTaskActionSchema.nullable() }),
 			system: taskCaptureSystemPrompt(ctx),
 			prompt: text,
+			...parseCallOptions(),
 		});
 		if (!object.task) return { ok: false, reason: "empty", raw: text };
 		return { ok: true, task: object.task };

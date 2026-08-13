@@ -16,7 +16,7 @@ const EnvSchema = z.object({
 
 	// AI Gateway (Phase 2)
 	AI_GATEWAY_API_KEY: z.string().min(1).optional(),
-	PARSER_MODEL: z.string().default("anthropic/claude-sonnet-5"),
+	PARSER_MODEL: z.string().default("anthropic/claude-haiku-4.5"),
 	CHAT_MODEL: z.string().default("anthropic/claude-sonnet-5"),
 
 	// External-surface secrets (Phase 7)
