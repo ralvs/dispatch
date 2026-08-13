@@ -6,7 +6,7 @@ import { fetchLinkMetadata } from "@/lib/links/metadata";
 import { afterExternalMutation } from "@/lib/mutation-feedback/invalidate";
 import { isAuthorized } from "@/lib/secret-auth";
 import { capture } from "@/lib/services/capture";
-import { createLink } from "@/lib/services/links";
+import { createLink, updateLinkMetadata } from "@/lib/services/links";
 import { recordNotification } from "@/lib/services/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -75,10 +75,23 @@ export async function POST(request: Request) {
 	const url = bareUrl(text);
 
 	if (url) {
-		// Enrichment first: a title makes the reading list legible, but it is a
-		// nicety — fetchLinkMetadata never throws, so a dead host still saves.
+		// Persist first (iron rule #4): the row is the guarantee, the title is
+		// a nicety. A crash during the fetch still leaves the URL on /links.
+		const saved = await createLink(sb, { url, source });
+		const tEnrich = performance.now();
 		const meta = await fetchLinkMetadata(url);
-		const link = await createLink(sb, { url, ...meta, source });
+		let link = saved;
+		if (meta.title || meta.description) {
+			try {
+				link = await updateLinkMetadata(sb, saved.id, meta);
+			} catch {
+				// Bare row already exists; a missed title is the lesser loss.
+			}
+		}
+		console.info("⏱ capture.link", {
+			id: saved.id,
+			enrich: Math.round(performance.now() - tEnrich),
+		});
 		const label = link.title ?? new URL(link.url).hostname;
 
 		// The asymmetry this closes: the in-app capture action has always called

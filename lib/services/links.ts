@@ -56,6 +56,23 @@ export async function createLink(sb: SupabaseClient, input: CreateLinkInput): Pr
 	return data as unknown as LinkRow;
 }
 
+/** Patch title/description after a persist-first save (POST /api/capture). */
+export async function updateLinkMetadata(
+	sb: SupabaseClient,
+	id: string,
+	meta: { title: string | null; description: string | null },
+): Promise<LinkRow> {
+	const data = unwrap(
+		await sb
+			.from(TABLE)
+			.update({ title: meta.title, description: meta.description })
+			.eq("id", id)
+			.select(LINK_SELECT)
+			.single(),
+	);
+	return data as unknown as LinkRow;
+}
+
 /**
  * Set a link's read state. Every status is reachable from every other, so a
  * mis-tapped "read" can go straight back to unread.

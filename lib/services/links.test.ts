@@ -1,7 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { CreateLinkSchema } from "@/lib/schemas/link";
-import { createLink, listLinks, setLinkStatus, unreadLinkCount } from "@/lib/services/links";
+import {
+	createLink,
+	listLinks,
+	setLinkStatus,
+	unreadLinkCount,
+	updateLinkMetadata,
+} from "@/lib/services/links";
 
 type StubResult = { data?: unknown; error?: unknown; count?: number };
 
@@ -110,6 +116,29 @@ describe("createLink", () => {
 			description: "Worth reading",
 			source: "share_sheet",
 		});
+	});
+});
+
+describe("updateLinkMetadata", () => {
+	it("patches title and description by id", async () => {
+		const { sb, calls } = stubSupabase({
+			ingest_links: { data: { id: "l1", title: "A post" }, error: null },
+		});
+
+		const row = await updateLinkMetadata(sb, "l1", {
+			title: "A post",
+			description: "Worth reading",
+		});
+
+		expect(row).toMatchObject({ id: "l1", title: "A post" });
+		expect(calls).toEqual([
+			{
+				table: "ingest_links",
+				op: "update",
+				payload: { title: "A post", description: "Worth reading" },
+			},
+			{ table: "ingest_links", op: "eq", payload: { col: "id", value: "l1" } },
+		]);
 	});
 });
 
