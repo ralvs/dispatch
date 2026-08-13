@@ -17,6 +17,9 @@ export type TaskDomainOption = {
 /** Label always stacks above its control (block, not inline beside). */
 const FIELD_LABEL = "field-caption mb-2 block text-xs";
 
+/** One column rhythm for both meta rows so date/time/chips sit on Domain/Repeats/Priority. */
+const META_GRID = "grid grid-cols-1 gap-x-12 gap-y-8 sm:grid-cols-3";
+
 /**
  * Shared field shell for non-primitive surfaces in this directory (mention
  * controls). Prefer Input/Select from `@/components/ui` for native fields.
@@ -154,43 +157,36 @@ export function TaskMetaFields({
 	const scheduleIsEmpty = due === "" && time === "" && recurrence === "";
 
 	return (
-		// Two deliberate rows rather than one that happens to wrap: "when" is
-		// wide (a date, a time, three shortcuts + reset), "where/how often/how
-		// much" are three answers on one grid under it. space-y-9 so each
-		// caption belongs to the control under it, not the rule above it.
-		<div className="space-y-9">
+		<div className="space-y-10">
 			<div className="field-unit min-w-0">
 				<span className={FIELD_LABEL}>Due</span>
-				<div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-					<div className="flex min-w-0 flex-1 items-center gap-5">
-						<Input
-							type="date"
-							name="due_date"
-							value={due}
-							onChange={(event) => {
-								const next = event.target.value;
-								setDue(next);
-								// A time with no date to sit on is meaningless (DB check
-								// constraint) — clear it in the same gesture that clears the date.
-								if (next === "") setTime("");
-							}}
-							aria-label="Due date"
-							className="min-w-[9.5rem] flex-1"
-						/>
-						<Input
-							type="time"
-							name="due_time"
-							value={time}
-							disabled={due === ""}
-							onChange={(event) => setTime(event.target.value)}
-							aria-label="Due time"
-							className="min-w-[7.5rem] flex-1"
-						/>
-					</div>
-					{/* Compact relative chips + reset as one cluster. Reset is always
-					    rendered so the chips never shift; disabled once there is
-					    nothing left to clear. */}
-					<div className="flex shrink-0 items-center gap-1">
+				<div className={META_GRID}>
+					<Input
+						type="date"
+						name="due_date"
+						value={due}
+						onChange={(event) => {
+							const next = event.target.value;
+							setDue(next);
+							// A time with no date to sit on is meaningless (DB check
+							// constraint) — clear it in the same gesture that clears the date.
+							if (next === "") setTime("");
+						}}
+						aria-label="Due date"
+						className="min-w-0 w-full"
+					/>
+					<Input
+						type="time"
+						name="due_time"
+						value={time}
+						disabled={due === ""}
+						onChange={(event) => setTime(event.target.value)}
+						aria-label="Due time"
+						className="min-w-0 w-full"
+					/>
+					{/* Same column as Priority. justify-between so today shares
+					    Priority's left edge and reset shares its right. */}
+					<div className="flex h-9 w-full min-w-0 items-center justify-between">
 						{RELATIVE_DAYS.map(({ label, title, days }) => {
 							const target = shiftDay(todayIso, days);
 							const on = due === target;
@@ -222,7 +218,7 @@ export function TaskMetaFields({
 				</div>
 			</div>
 
-			<div className="grid grid-cols-1 gap-x-8 gap-y-9 sm:grid-cols-3">
+			<div className={META_GRID}>
 				<Field label="Domain" className="min-w-0">
 					{/* No color dot on <option> — styling native option elements is
 					    unreliable cross-browser, so this stays a plain name list. */}
