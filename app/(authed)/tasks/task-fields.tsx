@@ -33,7 +33,6 @@ export const CONTROL = fieldControl({ size: "md" });
  */
 export const CHIP =
 	"h-9 whitespace-nowrap rounded-control px-2 font-mono text-eyebrow text-ink-3 transition-colors hover:bg-surface hover:text-ink";
-export const CHIP_ON = "bg-accent-bg text-accent-ink hover:bg-accent-bg hover:text-accent-ink";
 /**
  * Reset lives with the relative chips — same row, last in the cluster. Always
  * rendered so neighbours never shift. Red when it can take an answer away;
@@ -187,23 +186,18 @@ export function TaskMetaFields({
 					{/* Same column as Priority. justify-between so today shares
 					    Priority's left edge and reset shares its right. */}
 					<div className="flex h-9 w-full min-w-0 items-center justify-between">
-						{RELATIVE_DAYS.map(({ label, title, days }) => {
-							const target = shiftDay(todayIso, days);
-							const on = due === target;
-							return (
-								<button
-									key={label}
-									type="button"
-									title={title}
-									aria-label={title}
-									aria-pressed={on}
-									onClick={() => setDue(on ? "" : target)}
-									className={`${CHIP} ${on ? CHIP_ON : ""}`}
-								>
-									{label}
-								</button>
-							);
-						})}
+						{RELATIVE_DAYS.map(({ label, title, days }) => (
+							<button
+								key={label}
+								type="button"
+								title={title}
+								aria-label={title}
+								onClick={() => setDue(shiftDay(todayIso, days))}
+								className={CHIP}
+							>
+								{label}
+							</button>
+						))}
 						<button
 							type="button"
 							onClick={resetSchedule}
