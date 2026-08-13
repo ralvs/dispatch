@@ -20,6 +20,7 @@ export { Button } from "./button";
 export { type ButtonVariants, button } from "./button-variants";
 export { Card, card } from "./card";
 export { Checkbox, checkbox } from "./checkbox";
+export { DatePicker } from "./date-picker";
 export { Dialog, DialogBody, DialogFooter } from "./dialog";
 export { EmptyState } from "./empty-state";
 export { Field, Input, Select, Textarea } from "./field";
@@ -39,3 +40,4 @@ export {
 	suggestionOption,
 	suggestionPanel,
 } from "./suggestion-surface";
+export { TimePicker } from "./time-picker";

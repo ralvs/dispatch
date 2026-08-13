@@ -145,6 +145,13 @@ export function TaskDialog({
 		) {
 			return;
 		}
+		// Date segments and the time ComboBox own Enter (commit a slot / a day).
+		if (
+			event.target instanceof Element &&
+			event.target.closest("[data-rac], [role='combobox'], [role='spinbutton']")
+		) {
+			return;
+		}
 		event.preventDefault();
 		formRef.current?.requestSubmit();
 	}

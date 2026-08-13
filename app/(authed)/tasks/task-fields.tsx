@@ -3,7 +3,7 @@
 import { RotateCcw } from "lucide-react";
 import { type ReactNode, useId, useState } from "react";
 import { MentionTextarea, MentionTextInput } from "@/components/mention-input";
-import { Field, fieldControl, Icon, Input, Select } from "@/components/ui";
+import { DatePicker, Field, fieldControl, Icon, Select, TimePicker } from "@/components/ui";
 import { shiftDay } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
@@ -160,28 +160,24 @@ export function TaskMetaFields({
 			<div className="field-unit min-w-0">
 				<span className={FIELD_LABEL}>Due</span>
 				<div className={META_GRID}>
-					<Input
-						type="date"
+					<DatePicker
 						name="due_date"
 						value={due}
-						onChange={(event) => {
-							const next = event.target.value;
+						todayIso={todayIso}
+						aria-label="Due date"
+						onChange={(next) => {
 							setDue(next);
 							// A time with no date to sit on is meaningless (DB check
 							// constraint) — clear it in the same gesture that clears the date.
 							if (next === "") setTime("");
 						}}
-						aria-label="Due date"
-						className="min-w-0 w-full"
 					/>
-					<Input
-						type="time"
+					<TimePicker
 						name="due_time"
 						value={time}
 						disabled={due === ""}
-						onChange={(event) => setTime(event.target.value)}
 						aria-label="Due time"
-						className="min-w-0 w-full"
+						onChange={setTime}
 					/>
 					{/* Same column as Priority. justify-between so today shares
 					    Priority's left edge and reset shares its right. */}
