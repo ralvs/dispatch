@@ -76,8 +76,16 @@ function routingBlock(ctx: ParseContext): string[] {
 	if (domains.length > 0) lines.push(`KNOWN DOMAINS: ${domains.join(", ")}`);
 	if (projects.length > 0) lines.push(`KNOWN PROJECTS: ${projects.join(", ")}`);
 	lines.push(
-		"Set domain/project ONLY when the user explicitly names one; copy the",
-		"name EXACTLY as listed above. No clear match → OMIT, never guess.",
+		"Set domain/project ONLY when the utterance actually says that name; copy",
+		"it EXACTLY as listed above. No clear match → OMIT, never guess.",
+		"domain and project are INDEPENDENT. Naming a domain is not a reason to",
+		"fill project: if no project from the list was spoken, omit project",
+		"entirely. Never echo the domain into project, never copy a word out of",
+		"the task into it, and never pick a list entry that was not said.",
+		"Dictated text has no punctuation, so a destination is often just the",
+		'first word with no separator — "saúde marcar dentista" names Health and',
+		'the title is "marcar dentista". Only strip that word when it is a',
+		"destination; when it belongs to the sentence, keep it and omit routing.",
 	);
 	return lines;
 }

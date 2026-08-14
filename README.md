@@ -90,24 +90,38 @@ phrase, e.g. _Add to Dispatch_:
 
 | Step | Action | Settings |
 | --- | --- | --- |
-| 1 | Dictate Text | Language: your speaking language · Stop Listening: **After Pause** |
-| 2 | Run Shortcut | Run the poster, with **Input** = `Dictated Text` |
-| 3 | Get Dictionary Value | Get **Value** for key `summary` in `Shortcut Result` |
-| 4 | Show Result | `Dictionary Value` |
+| 1 | Ask for Input | Input Type: **Text** · Prompt: something short, e.g. "O que?" |
+| 2 | If | `Provided Input` **has any value** — everything below goes inside |
+| 3 | Run Shortcut | Run the poster, with **Input** = `Provided Input` |
+| 4 | Get Dictionary Value | Get **Value** for key `summary` in `Shortcut Result` |
+| 5 | Show Result | `Dictionary Value` |
 
 _Run Shortcut_ hands its input to the poster as `Shortcut Input` and returns
-the poster's last output, so the dictated words reach the endpoint and the
-reply comes back — one copy of the secret, one URL, one place to change.
+the poster's last output, so the spoken words reach the endpoint and the reply
+comes back — one copy of the secret, one URL, one place to change.
 
-Then, in the dictation shortcut's details pane: turn **Show on Apple Watch**
-on, and turn **Show When Run** off on _Run Shortcut_ so a Siri run never stops
-to show you a sheet.
+**Why _Ask for Input_ and not _Dictate Text_.** Siri does not pass the rest of
+your sentence into a shortcut: saying "Hey Siri, Add to Dispatch buy milk"
+matches the name and drops "buy milk". The words have to be collected by an
+action inside the shortcut, and _Ask for Input_ is the one Siri drives —
+running from Siri, it speaks the prompt and listens for the answer, which is
+also what works on a Watch with no keyboard. _Dictate Text_ expects the
+dictation UI and behaves inconsistently when Siri started the run.
 
-Say _"Hey Siri, Add to Dispatch"_, dictate a sentence, and Siri reads back what
-it became. The whole utterance goes to the parser: _"lembrar de ligar pro
-dentista amanhã de manhã"_ becomes a task with a due date, _"almoço com a Ana
-quinta ao meio-dia"_ becomes a calendar event, anything unclassifiable becomes
-a note you can sort from `/inbox`. Nothing is ever dropped (iron rule #4).
+The `If` in step 2 matters more than it looks. A misheard or silent answer
+yields empty input, and the poster's share-sheet fallback ("If there's no
+input: Get Clipboard") would then capture whatever you last copied. Guard it
+here, or drop the fallback from the poster.
+
+Then, in the shortcut's details pane: turn **Show on Apple Watch** on, and
+turn **Show When Run** off on _Run Shortcut_ so a Siri run never stops to show
+you a sheet.
+
+Say _"Hey Siri, Add to Dispatch"_, answer the prompt, and Siri reads back what
+it became. The whole answer goes to the parser: _"lembrar de ligar pro dentista
+amanhã de manhã"_ becomes a task with a due date, _"almoço com a Ana quinta ao
+meio-dia"_ becomes a calendar event, anything unclassifiable becomes a note you
+can sort from `/inbox`. Nothing is ever dropped (iron rule #4).
 
 #### Dictating a task straight into its domain
 
@@ -115,10 +129,10 @@ The parser never infers routing — it sets `domain`/`project` **only** when you
 name one, and copies the name from the lists in its prompt (docs/adr/0019 D1).
 So "marcar dentista amanhã" is always unfiled; say the destination and it isn't.
 
-- **Name it anywhere in the sentence.** Prefix (`Health: marcar dentista`),
-  aside (`tarefa de Health, marcar dentista`), or trailing
-  (`marcar dentista, isso é Health`) all route the same. The routing words are
-  stripped from the title.
+- **No punctuation needed** — you can't dictate a colon anyway. Just lead with
+  the word: "saúde marcar dentista pra semana que vem" files under Health with
+  the title "marcar dentista". A connector ("tarefa de saúde…", "na saúde…",
+  "no Dispatch…") or a trailing mention ("…isso é casa") works the same.
 - **Say it in Portuguese if that's what you're speaking.** `saúde` → Health,
   `casa` → Home, `família` → Family, `finanças` → Finance, `viagem` → Travel,
   `código` → Code. The model bridges to the listed English name, so you never
@@ -135,6 +149,10 @@ So "marcar dentista amanhã" is always unfiled; say the destination and it isn't
 - **Events take no domain at all.** `create_event` has no routing field; a
   captured event's domain comes from which calendar it lands on. Naming a
   domain while dictating an event is harmless but does nothing.
+- **If a task lands in a project you didn't name**, that is the parser
+  volunteering one rather than omitting the field. The prompt argues against it
+  and it is now rare, but it is not structurally prevented — the resolver
+  cannot tell a copied name from an invented one.
 
 Notes on this flow:
 
