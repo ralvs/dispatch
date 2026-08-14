@@ -1,8 +1,8 @@
 "use client";
 
 import { Card, EmptyState, SectionHead } from "@/components/ui";
+import type { DaySchedule } from "@/lib/day-schedule";
 import type { TaskRow } from "@/lib/services/tasks";
-import type { DaySchedule } from "@/lib/services/today";
 import { TOP3_SLOTS } from "@/lib/task-predicates";
 import type { DomainColorSource } from "@/lib/ui/event-color";
 import { TODAY_VARIANT } from "@/lib/ui/variant";

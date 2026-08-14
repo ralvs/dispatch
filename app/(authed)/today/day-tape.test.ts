@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DayScheduleItem } from "@/lib/services/today";
+import type { DayScheduleItem } from "@/lib/day-schedule";
 import {
 	computeTapeWindow,
 	formatTapeTime,

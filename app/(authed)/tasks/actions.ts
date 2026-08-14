@@ -68,7 +68,7 @@ export async function completeTaskAction(input: { id: string; observedDueDate: s
 	if (input.observedDueDate !== null && parseDateIso(input.observedDueDate) === null) {
 		throw new Error(`Invalid observed due date: ${input.observedDueDate}`);
 	}
-	await completeTask(sb, z.uuid().parse(input.id), await todayForRequest(sb), {
+	const result = await completeTask(sb, z.uuid().parse(input.id), await todayForRequest(sb), {
 		dueDate: input.observedDueDate,
 	});
 	// Revalidates even when the precondition rejected the write: the optimistic
@@ -77,6 +77,7 @@ export async function completeTaskAction(input: { id: string; observedDueDate: s
 	// "only act when rows moved" is scoped to afterExternalMutation, which has
 	// no transition on the other end.
 	afterMutation("task.write");
+	return result;
 }
 
 export async function reopenTaskAction(id: string) {

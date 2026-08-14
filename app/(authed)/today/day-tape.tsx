@@ -1,8 +1,8 @@
 "use client";
 
 import { type PointerEvent, useCallback, useState } from "react";
+import type { DayScheduleItem } from "@/lib/day-schedule";
 import { colorSlugVar, isColorSlug } from "@/lib/schemas/color";
-import type { DayScheduleItem } from "@/lib/services/today";
 import { type DomainColorSource, eventColor } from "@/lib/ui/event-color";
 
 /*

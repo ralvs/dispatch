@@ -1,4 +1,4 @@
-import type { DayScheduleItem } from "@/lib/services/today";
+import type { DayScheduleItem } from "@/lib/day-schedule";
 
 /**
  * The sentence at the top of the day, and it follows the day the nav is on —

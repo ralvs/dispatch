@@ -15,13 +15,14 @@ import {
 // DaySchedulePayload comes straight from lib/, not through actions.ts: a
 // "use server" module may only export async functions, and a re-exported type
 // there survives into the server-actions loader as an undefined binding.
-import type { TaskRow } from "@/lib/services/tasks";
-import type { DaySchedule, DaySchedulePayload } from "@/lib/services/today";
 import {
-	type ApplyContext,
 	applyDayIntent,
-	type TaskIntent,
-} from "@/lib/task-interaction/apply-intent";
+	type DayIntentContext,
+	type DaySchedule,
+	type DaySchedulePayload,
+} from "@/lib/day-schedule";
+import type { TaskRow } from "@/lib/services/tasks";
+import type { TaskIntent } from "@/lib/task-interaction/apply-intent";
 import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
 import type { DomainColorSource } from "@/lib/ui/event-color";
 import { completeTaskAction, reopenTaskAction, setTop3Action } from "../tasks/actions";
@@ -298,7 +299,7 @@ export function DayView({
 	// The optimistic store lives here, not in the sections: Top 3 and the
 	// Timeline sit in different columns and can hold the same task, so two
 	// stores would let a tick land in one and not the other.
-	const ctx: ApplyContext = { todayIso, top3DateIso: view.dateIso, tz };
+	const ctx: DayIntentContext = { dateIso: view.dateIso, todayIso, tz };
 	const [projected, dispatchOptimistic] = useOptimistic(
 		view.schedule,
 		(current, intent: TaskIntent) => applyDayIntent(current, intent, ctx),

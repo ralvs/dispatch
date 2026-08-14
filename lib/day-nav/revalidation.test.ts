@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { DaySchedule, DayScheduleItem, DaySchedulePayload } from "@/lib/day-schedule";
 import type { CalendarEventRow } from "@/lib/schemas/calendar";
 import type { TaskRow } from "@/lib/schemas/task";
-import type { DaySchedule, DayScheduleItem, DaySchedulePayload } from "@/lib/services/today";
 import {
 	type DayCacheEntry,
 	daySignature,

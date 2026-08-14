@@ -1,5 +1,5 @@
 import { visibleEventFields, visibleTaskFields } from "@/lib/day-nav/visible-fields";
-import type { DaySchedule, DayScheduleItem, DaySchedulePayload } from "@/lib/services/today";
+import type { DaySchedule, DayScheduleItem, DaySchedulePayload } from "@/lib/day-schedule";
 
 /** `content` is real data; `time` is the clock. Split so a write is
  *  distinguishable from a SoftRefresh tick. */

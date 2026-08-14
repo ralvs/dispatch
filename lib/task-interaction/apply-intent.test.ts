@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
+import type { DaySchedule } from "@/lib/day-schedule";
+import { applyDayIntent } from "@/lib/day-schedule";
 import type { TaskRow } from "@/lib/schemas/task";
-import type { DaySchedule } from "@/lib/services/today";
 import {
-	applyDayIntent,
 	applyDayTaskList,
 	applyTaskLists,
 	completeTaskFields,
+	nextCompleteFields,
+	projectComplete,
 } from "@/lib/task-interaction/apply-intent";
 
 const TODAY = "2026-07-15";
@@ -214,6 +216,35 @@ describe("completeTaskFields", () => {
 	});
 });
 
+describe("projectComplete", () => {
+	it("is the roll both adapters share", () => {
+		const t = task({
+			id: "r",
+			title: "Weekly",
+			recurrence_rule: "weekly",
+			due_date: "2026-07-10",
+		});
+		const next = projectComplete(t, { todayIso: TODAY });
+		expect(nextCompleteFields(t, { todayIso: TODAY })).toEqual({
+			rolled: true,
+			due_date: "2026-07-22",
+		});
+		expect(next).toMatchObject({ id: "r", status: "open", due_date: "2026-07-22" });
+		expect(completeTaskFields(t, { todayIso: TODAY }, { clearTop3: true }).due_date).toBe(
+			next.due_date,
+		);
+	});
+
+	it("closes a non-recurring task", () => {
+		const t = task({ id: "a", title: "Go" });
+		const next = projectComplete(t, { todayIso: TODAY, nowIso: `${TODAY}T12:00:00.000Z` });
+		expect(next).toMatchObject({
+			status: "done",
+			completed_at: `${TODAY}T12:00:00.000Z`,
+		});
+	});
+});
+
 describe("applyDayTaskList", () => {
 	const ctx = { todayIso: TODAY, nowIso: `${TODAY}T15:00:00.000Z` };
 
@@ -272,8 +303,8 @@ describe("applyDayTaskList", () => {
 
 describe("applyDayIntent", () => {
 	const ctx = {
+		dateIso: TODAY,
 		todayIso: TODAY,
-		top3DateIso: TODAY,
 		nowIso: `${TODAY}T15:00:00.000Z`,
 		tz: "UTC",
 	};

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { parseDateIso, todayInTz } from "@/lib/dates";
+import type { DaySchedulePayload } from "@/lib/day-schedule";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { getEvent } from "@/lib/services/calendar";
 import { ServiceError } from "@/lib/services/errors";
@@ -12,7 +13,7 @@ import { createManualLink } from "@/lib/services/note-links";
 import { createNote } from "@/lib/services/notes";
 import { clearSkipsToday, recordQuoteSkip } from "@/lib/services/resurfacing";
 import { todayForRequest } from "@/lib/services/settings";
-import { type DaySchedulePayload, loadDaySchedulePayload } from "@/lib/services/today";
+import { loadDaySchedulePayload } from "@/lib/services/today";
 
 /**
  * Load one day's tape + bands without re-running the ~13-query Today digest.

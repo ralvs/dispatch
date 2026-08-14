@@ -12,7 +12,9 @@ Capture must never be lost (iron rule #4): the raw input is persisted first,
 then parsed; any failure degrades to a `needs_review` note rather than
 dropping the input. The raw firehose lands in `captured_data`; parsed text
 turns into one or more actions (`lib/schemas/capture.ts`, `docs/adr/0008`).
-Dispatch does not transcribe audio (docs/adr/0017).
+A title-only create on `/tasks` is a separate **sentence → task** path
+(`quickAddTask`) — no `captured_data`, no `needs_review` degrade
+(docs/adr/0019 D3, 0043). Dispatch does not transcribe audio (docs/adr/0017).
 
 ## inbox
 
@@ -125,10 +127,9 @@ The prefix carries the date semantics (ADR-0036):
   `DayView`, `DayHeadline`, `DayTape`, `DayNav`, and the band sections.
 
 `briefing`, `chrome` and **brief** are all retired as domain terms; `chrome`
-means UI frame again. The "In brief" section was cut in the revision-A
-composition, so `BriefLine` / `deriveBriefLines` / `TodayView.briefLines`
-survive in `lib/services/today.ts` unread by any surface — nothing new should
-consume them.
+means UI frame again. The "In brief" section is gone — no `BriefLine` type
+or assembly remains. Day* types live in `lib/day-schedule.ts`, not the Today
+read.
 
 ## day tape
 

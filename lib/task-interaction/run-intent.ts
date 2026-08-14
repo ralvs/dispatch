@@ -8,7 +8,7 @@ import { useIntentLock } from "@/lib/task-interaction/intent-lock";
 
 const DEFAULT_ERROR = "Couldn't update that task. Try again.";
 
-export type TaskIntentRun = (intent: TaskIntent, action: () => Promise<void>) => void;
+export type TaskIntentRun = (intent: TaskIntent, action: () => Promise<unknown>) => void;
 
 /**
  * Claim → optimistic dispatch → server action → release.
@@ -24,7 +24,7 @@ export function useTaskIntentRunner(
 	const [, startTransition] = useTransition();
 
 	return useCallback(
-		(intent: TaskIntent, action: () => Promise<void>) => {
+		(intent: TaskIntent, action: () => Promise<unknown>) => {
 			if (!lock.claim(intent)) return;
 			startTransition(async () => {
 				dispatchOptimistic(intent);
@@ -46,7 +46,10 @@ export function top3DesiredState(
 }
 
 export type TaskWriteActions = {
-	complete: (input: { id: string; observedDueDate: string | null }) => Promise<void>;
+	complete: (input: {
+		id: string;
+		observedDueDate: string | null;
+	}) => Promise<{ rolled: boolean; nextDue: string | null; applied: boolean }>;
 	reopen: (id: string) => Promise<void>;
 	setTop3: (input: { id: string; starred: boolean; forDateIso?: string }) => Promise<void>;
 	delete?: (id: string) => Promise<void>;

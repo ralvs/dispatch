@@ -1,13 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-	dateOfInstant,
-	formatInstant,
-	instantFromLocal,
-	isoWeek,
-	isWallClockTime,
-	shiftDay,
-} from "@/lib/dates";
+import { formatInstant, instantFromLocal, isoWeek, isWallClockTime, shiftDay } from "@/lib/dates";
 import { buildDaySchedule, type DaySchedule, type DaySchedulePayload } from "@/lib/day-schedule";
 import { computeRoutineStats, type RoutineStats, recentDaysGrid } from "@/lib/routine-stats";
 import { type CalendarEventRow, listEventsOn } from "@/lib/services/calendar";
@@ -32,25 +25,11 @@ import {
 	listRoutines,
 	type RoutineRow,
 } from "@/lib/services/routines";
-import {
-	lastCompletedByDomain,
-	listCompletedOn,
-	listTasks,
-	type TaskRow,
-} from "@/lib/services/tasks";
-import { isDueToday, isOverdue, isTop3Today } from "@/lib/task-predicates";
+import { listCompletedOn, listTasks, type TaskRow } from "@/lib/services/tasks";
+import { isDueToday, isOverdue } from "@/lib/task-predicates";
 
-// Day placement lives in a client-safe module (lib/day-schedule.ts) because the
-// optimistic day bands run the same code in the browser; a `server-only` home
-// would pull `env` into the client graph. Re-exported here so server callers
-// keep one import surface for "the Today read".
-export {
-	buildDaySchedule,
-	type DaySchedule,
-	type DayScheduleItem,
-	type DaySchedulePayload,
-	placeOnDay,
-} from "@/lib/day-schedule";
+// Day placement lives in lib/day-schedule.ts (client-safe). Import Day*
+// types from there — this module is the Today read (digest + loaders).
 
 // ─────────────────────────────────────────────────────────────────────────
 // The Today page's data. getToday assembles a single read of the day's
@@ -73,11 +52,6 @@ export {
 //     DayBands     — Top3Section / TimelineSection / OpenSection; DayTape the
 //                    tape and the all-day band; DayNav the chevrons
 //
-// "In brief" was a section of Today and is RETIRED — the revision-A
-// composition cut it. BriefLine / deriveBriefLines / TodayView.briefLines
-// survive below unread by any surface, kept only because the digest they read
-// from is cross-request cached and pruning it is a separate change. Nothing
-// new should consume them.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type CadenceLine = {
@@ -90,20 +64,6 @@ export type CadenceLine = {
 
 /** One row of the retired "In brief" section: a domain measured against its
  * expected cadence. No surface renders these any more. */
-export type BriefLine = {
-	key: string;
-	name: string;
-	color: string | null;
-	daysSince: number;
-	thresholdDays: number;
-	slipping: boolean;
-	unit: string;
-	nextAction: string;
-	href: string;
-	/** Formatted display date of the last touch, or null when never touched. */
-	lastTouched: string | null;
-};
-
 export type AnchorData = {
 	eventCount: number;
 	nextEvent: { startAt: string; title: string } | null;
@@ -159,7 +119,6 @@ export type TodayView = {
 	quoteOfDay: QuoteRow | null;
 	masthead: { isoWeek: number; unreadNotifications: number };
 	anchor: AnchorData;
-	briefLines: BriefLine[];
 	routineBuckets: RoutineBucket[];
 	resurfaced: QuoteRow | null;
 	resurfacedSkips: number;
@@ -285,18 +244,6 @@ export function doingTodayFromSchedule(schedule: DaySchedule): TaskRow[] {
 	return out;
 }
 
-/**
- * @deprecated Prefer {@link doingTodayFromSchedule} after placeOnDay.
- * Kept for unit characterization of the pre-band flat list shape.
- */
-export function assembleDoingToday(open: TaskRow[], todayIso: string): TaskRow[] {
-	const top3 = open.filter((t) => isTop3Today(t, todayIso));
-	const dueOrOverdue = open.filter(
-		(t) => !isTop3Today(t, todayIso) && t.due_date !== null && t.due_date <= todayIso,
-	);
-	return [...top3, ...dueOrOverdue].slice(0, 10);
-}
-
 /** The one-sentence commitments anchor under the masthead. */
 export function buildAnchor(input: {
 	events: CalendarEventRow[];
@@ -315,21 +262,10 @@ export function buildAnchor(input: {
 	};
 }
 
-/** Days between two YYYY-MM-DD dates (from → to), pure string math. */
-function daysBetween(fromIso: string, toIso: string): number {
-	const parse = (iso: string) =>
-		Date.UTC(
-			parseInt(iso.slice(0, 4), 10),
-			parseInt(iso.slice(5, 7), 10) - 1,
-			parseInt(iso.slice(8, 10), 10),
-		);
-	return Math.round((parse(toIso) - parse(fromIso)) / 86_400_000);
-}
-
 /**
  * The numeric cadence threshold hiding in a domain's failure_patterns jsonb
  * (seed shape: [{"rule":"no_activity_days","value":7}, …]). Defensive: any
- * malformed shape yields null and the domain simply has no brief line.
+ * malformed shape yields null and the domain simply has no cadence rule.
  */
 export function cadenceThresholdDays(failurePatterns: unknown): number | null {
 	if (!Array.isArray(failurePatterns)) return null;
@@ -345,53 +281,6 @@ export function cadenceThresholdDays(failurePatterns: unknown): number | null {
 		}
 	}
 	return null;
-}
-
-/**
- * Lines for the retired "In brief" section: domains at (or approaching) their
- * cadence threshold. Nothing renders them; see the note at the top of the file.
- * Last touch = the most recent of last_shipped_at and the domain's latest
- * completed task; a never-touched domain falls back to its created_at. Lines
- * appear once daysSince reaches 75% of the threshold, so a domain surfaces
- * shortly before it slips — most-slipped first.
- */
-export function deriveBriefLines(
-	domains: DomainRow[],
-	lastTouchByDomain: Record<string, string>,
-	todayIso: string,
-	tz: string,
-): BriefLine[] {
-	const lines: BriefLine[] = [];
-	for (const domain of domains) {
-		const thresholdDays = cadenceThresholdDays(domain.failure_patterns);
-		if (thresholdDays === null) continue;
-
-		const touches = [domain.last_shipped_at, lastTouchByDomain[domain.id]].filter(
-			(t): t is string => typeof t === "string",
-		);
-		const touched = touches.length > 0 ? touches.sort().at(-1) : null;
-		const lastTouch = touched ?? domain.created_at;
-		if (!lastTouch) continue;
-
-		const daysSince = Math.max(0, daysBetween(dateOfInstant(lastTouch, tz), todayIso));
-		if (daysSince < Math.ceil(thresholdDays * 0.75)) continue;
-
-		lines.push({
-			key: domain.id,
-			name: domain.name,
-			color: domain.color,
-			daysSince,
-			thresholdDays,
-			slipping: daysSince > thresholdDays,
-			unit: daysSince === 1 ? "day since" : "days since",
-			nextAction: domain.expected_cadence ?? "Give it some attention.",
-			// Deep-link the row so "Mark shipped" / cadence edit are one scroll away
-			// rather than dumping the owner at the top of Settings.
-			href: `/domains#domain-${domain.id}`,
-			lastTouched: touched ? formatInstant(touched, tz, "d LLL") : null,
-		});
-	}
-	return lines.sort((a, b) => b.daysSince / b.thresholdDays - a.daysSince / a.thresholdDays);
 }
 
 /**
@@ -521,7 +410,6 @@ export async function loadTodayDigest(
 	needsReview: number;
 	quotes: QuoteRow[];
 	domains: DomainRow[];
-	lastTouchByDomain: Record<string, string>;
 	unreadNotifications: number;
 	skippedQuoteIds: string[];
 	completionHistory: CompletionRow[];
@@ -535,7 +423,6 @@ export async function loadTodayDigest(
 		needsReview,
 		quotes,
 		domains,
-		lastTouchByDomain,
 		unreadNotifications,
 		skippedQuoteIds,
 		completionHistory,
@@ -547,7 +434,6 @@ export async function loadTodayDigest(
 		countNeedsReview(sb),
 		listQuotes(sb),
 		listDomains(sb),
-		lastCompletedByDomain(sb),
 		unreadCount(sb),
 		listSkippedToday(sb, todayIso),
 		listCompletionsSince(sb, shiftDay(todayIso, -STREAK_HISTORY_DAYS)),
@@ -566,7 +452,6 @@ export async function loadTodayDigest(
 		needsReview,
 		quotes,
 		domains,
-		lastTouchByDomain,
 		unreadNotifications,
 		skippedQuoteIds,
 		completionHistory,
@@ -661,8 +546,6 @@ export function assembleTodayView(
 		completionsToday,
 		needsReview,
 		quotes,
-		domains,
-		lastTouchByDomain,
 		unreadNotifications,
 		skippedQuoteIds,
 		completionHistory,
@@ -711,7 +594,6 @@ export function assembleTodayView(
 			overdueCount: overdue.length,
 			nowUtcIso: new Date(nowMs).toISOString(),
 		}),
-		briefLines: deriveBriefLines(domains, lastTouchByDomain, todayIso, tz),
 		routineBuckets: bucketRoutines({
 			routines,
 			completions: completionHistory,

@@ -1,10 +1,10 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { dayWindowUtc, nowUtc } from "@/lib/dates";
-import { isRecurrencePattern, nextDueDate } from "@/lib/recurrence";
 import { TASK_SELECT, type TaskRow } from "@/lib/schemas/task";
 import { unwrap } from "@/lib/services/errors";
 import { type GraphFail, syncTaskMentionsFromText } from "@/lib/services/mentions";
+import { nextCompleteFields } from "@/lib/task-interaction/apply-intent";
 
 export type { TaskRow } from "@/lib/schemas/task";
 
@@ -286,12 +286,10 @@ export async function completeTask(
 	const task = await getTaskHot(sb, id);
 	if (!task) throw new Error("Task not found");
 
-	if (task.recurrence_rule && isRecurrencePattern(task.recurrence_rule)) {
-		const due = nextDueDate({
-			currentDue: task.due_date,
-			rule: task.recurrence_rule,
-			todayIso,
-		});
+	const nowIso = nowUtc();
+	const next = nextCompleteFields(task, { todayIso, nowIso });
+	if (next.rolled) {
+		const due = next.due_date;
 		// A recurring task may legitimately have no due date at all
 		// (nextDueDate accepts a null currentDue), and `= NULL` matches nothing
 		// in Postgres — the null case has to go through `is`, not `eq`.
@@ -310,7 +308,7 @@ export async function completeTask(
 	const rows = unwrap(
 		await sb
 			.from("tasks")
-			.update({ status: "done", completed_at: nowUtc() })
+			.update({ status: "done", completed_at: next.completed_at })
 			.eq("id", id)
 			.eq("status", "open")
 			.select("id"),

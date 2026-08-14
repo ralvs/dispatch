@@ -1,5 +1,5 @@
+import type { DayScheduleItem } from "@/lib/day-schedule";
 import type { TaskRow } from "@/lib/schemas/task";
-import type { DayScheduleItem } from "@/lib/services/today";
 
 /**
  * Canonical "what the day cares about on screen" for a task row.

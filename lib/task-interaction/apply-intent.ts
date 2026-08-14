@@ -1,8 +1,6 @@
-// Client-safe placement module, not `@/lib/services/today` — this file runs in
-// the browser (day-bands.tsx), and the service module is `server-only`.
-import { type DaySchedule, placeOnDay } from "@/lib/day-schedule";
+// Field-level projectors for task intents. Day membership lives in
+// lib/day-schedule.ts (applyDayIntent). This module stays client-safe.
 import { isRecurrencePattern, nextDueDate } from "@/lib/recurrence";
-import type { CalendarEventRow } from "@/lib/schemas/calendar";
 import type { TaskRow } from "@/lib/schemas/task";
 
 /** Intents the optimistic layer understands (v1). Edit waits for the server. */
@@ -22,8 +20,6 @@ export type ApplyContext = {
 	 * star: a completed recurring task still rolls forward from the real today.
 	 */
 	top3DateIso?: string;
-	/** App timezone — required for day membership (placeOnDay). */
-	tz?: string;
 	/** ISO instant for completed_at; defaults to now when omitted. */
 	nowIso?: string;
 };
@@ -45,12 +41,42 @@ function findIn(tasks: TaskRow[], id: string): TaskRow | undefined {
 	return tasks.find((t) => t.id === id);
 }
 
-function top3Target(ctx: ApplyContext): string {
-	return ctx.top3DateIso ?? ctx.todayIso;
+function nowOf(ctx: Pick<ApplyContext, "nowIso">): string {
+	return ctx.nowIso ?? new Date().toISOString();
 }
 
-function nowOf(ctx: ApplyContext): string {
-	return ctx.nowIso ?? new Date().toISOString();
+export type CompleteProjection =
+	| { rolled: true; due_date: string | null }
+	| { rolled: false; completed_at: string };
+
+/**
+ * The one complete projector: recurrence rolls the due date and stays open;
+ * everything else closes. Tasks-page cosmetics (clearTop3) sit outside this.
+ */
+export function nextCompleteFields(
+	task: { recurrence_rule: string | null; due_date: string | null },
+	ctx: Pick<ApplyContext, "todayIso" | "nowIso">,
+): CompleteProjection {
+	if (task.recurrence_rule && isRecurrencePattern(task.recurrence_rule)) {
+		return {
+			rolled: true,
+			due_date: nextDueDate({
+				currentDue: task.due_date,
+				rule: task.recurrence_rule,
+				todayIso: ctx.todayIso,
+			}),
+		};
+	}
+	return { rolled: false, completed_at: nowOf(ctx) };
+}
+
+export function projectComplete(
+	task: TaskRow,
+	ctx: Pick<ApplyContext, "todayIso" | "nowIso">,
+): TaskRow {
+	const fields = nextCompleteFields(task, ctx);
+	if (fields.rolled) return { ...task, due_date: fields.due_date };
+	return { ...task, status: "done", completed_at: fields.completed_at };
 }
 
 /**
@@ -66,22 +92,11 @@ export function completeTaskFields(
 	ctx: ApplyContext,
 	opts: { clearTop3: boolean },
 ): TaskRow {
-	if (task.recurrence_rule && isRecurrencePattern(task.recurrence_rule)) {
-		return {
-			...task,
-			due_date: nextDueDate({
-				currentDue: task.due_date,
-				rule: task.recurrence_rule,
-				todayIso: ctx.todayIso,
-			}),
-		};
+	const next = projectComplete(task, ctx);
+	if (opts.clearTop3 && next.status === "done") {
+		return { ...next, top3_for_date: null };
 	}
-	return {
-		...task,
-		status: "done",
-		completed_at: nowOf(ctx),
-		...(opts.clearTop3 ? { top3_for_date: null } : {}),
-	};
+	return next;
 }
 
 export function reopenTaskFields(task: TaskRow): TaskRow {
@@ -150,8 +165,7 @@ export function applyTaskLists(lists: TaskLists, intent: TaskIntent, ctx: ApplyC
  * Project a flat day-task list after an intent, in place.
  *
  * Completing a task does NOT drop it: Today's bands keep the day's finished
- * work on screen (docs/adr/0038). Prefer {@link applyDayIntent} when you have
- * a full DaySchedule — that one also re-bands membership.
+ * work on screen (docs/adr/0038). Re-band via applyDayIntent in day-schedule.
  */
 export function applyDayTaskList(
 	tasks: TaskRow[],
@@ -170,55 +184,4 @@ export function applyDayTaskList(
 		case "complete":
 			return mapId(tasks, intent.id, (t) => completeTaskFields(t, ctx, { clearTop3: false }));
 	}
-}
-
-/** Flatten every task the day currently shows, deduped by id. */
-export function collectDayTasks(schedule: DaySchedule): TaskRow[] {
-	const byId = new Map<string, TaskRow>();
-	for (const item of schedule.allDay) {
-		if (item.kind === "task") byId.set(item.task.id, item.task);
-	}
-	for (const item of schedule.timeline) {
-		if (item.kind === "task") byId.set(item.task.id, item.task);
-	}
-	for (const task of schedule.top3) {
-		byId.set(task.id, task);
-	}
-	for (const task of schedule.open) {
-		byId.set(task.id, task);
-	}
-	return [...byId.values()];
-}
-
-/** Events currently on the day schedule (all-day + timeline). */
-export function collectDayEvents(schedule: DaySchedule): CalendarEventRow[] {
-	const out: CalendarEventRow[] = [];
-	for (const item of schedule.allDay) {
-		if (item.kind === "event") out.push(item.event);
-	}
-	for (const item of schedule.timeline) {
-		if (item.kind === "event") out.push(item.event);
-	}
-	return out;
-}
-
-/**
- * One pure seam for Today's optimistic day bands: intent + base schedule →
- * next schedule. Field patch here; band membership via {@link placeOnDay}
- * so SSR and optimistic share one rule set.
- */
-export function applyDayIntent(
-	schedule: DaySchedule,
-	intent: TaskIntent,
-	ctx: ApplyContext,
-): DaySchedule {
-	const dateIso = top3Target(ctx);
-	const tz = ctx.tz ?? "UTC";
-	const tasks = applyDayTaskList(collectDayTasks(schedule), intent, ctx);
-	return placeOnDay({
-		events: collectDayEvents(schedule),
-		tasks,
-		dateIso,
-		tz,
-	});
 }

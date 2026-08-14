@@ -21,6 +21,7 @@
 import { formatInstant, instantFromLocal, isWallClockTime } from "@/lib/dates";
 import type { CalendarEventRow } from "@/lib/schemas/calendar";
 import type { TaskRow } from "@/lib/schemas/task";
+import { applyDayTaskList, type TaskIntent } from "@/lib/task-interaction/apply-intent";
 import { isTop3Today } from "@/lib/task-predicates";
 
 // `sortAt` is the UTC instant an item occupies on the timeline, and `time` its
@@ -53,7 +54,7 @@ export type DaySchedulePayload = {
 	taskNoteIds: Record<string, string>;
 };
 
-/** Cap on the open/unscheduled band — same ceiling assembleDoingToday used. */
+/** Cap on the open/unscheduled band. */
 const OPEN_CAP = 10;
 
 /**
@@ -80,7 +81,7 @@ function compareItems(a: DayScheduleItem, b: DayScheduleItem): number {
 
 /**
  * Day membership: which events/tasks sit in which band for one date.
- * One pure module used by SSR (`buildDaySchedule`) and optimistic day bands
+ * One pure module used by SSR (`buildDaySchedule`) and the optimistic tick
  * (`applyDayIntent`) so placement cannot drift.
  *
  * `dateIso` is the day being shown. Placement never asks whether a task is
@@ -166,5 +167,65 @@ export function buildDaySchedule(input: {
 		tasks: [...input.openTasks, ...(input.completedTasks ?? [])],
 		dateIso: input.dateIso,
 		tz: input.tz,
+	});
+}
+
+/** Flatten every task the day currently shows, deduped by id. */
+export function collectDayTasks(schedule: DaySchedule): TaskRow[] {
+	const byId = new Map<string, TaskRow>();
+	for (const item of schedule.allDay) {
+		if (item.kind === "task") byId.set(item.task.id, item.task);
+	}
+	for (const item of schedule.timeline) {
+		if (item.kind === "task") byId.set(item.task.id, item.task);
+	}
+	for (const task of schedule.top3) {
+		byId.set(task.id, task);
+	}
+	for (const task of schedule.open) {
+		byId.set(task.id, task);
+	}
+	return [...byId.values()];
+}
+
+/** Events currently on the day schedule (all-day + timeline). */
+export function collectDayEvents(schedule: DaySchedule): CalendarEventRow[] {
+	const out: CalendarEventRow[] = [];
+	for (const item of schedule.allDay) {
+		if (item.kind === "event") out.push(item.event);
+	}
+	for (const item of schedule.timeline) {
+		if (item.kind === "event") out.push(item.event);
+	}
+	return out;
+}
+
+/** Membership date is first-class — not smuggled as the star's target. */
+export type DayIntentContext = {
+	dateIso: string;
+	todayIso: string;
+	tz: string;
+	nowIso?: string;
+};
+
+/**
+ * Intent + base schedule → next schedule. Field patch via applyDayTaskList;
+ * band membership via placeOnDay so SSR and optimistic share one rule set.
+ */
+export function applyDayIntent(
+	schedule: DaySchedule,
+	intent: TaskIntent,
+	ctx: DayIntentContext,
+): DaySchedule {
+	const tasks = applyDayTaskList(collectDayTasks(schedule), intent, {
+		todayIso: ctx.todayIso,
+		top3DateIso: ctx.dateIso,
+		nowIso: ctx.nowIso,
+	});
+	return placeOnDay({
+		events: collectDayEvents(schedule),
+		tasks,
+		dateIso: ctx.dateIso,
+		tz: ctx.tz,
 	});
 }
