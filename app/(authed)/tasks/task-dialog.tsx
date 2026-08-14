@@ -4,6 +4,7 @@ import { type KeyboardEvent, useRef, useState, useTransition } from "react";
 import { Button, Dialog, DialogBody, DialogFooter } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { MentionCandidate } from "@/lib/mentions";
+import { titleOnlyCreate } from "@/lib/services/capture/title-only";
 import { createTaskAction, updateTaskAction } from "./actions";
 import { type TaskDomainOption, type TaskFieldDefaults, TaskFormFields } from "./task-fields";
 
@@ -101,18 +102,6 @@ export function TaskDialog({
 	 * uncontrolled by design and remount on every open, so the submitted payload
 	 * is the only place that cannot drift out of sync with what is on screen.
 	 */
-	function titleOnly(formData: FormData): boolean {
-		const blank = (name: string) => String(formData.get(name) ?? "").trim() === "";
-		return (
-			blank("due_date") &&
-			blank("due_time") &&
-			blank("notes") &&
-			blank("domain_id") &&
-			blank("recurrence_rule") &&
-			String(formData.get("priority") ?? "4") === "4"
-		);
-	}
-
 	function submit(formData: FormData) {
 		if (pending) return;
 		startTransition(async () => {
@@ -123,7 +112,7 @@ export function TaskDialog({
 						return updateTaskAction(taskId, formData);
 					}
 					const title = String(formData.get("title") ?? "").trim();
-					if (onQuickAdd && title && titleOnly(formData)) return onQuickAdd(title);
+					if (onQuickAdd && title && titleOnlyCreate(formData)) return onQuickAdd(title);
 					return onCreate ? onCreate(formData) : createTaskAction(formData);
 				},
 				mode === "edit" ? "Couldn't save task. Try again." : "Couldn't add that task. Try again.",

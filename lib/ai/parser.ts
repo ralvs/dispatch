@@ -2,12 +2,7 @@ import "server-only";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { isAiConfigured, parserModel } from "@/lib/ai/gateway";
-import {
-	type CaptureAction,
-	CaptureActionsSchema,
-	type CreateTaskAction,
-	CreateTaskActionSchema,
-} from "@/lib/schemas/capture";
+import { type CaptureAction, CaptureActionsSchema } from "@/lib/schemas/capture";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Text -> actions seam. Turns one capture text into v1 capture actions via the
@@ -37,26 +32,26 @@ export type ParseResult =
 
 // ── Shared prompt fragments ────────────────────────────────────────────
 //
-// The two prompts below are NOT variants of one another — systemPrompt asks
-// for an array of mixed actions, taskCaptureSystemPrompt for a single task or
-// null — so only the copy they genuinely share lives here. Anything a change
-// to one prompt should not silently make to the other stays inline.
+// Shared with the sentence → task module (lib/services/capture/quick-add.ts).
+// The two prompts are NOT variants of one another — systemPrompt asks for an
+// array of mixed actions, the task prompt for a single task or null — so only
+// the copy they genuinely share lives here.
 
 // The task field formats. Indentation is the caller's, since systemPrompt
-// nests this under its create_task bullet and taskCaptureSystemPrompt does not.
-const TASK_FIELD_FORMATS =
+// nests this under its create_task bullet and the task prompt does not.
+export const TASK_FIELD_FORMATS =
 	"priority is 1 (highest) to 4. due_date is YYYY-MM-DD, due_time is HH:mm.";
 
 // Relative dates resolve against the app timezone, never the model's guess at
 // "now" (iron rule #1) — both prompts state it identically.
-function dateResolution(ctx: ParseContext): string[] {
+export function dateResolution(ctx: ParseContext): string[] {
 	return [
 		`Resolve relative dates against NOW=${ctx.nowUtc}, TODAY=${ctx.todayIso},`,
 		`timezone ${ctx.tz}. Output due_date as YYYY-MM-DD and due_time as HH:mm.`,
 	];
 }
 
-function recurrenceRules(): string[] {
+export function recurrenceRules(): string[] {
 	return [
 		"  recurrence_rule is set ONLY when the user states repetition (e.g.",
 		'  "every Monday", "toda segunda", "daily", "todo dia"). Pick the closest',
@@ -68,7 +63,7 @@ function recurrenceRules(): string[] {
 	];
 }
 
-function routingBlock(ctx: ParseContext): string[] {
+export function routingBlock(ctx: ParseContext): string[] {
 	const domains = ctx.domains ?? [];
 	const projects = ctx.projects ?? [];
 	if (domains.length === 0 && projects.length === 0) return [];
@@ -96,7 +91,7 @@ const PARSE_MAX_RETRIES = 1;
 const PARSE_MAX_OUTPUT_TOKENS = 400;
 const PARSE_TIMEOUT_MS = 8_000;
 
-function parseCallOptions() {
+export function parseCallOptions() {
 	return {
 		maxRetries: PARSE_MAX_RETRIES,
 		maxOutputTokens: PARSE_MAX_OUTPUT_TOKENS,
@@ -163,51 +158,6 @@ export async function parse(text: string, ctx: ParseContext): Promise<ParseResul
 	} catch {
 		// Model error OR output that failed CaptureActionsSchema (unknown verb,
 		// malformed action). Degrade — the raw text is never lost.
-		return { ok: false, reason: "failed", raw: text };
-	}
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// Task-only parse for the /tasks quick-add input (Part B). Same no-throw,
-// typed-fallback contract as parse() above, narrowed to a single task.
-// ─────────────────────────────────────────────────────────────────────────
-
-export type ParseTaskResult =
-	| { ok: true; task: CreateTaskAction }
-	| { ok: false; reason: "unavailable" | "failed" | "empty"; raw: string };
-
-function taskCaptureSystemPrompt(ctx: ParseContext): string {
-	return [
-		"You convert ONE spoken or typed utterance into a single task, or null if",
-		"the utterance describes nothing actionable.",
-		"Output shape: { title, notes?, due_date?, due_time?, priority?,",
-		"  recurrence_rule?, domain?, project? }.",
-		"title is required — the task itself, verbatim in the language spoken",
-		"(pt-BR or English). NEVER translate.",
-		TASK_FIELD_FORMATS,
-		...recurrenceRules(),
-		"",
-		...dateResolution(ctx),
-		...routingBlock(ctx),
-		"",
-		'Return a JSON object of the form {"task": { ... }} or {"task": null}.',
-	].join("\n");
-}
-
-export async function parseTaskCapture(text: string, ctx: ParseContext): Promise<ParseTaskResult> {
-	try {
-		if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
-
-		const { object } = await generateObject({
-			model: parserModel(),
-			schema: z.object({ task: CreateTaskActionSchema.nullable() }),
-			system: taskCaptureSystemPrompt(ctx),
-			prompt: text,
-			...parseCallOptions(),
-		});
-		if (!object.task) return { ok: false, reason: "empty", raw: text };
-		return { ok: true, task: object.task };
-	} catch {
 		return { ok: false, reason: "failed", raw: text };
 	}
 }

@@ -1,19 +1,68 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { parseTaskCapture } from "@/lib/ai/parser";
+import { generateObject } from "ai";
+import { z } from "zod";
+import { isAiConfigured, parserModel } from "@/lib/ai/gateway";
+import {
+	dateResolution,
+	type ParseContext,
+	parseCallOptions,
+	recurrenceRules,
+	routingBlock,
+	TASK_FIELD_FORMATS,
+} from "@/lib/ai/parser";
+import { type CreateTaskAction, CreateTaskActionSchema } from "@/lib/schemas/capture";
 import { loadCaptureContext, taskInputFromAction } from "@/lib/services/capture/resolve";
 import { createTask, type TaskRow } from "@/lib/services/tasks";
 
 // ─────────────────────────────────────────────────────────────────────────
-// Task-scoped quick-add for /tasks (docs/adr/0019 D3). Deliberately skips
-// captured_data — this is a user-initiated, task-only mutation, not the
-// firehose capture pipeline (ADR-0008), so there is no notifications row
-// (iron rule #6 scoping) and no needs_review degrade path.
+// Sentence → task (docs/adr/0019 D3, 0043). Task-scoped: skips captured_data,
+// writes no notifications row, never degrades to needs_review. The firehose
+// capture() stays a separate orchestration.
 //
-// Never-lose is deterministic: any parser failure (unavailable/failed/empty)
-// creates the task with the raw text as title. Only a `createTask` throw
-// surfaces to the caller — same contract as the manual task form.
+// Never-lose is deterministic: any parse failure creates the task with the
+// raw text as title. Only a createTask throw surfaces — same as the form.
 // ─────────────────────────────────────────────────────────────────────────
+
+export type ParseTaskResult =
+	| { ok: true; task: CreateTaskAction }
+	| { ok: false; reason: "unavailable" | "failed" | "empty"; raw: string };
+
+function taskCaptureSystemPrompt(ctx: ParseContext): string {
+	return [
+		"You convert ONE spoken or typed utterance into a single task, or null if",
+		"the utterance describes nothing actionable.",
+		"Output shape: { title, notes?, due_date?, due_time?, priority?,",
+		"  recurrence_rule?, domain?, project? }.",
+		"title is required — the task itself, verbatim in the language spoken",
+		"(pt-BR or English). NEVER translate.",
+		TASK_FIELD_FORMATS,
+		...recurrenceRules(),
+		"",
+		...dateResolution(ctx),
+		...routingBlock(ctx),
+		"",
+		'Return a JSON object of the form {"task": { ... }} or {"task": null}.',
+	].join("\n");
+}
+
+export async function parseTaskCapture(text: string, ctx: ParseContext): Promise<ParseTaskResult> {
+	try {
+		if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
+
+		const { object } = await generateObject({
+			model: parserModel(),
+			schema: z.object({ task: CreateTaskActionSchema.nullable() }),
+			system: taskCaptureSystemPrompt(ctx),
+			prompt: text,
+			...parseCallOptions(),
+		});
+		if (!object.task) return { ok: false, reason: "empty", raw: text };
+		return { ok: true, task: object.task };
+	} catch {
+		return { ok: false, reason: "failed", raw: text };
+	}
+}
 
 export async function quickAddTask(
 	sb: SupabaseClient,

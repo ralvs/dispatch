@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
-import { parse, parseTaskCapture } from "@/lib/ai/parser";
+import { parse } from "@/lib/ai/parser";
 
 vi.mock("@/lib/ai/gateway", () => ({
 	isAiConfigured: vi.fn(),
@@ -110,88 +110,16 @@ describe("parse", () => {
 	});
 });
 
-describe("parseTaskCapture", () => {
-	it("returns unavailable when the gateway is not configured", async () => {
-		(isAiConfigured as Mock).mockReturnValue(false);
-
-		const result = await parseTaskCapture("pagar aluguel", CTX);
-
-		expect(result).toEqual({ ok: false, reason: "unavailable", raw: "pagar aluguel" });
-		expect(generateObject).not.toHaveBeenCalled();
-	});
-
-	it("returns failed when the model call throws", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockRejectedValue(new Error("boom"));
-
-		const result = await parseTaskCapture("blah", CTX);
-
-		expect(result).toEqual({ ok: false, reason: "failed", raw: "blah" });
-	});
-
-	it("returns empty when the model finds no task", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { task: null } });
-
-		const result = await parseTaskCapture("hmm", CTX);
-
-		expect(result).toEqual({ ok: false, reason: "empty", raw: "hmm" });
-	});
-
-	it("returns the parsed task on success", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({
-			object: { task: { action: "create_task", title: "pagar aluguel" } },
-		});
-
-		const result = await parseTaskCapture("pagar aluguel", CTX);
-
-		expect(result).toEqual({
-			ok: true,
-			task: { action: "create_task", title: "pagar aluguel" },
-		});
-	});
-
-	it("uses the same call budget as parse()", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { task: null } });
-
-		await parseTaskCapture("hmm", CTX);
-
-		const call = (generateObject as Mock).mock.calls[0][0];
-		expect(call.maxRetries).toBe(1);
-		expect(call.maxOutputTokens).toBe(400);
-		expect(call.abortSignal).toBeInstanceOf(AbortSignal);
-	});
-});
-
-// The two prompts share their date-resolution and task-field copy through
-// fragment builders; these assert the fragments actually reach both prompts.
 describe("shared prompt fragments", () => {
-	const systemFor = async (entry: typeof parse | typeof parseTaskCapture) => {
+	it("resolves relative dates against the app timezone", async () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [], task: null } });
-		await entry("hmm", CTX);
-		return (generateObject as Mock).mock.calls[0][0].system as string;
-	};
-
-	it.each([
-		["parse", parse],
-		["parseTaskCapture", parseTaskCapture],
-	])("%s resolves relative dates against the app timezone", async (_name, entry) => {
-		const system = await systemFor(entry);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+		await parse("hmm", CTX);
+		const system = (generateObject as Mock).mock.calls[0][0].system as string;
 		expect(system).toContain("NOW=2026-07-15T12:00:00Z");
 		expect(system).toContain("TODAY=2026-07-15");
 		expect(system).toContain("timezone America/Sao_Paulo");
-	});
-
-	it.each([
-		["parse", parse],
-		["parseTaskCapture", parseTaskCapture],
-	])("%s states the task field formats", async (_name, entry) => {
-		const system = await systemFor(entry);
 		expect(system).toContain("priority is 1 (highest) to 4.");
-		expect(system).toContain("due_date is YYYY-MM-DD, due_time is HH:mm.");
 	});
 });
 
