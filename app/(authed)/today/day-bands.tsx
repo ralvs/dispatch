@@ -24,7 +24,7 @@ import { EventDayRow, TaskDayRow } from "./day-row";
 
 type Placement = {
 	schedule: DaySchedule;
-	/** The day on screen — what ☆ reflects and pins to. */
+	/** The day on screen — what ☆ reflects and pins to, and what `due` counts from. */
 	dateIso: string;
 	/** The real calendar today: a recurrence rolls forward from the wall clock. */
 	todayIso: string;
@@ -104,7 +104,7 @@ export function Top3Section({ schedule, dateIso, todayIso, handlersFor, taskNote
 							task={task}
 							rank={i + 1}
 							todayIso={todayIso}
-							starDateIso={dateIso}
+							dateIso={dateIso}
 							handlers={handlersFor(task)}
 							noteId={taskNoteIds?.[task.id]}
 						/>
@@ -170,7 +170,7 @@ export function TimelineSection({
 								task={item.task}
 								time={item.time}
 								todayIso={todayIso}
-								starDateIso={dateIso}
+								dateIso={dateIso}
 								handlers={handlersFor(item.task)}
 								noteId={taskNoteIds?.[item.task.id]}
 							/>
@@ -197,7 +197,7 @@ export function OpenSection({ schedule, dateIso, todayIso, handlersFor, taskNote
 							key={task.id}
 							task={task}
 							todayIso={todayIso}
-							starDateIso={dateIso}
+							dateIso={dateIso}
 							handlers={handlersFor(task)}
 							noteId={taskNoteIds?.[task.id]}
 						/>

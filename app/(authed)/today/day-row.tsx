@@ -39,10 +39,15 @@ import { createMeetingNoteForEventAction } from "./actions";
  * saying the same thing in different words. This wrapper stays because the
  * predicate and the format are two questions: `isOverdue` also knows that a
  * done task is never late.
+ *
+ * Measured against the day on screen, not the wall clock. Every other phrase on
+ * this page answers "on this day" — the tape, the headline, the star — and a
+ * task carried onto Tuesday's page saying `due today` on Tuesday is answering
+ * about a different day than the page it is printed on.
  */
-function lateLabel(task: TaskRow, todayIso: string): string | null {
-	if (!task.due_date || !isOverdue(task, todayIso)) return null;
-	return formatLateLabel(task.due_date, todayIso);
+function lateLabel(task: TaskRow, dateIso: string): string | null {
+	if (!task.due_date || !isOverdue(task, dateIso)) return null;
+	return formatLateLabel(task.due_date, dateIso);
 }
 
 /**
@@ -125,7 +130,7 @@ export function TaskDayRow({
 	task,
 	time,
 	todayIso,
-	starDateIso,
+	dateIso,
 	handlers,
 	noteId,
 	rank,
@@ -133,19 +138,20 @@ export function TaskDayRow({
 	task: TaskRow;
 	/** Wall-clock time when the row sits on the Timeline; null elsewhere. */
 	time?: string | null;
+	/** The real calendar today — only for saying whether the day on screen is it. */
 	todayIso: string;
-	/** Which day ☆ pins to — the day on screen, not necessarily today. */
-	starDateIso: string;
+	/** The day on screen: what ☆ pins to, and what the due phrase is measured from. */
+	dateIso: string;
 	handlers: TaskRowHandlers;
 	noteId?: string;
 	/** Top 3 only: the slot number, printed as 01/02/03. */
 	rank?: number;
 }) {
 	const done = task.status === "done";
-	const late = lateLabel(task, todayIso);
+	const late = lateLabel(task, dateIso);
 	const slug = task.domain?.color;
-	const starred = isTop3Today(task, starDateIso);
-	const due = task.due_date && !time ? formatDueLabel(task.due_date, todayIso) : null;
+	const starred = isTop3Today(task, dateIso);
+	const due = task.due_date && !time ? formatDueLabel(task.due_date, dateIso) : null;
 
 	return (
 		<li className="flex min-h-12 items-center gap-3 border-b border-line py-3 last:border-b-0">
@@ -200,7 +206,7 @@ export function TaskDayRow({
 			)}
 			<StarButton
 				task={task}
-				starDay={starDateIso === todayIso ? "today" : "that day"}
+				starDay={dateIso === todayIso ? "today" : "that day"}
 				starred={starred}
 				onToggle={handlers.onToggleTop3}
 			/>
