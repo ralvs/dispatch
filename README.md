@@ -63,63 +63,58 @@ curl -sS -X POST https://your-app.vercel.app/api/capture -H "Authorization: Bear
 A `201` with `{"kind":"capture",…}` means the text path ran; post a bare URL
 instead and you should get `{"kind":"link",…}` and a new row at `/links`.
 
-**3. Build the poster.** One shortcut owns the secret and the endpoint; every
-other way of capturing calls it. In the Shortcuts app:
+**3. Build the Shortcut.** One shortcut covers both ways in: shared text posts
+straight through, and launching it with nothing to share falls into dictation.
 
 | Step | Action | Settings |
 | --- | --- | --- |
-| 1 | — | Enable **Show in Share Sheet**; accept _Text_, _Rich Text_, _URLs_ |
+| 1 | — | **Show in Share Sheet**, accept _Text_, _Rich Text_, _URLs_ · **If there's no input: Continue** |
 | 2 | Text | your secret, pasted |
 | 3 | Set Variable | `token` = the output of step 2 |
-| 4 | Get Contents of URL | See below |
+| 4 | If | `Shortcut Input` **has any value** |
+| 5 |  → Set Variable | `payload` = `Shortcut Input` |
+| 6 | Otherwise | |
+| 7 |  → Dictate Text | Stop Listening: **After Pause** |
+| 8 |  → Set Variable | `payload` = `Dictated Text` |
+| 9 | End If | |
+| 10 | If | `payload` **has any value** |
+| 11 |  → Get Contents of URL | See below |
+| 12 |  → Get Dictionary Value | **Value** for key `summary` in `Contents of URL` |
+| 13 |  → Show Result | `Dictionary Value` |
+| 14 | End If | |
 
-Configure step 4:
+Configure step 11:
 
 - **URL** — `https://your-app.vercel.app/api/capture`
 - **Method** — `POST`
 - **Headers** — `Authorization: Bearer <token>`, `Content-Type: application/json`
-- **Request Body** — JSON, one field: `text` (Text) = `Shortcut Input`
+- **Request Body** — JSON, one field: `text` (Text) = `payload`
 
 The token lives in step 2 and nowhere else, so rotating the secret is one
-paste in one shortcut. Share anything to it and it lands.
+paste in one place.
 
-**4. Add dictation on top** (Siri, iPhone, or Watch). Rather than copying the
-token into a second shortcut, make a two-action one that calls the poster.
-Name it for how you want to say it — the shortcut's name **is** the Siri
-phrase, e.g. _Add to Dispatch_:
+**Step 1's "If there's no input" must be `Continue`, not `Get Clipboard`.**
+The clipboard fallback is right for a share sheet and actively wrong for every
+other trigger: launched from Siri or a button there is no shared input, so the
+fallback fires and posts whatever you last copied — a stray word captured with
+no idea where it came from. `Continue` leaves the input genuinely empty, which
+is what step 4 needs to branch into dictation.
 
-| Step | Action | Settings |
-| --- | --- | --- |
-| 1 | Ask for Input | Input Type: **Text** · Prompt: something short, e.g. "O que?" |
-| 2 | If | `Provided Input` **has any value** — everything below goes inside |
-| 3 | Run Shortcut | Run the poster, with **Input** = `Provided Input` |
-| 4 | Get Dictionary Value | Get **Value** for key `summary` in `Shortcut Result` |
-| 5 | Show Result | `Dictionary Value` |
+Step 10 catches the other empty case: silence, or a dictation you cancelled.
+Without it the request goes out with an empty `text` and comes back 400, which
+surfaces as a shortcut error rather than a quiet no-op.
 
-_Run Shortcut_ hands its input to the poster as `Shortcut Input` and returns
-the poster's last output, so the spoken words reach the endpoint and the reply
-comes back — one copy of the secret, one URL, one place to change.
+**Siri cannot hand you a one-liner.** "Hey Siri, Add to Dispatch buy milk"
+matches the name and drops "buy milk" — trailing words are not passed into a
+user-authored shortcut, so the Siri path is always two beats (invoke, then
+speak). For genuinely one-step capture, skip Siri: bind the shortcut to the
+**Action Button**, **Back Tap**, or a **Watch complication** and dictation
+starts the moment it launches. Press, speak, done.
 
-**Why _Ask for Input_ and not _Dictate Text_.** Siri does not pass the rest of
-your sentence into a shortcut: saying "Hey Siri, Add to Dispatch buy milk"
-matches the name and drops "buy milk". The words have to be collected by an
-action inside the shortcut, and _Ask for Input_ is the one Siri drives —
-running from Siri, it speaks the prompt and listens for the answer, which is
-also what works on a Watch with no keyboard. _Dictate Text_ expects the
-dictation UI and behaves inconsistently when Siri started the run.
+Then, in the shortcut's details pane, turn **Show on Apple Watch** on.
 
-The `If` in step 2 matters more than it looks. A misheard or silent answer
-yields empty input, and the poster's share-sheet fallback ("If there's no
-input: Get Clipboard") would then capture whatever you last copied. Guard it
-here, or drop the fallback from the poster.
-
-Then, in the shortcut's details pane: turn **Show on Apple Watch** on, and
-turn **Show When Run** off on _Run Shortcut_ so a Siri run never stops to show
-you a sheet.
-
-Say _"Hey Siri, Add to Dispatch"_, answer the prompt, and Siri reads back what
-it became. The whole answer goes to the parser: _"lembrar de ligar pro dentista
-amanhã de manhã"_ becomes a task with a due date, _"almoço com a Ana quinta ao
+The whole utterance goes to the parser: _"lembrar de ligar pro dentista amanhã
+de manhã"_ becomes a task with a due date, _"almoço com a Ana quinta ao
 meio-dia"_ becomes a calendar event, anything unclassifiable becomes a note you
 can sort from `/inbox`. Nothing is ever dropped (iron rule #4).
 
@@ -158,18 +153,13 @@ Notes on this flow:
 
 - **Transcription is the device's job, never the app's** (docs/adr/0017). The
   Shortcut sends words, not audio.
-- **Drop the poster's clipboard fallback** if it has one. "If there's no input:
-  Get Clipboard" is right for a share sheet and wrong for dictation — a silent
-  Watch mic would capture whatever you last copied.
-- **Provenance costs a second copy of the token.** The body's optional `via`
+- **Provenance is per-shortcut, not per-capture.** The body's optional `via`
   (`voice`/`text`) and `source` (`webhook`/`watch`) fields only label the
-  ledger row. To set them per-entry, duplicate the poster instead of chaining
-  to it and hardcode them there; chaining is worth more than the label.
+  ledger row, and one shortcut serving both entry points can only send one
+  value. Leave them at their defaults unless the label earns a second shortcut.
 - **Bilingual** — dictate in PT-BR or EN and the content is stored verbatim in
   the language you spoke (iron rule #5). _Dictate Text_ takes one language per
   shortcut, so duplicate it if you want a dedicated phrase per language.
-- **Faster triggers** — assign the shortcut to the Action Button, Back Tap, or
-  a Watch complication for a press-and-talk capture with no Siri phrase at all.
 - The bare-URL branch effectively never fires here; dictated speech is not a
   lone URL, and a sentence that merely mentions a link is a capture, not a
   bookmark.
