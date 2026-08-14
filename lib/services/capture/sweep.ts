@@ -1,9 +1,9 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { nowUtc } from "@/lib/dates";
+import { recordNeedsReview } from "@/lib/services/capture/degrade";
 import { markParsed } from "@/lib/services/capture/store";
 import { unwrap } from "@/lib/services/errors";
-import { createNeedsReviewNote } from "@/lib/services/notes";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Reconciliation sweep (docs/adr/0008). Any captured_data row stuck at
@@ -69,9 +69,9 @@ export async function sweepRawCaptures(
 	const reconciled: string[] = [];
 	for (const orphan of orphans) {
 		if (!alreadyLinked.has(orphan.id)) {
-			await createNeedsReviewNote(sb, {
-				body: orphanBody(orphan.payload),
-				origin_capture_id: orphan.id,
+			await recordNeedsReview(sb, {
+				transcript: orphanBody(orphan.payload),
+				capturedId: orphan.id,
 				reason: "sweep_orphan",
 			});
 			swept.push(orphan.id);

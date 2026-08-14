@@ -2,10 +2,10 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parse } from "@/lib/ai/parser";
 import type { CaptureAction } from "@/lib/schemas/capture";
+import { recordNeedsReview } from "@/lib/services/capture/degrade";
 import { runActions } from "@/lib/services/capture/executor";
 import { loadCaptureContext } from "@/lib/services/capture/resolve";
 import { markParsed, persistRaw } from "@/lib/services/capture/store";
-import { createNeedsReviewNote } from "@/lib/services/notes";
 
 // ─────────────────────────────────────────────────────────────────────────
 // The capture module (docs/adr/0008). One deep function, capture(sb, raw),
@@ -104,12 +104,12 @@ async function process(
 	if (!parsed.ok && parsed.reason !== "empty") {
 		const reason: DegradeReason =
 			parsed.reason === "unavailable" ? "parser_unavailable" : "parser_failed";
-		const note = await createNeedsReviewNote(sb, {
-			body: raw.text,
-			origin_capture_id: capturedId,
+		const { noteId } = await recordNeedsReview(sb, {
+			transcript: raw.text,
+			capturedId,
 			reason,
+			mark: true,
 		});
-		await markParsed(sb, capturedId);
 		console.info("⏱ capture", {
 			id: capturedId,
 			context: Math.round(tContext - t0),
@@ -120,7 +120,7 @@ async function process(
 		return {
 			capturedId,
 			status: "parsed",
-			outcome: { kind: "needs_review", noteId: note.id, reason },
+			outcome: { kind: "needs_review", noteId, reason },
 		};
 	}
 
@@ -156,16 +156,16 @@ async function lastResort(
 	raw: CaptureInput,
 ): Promise<CapturedRecord> {
 	try {
-		const note = await createNeedsReviewNote(sb, {
-			body: raw.text,
-			origin_capture_id: capturedId,
+		const { noteId } = await recordNeedsReview(sb, {
+			transcript: raw.text,
+			capturedId,
 			reason: "capture_error",
+			mark: true,
 		});
-		await markParsed(sb, capturedId);
 		return {
 			capturedId,
 			status: "parsed",
-			outcome: { kind: "needs_review", noteId: note.id, reason: "capture_error" },
+			outcome: { kind: "needs_review", noteId, reason: "capture_error" },
 		};
 	} catch {
 		return { capturedId, status: "raw", outcome: { kind: "recorded_only" } };

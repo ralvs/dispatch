@@ -6,9 +6,10 @@ import { isCaldavConfigured } from "@/lib/env";
 import type { CaptureAction, CreateEventAction } from "@/lib/schemas/capture";
 import { createEventHere } from "@/lib/services/calendar";
 import type { ActionResult } from "@/lib/services/capture";
+import { recordNeedsReview } from "@/lib/services/capture/degrade";
 import { type RoutingLists, taskInputFromAction } from "@/lib/services/capture/resolve";
 import { createEntry } from "@/lib/services/journal";
-import { createNeedsReviewNote, createNote } from "@/lib/services/notes";
+import { createNote } from "@/lib/services/notes";
 import { recordNotification } from "@/lib/services/notifications";
 import { createQuote } from "@/lib/services/quotes";
 import { createTask } from "@/lib/services/tasks";
@@ -43,13 +44,13 @@ async function degrade(
 ): Promise<ActionResult> {
 	let noteId = "";
 	try {
-		const note = await createNeedsReviewNote(sb, {
-			body: prov.transcript,
-			origin_capture_id: prov.capturedId,
+		const recorded = await recordNeedsReview(sb, {
+			transcript: prov.transcript,
+			capturedId: prov.capturedId,
 			reason,
-			proposed_kind: proposedKind,
+			proposedKind,
 		});
-		noteId = note.id;
+		noteId = recorded.noteId;
 	} catch {
 		// Even the safety-net note failed. The raw capture is still in
 		// captured_data, so nothing is lost — surface an empty noteId.

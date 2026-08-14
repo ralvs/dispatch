@@ -91,10 +91,18 @@ export async function createNote(
  * the raw text verbatim and linking back to the originating capture so the
  * reconciliation sweep can dedupe.
  *
- * `reason` explains why it degraded; `proposed_kind` (when the parser guessed at
- * an intent it lacked a service for) is surfaced as an `unhandled:<kind>` tag.
- * Graph reconcile always swallows here so the safety net cannot fail on mentions.
+ * `reason` is stored as a `reason:` tag (known tokens as-is; freeform
+ * executor messages collapse to `reason:execute_failed`). `proposed_kind`
+ * (when the parser guessed at an intent it lacked a service for) is an
+ * `unhandled:<kind>` tag. Graph reconcile always swallows here so the
+ * safety net cannot fail on mentions.
  */
+const REASON_TOKEN = /^[a-z][a-z0-9_]{0,39}$/;
+
+export function needsReviewReasonTag(reason: string): string {
+	return REASON_TOKEN.test(reason) ? `reason:${reason}` : "reason:execute_failed";
+}
+
 export async function createNeedsReviewNote(
 	sb: SupabaseClient,
 	input: {
@@ -107,6 +115,7 @@ export async function createNeedsReviewNote(
 ): Promise<NoteRow> {
 	const tags = [
 		"capture:needs_review",
+		...(input.reason ? [needsReviewReasonTag(input.reason)] : []),
 		...(input.proposed_kind ? [`unhandled:${input.proposed_kind}`] : []),
 		...(input.tags ?? []),
 	];

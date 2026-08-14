@@ -69,7 +69,7 @@ describe("createNote", () => {
 });
 
 describe("createNeedsReviewNote", () => {
-	it("marks needs_review, links the origin capture, and tags the reason", async () => {
+	it("marks needs_review, links the origin capture, and tags proposed_kind", async () => {
 		const { sb, inserts } = stubSupabase();
 
 		await createNeedsReviewNote(sb, {
@@ -87,7 +87,27 @@ describe("createNeedsReviewNote", () => {
 		expect(inserts[0].tags).toEqual(["capture:needs_review", "unhandled:create_project"]);
 	});
 
-	it("omits the unhandled tag when no proposed_kind is given", async () => {
+	it("stores a structured reason as a tag", async () => {
+		const { sb, inserts } = stubSupabase();
+		await createNeedsReviewNote(sb, {
+			body: "raw text",
+			origin_capture_id: "cap-2",
+			reason: "parser_failed",
+		});
+		expect(inserts[0].tags).toEqual(["capture:needs_review", "reason:parser_failed"]);
+	});
+
+	it("collapses a freeform execute error to reason:execute_failed", async () => {
+		const { sb, inserts } = stubSupabase();
+		await createNeedsReviewNote(sb, {
+			body: "lunch",
+			origin_capture_id: "cap-3",
+			reason: "iCloud CalDAV is not configured; event not created",
+		});
+		expect(inserts[0].tags).toEqual(["capture:needs_review", "reason:execute_failed"]);
+	});
+
+	it("omits reason and unhandled tags when neither is given", async () => {
 		const { sb, inserts } = stubSupabase();
 
 		await createNeedsReviewNote(sb, { body: "raw text", origin_capture_id: "cap-2" });
