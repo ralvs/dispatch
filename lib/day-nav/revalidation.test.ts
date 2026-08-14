@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { DaySchedule, DayScheduleItem, DaySchedulePayload } from "@/lib/day-schedule";
+import type {
+	DaySchedule,
+	DayScheduleEventItem,
+	DayScheduleItem,
+	DaySchedulePayload,
+} from "@/lib/day-schedule";
 import type { CalendarEventRow } from "@/lib/schemas/calendar";
 import type { TaskRow } from "@/lib/schemas/task";
 import {
@@ -51,7 +56,7 @@ function taskItem(t: TaskRow, time: string | null = null): DayScheduleItem {
 	return { kind: "task", key: `task-${t.id}`, sortAt: "", time, task: t };
 }
 
-function eventItem(e: CalendarEventRow, time: string | null = null): DayScheduleItem {
+function eventItem(e: CalendarEventRow, time: string | null = null): DayScheduleEventItem {
 	return { kind: "event", key: `event-${e.id}`, sortAt: "", time, event: e };
 }
 
@@ -119,11 +124,11 @@ describe("daySignature", () => {
 	});
 
 	it("differs when an item is appended to allDay", () => {
-		const t1 = task({ id: "t1", title: "One" });
-		const t2 = task({ id: "t2", title: "Two" });
-		const a = daySignature(payload({ schedule: schedule({ allDay: [taskItem(t1)] }) }));
+		const e1 = event({ id: "e1", title: "One", all_day: true });
+		const e2 = event({ id: "e2", title: "Two", all_day: true });
+		const a = daySignature(payload({ schedule: schedule({ allDay: [eventItem(e1)] }) }));
 		const b = daySignature(
-			payload({ schedule: schedule({ allDay: [taskItem(t1), taskItem(t2)] }) }),
+			payload({ schedule: schedule({ allDay: [eventItem(e1), eventItem(e2)] }) }),
 		);
 		expect(a).not.toEqual(b);
 	});

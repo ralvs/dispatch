@@ -311,19 +311,16 @@ describe("applyDayIntent", () => {
 
 	it("keeps a completed non-recurring task on its band (ADR-0038)", () => {
 		const t = task({ id: "a", title: "Go", due_date: TODAY });
-		const schedule = emptySchedule({
-			open: [t],
-			allDay: [{ kind: "task", key: "task:a", sortAt: TODAY, time: null, task: t }],
-		});
+		const schedule = emptySchedule({ open: [t] });
 		const next = applyDayIntent(
 			schedule,
 			{ type: "complete", id: "a", observedDueDate: null },
 			ctx,
 		);
-		// placeOnDay: due today without time → all-day only (not also open).
-		expect(next.allDay).toHaveLength(1);
-		expect(next.allDay[0]?.kind === "task" && next.allDay[0].task.status).toBe("done");
-		expect(next.open).toHaveLength(0);
+		// placeOnDay: due today without a time → the open band, ticked.
+		expect(next.open).toHaveLength(1);
+		expect(next.open[0]?.status).toBe("done");
+		expect(next.allDay).toHaveLength(0);
 	});
 
 	it("drops a rolled recurring task from the day", () => {
@@ -333,10 +330,7 @@ describe("applyDayIntent", () => {
 			due_date: TODAY,
 			recurrence_rule: "daily",
 		});
-		const schedule = emptySchedule({
-			open: [t],
-			allDay: [{ kind: "task", key: "task:r", sortAt: TODAY, time: null, task: t }],
-		});
+		const schedule = emptySchedule({ open: [t] });
 		const next = applyDayIntent(
 			schedule,
 			{ type: "complete", id: "r", observedDueDate: null },

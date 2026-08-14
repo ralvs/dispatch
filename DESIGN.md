@@ -711,10 +711,12 @@ Three collision rules keep it readable and all three resolve in favour of the
 reading that changes: a start label gives way to the one before it, and any
 ruler hour gives way to the now-label and to the closing hour.
 
-The tape is capped from above by the **all-day band** — everything that belongs
-to the day but has no hour, which is precisely what the tape is structurally
-incapable of showing. The two read as one object for exactly that reason. When
-there is nothing all-day the band is absent, not empty.
+The tape is capped from above by the **all-day band** — the events that take the
+whole day rather than an hour of it, which is precisely what the tape is
+structurally incapable of showing. The two read as one object for exactly that
+reason. When there is nothing all-day the band is absent, not empty. A task with
+a due date and no time is not all-day: it has no span, and it reads in **Open**,
+where it stays whichever day you are looking at.
 
 **Motion:** the tape is the one authored moment. Blocks wipe out from their own
 start edge in clock order, and the now-mark drops in last. The resting state is

@@ -250,16 +250,42 @@ describe("syncCalendar", () => {
 });
 
 describe("listEventsOn", () => {
-	it("queries the day window in the given timezone", async () => {
-		const rows = [{ id: "evt-1", title: "Dentist" }];
-		const { sb, selectArgs } = stubSupabase({ selectResult: rows });
+	const timed = {
+		id: "evt-1",
+		title: "Dentist",
+		start_at: "2026-07-16T17:00:00.000Z",
+		end_at: "2026-07-16T18:00:00.000Z",
+		all_day: false,
+	};
+
+	it("queries a day either side of the one asked for", async () => {
+		const { sb, selectArgs } = stubSupabase({ selectResult: [timed] });
 
 		const result = await listEventsOn(sb, "2026-07-16", "America/Sao_Paulo");
 
-		expect(result).toEqual(rows);
-		// 2026-07-16 America/Sao_Paulo (UTC-3) day window, in UTC.
-		expect(selectArgs.lt).toBe("2026-07-17T03:00:00.000Z");
-		expect(selectArgs.gt).toBe("2026-07-16T03:00:00.000Z");
+		expect(result).toEqual([timed]);
+		// The 15th–17th in America/Sao_Paulo (UTC-3), in UTC: SQL narrows, and
+		// eventFallsOnDay decides — an all-day row's midnight can sit outside
+		// this timezone's day in either direction.
+		expect(selectArgs.lt).toBe("2026-07-18T03:00:00.000Z");
+		expect(selectArgs.gt).toBe("2026-07-15T03:00:00.000Z");
+	});
+
+	it("drops the neighbouring days the widened query brings back", async () => {
+		// A UTC-midnight all-day anchor for the 17th falls inside the 16th's
+		// local window. It belongs to the 17th and nowhere else.
+		const allDayNextDay = {
+			id: "evt-2",
+			title: "Mari brow",
+			start_at: "2026-07-17T00:00:00.000Z",
+			end_at: "2026-07-18T00:00:00.000Z",
+			all_day: true,
+		};
+		const { sb } = stubSupabase({ selectResult: [timed, allDayNextDay] });
+
+		const result = await listEventsOn(sb, "2026-07-16", "America/Sao_Paulo");
+
+		expect(result.map((e) => e.id)).toEqual(["evt-1"]);
 	});
 });
 

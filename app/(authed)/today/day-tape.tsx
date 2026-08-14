@@ -1,7 +1,7 @@
 "use client";
 
 import { type PointerEvent, useCallback, useState } from "react";
-import type { DayScheduleItem } from "@/lib/day-schedule";
+import type { DayScheduleEventItem, DayScheduleItem } from "@/lib/day-schedule";
 import { colorSlugVar, isColorSlug } from "@/lib/schemas/color";
 import { type DomainColorSource, eventColor } from "@/lib/ui/event-color";
 
@@ -176,10 +176,11 @@ export function visibleTimeLabels(positions: number[]): boolean[] {
 /**
  * The tape, capped by the all-day band.
  *
- * The band is everything that belongs to the day but has no hour, which is
- * precisely what the tape is structurally incapable of showing — so the two
- * sit together and read as one object: the whole day. When there is nothing
- * all-day the band is absent, not empty.
+ * The band is every event that takes the whole day rather than an hour of it,
+ * which is precisely what the tape is structurally incapable of showing — so
+ * the two sit together and read as one object: the whole day. When there is
+ * nothing all-day the band is absent, not empty. A task with no hour is not
+ * one of these: it has no span to draw and belongs in Open.
  *
  * The ruler is `aria-hidden`: the same events are already exposed as real list
  * rows by the Timeline below, and a screen reader should not walk the day
@@ -192,7 +193,8 @@ export function DayTape({
 	domains = [],
 }: {
 	timeline: DayScheduleItem[];
-	allDay: DayScheduleItem[];
+	/** Events only: a task with no hour is an open task, not an all-day one. */
+	allDay: DayScheduleEventItem[];
 	/** Wall-clock "now", or null on any day but today — no now-mark off today. */
 	nowLabel: string | null;
 	/** Live domain colours so a calendar named like a domain follows that slug. */
@@ -237,14 +239,8 @@ export function DayTape({
 						All day
 					</h2>
 					{allDay.map((item) => {
-						const title = item.kind === "event" ? item.event.title : item.task.title;
-						const slug = item.kind === "task" ? item.task.domain?.color : null;
-						const color =
-							item.kind === "event"
-								? eventColor(item.event.calendar_name, domains)
-								: isColorSlug(slug)
-									? colorSlugVar(slug)
-									: "var(--ink-3)";
+						const title = item.event.title;
+						const color = eventColor(item.event.calendar_name, domains);
 						return (
 							<span
 								key={item.key}

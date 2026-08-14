@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDaySchedule } from "@/lib/day-schedule";
+import { buildDaySchedule, eventFallsOnDay } from "@/lib/day-schedule";
 import type { CalendarEventRow } from "@/lib/schemas/calendar";
 import type { TaskRow } from "@/lib/schemas/task";
 
@@ -55,15 +55,22 @@ describe("buildDaySchedule", () => {
 		expect(day.open).toEqual([]);
 	});
 
-	it("puts all-day events and untimed due tasks in the all-day band", () => {
-		const day = schedule(
-			[event({ id: "e1", all_day: true })],
-			[task({ id: "t1", due_date: TODAY })],
-		);
-		expect(day.allDay.map((i) => i.key)).toEqual(["event:e1", "task:t1"]);
-		expect(day.allDay.map((i) => i.time)).toEqual([null, null]);
+	it("puts all-day events in the all-day band", () => {
+		const day = schedule([event({ id: "e1", all_day: true })], []);
+		expect(day.allDay.map((i) => i.key)).toEqual(["event:e1"]);
+		expect(day.allDay.map((i) => i.time)).toEqual([null]);
 		expect(day.timeline).toEqual([]);
 		expect(day.open).toEqual([]);
+	});
+
+	// The band is the calendar's "this occupies the whole day". A task with no
+	// hour occupies no hour — it is an open task, on its due date as on any day
+	// after it.
+	it("puts an untimed task due today in the open band, not the all-day one", () => {
+		const day = schedule([], [task({ id: "t1", due_date: TODAY })]);
+		expect(day.allDay).toEqual([]);
+		expect(day.timeline).toEqual([]);
+		expect(day.open.map((t) => t.id)).toEqual(["t1"]);
 	});
 
 	it("merges timed events and timed tasks into one ascending timeline", () => {
@@ -83,9 +90,10 @@ describe("buildDaySchedule", () => {
 		expect(day.timeline.map((i) => i.time)).toEqual(["08:15"]);
 	});
 
-	it("demotes a task with an unparseable time to the all-day band", () => {
+	it("demotes a task with an unparseable time to the open band", () => {
 		const day = schedule([], [task({ id: "t1", due_date: TODAY, due_time: "sometime" })]);
-		expect(day.allDay.map((i) => i.key)).toEqual(["task:t1"]);
+		expect(day.open.map((t) => t.id)).toEqual(["t1"]);
+		expect(day.allDay).toEqual([]);
 		expect(day.timeline).toEqual([]);
 	});
 
@@ -196,9 +204,10 @@ describe("buildDaySchedule", () => {
 			expect(day.open).toEqual([]);
 		});
 
-		it("keeps an untimed task due today in the all-day band", () => {
+		it("keeps an untimed task due today in the open band", () => {
 			const day = withDone([], [done({ id: "t1", due_date: TODAY })]);
-			expect(day.allDay.map((i) => i.key)).toEqual(["task:t1"]);
+			expect(day.open.map((t) => t.id)).toEqual(["t1"]);
+			expect(day.allDay).toEqual([]);
 		});
 
 		it("keeps an overdue task closed today in the open band", () => {
@@ -227,5 +236,103 @@ describe("buildDaySchedule", () => {
 			expect(day.open).toHaveLength(11);
 			expect(day.open.at(-1)?.id).toBe("closed");
 		});
+	});
+});
+
+describe("eventFallsOnDay", () => {
+	const AUG_18 = "2026-08-18";
+	const AUG_17 = "2026-08-17";
+
+	// The bug this exists for: São Paulo is UTC-3, so the 17th's day window runs
+	// 17th 03:00Z → 18th 03:00Z and swallows a UTC-midnight anchor that means
+	// the 18th. An all-day event stood on two days at once.
+	describe("CalDAV's UTC-midnight anchor", () => {
+		function allDayEvent(first: string, endExclusive: string): CalendarEventRow {
+			return event({
+				id: "e1",
+				all_day: true,
+				start_at: `${first}T00:00:00.000Z`,
+				end_at: `${endExclusive}T00:00:00.000Z`,
+			});
+		}
+
+		it("stands on its own date only", () => {
+			const e = allDayEvent(AUG_18, "2026-08-19");
+			expect(eventFallsOnDay(e, AUG_18, SP)).toBe(true);
+			expect(eventFallsOnDay(e, AUG_17, SP)).toBe(false);
+			expect(eventFallsOnDay(e, "2026-08-19", SP)).toBe(false);
+		});
+
+		it("reads DTEND as exclusive across a multi-day span", () => {
+			const e = allDayEvent(AUG_18, "2026-08-21");
+			expect(
+				["2026-08-18", "2026-08-19", "2026-08-20"].map((d) => eventFallsOnDay(e, d, SP)),
+			).toEqual([true, true, true]);
+			expect(eventFallsOnDay(e, "2026-08-21", SP)).toBe(false);
+		});
+
+		it("treats a missing DTEND (end === start) as one day", () => {
+			const e = allDayEvent(AUG_18, AUG_18);
+			expect(eventFallsOnDay(e, AUG_18, SP)).toBe(true);
+			expect(eventFallsOnDay(e, AUG_17, SP)).toBe(false);
+		});
+
+		it("holds east of Greenwich, where the anchor lands on the day before", () => {
+			const e = allDayEvent(AUG_18, "2026-08-19");
+			expect(eventFallsOnDay(e, AUG_18, "Asia/Tokyo")).toBe(true);
+			expect(eventFallsOnDay(e, AUG_17, "Asia/Tokyo")).toBe(false);
+		});
+	});
+
+	// EventKit hands the bridge what the Mac had: local midnight to 23:59:59.
+	describe("the bridge's local-midnight anchor", () => {
+		it("stands on the local date, in either hemisphere of the meridian", () => {
+			const sp = event({
+				id: "e1",
+				all_day: true,
+				start_at: `${AUG_18}T03:00:00.000Z`,
+				end_at: "2026-08-19T02:59:59.000Z",
+			});
+			expect(eventFallsOnDay(sp, AUG_18, SP)).toBe(true);
+			expect(eventFallsOnDay(sp, AUG_17, SP)).toBe(false);
+
+			const berlin = event({
+				id: "e2",
+				all_day: true,
+				start_at: `${AUG_17}T22:00:00.000Z`,
+				end_at: `${AUG_18}T21:59:59.000Z`,
+			});
+			expect(eventFallsOnDay(berlin, AUG_18, "Europe/Berlin")).toBe(true);
+			expect(eventFallsOnDay(berlin, AUG_17, "Europe/Berlin")).toBe(false);
+		});
+	});
+
+	describe("timed events", () => {
+		it("belongs to every local day it overlaps", () => {
+			const overnight = event({
+				id: "e1",
+				start_at: `${AUG_17}T23:00:00.000Z`,
+				end_at: `${AUG_18}T05:00:00.000Z`,
+			});
+			// 20:00 on the 17th to 02:00 on the 18th, in São Paulo.
+			expect(eventFallsOnDay(overnight, AUG_17, SP)).toBe(true);
+			expect(eventFallsOnDay(overnight, AUG_18, SP)).toBe(true);
+			expect(eventFallsOnDay(overnight, "2026-08-19", SP)).toBe(false);
+		});
+
+		it("is placed by the local clock, not the UTC one", () => {
+			// 22:00 on the 17th in São Paulo is already the 18th in UTC.
+			const lateNight = event({
+				id: "e1",
+				start_at: `${AUG_18}T01:00:00.000Z`,
+				end_at: `${AUG_18}T02:00:00.000Z`,
+			});
+			expect(eventFallsOnDay(lateNight, AUG_17, SP)).toBe(true);
+			expect(eventFallsOnDay(lateNight, AUG_18, SP)).toBe(false);
+		});
+	});
+
+	it("excludes a row with an unreadable start rather than throwing", () => {
+		expect(eventFallsOnDay(event({ id: "e1", start_at: "sometime" }), AUG_18, SP)).toBe(false);
 	});
 });

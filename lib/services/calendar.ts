@@ -4,7 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CaldavConnection } from "@/lib/caldav/client";
 import { parseCalendarObject } from "@/lib/caldav/ical";
 import { CALENDAR_SYNC_WINDOW_MS } from "@/lib/constants";
-import { dayWindowUtc, nowUtc } from "@/lib/dates";
+import { dayWindowUtc, nowUtc, shiftDay } from "@/lib/dates";
+import { eventFallsOnDay } from "@/lib/day-schedule";
 import { env } from "@/lib/env";
 import { type CalendarEventRow, EVENT_SELECT } from "@/lib/schemas/calendar";
 import { ServiceError, unwrap } from "@/lib/services/errors";
@@ -145,7 +146,12 @@ export async function listEventsOn(
 	dateIso: string,
 	tz: string,
 ): Promise<CalendarEventRow[]> {
-	const { startUtc, endUtc } = dayWindowUtc(dateIso, tz);
+	// A day wider on each side than the day being asked for. An all-day event
+	// carries dates encoded as instants (lib/day-schedule.ts), and that encoding
+	// can land its midnight outside this timezone's day in either direction, so
+	// SQL can only be trusted to narrow — `eventFallsOnDay` is what decides.
+	const { startUtc } = dayWindowUtc(shiftDay(dateIso, -1), tz);
+	const { endUtc } = dayWindowUtc(shiftDay(dateIso, 1), tz);
 	const data = unwrap(
 		await sb
 			.from("calendar_events")
@@ -154,7 +160,8 @@ export async function listEventsOn(
 			.gt("end_at", startUtc)
 			.order("start_at", { ascending: true }),
 	);
-	return (data ?? []) as unknown as CalendarEventRow[];
+	const rows = (data ?? []) as unknown as CalendarEventRow[];
+	return rows.filter((event) => eventFallsOnDay(event, dateIso, tz));
 }
 
 export async function getEvent(sb: SupabaseClient, id: string): Promise<CalendarEventRow | null> {
