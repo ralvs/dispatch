@@ -12,6 +12,7 @@ import {
 } from "@/lib/schemas/note";
 import { unwrap, unwrapCount } from "@/lib/services/errors";
 import { type GraphFail, syncNoteMentionsFromText } from "@/lib/services/mentions";
+import { removeAllForNote } from "@/lib/services/note-attachments";
 import { syncWikilinks } from "@/lib/services/note-links";
 import { extractWikilinkIds } from "@/lib/wikilinks";
 
@@ -198,6 +199,15 @@ export async function resolveNeedsReview(sb: SupabaseClient, id: string): Promis
 
 export async function deleteNote(sb: SupabaseClient, id: string): Promise<void> {
 	unwrap(await sb.from("notes").delete().eq("id", id));
+	// Best-effort, and deliberately after the row is gone: the note is what the
+	// user asked to delete, so an R2 hiccup must not resurrect it. Worst case
+	// the objects are orphaned bytes nothing links to (docs/adr/0052).
+	try {
+		await removeAllForNote(id);
+	} catch {
+		// Swept on the next delete of the same prefix, or never — either beats
+		// failing a delete the user already saw succeed.
+	}
 }
 
 /** Minimal id/title/body projection for wikilink resolution — all notes, no filtering. */

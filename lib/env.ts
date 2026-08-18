@@ -38,6 +38,14 @@ const EnvSchema = z.object({
 
 	// Mem.ai import (Phase 9)
 	MEM_API_KEY: z.string().optional(),
+
+	// Cloudflare R2 — note attachments (docs/adr/0052). Optional like every
+	// other integration: the app boots without them and the attachment
+	// surfaces answer "not configured" rather than crashing at import.
+	R2_ACCOUNT_ID: z.string().optional(),
+	R2_ACCESS_KEY_ID: z.string().optional(),
+	R2_SECRET_ACCESS_KEY: z.string().optional(),
+	R2_BUCKET: z.string().optional(),
 });
 
 let cached: z.infer<typeof EnvSchema> | undefined;
@@ -74,3 +82,8 @@ export const isCalendarBridgeConfigured = () => Boolean(env().CALENDAR_BRIDGE_SE
 
 export const isPushConfigured = () =>
 	Boolean(env().NEXT_PUBLIC_VAPID_PUBLIC_KEY && env().VAPID_PRIVATE_KEY);
+
+export const isR2Configured = () =>
+	Boolean(
+		env().R2_ACCOUNT_ID && env().R2_ACCESS_KEY_ID && env().R2_SECRET_ACCESS_KEY && env().R2_BUCKET,
+	);

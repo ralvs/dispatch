@@ -14,6 +14,7 @@ import { getNote, listNoteTitles } from "@/lib/services/notes";
 import { listMentionCandidates } from "@/lib/services/people";
 import { getAppTimezone } from "@/lib/services/settings";
 import { detachLinkAction } from "../actions";
+import { AttachmentStrip } from "./attachment-strip";
 import { LinkPicker } from "./link-picker";
 import { NoteEditor } from "./note-editor";
 
@@ -232,10 +233,14 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 			{/* Column + rail (W2): prose left on the measure, panels right on
 			    desk, stack below on phone. One tree. */}
 			<div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_16.25rem] lg:items-start lg:gap-10">
+				{/* The strip wraps the editor rather than following it: the drop
+				    target is the whole note, not a landing pad below it. */}
 				<div className="min-w-0">
-					<Suspense fallback={<EditorFallback />}>
-						<EditorSection sb={sb} note={note} />
-					</Suspense>
+					<AttachmentStrip noteId={note.id} attachments={note.attachments}>
+						<Suspense fallback={<EditorFallback />}>
+							<EditorSection sb={sb} note={note} />
+						</Suspense>
+					</AttachmentStrip>
 				</div>
 				<aside className="min-w-0 lg:sticky lg:top-0">
 					<Suspense fallback={<LinkSectionsFallback />}>

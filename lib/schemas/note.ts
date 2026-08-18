@@ -13,19 +13,27 @@ export const NoteSourceTypeSchema = z.enum([
 ]);
 export type NoteSourceType = z.infer<typeof NoteSourceTypeSchema>;
 
-// Image attachments — same shape used on notes + journal_entries. The
-// schema is intentionally loose (everything optional except url+path)
-// because the API trusts what it stored at upload time; the client
-// never crafts these from scratch — it just adds/removes whole
-// objects returned by /api/uploads/image.
+// File attachments — images, PDFs, and text files (docs/adr/0052). Same shape
+// is available on journal_entries, which is not wired up yet. The schema is
+// intentionally loose (everything optional except url/path/name) because the
+// API trusts what it stored at upload time; the client never crafts these
+// from scratch — it just adds/removes whole objects returned by
+// POST /api/notes/[id]/attachments.
 //
-// Location fields are populated server-side at upload time from EXIF
-// GPS tags (when present). Phone-camera photos usually carry them;
-// photos that came in via messaging apps typically don't. The address
-// is a human-readable reverse-geocode of the coords.
+// `url` is an app-relative /api/media path, never a provider URL: the bucket
+// is private and read through an owner-guarded proxy, so nothing persisted
+// here names a storage provider and swapping provider cannot invalidate a
+// stored row.
+//
+// The location fields are vestigial. They were specced for EXIF GPS, but
+// downscaling calls sharp's .rotate(), which strips metadata — so they are
+// never populated today. Left in place because they cost nothing and the
+// column already holds the shape.
 export const AttachmentSchema = z.object({
-	url: z.string().url(),
+	url: z.string().min(1),
 	storage_path: z.string().min(1),
+	/** Original client filename. Display only — it never enters the storage key. */
+	name: z.string().min(1),
 	content_type: z.string().optional(),
 	size_bytes: z.number().int().nonnegative().optional(),
 	alt: z.string().nullable().optional(),
@@ -90,9 +98,11 @@ export const UpdateNoteSchema = CreateNoteSchema.partial().extend({
 // needs the id back) and a wider one for list/detail views. NoteRowSchema
 // is the narrow shape; NoteListRowSchema extends it with the columns only
 // the UI reads. NOTE_SELECT/NOTE_LIST_SELECT are derived from their keys
-// (lib/services/notes.ts). No joins for this entity — note the DB also has
-// an `attachments` column that neither select reads today; that's existing
-// behavior, left untouched here.
+// (lib/services/notes.ts). No joins for this entity.
+//
+// `attachments` is on the list shape, not the narrow one: the capture
+// pipeline is text-only (iron rule #4) and has no use for it, while both the
+// note page and the list read it.
 export const NoteRowSchema = z.object({
 	id: z.string().uuid(),
 	title: z.string().nullable(),
@@ -113,6 +123,7 @@ export const NoteListRowSchema = NoteRowSchema.extend({
 	related_person_id: z.string().uuid().nullable(),
 	related_quote_id: z.string().uuid().nullable(),
 	pinned_at: z.string().nullable(),
+	attachments: z.array(AttachmentSchema).default([]),
 });
 export type NoteListRow = z.infer<typeof NoteListRowSchema>;
 

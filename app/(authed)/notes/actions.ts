@@ -6,6 +6,7 @@ import { requireOwnerPage } from "@/lib/auth";
 import { formatInstant } from "@/lib/dates";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { searchEventsByTitle } from "@/lib/services/calendar";
+import { removeAttachment } from "@/lib/services/note-attachments";
 import { createManualLink, deleteLink } from "@/lib/services/note-links";
 import {
 	createNote,
@@ -82,6 +83,21 @@ export async function attachLinkAction(
 	const type = LinkTargetTypeSchema.parse(targetType);
 	const target = z.uuid().parse(targetId);
 	await createManualLink(sb, { note_id: id, target_type: type, target_id: target });
+	revalidateNoteViews(id);
+}
+
+/**
+ * Remove one file from a note (docs/adr/0052). Upload is a route handler
+ * because it carries binary; removal is an action, matching the link rail it
+ * sits beside. The storage path identifies the file — the client already has
+ * it from the attachment row, and it is validated against the note by the
+ * RPC's `where id = p_note_id`.
+ */
+export async function removeAttachmentAction(noteId: string, storagePath: string) {
+	const { sb } = await requireOwnerPage();
+	const id = z.uuid().parse(noteId);
+	const path = z.string().min(1).parse(storagePath);
+	await removeAttachment(sb, id, path);
 	revalidateNoteViews(id);
 }
 
