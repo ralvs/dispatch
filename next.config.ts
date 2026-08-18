@@ -2,6 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
 	reactStrictMode: true,
+	// sharp loads libvips through dlopen, which the file tracer cannot follow:
+	// the .node binding gets bundled but libvips-cpp.so does not, so the
+	// attachments route died with ERR_DLOPEN_FAILED on Vercel while working
+	// locally. Ship the whole @img platform package with that one route.
+	outputFileTracingIncludes: {
+		"/api/notes/[id]/attachments": ["./node_modules/@img/**/*"],
+	},
 	// Partial Prerendering + `"use cache"` (docs/adr/0033).
 	cacheComponents: true,
 	// Server Actions default to a 1MB body cap — fine for forms, fatal for
