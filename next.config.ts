@@ -6,8 +6,12 @@ const nextConfig: NextConfig = {
 	// the .node binding gets bundled but libvips-cpp.so does not, so the
 	// attachments route died with ERR_DLOPEN_FAILED on Vercel while working
 	// locally. Ship the whole @img platform package with that one route.
+	//
+	// The key is a picomatch glob, not a literal route, so a dynamic segment
+	// must be written as `*` — spelling it `[id]` makes glob read a character
+	// class and the rule silently never matches.
 	outputFileTracingIncludes: {
-		"/api/notes/[id]/attachments": ["./node_modules/@img/**/*"],
+		"/api/notes/*/attachments": ["./node_modules/@img/**/*"],
 	},
 	// Partial Prerendering + `"use cache"` (docs/adr/0033).
 	cacheComponents: true,
