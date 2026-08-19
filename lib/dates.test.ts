@@ -9,6 +9,8 @@ import {
 	isValidTimezone,
 	isWallClockTime,
 	parseDateIso,
+	recentDoneSinceDate,
+	recentDoneSinceUtc,
 	shiftDay,
 	shiftMinutes,
 	startOfWeek,
@@ -166,5 +168,20 @@ describe("formatDayNavLabel", () => {
 	it("crosses a month boundary without drifting", () => {
 		expect(formatDayNavLabel("2026-08-01", "2026-07-31")).toBe("TOMORROW");
 		expect(formatDayNavLabel("2026-07-31", "2026-08-01")).toBe("YESTERDAY");
+	});
+});
+
+describe("recentDoneSinceDate / recentDoneSinceUtc", () => {
+	it("includes today and the two calendar days before it", () => {
+		expect(recentDoneSinceDate("2026-08-18")).toBe("2026-08-16");
+	});
+
+	it("crosses a month boundary", () => {
+		expect(recentDoneSinceDate("2026-08-01")).toBe("2026-07-30");
+	});
+
+	it("floors the query at local midnight of that oldest day", () => {
+		// São Paulo is UTC-3, so 16 Aug 00:00 BRT is 16 Aug 03:00 UTC.
+		expect(recentDoneSinceUtc("2026-08-18", SP)).toBe("2026-08-16T03:00:00.000Z");
 	});
 });

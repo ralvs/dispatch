@@ -86,8 +86,8 @@ export function TaskRowItem({
 	noteId?: string;
 	/**
 	 * Optional on purpose: only "Recently done" (Tasks page) needs it to show a
-	 * completion time. Today can show done rows in place (docs/adr/0038) but
-	 * does not pass tz — those rows restyle via status, not a timestamp.
+	 * completion date and time. Today can show done rows in place (docs/adr/0038)
+	 * but does not pass tz — those rows restyle via status, not a timestamp.
 	 */
 	tz?: string;
 	/** @mention candidates (docs/adr/0030) for the edit form's title/notes autocomplete. */
@@ -227,7 +227,7 @@ export function TaskRowItem({
 						    purely relative to today, so a task completed last week
 						    read `overdue 9d` in the "Recently done" band — an
 						    assertion that it is late, about a task that is done.
-						    The completion time two fields along already answers
+						    The completion stamp two fields along already answers
 						    "when", and it answers it truthfully. */}
 						{!scheduled && !done && task.due_date && (
 							<span className={overdue ? "text-accent-slip" : ""}>
@@ -248,7 +248,7 @@ export function TaskRowItem({
 							</span>
 						)}
 						{done && task.completed_at && tz && (
-							<span>{` · ${formatInstant(task.completed_at, tz, "HH:mm")}`}</span>
+							<span>{` · ${formatInstant(task.completed_at, tz)}`}</span>
 						)}
 					</span>
 					{mentions?.map((person) => (

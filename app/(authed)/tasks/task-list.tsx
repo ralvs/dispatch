@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
 import { EmptyState, PageHeader, SectionHead } from "@/components/ui";
+import { dateOfInstant, recentDoneSinceDate } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { TaskRow } from "@/lib/services/tasks";
 import {
@@ -124,7 +125,7 @@ export function TaskList({
 	initialDomainId?: string;
 	/** task id -> linked note id, for the linked-note glyph on rows. */
 	taskNoteIds?: Record<string, string>;
-	/** App timezone — threaded to rows so "Recently done" can show a completion time. */
+	/** App timezone — threaded to rows so "Recently done" can show a completion date and time. */
 	tz: string;
 	/** @mention candidates (docs/adr/0030) for the capture bar and edit-form autocomplete. */
 	people?: MentionCandidate[];
@@ -238,8 +239,13 @@ export function TaskList({
 	const rest = status === "open" ? filteredOpen.filter((t) => !isTop3Today(t, todayIso)) : [];
 	const slotsOpen = TOP3_SLOTS - top3.length;
 	// The Open view's "Recently done" band is a glance-strip, and since the Done
-	// filter is gone it is the only place completed work shows up.
-	const recentDoneBand = filteredDone.slice(0, 10);
+	// filter is gone it is the only place completed work shows up. Last three
+	// local calendar days — not a row cap — so yesterday is still visible and
+	// last week is not.
+	const sinceDate = recentDoneSinceDate(todayIso);
+	const recentDoneBand = filteredDone.filter(
+		(t) => t.completed_at !== null && dateOfInstant(t.completed_at, tz) >= sinceDate,
+	);
 
 	function onCreate(formData: FormData): Promise<void> {
 		const optimistic = optimisticTaskFromForm(formData, domains);

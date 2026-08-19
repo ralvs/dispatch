@@ -142,6 +142,22 @@ export function formatDayNavLabel(dateIso: string, todayIso: string): string {
 	return DateTime.fromISO(dateIso, { zone: "utc" }).toFormat("ccc · LLL d").toUpperCase();
 }
 
+/**
+ * The Tasks page "Recently done" band: today and the two calendar days before
+ * it, in the app timezone. Today counts as day 1.
+ */
+export const RECENT_DONE_DAYS = 3;
+
+/** Oldest calendar date included in the Recently done window (YYYY-MM-DD). */
+export function recentDoneSinceDate(todayIso: string): string {
+	return shiftDay(todayIso, -(RECENT_DONE_DAYS - 1));
+}
+
+/** UTC instant at local midnight of that oldest day — the query floor. */
+export function recentDoneSinceUtc(todayIso: string, tz: string): string {
+	return dayWindowUtc(recentDoneSinceDate(todayIso), tz).startUtc;
+}
+
 /** Editorial display formats used across the UI. */
 export function formatDay(dateIso: string, tz: string, format = "cccc, d LLLL yyyy"): string {
 	return DateTime.fromISO(dateIso, { zone: tz }).toFormat(format);

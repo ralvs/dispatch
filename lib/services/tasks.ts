@@ -74,14 +74,14 @@ export async function listCompletedOn(
 }
 
 /** Recently completed tasks only — Tasks page strip, not full history. */
-export async function listRecentDone(sb: SupabaseClient, limit = 10): Promise<TaskRow[]> {
+export async function listRecentDone(sb: SupabaseClient, sinceUtc: string): Promise<TaskRow[]> {
 	const data = unwrap(
 		await sb
 			.from("tasks")
 			.select(TASK_SELECT)
 			.eq("status", "done")
-			.order("completed_at", { ascending: false, nullsFirst: false })
-			.limit(limit),
+			.gte("completed_at", sinceUtc)
+			.order("completed_at", { ascending: false, nullsFirst: false }),
 	);
 	return (data ?? []).map(flatten);
 }

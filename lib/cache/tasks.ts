@@ -16,11 +16,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * `"use cache"` cannot close over a cookie-bound RLS client. Call only after
  * requireOwnerPage() — single-user app, admin reads the rows the owner would.
  *
- * Nothing time-dependent lives in here. `todayIso` decides overdue styling and
- * is derived per request from the timezone, so it stays outside — a cached
- * entry surviving midnight would otherwise paint yesterday's overdue set.
+ * `sinceUtc` is the one time-dependent input: it is the cache key for the
+ * Recently done window (today and the two local days before it). Overdue
+ * styling still stays outside — `todayIso` is derived per request so a
+ * cached entry surviving midnight cannot paint yesterday's overdue set.
  */
-export async function getCachedTaskBoard() {
+export async function getCachedTaskBoard(sinceUtc: string) {
 	"use cache";
 	// Every tag whose data this read touches. `tasks` covers domains too:
 	// settings.domain names it (see invalidationFor), because a renamed domain
@@ -31,9 +32,9 @@ export async function getCachedTaskBoard() {
 	const sb = createAdminClient();
 	const [openTasks, doneTasks, domains, projects, people] = await Promise.all([
 		listTasks(sb, { status: "open" }),
-		// Only the "Recently done" band consumes these — there is no Done filter
-		// to page through, so ten is the whole appetite.
-		listRecentDone(sb, 10),
+		// The Open view's glance-strip is the only consumer — no Done filter
+		// to page through. The window is last-3-local-days, not a row cap.
+		listRecentDone(sb, sinceUtc),
 		listDomains(sb),
 		listProjects(sb),
 		listMentionCandidates(sb),

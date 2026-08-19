@@ -1,7 +1,7 @@
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { getCachedTaskBoard } from "@/lib/cache/tasks";
-import { todayInTz } from "@/lib/dates";
+import { recentDoneSinceUtc, todayInTz } from "@/lib/dates";
 import { TaskList } from "./task-list";
 
 export default async function TasksPage({
@@ -21,12 +21,13 @@ export default async function TasksPage({
 
 	// searchParams only seed the client filter state — every one of them filters
 	// inside TaskList — so they are deliberately not part of the cache key.
-	const [tz, board] = await Promise.all([getCachedAppTimezone(), getCachedTaskBoard()]);
+	// Timezone first: the done-window floor is a cache key, so it has to be
+	// computed before the board read rather than in parallel with it.
+	const tz = await getCachedAppTimezone();
+	const todayIso = todayInTz(tz);
+	const board = await getCachedTaskBoard(recentDoneSinceUtc(todayIso, tz));
 	const { openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions } = board;
 
-	// Derived per request, not cached: an entry that survived midnight would
-	// otherwise paint yesterday's overdue set.
-	const todayIso = todayInTz(tz);
 	const inboxCount = openTasks.filter((t) => t.domain_id === null).length;
 
 	return (
