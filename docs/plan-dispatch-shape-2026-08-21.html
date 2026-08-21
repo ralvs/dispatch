@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dispatch’s own shape</title>
+<style>
+  :root {
+    --bg: #fbfaf9; --surface: #ffffff; --surface-2: #f4f2f0;
+    --ink: #1a1817; --ink-2: #45403c; --ink-3: #6b645e; --ink-4: #948c85;
+    --line: #e6e2de; --line-strong: #d3cdc7;
+    --accent: #b4541f; --accent-bg: #fbeee6;
+    --add-bg: #e8f3ec; --add-ink: #1c5433; --add-line: #a9d3bb;
+    --del-bg: #fbecec; --del-ink: #7a2222; --del-line: #e2b4b4;
+    --warn-bg: #fdf3e2; --warn-line: #e8cd9a; --warn-ink: #7a5410;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1817; --surface: #232120; --surface-2: #2c2927;
+      --ink: #f2efec; --ink-2: #cfc8c2; --ink-3: #a49c95; --ink-4: #7d746d;
+      --line: #35322f; --line-strong: #48433f;
+      --accent: #e0803f; --accent-bg: #33251a;
+      --add-bg: #1a2c21; --add-ink: #8fd0a8; --add-line: #2f5941;
+      --del-bg: #2f1e1e; --del-ink: #e5a2a2; --del-line: #5e3232;
+      --warn-bg: #2e2413; --warn-line: #574522; --warn-ink: #e0bd7c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1a1817; --surface: #232120; --surface-2: #2c2927;
+    --ink: #f2efec; --ink-2: #cfc8c2; --ink-3: #a49c95; --ink-4: #7d746d;
+    --line: #35322f; --line-strong: #48433f;
+    --accent: #e0803f; --accent-bg: #33251a;
+    --add-bg: #1a2c21; --add-ink: #8fd0a8; --add-line: #2f5941;
+    --del-bg: #2f1e1e; --del-ink: #e5a2a2; --del-line: #5e3232;
+    --warn-bg: #2e2413; --warn-line: #574522; --warn-ink: #e0bd7c;
+  }
+  :root[data-theme="light"] {
+    --bg: #fbfaf9; --surface: #ffffff; --surface-2: #f4f2f0;
+    --ink: #1a1817; --ink-2: #45403c; --ink-3: #6b645e; --ink-4: #948c85;
+    --line: #e6e2de; --line-strong: #d3cdc7;
+    --accent: #b4541f; --accent-bg: #fbeee6;
+    --add-bg: #e8f3ec; --add-ink: #1c5433; --add-line: #a9d3bb;
+    --del-bg: #fbecec; --del-ink: #7a2222; --del-line: #e2b4b4;
+    --warn-bg: #fdf3e2; --warn-line: #e8cd9a; --warn-ink: #7a5410;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 400 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 61rem; margin: 0 auto; padding: 3.5rem 1.5rem 6rem; }
+
+  header.top { margin-bottom: 2.5rem; }
+  .eyebrow {
+    font: 400 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 .6rem;
+  }
+  h1 { font-size: clamp(28px, 4.4vw, 38px); font-weight: 500; letter-spacing: -0.025em; line-height: 1.12; margin: 0 0 .7rem; }
+  .lede { color: var(--ink-2); font-size: 17px; max-width: 62ch; margin: 0; }
+
+  /* Element selectors first: every override below is more specific, so
+     declaring these later would be descending specificity. */
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .89em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: .08em .32em; }
+  strong { color: var(--ink); font-weight: 500; }
+
+  .callout {
+    margin: 1.75rem 0 0; padding: .9rem 1.1rem; border-radius: 10px;
+    background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink);
+    font-size: 14.5px; line-height: 1.55;
+  }
+  .callout strong { color: inherit; }
+  .callout code { background: transparent; border-color: currentColor; opacity: .95; }
+
+  table.summary { width: 100%; border-collapse: collapse; margin: 2.5rem 0 0; font-size: 14.5px; }
+  table.summary th, table.summary td { text-align: left; padding: .65rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.summary th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); font-weight: 500; border-bottom-color: var(--line-strong); }
+  table.summary td.n { color: var(--ink-4); font-variant-numeric: tabular-nums; width: 2.6rem; font-family: ui-monospace, monospace; font-size: 12.5px; }
+  .tbl-scroll { overflow-x: auto; }
+  table.summary tr.dim td { color: var(--ink-4); }
+
+  .pill { display: inline-block; padding: .12rem .5rem; border-radius: 999px; font-size: 11.5px; font-weight: 500; letter-spacing: .02em; white-space: nowrap; border: 1px solid; }
+  .pill.do    { background: var(--add-bg); color: var(--add-ink); border-color: var(--add-line); }
+  .pill.ask   { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-line); }
+  .pill.gap   { background: var(--del-bg); color: var(--del-ink); border-color: var(--del-line); }
+  .pill.later { background: var(--surface-2); color: var(--ink-3); border-color: var(--line-strong); }
+  .pill.fixed { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+
+  section.point { margin-top: 3.5rem; border-top: 1px solid var(--line-strong); padding-top: 1.75rem; }
+  section.point > h2 { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; margin: 0 0 .3rem; display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+  .num { font: 400 13px/1 ui-monospace, monospace; color: var(--ink-4); border: 1px solid var(--line-strong); border-radius: 5px; padding: .25rem .4rem; }
+  .sub { color: var(--ink-3); font-size: 14.5px; margin: 0 0 1.4rem; max-width: 68ch; }
+
+  h3 { font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-3); margin: 1.8rem 0 .6rem; }
+  p { margin: 0 0 .85rem; color: var(--ink-2); }
+  ul { margin: 0 0 .9rem; padding-left: 1.15rem; color: var(--ink-2); }
+  li { margin-bottom: .35rem; }
+
+  .ev { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .3rem 0; margin: 0 0 1rem; }
+  .ev-row { display: flex; gap: .9rem; padding: .45rem .95rem; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .ev-row:last-child { border-bottom: 0; }
+  .ev-row .loc { font-family: ui-monospace, monospace; font-size: 12.5px; color: var(--accent); white-space: nowrap; flex: 0 0 17rem; }
+  .ev-row .what { color: var(--ink-2); }
+  @media (max-width: 760px) { .ev-row { flex-direction: column; gap: .15rem; } .ev-row .loc { flex: none; white-space: normal; } }
+
+  /* Block, not flex: these verdicts carry inline <code>, and as flex items
+     each one would be its own unwrapping column. */
+  .verdict { background: var(--surface-2); border: 1px solid var(--line-strong); border-left: 3px solid var(--accent); border-radius: 8px; padding: .8rem 1rem; margin-top: 1.2rem; font-size: 14.5px; line-height: 1.55; color: var(--ink-2); }
+  .verdict b { color: var(--ink); font-weight: 500; }
+
+  /* ── ledger: kill / keep / learn ─────────────────────────────── */
+  .ledger { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.2rem; }
+  @media (max-width: 820px) { .ledger { grid-template-columns: 1fr; } }
+  .lcard { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--line-strong); border-radius: 10px; padding: .95rem 1.05rem 1.1rem; }
+  .lcard.kill { border-top-color: var(--del-line); }
+  .lcard.keep { border-top-color: var(--add-line); }
+  .lcard.learn { border-top-color: var(--accent); }
+  .lcard h4 { margin: 0 0 .1rem; font-size: 12px; text-transform: uppercase; letter-spacing: .09em; font-weight: 500; color: var(--ink-3); }
+  .lcard .big { display: block; font-size: 16.5px; color: var(--ink); font-weight: 500; letter-spacing: -.02em; margin: .35rem 0 .5rem; line-height: 1.3; }
+  .lcard p { font-size: 14px; margin: 0 0 .6rem; }
+  .lcard p:last-child { margin-bottom: 0; }
+  .quote { font-size: 13.5px; color: var(--ink-3); border-left: 2px solid var(--line-strong); padding-left: .7rem; margin: .7rem 0 0; font-style: italic; }
+
+  /* ── figures ─────────────────────────────────────────────────── */
+  figure { margin: 1.2rem 0 1.4rem; }
+  figure .fig-body { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem .9rem .6rem; overflow-x: auto; }
+  figcaption { font-size: 13px; color: var(--ink-4); margin-top: .55rem; line-height: 1.5; }
+  svg { display: block; max-width: 100%; height: auto; }
+  svg text { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  svg .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 820px) { .cols { grid-template-columns: 1fr; } }
+  .col h4 { margin: 0 0 .45rem; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); font-weight: 500; }
+  .col h4 .tag { font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+  /* ── recommendation cards ────────────────────────────────────── */
+  .rec { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.15rem 1.1rem; margin-bottom: 1rem; }
+  .rec.top { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-bg); }
+  .rec-head { display: flex; align-items: baseline; gap: .65rem; flex-wrap: wrap; margin-bottom: .15rem; }
+  .rec-head .rid { font: 500 12px/1 ui-monospace, monospace; color: var(--accent); border: 1px solid var(--accent); background: var(--accent-bg); border-radius: 5px; padding: .3rem .42rem; }
+  .rec-head h3 { margin: 0; font-size: 16.5px; text-transform: none; letter-spacing: -.02em; color: var(--ink); font-weight: 500; }
+  .rec .why { font-size: 14px; color: var(--ink-2); margin: .5rem 0 .7rem; }
+  .rec .meta { display: flex; gap: 1.4rem; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-4); font-family: ui-monospace, monospace; border-top: 1px solid var(--line); padding-top: .6rem; margin-top: .75rem; }
+  .rec .meta b { color: var(--ink-3); font-weight: 500; }
+  .files { list-style: none; padding: 0; margin: 0; font-size: 13.5px; }
+  /* min-width:0 on both: a flex item defaults to min-width:auto, so a long
+     unbreakable path would push the card past the viewport instead of wrapping. */
+  .files li { display: flex; gap: .55rem; margin-bottom: .28rem; align-items: baseline; min-width: 0; }
+  .files .op { font: 500 10.5px/1.5 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .06em; border-radius: 4px; padding: .05rem .32rem; flex: 0 0 3.4rem; text-align: center; border: 1px solid; }
+  .files .op.new { background: var(--add-bg); color: var(--add-ink); border-color: var(--add-line); }
+  .files .op.mod { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-line); }
+  .files .op.del { background: var(--del-bg); color: var(--del-ink); border-color: var(--del-line); }
+  .files .fp { font-family: ui-monospace, monospace; font-size: 12.5px; color: var(--ink-2); overflow-wrap: anywhere; min-width: 0; }
+
+  .skip { display: flex; gap: .85rem; padding: .7rem .2rem; border-bottom: 1px solid var(--line); font-size: 14px; align-items: baseline; }
+  .skip:last-child { border-bottom: 0; }
+  .skip .x { color: var(--ink-4); font-family: ui-monospace, monospace; font-size: 13px; flex: 0 0 1rem; }
+  .skip .t { flex: 0 0 15rem; color: var(--ink); font-weight: 500; }
+  .skip .r { color: var(--ink-3); }
+  @media (max-width: 760px) { .skip { flex-direction: column; gap: .15rem; } .skip .t { flex: none; } }
+
+  footer { margin-top: 4rem; border-top: 1px solid var(--line-strong); padding-top: 1.25rem; color: var(--ink-4); font-size: 13.5px; }
+  footer p { color: inherit; margin: 0 0 .4rem; }
+
+  /* ── additions for this document ─────────────────────────────── */
+  .qa { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--warn-line); border-radius: 8px; padding: .85rem 1.05rem; margin: 0 0 .9rem; font-size: 14.5px; }
+  .qa .qid { font: 500 11.5px/1 ui-monospace, monospace; color: var(--warn-ink); background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 5px; padding: .28rem .4rem; margin-right: .5rem; }
+  .qa .qt { color: var(--ink); font-weight: 500; }
+  .qa p { margin: .55rem 0 0; font-size: 14px; }
+  .qa .rec-line { color: var(--ink-2); border-top: 1px solid var(--line); margin-top: .6rem; padding-top: .5rem; }
+  .qa .rec-line b { color: var(--accent); font-weight: 500; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.2rem; }
+  @media (max-width: 820px) { .two { grid-template-columns: 1fr; } }
+  .pane { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .95rem 1.05rem 1rem; }
+  .pane.mine { border-top: 3px solid var(--add-line); }
+  .pane.his { border-top: 3px solid var(--line-strong); }
+  .pane h4 { margin: 0 0 .5rem; font-size: 12px; text-transform: uppercase; letter-spacing: .09em; font-weight: 500; color: var(--ink-3); }
+  .pane ul { margin: 0; font-size: 14px; }
+
+  dl.band { margin: 1rem 0 0; display: grid; grid-template-columns: 11rem 1fr; gap: .1rem 1rem; font-size: 14px; }
+  dl.band dt { font-family: ui-monospace, monospace; font-size: 12.5px; color: var(--accent); padding: .4rem 0; border-top: 1px solid var(--line); }
+  dl.band dd { margin: 0; color: var(--ink-2); padding: .4rem 0; border-top: 1px solid var(--line); }
+  @media (max-width: 700px) { dl.band { grid-template-columns: 1fr; } dl.band dd { border-top: 0; padding-top: 0; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">Dispatch · plan · 21 Aug 2026</p>
+  <h1>Dispatch’s own shape</h1>
+  <p class="lede">
+    The jerad-ops 2.0 read (<code>docs/review-jerad-ops-v2-2026-08-15.html</code>) asked what Dispatch could take
+    from the reference. This document answers it, and the answer is mostly <em>less</em>. Jerad runs an agency and
+    needs a defensible record of billable work. Renan is an employee whose project and ticket history already lives
+    in Linear, inside the company’s walls. Half of what the reference models is a job Dispatch does not have.
+  </p>
+
+  <div class="callout">
+    <strong>The governing rule for this plan.</strong> Dispatch does not duplicate Linear. It holds the thinking
+    around work, the life around work, and the things that quietly rot when nobody looks. Anything that exists to
+    prove what was delivered to a paying client comes out.
+  </div>
+</header>
+
+<div class="tbl-scroll">
+<table class="summary">
+  <thead><tr><th class="n">#</th><th>Decision</th><th>Settled as</th><th>State</th></tr></thead>
+  <tbody>
+    <tr><td class="n">D1</td><td>Notes get an optional domain</td><td>Optional. No Inbox fallback. <code>related_project_id</code> stays.</td><td><span class="pill do">agreed</span></td></tr>
+    <tr><td class="n">D2</td><td>Milestones go; project progress = tasks done / open</td><td>Project rows also list their tasks</td><td><span class="pill do">agreed</span></td></tr>
+    <tr><td class="n">D3</td><td>Client and billing fields go</td><td><code>client_id</code>, <code>hours_logged</code>, <code>quoted_hours</code>, <code>engagement_type</code></td><td><span class="pill do">agreed</span></td></tr>
+    <tr><td class="n">D4</td><td>A want is a task with the clock switched off</td><td><code>someday</code> flag, not a new entity</td><td><span class="pill do">agreed</span></td></tr>
+    <tr><td class="n">D5</td><td>Wire the neglect sweep (R1)</td><td>Surfaces on <code>/domains</code> and the bell — <strong>not</strong> Today</td><td><span class="pill do">do first</span></td></tr>
+    <tr><td class="n">D6</td><td><code>/domains</code> rows show last touch, open count, quiet dot</td><td>Today’s page is not touched</td><td><span class="pill do">agreed</span></td></tr>
+    <tr><td class="n">D7</td><td>A stat band above the list on some pages</td><td>New reading type — collides with ADR-0042/0046</td><td><span class="pill ask">needs ADR</span></td></tr>
+    <tr><td class="n">D8</td><td>Routines: edit a routine, tick past days</td><td>Backfill breaks a stated server-clock rule</td><td><span class="pill ask">needs ADR</span></td></tr>
+    <tr><td class="n">D9</td><td>Nothing is dropped from the database yet</td><td>Retire in code now, drop in SQL later</td><td><span class="pill later">staged</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+
+<section class="point">
+  <h2><span class="num">01</span> Two apps that look alike and are not</h2>
+  <p class="sub">The reference implementation and Dispatch share a vocabulary — domain, project, task, note. They do not share a job. Naming the difference is what makes the rest of this plan obvious rather than arbitrary.</p>
+
+  <div class="two">
+    <div class="pane his">
+      <h4>What jerad-ops has to do</h4>
+      <ul>
+        <li>Prove what was delivered to a client, and when.</li>
+        <li>Hold hours against a quote, per retainer cycle.</li>
+        <li>Keep a per-project conversation and update log.</li>
+        <li>Track owned gear for insurance and resale.</li>
+        <li>Notice a client who has gone silent.</li>
+      </ul>
+      <p style="font-size:14px;margin:.7rem 0 0;color:var(--ink-3)">Every one of these is a record kept <em>for someone else’s benefit</em>.</p>
+    </div>
+    <div class="pane mine">
+      <h4>What Dispatch has to do</h4>
+      <ul>
+        <li>Catch a thought before it is lost.</li>
+        <li>Hold the work thinking that is not yet a Linear ticket.</li>
+        <li>Hold home and family errands, meetings, and things to buy.</li>
+        <li>Notice a part of life nobody has touched in a while.</li>
+        <li>Keep the journal, quotes, notes and people around all of it.</li>
+      </ul>
+      <p style="font-size:14px;margin:.7rem 0 0;color:var(--ink-3)">Linear owns delivery history. Dispatch owns attention.</p>
+    </div>
+  </div>
+
+  <div class="verdict">
+    <b>Consequence.</b> The agency column is not a Dispatch feature that was never finished — it is a Dispatch
+    feature that should never exist. <code>activity_log</code>, <code>inventory_items</code>,
+    <code>client_id</code>, <code>quoted_hours</code>, <code>hours_logged</code> and
+    <code>engagement_type</code> are all in that column.
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">02</span> The model, after this plan</h2>
+  <p class="sub">Domains are the base point. A project is a loose bucket that tags tasks — nothing more. Everything else that behaved like a task gets retired, because three task shapes is two too many.</p>
+
+  <figure>
+    <div class="fig-body">
+      <svg viewBox="0 0 700 330" role="img" aria-label="Entity diagram: a stewardship domain feeds tasks, notes and projects; five retired concepts sit to the right.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-4)"/>
+          </marker>
+        </defs>
+
+        <!-- domain -->
+        <rect x="12" y="120" width="152" height="80" rx="9" fill="var(--accent-bg)" stroke="var(--accent)"/>
+        <text x="88" y="150" text-anchor="middle" font-size="14" font-weight="500" fill="var(--ink)">Stewardship</text>
+        <text x="88" y="168" text-anchor="middle" font-size="14" font-weight="500" fill="var(--ink)">domain</text>
+        <text x="88" y="187" text-anchor="middle" font-size="11" class="mono" fill="var(--accent)">THE BASE POINT</text>
+
+        <!-- edges -->
+        <path d="M164 152 C 200 152, 205 66, 244 66" fill="none" stroke="var(--ink-4)" stroke-width="1.4" marker-end="url(#ar)"/>
+        <path d="M164 160 L 244 160" fill="none" stroke="var(--ink-4)" stroke-width="1.4" marker-end="url(#ar)"/>
+        <path d="M164 172 C 200 172, 205 254, 244 254" fill="none" stroke="var(--ink-4)" stroke-width="1.4" marker-end="url(#ar)"/>
+
+        <!-- task -->
+        <rect x="248" y="36" width="196" height="62" rx="8" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+        <text x="262" y="60" font-size="13.5" font-weight="500" fill="var(--ink)">Task</text>
+        <text x="262" y="78" font-size="11.5" fill="var(--ink-3)">domain required · Inbox is the</text>
+        <text x="262" y="92" font-size="11.5" fill="var(--ink-3)">fallback · may be a <tspan font-weight="500" fill="var(--accent)">want</tspan></text>
+
+        <!-- note -->
+        <rect x="248" y="130" width="196" height="62" rx="8" fill="var(--add-bg)" stroke="var(--add-line)"/>
+        <text x="262" y="154" font-size="13.5" font-weight="500" fill="var(--ink)">Note</text>
+        <text x="262" y="172" font-size="11.5" fill="var(--ink-3)">domain <tspan font-weight="500" fill="var(--add-ink)">optional — new</tspan></text>
+        <text x="262" y="186" font-size="11.5" fill="var(--ink-3)">a loose thought stays loose</text>
+
+        <!-- project -->
+        <rect x="248" y="224" width="196" height="62" rx="8" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+        <text x="262" y="248" font-size="13.5" font-weight="500" fill="var(--ink)">Project</text>
+        <text x="262" y="266" font-size="11.5" fill="var(--ink-3)">a loose bucket that tags tasks</text>
+        <text x="262" y="280" font-size="11.5" fill="var(--ink-3)">progress = done / open</text>
+
+        <!-- retired column -->
+        <text x="484" y="26" font-size="11" class="mono" letter-spacing="1" fill="var(--del-ink)">RETIRED</text>
+        <g fill="var(--del-bg)" stroke="var(--del-line)">
+          <rect x="480" y="36" width="206" height="40" rx="7"/>
+          <rect x="480" y="86" width="206" height="40" rx="7"/>
+          <rect x="480" y="136" width="206" height="40" rx="7"/>
+          <rect x="480" y="186" width="206" height="40" rx="7"/>
+          <rect x="480" y="236" width="206" height="40" rx="7"/>
+        </g>
+        <g font-size="12.5" fill="var(--del-ink)">
+          <text x="494" y="55">Milestone</text>
+          <text x="494" y="105">Project checklist item</text>
+          <text x="494" y="155">Activity log (hours)</text>
+          <text x="494" y="205">Inventory (asset register)</text>
+          <text x="494" y="255">Action log</text>
+        </g>
+        <g font-size="10.5" fill="var(--del-ink)" opacity=".75">
+          <text x="494" y="69">a second task type</text>
+          <text x="494" y="119">a third task type</text>
+          <text x="494" y="169">Linear’s job</text>
+          <text x="494" y="219">Jerad’s gear, not a wish list</text>
+          <text x="494" y="269">the notification ledger does this</text>
+        </g>
+
+        <path d="M444 254 L 476 254" fill="none" stroke="var(--del-line)" stroke-width="1.4" stroke-dasharray="3 3"/>
+        <path d="M444 66 C 460 66, 462 56, 476 56" fill="none" stroke="var(--del-line)" stroke-width="1.4" stroke-dasharray="3 3"/>
+      </svg>
+    </div>
+    <figcaption>Read left to right. The orange box is the anchor; the green box is the one addition; the red column is what stops being wired. Nothing in the red column is dropped from Postgres in this plan — see §06.</figcaption>
+  </figure>
+
+  <div class="verdict">
+    <b>Why a project stops carrying progress of its own.</b> A percentage that only moves when you tick an invented
+    checklist item measures the checklist, not the work. Counting the project’s own tasks measures something that
+    exists for other reasons and cannot be gamed by forgetting to tick.
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">03</span> A want is a task with the clock switched off</h2>
+  <p class="sub">“Buy milk tomorrow” is an action with a time. “Buy a new wardrobe” is an intent with no time. Today they share one list, so the second one sits there looking overdue-ish forever and makes the list feel dishonest.</p>
+
+  <figure>
+    <div class="fig-body">
+      <svg viewBox="0 0 700 200" role="img" aria-label="Flow: a want with no date is promoted into a dated task, then completed.">
+        <defs>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+
+        <rect x="14" y="40" width="188" height="76" rx="9" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+        <text x="30" y="66" font-size="13.5" font-weight="500" fill="var(--ink)">Want</text>
+        <text x="30" y="85" font-size="11.5" fill="var(--ink-3)">no due date · has a domain</text>
+        <text x="30" y="100" font-size="11.5" fill="var(--ink-3)">hidden from Today and /tasks</text>
+
+        <path d="M206 78 L 262 78" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar2)"/>
+        <text x="234" y="66" text-anchor="middle" font-size="10.5" class="mono" fill="var(--accent)">PROMOTE</text>
+
+        <rect x="266" y="40" width="188" height="76" rx="9" fill="var(--accent-bg)" stroke="var(--accent)"/>
+        <text x="282" y="66" font-size="13.5" font-weight="500" fill="var(--ink)">Task</text>
+        <text x="282" y="85" font-size="11.5" fill="var(--ink-3)">has a due date</text>
+        <text x="282" y="100" font-size="11.5" fill="var(--ink-3)">shows up where it should</text>
+
+        <path d="M458 78 L 512 78" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar2)"/>
+
+        <rect x="516" y="40" width="170" height="76" rx="9" fill="var(--add-bg)" stroke="var(--add-line)"/>
+        <text x="532" y="66" font-size="13.5" font-weight="500" fill="var(--ink)">Done</text>
+        <text x="532" y="85" font-size="11.5" fill="var(--ink-3)">unchanged</text>
+
+        <line x1="14" y1="146" x2="686" y2="146" stroke="var(--line)"/>
+        <text x="14" y="168" font-size="11.5" class="mono" fill="var(--ink-4)">someday = true</text>
+        <text x="266" y="168" font-size="11.5" class="mono" fill="var(--ink-4)">someday = false</text>
+        <text x="14" y="188" font-size="11.5" fill="var(--ink-3)">One boolean column. One filter. Promotion is clearing a flag — never a copy from one table to another.</text>
+      </svg>
+    </div>
+    <figcaption>Rejected: a separate “wants” table with its own page and nav slot. That is a task with the clock removed, given a second home and a second form to maintain.</figcaption>
+  </figure>
+
+  <div class="verdict">
+    <b>What it costs.</b> One column, one predicate beside <code>isOverdue</code> in
+    <code>lib/task-predicates.ts</code>, one filter chip on <code>/tasks</code>, and one exclusion in the Today read.
+    It reuses the domain, the project tag, the notes field and the whole task form.
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">04</span> The neglect sweep, and where its output lands</h2>
+  <p class="sub">This is the one repair the last report ranked first, and it stays first. Dispatch already promises a cron that watches for neglect. There is no such cron. The threshold editor on a domain writes a number that nothing reads, into a table with no rows and no writers.</p>
+
+  <figure>
+    <div class="fig-body">
+      <svg viewBox="0 0 700 300" role="img" aria-label="Four activity sources merge into a domain last-touch date, compared against a threshold by a cron, writing an observation and a notification; Today is unchanged.">
+        <defs>
+          <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-4)"/>
+          </marker>
+        </defs>
+
+        <text x="14" y="20" font-size="10.5" class="mono" letter-spacing="1" fill="var(--ink-4)">SOURCES</text>
+        <g fill="var(--surface-2)" stroke="var(--line-strong)">
+          <rect x="14" y="30" width="196" height="34" rx="7"/>
+          <rect x="14" y="72" width="196" height="34" rx="7"/>
+          <rect x="14" y="114" width="196" height="34" rx="7"/>
+          <rect x="14" y="156" width="196" height="34" rx="7"/>
+        </g>
+        <g font-size="11" class="mono" fill="var(--ink-2)">
+          <text x="28" y="51">tasks.completed_at</text>
+          <text x="28" y="93">journal_entries.entry_date</text>
+          <text x="28" y="135">project activity</text>
+          <text x="28" y="177">domains.last_shipped_at</text>
+        </g>
+
+        <path d="M210 47 C 244 47, 244 100, 268 106" fill="none" stroke="var(--ink-4)" stroke-width="1.3" marker-end="url(#ar3)"/>
+        <path d="M210 89 C 240 89, 244 102, 268 108" fill="none" stroke="var(--ink-4)" stroke-width="1.3" marker-end="url(#ar3)"/>
+        <path d="M210 131 C 240 131, 244 118, 268 112" fill="none" stroke="var(--ink-4)" stroke-width="1.3" marker-end="url(#ar3)"/>
+        <path d="M210 173 C 244 173, 244 122, 268 116" fill="none" stroke="var(--ink-4)" stroke-width="1.3" marker-end="url(#ar3)"/>
+
+        <rect x="272" y="82" width="164" height="56" rx="8" fill="var(--accent-bg)" stroke="var(--accent)"/>
+        <text x="354" y="106" text-anchor="middle" font-size="13" font-weight="500" fill="var(--ink)">domain last touch</text>
+        <text x="354" y="124" text-anchor="middle" font-size="11" class="mono" fill="var(--accent)">MAX OF THE FOUR</text>
+
+        <path d="M354 138 L 354 168" fill="none" stroke="var(--ink-4)" stroke-width="1.3" marker-end="url(#ar3)"/>
+        <rect x="252" y="172" width="204" height="52" rx="8" fill="var(--warn-bg)" stroke="var(--warn-line)"/>
+        <text x="354" y="194" text-anchor="middle" font-size="12.5" fill="var(--warn-ink)">older than “flag after N days”?</text>
+        <text x="354" y="212" text-anchor="middle" font-size="11" class="mono" fill="var(--warn-ink)">CRON /api/cron/observations</text>
+
+        <path d="M456 198 C 486 198, 486 128, 512 122" fill="none" stroke="var(--ink-4)" stroke-width="1.3" marker-end="url(#ar3)"/>
+        <path d="M456 200 C 486 200, 486 60, 512 54" fill="none" stroke="var(--ink-4)" stroke-width="1.3" marker-end="url(#ar3)"/>
+
+        <rect x="516" y="30" width="170" height="48" rx="8" fill="var(--add-bg)" stroke="var(--add-line)"/>
+        <text x="530" y="50" font-size="12.5" font-weight="500" fill="var(--ink)">Notifications</text>
+        <text x="530" y="66" font-size="11" fill="var(--ink-3)">the bell · iron rule #6</text>
+
+        <rect x="516" y="98" width="170" height="48" rx="8" fill="var(--add-bg)" stroke="var(--add-line)"/>
+        <text x="530" y="118" font-size="12.5" font-weight="500" fill="var(--ink)">/domains</text>
+        <text x="530" y="134" font-size="11" fill="var(--ink-3)">the row goes quiet</text>
+
+        <rect x="516" y="166" width="170" height="48" rx="8" fill="none" stroke="var(--line)" stroke-dasharray="4 4"/>
+        <text x="530" y="186" font-size="12.5" fill="var(--ink-4)">Today</text>
+        <text x="530" y="202" font-size="11" fill="var(--ink-4)">unchanged, by request</text>
+
+        <line x1="14" y1="244" x2="686" y2="244" stroke="var(--line)"/>
+        <text x="14" y="266" font-size="12" fill="var(--ink-3)">A tick that found nothing writes nothing. A no-op is not an action, and a ledger of “all fine” rows</text>
+        <text x="14" y="282" font-size="12" fill="var(--ink-3)">buries the one that matters — the rule <tspan class="mono" fill="var(--ink-4)">app/api/cron/sweep/route.ts</tspan> already follows.</text>
+      </svg>
+    </div>
+    <figcaption>Because Today stays untouched, the sweep’s only two surfaces are the notification bell and the domains list — which is exactly why <code>/domains</code> has to start showing something (§05).</figcaption>
+  </figure>
+
+  <div class="ev">
+    <div class="ev-row"><span class="loc">lib/services/today.ts:270</span><span class="what"><code>cadenceThresholdDays</code> — the parser exists and works. Its only caller feeds the number back into the edit field it came from.</span></div>
+    <div class="ev-row"><span class="loc">lib/services/today.ts:177</span><span class="what"><code>buildCadenceLines</code> — computed into the Today digest every request. No component renders it. Dead output, live cost.</span></div>
+    <div class="ev-row"><span class="loc">app/(authed)/domains/domain-row.tsx:75</span><span class="what">Help text describing “the observations cron” to the user. That cron does not exist.</span></div>
+    <div class="ev-row"><span class="loc">app/api/cron/</span><span class="what">Holds <code>caldav</code>, <code>reminders</code>, <code>sweep</code>. <code>sweep</code> only reconciles stuck captures.</span></div>
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">05</span> What the pages are missing</h2>
+  <p class="sub">Every list page today opens with a title and a count of rows. A count of rows is the one fact you can already get by looking at the rows. The pages that feel thin are thin because the header states the obvious and withholds the interesting.</p>
+
+  <h3>The design collision, stated honestly</h3>
+  <p>ADR-0042 settled what the page header may carry: a 36px title, and a <em>measure</em> — a figure and the word it counts, at a flat 14px. ADR-0046 added <em>facts</em> — identity attributes, also flat. Both decisions were deliberately quiet, so that “a list page can never out-shout the day”. A row of big numbers is a third reading type, and it does not fit either slot.</p>
+
+  <figure>
+    <div class="fig-body">
+      <svg viewBox="0 0 700 250" role="img" aria-label="Page anatomy: the existing quiet header, then a new stat band below it, then the list.">
+        <text x="14" y="18" font-size="10.5" class="mono" letter-spacing="1" fill="var(--ink-4)">EXISTING — UNCHANGED</text>
+        <rect x="14" y="26" width="672" height="56" rx="8" fill="none" stroke="var(--line)"/>
+        <text x="30" y="62" font-size="27" font-weight="500" fill="var(--ink)" letter-spacing="-0.6">Routines</text>
+        <text x="672" y="60" text-anchor="end" font-size="13" fill="var(--ink-3)"><tspan font-weight="500" fill="var(--ink-2)">12</tspan> routines</text>
+        <text x="30" y="76" font-size="10" class="mono" fill="var(--ink-4)">TITLE 36px · MEASURE 14px — ADR-0042</text>
+
+        <text x="14" y="106" font-size="10.5" class="mono" letter-spacing="1" fill="var(--accent)">NEW — THE STAT BAND</text>
+        <rect x="14" y="114" width="672" height="82" rx="10" fill="var(--accent-bg)" stroke="var(--accent)"/>
+
+        <g>
+          <rect x="32" y="132" width="150" height="46" rx="4" fill="none" stroke="var(--line-strong)" stroke-dasharray="3 3"/>
+          <text x="107" y="160" text-anchor="middle" font-size="11" fill="var(--ink-3)">30-day grid</text>
+          <text x="107" y="173" text-anchor="middle" font-size="9.5" class="mono" fill="var(--ink-4)">ALREADY BUILT</text>
+        </g>
+
+        <text x="240" y="162" font-size="26" font-weight="500" fill="var(--ink)" letter-spacing="-0.6">96%</text>
+        <text x="240" y="180" font-size="10" class="mono" letter-spacing="1" fill="var(--ink-4)">KEPT · 30D</text>
+
+        <text x="370" y="162" font-size="26" font-weight="500" fill="var(--ink)" letter-spacing="-0.6">96%</text>
+        <text x="370" y="180" font-size="10" class="mono" letter-spacing="1" fill="var(--ink-4)">LAST 7</text>
+
+        <text x="500" y="162" font-size="26" font-weight="500" fill="var(--accent)" letter-spacing="-0.6">7</text>
+        <text x="500" y="180" font-size="10" class="mono" letter-spacing="1" fill="var(--ink-4)">DAY STREAK</text>
+
+        <text x="14" y="222" font-size="10.5" class="mono" letter-spacing="1" fill="var(--ink-4)">THE LIST</text>
+        <line x1="14" y1="232" x2="686" y2="232" stroke="var(--line)"/>
+        <line x1="14" y1="244" x2="686" y2="244" stroke="var(--line)"/>
+      </svg>
+    </div>
+    <figcaption>The band sits <strong>below</strong> the header, not inside it. That leaves ADR-0042 and ADR-0046 intact: the title line stays quiet, and the loud figures live in their own section, one ramp step under Today’s 56px hero. This is the trade-off an ADR has to record.</figcaption>
+  </figure>
+
+  <h3>What each band would carry</h3>
+  <dl class="band">
+    <dt>/routines</dt><dd>Kept over 30 days · kept over the last 7 · current day streak · the 30-day grid, moved up from the rows. <span class="pill do">clear win</span></dd>
+    <dt>/domains</dt><dd>Domains within cadence · domains gone quiet · longest quiet run. Fed by §04. <span class="pill do">clear win</span></dd>
+    <dt>/tasks</dt><dd>Done in the last 7 days · open · overdue · wants parked. <span class="pill do">clear win</span></dd>
+    <dt>/projects</dt><dd>Tasks done vs open across all active projects · projects with nothing open. <span class="pill ask">maybe</span></dd>
+    <dt>/journal</dt><dd>Days written in the last 30 · current writing streak. <span class="pill ask">maybe</span></dd>
+    <dt>/notes</dt><dd>Captured in the last 30 days · needing review · without a domain. <span class="pill ask">maybe</span></dd>
+    <dt>/people</dt><dd>Nothing yet. A silence measure is a separate piece of work and is not in this plan.</dd>
+    <dt>/quotes · /links</dt><dd>Nothing. A pile is a pile by design — ADR-0042 already says so about the unread count.</dd>
+  </dl>
+
+  <h3>Row-level facts, page by page</h3>
+  <div class="ev">
+    <div class="ev-row"><span class="loc">/domains — every row</span><span class="what">Days since last touch, count of open tasks, and a quiet/ok dot. Today the row shows the name and nothing else, so the page is a settings screen wearing a nav slot.</span></div>
+    <div class="ev-row"><span class="loc">/projects — every row</span><span class="what">Tasks done / open in place of the milestone percentage, plus the project’s open tasks listed inline under the row.</span></div>
+    <div class="ev-row"><span class="loc">/tasks</span><span class="what">A “Wants” filter beside the existing views, and wants excluded from All by default.</span></div>
+    <div class="ev-row"><span class="loc">/notes</span><span class="what">The domain dot on the row, and a domain filter in the sidebar — the same shape <code>/tasks</code> already uses.</span></div>
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">06</span> Routines: edit, and fix yesterday</h2>
+  <p class="sub">Two gaps, one small and one that breaks a stated rule.</p>
+
+  <h3>Editing a routine</h3>
+  <p>There is no edit. The page offers create, archive and delete only, and deleting warns that the whole completion history goes with it — so a typo in a routine name currently costs you the streak. The server side is already there: <code>UpdateRoutineSchema</code> exists and is complete. What is missing is an <code>updateRoutineAction</code> and an edit mode on the row, exactly like the one <code>/domains</code> already has.</p>
+
+  <h3>Ticking a past day</h3>
+  <p>The service can already do it — <code>setCompletion(sb, id, date, done)</code> takes a date, and <code>ToggleCompletionSchema</code> accepts one. The server action deliberately refuses to: it derives the date from the server clock and its comment says the date is <em>“never trusted from the client.”</em> Backfill means letting the client name a date, which is a real reversal of that rule and needs to be written down, not slipped in.</p>
+
+  <div class="verdict">
+    <b>How to keep the rule mostly intact.</b> Accept a date from the client, then bound it server-side: it must be
+    a real calendar date, not in the future, and not older than the 30 days the grid already shows. The client picks
+    <em>which</em> of the visible squares to tick; it never gets to invent a date the UI is not already displaying.
+    Streaks and rates recompute from the completion log, so no stored total goes stale.
+  </div>
+
+  <div class="ev">
+    <div class="ev-row"><span class="loc">app/(authed)/routines/actions.ts</span><span class="what">Add <code>updateRoutineAction</code>; widen <code>toggleCompletionAction</code> to take a bounded date.</span></div>
+    <div class="ev-row"><span class="loc">app/(authed)/routines/routine-row.tsx</span><span class="what">Edit mode on the row; the 30 grid squares become buttons instead of decoration.</span></div>
+    <div class="ev-row"><span class="loc">lib/routine-stats.ts</span><span class="what">Already computes streak, longest streak, 7-day count and the grid. Nothing to add for the band except the two percentages.</span></div>
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">07</span> Retire now, drop later</h2>
+  <p class="sub">Two of the answers pull against each other: milestones and the billing fields are agreed removals, but nothing is to be dropped from the database yet. Both are satisfiable — they are different phases, not the same one.</p>
+
+  <div class="two">
+    <div class="pane mine">
+      <h4>Phase A — retire in code (this plan)</h4>
+      <ul>
+        <li>Stop reading and writing the column or table.</li>
+        <li>Remove its UI, its form field, its service function.</li>
+        <li>Remove it from the row schema, so it leaves the select.</li>
+        <li>The rows stay in Postgres, untouched and reachable.</li>
+      </ul>
+      <p style="font-size:14px;margin:.7rem 0 0;color:var(--ink-3)">Reversible in an afternoon. Nothing is lost.</p>
+    </div>
+    <div class="pane his">
+      <h4>Phase B — drop in SQL (a later, separate patch)</h4>
+      <ul>
+        <li>One migration dropping whatever Phase A proved unnecessary.</li>
+        <li>Only after living without it long enough to be sure.</li>
+        <li>Its own ADR, following the ADR-0007 precedent.</li>
+      </ul>
+      <p style="font-size:14px;margin:.7rem 0 0;color:var(--ink-3)">Not scheduled. Not in this plan.</p>
+    </div>
+  </div>
+
+  <div class="tbl-scroll">
+  <table class="summary">
+    <thead><tr><th>Thing</th><th>State today</th><th>Phase A</th><th>Phase B</th></tr></thead>
+    <tbody>
+      <tr><td><code>milestones</code></td><td>Live — drives % on 3 surfaces</td><td>Remove UI and rollup; % becomes done/open</td><td>Candidate to drop</td></tr>
+      <tr><td><code>project_checklist_items</code></td><td>Dead — generated types only</td><td>Delete the orphan schemas</td><td>Candidate to drop</td></tr>
+      <tr><td><code>projects.client_id</code></td><td>Dead — schema only</td><td>Remove from schema</td><td>Candidate to drop</td></tr>
+      <tr><td><code>projects.hours_logged</code></td><td>Dead — schema only</td><td>Remove from schema</td><td>Candidate to drop</td></tr>
+      <tr><td><code>projects.quoted_hours</code></td><td>Live in the project form</td><td>Remove field and schema</td><td>Candidate to drop</td></tr>
+      <tr><td><code>projects.engagement_type</code></td><td>Live in the project form</td><td>Remove field and schema</td><td>Candidate to drop</td></tr>
+      <tr><td><code>tasks.parent_task_id</code></td><td>Dead — schema only</td><td>Remove from schema</td><td>Candidate to drop</td></tr>
+      <tr><td><code>activity_log</code></td><td>Dead — no reader, no writer</td><td>Nothing to remove</td><td>Candidate to drop</td></tr>
+      <tr><td><code>action_log</code></td><td>Dead — no reader, no writer</td><td>Nothing to remove</td><td>Candidate to drop</td></tr>
+      <tr><td><code>inventory_items</code> · <code>inventory_categories</code></td><td>Dead — no reader, no writer</td><td>Nothing to remove</td><td>Candidate to drop</td></tr>
+      <tr><td><code>buildCadenceLines</code></td><td>Computed every request, rendered nowhere</td><td><strong>Revived</strong> by §04, or deleted</td><td>—</td></tr>
+      <tr class="dim"><td><code>observations</code></td><td>Dead — no reader, no writer</td><td><strong>Wired</strong> by §04</td><td>Kept</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">08</span> The order to build it in</h2>
+  <p class="sub">Each step is independently shippable and independently revertible. Nothing later depends on anything earlier except where stated.</p>
+
+  <div class="rec top">
+    <div class="rec-head"><span class="rid">P1</span><h3>Wire the neglect sweep</h3><span class="pill do">do first</span></div>
+    <p class="why">Closes a promise the product already makes in writing. Everything else on this list is an improvement; this one is a repair.</p>
+    <ul class="files">
+      <li><span class="op new">new</span><span class="fp">lib/services/observations.ts — domain last touch as MAX of four sources</span></li>
+      <li><span class="op new">new</span><span class="fp">app/api/cron/observations/route.ts — modelled on app/api/cron/sweep/route.ts</span></li>
+      <li><span class="op mod">mod</span><span class="fp">lib/services/today.ts — reuse cadenceThresholdDays; decide buildCadenceLines' fate</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/domains/domain-row.tsx — the help text stops describing fiction</span></li>
+    </ul>
+    <div class="meta"><span><b>depends on</b> nothing</span><span><b>surfaces</b> bell + /domains</span><span><b>touches Today</b> no</span></div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head"><span class="rid">P2</span><h3>/domains earns its nav slot</h3></div>
+    <p class="why">P1 produces a fact that has nowhere to appear. Days since last touch, open task count, quiet dot on every row — plus the stat band above the list.</p>
+    <div class="meta"><span><b>depends on</b> P1</span><span><b>needs ADR</b> stat band</span></div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head"><span class="rid">P3</span><h3>Notes get a domain</h3></div>
+    <p class="why">One nullable column, the domain picker already built for tasks, a dot on the row and a filter in the sidebar. Small, self-contained, and it makes the whole model consistent.</p>
+    <ul class="files">
+      <li><span class="op new">new</span><span class="fp">supabase/migrations/… — notes.domain_id uuid null references stewardship_domains</span></li>
+      <li><span class="op mod">mod</span><span class="fp">lib/schemas/note.ts · lib/services/notes.ts · app/(authed)/notes/</span></li>
+    </ul>
+    <div class="meta"><span><b>depends on</b> nothing</span><span><b>feeds</b> P1’s last-touch — see O3</span></div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head"><span class="rid">P4</span><h3>Wants</h3></div>
+    <p class="why">The <code>someday</code> flag, its predicate, its filter, and its exclusion from Today and the default task list.</p>
+    <div class="meta"><span><b>depends on</b> nothing</span></div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head"><span class="rid">P5</span><h3>Projects become a loose bucket</h3></div>
+    <p class="why">Milestones and the billing fields come out of the UI. Progress becomes tasks done / open. Each project row lists its open tasks inline.</p>
+    <ul class="files">
+      <li><span class="op del">del</span><span class="fp">milestone UI in app/(authed)/projects/[id]/ and today/projects-card.tsx</span></li>
+      <li><span class="op mod">mod</span><span class="fp">lib/services/projects-shared.ts — the rollup changes source</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/projects/project-form.tsx — two fields leave</span></li>
+    </ul>
+    <div class="meta"><span><b>depends on</b> nothing</span><span><b>phase</b> A only — no SQL</span></div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head"><span class="rid">P6</span><h3>Routines: edit and backfill</h3></div>
+    <p class="why">An edit mode on the row, and the 30 grid squares become clickable within a bounded window.</p>
+    <div class="meta"><span><b>depends on</b> nothing</span><span><b>needs ADR</b> client-named date</span></div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head"><span class="rid">P7</span><h3>Stat bands on the remaining pages</h3></div>
+    <p class="why">/routines, /tasks, then whichever of the maybes survive §05.</p>
+    <div class="meta"><span><b>depends on</b> P2’s ADR and component</span></div>
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">09</span> Still open</h2>
+  <p class="sub">Six questions this plan could not settle on its own. Each carries a recommendation, so silence on any of them means the recommendation stands.</p>
+
+  <div class="qa">
+    <span class="qid">O1</span><span class="qt">Is “don’t drop anything yet” about the database only?</span>
+    <p>Milestones and the billing fields were agreed removals, and then nothing was to be dropped. §07 reads that as: pull them out of the code now, leave the rows in Postgres, drop them in a later patch.</p>
+    <p class="rec-line"><b>Recommended:</b> yes — Phase A now, Phase B never scheduled until you have lived without it.</p>
+  </div>
+
+  <div class="qa">
+    <span class="qid">O2</span><span class="qt">Which pages actually get a stat band?</span>
+    <p>Four are clear wins and three are guesses (§05). Adding a band to a page whose numbers you would never read is exactly the mistake the jerad-ops 2.0 release was written about.</p>
+    <p class="rec-line"><b>Recommended:</b> ship <code>/routines</code>, <code>/domains</code> and <code>/tasks</code>. Leave <code>/projects</code>, <code>/journal</code> and <code>/notes</code> until those three have been used for a while.</p>
+  </div>
+
+  <div class="qa">
+    <span class="qid">O3</span><span class="qt">Does writing a note count as touching its domain?</span>
+    <p>Once notes carry a domain, they become a fifth candidate source for the neglect sweep’s last-touch date. Counting them makes a domain look tended when all you did was think about it. Not counting them means a week of notes about Health still reads as neglect.</p>
+    <p class="rec-line"><b>Recommended:</b> count it. Attention is what this measure is for, and thinking about something is attention.</p>
+  </div>
+
+  <div class="qa">
+    <span class="qid">O4</span><span class="qt">How far back may a routine day be ticked?</span>
+    <p>The row already draws 30 days. A wider window needs a date picker and a reason.</p>
+    <p class="rec-line"><b>Recommended:</b> 30 days — exactly the squares already on screen, enforced server-side.</p>
+  </div>
+
+  <div class="qa">
+    <span class="qid">O5</span><span class="qt">How many tasks does a project row show?</span>
+    <p>Open tasks only, or everything including done? Always visible, or behind a disclosure?</p>
+    <p class="rec-line"><b>Recommended:</b> open tasks only, up to five, then “+N more”. Done work belongs on the project page, not in the list.</p>
+  </div>
+
+  <div class="qa">
+    <span class="qid">O6</span><span class="qt">Which ADRs does this plan owe?</span>
+    <p>The next free number is <strong>0053</strong> — 0052 is note attachments. Three decisions here are hard to reverse, surprising without context, and the result of a real trade-off, which is the bar the repo uses.</p>
+    <p class="rec-line"><b>Recommended:</b> one for the stat band as a third reading type against ADR-0042/0046; one for a client-named completion date on routines; one recording the jerad-ops 2.0 read — what was taken, what was refused, and that Linear owns delivery history. <code>AGENTS.md</code> requires the third one anyway.</p>
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">10</span> Explicitly not doing</h2>
+  <p class="sub">Refusals are the point of this plan, so they are written down rather than left as silence.</p>
+
+  <div class="skip"><span class="x">✕</span><span class="t">Copying the reference UI</span><span class="r">The current design stays. The gap was information, not looks.</span></div>
+  <div class="skip"><span class="x">✕</span><span class="t">Changing Today’s page</span><span class="r">Ruled out directly. The sweep routes around it.</span></div>
+  <div class="skip"><span class="x">✕</span><span class="t">A third task status (“waiting on”)</span><span class="r">R2 in the previous report. Waiting on someone else is a client-work problem; Linear holds the tickets that block.</span></div>
+  <div class="skip"><span class="x">✕</span><span class="t">Computed project urgency, worst-first</span><span class="r">R3. A project is a tag now. A tag does not have a state of health.</span></div>
+  <div class="skip"><span class="x">✕</span><span class="t">Silence tracking on People</span><span class="r">R4. Real, but it is a relationship-management feature and nothing asked for it.</span></div>
+  <div class="skip"><span class="x">✕</span><span class="t">Hours, quotes, retainers, clients</span><span class="r">Linear and the employer own this. It is the whole §01 argument.</span></div>
+  <div class="skip"><span class="x">✕</span><span class="t">An inventory or asset register</span><span class="r">Insurance and resale records. Not a wish list, and not a want.</span></div>
+  <div class="skip"><span class="x">✕</span><span class="t">Tomorrow’s Focus / the Daily Rule</span><span class="r">Dispatch never built the scoreboard, and <code>top3_for_date</code> is already the better version of the focus pointer.</span></div>
+</section>
+
+
+<footer>
+  <p><strong>Status.</strong> Plan only. No code, no migration, and no ADR has been written for any of this.</p>
+  <p>Sources: <code>docs/review-jerad-ops-v2-2026-08-15.html</code> (the reference read), the repository at <code>main</code>, and a design interview on 21 Aug 2026. Every claim about Dispatch above was checked against the code rather than inferred.</p>
+</footer>
+
+</div>
+</body>
+</html>
