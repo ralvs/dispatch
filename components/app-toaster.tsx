@@ -5,7 +5,7 @@ import { Toaster } from "sonner";
 
 /**
  * Sonner host. Theme follows `data-theme` on <html> (Dispatch light/dark).
- * Failure toasts only — callers use toastError / runAction.
+ * Callers use toastError / toastSuccess / runAction.
  *
  * Pass 5 / B: light is the default (matches THEME_BOOT in app/layout.tsx —
  * anything that is not the string "dark" resolves to light). Surface card,
@@ -39,6 +39,7 @@ export function AppToaster() {
 					title: "text-ink font-medium",
 					description: "text-ink-2 text-[13px]",
 					error: "border-error/40",
+					success: "border-success/40",
 					closeButton: "border-line bg-surface text-ink-3",
 				},
 			}}

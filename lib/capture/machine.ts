@@ -64,7 +64,11 @@ export type CaptureEvent =
 export type CaptureEffect =
 	| { type: "SUBMIT"; text: string; id: number }
 	| { type: "FOCUS_TEXTAREA" }
-	| { type: "RESTORE_FOCUS" };
+	| { type: "RESTORE_FOCUS" }
+	// Fired only when a slip settles while the palette is closed — the owner
+	// is no longer looking at the rows, so Sonner carries the receipt.
+	| { type: "TOAST"; kind: "ok"; receipt: CaptureReceipt; text: string }
+	| { type: "TOAST"; kind: "err"; offline: boolean; text: string };
 
 export type CaptureTransition = { state: CaptureState; effects: CaptureEffect[] };
 
@@ -120,9 +124,9 @@ export function captureMachine(state: CaptureState, event: CaptureEvent): Captur
 			// flight and completes regardless (verified against Next 16). Settled
 			// slips have been seen, so they are dropped; in-flight and failed ones
 			// survive, so reopening still shows what is working and what needs a
-			// retry. The old CLOSE bumped a global seq to invalidate the reply,
-			// which left the submitted text sitting in the composer and invited a
-			// duplicate submit on reopen.
+			// retry. A slip that then settles while closed is toasted (Sonner)
+			// and dropped, so it is not silent and does not reappear as a check
+			// the owner already heard about.
 			return {
 				state: {
 					...state,
@@ -150,11 +154,24 @@ export function captureMachine(state: CaptureState, event: CaptureEvent): Captur
 		}
 
 		case "SUBMIT_OK": {
+			const slip = state.slips.find((s) => s.id === event.id);
+			if (!slip) return { state, effects: [] };
+			if (!state.open) {
+				// Owner already left. Drop the settled slip (the words are on
+				// the server) and toast the receipt so it is not silent.
+				return {
+					state: {
+						...state,
+						slips: state.slips.filter((s) => s.id !== event.id),
+					},
+					effects: [{ type: "TOAST", kind: "ok", receipt: event.receipt, text: slip.text }],
+				};
+			}
 			return {
 				state: {
 					...state,
-					slips: replaceSlip(state.slips, event.id, (slip) => ({
-						...slip,
+					slips: replaceSlip(state.slips, event.id, (s) => ({
+						...s,
 						status: "done",
 						offline: false,
 						receipt: event.receipt,
@@ -165,24 +182,28 @@ export function captureMachine(state: CaptureState, event: CaptureEvent): Captur
 		}
 
 		case "SUBMIT_ERR": {
+			const slip = state.slips.find((s) => s.id === event.id);
+			if (!slip) return { state, effects: [] };
 			return {
 				state: {
 					...state,
-					slips: replaceSlip(state.slips, event.id, (slip) => ({
-						...slip,
+					slips: replaceSlip(state.slips, event.id, (s) => ({
+						...s,
 						status: "error",
 						offline: event.offline,
 						// Drop the provisional receipt so the failure reads as one.
 						receipt: null,
 					})),
 				},
-				effects: [],
+				effects: state.open
+					? []
+					: [{ type: "TOAST", kind: "err", offline: event.offline, text: slip.text }],
 			};
 		}
 
 		case "RETRY": {
 			const failed = state.slips.find((slip) => slip.id === event.id);
-			if (!failed || failed.status !== "error") return { state, effects: [] };
+			if (failed?.status !== "error") return { state, effects: [] };
 			// A retry is a new slip: the old one is dropped only once its text has
 			// been carried into the replacement, so the words are never unowned.
 			const pruned = { ...state, slips: state.slips.filter((slip) => slip.id !== event.id) };
@@ -212,7 +233,7 @@ export function captureMachine(state: CaptureState, event: CaptureEvent): Captur
 			// Only a settled slip can be dismissed; an in-flight one has nowhere
 			// else to live, and a failed one still holds unsaved words.
 			const slip = state.slips.find((s) => s.id === event.id);
-			if (!slip || slip.status !== "done") return { state, effects: [] };
+			if (slip?.status !== "done") return { state, effects: [] };
 			return {
 				state: { ...state, slips: state.slips.filter((s) => s.id !== event.id) },
 				effects: [],

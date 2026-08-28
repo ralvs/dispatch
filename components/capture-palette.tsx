@@ -1,10 +1,18 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { captureText } from "@/app/(authed)/capture/actions";
-import { Button, Dialog, DialogBody, DialogFooter, Textarea } from "@/components/ui";
+import {
+	Button,
+	Dialog,
+	DialogBody,
+	DialogFooter,
+	ListRow,
+	rowTitle,
+	Textarea,
+} from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
 import {
 	type CaptureEffect,
@@ -18,7 +26,7 @@ import { OPEN_CAPTURE_EVENT, openCapturePalette } from "@/lib/capture/palette-bu
 import { deriveReceipt } from "@/lib/capture/receipt";
 import { isOpenShortcut, isSubmitShortcut } from "@/lib/capture/shortcuts";
 import { isBlank } from "@/lib/capture/submission";
-import { toastError } from "@/lib/client/toast";
+import { toastError, toastSuccess } from "@/lib/client/toast";
 import { readCaptureIntent } from "@/lib/pwa/capture-intent";
 import type { CapturedRecord } from "@/lib/services/capture";
 import { DOCK_ACTION, DOCK_ACTION_SLOT_ID, DOCK_HEIGHT } from "@/lib/ui/dock";
@@ -75,13 +83,7 @@ export function CapturePalette() {
 					const record: CapturedRecord = await captureText({ text, via: "text" });
 					dispatch({ type: "SUBMIT_OK", id, receipt: deriveReceipt(record) });
 				} catch {
-					const offline = !navigator.onLine;
-					dispatch({ type: "SUBMIT_ERR", id, offline });
-					toastError(
-						offline
-							? "Offline — draft kept. Reconnect and retry."
-							: "Couldn't capture. Your text is kept — try again.",
-					);
+					dispatch({ type: "SUBMIT_ERR", id, offline: !navigator.onLine });
 				}
 			});
 		},
@@ -102,6 +104,17 @@ export function CapturePalette() {
 					break;
 				case "RESTORE_FOCUS":
 					// Dialog restores focus to the trigger on close.
+					break;
+				case "TOAST":
+					if (effect.kind === "ok") {
+						toastSuccess(effect.receipt.title, closedToastBody(effect.text, effect.receipt.lines));
+					} else {
+						toastError(
+							effect.offline
+								? `Offline — "${clip(effect.text)}" is kept. Reopen Capture to retry.`
+								: `Couldn't capture "${clip(effect.text)}". Reopen Capture to retry.`,
+						);
+					}
 					break;
 			}
 		}
@@ -209,13 +222,12 @@ export function CapturePalette() {
 					</div>
 
 					{state.slips.length > 0 ? (
-						<ul aria-label="Captures filing" className="mt-4 space-y-2">
+						<ul aria-label="Captures filing" className="mt-2">
 							{state.slips.map((slip) => (
 								<SlipRow
 									key={slip.id}
 									slip={slip}
 									onRetry={() => dispatch({ type: "RETRY", id: slip.id })}
-									onDismiss={() => dispatch({ type: "DISMISS", id: slip.id })}
 								/>
 							))}
 						</ul>
@@ -247,58 +259,64 @@ export function CapturePalette() {
 	);
 }
 
+function clip(text: string, n = 48): string {
+	const trimmed = text.trim();
+	return trimmed.length > n ? `${trimmed.slice(0, n - 1)}…` : trimmed;
+}
+
+function closedToastBody(text: string, lines: string[]): string {
+	return [clip(text), ...lines].join(" · ");
+}
+
 /**
- * One submitted capture. Shows the words it is carrying so a slow slip is
- * still identifiable, then its receipt — or a retry when it failed.
+ * One submitted capture, sitting under the composer. Pending rows dim (the
+ * system pending language); a check appears only once the server has filed it.
  */
-function SlipRow({
-	slip,
-	onRetry,
-	onDismiss,
-}: {
-	slip: CaptureSlip;
-	onRetry: () => void;
-	onDismiss: () => void;
-}) {
-	const tone =
-		slip.status === "error"
-			? "text-error"
-			: slip.receipt?.tone === "needs_review"
-				? "text-accent"
-				: "text-ink";
+function slipStatusTone(slip: CaptureSlip): string {
+	if (slip.status === "error") return "text-error";
+	if (slip.receipt?.tone === "needs_review") return "text-accent";
+	if (slip.status === "done") return "text-ink-2";
+	return "text-ink-3";
+}
+
+function SlipRow({ slip, onRetry }: { slip: CaptureSlip; onRetry: () => void }) {
+	const done = slip.status === "done";
+	const failed = slip.status === "error";
+	const tone = slipStatusTone(slip);
 
 	return (
-		<li className="flex items-start gap-3 border-line border-t pt-2">
-			<div className="min-w-0 flex-1">
-				<p className="truncate text-sm text-ink-2">{slip.text}</p>
-				<div role="status" aria-live="polite">
-					{slip.status === "error" ? (
-						<p className="text-sm text-error">
-							{slip.offline ? "Offline — kept." : "Couldn't save — kept."}
-						</p>
-					) : (
-						<p className={`text-sm ${tone}`}>
-							{slip.receipt?.title}
-							{slip.status === "done" && slip.receipt ? ` — ${slip.receipt.lines.join(" ")}` : "…"}
-						</p>
-					)}
-				</div>
+		<ListRow
+			align="start"
+			className={slip.status === "submitting" ? "opacity-50" : ""}
+			leading={
+				<span className="inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+					{done ? (
+						<Icon icon={Check} size="sm" strokeWidth={2.25} className="text-success" />
+					) : null}
+				</span>
+			}
+			trailing={
+				failed ? (
+					<Button variant="tertiary" size="sm" onClick={onRetry}>
+						Retry
+					</Button>
+				) : undefined
+			}
+		>
+			<p className={rowTitle({ tone: done ? "muted" : "default", layout: "block" })}>{slip.text}</p>
+			<div role="status" aria-live="polite">
+				{failed ? (
+					<p className="mt-0.5 text-sm text-error">
+						{slip.offline ? "Offline — kept." : "Couldn't save — kept."}
+					</p>
+				) : (
+					<p className={`mt-0.5 text-sm ${tone}`}>
+						{done && slip.receipt
+							? `${slip.receipt.title} — ${slip.receipt.lines.join(" ")}`
+							: "Filing…"}
+					</p>
+				)}
 			</div>
-			{slip.status === "error" ? (
-				<Button variant="tertiary" size="sm" onClick={onRetry}>
-					Retry
-				</Button>
-			) : null}
-			{slip.status === "done" ? (
-				<Button
-					variant="tertiary"
-					size="sm"
-					onClick={onDismiss}
-					aria-label={`Dismiss receipt for ${slip.text}`}
-				>
-					Clear
-				</Button>
-			) : null}
-		</li>
+		</ListRow>
 	);
 }

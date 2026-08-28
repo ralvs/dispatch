@@ -86,8 +86,9 @@ describe("captureMachine", () => {
 
 		it("a reply for an unknown slip changes nothing", () => {
 			const before = run([{ type: "OPEN" }, type("one"), { type: "SUBMIT" }]).state;
-			const after = captureMachine(before, { type: "SUBMIT_OK", id: 99, receipt: RECEIPT }).state;
-			expect(after.slips).toEqual(before.slips);
+			const after = captureMachine(before, { type: "SUBMIT_OK", id: 99, receipt: RECEIPT });
+			expect(after.state.slips).toEqual(before.slips);
+			expect(after.effects).toEqual([]);
 		});
 	});
 
@@ -108,8 +109,8 @@ describe("captureMachine", () => {
 			expect(state.text).toBe("");
 		});
 
-		it("still applies a reply that lands after the palette was closed", () => {
-			const { state } = run([
+		it("toasts and drops a slip that settles while the palette is closed", () => {
+			const { state, effects } = run([
 				{ type: "OPEN" },
 				type("buy milk"),
 				{ type: "SUBMIT" },
@@ -117,7 +118,31 @@ describe("captureMachine", () => {
 				{ type: "SUBMIT_OK", id: 1, receipt: RECEIPT },
 			]);
 
-			expect(state.slips[0]).toMatchObject({ status: "done", receipt: RECEIPT });
+			expect(state.slips).toEqual([]);
+			expect(effects).toEqual([{ type: "TOAST", kind: "ok", receipt: RECEIPT, text: "buy milk" }]);
+		});
+
+		it("toasts a failure that lands while closed, and keeps the words for retry", () => {
+			const { state, effects } = run([
+				{ type: "OPEN" },
+				type("buy milk"),
+				{ type: "SUBMIT" },
+				{ type: "CLOSE" },
+				{ type: "SUBMIT_ERR", id: 1, offline: false },
+			]);
+
+			expect(state.slips[0]).toMatchObject({ text: "buy milk", status: "error" });
+			expect(effects).toEqual([{ type: "TOAST", kind: "err", offline: false, text: "buy milk" }]);
+		});
+
+		it("does not toast a slip that settles while the palette is still open", () => {
+			const { effects } = run([
+				{ type: "OPEN" },
+				type("buy milk"),
+				{ type: "SUBMIT" },
+				{ type: "SUBMIT_OK", id: 1, receipt: RECEIPT },
+			]);
+			expect(effects).toEqual([]);
 		});
 
 		it("keeps an in-flight slip visible on reopen, and drops seen ones", () => {

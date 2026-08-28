@@ -3,10 +3,17 @@
 import { unstable_rethrow } from "next/navigation";
 import { toast } from "sonner";
 
-/** Failure-only surface. Do not use for success. */
 export function toastError(message = "Something went wrong. Try again."): void {
 	toast.error(message, {
 		duration: 5000,
+	});
+}
+
+/** Closed-palette capture receipts. In-dialog success is a check on the row. */
+export function toastSuccess(message: string, description?: string): void {
+	toast.success(message, {
+		description,
+		duration: 4000,
 	});
 }
 

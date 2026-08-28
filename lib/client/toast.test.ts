@@ -1,17 +1,35 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const toastErrorMock = vi.fn();
+const toastSuccessMock = vi.fn();
 const rethrowMock = vi.fn();
 
 vi.mock("sonner", () => ({
-	toast: { error: (...args: unknown[]) => toastErrorMock(...args) },
+	toast: {
+		error: (...args: unknown[]) => toastErrorMock(...args),
+		success: (...args: unknown[]) => toastSuccessMock(...args),
+	},
 }));
 
 vi.mock("next/navigation", () => ({
 	unstable_rethrow: (error: unknown) => rethrowMock(error),
 }));
 
-const { runAction } = await import("./toast");
+const { runAction, toastSuccess } = await import("./toast");
+
+describe("toastSuccess", () => {
+	beforeEach(() => {
+		toastSuccessMock.mockClear();
+	});
+
+	it("passes the title and optional description to sonner", () => {
+		toastSuccess("Captured", "1 task added.");
+		expect(toastSuccessMock).toHaveBeenCalledWith("Captured", {
+			description: "1 task added.",
+			duration: 4000,
+		});
+	});
+});
 
 describe("runAction", () => {
 	beforeEach(() => {
