@@ -5,6 +5,7 @@ import { z } from "zod";
 import { isAiConfigured, parserModel } from "@/lib/ai/gateway";
 import {
 	dateResolution,
+	hedge,
 	logParseFailure,
 	type ParseContext,
 	parseCallOptions,
@@ -51,13 +52,16 @@ export async function parseTaskCapture(text: string, ctx: ParseContext): Promise
 	try {
 		if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
 
-		const { object } = await generateObject({
-			model: parserModel(),
-			schema: z.object({ task: CreateTaskActionSchema.nullable() }),
-			system: taskCaptureSystemPrompt(ctx),
-			prompt: text,
-			...parseCallOptions(),
-		});
+		const system = taskCaptureSystemPrompt(ctx);
+		const { object } = await hedge((signal) =>
+			generateObject({
+				model: parserModel(),
+				schema: z.object({ task: CreateTaskActionSchema.nullable() }),
+				system,
+				prompt: text,
+				...parseCallOptions(signal),
+			}),
+		);
 		if (!object.task) return { ok: false, reason: "empty", raw: text };
 		return { ok: true, task: object.task };
 	} catch (error) {

@@ -87,22 +87,61 @@ describe("parse", () => {
 		expect(call.abortSignal).toBeInstanceOf(AbortSignal);
 	});
 
-	// The signal covers the whole call — both attempts and the backoff between
+	// The budget covers the whole call — every attempt plus the backoff between
 	// them. At 8s it aborted the gateway's ordinary tail (~19s observed) and
-	// degraded parseable utterances to needs_review notes, so the floor is
-	// asserted rather than left to drift back down.
-	it("gives the model call a wall-time budget that covers the gateway tail", async () => {
+	// degraded parseable utterances to needs_review notes, so a slow-but-fine
+	// call is asserted to survive rather than left to drift back down.
+	it("lets a 20s model call finish instead of aborting it", async () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
 		vi.useFakeTimers();
 		try {
-			await parse("hmm", CTX);
-			const { abortSignal } = (generateObject as Mock).mock.calls[0][0];
-			vi.advanceTimersByTime(20_000);
-			expect(abortSignal.aborted).toBe(false);
+			(generateObject as Mock).mockImplementation(async (opts: { abortSignal: AbortSignal }) => {
+				await vi.advanceTimersByTimeAsync(20_000);
+				if (opts.abortSignal.aborted) throw new Error("aborted mid-call");
+				return { object: { actions: [] } };
+			});
+
+			// "empty" (not "failed") proves the call completed rather than aborting.
+			await expect(parse("hmm", CTX)).resolves.toEqual({
+				ok: false,
+				reason: "empty",
+				raw: "hmm",
+			});
 		} finally {
 			vi.useRealTimers();
 		}
+	});
+
+	// Latency here is queueing variance, not prompt size: the same utterance
+	// measured 1.7s and 21s across runs. Racing two attempts halves the median.
+	it("races more than one attempt and takes the first success", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		let call = 0;
+		(generateObject as Mock).mockImplementation(async () => {
+			call += 1;
+			// The first attempt fails; the race must still yield the second's answer.
+			if (call === 1) throw new Error("gateway hiccup");
+			return { object: { actions: [{ action: "create_task", title: "ligar" }] } };
+		});
+
+		const result = await parse("ligar", CTX);
+
+		expect((generateObject as Mock).mock.calls.length).toBeGreaterThan(1);
+		expect(result).toEqual({ ok: true, actions: [{ action: "create_task", title: "ligar" }] });
+	});
+
+	it("aborts the losing attempt once a winner returns", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		const signals: AbortSignal[] = [];
+		(generateObject as Mock).mockImplementation(async (opts: { abortSignal: AbortSignal }) => {
+			signals.push(opts.abortSignal);
+			return { object: { actions: [] } };
+		});
+
+		await parse("hmm", CTX);
+
+		expect(signals.length).toBeGreaterThan(1);
+		expect(signals.every((s) => s.aborted)).toBe(true);
 	});
 
 	it("omits the routing block when no domains/projects are given", async () => {
