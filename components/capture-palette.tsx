@@ -9,7 +9,9 @@ import { Icon } from "@/components/ui/icon";
 import {
 	type CaptureEffect,
 	type CaptureEvent,
+	type CaptureSlip,
 	captureMachine,
+	hasPendingSlips,
 	initialCaptureState,
 } from "@/lib/capture/machine";
 import { OPEN_CAPTURE_EVENT, openCapturePalette } from "@/lib/capture/palette-bus";
@@ -22,28 +24,34 @@ import type { CapturedRecord } from "@/lib/services/capture";
 import { DOCK_ACTION, DOCK_ACTION_SLOT_ID, DOCK_HEIGHT } from "@/lib/ui/dock";
 
 /**
- * Capture palette — shell chrome only. Status/text/submit sequence lives in
- * captureMachine; this component dispatches and drains effects.
+ * Capture palette — shell chrome only. Slip queue / text / submit lifecycle
+ * lives in captureMachine; this component dispatches and drains effects.
+ *
+ * The composer never blocks. Each submit becomes a slip that files on its own
+ * while the field clears for the next thought, so five things can be captured
+ * in a row without waiting on the parser (p50 ~4s) between them.
  *
  * Pass 4 brought the overlay onto Dialog / Button / Textarea. The compose
  * field is prose being written, so measure-prose applies (Pass 3). Pass 5
  * retired `.type-title`; compose and receipt use font-medium tracking-tight.
  *
- * Iron rule #4: capture path never throws into the UI; failures keep the draft
- * and toast. The verb vocabulary and palette bus are behaviour — do not change.
+ * Iron rule #4: capture path never throws into the UI; a failed slip keeps its
+ * text and offers a retry.
  */
 export function CapturePalette() {
 	const [state, setState] = useState(initialCaptureState);
 	const stateRef = useRef(state);
 	stateRef.current = state;
-	const [effectsBatch, setEffectsBatch] = useState<{ id: number; effects: CaptureEffect[] }>({
-		id: 0,
-		effects: [],
-	});
+	// Effects queue up in a ref and are drained on a tick, rather than living in
+	// state. Two dispatches inside one React batch would otherwise collapse into
+	// a single render, and the earlier batch's effects — a SUBMIT among them —
+	// would be dropped without ever running. Concurrent submits are the whole
+	// point now, so the queue accumulates and the drain empties it.
+	const effectQueue = useRef<CaptureEffect[]>([]);
+	const [effectTick, setEffectTick] = useState(0);
 	const [, startTransition] = useTransition();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
-	const receiptHeadingRef = useRef<HTMLParagraphElement>(null);
 
 	const [dockSlot, setDockSlot] = useState<HTMLElement | null>(null);
 	useEffect(() => {
@@ -55,19 +63,20 @@ export function CapturePalette() {
 		stateRef.current = next;
 		setState(next);
 		if (effects.length > 0) {
-			setEffectsBatch((batch) => ({ id: batch.id + 1, effects }));
+			effectQueue.current.push(...effects);
+			setEffectTick((tick) => tick + 1);
 		}
 	}, []);
 
 	const runSubmitEffect = useCallback(
-		(text: string, seq: number) => {
+		(text: string, id: number) => {
 			startTransition(async () => {
 				try {
 					const record: CapturedRecord = await captureText({ text, via: "text" });
-					dispatch({ type: "SUBMIT_OK", seq, receipt: deriveReceipt(record) });
+					dispatch({ type: "SUBMIT_OK", id, receipt: deriveReceipt(record) });
 				} catch {
 					const offline = !navigator.onLine;
-					dispatch({ type: "SUBMIT_ERR", seq, offline });
+					dispatch({ type: "SUBMIT_ERR", id, offline });
 					toastError(
 						offline
 							? "Offline — draft kept. Reconnect and retry."
@@ -80,23 +89,23 @@ export function CapturePalette() {
 	);
 
 	useEffect(() => {
-		for (const effect of effectsBatch.effects) {
+		if (effectTick === 0) return;
+		const queued = effectQueue.current;
+		effectQueue.current = [];
+		for (const effect of queued) {
 			switch (effect.type) {
 				case "SUBMIT":
-					runSubmitEffect(effect.text, effect.seq);
+					runSubmitEffect(effect.text, effect.id);
 					break;
 				case "FOCUS_TEXTAREA":
 					requestAnimationFrame(() => textareaRef.current?.focus());
-					break;
-				case "FOCUS_RECEIPT":
-					receiptHeadingRef.current?.focus();
 					break;
 				case "RESTORE_FOCUS":
 					// Dialog restores focus to the trigger on close.
 					break;
 			}
 		}
-	}, [effectsBatch, runSubmitEffect]);
+	}, [effectTick, runSubmitEffect]);
 
 	const onOpenCaptureEvent = useCallback(
 		(event: Event) => {
@@ -158,13 +167,7 @@ export function CapturePalette() {
 		dispatch({ type: "SUBMIT" });
 	}
 
-	function captureAnother() {
-		dispatch({ type: "CAPTURE_ANOTHER" });
-	}
-
-	const pending = state.status === "submitting";
-	const showReceipt =
-		state.receipt !== null && (state.status === "done" || state.status === "submitting");
+	const pending = hasPendingSlips(state);
 
 	return (
 		<>
@@ -183,92 +186,119 @@ export function CapturePalette() {
 				: null}
 
 			<Dialog open={state.open} onClose={closePalette} title="Capture" size="md">
-				{showReceipt && state.receipt ? (
-					<>
-						<DialogBody>
-							<div role="status" aria-live="polite">
-								<p
-									ref={receiptHeadingRef}
-									tabIndex={-1}
-									className={`text-lg font-medium tracking-tight ${
-										state.receipt.tone === "needs_review" ? "text-accent" : "text-ink"
-									}`}
-								>
-									{state.receipt.title}
-								</p>
-								<ul className="mt-1 space-y-0.5 text-sm text-ink-2">
-									{state.receipt.lines.map((line) => (
-										<li key={line}>{line}</li>
-									))}
-								</ul>
-							</div>
-						</DialogBody>
-						<DialogFooter>
-							<span className="min-w-2 flex-1" />
-							{state.status === "done" ? (
-								<>
-									<Button variant="tertiary" size="sm" onClick={closePalette}>
-										Done
-									</Button>
-									<Button variant="primary" size="sm" onClick={captureAnother}>
-										Capture another
-									</Button>
-								</>
-							) : (
-								<p className="font-mono text-meta uppercase tracking-widest text-ink-4">Working…</p>
-							)}
-						</DialogFooter>
-					</>
-				) : (
-					<>
-						<DialogBody>
-							{/* Compose is a sentence being written — prose measure (Pass 3). */}
-							<div className="measure-prose">
-								<Textarea
-									ref={textareaRef}
-									value={state.text}
-									disabled={pending}
-									onChange={(event) => dispatch({ type: "TEXT_CHANGED", text: event.target.value })}
-									onKeyDown={(event) => {
-										if (isSubmitShortcut(event)) {
-											event.preventDefault();
-											submit();
-										}
-									}}
-									rows={3}
-									placeholder="What's on your mind?"
-									aria-label="Capture text"
-									size="lg"
-									data-autofocus
-									className="text-lg font-medium tracking-tight"
+				<DialogBody>
+					{/* Compose is a sentence being written — prose measure (Pass 3). */}
+					<div className="measure-prose">
+						<Textarea
+							ref={textareaRef}
+							value={state.text}
+							onChange={(event) => dispatch({ type: "TEXT_CHANGED", text: event.target.value })}
+							onKeyDown={(event) => {
+								if (isSubmitShortcut(event)) {
+									event.preventDefault();
+									submit();
+								}
+							}}
+							rows={3}
+							placeholder="What's on your mind?"
+							aria-label="Capture text"
+							size="lg"
+							data-autofocus
+							className="text-lg font-medium tracking-tight"
+						/>
+					</div>
+
+					{state.slips.length > 0 ? (
+						<ul aria-label="Captures filing" className="mt-4 space-y-2">
+							{state.slips.map((slip) => (
+								<SlipRow
+									key={slip.id}
+									slip={slip}
+									onRetry={() => dispatch({ type: "RETRY", id: slip.id })}
+									onDismiss={() => dispatch({ type: "DISMISS", id: slip.id })}
 								/>
-							</div>
-							<div role="status" aria-live="polite">
-								{state.status === "error" ? (
-									<p className="mt-2 text-sm text-error">
-										{state.offlineError
-											? "Offline — draft kept."
-											: "Couldn't save — your text is kept. Check your connection and retry."}
-									</p>
-								) : null}
-							</div>
-						</DialogBody>
-						<DialogFooter>
-							<span className="min-w-2 flex-1" />
-							<Button
-								type="button"
-								variant="primary"
-								size="sm"
-								onClick={submit}
-								disabled={pending || isBlank(state.text)}
-								isPending={pending}
-							>
-								{state.status === "error" ? "Retry" : pending ? "Capturing…" : "Capture"}
-							</Button>
-						</DialogFooter>
-					</>
-				)}
+							))}
+						</ul>
+					) : null}
+				</DialogBody>
+				<DialogFooter>
+					<p
+						role="status"
+						aria-live="polite"
+						className="min-w-2 flex-1 font-mono text-meta uppercase tracking-widest text-ink-4"
+					>
+						{pending ? "Filing…" : ""}
+					</p>
+					<Button variant="tertiary" size="sm" onClick={closePalette}>
+						Done
+					</Button>
+					<Button
+						type="button"
+						variant="primary"
+						size="sm"
+						onClick={submit}
+						disabled={isBlank(state.text)}
+					>
+						Capture
+					</Button>
+				</DialogFooter>
 			</Dialog>
 		</>
+	);
+}
+
+/**
+ * One submitted capture. Shows the words it is carrying so a slow slip is
+ * still identifiable, then its receipt — or a retry when it failed.
+ */
+function SlipRow({
+	slip,
+	onRetry,
+	onDismiss,
+}: {
+	slip: CaptureSlip;
+	onRetry: () => void;
+	onDismiss: () => void;
+}) {
+	const tone =
+		slip.status === "error"
+			? "text-error"
+			: slip.receipt?.tone === "needs_review"
+				? "text-accent"
+				: "text-ink";
+
+	return (
+		<li className="flex items-start gap-3 border-line border-t pt-2">
+			<div className="min-w-0 flex-1">
+				<p className="truncate text-sm text-ink-2">{slip.text}</p>
+				<div role="status" aria-live="polite">
+					{slip.status === "error" ? (
+						<p className="text-sm text-error">
+							{slip.offline ? "Offline — kept." : "Couldn't save — kept."}
+						</p>
+					) : (
+						<p className={`text-sm ${tone}`}>
+							{slip.receipt?.title}
+							{slip.status === "done" && slip.receipt ? ` — ${slip.receipt.lines.join(" ")}` : "…"}
+						</p>
+					)}
+				</div>
+			</div>
+			{slip.status === "error" ? (
+				<Button variant="tertiary" size="sm" onClick={onRetry}>
+					Retry
+				</Button>
+			) : null}
+			{slip.status === "done" ? (
+				<Button
+					variant="tertiary"
+					size="sm"
+					onClick={onDismiss}
+					aria-label={`Dismiss receipt for ${slip.text}`}
+				>
+					Clear
+				</Button>
+			) : null}
+		</li>
 	);
 }

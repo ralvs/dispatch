@@ -3,220 +3,322 @@ import {
 	type CaptureEvent,
 	type CaptureState,
 	captureMachine,
+	hasPendingSlips,
 	initialCaptureState,
+	RECORDING_RECEIPT,
 } from "@/lib/capture/machine";
 import type { CaptureReceipt } from "@/lib/capture/receipt";
 
-const receipt: CaptureReceipt = { tone: "executed", title: "Captured", lines: ["1 task added."] };
+const RECEIPT: CaptureReceipt = { tone: "executed", title: "Captured", lines: ["1 task added."] };
+const REVIEW: CaptureReceipt = { tone: "needs_review", title: "Kept for review", lines: ["…"] };
+
+/** Fold a script of events, returning the final state and the last effects. */
+function run(events: CaptureEvent[], from: CaptureState = initialCaptureState) {
+	let state = from;
+	let effects: ReturnType<typeof captureMachine>["effects"] = [];
+	for (const event of events) {
+		const result = captureMachine(state, event);
+		state = result.state;
+		effects = result.effects;
+	}
+	return { state, effects };
+}
+
+const type = (text: string): CaptureEvent => ({ type: "TEXT_CHANGED", text });
 
 describe("captureMachine", () => {
-	describe("stale-guard race: close/reopen invalidates an in-flight submit", () => {
-		it("ignores a stale SUBMIT_OK after close+reopen, keeping the new draft", () => {
-			// Open, type, submit — capture the in-flight seq.
-			let t = captureMachine(initialCaptureState, { type: "OPEN" });
-			t = captureMachine(t.state, { type: "TEXT_CHANGED", text: "first draft" });
-			t = captureMachine(t.state, { type: "SUBMIT" });
-			const staleSeq = t.state.seq;
-			expect(t.state.status).toBe("submitting");
-			expect(t.state.receipt?.title).toBe("Recorded");
-			expect(t.effects).toEqual([{ type: "SUBMIT", text: "first draft", seq: staleSeq }]);
+	describe("concurrent slips — capture several in a row", () => {
+		it("clears the composer on submit and keeps the palette open", () => {
+			const { state, effects } = run([{ type: "OPEN" }, type("buy milk"), { type: "SUBMIT" }]);
 
-			// Close (invalidates the in-flight submit) and reopen with a new draft.
-			t = captureMachine(t.state, { type: "CLOSE" });
-			expect(t.effects).toEqual([{ type: "RESTORE_FOCUS" }]);
-			t = captureMachine(t.state, { type: "OPEN" });
-			t = captureMachine(t.state, { type: "TEXT_CHANGED", text: "second draft" });
-
-			// The stale completion arrives late — it must be a complete no-op.
-			const beforeStale = t.state;
-			t = captureMachine(t.state, { type: "SUBMIT_OK", seq: staleSeq, receipt });
-			expect(t.state).toEqual(beforeStale);
-			expect(t.effects).toEqual([]);
-			expect(t.state.text).toBe("second draft");
+			expect(state.open).toBe(true);
+			expect(state.text).toBe("");
+			expect(state.slips).toHaveLength(1);
+			expect(state.slips[0]).toMatchObject({ id: 1, text: "buy milk", status: "submitting" });
+			expect(effects).toEqual([
+				{ type: "SUBMIT", text: "buy milk", id: 1 },
+				{ type: "FOCUS_TEXTAREA" },
+			]);
 		});
 
-		it("ignores a stale SUBMIT_ERR the same way", () => {
-			let t = captureMachine(initialCaptureState, { type: "OPEN" });
-			t = captureMachine(t.state, { type: "TEXT_CHANGED", text: "draft" });
-			t = captureMachine(t.state, { type: "SUBMIT" });
-			const staleSeq = t.state.seq;
-			t = captureMachine(t.state, { type: "CLOSE" });
+		it("accepts a second submit while the first is still in flight", () => {
+			const { state } = run([
+				{ type: "OPEN" },
+				type("one"),
+				{ type: "SUBMIT" },
+				type("two"),
+				{ type: "SUBMIT" },
+				type("three"),
+				{ type: "SUBMIT" },
+			]);
 
-			const beforeStale = t.state;
-			t = captureMachine(t.state, { type: "SUBMIT_ERR", seq: staleSeq, offline: true });
-			expect(t.state).toEqual(beforeStale);
-			expect(t.effects).toEqual([]);
+			expect(state.slips.map((s) => [s.id, s.text, s.status])).toEqual([
+				[1, "one", "submitting"],
+				[2, "two", "submitting"],
+				[3, "three", "submitting"],
+			]);
+			expect(hasPendingSlips(state)).toBe(true);
 		});
 
-		it("applies a fresh SUBMIT_OK: receipt set, status done, text cleared", () => {
-			let t = captureMachine(initialCaptureState, { type: "OPEN" });
-			t = captureMachine(t.state, { type: "TEXT_CHANGED", text: "draft" });
-			t = captureMachine(t.state, { type: "SUBMIT" });
-			const seq = t.state.seq;
+		it("settles each slip independently, out of order", () => {
+			const { state } = run([
+				{ type: "OPEN" },
+				type("one"),
+				{ type: "SUBMIT" },
+				type("two"),
+				{ type: "SUBMIT" },
+				// The second capture comes back first.
+				{ type: "SUBMIT_OK", id: 2, receipt: REVIEW },
+				{ type: "SUBMIT_OK", id: 1, receipt: RECEIPT },
+			]);
 
-			t = captureMachine(t.state, { type: "SUBMIT_OK", seq, receipt });
-			expect(t.state.status).toBe("done");
-			expect(t.state.receipt).toBe(receipt);
-			expect(t.state.text).toBe("");
-			expect(t.effects).toEqual([{ type: "FOCUS_RECEIPT" }]);
-		});
-	});
-
-	describe("offline retry race", () => {
-		it("SUBMIT_ERR with offline:true sets error+offlineError, keeping text", () => {
-			let t = captureMachine(initialCaptureState, { type: "OPEN" });
-			t = captureMachine(t.state, { type: "TEXT_CHANGED", text: "draft" });
-			t = captureMachine(t.state, { type: "SUBMIT" });
-			const seq = t.state.seq;
-
-			t = captureMachine(t.state, { type: "SUBMIT_ERR", seq, offline: true });
-			expect(t.state.status).toBe("error");
-			expect(t.state.offlineError).toBe(true);
-			expect(t.state.receipt).toBeNull();
-			expect(t.state.text).toBe("draft");
-			expect(t.effects).toEqual([]);
+			expect(state.slips.map((s) => [s.id, s.status, s.receipt?.title])).toEqual([
+				[1, "done", "Captured"],
+				[2, "done", "Kept for review"],
+			]);
+			expect(hasPendingSlips(state)).toBe(false);
 		});
 
-		it("ONLINE while status error && offlineError retries with a bumped seq", () => {
-			let t = captureMachine(initialCaptureState, { type: "OPEN" });
-			t = captureMachine(t.state, { type: "TEXT_CHANGED", text: "draft" });
-			t = captureMachine(t.state, { type: "SUBMIT" });
-			const seq = t.state.seq;
-			t = captureMachine(t.state, { type: "SUBMIT_ERR", seq, offline: true });
-
-			t = captureMachine(t.state, { type: "ONLINE" });
-			expect(t.state.status).toBe("submitting");
-			expect(t.state.seq).toBe(seq + 1);
-			expect(t.effects).toEqual([{ type: "SUBMIT", text: "draft", seq: seq + 1 }]);
+		it("shows the provisional receipt until a slip settles", () => {
+			const { state } = run([{ type: "OPEN" }, type("hmm"), { type: "SUBMIT" }]);
+			expect(state.slips[0].receipt).toEqual(RECORDING_RECEIPT);
 		});
 
-		it("ONLINE when idle (or error without offlineError) no-ops", () => {
-			const idleResult = captureMachine(initialCaptureState, { type: "ONLINE" });
-			expect(idleResult.state).toEqual(initialCaptureState);
-			expect(idleResult.effects).toEqual([]);
-
-			let t = captureMachine(initialCaptureState, { type: "OPEN" });
-			t = captureMachine(t.state, { type: "TEXT_CHANGED", text: "draft" });
-			t = captureMachine(t.state, { type: "SUBMIT" });
-			const seq = t.state.seq;
-			t = captureMachine(t.state, { type: "SUBMIT_ERR", seq, offline: false });
-
-			const before = t.state;
-			t = captureMachine(t.state, { type: "ONLINE" });
-			expect(t.state).toEqual(before);
-			expect(t.effects).toEqual([]);
+		it("a reply for an unknown slip changes nothing", () => {
+			const before = run([{ type: "OPEN" }, type("one"), { type: "SUBMIT" }]).state;
+			const after = captureMachine(before, { type: "SUBMIT_OK", id: 99, receipt: RECEIPT }).state;
+			expect(after.slips).toEqual(before.slips);
 		});
 	});
 
-	describe("text-preservation invariant", () => {
+	describe("closing mid-flight never loses or duplicates a capture", () => {
+		// The regression this whole redesign exists for. The old machine bumped a
+		// global seq on CLOSE, which discarded the reply AND left the submitted
+		// text sitting in the composer — so reopening showed words that had in
+		// fact already been captured, and submitting them again duplicated them.
+		it("does not leave the submitted text in the composer", () => {
+			const { state } = run([
+				{ type: "OPEN" },
+				type("buy milk"),
+				{ type: "SUBMIT" },
+				{ type: "CLOSE" },
+				{ type: "OPEN" },
+			]);
+
+			expect(state.text).toBe("");
+		});
+
+		it("still applies a reply that lands after the palette was closed", () => {
+			const { state } = run([
+				{ type: "OPEN" },
+				type("buy milk"),
+				{ type: "SUBMIT" },
+				{ type: "CLOSE" },
+				{ type: "SUBMIT_OK", id: 1, receipt: RECEIPT },
+			]);
+
+			expect(state.slips[0]).toMatchObject({ status: "done", receipt: RECEIPT });
+		});
+
+		it("keeps an in-flight slip visible on reopen, and drops seen ones", () => {
+			const { state } = run([
+				{ type: "OPEN" },
+				type("settled"),
+				{ type: "SUBMIT" },
+				type("still going"),
+				{ type: "SUBMIT" },
+				{ type: "SUBMIT_OK", id: 1, receipt: RECEIPT },
+				{ type: "CLOSE" },
+				{ type: "OPEN" },
+			]);
+
+			expect(state.slips.map((s) => s.text)).toEqual(["still going"]);
+		});
+
+		it("keeps a failed slip across a close, so its words survive", () => {
+			const { state } = run([
+				{ type: "OPEN" },
+				type("buy milk"),
+				{ type: "SUBMIT" },
+				{ type: "SUBMIT_ERR", id: 1, offline: false },
+				{ type: "CLOSE" },
+				{ type: "OPEN" },
+			]);
+
+			expect(state.slips[0]).toMatchObject({ text: "buy milk", status: "error" });
+		});
+
+		it("CLOSE emits RESTORE_FOCUS", () => {
+			const { effects } = run([{ type: "OPEN" }, { type: "CLOSE" }]);
+			expect(effects).toEqual([{ type: "RESTORE_FOCUS" }]);
+		});
+	});
+
+	describe("failure and retry", () => {
+		it("SUBMIT_ERR marks only its own slip and drops its provisional receipt", () => {
+			const { state } = run([
+				{ type: "OPEN" },
+				type("one"),
+				{ type: "SUBMIT" },
+				type("two"),
+				{ type: "SUBMIT" },
+				{ type: "SUBMIT_ERR", id: 1, offline: true },
+			]);
+
+			expect(state.slips[0]).toMatchObject({ status: "error", offline: true, receipt: null });
+			expect(state.slips[1]).toMatchObject({ status: "submitting" });
+		});
+
+		it("RETRY resubmits the failed slip's text under a new id", () => {
+			const { state, effects } = run([
+				{ type: "OPEN" },
+				type("buy milk"),
+				{ type: "SUBMIT" },
+				{ type: "SUBMIT_ERR", id: 1, offline: false },
+				{ type: "RETRY", id: 1 },
+			]);
+
+			expect(state.slips).toHaveLength(1);
+			expect(state.slips[0]).toMatchObject({ id: 2, text: "buy milk", status: "submitting" });
+			expect(effects).toEqual([{ type: "SUBMIT", text: "buy milk", id: 2 }]);
+		});
+
+		it("RETRY on a slip that is not failed is a no-op", () => {
+			const before = run([{ type: "OPEN" }, type("one"), { type: "SUBMIT" }]).state;
+			const { state, effects } = run([{ type: "RETRY", id: 1 }], before);
+			expect(state).toEqual(before);
+			expect(effects).toEqual([]);
+		});
+
+		it("ONLINE retries every offline failure and leaves other failures alone", () => {
+			const { state, effects } = run([
+				{ type: "OPEN" },
+				type("offline one"),
+				{ type: "SUBMIT" },
+				type("server error"),
+				{ type: "SUBMIT" },
+				type("offline two"),
+				{ type: "SUBMIT" },
+				{ type: "SUBMIT_ERR", id: 1, offline: true },
+				{ type: "SUBMIT_ERR", id: 2, offline: false },
+				{ type: "SUBMIT_ERR", id: 3, offline: true },
+				{ type: "ONLINE" },
+			]);
+
+			expect(state.slips.map((s) => [s.text, s.status])).toEqual([
+				["server error", "error"],
+				["offline one", "submitting"],
+				["offline two", "submitting"],
+			]);
+			expect(effects).toEqual([
+				{ type: "SUBMIT", text: "offline one", id: 4 },
+				{ type: "SUBMIT", text: "offline two", id: 5 },
+			]);
+		});
+
+		it("ONLINE with nothing stranded is a no-op", () => {
+			const before = run([{ type: "OPEN" }, type("one"), { type: "SUBMIT" }]).state;
+			const { state, effects } = run([{ type: "ONLINE" }], before);
+			expect(state).toEqual(before);
+			expect(effects).toEqual([]);
+		});
+	});
+
+	describe("never-lose invariant", () => {
+		// Every event, applied to a state holding one in-flight and one failed
+		// slip: the words behind both must still be reachable afterwards.
+		const seeded = run([
+			{ type: "OPEN" },
+			type("failed words"),
+			{ type: "SUBMIT" },
+			{ type: "SUBMIT_ERR", id: 1, offline: false },
+			type("pending words"),
+			{ type: "SUBMIT" },
+		]).state;
+
 		const events: CaptureEvent[] = [
 			{ type: "OPEN" },
-			{ type: "OPEN", prefill: "Task: " },
+			{ type: "OPEN", prefill: "a chip" },
 			{ type: "CLOSE" },
+			{ type: "TEXT_CHANGED", text: "typing" },
 			{ type: "SUBMIT" },
-			{ type: "SUBMIT_ERR", seq: 999, offline: true },
+			{ type: "SUBMIT_OK", id: 2, receipt: RECEIPT },
+			{ type: "SUBMIT_ERR", id: 2, offline: true },
 			{ type: "ONLINE" },
-			{ type: "CAPTURE_ANOTHER" },
+			{ type: "RETRY", id: 1 },
+			{ type: "DISMISS", id: 1 },
+			{ type: "DISMISS", id: 2 },
 		];
 
-		it("never clears text except on a fresh SUBMIT_OK", () => {
-			// TEXT_CHANGED legitimately changes the draft's content, but no
-			// event may ever blank it out except a fresh SUBMIT_OK.
-			let state: CaptureState = { ...initialCaptureState, text: "precious draft" };
-			for (const event of events) {
-				state = captureMachine(state, event).state;
-				if (event.type === "SUBMIT_OK") {
-					expect(state.text).toBe("");
-				} else {
-					expect(state.text).not.toBe("");
-				}
-			}
+		for (const event of events) {
+			it(`${event.type} keeps unsettled words reachable`, () => {
+				const { state } = run([event], seeded);
+				const carried = [state.text, ...state.slips.map((s) => s.text)];
+				expect(carried).toContain("failed words");
+				expect(carried).toContain("pending words");
+			});
+		}
+
+		it("DISMISS removes a settled slip and nothing else", () => {
+			const { state } = run([
+				{ type: "OPEN" },
+				type("one"),
+				{ type: "SUBMIT" },
+				{ type: "SUBMIT_OK", id: 1, receipt: RECEIPT },
+				{ type: "DISMISS", id: 1 },
+			]);
+			expect(state.slips).toEqual([]);
 		});
 
-		it("a fresh SUBMIT_OK is the only event that clears text", () => {
-			let t = captureMachine(
-				{ ...initialCaptureState, text: "precious draft", open: true, status: "editing" },
-				{ type: "SUBMIT" },
-			);
-			const seq = t.state.seq;
-			expect(t.state.text).toBe("precious draft");
-			t = captureMachine(t.state, { type: "SUBMIT_OK", seq, receipt });
-			expect(t.state.text).toBe("");
+		it("DISMISS refuses to drop an in-flight slip", () => {
+			const before = run([{ type: "OPEN" }, type("one"), { type: "SUBMIT" }]).state;
+			const { state } = run([{ type: "DISMISS", id: 1 }], before);
+			expect(state.slips).toHaveLength(1);
 		});
 	});
 
 	describe("OPEN prefill (Today's capture chips)", () => {
-		it("seeds an empty palette with the chip's kind hint", () => {
-			const t = captureMachine(initialCaptureState, {
-				type: "OPEN",
-				prefill: "Task: ",
-			});
-			expect(t.state.text).toBe("Task: ");
-			expect(t.state.status).toBe("editing");
+		it("seeds an empty composer with the chip's hint", () => {
+			const { state } = run([{ type: "OPEN", prefill: "Journal: " }]);
+			expect(state.text).toBe("Journal: ");
 		});
 
 		it("never overwrites an unsubmitted draft", () => {
-			const t = captureMachine(
-				{ ...initialCaptureState, text: "half a thought" },
-				{ type: "OPEN", prefill: "Task: " },
-			);
-			expect(t.state.text).toBe("half a thought");
+			const { state } = run([
+				{ type: "OPEN" },
+				type("half a thought"),
+				{ type: "CLOSE" },
+				{ type: "OPEN", prefill: "Journal: " },
+			]);
+			expect(state.text).toBe("half a thought");
 		});
 
 		it("treats a whitespace-only draft as empty", () => {
-			const t = captureMachine(
-				{ ...initialCaptureState, text: "   \n " },
-				{ type: "OPEN", prefill: "Note: " },
-			);
-			expect(t.state.text).toBe("Note: ");
+			const { state } = run([{ type: "OPEN" }, type("   "), { type: "OPEN", prefill: "Quote: " }]);
+			expect(state.text).toBe("Quote: ");
 		});
 
 		it("leaves text alone when no prefill is sent", () => {
-			const t = captureMachine(initialCaptureState, { type: "OPEN" });
-			expect(t.state.text).toBe("");
+			const { state } = run([{ type: "OPEN" }, type("draft"), { type: "OPEN" }]);
+			expect(state.text).toBe("draft");
 		});
 	});
 
 	describe("misc transitions", () => {
 		it("SUBMIT on a blank draft is a no-op", () => {
-			const t = captureMachine(initialCaptureState, { type: "SUBMIT" });
-			expect(t.state).toEqual(initialCaptureState);
-			expect(t.effects).toEqual([]);
+			const { state, effects } = run([{ type: "OPEN" }, type("   "), { type: "SUBMIT" }]);
+			expect(state.slips).toEqual([]);
+			expect(effects).toEqual([]);
 		});
 
-		it("SUBMIT while already submitting is a no-op", () => {
-			const submitting: CaptureState = {
-				...initialCaptureState,
-				open: true,
-				text: "draft",
-				status: "submitting",
-				seq: 3,
-			};
-			const t = captureMachine(submitting, { type: "SUBMIT" });
-			expect(t.state).toEqual(submitting);
-			expect(t.effects).toEqual([]);
-		});
-
-		it("CAPTURE_ANOTHER resets to editing, clears receipt, focuses textarea", () => {
-			const done: CaptureState = {
-				...initialCaptureState,
-				open: true,
-				status: "done",
-				receipt,
-			};
-			const t = captureMachine(done, { type: "CAPTURE_ANOTHER" });
-			expect(t.state.status).toBe("editing");
-			expect(t.state.receipt).toBeNull();
-			expect(t.effects).toEqual([{ type: "FOCUS_TEXTAREA" }]);
-		});
-
-		it("CLOSE bumps seq and emits RESTORE_FOCUS", () => {
-			const open: CaptureState = { ...initialCaptureState, open: true, status: "editing", seq: 2 };
-			const t = captureMachine(open, { type: "CLOSE" });
-			expect(t.state.open).toBe(false);
-			expect(t.state.status).toBe("idle");
-			expect(t.state.seq).toBe(3);
-			expect(t.effects).toEqual([{ type: "RESTORE_FOCUS" }]);
+		it("hasPendingSlips is false once everything settles", () => {
+			const { state } = run([
+				{ type: "OPEN" },
+				type("one"),
+				{ type: "SUBMIT" },
+				{ type: "SUBMIT_ERR", id: 1, offline: false },
+			]);
+			expect(hasPendingSlips(state)).toBe(false);
 		});
 	});
 });
