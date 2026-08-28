@@ -1,5 +1,6 @@
 // Generates the PWA icon set referenced by app/manifest.ts and the
-// apple-touch-icon + favicon in app/layout.tsx. Run once via
+// apple-touch-icon + favicon in app/layout.tsx, plus app/icon.png (App Router
+// metadata file + the well-known path T3 Code auto-detects). Run once via
 // `bun run scripts/generate-icons.ts` and commit the resulting PNGs — this
 // script is dev-tooling, not part of the runtime build.
 //
@@ -7,7 +8,7 @@
 // squircle with a dispatched chevron cut into it. The geometry below is that
 // component's, expressed in SVG so it can be rasterized — keep the two in step.
 
-import { mkdir } from "node:fs/promises";
+import { copyFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
@@ -15,7 +16,11 @@ import sharp from "sharp";
 // tint for dark surfaces; a home-screen icon sits on an unknown wallpaper, so
 // it carries the base orange.
 const ACCENT = "#f15a0f";
-const OUT_DIR = path.join(import.meta.dirname, "..", "public", "icons");
+const ROOT = path.join(import.meta.dirname, "..");
+const OUT_DIR = path.join(ROOT, "public", "icons");
+// Next.js App Router + T3 Code auto-detect this path. Keep it a copy of the
+// 192 "any" mark — not a third drawing.
+const APP_ICON = path.join(ROOT, "app", "icon.png");
 
 /**
  * The mark on a full accent field.
@@ -58,6 +63,8 @@ async function main() {
 	await mkdir(OUT_DIR, { recursive: true });
 	// Standard "any" icons — drawn as the mark is drawn, corners and all.
 	await render("icon-192.png", 192, 0.3, 1);
+	await copyFile(path.join(OUT_DIR, "icon-192.png"), APP_ICON);
+	console.log("wrote app/icon.png");
 	await render("icon-512.png", 512, 0.3, 1);
 	// Maskable — square field (the platform cuts the shape) with the glyph
 	// pulled into the ~80% safe zone.
