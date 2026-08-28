@@ -5,6 +5,7 @@ import { z } from "zod";
 import { isAiConfigured, parserModel } from "@/lib/ai/gateway";
 import {
 	dateResolution,
+	logParseFailure,
 	type ParseContext,
 	parseCallOptions,
 	recurrenceRules,
@@ -59,7 +60,8 @@ export async function parseTaskCapture(text: string, ctx: ParseContext): Promise
 		});
 		if (!object.task) return { ok: false, reason: "empty", raw: text };
 		return { ok: true, task: object.task };
-	} catch {
+	} catch (error) {
+		logParseFailure("quick-add", error);
 		return { ok: false, reason: "failed", raw: text };
 	}
 }

@@ -87,9 +87,28 @@ export function routingBlock(ctx: ParseContext): string[] {
 
 // Shared generateObject budget. Default retries (2) can triple a schema miss;
 // a runaway object should not sit until the function times out.
+//
+// The abort signal is the budget for the WHOLE call — every attempt plus the
+// backoff delay between them — not per attempt. Measured against the gateway,
+// one parse of a short utterance runs ~1.5s at best but 6s at the median and
+// 19s at the tail, so the old 8s cap failed roughly 4 calls in 10 and turned a
+// perfectly parseable "check X tomorrow" into a needs_review note. 30s holds
+// the tail plus one retry, and the palette never blocks on it: the UI shows a
+// provisional receipt immediately and settles when the pipeline returns.
 const PARSE_MAX_RETRIES = 1;
 const PARSE_MAX_OUTPUT_TOKENS = 400;
-const PARSE_TIMEOUT_MS = 8_000;
+const PARSE_TIMEOUT_MS = 30_000;
+
+/**
+ * Why a parse degraded. The catch below is the ONLY place the cause exists —
+ * the caller sees a typed "failed" and nothing more — so without this line a
+ * needs_review note is undiagnosable after the fact. Logs the shape of the
+ * error, never the user's text.
+ */
+export function logParseFailure(where: string, error: unknown): void {
+	const e = error as { name?: string; message?: string };
+	console.warn("parse failed", { where, name: e?.name, message: e?.message });
+}
 
 export function parseCallOptions() {
 	return {
@@ -155,9 +174,10 @@ export async function parse(text: string, ctx: ParseContext): Promise<ParseResul
 		});
 		if (object.actions.length === 0) return { ok: false, reason: "empty", raw: text };
 		return { ok: true, actions: object.actions };
-	} catch {
+	} catch (error) {
 		// Model error OR output that failed CaptureActionsSchema (unknown verb,
 		// malformed action). Degrade — the raw text is never lost.
+		logParseFailure("parse", error);
 		return { ok: false, reason: "failed", raw: text };
 	}
 }

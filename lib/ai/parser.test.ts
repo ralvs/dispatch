@@ -87,6 +87,24 @@ describe("parse", () => {
 		expect(call.abortSignal).toBeInstanceOf(AbortSignal);
 	});
 
+	// The signal covers the whole call — both attempts and the backoff between
+	// them. At 8s it aborted the gateway's ordinary tail (~19s observed) and
+	// degraded parseable utterances to needs_review notes, so the floor is
+	// asserted rather than left to drift back down.
+	it("gives the model call a wall-time budget that covers the gateway tail", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+		vi.useFakeTimers();
+		try {
+			await parse("hmm", CTX);
+			const { abortSignal } = (generateObject as Mock).mock.calls[0][0];
+			vi.advanceTimersByTime(20_000);
+			expect(abortSignal.aborted).toBe(false);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it("omits the routing block when no domains/projects are given", async () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
 		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
