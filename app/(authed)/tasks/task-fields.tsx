@@ -1,9 +1,10 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
 import { type ReactNode, useId, useState } from "react";
 import { MentionTextarea, MentionTextInput } from "@/components/mention-input";
 import { DatePicker, Field, fieldControl, Icon, Select, TimePicker } from "@/components/ui";
+import { PRIORITY_MARK, priorityRing } from "@/components/ui/checkbox";
 import { shiftDay } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
@@ -16,9 +17,6 @@ export type TaskDomainOption = {
 
 /** Label always stacks above its control (block, not inline beside). */
 const FIELD_LABEL = "field-caption mb-2 block text-xs";
-
-/** Domain / Repeats / Priority — one column on a phone, three from sm up. */
-const META_GRID = "grid grid-cols-1 gap-x-12 gap-y-8 sm:grid-cols-3";
 
 /**
  * Date and time answer one question, so they share a row even on a phone.
@@ -76,18 +74,6 @@ export const PRIORITIES = [
 	{ value: 4, label: "Low", title: "Low" },
 ] as const;
 
-/**
- * Only the chosen priority carries colour — an unselected scale in three
- * colours shouts before an answer exists — and selection is marked by a rule
- * in that colour rather than a filled cell, which reads as disabled at Low.
- * Full class strings so Tailwind can see the peer-checked variants.
- */
-const PRIORITY_CELL: Record<number, string> = {
-	1: "peer-checked:text-error",
-	2: "peer-checked:text-warning",
-	4: "peer-checked:text-ink-2",
-};
-
 function isPrioritySelected(value: number, current: number) {
 	if (value === 1) return current === 1;
 	if (value === 2) return current === 2;
@@ -101,8 +87,9 @@ function isPrioritySelected(value: number, current: number) {
  * and let one encoding serve both Today and Tasks. That left the badge with no
  * call sites, so it is gone rather than kept warm.
  *
- * The three tones are not lost: `PriorityPicker` below still colours the chosen
- * cell, which is the one place a priority is stated rather than read.
+ * The three intensities are not lost: `PriorityPicker` draws the same mark
+ * the list checkbox uses, which is the one place a priority is stated rather
+ * than read.
  */
 
 export type TaskFieldDefaults = {
@@ -234,25 +221,29 @@ export function TaskMetaFields({
 				</div>
 			</div>
 
-			<div className={META_GRID}>
-				<Field label="Domain" className="min-w-0">
-					{/* No color dot on <option> — styling native option elements is
-					    unreliable cross-browser, so this stays a plain name list. */}
-					<Select name="domain_id" defaultValue={defaults.domain_id ?? ""} className="w-full">
-						{/* "Unfiled" is offered only when it is already the answer — on the
-						    create form (undefined) or for a task sitting in the inbox (null).
-						    A filed task never sees it, which is what keeps filing one-way
-						    (docs/adr/0027). It also has to be listed in the inbox case, or
-						    the <select> would drop its own value and silently reassign the
-						    task to whichever domain sorts first. */}
-						{defaults.domain_id == null && <option value="">Unfiled</option>}
-						{domains.map((d) => (
-							<option key={d.id} value={d.id}>
-								{d.name}
-							</option>
-						))}
-					</Select>
-				</Field>
+			<div className="space-y-10">
+				<div className="flex items-start gap-4">
+					<Field label="Domain" className="min-w-0 flex-1">
+						{/* No color dot on <option> — styling native option elements is
+						    unreliable cross-browser, so this stays a plain name list. */}
+						<Select name="domain_id" defaultValue={defaults.domain_id ?? ""} className="w-full">
+							{/* "Unfiled" is offered only when it is already the answer — on the
+							    create form (undefined) or for a task sitting in the inbox (null).
+							    A filed task never sees it, which is what keeps filing one-way
+							    (docs/adr/0027). It also has to be listed in the inbox case, or
+							    the <select> would drop its own value and silently reassign the
+							    task to whichever domain sorts first. */}
+							{defaults.domain_id == null && <option value="">Unfiled</option>}
+							{domains.map((d) => (
+								<option key={d.id} value={d.id}>
+									{d.name}
+								</option>
+							))}
+						</Select>
+					</Field>
+
+					<PriorityPicker defaultValue={defaults.priority ?? 4} />
+				</div>
 
 				<Field label="Repeats" className="min-w-0">
 					<Select
@@ -269,8 +260,6 @@ export function TaskMetaFields({
 						))}
 					</Select>
 				</Field>
-
-				<PriorityPicker defaultValue={defaults.priority ?? 4} />
 			</div>
 		</div>
 	);
@@ -353,28 +342,24 @@ function TaskNotesField({
 }
 
 /**
- * Segmented priority control — radio group, colour reserved for the answer.
- * The segment fills its column rather than sizing to its three labels, so it
- * shares the grid's rhythm with the two selects beside it instead of leaving
- * a gap at the end of the row.
+ * Priority as the same marks the list checkbox uses — a 19px squircle with
+ * the high / medium / low ring. Sits on the Domain row; Repeats is the
+ * field under both, on phone and desktop.
  */
 export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) {
 	const lowValue = defaultValue === 1 || defaultValue === 2 ? 4 : defaultValue;
 	return (
-		<div className="field-unit min-w-0">
+		<div className="field-unit shrink-0">
 			<span className={FIELD_LABEL}>Priority</span>
-			<div
-				className="flex h-9 w-full overflow-hidden rounded-control border border-line"
-				role="radiogroup"
-				aria-label="Priority"
-			>
-				{PRIORITIES.map((p, i) => {
+			<div className="flex items-start gap-2.5" role="radiogroup" aria-label="Priority">
+				{PRIORITIES.map((p) => {
 					const value = p.value === 4 ? lowValue : p.value;
+					const ring = priorityRing(p.value);
 					return (
 						<label
 							key={p.label}
 							title={p.title}
-							className={`relative flex-1 cursor-pointer ${i > 0 ? "border-l border-line" : ""}`}
+							className="group flex cursor-pointer flex-col items-center gap-1"
 						>
 							<input
 								type="radio"
@@ -383,9 +368,15 @@ export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) 
 								defaultChecked={isPrioritySelected(p.value, defaultValue)}
 								className="peer sr-only"
 							/>
-							<span
-								className={`flex h-full items-center justify-center px-1.5 font-mono text-meta text-ink-3 transition-colors hover:text-ink peer-checked:shadow-[inset_0_-2px_0_currentColor] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-[-2px] peer-focus-visible:outline-accent ${PRIORITY_CELL[p.value]}`}
-							>
+							<span className="flex h-9 items-center opacity-40 transition-opacity group-hover:opacity-70 peer-checked:opacity-100 peer-focus-visible:[&>span]:outline-2 peer-focus-visible:[&>span]:outline-offset-2 peer-focus-visible:[&>span]:outline-accent [&_svg]:opacity-0 peer-checked:[&_svg]:opacity-100">
+								<span
+									aria-hidden
+									className={`inline-flex h-[19px] w-[19px] items-center justify-center rounded-mark border-[1.5px] bg-surface text-ink ${PRIORITY_MARK[ring]}`}
+								>
+									<Icon icon={Check} size="sm" className="h-3.5 w-3.5" strokeWidth={2.25} />
+								</span>
+							</span>
+							<span className="font-mono text-meta text-ink-4 transition-colors peer-checked:text-ink">
 								{p.label}
 							</span>
 						</label>
