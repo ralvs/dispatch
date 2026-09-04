@@ -6,6 +6,20 @@ import { TODAY_VARIANT } from "@/lib/ui/variant";
 import { Icon } from "./icon";
 import { tv } from "./tv";
 
+/**
+ * The ring + halo that encode high / medium / low — one hue at three
+ * intensities. Shared with the task-form picker so a selected priority
+ * and a list checkbox cannot drift.
+ *
+ * High is solid with a halo, medium the same red at 42% and a quieter
+ * halo, low the plain grey rule.
+ */
+export const PRIORITY_MARK = {
+	high: "border-priority-high shadow-[0_0_0_3.5px_var(--priority-high-halo)]",
+	medium: "border-priority-med shadow-[0_0_0_3.5px_var(--priority-med-halo)]",
+	low: "border-line-strong",
+} as const;
+
 export const checkbox = tv({
 	slots: {
 		root: "inline-flex cursor-pointer items-center gap-2",
@@ -32,16 +46,15 @@ export const checkbox = tv({
 		 *
 		 * One hue at three intensities, never three hues: the seven domain
 		 * colours already sit on the same row as filled dots, so a third hue
-		 * would collide with Travel's brass. High is solid with a halo, medium
-		 * the same red at 42% and no halo, low the plain grey rule.
+		 * would collide with Travel's brass.
 		 *
 		 * Suppressed entirely under the `rail` variant, where a left rail
 		 * carries priority instead (lib/ui/variant.ts).
 		 */
 		priority: {
-			high: { box: "border-priority-high shadow-[0_0_0_3.5px_var(--priority-high-halo)]" },
-			medium: { box: "border-priority-med" },
-			low: { box: "border-line-strong" },
+			high: { box: PRIORITY_MARK.high },
+			medium: { box: PRIORITY_MARK.medium },
+			low: { box: PRIORITY_MARK.low },
 			none: {},
 		},
 	},

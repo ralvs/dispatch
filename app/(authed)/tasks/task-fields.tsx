@@ -17,14 +17,30 @@ export type TaskDomainOption = {
 /** Label always stacks above its control (block, not inline beside). */
 const FIELD_LABEL = "field-caption mb-2 block text-xs";
 
-/** One column rhythm for both meta rows so date/time/chips sit on Domain/Repeats/Priority. */
-const META_GRID = "grid grid-cols-1 gap-x-12 gap-y-8 sm:grid-cols-3";
+/**
+ * Date and time answer one question, so they share a row even on a phone.
+ * Shortcuts wrap onto the next line (`col-span-2`) rather than squeezing
+ * the two fields.
+ */
+const DUE_GRID = "grid grid-cols-2 gap-x-3 gap-y-3 sm:grid-cols-3 sm:gap-x-12 sm:gap-y-8";
+
+/** Domain + Priority — same column gap as date / time / shortcuts. */
+const META_PAIR = "grid grid-cols-2 gap-x-3 sm:gap-x-12";
 
 /**
  * Shared field shell for non-primitive surfaces in this directory (mention
  * controls). Prefer Input/Select from `@/components/ui` for native fields.
  */
 export const CONTROL = fieldControl({ size: "md" });
+
+/**
+ * Notes is a real `<textarea>`. iOS Safari zooms the page when a focused
+ * control is under 16px — `text-sm` (14) trips it; `text-base` (16) does not.
+ */
+const NOTES_CONTROL = fieldControl({
+	size: "md",
+	className: "mt-2 block h-auto w-full py-1.5 text-base",
+});
 
 /**
  * Borderless on purpose: date, time, and the shortcut cluster would otherwise
@@ -48,25 +64,34 @@ const RELATIVE_DAYS = [
 	{ label: "+1w", title: "In one week", days: 7 },
 ] as const;
 
+/**
+ * Three labels, matching the dashboard's high / med / low ring. Storage is
+ * still 1–4: high is 1, med is 2, low is 4 (the create default). An existing
+ * P3 also reads as low so the picker never shows an empty group, and saving
+ * without a change keeps 3.
+ */
 export const PRIORITIES = [
-	{ value: 1, label: "P1", title: "Critical" },
-	{ value: 2, label: "P2", title: "High" },
-	{ value: 3, label: "P3", title: "Normal" },
-	{ value: 4, label: "P4", title: "Someday" },
+	{ value: 1, label: "high", title: "High" },
+	{ value: 2, label: "med", title: "Medium" },
+	{ value: 4, label: "low", title: "Low" },
 ] as const;
 
 /**
- * Only the chosen priority carries colour — an unselected scale in four
- * colours shouts before an answer exists — and selection is marked by a rule
- * in that colour rather than a filled cell, which reads as disabled at P4.
+ * Colour and glow from the list checkbox: one red at two intensities, then
+ * grey. The chosen cell keeps the inset rule so Low still reads as selected.
  * Full class strings so Tailwind can see the peer-checked variants.
  */
 const PRIORITY_CELL: Record<number, string> = {
-	1: "peer-checked:text-error",
-	2: "peer-checked:text-warning",
-	3: "peer-checked:text-accent-ink",
-	4: "peer-checked:text-ink-2",
+	1: "peer-checked:text-priority-high peer-checked:shadow-[inset_0_-2px_0_currentColor,0_0_0_3.5px_var(--priority-high-halo)]",
+	2: "peer-checked:text-priority-med peer-checked:shadow-[inset_0_-2px_0_currentColor,0_0_0_3.5px_var(--priority-med-halo)]",
+	4: "peer-checked:text-ink-2 peer-checked:shadow-[inset_0_-2px_0_currentColor]",
 };
+
+function isPrioritySelected(value: number, current: number) {
+	if (value === 1) return current === 1;
+	if (value === 2) return current === 2;
+	return current !== 1 && current !== 2;
+}
 
 /*
  * `PriorityBadge` used to live here — a P1–P4 chip in one of four tones, drawn
@@ -75,8 +100,9 @@ const PRIORITY_CELL: Record<number, string> = {
  * and let one encoding serve both Today and Tasks. That left the badge with no
  * call sites, so it is gone rather than kept warm.
  *
- * The four tones are not lost: `PriorityPicker` below still colours the chosen
- * cell, which is the one place a priority is stated rather than read.
+ * The three intensities are not lost: `PriorityPicker` colours the chosen
+ * cell with the same red halo the list checkbox uses, which is the one place
+ * a priority is stated rather than read.
  */
 
 export type TaskFieldDefaults = {
@@ -159,7 +185,7 @@ export function TaskMetaFields({
 		<div className="space-y-10">
 			<div className="field-unit min-w-0">
 				<span className={FIELD_LABEL}>Due</span>
-				<div className={META_GRID}>
+				<div className={DUE_GRID}>
 					<DatePicker
 						name="due_date"
 						value={due}
@@ -179,9 +205,9 @@ export function TaskMetaFields({
 						aria-label="Due time"
 						onChange={setTime}
 					/>
-					{/* Same column as Priority. justify-between so today shares
-					    Priority's left edge and reset shares its right. */}
-					<div className="flex h-9 w-full min-w-0 items-center justify-between">
+					{/* Same column as Priority on sm+. On a phone it spans the
+					    date+time row so the two fields stay on one line. */}
+					<div className="col-span-2 flex h-9 w-full min-w-0 items-center justify-between sm:col-span-1">
 						{RELATIVE_DAYS.map(({ label, title, days }) => (
 							<button
 								key={label}
@@ -208,25 +234,29 @@ export function TaskMetaFields({
 				</div>
 			</div>
 
-			<div className={META_GRID}>
-				<Field label="Domain" className="min-w-0">
-					{/* No color dot on <option> — styling native option elements is
-					    unreliable cross-browser, so this stays a plain name list. */}
-					<Select name="domain_id" defaultValue={defaults.domain_id ?? ""} className="w-full">
-						{/* "Unfiled" is offered only when it is already the answer — on the
-						    create form (undefined) or for a task sitting in the inbox (null).
-						    A filed task never sees it, which is what keeps filing one-way
-						    (docs/adr/0027). It also has to be listed in the inbox case, or
-						    the <select> would drop its own value and silently reassign the
-						    task to whichever domain sorts first. */}
-						{defaults.domain_id == null && <option value="">Unfiled</option>}
-						{domains.map((d) => (
-							<option key={d.id} value={d.id}>
-								{d.name}
-							</option>
-						))}
-					</Select>
-				</Field>
+			<div className="space-y-10">
+				<div className={META_PAIR}>
+					<Field label="Domain" className="min-w-0">
+						{/* No color dot on <option> — styling native option elements is
+						    unreliable cross-browser, so this stays a plain name list. */}
+						<Select name="domain_id" defaultValue={defaults.domain_id ?? ""} className="w-full">
+							{/* "Unfiled" is offered only when it is already the answer — on the
+							    create form (undefined) or for a task sitting in the inbox (null).
+							    A filed task never sees it, which is what keeps filing one-way
+							    (docs/adr/0027). It also has to be listed in the inbox case, or
+							    the <select> would drop its own value and silently reassign the
+							    task to whichever domain sorts first. */}
+							{defaults.domain_id == null && <option value="">Unfiled</option>}
+							{domains.map((d) => (
+								<option key={d.id} value={d.id}>
+									{d.name}
+								</option>
+							))}
+						</Select>
+					</Field>
+
+					<PriorityPicker defaultValue={defaults.priority ?? 4} />
+				</div>
 
 				<Field label="Repeats" className="min-w-0">
 					<Select
@@ -243,8 +273,6 @@ export function TaskMetaFields({
 						))}
 					</Select>
 				</Field>
-
-				<PriorityPicker defaultValue={defaults.priority ?? 4} />
 			</div>
 		</div>
 	);
@@ -320,7 +348,7 @@ function TaskNotesField({
 				onValueChange={setValue}
 				people={people}
 				aria-labelledby={labelId}
-				className={`${CONTROL} mt-2 block h-auto w-full py-1.5`}
+				className={NOTES_CONTROL}
 			/>
 		</div>
 	);
@@ -328,39 +356,45 @@ function TaskNotesField({
 
 /**
  * Segmented priority control — radio group, colour reserved for the answer.
- * The segment fills its column rather than sizing to its four labels, so it
- * shares the grid's rhythm with the two selects beside it instead of leaving
- * a gap at the end of the row.
+ * The segment fills its column rather than sizing to its three labels, so it
+ * shares the grid's rhythm with Domain instead of leaving a gap at the end
+ * of the row.
  */
 export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) {
+	const lowValue = defaultValue === 1 || defaultValue === 2 ? 4 : defaultValue;
 	return (
 		<div className="field-unit min-w-0">
 			<span className={FIELD_LABEL}>Priority</span>
 			<div
-				className="flex h-9 w-full overflow-hidden rounded-control border border-line"
+				className="flex h-9 w-full rounded-control border border-line"
 				role="radiogroup"
 				aria-label="Priority"
 			>
-				{PRIORITIES.map((p, i) => (
-					<label
-						key={p.value}
-						title={p.title}
-						className={`relative flex-1 cursor-pointer ${i > 0 ? "border-l border-line" : ""}`}
-					>
-						<input
-							type="radio"
-							name="priority"
-							value={p.value}
-							defaultChecked={defaultValue === p.value}
-							className="peer sr-only"
-						/>
-						<span
-							className={`flex h-full items-center justify-center px-2 font-mono text-meta tabular-nums text-ink-3 transition-colors hover:text-ink peer-checked:shadow-[inset_0_-2px_0_currentColor] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-[-2px] peer-focus-visible:outline-accent ${PRIORITY_CELL[p.value]}`}
+				{PRIORITIES.map((p, i) => {
+					const value = p.value === 4 ? lowValue : p.value;
+					const ends =
+						i === 0 ? "rounded-l-control" : i === PRIORITIES.length - 1 ? "rounded-r-control" : "";
+					return (
+						<label
+							key={p.label}
+							title={p.title}
+							className={`relative flex-1 cursor-pointer ${i > 0 ? "border-l border-line" : ""} ${ends}`}
 						>
-							{p.label}
-						</span>
-					</label>
-				))}
+							<input
+								type="radio"
+								name="priority"
+								value={value}
+								defaultChecked={isPrioritySelected(p.value, defaultValue)}
+								className="peer sr-only"
+							/>
+							<span
+								className={`flex h-full items-center justify-center px-1.5 font-mono text-meta text-ink-3 transition-colors hover:text-ink peer-checked:relative peer-checked:z-10 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-[-2px] peer-focus-visible:outline-accent ${ends} ${PRIORITY_CELL[p.value]}`}
+							>
+								{p.label}
+							</span>
+						</label>
+					);
+				})}
 			</div>
 		</div>
 	);

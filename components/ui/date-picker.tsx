@@ -22,7 +22,7 @@ import { Icon } from "./icon";
 import { suggestionPanel } from "./suggestion-surface";
 
 const FIELD_GROUP =
-	"field-shell flex h-9 w-full min-w-0 items-center text-sm text-ink disabled:cursor-not-allowed disabled:opacity-50";
+	"field-shell flex h-9 w-full min-w-0 items-center text-base text-ink disabled:cursor-not-allowed disabled:opacity-50";
 
 const SEGMENT =
 	"rounded-sm px-0.5 outline-none data-[placeholder]:text-ink-4 data-[type=literal]:text-ink-4 data-[focused]:bg-accent-bg data-[focused]:text-accent-ink";
