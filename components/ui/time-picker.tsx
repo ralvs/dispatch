@@ -17,7 +17,7 @@ import { suggestionOption, suggestionPanel } from "./suggestion-surface";
 const SLOTS = wallClockSlots(15);
 
 const FIELD_GROUP =
-	"field-shell flex h-9 w-full min-w-0 items-center text-sm text-ink disabled:cursor-not-allowed disabled:opacity-50";
+	"field-shell flex h-9 w-full min-w-0 items-center text-base text-ink disabled:cursor-not-allowed disabled:opacity-50";
 
 /**
  * Time as a pick-from-list ComboBox, not RAC TimeField — TimeField is type-only
@@ -50,7 +50,7 @@ export function TimePicker({
 			<Group className={FIELD_GROUP}>
 				<AriaInput
 					placeholder="--:--"
-					className="h-full min-w-0 flex-1 bg-transparent outline-none placeholder:text-ink-4"
+					className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-ink-4"
 				/>
 				<AriaButton
 					className="inline-flex size-9 shrink-0 items-center justify-center text-ink-3 outline-none hover:text-ink data-[disabled]:pointer-events-none data-[focus-visible]:text-ink"
