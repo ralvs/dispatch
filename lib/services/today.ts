@@ -27,7 +27,7 @@ import {
 	type RoutineRow,
 } from "@/lib/services/routines";
 import { listCompletedOn, listTasks, type TaskRow } from "@/lib/services/tasks";
-import { isDueToday, isOverdue } from "@/lib/task-predicates";
+import { isOverdue } from "@/lib/task-predicates";
 
 // Day placement lives in lib/day-schedule.ts (client-safe). Import Day*
 // types from there — this module is the Today read (digest + loaders).
@@ -42,8 +42,8 @@ import { isDueToday, isOverdue } from "@/lib/task-predicates";
 //
 //   Today*  is locked to the real calendar today.
 //     TodayView    — everything the page renders (digest + today's schedule)
-//     TodayDigest  — the cold half: quotes, projects, routines, cadence,
-//                    alert counts. Cross-request cached (lib/cache/today.ts).
+//     TodayDigest  — the cold half: quotes, projects, routines, alert
+//                    counts. Cross-request cached (lib/cache/today.ts).
 //
 //   Day*    follows the date picker (`?d=`), so it is not necessarily today.
 //     DaySchedule  — tasks + events for ONE date, in four bands
@@ -55,16 +55,6 @@ import { isDueToday, isOverdue } from "@/lib/task-predicates";
 //
 // ─────────────────────────────────────────────────────────────────────────
 
-export type CadenceLine = {
-	key: string;
-	big: string;
-	label: string;
-	href: string;
-	slip?: boolean;
-};
-
-/** One row of the retired "In brief" section: a domain measured against its
- * expected cadence. No surface renders these any more. */
 export type AnchorData = {
 	eventCount: number;
 	nextEvent: { startAt: string; title: string } | null;
@@ -109,7 +99,6 @@ export type ProjectBrief = {
 };
 
 export type TodayView = {
-	cadence: CadenceLine[];
 	// Counts Today's alerts row reads: tasks with no domain, notes the parser
 	// could not place, links not yet read.
 	inboxCount: number;
@@ -172,57 +161,6 @@ export function pickResurfaced(
 		if (!skipped.has(candidate.id)) return candidate;
 	}
 	return null;
-}
-
-/** The editorial cadence strip: a short row of counts, each linking to its section. */
-export function buildCadenceLines(input: {
-	overdue: number;
-	dueToday: number;
-	routinesDone: number;
-	routinesTotal: number;
-	needsReview: number;
-}): CadenceLine[] {
-	const lines: CadenceLine[] = [];
-
-	if (input.overdue > 0) {
-		lines.push({
-			key: "overdue",
-			big: String(input.overdue),
-			label: "overdue",
-			href: "/tasks",
-			slip: true,
-		});
-	}
-
-	if (input.dueToday > 0) {
-		lines.push({
-			key: "dueToday",
-			big: String(input.dueToday),
-			label: "due today",
-			href: "/tasks",
-		});
-	}
-
-	if (input.routinesTotal > 0) {
-		lines.push({
-			key: "routines",
-			big: `${input.routinesDone}/${input.routinesTotal}`,
-			label: "routines done",
-			href: "/routines",
-		});
-	}
-
-	if (input.needsReview > 0) {
-		lines.push({
-			key: "needsReview",
-			big: String(input.needsReview),
-			label: "need review",
-			href: "/notes",
-			slip: true,
-		});
-	}
-
-	return lines;
 }
 
 /**
@@ -553,26 +491,16 @@ export function assembleTodayView(
 	} = digest;
 
 	const overdue = open.filter((t) => isOverdue(t, todayIso));
-	const dueToday = open.filter((t) => isDueToday(t, todayIso));
 	const inboxCount = open.filter((t) => t.domain_id === null).length;
 
 	const completedRoutineIds = new Set(completionsToday.map((c) => c.routine_id));
 	const routinesDone = routines.filter((r) => completedRoutineIds.has(r.id)).length;
 	const remainingNames = routines.filter((r) => !completedRoutineIds.has(r.id)).map((r) => r.name);
 
-	const cadence = buildCadenceLines({
-		overdue: overdue.length,
-		dueToday: dueToday.length,
-		routinesDone,
-		routinesTotal: routines.length,
-		needsReview,
-	});
-
 	const resurfaced = pickResurfaced(quotes, todayIso, skippedQuoteIds);
 	const latestQuote = [...quotes].sort((a, b) => (a.created_at > b.created_at ? -1 : 1))[0] ?? null;
 
 	return {
-		cadence,
 		inboxCount,
 		needsReviewCount: needsReview,
 		linksUnreadCount: linksUnread,

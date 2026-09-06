@@ -122,14 +122,14 @@ The prefix carries the date semantics (ADR-0036):
 
 - **`Today*`** is locked to the real calendar today — `TodayView` (all the
   page's data), `TodayDigest` (its cold cached half: quotes, projects,
-  routines, cadence, alert counts; tag `today-digest`).
+  routines, alert counts; tag `today-digest`).
 - **`Day*`** follows the date picker, so it may be any date — `DaySchedule`,
   `DayView`, `DayHeadline`, `DayTape`, `DayNav`, and the band sections.
 
 `briefing`, `chrome` and **brief** are all retired as domain terms; `chrome`
-means UI frame again. The "In brief" section is gone — no `BriefLine` type
-or assembly remains. Day* types live in `lib/day-schedule.ts`, not the Today
-read.
+means UI frame again. The "In brief" section is gone — no `BriefLine` or
+`CadenceLine` type, and no assembly, remains. Day* types live in
+`lib/day-schedule.ts`, not the Today read.
 
 ## day tape
 

@@ -6,7 +6,6 @@ import type { CompletionRow, RoutineRow } from "@/lib/services/routines";
 import {
 	bucketRoutines,
 	buildAnchor,
-	buildCadenceLines,
 	cadenceThresholdDays,
 	pickResurfaced,
 	quoteOfDay,
@@ -59,46 +58,6 @@ describe("quoteOfDay", () => {
 			if (picked) picks.add(picked.id);
 		}
 		expect(picks.size).toBeGreaterThanOrEqual(2);
-	});
-});
-
-describe("buildCadenceLines", () => {
-	it("returns all lines in order with correct keys/hrefs/slip for a full input", () => {
-		const lines = buildCadenceLines({
-			overdue: 2,
-			dueToday: 3,
-			routinesDone: 1,
-			routinesTotal: 4,
-			needsReview: 2,
-		});
-
-		expect(lines.map((l) => l.key)).toEqual(["overdue", "dueToday", "routines", "needsReview"]);
-		expect(lines.map((l) => l.href)).toEqual(["/tasks", "/tasks", "/routines", "/notes"]);
-		expect(lines.map((l) => Boolean(l.slip))).toEqual([true, false, false, true]);
-		expect(lines.find((l) => l.key === "routines")?.big).toBe("1/4");
-	});
-
-	it("omits zero-valued lines, except routines shows whenever total > 0", () => {
-		const lines = buildCadenceLines({
-			overdue: 0,
-			dueToday: 0,
-			routinesDone: 0,
-			routinesTotal: 3,
-			needsReview: 0,
-		});
-		expect(lines).toHaveLength(1);
-		expect(lines[0]).toMatchObject({ key: "routines", big: "0/3" });
-	});
-
-	it("omits routines entirely when total is 0", () => {
-		const lines = buildCadenceLines({
-			overdue: 0,
-			dueToday: 0,
-			routinesDone: 0,
-			routinesTotal: 0,
-			needsReview: 0,
-		});
-		expect(lines).toHaveLength(0);
 	});
 });
 

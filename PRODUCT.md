@@ -107,8 +107,7 @@ Further durable constraints:
   words in it are not synonyms to be varied for readability. Notably: *Inbox* is
   the unfiled-task queue at `/inbox` and "triage" is retired; *Links* is the
   reading list; `Today*` is locked to the real calendar today while `Day*`
-  follows the date picker; *brief* means only the "In brief" cadence rows, not
-  the page.
+  follows the date picker; *brief* is retired as a domain term.
 - **The app shell owns the viewport**, and every route carries a loading
   boundary — a performance decision with direct layout consequences
   (ADR-0028).

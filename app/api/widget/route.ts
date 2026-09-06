@@ -29,7 +29,8 @@ export async function GET(request: Request) {
 	return NextResponse.json(
 		{
 			date: todayIso,
-			cadence: today.cadence.map((line) => ({ big: line.big, label: line.label })),
+			overdue_count: today.anchor.overdueCount,
+			needs_review_count: today.needsReviewCount,
 			inbox_count: today.inboxCount,
 			doing_today: doingTodayFromSchedule(today.daySchedule).map((t) => ({
 				id: t.id,

@@ -68,10 +68,6 @@ export function renderChatContext(snapshot: ChatSnapshot): string {
 
 	if (snapshot.today) {
 		const b = snapshot.today;
-		const cadence =
-			b.cadence.length > 0
-				? b.cadence.map((c) => `${c.big} ${c.label}`).join(", ")
-				: "nothing flagged";
 		const routines =
 			b.routines.total > 0
 				? `${b.routines.done}/${b.routines.total} done; remaining: ${
@@ -84,7 +80,7 @@ export function renderChatContext(snapshot: ChatSnapshot): string {
 		sections.push(
 			[
 				"## Today",
-				`Cadence: ${cadence}`,
+				`Overdue: ${b.anchor.overdueCount}; need review: ${b.needsReviewCount}`,
 				`Inbox: ${b.inboxCount} unfiled`,
 				`Doing today: ${
 					doingTodayFromSchedule(b.daySchedule)
