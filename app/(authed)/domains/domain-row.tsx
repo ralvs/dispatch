@@ -7,6 +7,7 @@ import { Button, Card, Field, Input, ListRow, rowTitle, Textarea } from "@/compo
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import type { DomainRow as DomainRowType } from "@/lib/services/domains";
+import type { DomainTouch } from "@/lib/services/observations";
 import {
 	archiveDomainAction,
 	markDomainShippedAction,
@@ -16,7 +17,9 @@ import {
 
 /**
  * `cadenceDays` is read out of failure_patterns by the page — the parser for
- * that shape is server-only, so it arrives already resolved.
+ * that shape is server-only, so it arrives already resolved. `touch` arrives
+ * the same way: the last-touch fold is server-only and shared with the neglect
+ * cron, so the row and the bell can never disagree (shape plan §05).
  *
  * Rest name at 400 via `rowTitle()` (ADR-0044). Domain colour leads left
  * through ColorDot → `var(--domain-<slug>)`, never a hex.
@@ -25,10 +28,13 @@ export function DomainRowItem({
 	domain,
 	tz,
 	cadenceDays,
+	touch,
 }: {
 	domain: DomainRowType;
 	tz: string;
 	cadenceDays: number | null;
+	/** Null for an archived domain — the sweep only measures active ones. */
+	touch: DomainTouch | null;
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
@@ -114,6 +120,20 @@ export function DomainRowItem({
 		? `Last shipped ${formatInstant(domain.last_shipped_at, tz)}`
 		: "Last shipped never";
 
+	// The two facts the plan asked every row to carry. "Days since last touch"
+	// is the sweep's own measure, not last_shipped_at — shipping is one of its
+	// four sources, not the whole of it.
+	const lastTouch =
+		touch === null
+			? null
+			: touch.daysSinceTouch === null
+				? "Never touched"
+				: touch.daysSinceTouch === 0
+					? "Touched today"
+					: `${touch.daysSinceTouch}d since last touch`;
+	const openTasks =
+		touch === null ? null : `${touch.openTasks} open task${touch.openTasks === 1 ? "" : "s"}`;
+
 	return (
 		<ListRow
 			id={`domain-${domain.id}`}
@@ -122,6 +142,21 @@ export function DomainRowItem({
 			className={`scroll-mt-24 ${pending ? "opacity-50" : ""}`}
 		>
 			<span className={rowTitle()}>{domain.name}</span>
+			{lastTouch !== null && (
+				<p className="mt-0.5 flex items-center gap-1.5 font-mono text-meta text-ink-3">
+					{touch?.quiet && (
+						<span
+							aria-hidden="true"
+							className="inline-block size-1.5 shrink-0 rounded-full bg-accent"
+						/>
+					)}
+					<span className={touch?.quiet ? "text-accent" : undefined}>
+						{touch?.quiet ? `Quiet · ${lastTouch}` : lastTouch}
+					</span>
+					<span aria-hidden="true">·</span>
+					<span>{openTasks}</span>
+				</p>
+			)}
 			{domain.description && <p className="mt-0.5 text-sm text-ink-3">{domain.description}</p>}
 			{domain.fruit_definition && (
 				<p className="mt-0.5 font-mono text-meta text-ink-4">Fruit: {domain.fruit_definition}</p>

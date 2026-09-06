@@ -34,6 +34,7 @@ export { PageSkeleton } from "./page-skeleton";
 export { Progress } from "./progress";
 export { Radio, radio } from "./radio";
 export { SectionHead } from "./section-head";
+export { type Stat, StatBand } from "./stat-band";
 export {
 	suggestionEmpty,
 	suggestionEmptyText,
