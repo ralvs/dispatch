@@ -3,10 +3,12 @@ import type { TaskRow } from "@/lib/schemas/task";
 import type { TaskIntent } from "@/lib/task-interaction/apply-intent";
 
 const toastSuccessMock = vi.fn();
+const toastNoticeMock = vi.fn();
 
 vi.mock("@/lib/client/toast", () => ({
 	runAction: vi.fn(),
 	toastSuccess: (...args: unknown[]) => toastSuccessMock(...args),
+	toastNotice: (...args: unknown[]) => toastNoticeMock(...args),
 }));
 
 const { bindTaskHandlers, toastTaskToggle } = await import("./run-intent");
@@ -37,6 +39,7 @@ function task(partial: Partial<TaskRow> & Pick<TaskRow, "id" | "title">): TaskRo
 describe("toastTaskToggle", () => {
 	beforeEach(() => {
 		toastSuccessMock.mockClear();
+		toastNoticeMock.mockClear();
 	});
 
 	it("toasts Done for a one-shot complete", () => {
@@ -58,9 +61,10 @@ describe("toastTaskToggle", () => {
 		expect(toastSuccessMock).toHaveBeenCalledWith("Done", "due in 7d");
 	});
 
-	it("toasts Reopened", () => {
+	it("toasts Reopened as a neutral notice", () => {
 		toastTaskToggle("reopen", task({ id: "a", title: "Ship", status: "done" }), TODAY);
-		expect(toastSuccessMock).toHaveBeenCalledWith("Reopened");
+		expect(toastNoticeMock).toHaveBeenCalledWith("Reopened");
+		expect(toastSuccessMock).not.toHaveBeenCalled();
 	});
 });
 
@@ -74,6 +78,7 @@ describe("bindTaskHandlers", () => {
 
 	beforeEach(() => {
 		toastSuccessMock.mockClear();
+		toastNoticeMock.mockClear();
 		actions.complete.mockReset();
 		actions.reopen.mockReset();
 		actions.setTop3.mockReset();
@@ -98,6 +103,7 @@ describe("bindTaskHandlers", () => {
 		});
 		handlers.onToggleDone();
 		expect(toastSuccessMock).not.toHaveBeenCalled();
+		expect(toastNoticeMock).not.toHaveBeenCalled();
 	});
 
 	it("toasts Reopened on uncheck", () => {
@@ -109,7 +115,8 @@ describe("bindTaskHandlers", () => {
 			{ top3DateIso: TODAY, todayIso: TODAY },
 		);
 		handlers.onToggleDone();
-		expect(toastSuccessMock).toHaveBeenCalledWith("Reopened");
+		expect(toastNoticeMock).toHaveBeenCalledWith("Reopened");
+		expect(toastSuccessMock).not.toHaveBeenCalled();
 	});
 
 	it("does not toast on star", () => {
@@ -120,6 +127,7 @@ describe("bindTaskHandlers", () => {
 		});
 		handlers.onToggleTop3();
 		expect(toastSuccessMock).not.toHaveBeenCalled();
+		expect(toastNoticeMock).not.toHaveBeenCalled();
 	});
 
 	it("does not toast on delete", () => {
@@ -130,6 +138,7 @@ describe("bindTaskHandlers", () => {
 		});
 		handlers.onDelete?.();
 		expect(toastSuccessMock).not.toHaveBeenCalled();
+		expect(toastNoticeMock).not.toHaveBeenCalled();
 	});
 
 	it("passes a complete intent with the observed due date", () => {

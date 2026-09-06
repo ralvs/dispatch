@@ -1,6 +1,8 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { unstable_rethrow } from "next/navigation";
+import { createElement } from "react";
 import { toast } from "sonner";
 
 export function toastError(message = "Something went wrong. Try again."): void {
@@ -14,6 +16,15 @@ export function toastSuccess(message: string, description?: string): void {
 	toast.success(message, {
 		description,
 		duration: 4000,
+	});
+}
+
+/** Neutral slip — reopen, and anything that is not a success or a failure. */
+export function toastNotice(message: string, description?: string): void {
+	toast.message(message, {
+		description,
+		duration: 4000,
+		icon: createElement(Check, { size: 14, strokeWidth: 2.25 }),
 	});
 }
 

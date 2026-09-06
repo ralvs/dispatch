@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useTransition } from "react";
-import { runAction, toastSuccess } from "@/lib/client/toast";
+import { runAction, toastNotice, toastSuccess } from "@/lib/client/toast";
 import { formatDueLabel } from "@/lib/dates";
 import type { TaskRow } from "@/lib/schemas/task";
 import { nextCompleteFields, type TaskIntent } from "@/lib/task-interaction/apply-intent";
@@ -23,7 +23,7 @@ export function toastTaskToggle(
 	todayIso: string,
 ): void {
 	if (kind === "reopen") {
-		toastSuccess("Reopened");
+		toastNotice("Reopened");
 		return;
 	}
 	const next = nextCompleteFields(task, { todayIso });

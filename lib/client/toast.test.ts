@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const toastErrorMock = vi.fn();
 const toastSuccessMock = vi.fn();
+const toastMessageMock = vi.fn();
 const rethrowMock = vi.fn();
 
 vi.mock("sonner", () => ({
 	toast: {
 		error: (...args: unknown[]) => toastErrorMock(...args),
 		success: (...args: unknown[]) => toastSuccessMock(...args),
+		message: (...args: unknown[]) => toastMessageMock(...args),
 	},
 }));
 
@@ -15,7 +17,7 @@ vi.mock("next/navigation", () => ({
 	unstable_rethrow: (error: unknown) => rethrowMock(error),
 }));
 
-const { runAction, toastSuccess } = await import("./toast");
+const { runAction, toastNotice, toastSuccess } = await import("./toast");
 
 describe("toastSuccess", () => {
 	beforeEach(() => {
@@ -27,6 +29,21 @@ describe("toastSuccess", () => {
 		expect(toastSuccessMock).toHaveBeenCalledWith("Captured", {
 			description: "1 task added.",
 			duration: 4000,
+		});
+	});
+});
+
+describe("toastNotice", () => {
+	beforeEach(() => {
+		toastMessageMock.mockClear();
+	});
+
+	it("fires a message toast with a check icon", () => {
+		toastNotice("Reopened");
+		expect(toastMessageMock).toHaveBeenCalledWith("Reopened", {
+			description: undefined,
+			duration: 4000,
+			icon: expect.anything(),
 		});
 	});
 });

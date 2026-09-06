@@ -1,15 +1,17 @@
 "use client";
 
+import { Check, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Toaster } from "sonner";
+import { Icon } from "@/components/ui/icon";
 
 /**
  * Sonner host. Theme follows `data-theme` on <html> (Dispatch light/dark).
- * Callers use toastError / toastSuccess / runAction.
+ * Callers use toastError / toastSuccess / toastNotice / runAction.
  *
- * Pass 5 / B: light is the default (matches THEME_BOOT in app/layout.tsx —
- * anything that is not the string "dark" resolves to light). Surface card,
- * medium title, error border. Speaks in the app's operational English.
+ * The slip: dock-pill geometry, overlay lift, 19px mark. Success is a green
+ * filled tick; reopen is a neutral outline. Geometry lives in globals.css
+ * because Sonner sets padding and radius with !important.
  */
 export function AppToaster() {
 	const [theme, setTheme] = useState<"dark" | "light">("light");
@@ -32,14 +34,16 @@ export function AppToaster() {
 			position="top-center"
 			closeButton
 			richColors={false}
+			icons={{
+				success: <Icon icon={Check} size="sm" strokeWidth={2.25} />,
+				error: <Icon icon={X} size="sm" strokeWidth={2.25} />,
+				close: <Icon icon={X} size="sm" />,
+			}}
 			toastOptions={{
 				classNames: {
-					toast:
-						"rounded-control border border-line-strong bg-surface text-ink elevation-overlay font-sans text-sm",
+					toast: "font-sans text-sm text-ink",
 					title: "text-ink font-medium",
-					description: "text-ink-2 text-[13px]",
-					error: "border-error/40",
-					success: "border-success/40",
+					description: "font-mono text-meta text-ink-3",
 					closeButton: "border-line bg-surface text-ink-3",
 				},
 			}}
