@@ -219,8 +219,9 @@
     <tr><td class="n">D6</td><td><code>/domains</code> rows show last touch, open count, quiet dot</td><td>Today’s page is not touched</td><td><span class="pill do">agreed</span></td></tr>
     <tr><td class="n">D7</td><td>A stat band above the list on some pages</td><td>New reading type — collides with ADR-0042/0046</td><td><span class="pill ask">needs ADR</span></td></tr>
     <tr><td class="n">D8</td><td>Routines: edit a routine, tick past days</td><td>Backfill breaks a stated server-clock rule</td><td><span class="pill ask">needs ADR</span></td></tr>
-    <tr><td class="n">D10</td><td>The task form gets a project field back</td><td>Never existed on the form; only capture can set one</td><td><span class="pill do">agreed</span></td></tr>
+    <tr><td class="n">D10</td><td>The task form gains a project field</td><td>Never existed on the form; only capture can set one</td><td><span class="pill do">agreed</span></td></tr>
     <tr><td class="n">D11</td><td>Add a task from a project, project locked</td><td>The same dialog — ADR-0040 stays true</td><td><span class="pill do">agreed</span></td></tr>
+    <tr><td class="n">D12</td><td>Repeats gains a Custom rule</td><td><code>weekly:tu,sa</code> — no migration, the column is already text</td><td><span class="pill do">agreed</span></td></tr>
     <tr><td class="n">D9</td><td>Nothing is dropped from the database yet</td><td>Retire in code now, drop in SQL later</td><td><span class="pill later">staged</span></td></tr>
   </tbody>
 </table>
@@ -533,8 +534,10 @@
 
 
 <section class="point">
-  <h2><span class="num">06</span> A project you cannot put anything in</h2>
-  <p class="sub">If a project is a tag for tasks, then applying that tag is the only thing a project has to do. Dispatch cannot do it. The column exists, the service accepts it, the filter reads it — and no screen can set it.</p>
+  <h2><span class="num">06</span> Two answers the task form cannot take</h2>
+  <p class="sub">Two gaps in one form. It cannot say which project a task belongs to, and it cannot say “every Tuesday and Saturday”. They land in the same three-column grid, and the fix for one makes room for the other.</p>
+  <h3>A project you cannot put anything in</h3>
+  <p>If a project is a tag for tasks, applying that tag is the only thing a project has to do. The column exists, the service accepts it, the filter reads it — and no screen can set it.</p>
 
   <div class="ev">
     <div class="ev-row"><span class="loc">app/(authed)/tasks/task-fields.tsx</span><span class="what">The task form has seven fields: title, notes, due date, due time, domain, repeats, priority. <strong>No project.</strong></span></div>
@@ -551,50 +554,65 @@
     relationship exists at all.
   </div>
 
-  <h3>Where the field goes</h3>
-  <p>The form’s meta area is a three-column grid, two rows: <em>Due date · Due time · relative chips</em>, then <em>Domain · Repeats · Priority</em>. Adding Project makes seven controls for six slots.</p>
+  <h3>Where the field goes — and why Repeats has to move</h3>
+  <p>The meta area is a three-column grid in two groups: <em>Due date · Due time · the relative chips</em>, then <em>Domain · Repeats · Priority</em>. All six slots are taken. The chips are one of those slots, not spare room — so there is nowhere to put a seventh control.</p>
+  <p>The way out is not to squeeze. It is that <strong>Repeats is about to need a whole row of its own</strong> — see below — which frees exactly the slot Project wants. The two requests solve each other.</p>
 
   <figure>
     <div class="fig-body">
-      <svg viewBox="0 0 700 250" role="img" aria-label="The task form meta grid today, and the proposed rearrangement with a project field.">
-        <text x="14" y="18" font-size="10.5" class="mono" letter-spacing="1" fill="var(--ink-4)">TODAY — SIX SLOTS</text>
+      <svg viewBox="0 0 700 320" role="img" aria-label="The task form meta grid today in two rows, and the proposal in three groups with Repeats on its own row.">
+        <text x="14" y="18" font-size="10.5" class="mono" letter-spacing="1" fill="var(--ink-4)">TODAY — TWO GROUPS, SIX SLOTS, ALL TAKEN</text>
         <g fill="var(--surface-2)" stroke="var(--line-strong)">
-          <rect x="14" y="28" width="212" height="36" rx="6"/>
-          <rect x="236" y="28" width="212" height="36" rx="6"/>
-          <rect x="458" y="28" width="228" height="36" rx="6"/>
-          <rect x="14" y="72" width="212" height="36" rx="6"/>
-          <rect x="236" y="72" width="212" height="36" rx="6"/>
-          <rect x="458" y="72" width="228" height="36" rx="6"/>
+          <rect x="14" y="28" width="212" height="34" rx="6"/>
+          <rect x="236" y="28" width="212" height="34" rx="6"/>
+          <rect x="458" y="28" width="228" height="34" rx="6"/>
+          <rect x="14" y="72" width="212" height="34" rx="6"/>
+          <rect x="236" y="72" width="212" height="34" rx="6"/>
+          <rect x="458" y="72" width="228" height="34" rx="6"/>
         </g>
         <g font-size="12.5" fill="var(--ink-2)">
-          <text x="30" y="51">Due date</text>
-          <text x="252" y="51">Due time</text>
-          <text x="474" y="51">today · +1d · +1w · reset</text>
-          <text x="30" y="95">Domain</text>
-          <text x="252" y="95">Repeats</text>
-          <text x="474" y="95">Priority</text>
+          <text x="30" y="50">Due date</text>
+          <text x="252" y="50">Due time</text>
+          <text x="474" y="50">today · +1d · +1w · reset</text>
+          <text x="30" y="94">Domain</text>
+          <text x="252" y="94">Repeats</text>
+          <text x="474" y="94">Priority</text>
         </g>
 
-        <text x="14" y="144" font-size="10.5" class="mono" letter-spacing="1" fill="var(--accent)">PROPOSED — REPEATS JOINS THE SCHEDULE</text>
+        <text x="14" y="136" font-size="10.5" class="mono" letter-spacing="1" fill="var(--accent)">PROPOSED — THREE GROUPS, ONE QUESTION EACH</text>
+
+        <text x="14" y="156" font-size="9.5" class="mono" letter-spacing="1" fill="var(--ink-4)">WHEN — UNCHANGED</text>
         <g fill="var(--surface-2)" stroke="var(--line-strong)">
-          <rect x="14" y="154" width="212" height="36" rx="6"/>
-          <rect x="236" y="154" width="212" height="36" rx="6"/>
-          <rect x="14" y="198" width="212" height="36" rx="6"/>
-          <rect x="458" y="198" width="228" height="36" rx="6"/>
+          <rect x="14" y="162" width="212" height="34" rx="6"/>
+          <rect x="236" y="162" width="212" height="34" rx="6"/>
+          <rect x="458" y="162" width="228" height="34" rx="6"/>
         </g>
-        <rect x="458" y="154" width="228" height="36" rx="6" fill="var(--surface-2)" stroke="var(--warn-line)"/>
-        <rect x="236" y="198" width="212" height="36" rx="6" fill="var(--add-bg)" stroke="var(--add-line)"/>
         <g font-size="12.5" fill="var(--ink-2)">
-          <text x="30" y="177">Due date</text>
-          <text x="252" y="177">Due time</text>
-          <text x="474" y="177" fill="var(--warn-ink)">Repeats</text>
-          <text x="30" y="221">Domain</text>
-          <text x="252" y="221" fill="var(--add-ink)">Project</text>
-          <text x="474" y="221">Priority</text>
+          <text x="30" y="184">Due date</text>
+          <text x="252" y="184">Due time</text>
+          <text x="474" y="184">today · +1d · +1w · reset</text>
+        </g>
+
+        <text x="14" y="214" font-size="9.5" class="mono" letter-spacing="1" fill="var(--warn-ink)">HOW OFTEN — A ROW OF ITS OWN</text>
+        <rect x="14" y="220" width="212" height="34" rx="6" fill="var(--surface-2)" stroke="var(--warn-line)"/>
+        <rect x="236" y="220" width="450" height="34" rx="6" fill="none" stroke="var(--warn-line)" stroke-dasharray="4 4"/>
+        <text x="30" y="242" font-size="12.5" fill="var(--warn-ink)">Repeats</text>
+        <text x="252" y="242" font-size="12.5" fill="var(--ink-3)">S M T W T F S — appears only when Repeats is Custom</text>
+
+        <text x="14" y="272" font-size="9.5" class="mono" letter-spacing="1" fill="var(--add-ink)">WHERE IT BELONGS, AND HOW MUCH</text>
+        <g fill="var(--surface-2)" stroke="var(--line-strong)">
+          <rect x="14" y="278" width="212" height="34" rx="6"/>
+          <rect x="458" y="278" width="228" height="34" rx="6"/>
+        </g>
+        <rect x="236" y="278" width="212" height="34" rx="6" fill="var(--add-bg)" stroke="var(--add-line)"/>
+        <g font-size="12.5" fill="var(--ink-2)">
+          <text x="30" y="300">Domain</text>
+          <text x="252" y="300" fill="var(--add-ink)">Project</text>
+          <text x="474" y="300">Priority</text>
         </g>
       </svg>
     </div>
-    <figcaption>Repeats moves up beside the due date, and Project takes the freed slot next to Domain. The code already agrees this is where Repeats belongs: <code>resetSchedule()</code> in <code>task-fields.tsx</code> clears due date, due time <em>and</em> recurrence in one gesture, and the reset button’s own label says so. It has been sitting in the wrong row.</figcaption>
+    <figcaption>The chips do not move. Nothing about the Due group changes. Repeats leaves because a weekday picker cannot live in a third of a row, and Project takes the slot it vacates. The reset button keeps clearing due date, due time and recurrence together — it now sits at the end of one group and reaches into the one directly below it, which is closer to what it already did than the current layout was.</figcaption>
   </figure>
 
   <h3>Adding a task from a project</h3>
@@ -607,12 +625,40 @@
 
   <div class="ev">
     <div class="ev-row"><span class="loc">lib/schemas/task.ts</span><span class="what">Add <code>project_id</code> to <code>CreateTaskFormSchema</code>, with the <code>.or(z.literal(""))</code> treatment every optional FormData field needs.</span></div>
-    <div class="ev-row"><span class="loc">app/(authed)/tasks/task-fields.tsx</span><span class="what">A Project select beside Domain; Repeats moves into the schedule row. New <code>projects</code> prop, new <code>lockProject</code> prop.</span></div>
+    <div class="ev-row"><span class="loc">app/(authed)/tasks/task-fields.tsx</span><span class="what">A Project select takes the slot Repeats vacates. New <code>projects</code> prop, new <code>lockProject</code> prop.</span></div>
     <div class="ev-row"><span class="loc">app/(authed)/tasks/task-dialog.tsx · actions.ts</span><span class="what">Thread the project list in and the chosen id out.</span></div>
     <div class="ev-row"><span class="loc">app/(authed)/projects/[id]/page.tsx</span><span class="what">Load the project's tasks. Today it loads milestones and domains only.</span></div>
     <div class="ev-row"><span class="loc">app/(authed)/projects/page.tsx</span><span class="what">An “Add task” action per row, opening the shared dialog with the project locked.</span></div>
     <div class="ev-row"><span class="loc">app/(authed)/tasks/task-list.tsx:62</span><span class="what">The optimistic builder hardcodes <code>project_id: null</code>. It has to carry the real value once the form can set one.</span></div>
   </div>
+
+  <h3>Repeats needs a Custom rule</h3>
+  <p>“Weekly on Tuesdays and Saturdays” cannot be said today. <code>RECURRENCE_PATTERNS</code> is a flat list of seven literals — daily, weekdays, weekly, every 2 weeks, monthly, every 6 months, yearly — and the select offers exactly those.</p>
+
+  <div class="callout">
+    <strong>The column is already ready.</strong> <code>tasks.recurrence_rule</code> is plain <code>text</code>, and
+    <code>lib/recurrence.ts</code> says so in its own opening comment: the vocabulary was kept small for v1, and
+    richer rules can be added “without a migration.” This is the one feature on the whole plan that needs no SQL.
+  </div>
+
+  <h3>The rule format</h3>
+  <p>A narrow extension, not a standard: <code>weekly:tu,sa</code> — the word <code>weekly</code>, a colon, then two-letter weekday codes. It reads correctly in a database client, it parses in about ten lines, and it leaves all seven existing literals valid exactly as they are.</p>
+  <p>Rejected: full RFC&nbsp;5545 (<code>FREQ=WEEKLY;BYDAY=TU,SA</code>). It is the right answer for an app that syncs recurrence with a calendar. Dispatch does not, and adopting the grammar invites every other part of it — counts, intervals, month-day sets — one support request at a time.</p>
+
+  <div class="verdict">
+    <b>The real cost is not the date maths.</b> Advancing to the next listed weekday is a loop that runs at most
+    seven times. The cost is that three places currently assume a rule is one of the seven literals, and
+    <em>all three fail quietly</em> — no error, just wrong behaviour.
+  </div>
+
+  <div class="ev">
+    <div class="ev-row"><span class="loc">lib/task-interaction/apply-intent.ts:60</span><span class="what">Guards the optimistic roll with <code>isRecurrencePattern</code>. An unknown rule skips the guard, so ticking the checkbox would show the task <em>completing</em> instead of rolling forward — then snap back when the server disagrees.</span></div>
+    <div class="ev-row"><span class="loc">app/(authed)/tasks/task-row.tsx:244</span><span class="what"><code>recurrenceLabel</code> returns null for anything unknown, so a custom task would silently lose its ↻ chip and look like a one-off.</span></div>
+    <div class="ev-row"><span class="loc">lib/schemas/task.ts · lib/schemas/capture.ts</span><span class="what">Three <code>z.enum(RECURRENCE_PATTERNS)</code> sites would reject the string outright. These fail loudly, which is the easy kind.</span></div>
+    <div class="ev-row"><span class="loc">lib/recurrence.ts</span><span class="what"><code>nextDueDate</code> gains a parse step and one branch. <code>periodStart</code> treats a custom weekly as a Monday-anchored week — same as plain <code>weekly</code>.</span></div>
+    <div class="ev-row"><span class="loc">lib/recurrence.ts</span><span class="what">Aside: <code>periodStart</code> and <code>isCurrentlyDoneRecurring</code> have no live caller. Their only consumer was the checklist schema §08 retires.</span></div>
+  </div>
+
 </section>
 
 
@@ -752,13 +798,26 @@
   </div>
 
   <div class="rec">
-    <div class="rec-head"><span class="rid">P7</span><h3>Routines: edit and backfill</h3></div>
+    <div class="rec-head"><span class="rid">P7</span><h3>Repeats: a Custom rule</h3><span class="pill do">no SQL</span></div>
+    <p class="why">“Weekly on Tuesdays and Saturdays”, stored as <code>weekly:tu,sa</code> in the text column that already holds the seven literals. Ships with P6 because it is the same row of the same form.</p>
+    <ul class="files">
+      <li><span class="op mod">mod</span><span class="fp">lib/recurrence.ts — parse, nextDueDate branch, label, periodStart alias</span></li>
+      <li><span class="op mod">mod</span><span class="fp">lib/schemas/task.ts · lib/schemas/capture.ts — three z.enum sites become a validated string</span></li>
+      <li><span class="op mod">mod</span><span class="fp">lib/task-interaction/apply-intent.ts — the optimistic roll must accept a custom rule</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/tasks/task-row.tsx — the ↻ chip must label a custom rule</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/tasks/task-fields.tsx — Custom option + the weekday strip</span></li>
+    </ul>
+    <div class="meta"><span><b>depends on</b> nothing</span><span><b>ships with</b> P6</span><span><b>migration</b> none</span></div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head"><span class="rid">P8</span><h3>Routines: edit and backfill</h3></div>
     <p class="why">An edit mode on the row, and the 30 grid squares become clickable within a bounded window.</p>
     <div class="meta"><span><b>depends on</b> nothing</span><span><b>needs ADR</b> client-named date</span></div>
   </div>
 
   <div class="rec">
-    <div class="rec-head"><span class="rid">P8</span><h3>Stat bands on the remaining pages</h3></div>
+    <div class="rec-head"><span class="rid">P9</span><h3>Stat bands on the remaining pages</h3></div>
     <p class="why">/routines, /tasks, then whichever of the maybes survive §05.</p>
     <div class="meta"><span><b>depends on</b> P2’s ADR and component</span></div>
   </div>
@@ -767,7 +826,7 @@
 
 <section class="point">
   <h2><span class="num">10</span> Still open</h2>
-  <p class="sub">All six were put to the owner on 21 Aug 2026 and all six recommendations were accepted. They are kept here with their reasoning, because the reasoning is the part worth re-reading. One new question opened with the project work — O7.</p>
+  <p class="sub">All six were put to the owner on 21 Aug 2026 and all six recommendations were accepted. They are kept here with their reasoning, because the reasoning is the part worth re-reading. Two more opened with the form work — O7 is settled below, O8 is not.</p>
 
   <div class="qa">
     <span class="qid">O1</span><span class="qt">Is “don’t drop anything yet” about the database only?</span>
@@ -806,9 +865,15 @@
   </div>
 
   <div class="qa">
-    <span class="qid">O7</span><span class="qt">May Repeats move out of its row to make space for Project? <span class="pill ask">open</span></span>
-    <p>The meta grid has six slots and Project makes seven. Either Repeats moves up beside the due date and time, or the grid grows a third row with two empty cells in it.</p>
-    <p class="rec-line"><b>Recommended:</b> move Repeats. It is a scheduling answer, not a filing one, and the form already treats it that way — one reset button clears due date, due time and recurrence together, and its label says exactly that. Domain and Project then sit side by side, which is the honest pairing: both answer “where does this belong?”</p>
+    <span class="qid">O7</span><span class="qt">Where do the relative chips go?</span>
+    <p>An earlier draft of this plan moved Repeats into the third slot of the Due row. That was wrong: the third slot is the <em>today · +1d · +1w · reset</em> cluster, not free space. All six slots are occupied.</p>
+    <p class="rec-line"><b>Settled:</b> the chips do not move at all. Repeats leaves the filing row and takes a row of its own, because the Custom weekday strip cannot fit in a third of a row. Project fills the slot Repeats vacates. Three groups, one question each: when · how often · where and how much.</p>
+  </div>
+
+  <div class="qa">
+    <span class="qid">O8</span><span class="qt">How far does the Custom grammar go? <span class="pill ask">open</span></span>
+    <p><code>weekly:tu,sa</code> covers “weekly on these weekdays”. It does not cover “every 2 weeks on Tuesday and Saturday”, or “the last Friday of the month”. Each of those is a small extension on its own, and together they are RFC 5545.</p>
+    <p class="rec-line"><b>Recommended:</b> stop at weekly-on-weekdays. Add an interval only when a real task needs it, not in advance. Keep <code>weekdays</code> as its own literal rather than rewriting it to <code>weekly:mo,tu,we,th,fr</code> — the rows already stored say <code>weekdays</code>, and a rewrite buys nothing.</p>
   </div>
 </section>
 
