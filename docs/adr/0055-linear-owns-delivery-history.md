@@ -37,9 +37,11 @@ Milestones went for a different reason: a percentage that only moves when you
 tick an invented checklist item measures the checklist, not the work. Progress
 is the project's own tasks now (decision D2).
 
-Everything retired is retired **in code only** (plan §08 Phase A). The rows are
-untouched in Postgres and reachable. Dropping them is a later, separate patch
-with its own ADR, following the ADR-0007 precedent, and it is not scheduled.
+Everything retired was retired **in code first** (plan §08 Phase A), with the
+rows left untouched in Postgres. That was the position when this ADR was
+written; it is no longer current. Phase B ran on 6 Sep 2026 and dropped the
+tables and columns in SQL — see **ADR-0056**, which records what was lost and
+why it did not wait longer.
 
 ## What was taken
 

@@ -68,8 +68,8 @@ export async function archiveProject(sb: SupabaseClient, id: string): Promise<vo
 // ─── Task rollup ────────────────────────────────────────────────────────
 //
 // A project is a loose bucket that tags tasks (shape plan §02), so its
-// progress is its tasks' progress. Milestones used to drive this; they are
-// retired in code here (Phase A, §08) while their rows stay in Postgres.
+// progress is its tasks' progress. Milestones used to drive this; §08 Phase A
+// retired them here and Phase B dropped the table (docs/adr/0056).
 
 export { EMPTY_TASK_COUNTS, type ProjectTaskCounts, taskProgress };
 
