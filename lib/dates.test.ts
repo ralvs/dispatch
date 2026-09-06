@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	calendarDaysBetween,
 	dateOfInstant,
 	dayWindowUtc,
 	formatDateline,
@@ -40,6 +41,17 @@ describe("dayWindowUtc", () => {
 		const { startUtc, endUtc } = dayWindowUtc("2026-07-14", SP);
 		expect(startUtc).toBe("2026-07-14T03:00:00.000Z");
 		expect(endUtc).toBe("2026-07-15T03:00:00.000Z");
+	});
+});
+
+describe("calendarDaysBetween", () => {
+	it("counts whole days between two calendar dates", () => {
+		expect(calendarDaysBetween("2026-08-23", "2026-09-06")).toBe(14);
+		expect(calendarDaysBetween("2026-09-06", "2026-09-06")).toBe(0);
+	});
+
+	it("does not go negative when the start is in the future", () => {
+		expect(calendarDaysBetween("2026-09-10", "2026-09-06")).toBe(0);
 	});
 });
 

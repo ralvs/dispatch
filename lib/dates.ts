@@ -58,6 +58,21 @@ export function shiftDay(dateIso: string, days: number): string {
 	return iso;
 }
 
+/**
+ * Whole calendar days from `fromIso` to `toIso` (both YYYY-MM-DD). Never
+ * negative — a future `fromIso` reads as 0, not a countdown.
+ */
+export function calendarDaysBetween(fromIso: string, toIso: string): number {
+	const days = Math.round(
+		DateTime.fromISO(toIso, { zone: "utc" }).diff(
+			DateTime.fromISO(fromIso, { zone: "utc" }),
+			"days",
+		).days,
+	);
+	if (!Number.isFinite(days)) throw new Error(`Invalid date: ${fromIso} → ${toIso}`);
+	return Math.max(0, days);
+}
+
 /** Monday of the week containing the given calendar date. */
 export function startOfWeek(dateIso: string): string {
 	const iso = DateTime.fromISO(dateIso, { zone: "utc" }).startOf("week").toISODate();
