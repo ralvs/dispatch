@@ -1149,6 +1149,7 @@ export type Database = {
 					recurrence_rule: string | null;
 					reminder_offsets: Json;
 					reminders_sent: Json;
+					someday: boolean;
 					source: string;
 					status: string;
 					title: string;
@@ -1169,6 +1170,7 @@ export type Database = {
 					recurrence_rule?: string | null;
 					reminder_offsets?: Json;
 					reminders_sent?: Json;
+					someday?: boolean;
 					source?: string;
 					status?: string;
 					title: string;
@@ -1189,6 +1191,7 @@ export type Database = {
 					recurrence_rule?: string | null;
 					reminder_offsets?: Json;
 					reminders_sent?: Json;
+					someday?: boolean;
 					source?: string;
 					status?: string;
 					title?: string;

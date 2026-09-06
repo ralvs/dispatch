@@ -14,7 +14,7 @@ import {
 	type TaskLists,
 } from "@/lib/task-interaction/apply-intent";
 import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
-import { isDueToday, isOverdue, isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
+import { isDueToday, isOverdue, isTop3Today, isWant, TOP3_SLOTS } from "@/lib/task-predicates";
 import {
 	completeTaskAction,
 	createTaskAction,
@@ -36,7 +36,7 @@ import {
 import { TaskRowItem } from "./task-row";
 
 function isTaskStatusFilter(value: string | undefined): value is TaskStatusFilter {
-	return value === "open" || value === "overdue" || value === "today";
+	return value === "open" || value === "overdue" || value === "today" || value === "wants";
 }
 
 /** Builds the shareable `?status=&project=&domain=` query string, dropping defaults. */
@@ -62,6 +62,7 @@ function optimisticTask(overrides: Partial<TaskRow> = {}): TaskRow {
 		project_id: null,
 		domain_id: null,
 		recurrence_rule: null,
+		someday: false,
 		top3_for_date: null,
 		source: "manual",
 		created_at: new Date().toISOString(),
@@ -87,6 +88,7 @@ function optimisticTaskFromForm(formData: FormData, domains: TaskDomainOption[])
 		notes: String(formData.get("notes") ?? "") || null,
 		due_date: String(formData.get("due_date") ?? "") || null,
 		due_time: String(formData.get("due_time") ?? "") || null,
+		someday: formData.get("someday") === "on",
 		priority: Number.isFinite(priorityRaw) ? priorityRaw : 4,
 		domain_id: domainId,
 		recurrence_rule: String(formData.get("recurrence_rule") ?? "") || null,
@@ -226,7 +228,12 @@ export function TaskList({
 		return true;
 	}
 
-	const filteredOpen = lists.open.filter(matchesFilters);
+	// Wants are parked, not open: they carry no due date and would otherwise sit
+	// in every view looking overdue-ish forever (shape plan §03). They are their
+	// own view and are excluded from all three of the others.
+	const scoped = lists.open.filter(matchesFilters);
+	const filteredOpen = scoped.filter((t) => !isWant(t));
+	const wantTasks = scoped.filter(isWant);
 	const filteredDone = lists.done.filter(matchesFilters);
 	const overdueTasks = filteredOpen.filter((t) => isOverdue(t, todayIso));
 	const todayTasks = filteredOpen.filter((t) => isDueToday(t, todayIso));
@@ -318,6 +325,7 @@ export function TaskList({
 						openCount={filteredOpen.length}
 						overdueCount={overdueTasks.length}
 						todayCount={todayTasks.length}
+						wantsCount={wantTasks.length}
 					/>
 					<TaskScopeFilters
 						projectId={projectId}
@@ -432,6 +440,33 @@ export function TaskList({
 					) : (
 						<ul>
 							{todayTasks.map((t) => (
+								<TaskRowItem
+									key={t.id}
+									task={t}
+									todayIso={todayIso}
+									domains={domains}
+									initialEditing={editTaskId === t.id}
+									handlers={handlersFor(t)}
+									noteId={taskNoteIds?.[t.id]}
+									people={people}
+									mentions={taskMentions?.[t.id]}
+								/>
+							))}
+						</ul>
+					)}
+				</section>
+			)}
+
+			{status === "wants" && (
+				<section className="mt-9" aria-label="Wants">
+					<SectionHead title="Wants" />
+					{wantTasks.length === 0 ? (
+						<EmptyState hint="A want is a task with the clock switched off — set one with the “someday” chip on the form.">
+							Nothing parked.
+						</EmptyState>
+					) : (
+						<ul>
+							{wantTasks.map((t) => (
 								<TaskRowItem
 									key={t.id}
 									task={t}

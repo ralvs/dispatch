@@ -17,6 +17,16 @@ export function isDueToday(task: Pick<TaskRow, "status" | "due_date">, todayIso:
 	return task.status !== "done" && task.due_date === todayIso;
 }
 
+/**
+ * A want: an intent with no time (shape plan §03). Hidden from Today and from
+ * the default /tasks views, so an open-ended wish stops looking overdue-ish
+ * forever. Promotion is clearing the flag, so this is the only thing that
+ * separates a want from a task.
+ */
+export function isWant(task: Pick<TaskRow, "someday">): boolean {
+	return task.someday === true;
+}
+
 /** A task is starred for "today's top 3" if it's pinned to today's date. */
 export function isTop3Today(task: Pick<TaskRow, "top3_for_date">, todayIso: string): boolean {
 	return task.top3_for_date === todayIso;

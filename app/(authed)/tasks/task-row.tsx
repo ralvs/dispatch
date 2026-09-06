@@ -165,6 +165,7 @@ export function TaskRowItem({
 						domain_id: task.domain_id,
 						priority: task.priority,
 						recurrence_rule: task.recurrence_rule,
+						someday: task.someday,
 					}}
 				/>
 			)}

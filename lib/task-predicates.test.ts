@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isDueToday, isOverdue, isTop3Today } from "@/lib/task-predicates";
+import { isDueToday, isOverdue, isTop3Today, isWant } from "@/lib/task-predicates";
 
 describe("isOverdue", () => {
 	it("is false when due today", () => {
@@ -56,5 +56,12 @@ describe("isTop3Today", () => {
 
 	it("is false when not pinned", () => {
 		expect(isTop3Today({ top3_for_date: null }, "2026-07-15")).toBe(false);
+	});
+});
+
+describe("isWant", () => {
+	it("is true only when the clock is switched off", () => {
+		expect(isWant({ someday: true })).toBe(true);
+		expect(isWant({ someday: false })).toBe(false);
 	});
 });

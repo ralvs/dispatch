@@ -389,7 +389,9 @@ export async function loadDayScheduleInputs(
 	dateIso: string,
 ): Promise<{ open: TaskRow[]; completed: TaskRow[]; events: CalendarEventRow[] }> {
 	const [open, completed, events] = await Promise.all([
-		listTasks(sb, { status: "open" }),
+		// Wants never reach a day: an intent with no time has no day to sit on
+		// (shape plan §03). Today's page is otherwise untouched by this plan.
+		listTasks(sb, { status: "open", excludeWants: true }),
 		listCompletedOn(sb, dateIso, tz),
 		listEventsOn(sb, dateIso, tz),
 	]);

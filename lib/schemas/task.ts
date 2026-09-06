@@ -29,6 +29,9 @@ export const TaskSchema = z.object({
 	recurrence_rule: z.enum(RECURRENCE_PATTERNS).nullable().optional(),
 	reminder_offsets: z.array(z.number()).default([]),
 	source: TaskSourceSchema,
+	// A want: an intent with no time (shape plan §03). Not a status and not a
+	// second entity — the clock is simply switched off.
+	someday: z.boolean().default(false),
 	top3_for_date: nullableDate(),
 	created_at: z.string().datetime({ offset: true }),
 	completed_at: z.string().datetime({ offset: true }).nullable().optional(),
@@ -68,6 +71,10 @@ export const CreateTaskFormSchema = z
 		priority: z.coerce.number().int().min(1).max(4).default(4),
 		domain_id: z.uuid().optional().or(z.literal("")),
 		recurrence_rule: z.enum(RECURRENCE_PATTERNS).optional().or(z.literal("")),
+		// An unchecked checkbox posts nothing at all, so absence is false. The
+		// literal is what a checked one posts through the hidden input the form
+		// uses, which keeps the value legible in a FormData dump.
+		someday: z.literal("on").optional().or(z.literal("")),
 	})
 	// A time with no date to put it on is meaningless (matches the DB check
 	// constraint — see the migration that added it). Report it as a form
@@ -76,6 +83,13 @@ export const CreateTaskFormSchema = z
 	.refine((v) => !(v.due_time && !v.due_date), {
 		message: "due_time requires due_date",
 		path: ["due_time"],
+	})
+	// A want has the clock switched off, so it cannot also be scheduled. Same
+	// invariant as the DB check constraint; reported here as a form error
+	// rather than reaching the service and being silently coerced.
+	.refine((v) => !(v.someday === "on" && v.due_date), {
+		message: "a want cannot have a due date",
+		path: ["someday"],
 	});
 
 // ─── Row shape actually returned by the tasks service ──────────────────
@@ -96,6 +110,7 @@ export const TaskRowSchema = z.object({
 	project_id: z.string().uuid().nullable(),
 	domain_id: z.string().uuid().nullable(),
 	recurrence_rule: z.string().nullable(),
+	someday: z.boolean(),
 	top3_for_date: z.string().nullable(),
 	source: z.string(),
 	created_at: z.string(),

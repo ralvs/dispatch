@@ -26,6 +26,11 @@ export async function listTasks(
 		/** Tasks with no domain at all — the inbox. Distinct from domainId. */
 		unfiled?: boolean;
 		projectId?: string;
+		/**
+		 * Drop wants — tasks with the clock switched off (shape plan §03). Today
+		 * asks for this; /tasks loads them and files them into their own view.
+		 */
+		excludeWants?: boolean;
 	} = {},
 ): Promise<TaskRow[]> {
 	let q = sb
@@ -38,6 +43,7 @@ export async function listTasks(
 	if (filters.domainId) q = q.eq("domain_id", filters.domainId);
 	if (filters.unfiled) q = q.is("domain_id", null);
 	if (filters.projectId) q = q.eq("project_id", filters.projectId);
+	if (filters.excludeWants) q = q.eq("someday", false);
 	const data = unwrap(await q);
 	return (data ?? []).map(flatten);
 }
@@ -181,6 +187,7 @@ export async function createTask(
 		domain_id?: string | null;
 		project_id?: string | null;
 		recurrence_rule?: string | null;
+		someday?: boolean;
 		source?: string;
 	},
 	opts: TaskWriteOpts = {},
@@ -191,12 +198,17 @@ export async function createTask(
 	// coercion in updateTask below rather than rejecting: a time with no
 	// date to sit on is silently dropped instead of degrading the capture.
 	const due_time = input.due_date ? input.due_time : null;
+	// A want has the clock switched off (shape plan §03) — same invariant the
+	// DB check constraint holds, coerced here rather than rejected so a capture
+	// that guesses both never fails.
+	const someday = input.due_date ? false : input.someday;
 	const data = unwrap(
 		await sb
 			.from("tasks")
 			.insert({
 				...input,
 				due_time,
+				someday,
 				// A task without a stated destination is unfiled — no domain at all,
 				// which is what the /inbox route selects on (docs/adr/0027). Stated
 				// explicitly rather than left to the column default so the write says
@@ -227,6 +239,7 @@ export async function updateTask(
 		domain_id: string;
 		project_id: string | null;
 		recurrence_rule: string | null;
+		someday: boolean;
 	}>,
 	opts: TaskWriteOpts = {},
 ): Promise<void> {
@@ -236,7 +249,12 @@ export async function updateTask(
 	// becomes invalid once merged into the row it's patching. Coerce rather
 	// than reject: clearing the date silently clears whatever time no longer
 	// has a date to sit on, whether or not the caller also touched due_time.
-	const nextPatch = patch.due_date === null ? { ...patch, due_time: null } : patch;
+	const dateCleared = patch.due_date === null ? { ...patch, due_time: null } : patch;
+	// A want has the clock switched off (shape plan §03) — the same invariant
+	// the DB check constraint holds. A patch that sets both loses the flag, not
+	// the date: the user just named a day, which is the promotion gesture.
+	const nextPatch =
+		dateCleared.someday && dateCleared.due_date ? { ...dateCleared, someday: false } : dateCleared;
 	unwrap(await sb.from("tasks").update(nextPatch).eq("id", id));
 
 	// Mentions only re-derive when text moves (not complete/star/domain).

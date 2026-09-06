@@ -28,6 +28,7 @@ export async function createTaskAction(formData: FormData) {
 		priority: parsed.priority,
 		domain_id: parsed.domain_id || null,
 		recurrence_rule: parsed.recurrence_rule || null,
+		someday: parsed.someday === "on",
 	});
 	afterMutation("task.write");
 }
@@ -53,6 +54,10 @@ export async function updateTaskAction(id: string, formData: FormData) {
 		// wants the opposite, which is why the two mappings stay separate.
 		domain_id: parsed.domain_id || undefined,
 		recurrence_rule: parsed.recurrence_rule || null,
+		// Always sent, unlike domain: the toggle's off state is the promotion
+		// gesture (shape plan §03), so an absent field has to mean "not a want"
+		// rather than "leave it alone".
+		someday: parsed.someday === "on",
 	});
 	afterMutation("task.write");
 }

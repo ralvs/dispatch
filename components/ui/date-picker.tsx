@@ -44,6 +44,7 @@ export function DatePicker({
 	value,
 	onChange,
 	todayIso,
+	disabled = false,
 	"aria-label": ariaLabel,
 }: {
 	name: string;
@@ -51,6 +52,9 @@ export function DatePicker({
 	onChange: (next: string) => void;
 	/** App-timezone today — seeds the empty field's format, not the value. */
 	todayIso: string;
+	/** Greys the whole group. The hidden input still posts, so the caller's
+	 *  cleared value is what lands — never a stale one. */
+	disabled?: boolean;
 	"aria-label": string;
 }) {
 	return (
@@ -59,6 +63,7 @@ export function DatePicker({
 			value={toDateValue(value)}
 			placeholderValue={parseDate(todayIso)}
 			onChange={(next) => onChange(next ? next.toString() : "")}
+			isDisabled={disabled}
 			shouldForceLeadingZeros
 			firstDayOfWeek="mon"
 			className="min-w-0 w-full"
