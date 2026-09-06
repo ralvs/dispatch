@@ -1,14 +1,38 @@
 "use client";
 
 import { useCallback, useTransition } from "react";
-import { runAction } from "@/lib/client/toast";
+import { runAction, toastSuccess } from "@/lib/client/toast";
+import { formatDueLabel } from "@/lib/dates";
 import type { TaskRow } from "@/lib/schemas/task";
-import type { TaskIntent } from "@/lib/task-interaction/apply-intent";
+import { nextCompleteFields, type TaskIntent } from "@/lib/task-interaction/apply-intent";
 import { useIntentLock } from "@/lib/task-interaction/intent-lock";
 
 const DEFAULT_ERROR = "Couldn't update that task. Try again.";
 
-export type TaskIntentRun = (intent: TaskIntent, action: () => Promise<unknown>) => void;
+export type TaskIntentRun = (intent: TaskIntent, action: () => Promise<unknown>) => boolean;
+
+/**
+ * Recurring complete does not close the row — the checkbox springs back
+ * (docs/adr/0037). The due-date label is the only other signal and is easy
+ * to miss, so the success pill is the confirmation. Fired on claim, not
+ * after the server round-trip, so the pill lands with the optimistic tick.
+ */
+export function toastTaskToggle(
+	kind: "complete" | "reopen",
+	task: Pick<TaskRow, "recurrence_rule" | "due_date">,
+	todayIso: string,
+): void {
+	if (kind === "reopen") {
+		toastSuccess("Reopened");
+		return;
+	}
+	const next = nextCompleteFields(task, { todayIso });
+	if (next.rolled && next.due_date) {
+		toastSuccess("Done", formatDueLabel(next.due_date, todayIso));
+		return;
+	}
+	toastSuccess("Done");
+}
 
 /**
  * Claim → optimistic dispatch → server action → release.
@@ -25,13 +49,14 @@ export function useTaskIntentRunner(
 
 	return useCallback(
 		(intent: TaskIntent, action: () => Promise<unknown>) => {
-			if (!lock.claim(intent)) return;
+			if (!lock.claim(intent)) return false;
 			startTransition(async () => {
 				dispatchOptimistic(intent);
 				// On failure optimistic state rolls back when the transition ends.
 				await runAction(action, errorMessage);
 				lock.release(intent);
 			});
+			return true;
 		},
 		[lock, dispatchOptimistic, errorMessage],
 	);
@@ -58,27 +83,34 @@ export type TaskWriteActions = {
 /**
  * Bind a row's checkbox / star / delete to intent + preconditioned actions.
  * `top3DateIso` is the day the star pins to (today on Tasks; day on screen on Today).
+ * `todayIso` is the real calendar today — recurrence rolls from it, not the day on screen.
  */
 export function bindTaskHandlers(
 	task: TaskRow,
 	run: TaskIntentRun,
 	actions: TaskWriteActions,
-	opts: { top3DateIso: string },
+	opts: { top3DateIso: string; todayIso: string },
 ) {
 	const done = task.status === "done";
 	return {
 		onToggleDone: () => {
 			if (done) {
-				run({ type: "reopen", id: task.id }, () => actions.reopen(task.id));
+				if (!run({ type: "reopen", id: task.id }, () => actions.reopen(task.id))) return;
+				toastTaskToggle("reopen", task, opts.todayIso);
 			} else {
 				const intent = {
 					type: "complete" as const,
 					id: task.id,
 					observedDueDate: task.due_date,
 				};
-				run(intent, () =>
-					actions.complete({ id: intent.id, observedDueDate: intent.observedDueDate }),
-				);
+				if (
+					!run(intent, () =>
+						actions.complete({ id: intent.id, observedDueDate: intent.observedDueDate }),
+					)
+				) {
+					return;
+				}
+				toastTaskToggle("complete", task, opts.todayIso);
 			}
 		},
 		onToggleTop3: () => {

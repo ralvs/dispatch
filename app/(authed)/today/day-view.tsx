@@ -306,8 +306,9 @@ export function DayView({
 	);
 	const run = useTaskIntentRunner(dispatchOptimistic);
 	const handlersFor = useCallback(
-		(task: TaskRow) => bindTaskHandlers(task, run, WRITE_ACTIONS, { top3DateIso: view.dateIso }),
-		[run, view.dateIso],
+		(task: TaskRow) =>
+			bindTaskHandlers(task, run, WRITE_ACTIONS, { top3DateIso: view.dateIso, todayIso }),
+		[run, view.dateIso, todayIso],
 	);
 
 	const placement = {

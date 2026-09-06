@@ -218,7 +218,7 @@ export function TaskList({
 				setTop3: setTop3Action,
 				delete: deleteTaskAction,
 			},
-			{ top3DateIso: todayIso },
+			{ top3DateIso: todayIso, todayIso },
 		);
 	}
 
