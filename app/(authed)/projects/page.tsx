@@ -1,17 +1,30 @@
 import { EmptyState, ListSection, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { listDomains } from "@/lib/services/domains";
-import { listProjects } from "@/lib/services/projects";
+import { countTasksByProject, listProjects } from "@/lib/services/projects";
+import { listTasks } from "@/lib/services/tasks";
 import { STATUS_GROUPS } from "./constants";
 import { ProjectCreateButton } from "./project-form";
 import { ProjectRowItem } from "./project-row";
 
 export default async function ProjectsPage() {
 	const { sb } = await requireOwnerPage();
-	const [projects, domains] = await Promise.all([
+	const [projects, domains, openTasks, taskCounts] = await Promise.all([
 		listProjects(sb),
 		listDomains(sb, { includeArchived: true }),
+		// Open tasks for the inline lists (plan O5). One read for the whole
+		// page rather than one per row.
+		listTasks(sb, { status: "open" }),
+		countTasksByProject(sb),
 	]);
+
+	const openByProject = new Map<string, typeof openTasks>();
+	for (const task of openTasks) {
+		if (task.project_id === null) continue;
+		const bucket = openByProject.get(task.project_id);
+		if (bucket) bucket.push(task);
+		else openByProject.set(task.project_id, [task]);
+	}
 
 	return (
 		<div>
@@ -42,7 +55,12 @@ export default async function ProjectsPage() {
 							<ListSection key={status} title={label} count={group.length}>
 								<ul>
 									{group.map((p) => (
-										<ProjectRowItem key={p.id} project={p} />
+										<ProjectRowItem
+											key={p.id}
+											project={p}
+											openTasks={openByProject.get(p.id) ?? []}
+											doneCount={taskCounts[p.id]?.done ?? 0}
+										/>
 									))}
 								</ul>
 							</ListSection>

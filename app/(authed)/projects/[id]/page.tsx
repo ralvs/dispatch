@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { listDomains } from "@/lib/services/domains";
-import { getProject, listMilestones } from "@/lib/services/projects";
+import { getProject, listTasksForProject } from "@/lib/services/projects";
 import { ProjectDetail } from "./project-detail";
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
@@ -15,10 +15,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 	const project = await getProject(sb, id);
 	if (!project) notFound();
 
-	const [milestones, domains] = await Promise.all([
-		listMilestones(sb, id),
+	const [tasks, domains] = await Promise.all([
+		listTasksForProject(sb, id),
 		listDomains(sb, { includeArchived: true }),
 	]);
 
-	return <ProjectDetail project={project} milestones={milestones} domains={domains} />;
+	return <ProjectDetail project={project} tasks={tasks} domains={domains} />;
 }

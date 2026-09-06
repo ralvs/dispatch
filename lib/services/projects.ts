@@ -3,11 +3,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { nowUtc } from "@/lib/dates";
 import {
-	type CreateMilestoneSchema,
-	MILESTONE_SELECT,
-	type MilestoneRow,
-} from "@/lib/schemas/milestone";
-import {
 	type CreateProjectSchema,
 	PROJECT_SELECT,
 	type ProjectRow,
@@ -15,6 +10,12 @@ import {
 	type UpdateProjectSchema,
 } from "@/lib/schemas/project";
 import { unwrap } from "@/lib/services/errors";
+import {
+	EMPTY_TASK_COUNTS,
+	type ProjectTaskCounts,
+	taskProgress,
+} from "@/lib/services/projects-shared";
+import { listTasks, type TaskRow } from "@/lib/services/tasks";
 
 // ─── Projects ───────────────────────────────────────────────────────────
 
@@ -64,81 +65,41 @@ export async function archiveProject(sb: SupabaseClient, id: string): Promise<vo
 	unwrap(await sb.from("projects").update({ status: "archived" }).eq("id", id));
 }
 
-// ─── Milestones ─────────────────────────────────────────────────────────
+// ─── Task rollup ────────────────────────────────────────────────────────
+//
+// A project is a loose bucket that tags tasks (shape plan §02), so its
+// progress is its tasks' progress. Milestones used to drive this; they are
+// retired in code here (Phase A, §08) while their rows stay in Postgres.
 
-export type { MilestoneRow };
+export { EMPTY_TASK_COUNTS, type ProjectTaskCounts, taskProgress };
 
-export type CreateMilestoneInput = z.infer<typeof CreateMilestoneSchema>;
-
-export async function listMilestones(
+/** done/open task counts for every project, in one query. */
+export async function countTasksByProject(
 	sb: SupabaseClient,
-	projectId: string,
-): Promise<MilestoneRow[]> {
+): Promise<Record<string, ProjectTaskCounts>> {
 	const data = unwrap(
-		await sb
-			.from("milestones")
-			.select(MILESTONE_SELECT)
-			.eq("project_id", projectId)
-			.order("position", { ascending: true })
-			.order("created_at", { ascending: true }),
-	);
-	return (data ?? []) as unknown as MilestoneRow[];
-}
+		await sb.from("tasks").select("project_id, status").not("project_id", "is", null),
+	) as Array<{ project_id: string | null; status: string }> | null;
 
-/** Milestones for many projects in one query, grouped by project id. */
-export async function listMilestonesForProjects(
-	sb: SupabaseClient,
-	projectIds: string[],
-): Promise<Record<string, MilestoneRow[]>> {
-	if (projectIds.length === 0) return {};
-	const data = unwrap(
-		await sb
-			.from("milestones")
-			.select(MILESTONE_SELECT)
-			.in("project_id", projectIds)
-			.order("position", { ascending: true })
-			.order("created_at", { ascending: true }),
-	);
-	const grouped: Record<string, MilestoneRow[]> = {};
-	for (const row of (data ?? []) as unknown as MilestoneRow[]) {
-		if (!grouped[row.project_id]) grouped[row.project_id] = [];
-		grouped[row.project_id].push(row);
+	const out: Record<string, ProjectTaskCounts> = {};
+	for (const row of data ?? []) {
+		if (row.project_id === null) continue;
+		out[row.project_id] ??= { done: 0, open: 0 };
+		const counts = out[row.project_id];
+		if (row.status === "done") counts.done += 1;
+		else counts.open += 1;
 	}
-	return grouped;
+	return out;
 }
 
-export async function createMilestone(
+/**
+ * A project's own tasks. Open first (the list surfaces show open only — plan
+ * O5), each band in the same order /tasks uses.
+ */
+export async function listTasksForProject(
 	sb: SupabaseClient,
 	projectId: string,
-	input: CreateMilestoneInput,
-): Promise<MilestoneRow> {
-	const data = unwrap(
-		await sb
-			.from("milestones")
-			.insert({ ...input, project_id: projectId })
-			.select(MILESTONE_SELECT)
-			.single(),
-	);
-	return data as unknown as MilestoneRow;
+	filters: { status?: "open" | "done" } = {},
+): Promise<TaskRow[]> {
+	return listTasks(sb, { projectId, ...filters });
 }
-
-/** Flips a milestone open<->done, stamping/clearing completed_at to match. */
-export async function toggleMilestone(
-	sb: SupabaseClient,
-	id: string,
-	done: boolean,
-): Promise<void> {
-	unwrap(
-		await sb
-			.from("milestones")
-			.update({ status: done ? "done" : "open", completed_at: done ? nowUtc() : null })
-			.eq("id", id),
-	);
-}
-
-export async function deleteMilestone(sb: SupabaseClient, id: string): Promise<void> {
-	unwrap(await sb.from("milestones").delete().eq("id", id));
-}
-
-/** Done weight / total weight, in [0, 1]. 0 for an empty milestone list. */
-export { milestoneProgress } from "@/lib/services/projects-shared";

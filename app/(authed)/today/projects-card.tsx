@@ -7,11 +7,12 @@ import { PROGRESS_RENDER } from "@/lib/ui/variant";
 /**
  * Active projects, each as a completion figure and a headcount.
  *
- * The ring is the weighted milestone progress and the count beside it is the
- * plain "9 of 14 done" — they are different numbers on purpose. Weight is what
- * makes progress honest when milestones are unequal; the count is what a
- * person can actually check. The number inside the ring is what is left, which
- * is the only one of the three that answers "how much more".
+ * The ring and the count read the project's own tasks (shape plan §02,
+ * decision D2). They used to be different numbers — weighted milestone
+ * progress against a plain headcount — because a milestone could carry more
+ * weight than its neighbour. Tasks all weigh the same, so the ring is now the
+ * count drawn as an arc. The number inside it is what is left, which is the
+ * one reading that answers "how much more".
  */
 export function ProjectsCard({ projects }: { projects: ProjectBrief[] }) {
 	if (projects.length === 0) return null;
@@ -35,7 +36,7 @@ export function ProjectsCard({ projects }: { projects: ProjectBrief[] }) {
 									href={`/projects/${p.id}`}
 									className="flex min-h-12 items-center gap-3 py-3 hover:text-accent-ink"
 								>
-									{/* A ring at 0% on a project with no milestones is not a
+									{/* A ring at 0% on a project with no tasks is not a
 									    reading, it is furniture — it says "nothing done" about a
 									    thing that has nothing to do. The project keeps its
 									    colour as a dot and the row says so in words. */}
@@ -49,7 +50,7 @@ export function ProjectsCard({ projects }: { projects: ProjectBrief[] }) {
 										<Progress
 											render={PROGRESS_RENDER}
 											value={p.progress}
-											label={`${p.name}: ${p.doneCount} of ${p.totalCount} milestones done`}
+											label={`${p.name}: ${p.doneCount} of ${p.totalCount} tasks done`}
 											color={color}
 											size={34}
 											thickness={5}
@@ -60,9 +61,7 @@ export function ProjectsCard({ projects }: { projects: ProjectBrief[] }) {
 									)}
 									<span className="min-w-0 flex-1 truncate text-base text-ink">{p.name}</span>
 									<span className="shrink-0 font-mono text-meta tabular-nums text-ink-4">
-										{p.totalCount === 0
-											? "No milestones"
-											: `${p.doneCount} of ${p.totalCount} done`}
+										{p.totalCount === 0 ? "No tasks" : `${p.doneCount} of ${p.totalCount} done`}
 									</span>
 								</Link>
 							</li>

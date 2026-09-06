@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import Link from "next/link";
+import { useState, useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
 import {
 	Button,
 	Card,
-	Checkbox,
+	EmptyState,
 	Field,
 	Input,
 	ListRow,
@@ -17,39 +18,27 @@ import {
 } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { DomainRow } from "@/lib/services/domains";
-import type { MilestoneRow, ProjectRow } from "@/lib/services/projects";
-import { milestoneProgress } from "@/lib/services/projects-shared";
-import {
-	ENGAGEMENT_TYPES,
-	engagementTypeLabel,
-	KINDS,
-	kindLabel,
-	PROJECT_TYPES,
-	projectTypeLabel,
-	statusLabel,
-} from "../constants";
-import {
-	archiveProjectAction,
-	completeProjectAction,
-	createMilestoneAction,
-	deleteMilestoneAction,
-	toggleMilestoneAction,
-	updateProjectAction,
-} from "./actions";
+import type { ProjectRow } from "@/lib/services/projects";
+import { taskProgress } from "@/lib/services/projects-shared";
+import type { TaskRow } from "@/lib/services/tasks";
+import { KINDS, kindLabel, PROJECT_TYPES, projectTypeLabel, statusLabel } from "../constants";
+import { archiveProjectAction, completeProjectAction, updateProjectAction } from "./actions";
 
 export function ProjectDetail({
 	project,
-	milestones,
+	tasks,
 	domains,
 }: {
 	project: ProjectRow;
-	milestones: MilestoneRow[];
+	/** Every task tagged with this project, open and done (shape plan §02). */
+	tasks: TaskRow[];
 	domains: DomainRow[];
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
 	const domain = domains.find((d) => d.id === project.domain_id);
-	const doneCount = milestones.filter((m) => m.status === "done").length;
+	const openTasks = tasks.filter((t) => t.status !== "done");
+	const doneTasks = tasks.filter((t) => t.status === "done");
 
 	function saveDetails(formData: FormData) {
 		startTransition(async () => {
@@ -63,10 +52,10 @@ export function ProjectDetail({
 
 	return (
 		<div className={pending ? "opacity-50" : ""}>
-			{/* Name is the title; type + status are facts (plain), milestones
-			    the measure (Pass 4.5 Gate A). Domain rides the subtitle with its
-			    colour — the list row already settled that domain, not project
-			    colour, is the colour that leads. */}
+			{/* Name is the title; type + status are facts (plain), the task
+			    rollup the measure (Pass 4.5 Gate A). Domain rides the subtitle
+			    with its colour — the list row already settled that domain, not
+			    project colour, is the colour that leads. */}
 			<PageHeader
 				title={project.name}
 				facts={[
@@ -74,8 +63,8 @@ export function ProjectDetail({
 					statusLabel(project.status),
 				]}
 				measure={
-					milestones.length > 0
-						? [{ count: `${doneCount}/${milestones.length}`, label: "milestones" }]
+					tasks.length > 0
+						? [{ count: `${doneTasks.length}/${tasks.length}`, label: "tasks done" }]
 						: undefined
 				}
 				subtitle={
@@ -132,24 +121,6 @@ export function ProjectDetail({
 										))}
 									</Select>
 								</Field>
-								<Field label="Engagement">
-									<Select name="engagement_type" defaultValue={project.engagement_type}>
-										{ENGAGEMENT_TYPES.map((e) => (
-											<option key={e.value} value={e.value}>
-												{e.label}
-											</option>
-										))}
-									</Select>
-								</Field>
-								<Field label="Quoted hours">
-									<Input
-										name="quoted_hours"
-										type="number"
-										min="0"
-										step="0.5"
-										defaultValue={project.quoted_hours ?? ""}
-									/>
-								</Field>
 								<Field label="Start date">
 									<Input name="start_date" type="date" defaultValue={project.start_date ?? ""} />
 								</Field>
@@ -177,14 +148,6 @@ export function ProjectDetail({
 							<div>
 								<dt className="font-mono text-eyebrow uppercase text-ink-3">Kind</dt>
 								<dd>{kindLabel(project.kind)}</dd>
-							</div>
-							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Engagement</dt>
-								<dd>{engagementTypeLabel(project.engagement_type)}</dd>
-							</div>
-							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Quoted hours</dt>
-								<dd>{project.quoted_hours ?? "—"}</dd>
 							</div>
 							<div>
 								<dt className="font-mono text-eyebrow uppercase text-ink-3">Start date</dt>
@@ -254,136 +217,82 @@ export function ProjectDetail({
 				)}
 			</section>
 
-			<MilestonesSection projectId={project.id} milestones={milestones} />
+			<ProjectTasksSection projectId={project.id} open={openTasks} done={doneTasks} />
 		</div>
 	);
 }
 
-function MilestonesSection({
+/**
+ * A project is a loose bucket that tags tasks (shape plan §02), so the page
+ * that names one has to show what is in it. Milestones used to stand here — a
+ * second checklist that measured itself, and moved only when you remembered
+ * to tick it.
+ *
+ * Open work leads; finished work follows, because the project page is where
+ * done work belongs (plan O5 keeps it off the list rows).
+ */
+function ProjectTasksSection({
 	projectId,
-	milestones,
+	open,
+	done,
 }: {
 	projectId: string;
-	milestones: MilestoneRow[];
+	open: TaskRow[];
+	done: TaskRow[];
 }) {
-	const formRef = useRef<HTMLFormElement>(null);
-	const [pending, startTransition] = useTransition();
-	const [open, setOpen] = useState(false);
-	const progress = milestoneProgress(milestones);
-
-	function submit(formData: FormData) {
-		startTransition(async () => {
-			const ok = await runAction(
-				() => createMilestoneAction(projectId, formData),
-				"Couldn't add milestone.",
-			);
-			if (!ok) return;
-			formRef.current?.reset();
-			setOpen(false);
-		});
-	}
+	const total = open.length + done.length;
+	const progress = taskProgress({ done: done.length, open: open.length });
 
 	return (
-		<section className="mt-9" aria-label="Milestones">
-			<SectionHead title="Milestones" aside={`${Math.round(progress * 100)}%`} />
-			<div
-				className="mt-2 h-1.5 w-full bg-line"
-				role="progressbar"
-				aria-valuenow={Math.round(progress * 100)}
-				aria-valuemin={0}
-				aria-valuemax={100}
-				aria-label="Milestone progress"
-			>
-				<div className="h-full bg-ink" style={{ width: `${progress * 100}%` }} />
-			</div>
-
-			<ul className="mt-3">
-				{milestones.map((m) => (
-					<ListRow
-						key={m.id}
-						leading={
-							<Checkbox
-								checked={m.status === "done"}
-								disabled={pending}
-								onChange={(e) => {
-									const done = e.currentTarget.checked;
-									startTransition(async () => {
-										await runAction(
-											() => toggleMilestoneAction(projectId, m.id, done),
-											"Couldn't update milestone.",
-										);
-									});
-								}}
-								aria-label={`Mark milestone "${m.title}" ${m.status === "done" ? "open" : "done"}`}
-							/>
-						}
-						trailing={
-							<Button
-								type="button"
-								variant="danger-soft"
-								size="sm"
-								aria-label={`Delete milestone "${m.title}"`}
-								disabled={pending}
-								onClick={() =>
-									startTransition(async () => {
-										await runAction(
-											() => deleteMilestoneAction(projectId, m.id),
-											"Couldn't delete milestone.",
-										);
-									})
-								}
-							>
-								Delete
-							</Button>
-						}
-					>
-						<div className="flex min-w-0 items-baseline gap-2">
-							<span className={rowTitle({ tone: m.status === "done" ? "done" : "default" })}>
-								{m.title}
-							</span>
-							<span className="shrink-0 font-mono text-meta text-ink-4">w{m.weight}</span>
-						</div>
-					</ListRow>
-				))}
-			</ul>
-
-			{open ? (
-				<form ref={formRef} action={submit} className="mt-3">
-					<Card className="space-y-3" padding="compact">
-						<div className="grid grid-cols-3 gap-2">
-							<Field label="Title" className="col-span-2">
-								<Input name="title" required />
-							</Field>
-							<Field label="Weight">
-								<Input name="weight" type="number" min="1" step="1" placeholder="1" />
-							</Field>
-						</div>
-						<div className="flex justify-end gap-2">
-							<Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
-								Cancel
-							</Button>
-							<Button
-								type="submit"
-								variant="primary"
-								size="sm"
-								isPending={pending}
-								disabled={pending}
-							>
-								Add
-							</Button>
-						</div>
-					</Card>
-				</form>
+		<section className="mt-9" aria-label="Tasks">
+			<SectionHead
+				title="Tasks"
+				aside={
+					total > 0 ? (
+						<span className="font-mono text-meta text-ink-3">{Math.round(progress * 100)}%</span>
+					) : undefined
+				}
+			/>
+			{total === 0 ? (
+				<EmptyState hint="Tag a task with this project and it shows up here.">
+					Nothing tagged with this project.
+				</EmptyState>
 			) : (
-				<Button
-					type="button"
-					variant="tertiary"
-					fullWidth
-					className="mt-3 justify-start"
-					onClick={() => setOpen(true)}
-				>
-					+ Add milestone
-				</Button>
+				<>
+					<div
+						className="mt-2 h-1.5 w-full bg-line"
+						role="progressbar"
+						aria-valuenow={Math.round(progress * 100)}
+						aria-valuemin={0}
+						aria-valuemax={100}
+						aria-label="Tasks done"
+					>
+						<div className="h-full bg-ink" style={{ width: `${progress * 100}%` }} />
+					</div>
+
+					<ul className="mt-3">
+						{[...open, ...done].map((t) => (
+							<ListRow key={t.id}>
+								<Link
+									href={`/tasks?edit=${t.id}`}
+									className={rowTitle({
+										tone: t.status === "done" ? "done" : "default",
+										className: "hover:text-accent-ink",
+									})}
+								>
+									{t.title}
+								</Link>
+							</ListRow>
+						))}
+					</ul>
+
+					<Link
+						href={`/tasks?project=${projectId}`}
+						className="mt-3 inline-block font-mono text-meta text-accent-ink"
+					>
+						Open in Tasks →
+					</Link>
+				</>
 			)}
 		</section>
 	);

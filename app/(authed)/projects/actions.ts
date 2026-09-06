@@ -12,9 +12,7 @@ function revalidateProjectViews() {
 
 export async function createProjectAction(formData: FormData) {
 	const { sb } = await requireOwnerPage();
-	const parsed = decodeForm(CreateProjectSchema, formData, {
-		spec: { quoted_hours: "number" },
-	});
+	const parsed = decodeForm(CreateProjectSchema, formData, {});
 	await createProject(sb, parsed);
 	revalidateProjectViews();
 }

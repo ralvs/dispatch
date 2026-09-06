@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CalendarEventRow } from "@/lib/services/calendar";
-import type { MilestoneRow, ProjectRow } from "@/lib/services/projects";
+import type { ProjectRow } from "@/lib/services/projects";
 import type { QuoteRow } from "@/lib/services/quotes";
 import type { CompletionRow, RoutineRow } from "@/lib/services/routines";
 import {
@@ -333,36 +333,17 @@ describe("bucketRoutines", () => {
 });
 
 describe("summarizeProjects", () => {
-	function milestone(
-		overrides: Partial<MilestoneRow> & { id: string; project_id: string },
-	): MilestoneRow {
-		return {
-			title: "Milestone",
-			status: "open",
-			weight: 1,
-			position: 0,
-			completed_at: null,
-			created_at: "2026-01-01T00:00:00.000Z",
-			...overrides,
-		} as MilestoneRow;
-	}
-
-	it("computes weighted progress and the next open milestone", () => {
+	it("counts done over total from the project's own tasks", () => {
 		const projects = [{ id: "p1", name: "Dispatch" } as ProjectRow];
-		const milestones = {
-			p1: [
-				milestone({ id: "m1", project_id: "p1", status: "done", weight: 3 }),
-				milestone({ id: "m2", project_id: "p1", title: "Ship UI", weight: 1 }),
-			],
-		};
-		const [brief] = summarizeProjects(projects, milestones);
+		const [brief] = summarizeProjects(projects, { p1: { done: 3, open: 1 } });
 		expect(brief.progress).toBeCloseTo(0.75);
-		expect(brief.nextMilestone).toEqual({ title: "Ship UI" });
+		expect(brief.doneCount).toBe(3);
+		expect(brief.totalCount).toBe(4);
 	});
 
-	it("handles projects with no milestones", () => {
+	it("handles projects with no tasks", () => {
 		const [brief] = summarizeProjects([{ id: "p1", name: "Empty" } as ProjectRow], {});
 		expect(brief.progress).toBe(0);
-		expect(brief.nextMilestone).toBeNull();
+		expect(brief.totalCount).toBe(0);
 	});
 });

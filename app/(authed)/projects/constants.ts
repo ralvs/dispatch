@@ -17,10 +17,10 @@ export const KINDS = [
 	{ value: "area", label: "Area" },
 ];
 
-export const ENGAGEMENT_TYPES = [
-	{ value: "project", label: "Project" },
-	{ value: "retainer", label: "Retainer" },
-];
+// ENGAGEMENT_TYPES / engagementTypeLabel are gone: engagement_type, along
+// with client_id, quoted_hours and hours_logged, is the agency column the
+// shape plan §01 argues Dispatch should never have had. Retired in code
+// (Phase A, §08); the columns stay in Postgres for now.
 
 export const STATUS_GROUPS: { status: ProjectRow["status"]; label: string }[] = [
 	{ status: "active", label: "Active" },
@@ -39,10 +39,6 @@ export function projectTypeLabel(value: string): string {
 
 export function kindLabel(value: string): string {
 	return labelFor(KINDS, value);
-}
-
-export function engagementTypeLabel(value: string): string {
-	return labelFor(ENGAGEMENT_TYPES, value);
 }
 
 export function statusLabel(status: string): string {

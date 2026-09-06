@@ -3,8 +3,6 @@ import { ColorSlugSchema } from "@/lib/schemas/color";
 
 export const ProjectStatusSchema = z.enum(["active", "paused", "done", "archived"]);
 export const ProjectTypeSchema = z.enum(["client", "internal", "content"]);
-export const EngagementTypeSchema = z.enum(["project", "retainer"]);
-export type EngagementType = z.infer<typeof EngagementTypeSchema>;
 // kind: 'project' (finite, has an outcome) vs 'area' (ongoing context like
 // Home, Garage, Health). Orthogonal to engagement_type — a 'project' kind
 // can still be a retainer, and areas are always 'project' engagement_type
@@ -19,13 +17,9 @@ export const ProjectSchema = z.object({
 	domain_id: z.string().uuid().nullable().optional(),
 	status: ProjectStatusSchema,
 	type: ProjectTypeSchema.nullable().optional(),
-	client_id: z.string().uuid().nullable().optional(),
-	quoted_hours: z.number().nullable().optional(),
-	hours_logged: z.number(),
 	start_date: z.string().date().nullable().optional(),
 	target_date: z.string().date().nullable().optional(),
 	color: ColorSlugSchema.nullable().optional(),
-	engagement_type: EngagementTypeSchema.default("project"),
 	kind: ProjectKindSchema.default("project"),
 	completed_at: z.string().datetime({ offset: true }).nullable().optional(),
 	created_at: z.string().datetime({ offset: true }),
@@ -41,23 +35,26 @@ export const CreateProjectSchema = z.object({
 	description: z.string().nullable().optional(),
 	domain_id: z.string().uuid().nullable().optional(),
 	type: ProjectTypeSchema.nullable().optional(),
-	client_id: z.string().uuid().nullable().optional(),
-	quoted_hours: z.number().nullable().optional(),
 	start_date: z.string().date().nullable().optional(),
 	target_date: z.string().date().nullable().optional(),
 	color: ColorSlugSchema.nullable().optional(),
-	engagement_type: EngagementTypeSchema.optional(),
 	kind: ProjectKindSchema.optional(),
 });
 
 export const UpdateProjectSchema = CreateProjectSchema.partial().extend({
 	status: ProjectStatusSchema.optional(),
-	hours_logged: z.number().optional(),
 });
 
-// Milestone schemas (MilestoneSchema, CreateMilestoneSchema,
-// UpdateMilestoneSchema, MilestoneStatusSchema) live in ./milestone —
-// pre-existing in this repo, re-exported via ./index.
+// Retired here by the shape plan's P5 (Phase A, §08): client_id,
+// quoted_hours, hours_logged and engagement_type. Every one of them exists to
+// prove what was delivered to a paying client — the job §01 argues Dispatch
+// does not have, because Linear owns delivery history. The columns are still
+// in Postgres and the rows are untouched; dropping them is a later, separate
+// patch with its own ADR.
+//
+// Milestones went the same way. A percentage that only moved when you ticked
+// an invented checklist item measured the checklist, not the work; progress is
+// now the project's own tasks (decision D2, lib/services/projects-shared.ts).
 
 // ─── Row shape actually returned by the projects service ───────────────
 //
@@ -73,14 +70,10 @@ export const ProjectRowSchema = z.object({
 	domain_id: z.string().uuid().nullable(),
 	status: ProjectStatusSchema,
 	type: ProjectTypeSchema.nullable(),
-	client_id: z.string().uuid().nullable(),
-	quoted_hours: z.number().nullable(),
-	hours_logged: z.number(),
 	start_date: z.string().nullable(),
 	target_date: z.string().nullable(),
 	completed_at: z.string().nullable(),
 	color: z.string().nullable(),
-	engagement_type: EngagementTypeSchema,
 	kind: ProjectKindSchema,
 	created_at: z.string(),
 	updated_at: z.string(),

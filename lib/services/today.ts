@@ -10,11 +10,12 @@ import { listNoteIdsForTargets } from "@/lib/services/note-links";
 import { countNeedsReview } from "@/lib/services/notes";
 import { unreadCount } from "@/lib/services/notifications";
 import {
-	listMilestonesForProjects,
+	countTasksByProject,
+	EMPTY_TASK_COUNTS,
 	listProjects,
-	type MilestoneRow,
-	milestoneProgress,
 	type ProjectRow,
+	type ProjectTaskCounts,
+	taskProgress,
 } from "@/lib/services/projects";
 import { listQuotes, type QuoteRow } from "@/lib/services/quotes";
 import { listSkippedToday } from "@/lib/services/resurfacing";
@@ -97,14 +98,14 @@ export type ProjectBrief = {
 	id: string;
 	name: string;
 	progress: number;
-	/** Milestone headcount behind `progress`, which is weighted and so cannot
-	 * be read back as "9 of 14". The row shows both: the ring is the weighted
-	 * truth, the count is the one a person can check. */
+	/** The project's own tasks — done and total. Since the shape plan's P5 the
+	 * ring and the count read the same thing: milestones were a weighted
+	 * checklist that only moved when you ticked it, so ring and count could
+	 * disagree. Kept as two fields because the row still shows both. */
 	doneCount: number;
 	totalCount: number;
 	/** Palette slug (lib/schemas/color.ts), or null — colours the ring. */
 	color: string | null;
-	nextMilestone: { title: string } | null;
 };
 
 export type TodayView = {
@@ -349,22 +350,20 @@ export function bucketRoutines(input: {
 		.filter((b) => b.rows.length > 0);
 }
 
-/** Milestone-progress summary for active projects, next open milestone first. */
+/** Task-progress summary for active projects (shape plan §02, decision D2). */
 export function summarizeProjects(
 	projects: ProjectRow[],
-	milestonesByProject: Record<string, MilestoneRow[]>,
+	taskCountsByProject: Record<string, ProjectTaskCounts>,
 ): ProjectBrief[] {
 	return projects.map((p) => {
-		const milestones = milestonesByProject[p.id] ?? [];
-		const next = milestones.find((m) => m.status !== "done");
+		const counts = taskCountsByProject[p.id] ?? EMPTY_TASK_COUNTS;
 		return {
 			id: p.id,
 			name: p.name,
-			progress: milestoneProgress(milestones),
-			doneCount: milestones.filter((m) => m.status === "done").length,
-			totalCount: milestones.length,
+			progress: taskProgress(counts),
+			doneCount: counts.done,
+			totalCount: counts.done + counts.open,
 			color: p.color ?? null,
-			nextMilestone: next ? { title: next.title } : null,
 		};
 	});
 }
@@ -417,7 +416,7 @@ export async function loadTodayDigest(
 	completionHistory: CompletionRow[];
 	activeProjects: ProjectRow[];
 	linksUnread: number;
-	milestonesByProject: Record<string, MilestoneRow[]>;
+	taskCountsByProject: Record<string, ProjectTaskCounts>;
 }> {
 	const [
 		routines,
@@ -443,10 +442,7 @@ export async function loadTodayDigest(
 		unreadLinkCount(sb),
 	]);
 
-	const milestonesByProject = await listMilestonesForProjects(
-		sb,
-		activeProjects.map((p) => p.id),
-	);
+	const taskCountsByProject = await countTasksByProject(sb);
 
 	return {
 		routines,
@@ -459,7 +455,7 @@ export async function loadTodayDigest(
 		completionHistory,
 		activeProjects,
 		linksUnread,
-		milestonesByProject,
+		taskCountsByProject,
 	};
 }
 
@@ -553,7 +549,7 @@ export function assembleTodayView(
 		completionHistory,
 		activeProjects,
 		linksUnread,
-		milestonesByProject,
+		taskCountsByProject,
 	} = digest;
 
 	const overdue = open.filter((t) => isOverdue(t, todayIso));
@@ -606,7 +602,7 @@ export function assembleTodayView(
 		resurfaced,
 		resurfacedSkips: skippedQuoteIds.length,
 		latestQuote,
-		projects: summarizeProjects(activeProjects, milestonesByProject),
+		projects: summarizeProjects(activeProjects, taskCountsByProject),
 	};
 }
 

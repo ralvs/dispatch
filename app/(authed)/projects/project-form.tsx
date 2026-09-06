@@ -4,7 +4,7 @@ import { CreateDialogButton } from "@/components/create-dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui";
 import type { DomainRow } from "@/lib/services/domains";
 import { createProjectAction } from "./actions";
-import { ENGAGEMENT_TYPES, KINDS, PROJECT_TYPES } from "./constants";
+import { KINDS, PROJECT_TYPES } from "./constants";
 
 /**
  * Create a project — dialog behind the header's `+` (Gate B / B1, ADR-0043
@@ -62,18 +62,6 @@ export function ProjectCreateButton({ domains }: { domains: DomainRow[] }) {
 							</option>
 						))}
 					</Select>
-				</Field>
-				<Field label="Engagement">
-					<Select name="engagement_type" defaultValue="project">
-						{ENGAGEMENT_TYPES.map((e) => (
-							<option key={e.value} value={e.value}>
-								{e.label}
-							</option>
-						))}
-					</Select>
-				</Field>
-				<Field label="Quoted hours">
-					<Input name="quoted_hours" type="number" min="0" step="0.5" placeholder="Optional" />
 				</Field>
 				<Field label="Start date">
 					<Input name="start_date" type="date" />
