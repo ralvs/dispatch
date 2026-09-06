@@ -1,4 +1,4 @@
-import { EmptyState, PageHeader } from "@/components/ui";
+import { EmptyState, PageHeader, StatBand } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { shiftDay, todayInTz } from "@/lib/dates";
 import { computeRoutineStats, recentDaysGrid } from "@/lib/routine-stats";
@@ -6,6 +6,7 @@ import { listCompletionsForRoutines, listRoutines } from "@/lib/services/routine
 import { getAppTimezone } from "@/lib/services/settings";
 import { RoutineCreateButton } from "./routine-form";
 import { RoutineRowItem } from "./routine-row";
+import { routineStats } from "./routine-stats-band";
 
 export default async function RoutinesPage() {
 	const { sb } = await requireOwnerPage();
@@ -21,6 +22,17 @@ export default async function RoutinesPage() {
 		sinceIso,
 	);
 
+	// Computed once here and handed to both the band and the rows — two
+	// passes over the same completion log could drift.
+	const perRoutine = routines.map((routine) => {
+		const dates = (completionsByRoutine[routine.id] ?? []).map((c) => c.completed_date);
+		return {
+			routine,
+			stats: computeRoutineStats(dates, todayIso),
+			recentDays: recentDaysGrid(dates, todayIso, 30),
+		};
+	});
+
 	return (
 		<div>
 			<PageHeader
@@ -31,24 +43,21 @@ export default async function RoutinesPage() {
 				action={<RoutineCreateButton />}
 			/>
 
+			{routines.length > 0 && <StatBand stats={routineStats(perRoutine.map((r) => r.stats))} />}
+
 			{routines.length === 0 ? (
 				<EmptyState>No routines yet. Add something you want to do daily.</EmptyState>
 			) : (
 				// Single ungrouped list — header measure is the count.
 				<ul>
-					{routines.map((routine) => {
-						const dates = (completionsByRoutine[routine.id] ?? []).map((c) => c.completed_date);
-						const stats = computeRoutineStats(dates, todayIso);
-						const recentDays = recentDaysGrid(dates, todayIso, 30);
-						return (
-							<RoutineRowItem
-								key={routine.id}
-								routine={routine}
-								stats={stats}
-								recentDays={recentDays}
-							/>
-						);
-					})}
+					{perRoutine.map(({ routine, stats, recentDays }) => (
+						<RoutineRowItem
+							key={routine.id}
+							routine={routine}
+							stats={stats}
+							recentDays={recentDays}
+						/>
+					))}
 				</ul>
 			)}
 		</div>

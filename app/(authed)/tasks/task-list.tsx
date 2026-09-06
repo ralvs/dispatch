@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
-import { EmptyState, PageHeader, SectionHead } from "@/components/ui";
-import { dateOfInstant, recentDoneSinceDate } from "@/lib/dates";
+import { EmptyState, PageHeader, SectionHead, type Stat, StatBand } from "@/components/ui";
+import { dateOfInstant, RECENT_DONE_DAYS, recentDoneSinceDate } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { TaskRow } from "@/lib/services/tasks";
 import {
@@ -310,6 +310,25 @@ export function TaskList({
 			    control. Putting it in the measure slot would have taught eleven
 			    other pages that a count there is sometimes clickable. */}
 			<PageHeader title="Tasks" action={<NewTaskButton onClick={() => setCreating(true)} />} />
+
+			{/* Four readings you cannot get by looking at the list (ADR-0053).
+				Overdue is the only one that may spend the orange, and only
+				when there is something in it — a `0 overdue` in the accent
+				spends it on nothing. */}
+			<StatBand
+				stats={
+					[
+						{ value: recentDoneBand.length, label: `done · last ${RECENT_DONE_DAYS}d` },
+						{ value: filteredOpen.length, label: "open" },
+						{
+							value: overdueTasks.length,
+							label: "overdue",
+							attention: overdueTasks.length > 0,
+						},
+						{ value: wantTasks.length, label: "wants parked" },
+					] satisfies Stat[]
+				}
+			/>
 
 			{/* `onQuickAdd` is what makes this dialog the fast path too: a create
 			    carrying nothing but a title goes through the parser, anything
