@@ -202,6 +202,7 @@ export function TaskMetaFields({
 	domains,
 	projects = [],
 	lockProject = false,
+	lockDomain = false,
 	todayIso,
 	defaults = {},
 }: {
@@ -213,6 +214,8 @@ export function TaskMetaFields({
 	 * A disabled select posts nothing, so the value rides a hidden input.
 	 */
 	lockProject?: boolean;
+	/** Same contract as `lockProject`, for the project's domain. */
+	lockDomain?: boolean;
 	/** App-timezone today (docs/adr/0002) — never `new Date()` in the browser. */
 	todayIso: string;
 	defaults?: TaskFieldDefaults;
@@ -381,9 +384,20 @@ export function TaskMetaFields({
 
 				<div className={META_TRIO}>
 					<Field label="Domain" className="min-w-0">
+						{/* Locked: same hidden-input contract as Project — a disabled
+							select posts nothing. */}
+						{lockDomain && (
+							<input type="hidden" name="domain_id" value={defaults.domain_id ?? ""} />
+						)}
 						{/* No color dot on <option> — styling native option elements is
 						    unreliable cross-browser, so this stays a plain name list. */}
-						<Select name="domain_id" defaultValue={defaults.domain_id ?? ""} className="w-full">
+						<Select
+							name={lockDomain ? undefined : "domain_id"}
+							defaultValue={defaults.domain_id ?? ""}
+							disabled={lockDomain}
+							aria-label="Domain"
+							className="w-full"
+						>
 							{/* "Unfiled" is offered only when it is already the answer — on the
 							    create form (undefined) or for a task sitting in the inbox (null).
 							    A filed task never sees it, which is what keeps filing one-way
@@ -441,6 +455,7 @@ export function TaskFormFields({
 	domains,
 	projects = [],
 	lockProject = false,
+	lockDomain = false,
 	todayIso,
 	defaults = {},
 	titlePlaceholder = "What needs doing?",
@@ -452,6 +467,7 @@ export function TaskFormFields({
 	domains: TaskDomainOption[];
 	projects?: TaskProjectOption[];
 	lockProject?: boolean;
+	lockDomain?: boolean;
 	todayIso: string;
 	defaults?: TaskFieldDefaults;
 	titlePlaceholder?: string;
@@ -481,6 +497,7 @@ export function TaskFormFields({
 				domains={domains}
 				projects={projects}
 				lockProject={lockProject}
+				lockDomain={lockDomain}
 				todayIso={todayIso}
 				defaults={defaults}
 			/>

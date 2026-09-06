@@ -46,6 +46,7 @@ export function TaskDialog({
 	domains,
 	projects = [],
 	lockProject = false,
+	lockDomain = false,
 	todayIso,
 	defaults,
 	people = [],
@@ -75,6 +76,8 @@ export function TaskDialog({
 	projects?: TaskProjectOption[];
 	/** Opened from a project: the field shows the answer and cannot be changed. */
 	lockProject?: boolean;
+	/** Opened from a project: domain is the project's domain and cannot be changed. */
+	lockDomain?: boolean;
 	/** App-timezone today (docs/adr/0002) — never `new Date()` in the browser. */
 	todayIso: string;
 	defaults?: TaskFieldDefaults;
@@ -177,6 +180,7 @@ export function TaskDialog({
 						domains={domains}
 						projects={projects}
 						lockProject={lockProject}
+						lockDomain={lockDomain}
 						todayIso={todayIso}
 						defaults={defaults}
 						showNotes

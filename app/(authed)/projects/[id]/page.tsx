@@ -25,19 +25,21 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 		getAppTimezone(sb),
 	]);
 
+	const todayIso = todayInTz(tz);
+
 	return (
 		<ProjectDetail
 			project={project}
 			tasks={tasks}
 			domains={domains}
+			todayIso={todayIso}
 			addTask={
 				<AddTaskButton
 					project={{ id: project.id, name: project.name }}
+					domainId={project.domain_id}
 					projects={projects.map((p) => ({ id: p.id, name: p.name }))}
-					domains={domains
-						.filter((d) => d.active)
-						.map((d) => ({ id: d.id, name: d.name, color: d.color }))}
-					todayIso={todayInTz(tz)}
+					domains={domains.map((d) => ({ id: d.id, name: d.name, color: d.color }))}
+					todayIso={todayIso}
 				/>
 			}
 		/>

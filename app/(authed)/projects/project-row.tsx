@@ -29,7 +29,7 @@ export function ProjectRowItem({
 	/** The project's open tasks, in list order. Only the first five are drawn. */
 	openTasks?: TaskRow[];
 	doneCount?: number;
-	/** "Add task", pre-filled and locked to this project (shape plan §06). */
+	/** "Add task" on the right — pre-filled and locked to this project (shape plan §06). */
 	addTask?: ReactNode;
 }) {
 	const domainColor = project.domain?.color ?? null;
@@ -48,7 +48,12 @@ export function ProjectRowItem({
 			align="start"
 			leading={<ColorDot color={domainColor} hold />}
 			trailing={
-				project.type ? <Badge tone="neutral">{projectTypeLabel(project.type)}</Badge> : undefined
+				project.type || addTask ? (
+					<div className="flex shrink-0 items-center gap-2">
+						{project.type ? <Badge tone="neutral">{projectTypeLabel(project.type)}</Badge> : null}
+						{addTask}
+					</div>
+				) : undefined
 			}
 		>
 			<Link href={`/projects/${project.id}`} className="block min-w-0 hover:text-accent-ink">
@@ -73,7 +78,6 @@ export function ProjectRowItem({
 					)}
 				</ul>
 			)}
-			{addTask && <div className="mt-2">{addTask}</div>}
 		</ListRow>
 	);
 }

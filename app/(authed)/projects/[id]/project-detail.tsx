@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { type ReactNode, useState, useTransition } from "react";
+import { type ReactNode, useOptimistic, useState, useTransition } from "react";
+import { completeTaskAction, reopenTaskAction, setTop3Action } from "@/app/(authed)/tasks/actions";
 import { ColorDot } from "@/components/color-dot";
 import {
 	Button,
 	Card,
+	Checkbox,
 	EmptyState,
 	Field,
 	Input,
@@ -21,31 +23,74 @@ import type { DomainRow } from "@/lib/services/domains";
 import type { ProjectRow } from "@/lib/services/projects";
 import { taskProgress } from "@/lib/services/projects-shared";
 import type { TaskRow } from "@/lib/services/tasks";
+import {
+	type ApplyContext,
+	completeTaskFields,
+	reopenTaskFields,
+	type TaskIntent,
+} from "@/lib/task-interaction/apply-intent";
+import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
 import { KINDS, kindLabel, PROJECT_TYPES, projectTypeLabel, statusLabel } from "../constants";
 import { archiveProjectAction, completeProjectAction, updateProjectAction } from "./actions";
+
+/** Flat-list projector — `applyTaskLists` caps done at 10 for the Tasks page. */
+function applyProjectTasks(tasks: TaskRow[], intent: TaskIntent, ctx: ApplyContext): TaskRow[] {
+	if (intent.type === "complete") {
+		const task = tasks.find((t) => t.id === intent.id);
+		if (!task) return tasks;
+		const next = completeTaskFields(task, ctx, { clearTop3: false });
+		return tasks.map((t) => (t.id === intent.id ? next : t));
+	}
+	if (intent.type === "reopen") {
+		const task = tasks.find((t) => t.id === intent.id);
+		if (!task) return tasks;
+		return tasks.map((t) => (t.id === intent.id ? reopenTaskFields(t) : t));
+	}
+	return tasks;
+}
 
 export function ProjectDetail({
 	project,
 	tasks,
 	domains,
+	todayIso,
 	addTask,
 }: {
 	project: ProjectRow;
 	/** Every task tagged with this project, open and done (shape plan §02). */
 	tasks: TaskRow[];
 	domains: DomainRow[];
+	/** App-timezone today (docs/adr/0002) — recurrence rolls from this. */
+	todayIso: string;
 	/**
-	 * "Add task", pre-filled and locked to this project. It ships with the
-	 * list below it and never alone — a button on a page that then shows you
-	 * nothing is a trapdoor (shape plan §06).
+	 * "Add task", pre-filled and locked to this project. Lives on the header
+	 * so the list rows can rest (ADR-0044).
 	 */
 	addTask?: ReactNode;
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
 	const domain = domains.find((d) => d.id === project.domain_id);
-	const openTasks = tasks.filter((t) => t.status !== "done");
-	const doneTasks = tasks.filter((t) => t.status === "done");
+	const ctx: ApplyContext = { todayIso };
+	const [optTasks, dispatchOptimistic] = useOptimistic(tasks, (current, intent: TaskIntent) =>
+		applyProjectTasks(current, intent, ctx),
+	);
+	const run = useTaskIntentRunner(dispatchOptimistic);
+	const openTasks = optTasks.filter((t) => t.status !== "done");
+	const doneTasks = optTasks.filter((t) => t.status === "done");
+
+	function handlersFor(task: TaskRow) {
+		return bindTaskHandlers(
+			task,
+			run,
+			{
+				complete: completeTaskAction,
+				reopen: reopenTaskAction,
+				setTop3: setTop3Action,
+			},
+			{ top3DateIso: todayIso, todayIso },
+		);
+	}
 
 	function saveDetails(formData: FormData) {
 		startTransition(async () => {
@@ -59,6 +104,14 @@ export function ProjectDetail({
 
 	return (
 		<div className={pending ? "opacity-50" : ""}>
+			<nav aria-label="Breadcrumb" className="pb-4">
+				<Link
+					href="/projects"
+					className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
+				>
+					← Projects
+				</Link>
+			</nav>
 			{/* Name is the title; type + status are facts (plain), the task
 			    rollup the measure (Pass 4.5 Gate A). Domain rides the subtitle
 			    with its colour — the list row already settled that domain, not
@@ -70,8 +123,8 @@ export function ProjectDetail({
 					statusLabel(project.status),
 				]}
 				measure={
-					tasks.length > 0
-						? [{ count: `${doneTasks.length}/${tasks.length}`, label: "tasks done" }]
+					optTasks.length > 0
+						? [{ count: `${doneTasks.length}/${optTasks.length}`, label: "tasks done" }]
 						: undefined
 				}
 				subtitle={
@@ -82,6 +135,7 @@ export function ProjectDetail({
 						</span>
 					) : undefined
 				}
+				action={addTask}
 			/>
 
 			<section aria-label="Details">
@@ -228,7 +282,7 @@ export function ProjectDetail({
 				projectId={project.id}
 				open={openTasks}
 				done={doneTasks}
-				addTask={addTask}
+				handlersFor={handlersFor}
 			/>
 		</div>
 	);
@@ -247,12 +301,12 @@ function ProjectTasksSection({
 	projectId,
 	open,
 	done,
-	addTask,
+	handlersFor,
 }: {
 	projectId: string;
 	open: TaskRow[];
 	done: TaskRow[];
-	addTask?: ReactNode;
+	handlersFor: (task: TaskRow) => { onToggleDone: () => void };
 }) {
 	const total = open.length + done.length;
 	const progress = taskProgress({ done: done.length, open: open.length });
@@ -267,9 +321,8 @@ function ProjectTasksSection({
 					) : undefined
 				}
 			/>
-			{addTask && <div className="mb-3">{addTask}</div>}
 			{total === 0 ? (
-				<EmptyState hint="Tag a task with this project and it shows up here.">
+				<EmptyState hint="Add one with the + at the top of the page.">
 					Nothing tagged with this project.
 				</EmptyState>
 			) : (
@@ -286,19 +339,33 @@ function ProjectTasksSection({
 					</div>
 
 					<ul className="mt-3">
-						{[...open, ...done].map((t) => (
-							<ListRow key={t.id}>
-								<Link
-									href={`/tasks?edit=${t.id}`}
-									className={rowTitle({
-										tone: t.status === "done" ? "done" : "default",
-										className: "hover:text-accent-ink",
-									})}
+						{[...open, ...done].map((t) => {
+							const doneRow = t.status === "done";
+							return (
+								<ListRow
+									key={t.id}
+									leading={
+										<Checkbox
+											checked={doneRow}
+											priority={t.priority}
+											aria-label={doneRow ? `Reopen "${t.title}"` : `Complete "${t.title}"`}
+											onChange={handlersFor(t).onToggleDone}
+											className="shrink-0"
+										/>
+									}
 								>
-									{t.title}
-								</Link>
-							</ListRow>
-						))}
+									<Link
+										href={`/tasks?edit=${t.id}`}
+										className={rowTitle({
+											tone: doneRow ? "done" : "default",
+											className: "hover:text-accent-ink",
+										})}
+									>
+										{t.title}
+									</Link>
+								</ListRow>
+							);
+						})}
 					</ul>
 
 					<Link
