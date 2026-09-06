@@ -173,3 +173,4 @@ and both routes also accept `POST`.
 | --- | --- | --- |
 | `/api/cron/sweep` | as configured | Reconciles stuck `captured_data` rows to `needs_review` notes (docs/adr/0008). |
 | `/api/cron/reminders` | every 5 minutes | Fires due-task reminders per the global offset/anchor in Settings (docs/adr/0021). |
+| `/api/cron/observations` | daily | Flags a domain whose last touch is older than its own "flag after N days" rule; resolves the flag once it is touched again. |

@@ -72,7 +72,7 @@ export function DomainRowItem({
 						</Field>
 						<Field
 							label="Flag after (days)"
-							description="How long this domain may go untouched before the observations cron flags it."
+							description="How long this domain may go untouched before the nightly sweep marks it quiet and rings the bell."
 						>
 							<Input
 								name="cadence_days"
