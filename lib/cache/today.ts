@@ -12,7 +12,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * single-user app; admin reads the same rows the owner would under RLS.
  */
 
-/** Cold digest: quotes, projects, routines, domain cadence, alert counts. */
+/** Cold digest: quotes, projects, routines, domains, alert counts. */
 export async function getCachedTodayDigest(todayIso: string) {
 	"use cache";
 	cacheTag(CacheTag.todayDigest);

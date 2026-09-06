@@ -3,7 +3,7 @@
  * afterMutation invalidates these via revalidateTag(tag, "max").
  */
 export const CacheTag = {
-	/** Quotes, projects, routines stats, domains cadence, alert counts. */
+	/** Quotes, projects, routines stats, domains, alert counts. */
 	todayDigest: "today-digest",
 	/** Open tasks + calendar events for day bands (any date). */
 	daySchedule: "day-schedule",

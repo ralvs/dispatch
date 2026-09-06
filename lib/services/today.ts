@@ -336,7 +336,7 @@ export async function loadDayScheduleInputs(
 }
 
 /**
- * Cold segment: quotes, projects, routine history, alerts, domains cadence.
+ * Cold segment: quotes, projects, routine history, alerts, domains.
  * Unchanged by a single task checkbox in the common case.
  * Exported for cross-request `"use cache"` (docs/adr/0033).
  */

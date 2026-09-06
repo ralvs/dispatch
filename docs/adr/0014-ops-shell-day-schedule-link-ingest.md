@@ -79,6 +79,9 @@ Cadence strip (`buildCadenceLines` — already computed, used by widget/chat)
 **must render** on Today. Alerts row: triage count, needs-review count, unread
 ingest count (once Ingest ships).
 
+> Superseded on this point: the strip and `buildCadenceLines` were removed in
+> 533d4c2. The widget and chat read the counts directly.
+
 Mobile stacks **action-first**: masthead → cadence → alerts → day schedule →
 routines → in brief / projects / quotes → capture chips.
 
