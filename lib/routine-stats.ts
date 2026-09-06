@@ -8,6 +8,17 @@
 // numbers, and the heatmap view re-derives them from the same data so we
 // can't drift between two surfaces.
 
+/**
+ * The window the routine row's grid draws, and therefore the window a
+ * completion may be backfilled into (docs/adr/0054, plan O4). One constant so
+ * the squares on screen and the dates the server accepts cannot drift apart.
+ *
+ * It lives here rather than beside the action because a "use server" module
+ * may only export async functions — a plain const there makes every export in
+ * the file unreachable, silently, until the production build says so.
+ */
+export const BACKFILL_DAYS = 30;
+
 export interface RoutineStats {
 	// Days completed in a consecutive run ending today (or yesterday if
 	// today isn't done yet but yesterday was). 0 if no current run.

@@ -1,7 +1,7 @@
 import { EmptyState, PageHeader, StatBand } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { shiftDay, todayInTz } from "@/lib/dates";
-import { computeRoutineStats, recentDaysGrid } from "@/lib/routine-stats";
+import { BACKFILL_DAYS, computeRoutineStats, recentDaysGrid } from "@/lib/routine-stats";
 import { listCompletionsForRoutines, listRoutines } from "@/lib/services/routines";
 import { getAppTimezone } from "@/lib/services/settings";
 import { RoutineCreateButton } from "./routine-form";
@@ -29,7 +29,7 @@ export default async function RoutinesPage() {
 		return {
 			routine,
 			stats: computeRoutineStats(dates, todayIso),
-			recentDays: recentDaysGrid(dates, todayIso, 30),
+			recentDays: recentDaysGrid(dates, todayIso, BACKFILL_DAYS),
 		};
 	});
 

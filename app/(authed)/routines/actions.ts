@@ -5,6 +5,7 @@ import { requireOwnerPage } from "@/lib/auth";
 import { shiftDay } from "@/lib/dates";
 import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { BACKFILL_DAYS } from "@/lib/routine-stats";
 import { CreateRoutineSchema, UpdateRoutineSchema } from "@/lib/schemas/routine";
 import {
 	archiveRoutine,
@@ -14,9 +15,6 @@ import {
 	updateRoutine,
 } from "@/lib/services/routines";
 import { todayForRequest } from "@/lib/services/settings";
-
-/** The window the row's grid draws, and therefore the window it may tick (O4). */
-export const BACKFILL_DAYS = 30;
 
 function revalidateRoutineViews() {
 	afterMutation("routine.write");
