@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
-import { completeProject, createProject, taskProgress } from "@/lib/services/projects";
+import {
+	completeProject,
+	countTasksByProject,
+	createProject,
+	taskProgress,
+} from "@/lib/services/projects";
 
 // Stub covering .from().insert().select().single() and .from().update().eq().
 function stubSupabase() {
@@ -62,5 +67,34 @@ describe("taskProgress", () => {
 
 	it("is 1 when everything is finished", () => {
 		expect(taskProgress({ done: 2, open: 0 })).toBe(1);
+	});
+});
+
+describe("countTasksByProject", () => {
+	it("asks the database for non-wants only, and folds by project", async () => {
+		const filters: Array<[string, unknown]> = [];
+		const rows = [
+			{ project_id: "p1", status: "open" },
+			{ project_id: "p1", status: "done" },
+			{ project_id: "p2", status: "open" },
+			{ project_id: null, status: "open" },
+		];
+		const query = {
+			not: () => query,
+			eq: (column: string, value: unknown) => {
+				filters.push([column, value]);
+				return Promise.resolve({ data: rows, error: null });
+			},
+		};
+		const sb = { from: () => ({ select: () => query }) } as unknown as SupabaseClient;
+
+		const counts = await countTasksByProject(sb);
+
+		// A parked want must not inflate "open" or drag progress down.
+		expect(filters).toContainEqual(["someday", false]);
+		expect(counts.p1).toEqual({ done: 1, open: 1 });
+		expect(counts.p2).toEqual({ done: 0, open: 1 });
+		// A task with no project is not a project's task.
+		expect(Object.keys(counts)).toEqual(["p1", "p2"]);
 	});
 });

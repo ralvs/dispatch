@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RECURRENCE_PATTERNS } from "@/lib/recurrence";
+import { isRecurrenceRule } from "@/lib/recurrence";
 import { NoteSourceTypeSchema } from "@/lib/schemas/note";
 import { WallClockTimeSchema } from "@/lib/schemas/time";
 
@@ -35,10 +35,16 @@ export const CreateTaskActionSchema = z.object({
 	// schema-parse (→ typed failed → degrade) rather than reaching the executor.
 	due_time: WallClockTimeSchema.optional(),
 	priority: z.number().int().min(1).max(4).optional(),
-	// Constrained to the enum so the LLM can never violate the DB check
-	// constraint (docs/adr/0019). Unrepresentable cadences ("every 3 weeks")
-	// are omitted by the parser; the phrase survives in `notes` instead.
-	recurrence_rule: z.enum(RECURRENCE_PATTERNS).optional(),
+	// Validated through lib/recurrence.ts so the LLM can never violate the DB
+	// check constraint (docs/adr/0019) — the seven literals, or the custom
+	// weekly form `weekly:tu,sa` (shape plan §06). Sharing the predicate rather
+	// than re-listing the vocabulary is what keeps the two from drifting.
+	// Unrepresentable cadences ("every 3 weeks") are omitted by the parser; the
+	// phrase survives in `notes` instead.
+	recurrence_rule: z
+		.string()
+		.refine(isRecurrenceRule, { message: "not a recurrence rule" })
+		.optional(),
 	// Names copied verbatim from the routing lists injected into the prompt —
 	// never ids (docs/adr/0019 D1). Resolved server-side; no match → Inbox.
 	domain: z.string().min(1).optional(),

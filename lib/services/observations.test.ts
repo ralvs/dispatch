@@ -6,7 +6,8 @@ import {
 	resolveTouch,
 } from "@/lib/services/observations";
 
-const NOW = Date.parse("2026-09-06T12:00:00.000Z");
+const TODAY = "2026-09-06";
+const SP = "America/Sao_Paulo";
 
 function touchInput(patch: Partial<Parameters<typeof resolveTouch>[0]> = {}) {
 	return {
@@ -18,7 +19,8 @@ function touchInput(patch: Partial<Parameters<typeof resolveTouch>[0]> = {}) {
 		lastProjectActivityAt: null,
 		lastNoteAt: null,
 		openTasks: 0,
-		nowMs: NOW,
+		todayIso: TODAY,
+		tz: SP,
 		...patch,
 	};
 }
@@ -38,16 +40,22 @@ describe("laterOf", () => {
 });
 
 describe("daysBetween", () => {
-	it("floors to whole days", () => {
-		expect(daysBetween("2026-09-04T13:00:00.000Z", NOW)).toBe(1);
+	it("counts calendar days in the app timezone, not elapsed 24h blocks", () => {
+		expect(daysBetween("2026-09-04T13:00:00.000Z", TODAY, SP)).toBe(2);
+	});
+
+	it("puts a late-evening UTC instant on the app timezone's own day", () => {
+		// 02:00 UTC on the 5th is still 23:00 on the 4th in São Paulo, so this
+		// is two calendar days back, not one.
+		expect(daysBetween("2026-09-05T02:00:00.000Z", TODAY, SP)).toBe(2);
 	});
 
 	it("never goes negative for a future instant", () => {
-		expect(daysBetween("2026-10-01T00:00:00.000Z", NOW)).toBe(0);
+		expect(daysBetween("2026-10-01T00:00:00.000Z", TODAY, SP)).toBe(0);
 	});
 
 	it("degrades to 0 on a malformed instant rather than throwing", () => {
-		expect(daysBetween("not-a-date", NOW)).toBe(0);
+		expect(daysBetween("not-a-date", TODAY, SP)).toBe(0);
 	});
 });
 
@@ -62,14 +70,15 @@ describe("resolveTouch", () => {
 		);
 
 		expect(touch.lastTouchUtc).toBe("2026-09-05T00:00:00.000Z");
-		expect(touch.daysSinceTouch).toBe(1);
+		// 00:00 UTC on the 5th is 21:00 on the 4th in São Paulo.
+		expect(touch.daysSinceTouch).toBe(2);
 		expect(touch.quiet).toBe(false);
 	});
 
 	it("goes quiet once the threshold is passed", () => {
 		const touch = resolveTouch(touchInput({ lastTaskDoneAt: "2026-08-20T00:00:00.000Z" }));
 
-		expect(touch.daysSinceTouch).toBe(17);
+		expect(touch.daysSinceTouch).toBe(18);
 		expect(touch.quiet).toBe(true);
 	});
 
@@ -106,6 +115,12 @@ describe("neglectObservationBody", () => {
 				lastTaskDoneAt: "2026-09-05T00:00:00.000Z",
 			}),
 		);
-		expect(neglectObservationBody(touch)).toBe("1 day since the last touch — flags after 1 day.");
+		expect(neglectObservationBody(touch)).toBe("2 days since the last touch — flags after 1 day.");
+	});
+});
+
+describe("resolveTouch · open task count", () => {
+	it("takes the count it is handed — the fold excludes wants upstream", () => {
+		expect(resolveTouch(touchInput({ openTasks: 2 })).openTasks).toBe(2);
 	});
 });

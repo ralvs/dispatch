@@ -11,6 +11,11 @@ import type { RoutineStats } from "@/lib/routine-stats";
  * "days": with three routines and one ticked yesterday, 1/3 is the truth and
  * 100% would be a lie about the other two.
  *
+ * §05 also listed "the 30-day grid, moved up from the rows". It stayed on the
+ * rows: P8 made those 30 squares clickable (docs/adr/0054), so a page-level
+ * copy would be a second grid of the same data, and only one of the two could
+ * be tapped. The band carries the figures the rows cannot.
+ *
  * No `attention` anywhere. A missed day is not an alarm — the one orange means
  * "this needs you", and a habit page that shouts every morning stops meaning
  * anything (ADR-0053, DESIGN.md).

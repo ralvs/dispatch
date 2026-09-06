@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isRecurrenceRule, RECURRENCE_PATTERNS } from "@/lib/recurrence";
+import { isRecurrenceRule } from "@/lib/recurrence";
 
 // A stored recurrence rule: one of the seven literals, or the custom weekly
 // form `weekly:tu,sa` (shape plan §06 / P7). Validated through

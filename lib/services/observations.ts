@@ -1,7 +1,9 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { dateOfInstant, todayInTz } from "@/lib/dates";
 import { listDomains } from "@/lib/services/domains";
 import { unwrap } from "@/lib/services/errors";
+import { getAppTimezone } from "@/lib/services/settings";
 import { cadenceThresholdDays } from "@/lib/services/today";
 
 // ─── The neglect sweep ─────────────────────────────────────────────────
@@ -19,6 +21,10 @@ import { cadenceThresholdDays } from "@/lib/services/today";
 //                                  that it counts: attention is what this
 //                                  measure is for, and thinking about
 //                                  something is attention.
+//                                  Create-time only, because `notes` has no
+//                                  updated_at column. Filing an old note into
+//                                  a domain therefore does not revive it; that
+//                                  needs a migration and is its own patch.
 //   4. domains.last_shipped_at   — the manual "I shipped something" stamp
 //
 // Journal is deliberately NOT a source. The plan lists journal_entries as a
@@ -48,11 +54,22 @@ export type DomainTouch = {
 	quiet: boolean;
 };
 
-/** Whole days between two instants, floored, never negative. */
-export function daysBetween(fromUtcIso: string, nowMs: number): number {
-	const from = Date.parse(fromUtcIso);
-	if (Number.isNaN(from)) return 0;
-	return Math.max(0, Math.floor((nowMs - from) / 86_400_000));
+/**
+ * Whole app-timezone calendar days between an instant and today.
+ *
+ * Calendar days, not elapsed 24-hour blocks (iron rule #1 / ADR-0002): "flag
+ * after 7 days" means seven dates on the wall, and counting elapsed
+ * milliseconds is off by one for most of the day near a midnight boundary.
+ * Defensive like the rest of this module — a malformed instant reads as 0
+ * rather than throwing into the cron.
+ */
+export function daysBetween(fromUtcIso: string, todayIso: string, tz: string): number {
+	if (Number.isNaN(Date.parse(fromUtcIso))) return 0;
+	const fromIso = dateOfInstant(fromUtcIso, tz);
+	const days = Math.round(
+		(Date.parse(`${todayIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`)) / 86_400_000,
+	);
+	return Math.max(0, days);
 }
 
 /** The later of two nullable UTC ISO instants. */
@@ -75,7 +92,9 @@ export function resolveTouch(input: {
 	lastProjectActivityAt: string | null;
 	lastNoteAt: string | null;
 	openTasks: number;
-	nowMs: number;
+	/** App-timezone today (ADR-0002) — the caller decides what "today" means. */
+	todayIso: string;
+	tz: string;
 }): DomainTouch {
 	const lastTouchUtc = [
 		input.lastShippedAt,
@@ -85,7 +104,8 @@ export function resolveTouch(input: {
 	].reduce<string | null>((acc, candidate) => laterOf(acc, candidate ?? null), null);
 
 	const thresholdDays = cadenceThresholdDays(input.failurePatterns);
-	const daysSinceTouch = lastTouchUtc === null ? null : daysBetween(lastTouchUtc, input.nowMs);
+	const daysSinceTouch =
+		lastTouchUtc === null ? null : daysBetween(lastTouchUtc, input.todayIso, input.tz);
 
 	// Never touched + has a rule counts as quiet: a domain nothing has ever
 	// reached is exactly the case the sweep exists to notice.
@@ -124,18 +144,27 @@ export async function listDomainTouches(
 	sb: SupabaseClient,
 	nowMs: number = Date.now(),
 ): Promise<DomainTouch[]> {
+	const tz = await getAppTimezone(sb);
+	const todayIso = todayInTz(tz, nowMs);
 	const [domains, taskRows, projectRows, noteRows] = await Promise.all([
 		listDomains(sb),
-		unwrap(await sb.from("tasks").select("domain_id, status, completed_at")) as Array<{
+		unwrap(
+			// Explicit range: PostgREST caps an unbounded select at its
+			// configured max-rows (1000 by default), and a silently truncated
+			// read would make MAX(last touch) and the open counts wrong
+			// without erroring.
+			await sb.from("tasks").select("domain_id, status, completed_at, someday").range(0, 49_999),
+		) as Array<{
 			domain_id: string | null;
 			status: string;
 			completed_at: string | null;
+			someday: boolean;
 		}> | null,
-		unwrap(await sb.from("projects").select("domain_id, updated_at")) as Array<{
+		unwrap(await sb.from("projects").select("domain_id, updated_at").range(0, 49_999)) as Array<{
 			domain_id: string | null;
 			updated_at: string | null;
 		}> | null,
-		unwrap(await sb.from("notes").select("domain_id, created_at")) as Array<{
+		unwrap(await sb.from("notes").select("domain_id, created_at").range(0, 49_999)) as Array<{
 			domain_id: string | null;
 			created_at: string | null;
 		}> | null,
@@ -150,9 +179,12 @@ export async function listDomainTouches(
 		(noteRows ?? []).map((n) => ({ domain_id: n.domain_id, at: n.created_at })),
 	);
 
+	// Wants are not open work — an intent with no time is already parked
+	// (shape plan §03), and counting it would make a domain look busy for
+	// something nobody intends to do on a date.
 	const openByDomain = new Map<string, number>();
 	for (const t of tasks) {
-		if (t.domain_id === null || t.status !== "open") continue;
+		if (t.domain_id === null || t.status !== "open" || t.someday) continue;
 		openByDomain.set(t.domain_id, (openByDomain.get(t.domain_id) ?? 0) + 1);
 	}
 
@@ -166,7 +198,8 @@ export async function listDomainTouches(
 			lastProjectActivityAt: lastProject.get(d.id) ?? null,
 			lastNoteAt: lastNote.get(d.id) ?? null,
 			openTasks: openByDomain.get(d.id) ?? 0,
-			nowMs,
+			todayIso,
+			tz,
 		}),
 	);
 }

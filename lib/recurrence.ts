@@ -7,8 +7,13 @@
 //
 // The shape plan's P7 took exactly that route: a rule may now also be
 // `weekly:tu,sa` — the word `weekly`, a colon, then two-letter weekday codes
-// (see WEEKDAY_CODES). All seven literals stay valid exactly as they are, and
-// no migration was needed because the column is already text.
+// (see WEEKDAY_CODES). All seven literals stay valid exactly as they are.
+//
+// It did need one migration after all. The column is text, but
+// 20260715183208_recurrence_checks.sql had pinned it to the seven literals
+// with tasks_recurrence_rule_check, so Postgres would have rejected the
+// insert; 20260906140000_recurrence_custom_weekly.sql widens that constraint
+// and touches nothing else.
 //
 // Deliberately NOT RFC 5545 (`FREQ=WEEKLY;BYDAY=TU,SA`). That is the right
 // answer for an app that syncs recurrence with a calendar; Dispatch does not,

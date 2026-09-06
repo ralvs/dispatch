@@ -57,7 +57,12 @@ export function recurrenceRules(): string[] {
 		'  "every Monday", "toda segunda", "daily", "todo dia"). Pick the closest',
 		"  match from: daily, weekdays, weekly, biweekly, monthly, semiannually,",
 		'  yearly. "every Monday" → weekly, with due_date set to the next Monday.',
-		'  If the cadence has no match in that list (e.g. "every 3 weeks"), OMIT',
+		"  For repetition on SEVERAL named weekdays, use weekly:<codes> with the",
+		'  two-letter codes su,mo,tu,we,th,fr,sa — e.g. "every Tuesday and',
+		'  Saturday" → weekly:tu,sa, "terça e sábado" → weekly:tu,sa. Use it only',
+		'  for named weekdays: it cannot say an interval ("every other Tuesday")',
+		'  or a position ("last Friday of the month").',
+		'  If the cadence has no match at all (e.g. "every 3 weeks"), OMIT',
 		"  recurrence_rule and keep the phrase in notes instead of guessing.",
 		"  notes carries secondary detail verbatim (never the title).",
 	];

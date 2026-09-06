@@ -48,9 +48,15 @@ export async function listTasks(
 	return (data ?? []).map(flatten);
 }
 
-/** The /inbox queue: open tasks that were captured without a domain. */
+/**
+ * The /inbox queue: open tasks that were captured without a domain.
+ *
+ * Wants are excluded. An intent with no time is not a thing waiting to be
+ * filed — it is already parked, and putting it in the queue makes the inbox
+ * count lie about how much is outstanding (shape plan §03).
+ */
 export async function listInboxTasks(sb: SupabaseClient): Promise<TaskRow[]> {
-	return listTasks(sb, { status: "open", unfiled: true });
+	return listTasks(sb, { status: "open", unfiled: true, excludeWants: true });
 }
 
 /**
