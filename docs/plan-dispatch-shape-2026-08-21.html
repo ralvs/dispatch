@@ -215,14 +215,14 @@
     <tr><td class="n">D2</td><td>Milestones go; project progress = tasks done / open</td><td>Project rows also list their tasks</td><td><span class="pill do">agreed</span></td></tr>
     <tr><td class="n">D3</td><td>Client and billing fields go</td><td><code>client_id</code>, <code>hours_logged</code>, <code>quoted_hours</code>, <code>engagement_type</code></td><td><span class="pill do">agreed</span></td></tr>
     <tr><td class="n">D4</td><td>A want is a task with the clock switched off</td><td><code>someday</code> flag, not a new entity</td><td><span class="pill do">agreed</span></td></tr>
-    <tr><td class="n">D5</td><td>Wire the neglect sweep (R1)</td><td>Surfaces on <code>/domains</code> and the bell — <strong>not</strong> Today</td><td><span class="pill do">do first</span></td></tr>
+    <tr><td class="n">D5</td><td>Wire the neglect sweep</td><td>Surfaces on <code>/domains</code> and the bell — <strong>not</strong> Today</td><td><span class="pill do">do first</span></td></tr>
     <tr><td class="n">D6</td><td><code>/domains</code> rows show last touch, open count, quiet dot</td><td>Today’s page is not touched</td><td><span class="pill do">agreed</span></td></tr>
-    <tr><td class="n">D7</td><td>A stat band above the list on some pages</td><td>New reading type — collides with ADR-0042/0046</td><td><span class="pill ask">needs ADR</span></td></tr>
-    <tr><td class="n">D8</td><td>Routines: edit a routine, tick past days</td><td>Backfill breaks a stated server-clock rule</td><td><span class="pill ask">needs ADR</span></td></tr>
+    <tr><td class="n">D7</td><td>A stat band above the list on some pages</td><td>New reading type — collides with ADR-0042/0046</td><td><span class="pill do">agreed · owes an ADR</span></td></tr>
+    <tr><td class="n">D8</td><td>Routines: edit a routine, tick past days</td><td>Backfill breaks a stated server-clock rule</td><td><span class="pill do">agreed · owes an ADR</span></td></tr>
+    <tr><td class="n">D9</td><td>Nothing is dropped from the database yet</td><td>Retire in code now, drop in SQL later</td><td><span class="pill later">staged</span></td></tr>
     <tr><td class="n">D10</td><td>The task form gains a project field</td><td>Never existed on the form; only capture can set one</td><td><span class="pill do">agreed</span></td></tr>
     <tr><td class="n">D11</td><td>Add a task from a project, project locked</td><td>The same dialog — ADR-0040 stays true</td><td><span class="pill do">agreed</span></td></tr>
     <tr><td class="n">D12</td><td>Repeats gains a Custom rule</td><td><code>weekly:tu,sa</code> — no migration, the column is already text</td><td><span class="pill do">agreed</span></td></tr>
-    <tr><td class="n">D9</td><td>Nothing is dropped from the database yet</td><td>Retire in code now, drop in SQL later</td><td><span class="pill later">staged</span></td></tr>
   </tbody>
 </table>
 </div>
@@ -516,9 +516,9 @@
     <dt>/routines</dt><dd>Kept over 30 days · kept over the last 7 · current day streak · the 30-day grid, moved up from the rows. <span class="pill do">clear win</span></dd>
     <dt>/domains</dt><dd>Domains within cadence · domains gone quiet · longest quiet run. Fed by §04. <span class="pill do">clear win</span></dd>
     <dt>/tasks</dt><dd>Done in the last 7 days · open · overdue · wants parked. <span class="pill do">clear win</span></dd>
-    <dt>/projects</dt><dd>Tasks done vs open across all active projects · projects with nothing open. <span class="pill ask">maybe</span></dd>
-    <dt>/journal</dt><dd>Days written in the last 30 · current writing streak. <span class="pill ask">maybe</span></dd>
-    <dt>/notes</dt><dd>Captured in the last 30 days · needing review · without a domain. <span class="pill ask">maybe</span></dd>
+    <dt>/projects</dt><dd>Tasks done vs open across all active projects · projects with nothing open. <span class="pill later">held</span></dd>
+    <dt>/journal</dt><dd>Days written in the last 30 · current writing streak. <span class="pill later">held</span></dd>
+    <dt>/notes</dt><dd>Captured in the last 30 days · needing review · without a domain. <span class="pill later">held</span></dd>
     <dt>/people</dt><dd>Nothing yet. A silence measure is a separate piece of work and is not in this plan.</dd>
     <dt>/quotes · /links</dt><dd>Nothing. A pile is a pile by design — ADR-0042 already says so about the unread count.</dd>
   </dl>
@@ -825,8 +825,8 @@
 
 
 <section class="point">
-  <h2><span class="num">10</span> Still open</h2>
-  <p class="sub">All six were put to the owner on 21 Aug 2026 and all six recommendations were accepted. They are kept here with their reasoning, because the reasoning is the part worth re-reading. Two more opened with the form work — O7 is settled below, O8 is not.</p>
+  <h2><span class="num">10</span> Every question, and how it was answered</h2>
+  <p class="sub">Six questions were put to the owner on 21 Aug 2026; two more opened with the task-form work. All eight are settled and every recommendation was accepted. They are kept here with their reasoning, because the reasoning is the part worth re-reading. Nothing on this plan is waiting on a decision.</p>
 
   <div class="qa">
     <span class="qid">O1</span><span class="qt">Is “don’t drop anything yet” about the database only?</span>
@@ -871,9 +871,9 @@
   </div>
 
   <div class="qa">
-    <span class="qid">O8</span><span class="qt">How far does the Custom grammar go? <span class="pill ask">open</span></span>
+    <span class="qid">O8</span><span class="qt">How far does the Custom grammar go?</span>
     <p><code>weekly:tu,sa</code> covers “weekly on these weekdays”. It does not cover “every 2 weeks on Tuesday and Saturday”, or “the last Friday of the month”. Each of those is a small extension on its own, and together they are RFC 5545.</p>
-    <p class="rec-line"><b>Recommended:</b> stop at weekly-on-weekdays. Add an interval only when a real task needs it, not in advance. Keep <code>weekdays</code> as its own literal rather than rewriting it to <code>weekly:mo,tu,we,th,fr</code> — the rows already stored say <code>weekdays</code>, and a rewrite buys nothing.</p>
+    <p class="rec-line"><b>Settled:</b> stop at weekly-on-weekdays. Add an interval only when a real task needs it, not in advance. Keep <code>weekdays</code> as its own literal rather than rewriting it to <code>weekly:mo,tu,we,th,fr</code> — the rows already stored say <code>weekdays</code>, and a rewrite buys nothing.</p>
   </div>
 </section>
 
@@ -894,7 +894,7 @@
 
 
 <footer>
-  <p><strong>Status.</strong> Plan only. No code, no migration, and no ADR has been written for any of this.</p>
+  <p><strong>Status.</strong> Settled, not started. Every decision above is agreed and nothing is waiting on an answer. No code, no migration and no ADR has been written yet — §09 holds the build order, and P1 is the first thing to pick up.</p>
   <p>Sources: <code>docs/review-jerad-ops-v2-2026-08-15.html</code> (the reference read), the repository at <code>main</code>, and a design interview on 21 Aug 2026. Every claim about Dispatch above was checked against the code rather than inferred.</p>
 </footer>
 
