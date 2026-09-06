@@ -58,3 +58,23 @@ describe("CreateTaskFormSchema due_time-requires-due_date invariant", () => {
 		expect(result.success).toBe(true);
 	});
 });
+
+describe("CreateTaskFormSchema · project_id", () => {
+	const base = { title: "Ship it", priority: "4" };
+
+	it("accepts a project id", () => {
+		const parsed = CreateTaskFormSchema.parse({
+			...base,
+			project_id: "3f1b6c2e-9a4d-4f7b-8c1e-2d5a6b7c8d9e",
+		});
+		expect(parsed.project_id).toBe("3f1b6c2e-9a4d-4f7b-8c1e-2d5a6b7c8d9e");
+	});
+
+	it("accepts the empty string a cleared select posts", () => {
+		expect(CreateTaskFormSchema.parse({ ...base, project_id: "" }).project_id).toBe("");
+	});
+
+	it("rejects anything that is not a uuid", () => {
+		expect(CreateTaskFormSchema.safeParse({ ...base, project_id: "nope" }).success).toBe(false);
+	});
+});

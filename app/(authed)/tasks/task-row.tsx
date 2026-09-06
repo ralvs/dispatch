@@ -14,7 +14,7 @@ import { RECURRENCE_GLYPH, recurrenceLabel } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/services/tasks";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
 import { TaskDialog } from "./task-dialog";
-import type { TaskDomainOption } from "./task-fields";
+import type { TaskDomainOption, TaskProjectOption } from "./task-fields";
 import { TaskNotePopover } from "./task-note-popover";
 
 export type { TaskDomainOption };
@@ -59,6 +59,7 @@ export function TaskRowItem({
 	starDateIso,
 	timeLabel,
 	domains = [],
+	projects = [],
 	manageable = true,
 	initialEditing = false,
 	handlers,
@@ -77,6 +78,8 @@ export function TaskRowItem({
 	starDateIso?: string;
 	timeLabel?: string | null;
 	domains?: TaskDomainOption[];
+	/** Pickable projects for the edit form's filing row (shape plan §06). */
+	projects?: TaskProjectOption[];
 	/** Edit/delete only make sense on the Tasks page — Today is read-mostly. */
 	manageable?: boolean;
 	/** Open the edit form on mount (deep-link from Today via `?edit=`). */
@@ -154,6 +157,7 @@ export function TaskRowItem({
 					mode="edit"
 					taskId={task.id}
 					domains={domains}
+					projects={projects}
 					todayIso={todayIso}
 					people={people}
 					onDelete={handlers.onDelete ? remove : undefined}
@@ -163,6 +167,7 @@ export function TaskRowItem({
 						due_date: task.due_date,
 						due_time: task.due_time,
 						domain_id: task.domain_id,
+						project_id: task.project_id,
 						priority: task.priority,
 						recurrence_rule: task.recurrence_rule,
 						someday: task.someday,

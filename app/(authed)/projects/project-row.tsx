@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ColorDot } from "@/components/color-dot";
 import { Badge, ListRow, rowTitle } from "@/components/ui";
 import type { ProjectRow } from "@/lib/services/projects";
@@ -22,11 +23,14 @@ export function ProjectRowItem({
 	project,
 	openTasks = [],
 	doneCount = 0,
+	addTask,
 }: {
 	project: ProjectRow;
 	/** The project's open tasks, in list order. Only the first five are drawn. */
 	openTasks?: TaskRow[];
 	doneCount?: number;
+	/** "Add task", pre-filled and locked to this project (shape plan §06). */
+	addTask?: ReactNode;
 }) {
 	const domainColor = project.domain?.color ?? null;
 	const domainName = project.domain?.name ?? "—";
@@ -69,6 +73,7 @@ export function ProjectRowItem({
 					)}
 				</ul>
 			)}
+			{addTask && <div className="mt-2">{addTask}</div>}
 		</ListRow>
 	);
 }

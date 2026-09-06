@@ -70,6 +70,10 @@ export const CreateTaskFormSchema = z
 		due_time: WallClockTimeSchema.optional().or(z.literal("")),
 		priority: z.coerce.number().int().min(1).max(4).default(4),
 		domain_id: z.uuid().optional().or(z.literal("")),
+		// The project tag, settable at last (shape plan §06). The service has
+		// always accepted it; only the form was missing, which left capture's
+		// guess the sole writer and no way to correct it.
+		project_id: z.uuid().optional().or(z.literal("")),
 		recurrence_rule: z.enum(RECURRENCE_PATTERNS).optional().or(z.literal("")),
 		// An unchecked checkbox posts nothing at all, so absence is false. The
 		// literal is what a checked one posts through the hidden input the form

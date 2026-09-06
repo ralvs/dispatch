@@ -9,6 +9,7 @@ export function titleOnlyCreate(formData: FormData): boolean {
 		blank("due_time") &&
 		blank("notes") &&
 		blank("domain_id") &&
+		blank("project_id") &&
 		blank("recurrence_rule") &&
 		String(formData.get("priority") ?? "4") === "4"
 	);

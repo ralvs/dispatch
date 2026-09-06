@@ -78,9 +78,15 @@ function optimisticTaskFromText(text: string): TaskRow {
 	return optimisticTask({ title: text });
 }
 
-function optimisticTaskFromForm(formData: FormData, domains: TaskDomainOption[]): TaskRow {
+function optimisticTaskFromForm(
+	formData: FormData,
+	domains: TaskDomainOption[],
+	projects: TaskFilterOption[],
+): TaskRow {
 	const domainId = String(formData.get("domain_id") ?? "") || null;
 	const domain = domains.find((d) => d.id === domainId);
+	const projectId = String(formData.get("project_id") ?? "") || null;
+	const project = projects.find((p) => p.id === projectId);
 	const priorityRaw = Number(formData.get("priority"));
 
 	return optimisticTask({
@@ -91,8 +97,13 @@ function optimisticTaskFromForm(formData: FormData, domains: TaskDomainOption[])
 		someday: formData.get("someday") === "on",
 		priority: Number.isFinite(priorityRaw) ? priorityRaw : 4,
 		domain_id: domainId,
+		// The optimistic builder hard-coded `project_id: null` while the form
+		// could not set one. It can now (shape plan §06), so the fake row has
+		// to carry the real answer or the project filter drops it on sight.
+		project_id: projectId,
 		recurrence_rule: String(formData.get("recurrence_rule") ?? "") || null,
 		domain: domain ? { id: domain.id, name: domain.name, color: domain.color ?? null } : null,
+		project: project ? { id: project.id, name: project.name } : null,
 	});
 }
 
@@ -255,7 +266,7 @@ export function TaskList({
 	);
 
 	function onCreate(formData: FormData): Promise<void> {
-		const optimistic = optimisticTaskFromForm(formData, domains);
+		const optimistic = optimisticTaskFromForm(formData, domains, projects ?? []);
 		sessionCreatedIds.add(optimistic.id);
 		// useOptimistic must run inside a transition owned here (not only the form's).
 		return new Promise((resolve, reject) => {
@@ -309,6 +320,7 @@ export function TaskList({
 				onClose={() => setCreating(false)}
 				mode="create"
 				domains={domains}
+				projects={projects ?? []}
 				todayIso={todayIso}
 				people={people}
 				onCreate={onCreate}
@@ -370,6 +382,7 @@ export function TaskList({
 										task={t}
 										todayIso={todayIso}
 										domains={domains}
+										projects={projects ?? []}
 										initialEditing={editTaskId === t.id}
 										handlers={handlersFor(t)}
 										noteId={taskNoteIds?.[t.id]}
@@ -397,6 +410,7 @@ export function TaskList({
 										task={t}
 										todayIso={todayIso}
 										domains={domains}
+										projects={projects ?? []}
 										initialEditing={editTaskId === t.id}
 										handlers={handlersFor(t)}
 										noteId={taskNoteIds?.[t.id]}
@@ -418,6 +432,7 @@ export function TaskList({
 										task={t}
 										todayIso={todayIso}
 										domains={domains}
+										projects={projects ?? []}
 										initialEditing={editTaskId === t.id}
 										handlers={handlersFor(t)}
 										noteId={taskNoteIds?.[t.id]}
@@ -445,6 +460,7 @@ export function TaskList({
 									task={t}
 									todayIso={todayIso}
 									domains={domains}
+									projects={projects ?? []}
 									initialEditing={editTaskId === t.id}
 									handlers={handlersFor(t)}
 									noteId={taskNoteIds?.[t.id]}
@@ -472,6 +488,7 @@ export function TaskList({
 									task={t}
 									todayIso={todayIso}
 									domains={domains}
+									projects={projects ?? []}
 									initialEditing={editTaskId === t.id}
 									handlers={handlersFor(t)}
 									noteId={taskNoteIds?.[t.id]}
@@ -499,6 +516,7 @@ export function TaskList({
 									task={t}
 									todayIso={todayIso}
 									domains={domains}
+									projects={projects ?? []}
 									initialEditing={editTaskId === t.id}
 									handlers={handlersFor(t)}
 									noteId={taskNoteIds?.[t.id]}

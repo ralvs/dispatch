@@ -14,6 +14,9 @@ export type TaskDomainOption = {
 	color: string | null;
 };
 
+/** A project as the task form needs it — a name to pick, nothing more. */
+export type TaskProjectOption = { id: string; name: string };
+
 /** Label always stacks above its control (block, not inline beside). */
 const FIELD_LABEL = "field-caption mb-2 block text-xs";
 
@@ -24,8 +27,17 @@ const FIELD_LABEL = "field-caption mb-2 block text-xs";
  */
 const DUE_GRID = "grid grid-cols-2 gap-x-3 gap-y-3 sm:grid-cols-3 sm:gap-x-12 sm:gap-y-8";
 
-/** Domain + Priority — same column gap as date / time / shortcuts. */
-const META_PAIR = "grid grid-cols-2 gap-x-3 sm:gap-x-12";
+/**
+ * Domain · Project · Priority — the filing row, same column gap and the same
+ * three-up rhythm as date / time / shortcuts above it.
+ *
+ * Three groups, one question each: when · how often · where and how much
+ * (shape plan §06 / O7). Repeats used to sit in this row's third slot and
+ * moved to a row of its own, because the Custom weekday strip cannot live in
+ * a third of a row. Project took the slot it vacated. The relative chips did
+ * not move — they are one of the Due row's three slots, not spare room.
+ */
+const META_TRIO = "grid grid-cols-2 gap-x-3 gap-y-3 sm:grid-cols-3 sm:gap-x-12";
 
 /**
  * Shared field shell for non-primitive surfaces in this directory (mention
@@ -113,6 +125,8 @@ export type TaskFieldDefaults = {
 	/** null = the task is unfiled; undefined = no task yet (create form). */
 	domain_id?: string | null;
 	priority?: number;
+	/** null = no project; undefined = no task yet (create form). */
+	project_id?: string | null;
 	recurrence_rule?: string | null;
 	/** A want — the clock switched off (shape plan §03). */
 	someday?: boolean;
@@ -162,10 +176,19 @@ export function TaskTitleField({
  */
 export function TaskMetaFields({
 	domains,
+	projects = [],
+	lockProject = false,
 	todayIso,
 	defaults = {},
 }: {
 	domains: TaskDomainOption[];
+	/** Pickable projects. Empty renders the select with only "No project". */
+	projects?: TaskProjectOption[];
+	/**
+	 * Opened from a project, so the answer is already given (shape plan §06).
+	 * A disabled select posts nothing, so the value rides a hidden input.
+	 */
+	lockProject?: boolean;
 	/** App-timezone today (docs/adr/0002) — never `new Date()` in the browser. */
 	todayIso: string;
 	defaults?: TaskFieldDefaults;
@@ -263,7 +286,24 @@ export function TaskMetaFields({
 			</div>
 
 			<div className="space-y-10">
-				<div className={META_PAIR}>
+				<Field label="Repeats" className="min-w-0">
+					<Select
+						name="recurrence_rule"
+						value={recurrence}
+						disabled={someday}
+						onChange={(event) => setRecurrence(event.target.value)}
+						className="w-full"
+					>
+						<option value="">Never</option>
+						{RECURRENCE_PATTERNS.map((p) => (
+							<option key={p} value={p}>
+								{RECURRENCE_LABELS[p]}
+							</option>
+						))}
+					</Select>
+				</Field>
+
+				<div className={META_TRIO}>
 					<Field label="Domain" className="min-w-0">
 						{/* No color dot on <option> — styling native option elements is
 						    unreliable cross-browser, so this stays a plain name list. */}
@@ -283,25 +323,31 @@ export function TaskMetaFields({
 						</Select>
 					</Field>
 
+					<Field label="Project" className="min-w-0">
+						{/* Locked: the select still renders so the answer is
+							visible and named, and a hidden input carries the id
+							a disabled control would not post. */}
+						{lockProject && (
+							<input type="hidden" name="project_id" value={defaults.project_id ?? ""} />
+						)}
+						<Select
+							name={lockProject ? undefined : "project_id"}
+							defaultValue={defaults.project_id ?? ""}
+							disabled={lockProject}
+							aria-label="Project"
+							className="w-full"
+						>
+							<option value="">No project</option>
+							{projects.map((p) => (
+								<option key={p.id} value={p.id}>
+									{p.name}
+								</option>
+							))}
+						</Select>
+					</Field>
+
 					<PriorityPicker defaultValue={defaults.priority ?? 4} />
 				</div>
-
-				<Field label="Repeats" className="min-w-0">
-					<Select
-						name="recurrence_rule"
-						value={recurrence}
-						disabled={someday}
-						onChange={(event) => setRecurrence(event.target.value)}
-						className="w-full"
-					>
-						<option value="">Never</option>
-						{RECURRENCE_PATTERNS.map((p) => (
-							<option key={p} value={p}>
-								{RECURRENCE_LABELS[p]}
-							</option>
-						))}
-					</Select>
-				</Field>
 			</div>
 		</div>
 	);
@@ -317,6 +363,8 @@ export function TaskMetaFields({
  */
 export function TaskFormFields({
 	domains,
+	projects = [],
+	lockProject = false,
 	todayIso,
 	defaults = {},
 	titlePlaceholder = "What needs doing?",
@@ -326,6 +374,8 @@ export function TaskFormFields({
 	autoFocusTitle = false,
 }: {
 	domains: TaskDomainOption[];
+	projects?: TaskProjectOption[];
+	lockProject?: boolean;
 	todayIso: string;
 	defaults?: TaskFieldDefaults;
 	titlePlaceholder?: string;
@@ -351,7 +401,13 @@ export function TaskFormFields({
 
 			{showNotes && <TaskNotesField defaultValue={defaults.notes ?? ""} people={people} />}
 
-			<TaskMetaFields domains={domains} todayIso={todayIso} defaults={defaults} />
+			<TaskMetaFields
+				domains={domains}
+				projects={projects}
+				lockProject={lockProject}
+				todayIso={todayIso}
+				defaults={defaults}
+			/>
 		</>
 	);
 }

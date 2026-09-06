@@ -27,6 +27,7 @@ export async function createTaskAction(formData: FormData) {
 		due_time: parsed.due_time || null,
 		priority: parsed.priority,
 		domain_id: parsed.domain_id || null,
+		project_id: parsed.project_id || null,
 		recurrence_rule: parsed.recurrence_rule || null,
 		someday: parsed.someday === "on",
 	});
@@ -53,6 +54,9 @@ export async function updateTaskAction(id: string, formData: FormData) {
 		// domain alone", where null would reset it to Inbox. The create path above
 		// wants the opposite, which is why the two mappings stay separate.
 		domain_id: parsed.domain_id || undefined,
+		// Null, not undefined: clearing the select is how a task leaves a
+		// project, and the field is always present on the form.
+		project_id: parsed.project_id || null,
 		recurrence_rule: parsed.recurrence_rule || null,
 		// Always sent, unlike domain: the toggle's off state is the promotion
 		// gesture (shape plan §03), so an absent field has to mean "not a want"

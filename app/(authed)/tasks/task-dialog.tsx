@@ -6,7 +6,12 @@ import { runAction } from "@/lib/client/toast";
 import type { MentionCandidate } from "@/lib/mentions";
 import { titleOnlyCreate } from "@/lib/services/capture/title-only";
 import { createTaskAction, updateTaskAction } from "./actions";
-import { type TaskDomainOption, type TaskFieldDefaults, TaskFormFields } from "./task-fields";
+import {
+	type TaskDomainOption,
+	type TaskFieldDefaults,
+	TaskFormFields,
+	type TaskProjectOption,
+} from "./task-fields";
 
 /**
  * The one surface a task is written on (docs/adr/0040, docs/adr/0043) — create
@@ -39,6 +44,8 @@ export function TaskDialog({
 	onClose,
 	mode,
 	domains,
+	projects = [],
+	lockProject = false,
 	todayIso,
 	defaults,
 	people = [],
@@ -64,6 +71,10 @@ export function TaskDialog({
 	onClose: () => void;
 	mode: TaskDialogMode;
 	domains: TaskDomainOption[];
+	/** Pickable projects for the filing row (shape plan §06). */
+	projects?: TaskProjectOption[];
+	/** Opened from a project: the field shows the answer and cannot be changed. */
+	lockProject?: boolean;
 	/** App-timezone today (docs/adr/0002) — never `new Date()` in the browser. */
 	todayIso: string;
 	defaults?: TaskFieldDefaults;
@@ -164,6 +175,8 @@ export function TaskDialog({
 				<DialogBody className="space-y-10">
 					<TaskFormFields
 						domains={domains}
+						projects={projects}
+						lockProject={lockProject}
 						todayIso={todayIso}
 						defaults={defaults}
 						showNotes

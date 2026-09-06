@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { type ReactNode, useState, useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
 import {
 	Button,
@@ -28,11 +28,18 @@ export function ProjectDetail({
 	project,
 	tasks,
 	domains,
+	addTask,
 }: {
 	project: ProjectRow;
 	/** Every task tagged with this project, open and done (shape plan §02). */
 	tasks: TaskRow[];
 	domains: DomainRow[];
+	/**
+	 * "Add task", pre-filled and locked to this project. It ships with the
+	 * list below it and never alone — a button on a page that then shows you
+	 * nothing is a trapdoor (shape plan §06).
+	 */
+	addTask?: ReactNode;
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
@@ -217,7 +224,12 @@ export function ProjectDetail({
 				)}
 			</section>
 
-			<ProjectTasksSection projectId={project.id} open={openTasks} done={doneTasks} />
+			<ProjectTasksSection
+				projectId={project.id}
+				open={openTasks}
+				done={doneTasks}
+				addTask={addTask}
+			/>
 		</div>
 	);
 }
@@ -235,10 +247,12 @@ function ProjectTasksSection({
 	projectId,
 	open,
 	done,
+	addTask,
 }: {
 	projectId: string;
 	open: TaskRow[];
 	done: TaskRow[];
+	addTask?: ReactNode;
 }) {
 	const total = open.length + done.length;
 	const progress = taskProgress({ done: done.length, open: open.length });
@@ -253,6 +267,7 @@ function ProjectTasksSection({
 					) : undefined
 				}
 			/>
+			{addTask && <div className="mb-3">{addTask}</div>}
 			{total === 0 ? (
 				<EmptyState hint="Tag a task with this project and it shows up here.">
 					Nothing tagged with this project.
