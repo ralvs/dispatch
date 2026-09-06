@@ -479,6 +479,7 @@ export type Database = {
 					id: string;
 					needs_review: boolean;
 					origin_capture_id: string | null;
+					pinned_at: string | null;
 					related_person_id: string | null;
 					related_project_id: string | null;
 					related_quote_id: string | null;
@@ -497,6 +498,7 @@ export type Database = {
 					id?: string;
 					needs_review?: boolean;
 					origin_capture_id?: string | null;
+					pinned_at?: string | null;
 					related_person_id?: string | null;
 					related_project_id?: string | null;
 					related_quote_id?: string | null;
@@ -515,6 +517,7 @@ export type Database = {
 					id?: string;
 					needs_review?: boolean;
 					origin_capture_id?: string | null;
+					pinned_at?: string | null;
 					related_person_id?: string | null;
 					related_project_id?: string | null;
 					related_quote_id?: string | null;
