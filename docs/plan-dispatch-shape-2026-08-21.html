@@ -87,6 +87,11 @@
   .pill.gap   { background: var(--del-bg); color: var(--del-ink); border-color: var(--del-line); }
   .pill.later { background: var(--surface-2); color: var(--ink-3); border-color: var(--line-strong); }
   .pill.fixed { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+  .pill.done  { background: var(--add-ink); color: var(--add-bg); border-color: var(--add-ink); }
+  .rec.shipped { border-color: var(--add-line); }
+  .rec.shipped .rid { color: var(--add-ink); border-color: var(--add-line); background: transparent; }
+  .shipline { font: 400 12.5px/1.5 ui-monospace, monospace; color: var(--ink-3); margin: .6rem 0 0; }
+  .shipline b { color: var(--add-ink); font-weight: 500; }
 
   section.point { margin-top: 3.5rem; border-top: 1px solid var(--line-strong); padding-top: 1.75rem; }
   section.point > h2 { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; margin: 0 0 .3rem; display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
@@ -191,7 +196,7 @@
 <div class="wrap">
 
 <header class="top">
-  <p class="eyebrow">Dispatch · plan · 21 Aug 2026</p>
+  <p class="eyebrow">Dispatch · plan · 21 Aug 2026 · built 6 Sep 2026</p>
   <h1>Dispatch’s own shape</h1>
   <p class="lede">
     The jerad-ops 2.0 read (<code>docs/review-jerad-ops-v2-2026-08-15.html</code>) asked what Dispatch could take
@@ -211,18 +216,18 @@
 <table class="summary">
   <thead><tr><th class="n">#</th><th>Decision</th><th>Settled as</th><th>State</th></tr></thead>
   <tbody>
-    <tr><td class="n">D1</td><td>Notes get an optional domain</td><td>Optional. No Inbox fallback. <code>related_project_id</code> stays.</td><td><span class="pill do">agreed</span></td></tr>
-    <tr><td class="n">D2</td><td>Milestones go; project progress = tasks done / open</td><td>Project rows also list their tasks</td><td><span class="pill do">agreed</span></td></tr>
-    <tr><td class="n">D3</td><td>Client and billing fields go</td><td><code>client_id</code>, <code>hours_logged</code>, <code>quoted_hours</code>, <code>engagement_type</code></td><td><span class="pill do">agreed</span></td></tr>
-    <tr><td class="n">D4</td><td>A want is a task with the clock switched off</td><td><code>someday</code> flag, not a new entity</td><td><span class="pill do">agreed</span></td></tr>
-    <tr><td class="n">D5</td><td>Wire the neglect sweep</td><td>Surfaces on <code>/domains</code> and the bell — <strong>not</strong> Today</td><td><span class="pill do">do first</span></td></tr>
-    <tr><td class="n">D6</td><td><code>/domains</code> rows show last touch, open count, quiet dot</td><td>Today’s page is not touched</td><td><span class="pill do">agreed</span></td></tr>
-    <tr><td class="n">D7</td><td>A stat band above the list on some pages</td><td>New reading type — collides with ADR-0042/0046</td><td><span class="pill do">agreed · owes an ADR</span></td></tr>
-    <tr><td class="n">D8</td><td>Routines: edit a routine, tick past days</td><td>Backfill breaks a stated server-clock rule</td><td><span class="pill do">agreed · owes an ADR</span></td></tr>
-    <tr><td class="n">D9</td><td>Nothing is dropped from the database yet</td><td>Retire in code now, drop in SQL later</td><td><span class="pill later">staged</span></td></tr>
-    <tr><td class="n">D10</td><td>The task form gains a project field</td><td>Never existed on the form; only capture can set one</td><td><span class="pill do">agreed</span></td></tr>
-    <tr><td class="n">D11</td><td>Add a task from a project, project locked</td><td>The same dialog — ADR-0040 stays true</td><td><span class="pill do">agreed</span></td></tr>
-    <tr><td class="n">D12</td><td>Repeats gains a Custom rule</td><td><code>weekly:tu,sa</code> — no migration, the column is already text</td><td><span class="pill do">agreed</span></td></tr>
+    <tr><td class="n">D1</td><td>Notes get an optional domain</td><td>Optional. No Inbox fallback. <code>related_project_id</code> stays.</td><td><span class="pill done">shipped</span></td></tr>
+    <tr><td class="n">D2</td><td>Milestones go; project progress = tasks done / open</td><td>Project rows also list their tasks</td><td><span class="pill done">shipped</span></td></tr>
+    <tr><td class="n">D3</td><td>Client and billing fields go</td><td><code>client_id</code>, <code>hours_logged</code>, <code>quoted_hours</code>, <code>engagement_type</code></td><td><span class="pill done">shipped</span></td></tr>
+    <tr><td class="n">D4</td><td>A want is a task with the clock switched off</td><td><code>someday</code> flag, not a new entity</td><td><span class="pill done">shipped</span></td></tr>
+    <tr><td class="n">D5</td><td>Wire the neglect sweep</td><td>Surfaces on <code>/domains</code> and the bell — <strong>not</strong> Today</td><td><span class="pill done">shipped</span></td></tr>
+    <tr><td class="n">D6</td><td><code>/domains</code> rows show last touch, open count, quiet dot</td><td>Today’s page is not touched</td><td><span class="pill done">shipped</span></td></tr>
+    <tr><td class="n">D7</td><td>A stat band above the list on some pages</td><td>New reading type — collides with ADR-0042/0046</td><td><span class="pill done">shipped · ADR written</span></td></tr>
+    <tr><td class="n">D8</td><td>Routines: edit a routine, tick past days</td><td>Backfill breaks a stated server-clock rule</td><td><span class="pill done">shipped · ADR written</span></td></tr>
+    <tr><td class="n">D9</td><td>Nothing is dropped from the database yet</td><td>Retire in code now, drop in SQL later</td><td><span class="pill done">shipped</span> <span class="pill later">SQL still staged</span></td></tr>
+    <tr><td class="n">D10</td><td>The task form gains a project field</td><td>Never existed on the form; only capture can set one</td><td><span class="pill done">shipped</span></td></tr>
+    <tr><td class="n">D11</td><td>Add a task from a project, project locked</td><td>The same dialog — ADR-0040 stays true</td><td><span class="pill done">shipped</span></td></tr>
+    <tr><td class="n">D12</td><td>Repeats gains a Custom rule</td><td><code>weekly:tu,sa</code> — needed a migration after all; a CHECK pinned the column</td><td><span class="pill done">shipped</span></td></tr>
   </tbody>
 </table>
 </div>
@@ -738,43 +743,48 @@
 <section class="point">
   <h2><span class="num">09</span> The order to build it in</h2>
   <p class="sub">Each step is independently shippable and independently revertible. Nothing later depends on anything earlier except where stated.</p>
+  <p class="sub">All nine shipped on 6 Sep 2026, one commit each, on <code>main</code>. Every card carries the commit that closed it and anything the plan got wrong.</p>
 
-  <div class="rec top">
-    <div class="rec-head"><span class="rid">P1</span><h3>Wire the neglect sweep</h3><span class="pill do">do first</span></div>
+  <div class="rec shipped">
+    <div class="rec-head"><span class="rid">P1</span><h3>Wire the neglect sweep</h3><span class="pill done">shipped</span></div>
     <p class="why">Closes a promise the product already makes in writing. Everything else on this list is an improvement; this one is a repair.</p>
     <ul class="files">
       <li><span class="op new">new</span><span class="fp">lib/services/observations.ts — domain last touch as MAX of four sources</span></li>
       <li><span class="op new">new</span><span class="fp">app/api/cron/observations/route.ts — modelled on app/api/cron/sweep/route.ts</span></li>
-      <li><span class="op mod">mod</span><span class="fp">lib/services/today.ts — reuse cadenceThresholdDays; decide buildCadenceLines' fate</span></li>
+      <li><span class="op mod">mod</span><span class="fp">lib/services/today.ts — reuse cadenceThresholdDays; buildCadenceLines kept here, removed in 533d4c2</span></li>
       <li><span class="op mod">mod</span><span class="fp">app/(authed)/domains/domain-row.tsx — the help text stops describing fiction</span></li>
     </ul>
     <div class="meta"><span><b>depends on</b> nothing</span><span><b>surfaces</b> bell + /domains</span><span><b>touches Today</b> no</span></div>
+    <p class="shipline"><b>shipped</b> dad4c72 — lib/services/observations.ts and app/api/cron/observations/route.ts. <strong>buildCadenceLines was not dead code</strong> — the widget and chat still read it, so P1 left it alone. It was removed later, on its own, in 533d4c2.</p>
   </div>
 
-  <div class="rec">
-    <div class="rec-head"><span class="rid">P2</span><h3>/domains earns its nav slot</h3></div>
+  <div class="rec shipped">
+    <div class="rec-head"><span class="rid">P2</span><h3>/domains earns its nav slot</h3><span class="pill done">shipped</span></div>
     <p class="why">P1 produces a fact that has nowhere to appear. Days since last touch, open task count, quiet dot on every row — plus the stat band above the list.</p>
     <div class="meta"><span><b>depends on</b> P1</span><span><b>needs ADR</b> stat band</span></div>
+    <p class="shipline"><b>shipped</b> bb8ad0e — Last touch, open count and a quiet dot on every row, under the first stat band. ADR-0053.</p>
   </div>
 
-  <div class="rec">
-    <div class="rec-head"><span class="rid">P3</span><h3>Notes get a domain</h3></div>
+  <div class="rec shipped">
+    <div class="rec-head"><span class="rid">P3</span><h3>Notes get a domain</h3><span class="pill done">shipped</span></div>
     <p class="why">One nullable column, the domain picker already built for tasks, a dot on the row and a filter in the sidebar. Small, self-contained, and it makes the whole model consistent.</p>
     <ul class="files">
       <li><span class="op new">new</span><span class="fp">supabase/migrations/… — notes.domain_id uuid null references stewardship_domains</span></li>
       <li><span class="op mod">mod</span><span class="fp">lib/schemas/note.ts · lib/services/notes.ts · app/(authed)/notes/</span></li>
     </ul>
     <div class="meta"><span><b>depends on</b> nothing</span><span><b>feeds</b> P1’s last-touch — see O3</span></div>
+    <p class="shipline"><b>shipped</b> 2233268 — Migration 20260906120000. A note also gained <code>updated_at</code> later (72541e1), so editing or filing a note now revives its domain.</p>
   </div>
 
-  <div class="rec">
-    <div class="rec-head"><span class="rid">P4</span><h3>Wants</h3></div>
+  <div class="rec shipped">
+    <div class="rec-head"><span class="rid">P4</span><h3>Wants</h3><span class="pill done">shipped</span></div>
     <p class="why">The <code>someday</code> flag, its predicate, its filter, and its exclusion from Today and the default task list.</p>
     <div class="meta"><span><b>depends on</b> nothing</span></div>
+    <p class="shipline"><b>shipped</b> 40d0ace — Migration 20260906130000. Wants are excluded from Today, the inbox, project counts and the domain open-task fold.</p>
   </div>
 
-  <div class="rec">
-    <div class="rec-head"><span class="rid">P5</span><h3>Projects become a loose bucket</h3></div>
+  <div class="rec shipped">
+    <div class="rec-head"><span class="rid">P5</span><h3>Projects become a loose bucket</h3><span class="pill done">shipped</span></div>
     <p class="why">Milestones and the billing fields come out of the UI. Progress becomes tasks done / open. Each project row lists its open tasks inline.</p>
     <ul class="files">
       <li><span class="op del">del</span><span class="fp">milestone UI in app/(authed)/projects/[id]/ and today/projects-card.tsx</span></li>
@@ -782,10 +792,11 @@
       <li><span class="op mod">mod</span><span class="fp">app/(authed)/projects/project-form.tsx — two fields leave</span></li>
     </ul>
     <div class="meta"><span><b>depends on</b> nothing</span><span><b>phase</b> A only — no SQL</span></div>
+    <p class="shipline"><b>shipped</b> a2ca2e0 — <code>milestoneProgress</code> replaced by <code>taskProgress</code>; the milestone services deleted. No SQL, as planned — the tables stay (D9).</p>
   </div>
 
-  <div class="rec top">
-    <div class="rec-head"><span class="rid">P6</span><h3>The project tag becomes usable</h3><span class="pill gap">closes a hole</span></div>
+  <div class="rec shipped">
+    <div class="rec-head"><span class="rid">P6</span><h3>The project tag becomes usable</h3><span class="pill done">shipped</span></div>
     <p class="why">Adds the project field to the task form, teaches the project page to list its tasks, and adds “Add task” from both project surfaces with the project pre-filled and locked. Without this, §02’s whole “a project is a tag for tasks” model is a claim the UI cannot honour.</p>
     <ul class="files">
       <li><span class="op mod">mod</span><span class="fp">lib/schemas/task.ts — project_id joins CreateTaskFormSchema</span></li>
@@ -795,10 +806,11 @@
       <li><span class="op mod">mod</span><span class="fp">app/(authed)/projects/page.tsx — per-row Add task, project locked</span></li>
     </ul>
     <div class="meta"><span><b>depends on</b> nothing</span><span><b>pairs with</b> P5</span><span><b>service side</b> already done</span></div>
+    <p class="shipline"><b>shipped</b> 450aec3 — Project on the form, an Add task button on both project surfaces, project locked when opened from a project.</p>
   </div>
 
-  <div class="rec">
-    <div class="rec-head"><span class="rid">P7</span><h3>Repeats: a Custom rule</h3><span class="pill do">no SQL</span></div>
+  <div class="rec shipped">
+    <div class="rec-head"><span class="rid">P7</span><h3>Repeats: a Custom rule</h3><span class="pill done">shipped</span></div>
     <p class="why">“Weekly on Tuesdays and Saturdays”, stored as <code>weekly:tu,sa</code> in the text column that already holds the seven literals. Ships with P6 because it is the same row of the same form.</p>
     <ul class="files">
       <li><span class="op mod">mod</span><span class="fp">lib/recurrence.ts — parse, nextDueDate branch, label, periodStart alias</span></li>
@@ -807,26 +819,29 @@
       <li><span class="op mod">mod</span><span class="fp">app/(authed)/tasks/task-row.tsx — the ↻ chip must label a custom rule</span></li>
       <li><span class="op mod">mod</span><span class="fp">app/(authed)/tasks/task-fields.tsx — Custom option + the weekday strip</span></li>
     </ul>
-    <div class="meta"><span><b>depends on</b> nothing</span><span><b>ships with</b> P6</span><span><b>migration</b> none</span></div>
+    <div class="meta"><span><b>depends on</b> nothing</span><span><b>ships with</b> P6</span><span><b>migration</b> one, after all</span></div>
+    <p class="shipline"><b>shipped</b> 9af9984 — <strong>The plan was wrong about the SQL.</strong> <code>tasks_recurrence_rule_check</code> pinned the column to seven literals, so Postgres would have rejected <code>weekly:tu,sa</code>. Migration 20260906140000 widens it.</p>
   </div>
 
-  <div class="rec">
-    <div class="rec-head"><span class="rid">P8</span><h3>Routines: edit and backfill</h3></div>
+  <div class="rec shipped">
+    <div class="rec-head"><span class="rid">P8</span><h3>Routines: edit and backfill</h3><span class="pill done">shipped</span></div>
     <p class="why">An edit mode on the row, and the 30 grid squares become clickable within a bounded window.</p>
     <div class="meta"><span><b>depends on</b> nothing</span><span><b>needs ADR</b> client-named date</span></div>
+    <p class="shipline"><b>shipped</b> ac6857b — Edit mode on the row; the 30 squares are buttons, bounded server-side. ADR-0054.</p>
   </div>
 
-  <div class="rec">
-    <div class="rec-head"><span class="rid">P9</span><h3>Stat bands on the remaining pages</h3></div>
+  <div class="rec shipped">
+    <div class="rec-head"><span class="rid">P9</span><h3>Stat bands on the remaining pages</h3><span class="pill done">shipped</span></div>
     <p class="why">/routines, /tasks, then whichever of the maybes survive §05.</p>
     <div class="meta"><span><b>depends on</b> P2’s ADR and component</span></div>
+    <p class="shipline"><b>shipped</b> 5293949 — /routines and /tasks. None of §05’s maybes were added — a band that repeats the header measure is not a second reading.</p>
   </div>
 </section>
 
 
 <section class="point">
   <h2><span class="num">10</span> Every question, and how it was answered</h2>
-  <p class="sub">Six questions were put to the owner on 21 Aug 2026; two more opened with the task-form work. All eight are settled and every recommendation was accepted. They are kept here with their reasoning, because the reasoning is the part worth re-reading. Nothing on this plan is waiting on a decision.</p>
+  <p class="sub">Six questions were put to the owner on 21 Aug 2026; two more opened with the task-form work. All eight are settled and every recommendation was accepted. They are kept here with their reasoning, because the reasoning is the part worth re-reading. All eight were built as settled, with one change: O3’s note source became <code>notes.updated_at</code>, not <code>created_at</code>.</p>
 
   <div class="qa">
     <span class="qid">O1</span><span class="qt">Is “don’t drop anything yet” about the database only?</span>
@@ -844,6 +859,7 @@
     <span class="qid">O3</span><span class="qt">Does writing a note count as touching its domain?</span>
     <p>Once notes carry a domain, they become a fifth candidate source for the neglect sweep’s last-touch date. Counting them makes a domain look tended when all you did was think about it. Not counting them means a week of notes about Health still reads as neglect.</p>
     <p class="rec-line"><b>Settled:</b> count it. Attention is what this measure is for, and thinking about something is attention.</p>
+    <p class="shipline"><b>built as</b> <code>notes.updated_at</code>, not <code>created_at</code> (72541e1). Create-time only would have meant that editing an old note, or filing one into a domain, counted as nothing. Journal is still not a source: <code>journal_entries</code> has no domain link.</p>
   </div>
 
   <div class="qa">
@@ -894,7 +910,18 @@
 
 
 <footer>
-  <p><strong>Status.</strong> Settled, not started. Every decision above is agreed and nothing is waiting on an answer. No code, no migration and no ADR has been written yet — §09 holds the build order, and P1 is the first thing to pick up.</p>
+  <p><strong>Status.</strong> Built. All nine phases of §09 shipped on 6 Sep 2026, one commit each, on <code>main</code>; four migrations
+  (<code>notes.domain_id</code>, <code>tasks.someday</code>, the widened recurrence check, <code>notes.updated_at</code>) are applied to the
+  live database, and the three ADRs the plan owed — 0053, 0054, 0055 — are written.</p>
+  <p><strong>What the plan got wrong, and what changed after it.</strong> P7 was not free of SQL: a CHECK constraint pinned
+  <code>tasks.recurrence_rule</code> to seven literals. <code>buildCadenceLines</code> was not dead code when P1 ran; it was removed
+  separately once its two readers were moved onto the counts directly, which also dropped the <code>cadence</code> array from the widget
+  JSON. And O3’s note source became <code>notes.updated_at</code> rather than <code>created_at</code>, so filing or editing a note now
+  revives a quiet domain — the migration the plan deferred.</p>
+  <p><strong>What is deliberately still open.</strong> D9’s Phase B — dropping <code>milestones</code>, <code>project_checklist_items</code>,
+  the billing columns, <code>parent_task_id</code>, <code>activity_log</code>, <code>action_log</code> and <code>inventory_items</code> in SQL
+  — is not scheduled, by the plan’s own rule. Journal is still not a last-touch source: <code>journal_entries</code> has no domain link, and
+  inventing one is a guess. §05’s remaining stat-band candidates were left alone on purpose.</p>
   <p>Sources: <code>docs/review-jerad-ops-v2-2026-08-15.html</code> (the reference read), the repository at <code>main</code>, and a design interview on 21 Aug 2026. Every claim about Dispatch above was checked against the code rather than inferred.</p>
 </footer>
 
