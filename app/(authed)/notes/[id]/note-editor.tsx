@@ -9,12 +9,17 @@ import StarterKit from "@tiptap/starter-kit";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Markdown, type MarkdownStorage } from "tiptap-markdown";
-import { Button } from "@/components/ui";
+import { Button, type ScopeOption, ScopeSelect } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import { createDebouncedSave } from "@/lib/debounced-save";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { NoteListRow } from "@/lib/services/notes";
-import { deleteNoteAction, resolveNeedsReviewAction, saveNoteAction } from "../actions";
+import {
+	deleteNoteAction,
+	resolveNeedsReviewAction,
+	saveNoteAction,
+	setNoteDomainAction,
+} from "../actions";
 import { Mention } from "./mention-extension";
 import { createMentionSuggestionExtension } from "./mention-suggestion";
 import { Wikilink } from "./wikilink-extension";
@@ -73,14 +78,20 @@ export function NoteEditor({
 	note,
 	noteTitles,
 	people = [],
+	domains,
 }: {
 	note: NoteListRow;
 	noteTitles: WikilinkCandidate[];
 	/** @mention candidates (docs/adr/0030) for the `@` autocomplete. */
 	people?: MentionCandidate[];
+	/** Active domains for the filing picker. A note's domain is optional. */
+	domains: ScopeOption[];
 }) {
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
+	// Optimistic so the meta line settles before the RSC round-trip; filing is
+	// a one-click move and a select that snaps back reads as a failure.
+	const [domainId, setDomainId] = useState(note.domain_id ?? "");
 	const [saveState, setSaveState] = useState<SaveState>("idle");
 	const titleRef = useRef(note.title ?? "");
 	const bodyRef = useRef(note.body);
@@ -185,9 +196,22 @@ export function NoteEditor({
 			<div className="prose-authored field-shell mt-7 pb-2">
 				<EditorContent editor={editor} />
 			</div>
-			<p className="mt-3 font-mono text-meta text-ink-4">
-				{note.source_type}
-				{note.tags.length > 0 ? ` · ${note.tags.join(", ")}` : ""}
+			<p className="mt-3 flex flex-wrap items-center gap-x-1.5 font-mono text-meta text-ink-4">
+				<span>{note.source_type}</span>
+				<span aria-hidden>·</span>
+				<ScopeSelect
+					value={domainId}
+					onChange={(next) => {
+						setDomainId(next);
+						startTransition(async () => {
+							await runAction(() => setNoteDomainAction(note.id, next), "Couldn't file this note.");
+						});
+					}}
+					label="Domain"
+					allLabel="No domain"
+					options={domains}
+				/>
+				{note.tags.length > 0 ? <span>· {note.tags.join(", ")}</span> : null}
 				{/* Autosave status only — kept out of the static text above so the
 				    live region doesn't re-announce the source/tags on every save. */}
 				<span aria-live="polite">

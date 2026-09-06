@@ -59,6 +59,9 @@ export const NoteSchema = z.object({
 	source_type: NoteSourceTypeSchema,
 	source_reference: z.string().nullable().optional(),
 	tags: z.array(z.string()).default([]),
+	// Optional, with no Inbox fallback — a loose thought stays loose
+	// (shape plan D1). A note may carry a domain, a project, both or neither.
+	domain_id: z.string().uuid().nullable().optional(),
 	related_project_id: z.string().uuid().nullable().optional(),
 	related_person_id: z.string().uuid().nullable().optional(),
 	related_quote_id: z.string().uuid().nullable().optional(),
@@ -79,6 +82,7 @@ export const CreateNoteSchema = z.object({
 	// making it impossible to wipe a source_reference once it's been set.
 	source_reference: z.string().nullable().optional(),
 	tags: z.array(z.string()).optional(),
+	domain_id: z.string().uuid().nullable().optional(),
 	related_project_id: z.string().uuid().nullable().optional(),
 	related_person_id: z.string().uuid().nullable().optional(),
 	related_quote_id: z.string().uuid().nullable().optional(),
@@ -119,6 +123,7 @@ export const NOTE_SELECT = Object.keys(NoteRowSchema.shape).join(", ");
 
 export const NoteListRowSchema = NoteRowSchema.extend({
 	source_reference: z.string().nullable(),
+	domain_id: z.string().uuid().nullable(),
 	related_project_id: z.string().uuid().nullable(),
 	related_person_id: z.string().uuid().nullable(),
 	related_quote_id: z.string().uuid().nullable(),

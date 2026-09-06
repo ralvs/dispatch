@@ -1,19 +1,15 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
-import { Icon } from "@/components/ui/icon";
+import { type ScopeOption, ScopeSelect } from "@/components/ui";
 
 export type TaskStatusFilter = "open" | "overdue" | "today";
 
-export type TaskFilterOption = { id: string; name: string };
+export type TaskFilterOption = ScopeOption;
 
-/**
- * Sentinel for "this column is null" — distinct from "" which means no narrow
- * at all. Since ADR-0027 an unfiled task carries `domain_id: null` rather than
- * a pseudo-domain row, so without this the unfiled queue is unreachable from
- * the filters. `project_id` has always been nullable and gets the same treatment.
- */
-export const UNFILED = "none";
+// The null sentinel and the select itself moved to components/ui/scope-select
+// when /notes gained the same narrow. Re-exported so the task surfaces that
+// already import UNFILED from here keep working.
+export { UNFILED } from "@/components/ui";
 
 /**
  * The count line doubles as the status filter — "13 open · 0 overdue · 1 today"
@@ -88,65 +84,6 @@ export function TaskStatusStrip({
 				);
 			})}
 		</fieldset>
-	);
-}
-
-/**
- * Project and domain are the rarely-touched narrows, so they read as text
- * until you reach for them: no label, no box, native caret suppressed. A
- * chosen value colours itself, which is the only state worth seeing at rest.
- */
-function ScopeSelect({
-	value,
-	onChange,
-	label,
-	allLabel,
-	unfiledLabel,
-	options,
-}: {
-	value: string;
-	onChange: (value: string) => void;
-	label: string;
-	allLabel: string;
-	unfiledLabel: string;
-	options: TaskFilterOption[];
-}) {
-	// A native select is always as wide as its longest option, which leaves a
-	// dead gap before the caret. The visible text is a span sized to the chosen
-	// value; the select itself is a transparent overlay that still owns the
-	// interaction, the keyboard, and the accessible name.
-	const current =
-		value === ""
-			? allLabel
-			: value === UNFILED
-				? unfiledLabel
-				: (options.find((o) => o.id === value)?.name ?? allLabel);
-
-	return (
-		<span
-			className={`group relative inline-flex items-center gap-1 font-mono text-meta transition-colors ${
-				value ? "text-accent-ink" : "text-ink-4"
-			} has-[select:focus-visible]:outline-2 has-[select:focus-visible]:outline-offset-2 has-[select:focus-visible]:outline-accent hover:text-ink`}
-		>
-			<span aria-hidden>{current}</span>
-			<span aria-hidden className="inline-flex">
-				<Icon icon={ChevronDown} size="sm" />
-			</span>
-			<select
-				value={value}
-				onChange={(event) => onChange(event.target.value)}
-				aria-label={label}
-				className="absolute inset-0 cursor-pointer opacity-0"
-			>
-				<option value="">{allLabel}</option>
-				<option value={UNFILED}>{unfiledLabel}</option>
-				{options.map((o) => (
-					<option key={o.id} value={o.id}>
-						{o.name}
-					</option>
-				))}
-			</select>
-		</span>
 	);
 }
 

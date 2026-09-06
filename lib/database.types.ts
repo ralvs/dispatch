@@ -475,6 +475,7 @@ export type Database = {
 					attachments: Json;
 					body: string;
 					created_at: string;
+					domain_id: string | null;
 					id: string;
 					needs_review: boolean;
 					origin_capture_id: string | null;
@@ -491,6 +492,7 @@ export type Database = {
 					attachments?: Json;
 					body: string;
 					created_at?: string;
+					domain_id?: string | null;
 					id?: string;
 					needs_review?: boolean;
 					origin_capture_id?: string | null;
@@ -507,6 +509,7 @@ export type Database = {
 					attachments?: Json;
 					body?: string;
 					created_at?: string;
+					domain_id?: string | null;
 					id?: string;
 					needs_review?: boolean;
 					origin_capture_id?: string | null;
@@ -520,6 +523,13 @@ export type Database = {
 					title?: string | null;
 				};
 				Relationships: [
+					{
+						foreignKeyName: "notes_domain_id_fkey";
+						columns: ["domain_id"];
+						isOneToOne: false;
+						referencedRelation: "stewardship_domains";
+						referencedColumns: ["id"];
+					},
 					{
 						foreignKeyName: "notes_origin_capture_id_fkey";
 						columns: ["origin_capture_id"];

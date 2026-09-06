@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/icon";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
+import { listDomains } from "@/lib/services/domains";
 import { unwrap } from "@/lib/services/errors";
 import { listBacklinks, listLinksForNote } from "@/lib/services/note-links";
 import { getNote, listNoteTitles } from "@/lib/services/notes";
@@ -56,8 +57,19 @@ async function EditorSection({
 	sb: Sb;
 	note: NonNullable<Awaited<ReturnType<typeof getNote>>>;
 }) {
-	const [noteTitles, people] = await Promise.all([listNoteTitles(sb), listMentionCandidates(sb)]);
-	return <NoteEditor note={note} noteTitles={noteTitles} people={people} />;
+	const [noteTitles, people, domains] = await Promise.all([
+		listNoteTitles(sb),
+		listMentionCandidates(sb),
+		listDomains(sb),
+	]);
+	return (
+		<NoteEditor
+			note={note}
+			noteTitles={noteTitles}
+			people={people}
+			domains={domains.map((d) => ({ id: d.id, name: d.name }))}
+		/>
+	);
 }
 
 /*

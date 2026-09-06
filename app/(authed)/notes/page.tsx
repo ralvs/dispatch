@@ -2,6 +2,8 @@ import { HeaderCreateButton, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedNoteLists } from "@/lib/cache/notes";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
+import { listDomains } from "@/lib/services/domains";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createBlankNoteAction } from "./actions";
 import { NoteList } from "./note-list";
 
@@ -9,9 +11,10 @@ export default async function NotesPage() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
-	const [{ needsReview, allNotes }, tz] = await Promise.all([
+	const [{ needsReview, allNotes }, tz, domains] = await Promise.all([
 		getCachedNoteLists(),
 		getCachedAppTimezone(),
+		listDomains(createAdminClient()),
 	]);
 
 	return (
@@ -33,7 +36,12 @@ export default async function NotesPage() {
 				}
 			/>
 
-			<NoteList needsReview={needsReview} allNotes={allNotes} tz={tz} />
+			<NoteList
+				needsReview={needsReview}
+				allNotes={allNotes}
+				tz={tz}
+				domains={domains.map((d) => ({ id: d.id, name: d.name, color: d.color }))}
+			/>
 		</div>
 	);
 }

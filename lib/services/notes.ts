@@ -57,6 +57,7 @@ export type CreateNoteInput = {
 	source_type?: z.infer<typeof CreateNoteSchema>["source_type"];
 	source_reference?: string | null;
 	tags?: string[];
+	domain_id?: string | null;
 	related_project_id?: string | null;
 	related_person_id?: string | null;
 	related_quote_id?: string | null;

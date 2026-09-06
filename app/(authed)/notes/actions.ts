@@ -52,6 +52,19 @@ export async function saveNoteAction(id: string, input: { title: string | null; 
 	revalidateNoteViews(id);
 }
 
+/**
+ * File a note under a domain, or unfile it. Optional by design — there is no
+ * Inbox fallback and a loose thought stays loose (shape plan D1) — so "" from
+ * the select means null, not "leave it alone".
+ */
+export async function setNoteDomainAction(id: string, domainId: string) {
+	const { sb } = await requireOwnerPage();
+	const noteId = z.uuid().parse(id);
+	const domain = domainId === "" ? null : z.uuid().parse(domainId);
+	await updateNote(sb, noteId, { domain_id: domain });
+	revalidateNoteViews(id);
+}
+
 export async function resolveNeedsReviewAction(id: string) {
 	const { sb } = await requireOwnerPage();
 	await resolveNeedsReview(sb, z.uuid().parse(id));

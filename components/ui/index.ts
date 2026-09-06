@@ -33,6 +33,7 @@ export { type Measure, PageHeader } from "./page-header";
 export { PageSkeleton } from "./page-skeleton";
 export { Progress } from "./progress";
 export { Radio, radio } from "./radio";
+export { type ScopeOption, ScopeSelect, UNFILED } from "./scope-select";
 export { SectionHead } from "./section-head";
 export { type Stat, StatBand } from "./stat-band";
 export {

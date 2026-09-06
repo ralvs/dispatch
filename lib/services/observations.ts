@@ -15,9 +15,10 @@ import { cadenceThresholdDays } from "@/lib/services/today";
 // A domain's LAST TOUCH is the max of:
 //   1. tasks.completed_at        — work finished in the domain
 //   2. projects.updated_at       — project activity in the domain
-//   3. notes.created_at          — thinking about the domain (wired by P3;
-//                                  plan O3: "attention is what this measure
-//                                  is for")
+//   3. notes.created_at          — thinking about the domain. Plan O3 settled
+//                                  that it counts: attention is what this
+//                                  measure is for, and thinking about
+//                                  something is attention.
 //   4. domains.last_shipped_at   — the manual "I shipped something" stamp
 //
 // Journal is deliberately NOT a source. The plan lists journal_entries as a
@@ -123,7 +124,7 @@ export async function listDomainTouches(
 	sb: SupabaseClient,
 	nowMs: number = Date.now(),
 ): Promise<DomainTouch[]> {
-	const [domains, taskRows, projectRows] = await Promise.all([
+	const [domains, taskRows, projectRows, noteRows] = await Promise.all([
 		listDomains(sb),
 		unwrap(await sb.from("tasks").select("domain_id, status, completed_at")) as Array<{
 			domain_id: string | null;
@@ -134,6 +135,10 @@ export async function listDomainTouches(
 			domain_id: string | null;
 			updated_at: string | null;
 		}> | null,
+		unwrap(await sb.from("notes").select("domain_id, created_at")) as Array<{
+			domain_id: string | null;
+			created_at: string | null;
+		}> | null,
 	]);
 
 	const tasks = taskRows ?? [];
@@ -141,8 +146,9 @@ export async function listDomainTouches(
 	const lastProject = foldMax(
 		(projectRows ?? []).map((p) => ({ domain_id: p.domain_id, at: p.updated_at })),
 	);
-	// notes.domain_id does not exist yet — P3 adds the column and this source.
-	const lastNote: MaxByDomain = new Map();
+	const lastNote = foldMax(
+		(noteRows ?? []).map((n) => ({ domain_id: n.domain_id, at: n.created_at })),
+	);
 
 	const openByDomain = new Map<string, number>();
 	for (const t of tasks) {

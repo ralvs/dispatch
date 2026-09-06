@@ -2,9 +2,17 @@
 
 import { Star } from "lucide-react";
 import Link from "next/link";
-import { useOptimistic, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { setPinAction } from "@/app/(authed)/notes/actions";
-import { ListRow, ListSection, rowTitle } from "@/components/ui";
+import { ColorDot } from "@/components/color-dot";
+import {
+	ListRow,
+	ListSection,
+	rowTitle,
+	type ScopeOption,
+	ScopeSelect,
+	UNFILED,
+} from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
 import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
@@ -14,15 +22,21 @@ import type { NoteListRow } from "@/lib/services/notes";
 function NoteLinkRow({
 	note,
 	tz,
+	domainColor,
 	onTogglePin,
 }: {
 	note: NoteListRow;
 	tz: string;
+	/** Palette slug of the note's domain, or null when it is unfiled. */
+	domainColor: string | null;
 	onTogglePin: () => void;
 }) {
 	const pinned = note.pinned_at !== null;
 	return (
 		<ListRow
+			// `hold` keeps the 9px slot on an unfiled note so a mixed list keeps
+			// one left edge (DESIGN.md, Invisible Slot Rule).
+			leading={<ColorDot color={domainColor} hold />}
 			trailing={
 				<button
 					type="button"
@@ -51,12 +65,14 @@ function Section({
 	label,
 	notes,
 	tz,
+	domainColors,
 	onTogglePin,
 	empty,
 }: {
 	label: string;
 	notes: NoteListRow[];
 	tz: string;
+	domainColors: Map<string, string | null>;
 	/** Takes the row, not just its id, so the caller can derive the desired pin state. */
 	onTogglePin: (note: NoteListRow) => void;
 	empty?: string;
@@ -71,7 +87,13 @@ function Section({
 			{notes.length > 0 ? (
 				<ul>
 					{notes.map((n) => (
-						<NoteLinkRow key={n.id} note={n} tz={tz} onTogglePin={() => onTogglePin(n)} />
+						<NoteLinkRow
+							key={n.id}
+							note={n}
+							tz={tz}
+							domainColor={n.domain_id === null ? null : (domainColors.get(n.domain_id) ?? null)}
+							onTogglePin={() => onTogglePin(n)}
+						/>
 					))}
 				</ul>
 			) : undefined}
@@ -94,12 +116,25 @@ export function NoteList({
 	needsReview,
 	allNotes,
 	tz,
+	domains,
 }: {
 	needsReview: NoteListRow[];
 	allNotes: NoteListRow[];
 	tz: string;
+	domains: Array<ScopeOption & { color: string | null }>;
 }) {
 	const [, startTransition] = useTransition();
+	// "" = every note, UNFILED = the notes with no domain. Client-side over the
+	// already-loaded list, the same shape /tasks uses.
+	const [domainFilter, setDomainFilter] = useState("");
+	const domainColors = new Map(domains.map((d) => [d.id, d.color]));
+
+	function inScope(note: NoteListRow): boolean {
+		if (domainFilter === "") return true;
+		if (domainFilter === UNFILED) return note.domain_id === null;
+		return note.domain_id === domainFilter;
+	}
+
 	const [review, dispatchReview] = useOptimistic(needsReview, (current, id: string) =>
 		current.map((n) => (n.id === id ? flipPin(n) : n)),
 	);
@@ -107,8 +142,9 @@ export function NoteList({
 		current.map((n) => (n.id === id ? flipPin(n) : n)),
 	);
 
-	const pinned = notes.filter((n) => n.pinned_at !== null);
-	const unpinned = notes.filter((n) => n.pinned_at === null);
+	const scoped = notes.filter(inScope);
+	const pinned = scoped.filter((n) => n.pinned_at !== null);
+	const unpinned = scoped.filter((n) => n.pinned_at === null);
 
 	// The desired state comes from the row on screen — the same comparison the
 	// optimistic reducer makes — so the write is a setter, not a flip, and a
@@ -131,14 +167,39 @@ export function NoteList({
 		// so the first group kept its 36px and sat lower than every other page's
 		// (ADR-0046).
 		<div>
-			<Section label="Needs review" notes={review} tz={tz} onTogglePin={(n) => toggle(n, true)} />
-			<Section label="Pinned" notes={pinned} tz={tz} onTogglePin={(n) => toggle(n, false)} />
+			<div className="mb-4 flex items-center">
+				<ScopeSelect
+					value={domainFilter}
+					onChange={setDomainFilter}
+					label="Filter notes by domain"
+					allLabel="All domains"
+					unfiledLabel="No domain"
+					options={domains}
+				/>
+			</div>
+			<Section
+				label="Needs review"
+				notes={review.filter(inScope)}
+				tz={tz}
+				domainColors={domainColors}
+				onTogglePin={(n) => toggle(n, true)}
+			/>
+			<Section
+				label="Pinned"
+				notes={pinned}
+				tz={tz}
+				domainColors={domainColors}
+				onTogglePin={(n) => toggle(n, false)}
+			/>
 			<Section
 				label="All notes"
 				notes={unpinned}
 				tz={tz}
+				domainColors={domainColors}
 				onTogglePin={(n) => toggle(n, false)}
-				empty="Nothing here yet. Capture something."
+				empty={
+					domainFilter === "" ? "Nothing here yet. Capture something." : "No notes in this domain."
+				}
 			/>
 		</div>
 	);
