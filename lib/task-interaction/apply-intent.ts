@@ -1,6 +1,6 @@
 // Field-level projectors for task intents. Day membership lives in
 // lib/day-schedule.ts (applyDayIntent). This module stays client-safe.
-import { isRecurrencePattern, nextDueDate } from "@/lib/recurrence";
+import { isRecurrenceRule, nextDueDate } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/schemas/task";
 
 /** Intents the optimistic layer understands (v1). Edit waits for the server. */
@@ -57,7 +57,12 @@ export function nextCompleteFields(
 	task: { recurrence_rule: string | null; due_date: string | null },
 	ctx: Pick<ApplyContext, "todayIso" | "nowIso">,
 ): CompleteProjection {
-	if (task.recurrence_rule && isRecurrencePattern(task.recurrence_rule)) {
+	// isRecurrenceRule, not isRecurrencePattern: a custom weekly rule must
+	// roll forward like any other. Guarding on the seven literals let an
+	// unknown rule fall through to "completed", so the optimistic tick showed
+	// the task closing and then snapped back when the server disagreed
+	// (shape plan §06).
+	if (task.recurrence_rule && isRecurrenceRule(task.recurrence_rule)) {
 		return {
 			rolled: true,
 			due_date: nextDueDate({

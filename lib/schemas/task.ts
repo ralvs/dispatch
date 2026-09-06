@@ -1,5 +1,14 @@
 import { z } from "zod";
-import { RECURRENCE_PATTERNS } from "@/lib/recurrence";
+import { isRecurrenceRule, RECURRENCE_PATTERNS } from "@/lib/recurrence";
+
+// A stored recurrence rule: one of the seven literals, or the custom weekly
+// form `weekly:tu,sa` (shape plan §06 / P7). Validated through
+// lib/recurrence.ts rather than re-listed here, so the schema and the parser
+// cannot drift on what a valid rule is.
+const RecurrenceRuleSchema = z.string().refine(isRecurrenceRule, {
+	message: "not a recurrence rule",
+});
+
 import { WallClockTimeSchema } from "@/lib/schemas/time";
 
 export const TaskStatusSchema = z.enum(["open", "done"]);
@@ -26,7 +35,7 @@ export const TaskSchema = z.object({
 	// null means unfiled — the /inbox queue (docs/adr/0027).
 	domain_id: z.string().uuid().nullable(),
 	parent_task_id: z.string().uuid().nullable().optional(),
-	recurrence_rule: z.enum(RECURRENCE_PATTERNS).nullable().optional(),
+	recurrence_rule: RecurrenceRuleSchema.nullable().optional(),
 	reminder_offsets: z.array(z.number()).default([]),
 	source: TaskSourceSchema,
 	// A want: an intent with no time (shape plan §03). Not a status and not a
@@ -74,7 +83,7 @@ export const CreateTaskFormSchema = z
 		// always accepted it; only the form was missing, which left capture's
 		// guess the sole writer and no way to correct it.
 		project_id: z.uuid().optional().or(z.literal("")),
-		recurrence_rule: z.enum(RECURRENCE_PATTERNS).optional().or(z.literal("")),
+		recurrence_rule: RecurrenceRuleSchema.optional().or(z.literal("")),
 		// An unchecked checkbox posts nothing at all, so absence is false. The
 		// literal is what a checked one posts through the hidden input the form
 		// uses, which keeps the value legible in a FormData dump.

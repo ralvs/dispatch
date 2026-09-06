@@ -4,6 +4,18 @@
 // We keep the vocabulary small + flat for v1 — every supported pattern
 // is a single literal string. If/when we need "every 3 weeks" or RRULE-
 // style flexibility, we can extend the parser without a migration.
+//
+// The shape plan's P7 took exactly that route: a rule may now also be
+// `weekly:tu,sa` — the word `weekly`, a colon, then two-letter weekday codes
+// (see WEEKDAY_CODES). All seven literals stay valid exactly as they are, and
+// no migration was needed because the column is already text.
+//
+// Deliberately NOT RFC 5545 (`FREQ=WEEKLY;BYDAY=TU,SA`). That is the right
+// answer for an app that syncs recurrence with a calendar; Dispatch does not,
+// and adopting the grammar invites counts, intervals and month-day sets one
+// support request at a time. The grammar stops at weekly-on-weekdays (plan
+// O8), and `weekdays` keeps its own literal rather than being rewritten to
+// `weekly:mo,tu,we,th,fr` — the stored rows already say `weekdays`.
 
 export const RECURRENCE_PATTERNS = [
 	"daily",
@@ -33,9 +45,66 @@ export function isRecurrencePattern(s: unknown): s is RecurrencePattern {
 	return typeof s === "string" && (RECURRENCE_PATTERNS as readonly string[]).includes(s);
 }
 
-/** Human label for a stored rule string, or null when it isn't a known pattern. */
+// ─── The custom weekly rule ───────────────────────────────────────────
+//
+// `weekly:tu,sa` — "weekly on Tuesdays and Saturdays". Codes are the first two
+// letters of the English weekday name, ordered Sunday-first to match
+// Date#getUTCDay so the index IS the day number.
+
+export const WEEKDAY_CODES = ["su", "mo", "tu", "we", "th", "fr", "sa"] as const;
+export type WeekdayCode = (typeof WEEKDAY_CODES)[number];
+
+const WEEKDAY_LABELS: Record<WeekdayCode, string> = {
+	su: "Sun",
+	mo: "Mon",
+	tu: "Tue",
+	we: "Wed",
+	th: "Thu",
+	fr: "Fri",
+	sa: "Sat",
+};
+
+const CUSTOM_WEEKLY_PREFIX = "weekly:";
+
+/**
+ * Parse `weekly:tu,sa` into day numbers (0=Sun..6=Sat), or null when the
+ * string is not a custom weekly rule.
+ *
+ * Strict on purpose: an unknown code, a duplicate, or an empty list yields
+ * null rather than a partial rule. A rule this function cannot read is one the
+ * roll-forward must not guess at.
+ */
+export function parseCustomWeekly(rule: string | null | undefined): number[] | null {
+	if (typeof rule !== "string" || !rule.startsWith(CUSTOM_WEEKLY_PREFIX)) return null;
+	const body = rule.slice(CUSTOM_WEEKLY_PREFIX.length);
+	if (body === "") return null;
+	const days = new Set<number>();
+	for (const code of body.split(",")) {
+		const index = (WEEKDAY_CODES as readonly string[]).indexOf(code);
+		if (index === -1 || days.has(index)) return null;
+		days.add(index);
+	}
+	return [...days].sort((a, b) => a - b);
+}
+
+/** Day numbers → the stored rule string. Empty selection means "no rule". */
+export function formatCustomWeekly(days: readonly number[]): string {
+	const unique = [...new Set(days)].filter((d) => d >= 0 && d <= 6).sort((a, b) => a - b);
+	if (unique.length === 0) return "";
+	return CUSTOM_WEEKLY_PREFIX + unique.map((d) => WEEKDAY_CODES[d]).join(",");
+}
+
+/** Anything the app can store in tasks.recurrence_rule and act on. */
+export function isRecurrenceRule(s: unknown): boolean {
+	return isRecurrencePattern(s) || parseCustomWeekly(typeof s === "string" ? s : null) !== null;
+}
+
+/** Human label for a stored rule string, or null when it isn't a known rule. */
 export function recurrenceLabel(rule: string | null | undefined): string | null {
-	return isRecurrencePattern(rule) ? RECURRENCE_LABELS[rule] : null;
+	if (isRecurrencePattern(rule)) return RECURRENCE_LABELS[rule];
+	const days = parseCustomWeekly(rule);
+	if (days === null) return null;
+	return days.map((d) => WEEKDAY_LABELS[WEEKDAY_CODES[d]]).join(", ");
 }
 
 // ─── Date math ────────────────────────────────────────────────────────
@@ -93,9 +162,12 @@ function addMonthsClamped(d: Date, n: number): Date {
 //
 //   3. For 'weekdays', we always land on Mon-Fri. Stepping to Sat/Sun
 //      pushes through to Monday.
+//   4. A custom weekly rule (`weekly:tu,sa`) advances to the next listed
+//      weekday. The loop runs at most seven times, so it needs no special
+//      safety belt beyond the one already here.
 export function nextDueDate(params: {
 	currentDue: string | null | undefined;
-	rule: RecurrencePattern;
+	rule: RecurrencePattern | string;
 	todayIso: string;
 }): string {
 	const today = parseIsoDate(params.todayIso);
@@ -103,8 +175,19 @@ export function nextDueDate(params: {
 	// Start from whichever is later — current due, or today.
 	const start = baseFromCurrent && baseFromCurrent > today ? baseFromCurrent : today;
 
+	const customDays = parseCustomWeekly(params.rule);
+	if (customDays !== null) {
+		let next = addDays(start, 1);
+		// At most seven steps: one of the seven weekdays is always in the set.
+		for (let i = 0; i < 7 && !customDays.includes(next.getUTCDay()); i++) {
+			next = addDays(next, 1);
+		}
+		return formatIsoDate(next);
+	}
+
+	const rule = params.rule as RecurrencePattern;
 	const step = (from: Date): Date => {
-		switch (params.rule) {
+		switch (rule) {
 			case "daily":
 				return addDays(from, 1);
 			case "weekdays": {
@@ -149,13 +232,18 @@ export function nextDueDate(params: {
 // "now" is passed in so the caller controls the timezone interpretation;
 // the helpers do plain UTC math on the timestamp the caller gives them.
 
-export function periodStart(rule: RecurrencePattern, nowMs: number): number {
+export function periodStart(rule: RecurrencePattern | string, nowMs: number): number {
+	// A custom weekly rule shares plain weekly's Monday-anchored window: the
+	// question is "done this week", and which weekdays it lands on does not
+	// change where the week starts.
+	const effective: RecurrencePattern =
+		parseCustomWeekly(rule) !== null ? "weekly" : (rule as RecurrencePattern);
 	const d = new Date(nowMs);
 	const y = d.getUTCFullYear();
 	const m = d.getUTCMonth();
 	const day = d.getUTCDate();
 
-	switch (rule) {
+	switch (effective) {
 		case "daily":
 			return Date.UTC(y, m, day);
 		case "weekdays": {
@@ -194,7 +282,7 @@ export function periodStart(rule: RecurrencePattern, nowMs: number): number {
 export function isCurrentlyDoneRecurring(
 	done: boolean,
 	doneAtIso: string | null | undefined,
-	rule: RecurrencePattern,
+	rule: RecurrencePattern | string,
 	nowMs: number = Date.now(),
 ): boolean {
 	if (!done || !doneAtIso) return false;

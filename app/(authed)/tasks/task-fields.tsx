@@ -6,7 +6,31 @@ import { MentionTextarea, MentionTextInput } from "@/components/mention-input";
 import { DatePicker, Field, fieldControl, Icon, Select, TimePicker } from "@/components/ui";
 import { shiftDay } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
-import { RECURRENCE_LABELS, RECURRENCE_PATTERNS } from "@/lib/recurrence";
+import {
+	formatCustomWeekly,
+	parseCustomWeekly,
+	RECURRENCE_LABELS,
+	RECURRENCE_PATTERNS,
+} from "@/lib/recurrence";
+
+/**
+ * The Repeats select's own value for "weekly on these weekdays". Never stored
+ * — the strip below turns the chosen days into `weekly:tu,sa` (shape plan
+ * §06 / P7). Distinct from every stored literal so the select cannot collide.
+ */
+const CUSTOM_OPTION = "__custom";
+
+/** Sunday-first, matching lib/recurrence.ts's WEEKDAY_CODES index order. */
+const WEEKDAY_INITIALS = ["S", "M", "T", "W", "T", "F", "S"] as const;
+const WEEKDAY_NAMES = [
+	"Sunday",
+	"Monday",
+	"Tuesday",
+	"Wednesday",
+	"Thursday",
+	"Friday",
+	"Saturday",
+] as const;
 
 export type TaskDomainOption = {
 	id: string;
@@ -197,7 +221,17 @@ export function TaskMetaFields({
 	const [time, setTime] = useState(defaults.due_time ? defaults.due_time.slice(0, 5) : "");
 	// Uncontrolled elsewhere in this file, but Reset has to clear it too, so it
 	// needs to be React state here rather than a defaultValue-only <select>.
-	const [recurrence, setRecurrence] = useState(defaults.recurrence_rule ?? "");
+	// Two pieces of state for one answer: which option the select shows, and
+	// which weekdays the strip has. They are only both live for Custom.
+	const initialCustomDays = parseCustomWeekly(defaults.recurrence_rule);
+	const [recurrence, setRecurrence] = useState(
+		initialCustomDays === null ? (defaults.recurrence_rule ?? "") : CUSTOM_OPTION,
+	);
+	const [customDays, setCustomDays] = useState<number[]>(initialCustomDays ?? []);
+	// What actually gets posted. Custom with nothing ticked is not a rule yet,
+	// so it posts "" — the same as Never, which is what it means.
+	const storedRecurrence =
+		recurrence === CUSTOM_OPTION ? formatCustomWeekly(customDays) : recurrence;
 	// A want is this same form with the clock switched off (shape plan §03), so
 	// it is a toggle in the Due group rather than a field of its own: switching
 	// it on clears and disables date, time and repeat, and switching it off
@@ -208,6 +242,13 @@ export function TaskMetaFields({
 		setDue("");
 		setTime("");
 		setRecurrence("");
+		setCustomDays([]);
+	}
+
+	function toggleWeekday(day: number) {
+		setCustomDays((current) =>
+			current.includes(day) ? current.filter((d) => d !== day) : [...current, day].sort(),
+		);
 	}
 	const scheduleIsEmpty = due === "" && time === "" && recurrence === "" && !someday;
 
@@ -286,11 +327,19 @@ export function TaskMetaFields({
 			</div>
 
 			<div className="space-y-10">
-				<Field label="Repeats" className="min-w-0">
+				{/* A row of its own: the weekday strip cannot live in a third
+					of a row, which is what freed the slot Project now fills
+					(shape plan O7). */}
+				<div className="field-unit min-w-0">
+					<span className={FIELD_LABEL}>Repeats</span>
+					{/* The select is the control; the posted value is derived,
+						so it rides a hidden input rather than the select's own
+						name. Custom with no day ticked posts "" — Never. */}
+					<input type="hidden" name="recurrence_rule" value={storedRecurrence} />
 					<Select
-						name="recurrence_rule"
 						value={recurrence}
 						disabled={someday}
+						aria-label="Repeats"
 						onChange={(event) => setRecurrence(event.target.value)}
 						className="w-full"
 					>
@@ -300,8 +349,35 @@ export function TaskMetaFields({
 								{RECURRENCE_LABELS[p]}
 							</option>
 						))}
+						<option value={CUSTOM_OPTION}>Custom…</option>
 					</Select>
-				</Field>
+					{recurrence === CUSTOM_OPTION && (
+						<fieldset className="mt-3 flex w-full gap-1">
+							<legend className="sr-only">Repeat on these weekdays</legend>
+							{WEEKDAY_INITIALS.map((initial, day) => {
+								const on = customDays.includes(day);
+								return (
+									<button
+										key={WEEKDAY_NAMES[day]}
+										type="button"
+										aria-pressed={on}
+										aria-label={WEEKDAY_NAMES[day]}
+										title={WEEKDAY_NAMES[day]}
+										disabled={someday}
+										onClick={() => toggleWeekday(day)}
+										className={`h-9 flex-1 rounded-control border font-mono text-meta transition-colors ${
+											on
+												? "border-accent bg-accent-bg text-accent-ink"
+												: "border-line text-ink-3 hover:border-line-strong hover:text-ink"
+										}`}
+									>
+										{initial}
+									</button>
+								);
+							})}
+						</fieldset>
+					)}
+				</div>
 
 				<div className={META_TRIO}>
 					<Field label="Domain" className="min-w-0">

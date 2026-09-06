@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+	formatCustomWeekly,
 	isCurrentlyDoneRecurring,
+	isRecurrenceRule,
 	nextDueDate,
+	parseCustomWeekly,
 	periodStart,
 	RECURRENCE_LABELS,
 	RECURRENCE_PATTERNS,
@@ -100,5 +103,90 @@ describe("isCurrentlyDoneRecurring", () => {
 		expect(isCurrentlyDoneRecurring(false, "2026-07-14T08:00:00Z", "daily", now)).toBe(false);
 		expect(isCurrentlyDoneRecurring(true, null, "daily", now)).toBe(false);
 		expect(isCurrentlyDoneRecurring(true, "not-a-date", "daily", now)).toBe(false);
+	});
+});
+
+describe("parseCustomWeekly", () => {
+	it("reads the weekday codes into day numbers", () => {
+		expect(parseCustomWeekly("weekly:tu,sa")).toEqual([2, 6]);
+	});
+
+	it("sorts regardless of the order written", () => {
+		expect(parseCustomWeekly("weekly:sa,tu")).toEqual([2, 6]);
+	});
+
+	it("is null for the seven plain literals", () => {
+		expect(parseCustomWeekly("weekly")).toBeNull();
+		expect(parseCustomWeekly("weekdays")).toBeNull();
+	});
+
+	it("is null for a malformed rule rather than a partial one", () => {
+		expect(parseCustomWeekly("weekly:")).toBeNull();
+		expect(parseCustomWeekly("weekly:xx")).toBeNull();
+		expect(parseCustomWeekly("weekly:tu,tu")).toBeNull();
+		expect(parseCustomWeekly(null)).toBeNull();
+	});
+});
+
+describe("formatCustomWeekly", () => {
+	it("round-trips through parseCustomWeekly", () => {
+		expect(parseCustomWeekly(formatCustomWeekly([6, 2]))).toEqual([2, 6]);
+	});
+
+	it("is the empty string for no days, which means no rule", () => {
+		expect(formatCustomWeekly([])).toBe("");
+	});
+});
+
+describe("recurrenceLabel · custom weekly", () => {
+	it("names the weekdays", () => {
+		expect(recurrenceLabel("weekly:tu,sa")).toBe("Tue, Sat");
+	});
+
+	it("stays null for a rule it cannot read", () => {
+		expect(recurrenceLabel("weekly:nope")).toBeNull();
+	});
+});
+
+describe("nextDueDate · custom weekly", () => {
+	// 2026-09-06 is a Sunday.
+	it("advances to the next listed weekday", () => {
+		expect(nextDueDate({ currentDue: null, rule: "weekly:tu,sa", todayIso: "2026-09-06" })).toBe(
+			"2026-09-08",
+		);
+	});
+
+	it("wraps to the following week when the last listed day has passed", () => {
+		// Saturday 2026-09-12 → next Tuesday.
+		expect(
+			nextDueDate({ currentDue: "2026-09-12", rule: "weekly:tu,sa", todayIso: "2026-09-06" }),
+		).toBe("2026-09-15");
+	});
+
+	it("rolls from today when the task is overdue", () => {
+		expect(
+			nextDueDate({ currentDue: "2026-08-01", rule: "weekly:tu,sa", todayIso: "2026-09-06" }),
+		).toBe("2026-09-08");
+	});
+
+	it("handles a single listed day", () => {
+		expect(nextDueDate({ currentDue: null, rule: "weekly:su", todayIso: "2026-09-06" })).toBe(
+			"2026-09-13",
+		);
+	});
+});
+
+describe("isRecurrenceRule", () => {
+	it("accepts the literals and the custom form, and nothing else", () => {
+		expect(isRecurrenceRule("weekly")).toBe(true);
+		expect(isRecurrenceRule("weekly:tu,sa")).toBe(true);
+		expect(isRecurrenceRule("every 3 weeks")).toBe(false);
+	});
+});
+
+describe("periodStart · custom weekly", () => {
+	it("shares plain weekly's Monday-anchored window", () => {
+		const now = Date.parse("2026-09-06T12:00:00.000Z");
+		expect(periodStart("weekly:tu,sa", now)).toBe(periodStart("weekly", now));
 	});
 });
