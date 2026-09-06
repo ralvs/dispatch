@@ -219,6 +219,8 @@
     <tr><td class="n">D6</td><td><code>/domains</code> rows show last touch, open count, quiet dot</td><td>Today’s page is not touched</td><td><span class="pill do">agreed</span></td></tr>
     <tr><td class="n">D7</td><td>A stat band above the list on some pages</td><td>New reading type — collides with ADR-0042/0046</td><td><span class="pill ask">needs ADR</span></td></tr>
     <tr><td class="n">D8</td><td>Routines: edit a routine, tick past days</td><td>Backfill breaks a stated server-clock rule</td><td><span class="pill ask">needs ADR</span></td></tr>
+    <tr><td class="n">D10</td><td>The task form gets a project field back</td><td>Never existed on the form; only capture can set one</td><td><span class="pill do">agreed</span></td></tr>
+    <tr><td class="n">D11</td><td>Add a task from a project, project locked</td><td>The same dialog — ADR-0040 stays true</td><td><span class="pill do">agreed</span></td></tr>
     <tr><td class="n">D9</td><td>Nothing is dropped from the database yet</td><td>Retire in code now, drop in SQL later</td><td><span class="pill later">staged</span></td></tr>
   </tbody>
 </table>
@@ -531,7 +533,91 @@
 
 
 <section class="point">
-  <h2><span class="num">06</span> Routines: edit, and fix yesterday</h2>
+  <h2><span class="num">06</span> A project you cannot put anything in</h2>
+  <p class="sub">If a project is a tag for tasks, then applying that tag is the only thing a project has to do. Dispatch cannot do it. The column exists, the service accepts it, the filter reads it — and no screen can set it.</p>
+
+  <div class="ev">
+    <div class="ev-row"><span class="loc">app/(authed)/tasks/task-fields.tsx</span><span class="what">The task form has seven fields: title, notes, due date, due time, domain, repeats, priority. <strong>No project.</strong></span></div>
+    <div class="ev-row"><span class="loc">lib/schemas/task.ts</span><span class="what"><code>CreateTaskFormSchema</code> has no <code>project_id</code>, so even a hand-posted form field would be stripped before the service saw it.</span></div>
+    <div class="ev-row"><span class="loc">lib/services/tasks.ts</span><span class="what"><code>createTask</code> <strong>already accepts</strong> <code>project_id</code>. The write path is finished. Only the form is missing.</span></div>
+    <div class="ev-row"><span class="loc">lib/services/capture/resolve.ts</span><span class="what">The one and only writer: capture matches a project name inside the captured text. A guess is the sole way a task ever gets a project.</span></div>
+    <div class="ev-row"><span class="loc">app/(authed)/tasks/task-filters.tsx</span><span class="what">A “project” filter on <code>/tasks</code> — a filter over a value you are not allowed to set.</span></div>
+    <div class="ev-row"><span class="loc">app/(authed)/projects/[id]/page.tsx</span><span class="what">The project page loads milestones and domains. <strong>It never loads tasks.</strong> A project has no idea what work belongs to it.</span></div>
+  </div>
+
+  <div class="callout">
+    <strong>So the state today is:</strong> capture can guess a project onto a task, you cannot correct that guess,
+    you cannot set one by hand, and no project surface shows you the result. The filter is the only evidence the
+    relationship exists at all.
+  </div>
+
+  <h3>Where the field goes</h3>
+  <p>The form’s meta area is a three-column grid, two rows: <em>Due date · Due time · relative chips</em>, then <em>Domain · Repeats · Priority</em>. Adding Project makes seven controls for six slots.</p>
+
+  <figure>
+    <div class="fig-body">
+      <svg viewBox="0 0 700 250" role="img" aria-label="The task form meta grid today, and the proposed rearrangement with a project field.">
+        <text x="14" y="18" font-size="10.5" class="mono" letter-spacing="1" fill="var(--ink-4)">TODAY — SIX SLOTS</text>
+        <g fill="var(--surface-2)" stroke="var(--line-strong)">
+          <rect x="14" y="28" width="212" height="36" rx="6"/>
+          <rect x="236" y="28" width="212" height="36" rx="6"/>
+          <rect x="458" y="28" width="228" height="36" rx="6"/>
+          <rect x="14" y="72" width="212" height="36" rx="6"/>
+          <rect x="236" y="72" width="212" height="36" rx="6"/>
+          <rect x="458" y="72" width="228" height="36" rx="6"/>
+        </g>
+        <g font-size="12.5" fill="var(--ink-2)">
+          <text x="30" y="51">Due date</text>
+          <text x="252" y="51">Due time</text>
+          <text x="474" y="51">today · +1d · +1w · reset</text>
+          <text x="30" y="95">Domain</text>
+          <text x="252" y="95">Repeats</text>
+          <text x="474" y="95">Priority</text>
+        </g>
+
+        <text x="14" y="144" font-size="10.5" class="mono" letter-spacing="1" fill="var(--accent)">PROPOSED — REPEATS JOINS THE SCHEDULE</text>
+        <g fill="var(--surface-2)" stroke="var(--line-strong)">
+          <rect x="14" y="154" width="212" height="36" rx="6"/>
+          <rect x="236" y="154" width="212" height="36" rx="6"/>
+          <rect x="14" y="198" width="212" height="36" rx="6"/>
+          <rect x="458" y="198" width="228" height="36" rx="6"/>
+        </g>
+        <rect x="458" y="154" width="228" height="36" rx="6" fill="var(--surface-2)" stroke="var(--warn-line)"/>
+        <rect x="236" y="198" width="212" height="36" rx="6" fill="var(--add-bg)" stroke="var(--add-line)"/>
+        <g font-size="12.5" fill="var(--ink-2)">
+          <text x="30" y="177">Due date</text>
+          <text x="252" y="177">Due time</text>
+          <text x="474" y="177" fill="var(--warn-ink)">Repeats</text>
+          <text x="30" y="221">Domain</text>
+          <text x="252" y="221" fill="var(--add-ink)">Project</text>
+          <text x="474" y="221">Priority</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>Repeats moves up beside the due date, and Project takes the freed slot next to Domain. The code already agrees this is where Repeats belongs: <code>resetSchedule()</code> in <code>task-fields.tsx</code> clears due date, due time <em>and</em> recurrence in one gesture, and the reset button’s own label says so. It has been sitting in the wrong row.</figcaption>
+  </figure>
+
+  <h3>Adding a task from a project</h3>
+  <p>The same dialog, opened from the project page, with the Project field pre-filled and locked. Nothing new is designed and nothing is duplicated — ADR-0040 says there is one task form, and this keeps that true. A locked select still has to post its value, so the field renders disabled beside a hidden input carrying the id.</p>
+
+  <div class="verdict">
+    <b>Why the project page has to list tasks too.</b> An “Add task” button on a page that then shows you nothing
+    is a trapdoor. The button and the list ship together, or neither ships.
+  </div>
+
+  <div class="ev">
+    <div class="ev-row"><span class="loc">lib/schemas/task.ts</span><span class="what">Add <code>project_id</code> to <code>CreateTaskFormSchema</code>, with the <code>.or(z.literal(""))</code> treatment every optional FormData field needs.</span></div>
+    <div class="ev-row"><span class="loc">app/(authed)/tasks/task-fields.tsx</span><span class="what">A Project select beside Domain; Repeats moves into the schedule row. New <code>projects</code> prop, new <code>lockProject</code> prop.</span></div>
+    <div class="ev-row"><span class="loc">app/(authed)/tasks/task-dialog.tsx · actions.ts</span><span class="what">Thread the project list in and the chosen id out.</span></div>
+    <div class="ev-row"><span class="loc">app/(authed)/projects/[id]/page.tsx</span><span class="what">Load the project's tasks. Today it loads milestones and domains only.</span></div>
+    <div class="ev-row"><span class="loc">app/(authed)/projects/page.tsx</span><span class="what">An “Add task” action per row, opening the shared dialog with the project locked.</span></div>
+    <div class="ev-row"><span class="loc">app/(authed)/tasks/task-list.tsx:62</span><span class="what">The optimistic builder hardcodes <code>project_id: null</code>. It has to carry the real value once the form can set one.</span></div>
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">07</span> Routines: edit, and fix yesterday</h2>
   <p class="sub">Two gaps, one small and one that breaks a stated rule.</p>
 
   <h3>Editing a routine</h3>
@@ -556,7 +642,7 @@
 
 
 <section class="point">
-  <h2><span class="num">07</span> Retire now, drop later</h2>
+  <h2><span class="num">08</span> Retire now, drop later</h2>
   <p class="sub">Two of the answers pull against each other: milestones and the billing fields are agreed removals, but nothing is to be dropped from the database yet. Both are satisfiable — they are different phases, not the same one.</p>
 
   <div class="two">
@@ -604,7 +690,7 @@
 
 
 <section class="point">
-  <h2><span class="num">08</span> The order to build it in</h2>
+  <h2><span class="num">09</span> The order to build it in</h2>
   <p class="sub">Each step is independently shippable and independently revertible. Nothing later depends on anything earlier except where stated.</p>
 
   <div class="rec top">
@@ -652,14 +738,27 @@
     <div class="meta"><span><b>depends on</b> nothing</span><span><b>phase</b> A only — no SQL</span></div>
   </div>
 
+  <div class="rec top">
+    <div class="rec-head"><span class="rid">P6</span><h3>The project tag becomes usable</h3><span class="pill gap">closes a hole</span></div>
+    <p class="why">Adds the project field to the task form, teaches the project page to list its tasks, and adds “Add task” from both project surfaces with the project pre-filled and locked. Without this, §02’s whole “a project is a tag for tasks” model is a claim the UI cannot honour.</p>
+    <ul class="files">
+      <li><span class="op mod">mod</span><span class="fp">lib/schemas/task.ts — project_id joins CreateTaskFormSchema</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/tasks/task-fields.tsx — Project beside Domain; Repeats moves to the schedule row</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/tasks/task-dialog.tsx · actions.ts · task-list.tsx</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/projects/[id]/page.tsx — load the project's tasks</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/projects/page.tsx — per-row Add task, project locked</span></li>
+    </ul>
+    <div class="meta"><span><b>depends on</b> nothing</span><span><b>pairs with</b> P5</span><span><b>service side</b> already done</span></div>
+  </div>
+
   <div class="rec">
-    <div class="rec-head"><span class="rid">P6</span><h3>Routines: edit and backfill</h3></div>
+    <div class="rec-head"><span class="rid">P7</span><h3>Routines: edit and backfill</h3></div>
     <p class="why">An edit mode on the row, and the 30 grid squares become clickable within a bounded window.</p>
     <div class="meta"><span><b>depends on</b> nothing</span><span><b>needs ADR</b> client-named date</span></div>
   </div>
 
   <div class="rec">
-    <div class="rec-head"><span class="rid">P7</span><h3>Stat bands on the remaining pages</h3></div>
+    <div class="rec-head"><span class="rid">P8</span><h3>Stat bands on the remaining pages</h3></div>
     <p class="why">/routines, /tasks, then whichever of the maybes survive §05.</p>
     <div class="meta"><span><b>depends on</b> P2’s ADR and component</span></div>
   </div>
@@ -667,49 +766,55 @@
 
 
 <section class="point">
-  <h2><span class="num">09</span> Still open</h2>
-  <p class="sub">Six questions this plan could not settle on its own. Each carries a recommendation, so silence on any of them means the recommendation stands.</p>
+  <h2><span class="num">10</span> Still open</h2>
+  <p class="sub">All six were put to the owner on 21 Aug 2026 and all six recommendations were accepted. They are kept here with their reasoning, because the reasoning is the part worth re-reading. One new question opened with the project work — O7.</p>
 
   <div class="qa">
     <span class="qid">O1</span><span class="qt">Is “don’t drop anything yet” about the database only?</span>
     <p>Milestones and the billing fields were agreed removals, and then nothing was to be dropped. §07 reads that as: pull them out of the code now, leave the rows in Postgres, drop them in a later patch.</p>
-    <p class="rec-line"><b>Recommended:</b> yes — Phase A now, Phase B never scheduled until you have lived without it.</p>
+    <p class="rec-line"><b>Settled:</b> yes — Phase A now, Phase B never scheduled until you have lived without it.</p>
   </div>
 
   <div class="qa">
     <span class="qid">O2</span><span class="qt">Which pages actually get a stat band?</span>
     <p>Four are clear wins and three are guesses (§05). Adding a band to a page whose numbers you would never read is exactly the mistake the jerad-ops 2.0 release was written about.</p>
-    <p class="rec-line"><b>Recommended:</b> ship <code>/routines</code>, <code>/domains</code> and <code>/tasks</code>. Leave <code>/projects</code>, <code>/journal</code> and <code>/notes</code> until those three have been used for a while.</p>
+    <p class="rec-line"><b>Settled:</b> ship <code>/routines</code>, <code>/domains</code> and <code>/tasks</code>. Leave <code>/projects</code>, <code>/journal</code> and <code>/notes</code> until those three have been used for a while.</p>
   </div>
 
   <div class="qa">
     <span class="qid">O3</span><span class="qt">Does writing a note count as touching its domain?</span>
     <p>Once notes carry a domain, they become a fifth candidate source for the neglect sweep’s last-touch date. Counting them makes a domain look tended when all you did was think about it. Not counting them means a week of notes about Health still reads as neglect.</p>
-    <p class="rec-line"><b>Recommended:</b> count it. Attention is what this measure is for, and thinking about something is attention.</p>
+    <p class="rec-line"><b>Settled:</b> count it. Attention is what this measure is for, and thinking about something is attention.</p>
   </div>
 
   <div class="qa">
     <span class="qid">O4</span><span class="qt">How far back may a routine day be ticked?</span>
     <p>The row already draws 30 days. A wider window needs a date picker and a reason.</p>
-    <p class="rec-line"><b>Recommended:</b> 30 days — exactly the squares already on screen, enforced server-side.</p>
+    <p class="rec-line"><b>Settled:</b> 30 days — exactly the squares already on screen, enforced server-side.</p>
   </div>
 
   <div class="qa">
     <span class="qid">O5</span><span class="qt">How many tasks does a project row show?</span>
     <p>Open tasks only, or everything including done? Always visible, or behind a disclosure?</p>
-    <p class="rec-line"><b>Recommended:</b> open tasks only, up to five, then “+N more”. Done work belongs on the project page, not in the list.</p>
+    <p class="rec-line"><b>Settled:</b> open tasks only, up to five, then “+N more”. Done work belongs on the project page, not in the list.</p>
   </div>
 
   <div class="qa">
     <span class="qid">O6</span><span class="qt">Which ADRs does this plan owe?</span>
     <p>The next free number is <strong>0053</strong> — 0052 is note attachments. Three decisions here are hard to reverse, surprising without context, and the result of a real trade-off, which is the bar the repo uses.</p>
-    <p class="rec-line"><b>Recommended:</b> one for the stat band as a third reading type against ADR-0042/0046; one for a client-named completion date on routines; one recording the jerad-ops 2.0 read — what was taken, what was refused, and that Linear owns delivery history. <code>AGENTS.md</code> requires the third one anyway.</p>
+    <p class="rec-line"><b>Settled:</b> one for the stat band as a third reading type against ADR-0042/0046; one for a client-named completion date on routines; one recording the jerad-ops 2.0 read — what was taken, what was refused, and that Linear owns delivery history. <code>AGENTS.md</code> requires the third one anyway.</p>
+  </div>
+
+  <div class="qa">
+    <span class="qid">O7</span><span class="qt">May Repeats move out of its row to make space for Project? <span class="pill ask">open</span></span>
+    <p>The meta grid has six slots and Project makes seven. Either Repeats moves up beside the due date and time, or the grid grows a third row with two empty cells in it.</p>
+    <p class="rec-line"><b>Recommended:</b> move Repeats. It is a scheduling answer, not a filing one, and the form already treats it that way — one reset button clears due date, due time and recurrence together, and its label says exactly that. Domain and Project then sit side by side, which is the honest pairing: both answer “where does this belong?”</p>
   </div>
 </section>
 
 
 <section class="point">
-  <h2><span class="num">10</span> Explicitly not doing</h2>
+  <h2><span class="num">11</span> Explicitly not doing</h2>
   <p class="sub">Refusals are the point of this plan, so they are written down rather than left as silence.</p>
 
   <div class="skip"><span class="x">✕</span><span class="t">Copying the reference UI</span><span class="r">The current design stays. The gap was information, not looks.</span></div>
