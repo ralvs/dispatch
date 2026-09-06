@@ -17,14 +17,18 @@ import { cadenceThresholdDays } from "@/lib/services/today";
 // A domain's LAST TOUCH is the max of:
 //   1. tasks.completed_at        — work finished in the domain
 //   2. projects.updated_at       — project activity in the domain
-//   3. notes.created_at          — thinking about the domain. Plan O3 settled
+//   3. notes.updated_at          — thinking about the domain. Plan O3 settled
 //                                  that it counts: attention is what this
 //                                  measure is for, and thinking about
 //                                  something is attention.
-//                                  Create-time only, because `notes` has no
-//                                  updated_at column. Filing an old note into
-//                                  a domain therefore does not revive it; that
-//                                  needs a migration and is its own patch.
+//                                  updated_at, not created_at: editing a note,
+//                                  or filing an old one into a domain, is
+//                                  attention too. The column and its trigger
+//                                  arrived in
+//                                  20260906150000_notes_updated_at.sql,
+//                                  backfilled to created_at so an untouched
+//                                  note still reads as last touched when it
+//                                  was written.
 //   4. domains.last_shipped_at   — the manual "I shipped something" stamp
 //
 // Journal is deliberately NOT a source. The plan lists journal_entries as a
@@ -164,9 +168,9 @@ export async function listDomainTouches(
 			domain_id: string | null;
 			updated_at: string | null;
 		}> | null,
-		unwrap(await sb.from("notes").select("domain_id, created_at").range(0, 49_999)) as Array<{
+		unwrap(await sb.from("notes").select("domain_id, updated_at").range(0, 49_999)) as Array<{
 			domain_id: string | null;
-			created_at: string | null;
+			updated_at: string | null;
 		}> | null,
 	]);
 
@@ -176,7 +180,7 @@ export async function listDomainTouches(
 		(projectRows ?? []).map((p) => ({ domain_id: p.domain_id, at: p.updated_at })),
 	);
 	const lastNote = foldMax(
-		(noteRows ?? []).map((n) => ({ domain_id: n.domain_id, at: n.created_at })),
+		(noteRows ?? []).map((n) => ({ domain_id: n.domain_id, at: n.updated_at })),
 	);
 
 	// Wants are not open work — an intent with no time is already parked

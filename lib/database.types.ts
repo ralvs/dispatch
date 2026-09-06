@@ -487,6 +487,7 @@ export type Database = {
 					source_type: string;
 					tags: string[];
 					title: string | null;
+					updated_at: string;
 				};
 				Insert: {
 					attachments?: Json;
@@ -504,6 +505,7 @@ export type Database = {
 					source_type?: string;
 					tags?: string[];
 					title?: string | null;
+					updated_at?: string;
 				};
 				Update: {
 					attachments?: Json;
@@ -521,6 +523,7 @@ export type Database = {
 					source_type?: string;
 					tags?: string[];
 					title?: string | null;
+					updated_at?: string;
 				};
 				Relationships: [
 					{
