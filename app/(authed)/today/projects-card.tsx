@@ -36,29 +36,24 @@ export function ProjectsCard({ projects }: { projects: ProjectBrief[] }) {
 									href={`/projects/${p.id}`}
 									className="flex min-h-12 items-center gap-3 py-3 hover:text-accent-ink"
 								>
-									{/* A ring at 0% on a project with no tasks is not a
-									    reading, it is furniture — it says "nothing done" about a
-									    thing that has nothing to do. The project keeps its
-									    colour as a dot and the row says so in words. */}
-									{p.totalCount === 0 ? (
-										<span
-											aria-hidden="true"
-											className="inline-block size-[9px] shrink-0 rounded-full"
-											style={{ background: color }}
-										/>
-									) : (
-										<Progress
-											render={PROGRESS_RENDER}
-											value={p.progress}
-											label={`${p.name}: ${p.doneCount} of ${p.totalCount} tasks done`}
-											color={color}
-											size={34}
-											thickness={5}
-											className={PROGRESS_RENDER === "bar" ? "flex-1" : undefined}
-										>
-											{remaining > 0 ? remaining : null}
-										</Progress>
-									)}
+									{/* Same ring on every row, including 0 remaining. A
+									    9px dot next to a 34px ring was two systems on
+									    one list. The number inside is what is left. */}
+									<Progress
+										render={PROGRESS_RENDER}
+										value={p.progress}
+										label={
+											p.totalCount === 0
+												? `${p.name}: no tasks`
+												: `${p.name}: ${p.doneCount} of ${p.totalCount} tasks done`
+										}
+										color={color}
+										size={34}
+										thickness={5}
+										className={PROGRESS_RENDER === "bar" ? "flex-1" : undefined}
+									>
+										{remaining}
+									</Progress>
 									<span className="min-w-0 flex-1 truncate text-base text-ink">{p.name}</span>
 									<span className="shrink-0 font-mono text-meta tabular-nums text-ink-4">
 										{p.totalCount === 0 ? "No tasks" : `${p.doneCount} of ${p.totalCount} done`}
