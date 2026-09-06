@@ -19,8 +19,8 @@ export const KINDS = [
 
 // ENGAGEMENT_TYPES / engagementTypeLabel are gone: engagement_type, along
 // with client_id, quoted_hours and hours_logged, is the agency column the
-// shape plan §01 argues Dispatch should never have had. Retired in code
-// (Phase A, §08); the columns stay in Postgres for now.
+// shape plan §01 argues Dispatch should never have had. Retired in code by
+// §08 Phase A and dropped from Postgres by Phase B (docs/adr/0056).
 
 export const STATUS_GROUPS: { status: ProjectRow["status"]; label: string }[] = [
 	{ status: "active", label: "Active" },

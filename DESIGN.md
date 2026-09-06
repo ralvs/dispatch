@@ -534,7 +534,7 @@ beneath where one is earned (ADR-0042; Pass 4.5 Gate A for facts).
   **before** the measure. Used when a detail page needs identity on the header
   without abusing the count treatment (Pass 4.5 Gate A / option A).
 - **Measure:** the page's own **count** reading — `14 open`, `3 paused`,
-  `3/8 milestones` — figure at 500 in `ink-2` with tabular-nums, word at 400 in
+  `3/8 tasks` — figure at 500 in `ink-2` with tabular-nums, word at 400 in
   `ink-3`, both at 14px. It takes the accent only for what is genuinely late,
   never to mark that a count is non-zero. Never a plain attribute with an empty
   label.

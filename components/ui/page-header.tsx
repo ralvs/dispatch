@@ -9,7 +9,7 @@ import type { ReactNode } from "react";
  *
  *   Projects                              14 open   3 paused
  *   Notes                    128 notes  3 need review   [+ New note]
- *   Dispatch rewrite         Internal  Active  3/8 milestones
+ *   Dispatch rewrite         Internal  Active  3/8 tasks
  *
  * Three things it is not, each of them a deliberate deletion:
  *

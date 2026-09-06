@@ -34,7 +34,6 @@ export const TaskSchema = z.object({
 	project_id: z.string().uuid().nullable().optional(),
 	// null means unfiled — the /inbox queue (docs/adr/0027).
 	domain_id: z.string().uuid().nullable(),
-	parent_task_id: z.string().uuid().nullable().optional(),
 	recurrence_rule: RecurrenceRuleSchema.nullable().optional(),
 	reminder_offsets: z.array(z.number()).default([]),
 	source: TaskSourceSchema,

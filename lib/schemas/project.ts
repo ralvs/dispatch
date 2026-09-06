@@ -4,9 +4,8 @@ import { ColorSlugSchema } from "@/lib/schemas/color";
 export const ProjectStatusSchema = z.enum(["active", "paused", "done", "archived"]);
 export const ProjectTypeSchema = z.enum(["client", "internal", "content"]);
 // kind: 'project' (finite, has an outcome) vs 'area' (ongoing context like
-// Home, Garage, Health). Orthogonal to engagement_type — a 'project' kind
-// can still be a retainer, and areas are always 'project' engagement_type
-// since they have no client.
+// Home, Garage, Health). This is the only such axis left: engagement_type,
+// which used to sit beside it, was an agency column and is gone (ADR-0056).
 export const ProjectKindSchema = z.enum(["project", "area"]);
 export type ProjectKind = z.infer<typeof ProjectKindSchema>;
 
@@ -45,12 +44,11 @@ export const UpdateProjectSchema = CreateProjectSchema.partial().extend({
 	status: ProjectStatusSchema.optional(),
 });
 
-// Retired here by the shape plan's P5 (Phase A, §08): client_id,
-// quoted_hours, hours_logged and engagement_type. Every one of them exists to
-// prove what was delivered to a paying client — the job §01 argues Dispatch
-// does not have, because Linear owns delivery history. The columns are still
-// in Postgres and the rows are untouched; dropping them is a later, separate
-// patch with its own ADR.
+// Retired here by the shape plan's P5 (§08): client_id, quoted_hours,
+// hours_logged and engagement_type. Every one of them exists to prove what was
+// delivered to a paying client — the job §01 argues Dispatch does not have,
+// because Linear owns delivery history. Phase B has since dropped all four
+// from Postgres (docs/adr/0056).
 //
 // Milestones went the same way. A percentage that only moved when you ticked
 // an invented checklist item measured the checklist, not the work; progress is

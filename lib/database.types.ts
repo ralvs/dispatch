@@ -8,114 +8,31 @@ export type Database = {
 	};
 	public: {
 		Tables: {
-			action_log: {
-				Row: {
-					action_type: string;
-					description: string;
-					executed_at: string;
-					id: string;
-					payload: Json;
-					status: string;
-					target_system: string;
-					triggered_by: string;
-				};
-				Insert: {
-					action_type: string;
-					description: string;
-					executed_at?: string;
-					id?: string;
-					payload?: Json;
-					status?: string;
-					target_system: string;
-					triggered_by: string;
-				};
-				Update: {
-					action_type?: string;
-					description?: string;
-					executed_at?: string;
-					id?: string;
-					payload?: Json;
-					status?: string;
-					target_system?: string;
-					triggered_by?: string;
-				};
-				Relationships: [];
-			};
-			activity_log: {
-				Row: {
-					entry: string;
-					hours_logged: number | null;
-					id: string;
-					kind: string;
-					logged_at: string;
-					project_id: string | null;
-					source: string;
-				};
-				Insert: {
-					entry: string;
-					hours_logged?: number | null;
-					id?: string;
-					kind?: string;
-					logged_at?: string;
-					project_id?: string | null;
-					source?: string;
-				};
-				Update: {
-					entry?: string;
-					hours_logged?: number | null;
-					id?: string;
-					kind?: string;
-					logged_at?: string;
-					project_id?: string | null;
-					source?: string;
-				};
-				Relationships: [
-					{
-						foreignKeyName: "activity_log_project_id_fkey";
-						columns: ["project_id"];
-						isOneToOne: false;
-						referencedRelation: "projects";
-						referencedColumns: ["id"];
-					},
-				];
-			};
 			app_settings: {
 				Row: {
 					id: boolean;
+					reminder_anchor_time: string;
+					reminder_offset_minutes: number;
 					timezone: string;
 					updated_at: string;
 				};
 				Insert: {
 					id?: boolean;
+					reminder_anchor_time?: string;
+					reminder_offset_minutes?: number;
 					timezone?: string;
 					updated_at?: string;
 				};
 				Update: {
 					id?: boolean;
+					reminder_anchor_time?: string;
+					reminder_offset_minutes?: number;
 					timezone?: string;
 					updated_at?: string;
 				};
 				Relationships: [];
 			};
 			caldav_sync_state: {
-				Row: {
-					id: boolean;
-					last_result: Json | null;
-					last_synced_at: string | null;
-				};
-				Insert: {
-					id?: boolean;
-					last_result?: Json | null;
-					last_synced_at?: string | null;
-				};
-				Update: {
-					id?: boolean;
-					last_result?: Json | null;
-					last_synced_at?: string | null;
-				};
-				Relationships: [];
-			};
-			google_sync_state: {
 				Row: {
 					id: boolean;
 					last_result: Json | null;
@@ -226,6 +143,24 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			google_sync_state: {
+				Row: {
+					id: boolean;
+					last_result: Json | null;
+					last_synced_at: string | null;
+				};
+				Insert: {
+					id?: boolean;
+					last_result?: Json | null;
+					last_synced_at?: string | null;
+				};
+				Update: {
+					id?: boolean;
+					last_result?: Json | null;
+					last_synced_at?: string | null;
+				};
+				Relationships: [];
+			};
 			ingest_links: {
 				Row: {
 					created_at: string;
@@ -256,99 +191,6 @@ export type Database = {
 					title?: string | null;
 					updated_at?: string;
 					url?: string;
-				};
-				Relationships: [];
-			};
-			inventory_categories: {
-				Row: {
-					created_at: string;
-					default_depreciation_rate: number | null;
-					id: string;
-					insurance_relevant: boolean;
-					name: string;
-				};
-				Insert: {
-					created_at?: string;
-					default_depreciation_rate?: number | null;
-					id?: string;
-					insurance_relevant?: boolean;
-					name: string;
-				};
-				Update: {
-					created_at?: string;
-					default_depreciation_rate?: number | null;
-					id?: string;
-					insurance_relevant?: boolean;
-					name?: string;
-				};
-				Relationships: [];
-			};
-			inventory_items: {
-				Row: {
-					brand: string | null;
-					category: string;
-					created_at: string;
-					current_value_estimate: number | null;
-					id: string;
-					location: string | null;
-					model: string | null;
-					notes: string | null;
-					photos: Json;
-					purchase_date: string | null;
-					purchase_price: number | null;
-					purchase_source: string | null;
-					receipts: Json;
-					serial_number: string | null;
-					sold_date: string | null;
-					sold_price: number | null;
-					sold_to: string | null;
-					status: string;
-					updated_at: string;
-					value_updated_at: string | null;
-				};
-				Insert: {
-					brand?: string | null;
-					category: string;
-					created_at?: string;
-					current_value_estimate?: number | null;
-					id?: string;
-					location?: string | null;
-					model?: string | null;
-					notes?: string | null;
-					photos?: Json;
-					purchase_date?: string | null;
-					purchase_price?: number | null;
-					purchase_source?: string | null;
-					receipts?: Json;
-					serial_number?: string | null;
-					sold_date?: string | null;
-					sold_price?: number | null;
-					sold_to?: string | null;
-					status?: string;
-					updated_at?: string;
-					value_updated_at?: string | null;
-				};
-				Update: {
-					brand?: string | null;
-					category?: string;
-					created_at?: string;
-					current_value_estimate?: number | null;
-					id?: string;
-					location?: string | null;
-					model?: string | null;
-					notes?: string | null;
-					photos?: Json;
-					purchase_date?: string | null;
-					purchase_price?: number | null;
-					purchase_source?: string | null;
-					receipts?: Json;
-					serial_number?: string | null;
-					sold_date?: string | null;
-					sold_price?: number | null;
-					sold_to?: string | null;
-					status?: string;
-					updated_at?: string;
-					value_updated_at?: string | null;
 				};
 				Relationships: [];
 			};
@@ -429,43 +271,116 @@ export type Database = {
 					},
 				];
 			};
-			milestones: {
+			mentions: {
 				Row: {
-					completed_at: string | null;
 					created_at: string;
 					id: string;
-					position: number;
-					project_id: string;
-					status: string;
-					title: string;
-					weight: number;
+					matched_name: string;
+					note_id: string | null;
+					person_id: string;
+					source_type: string;
+					task_id: string | null;
 				};
 				Insert: {
-					completed_at?: string | null;
 					created_at?: string;
 					id?: string;
-					position?: number;
-					project_id: string;
-					status?: string;
-					title: string;
-					weight?: number;
+					matched_name: string;
+					note_id?: string | null;
+					person_id: string;
+					source_type: string;
+					task_id?: string | null;
 				};
 				Update: {
-					completed_at?: string | null;
 					created_at?: string;
 					id?: string;
-					position?: number;
-					project_id?: string;
-					status?: string;
-					title?: string;
-					weight?: number;
+					matched_name?: string;
+					note_id?: string | null;
+					person_id?: string;
+					source_type?: string;
+					task_id?: string | null;
 				};
 				Relationships: [
 					{
-						foreignKeyName: "milestones_project_id_fkey";
-						columns: ["project_id"];
+						foreignKeyName: "mentions_note_id_fkey";
+						columns: ["note_id"];
 						isOneToOne: false;
-						referencedRelation: "projects";
+						referencedRelation: "notes";
+						referencedColumns: ["id"];
+					},
+					{
+						foreignKeyName: "mentions_person_id_fkey";
+						columns: ["person_id"];
+						isOneToOne: false;
+						referencedRelation: "people";
+						referencedColumns: ["id"];
+					},
+					{
+						foreignKeyName: "mentions_task_id_fkey";
+						columns: ["task_id"];
+						isOneToOne: false;
+						referencedRelation: "tasks";
+						referencedColumns: ["id"];
+					},
+				];
+			};
+			note_links: {
+				Row: {
+					created_at: string;
+					id: string;
+					kind: string;
+					note_id: string;
+					target_event_id: string | null;
+					target_note_id: string | null;
+					target_task_id: string | null;
+					target_type: string;
+				};
+				Insert: {
+					created_at?: string;
+					id?: string;
+					kind?: string;
+					note_id: string;
+					target_event_id?: string | null;
+					target_note_id?: string | null;
+					target_task_id?: string | null;
+					target_type: string;
+				};
+				Update: {
+					created_at?: string;
+					id?: string;
+					kind?: string;
+					note_id?: string;
+					target_event_id?: string | null;
+					target_note_id?: string | null;
+					target_task_id?: string | null;
+					target_type?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: "note_links_note_id_fkey";
+						columns: ["note_id"];
+						isOneToOne: false;
+						referencedRelation: "notes";
+						referencedColumns: ["id"];
+					},
+					{
+						foreignKeyName: "note_links_target_event_id_fkey";
+						columns: ["target_event_id"];
+						isOneToOne: false;
+						referencedRelation: "calendar_events";
+						referencedColumns: ["id"];
+					},
+					{
+						foreignKeyName: "note_links_target_note_id_fkey";
+						columns: ["target_note_id"];
+						isOneToOne: false;
+						referencedRelation: "notes";
+						referencedColumns: ["id"];
+					},
+					{
+						foreignKeyName: "note_links_target_task_id_fkey";
+						columns: ["target_task_id"];
+						isOneToOne: false;
+						referencedRelation: "tasks";
 						referencedColumns: ["id"];
 					},
 				];
@@ -768,64 +683,16 @@ export type Database = {
 					},
 				];
 			};
-			project_checklist_items: {
-				Row: {
-					created_at: string;
-					done: boolean;
-					done_at: string | null;
-					id: string;
-					position: number;
-					project_id: string;
-					recurrence_rule: string | null;
-					title: string;
-					updated_at: string;
-				};
-				Insert: {
-					created_at?: string;
-					done?: boolean;
-					done_at?: string | null;
-					id?: string;
-					position?: number;
-					project_id: string;
-					recurrence_rule?: string | null;
-					title: string;
-					updated_at?: string;
-				};
-				Update: {
-					created_at?: string;
-					done?: boolean;
-					done_at?: string | null;
-					id?: string;
-					position?: number;
-					project_id?: string;
-					recurrence_rule?: string | null;
-					title?: string;
-					updated_at?: string;
-				};
-				Relationships: [
-					{
-						foreignKeyName: "project_checklist_items_project_id_fkey";
-						columns: ["project_id"];
-						isOneToOne: false;
-						referencedRelation: "projects";
-						referencedColumns: ["id"];
-					},
-				];
-			};
 			projects: {
 				Row: {
-					client_id: string | null;
 					color: string | null;
 					completed_at: string | null;
 					created_at: string;
 					description: string | null;
 					domain_id: string | null;
-					engagement_type: string;
-					hours_logged: number;
 					id: string;
 					kind: string;
 					name: string;
-					quoted_hours: number | null;
 					start_date: string | null;
 					status: string;
 					target_date: string | null;
@@ -833,18 +700,14 @@ export type Database = {
 					updated_at: string;
 				};
 				Insert: {
-					client_id?: string | null;
 					color?: string | null;
 					completed_at?: string | null;
 					created_at?: string;
 					description?: string | null;
 					domain_id?: string | null;
-					engagement_type?: string;
-					hours_logged?: number;
 					id?: string;
 					kind?: string;
 					name: string;
-					quoted_hours?: number | null;
 					start_date?: string | null;
 					status?: string;
 					target_date?: string | null;
@@ -852,18 +715,14 @@ export type Database = {
 					updated_at?: string;
 				};
 				Update: {
-					client_id?: string | null;
 					color?: string | null;
 					completed_at?: string | null;
 					created_at?: string;
 					description?: string | null;
 					domain_id?: string | null;
-					engagement_type?: string;
-					hours_logged?: number;
 					id?: string;
 					kind?: string;
 					name?: string;
-					quoted_hours?: number | null;
 					start_date?: string | null;
 					status?: string;
 					target_date?: string | null;
@@ -871,13 +730,6 @@ export type Database = {
 					updated_at?: string;
 				};
 				Relationships: [
-					{
-						foreignKeyName: "projects_client_id_fkey";
-						columns: ["client_id"];
-						isOneToOne: false;
-						referencedRelation: "people";
-						referencedColumns: ["id"];
-					},
 					{
 						foreignKeyName: "projects_domain_id_fkey";
 						columns: ["domain_id"];
@@ -1104,6 +956,7 @@ export type Database = {
 			stewardship_domains: {
 				Row: {
 					active: boolean;
+					color: string | null;
 					created_at: string;
 					description: string | null;
 					expected_cadence: string | null;
@@ -1116,6 +969,7 @@ export type Database = {
 				};
 				Insert: {
 					active?: boolean;
+					color?: string | null;
 					created_at?: string;
 					description?: string | null;
 					expected_cadence?: string | null;
@@ -1128,6 +982,7 @@ export type Database = {
 				};
 				Update: {
 					active?: boolean;
+					color?: string | null;
 					created_at?: string;
 					description?: string | null;
 					expected_cadence?: string | null;
@@ -1149,7 +1004,6 @@ export type Database = {
 					due_time: string | null;
 					id: string;
 					notes: string | null;
-					parent_task_id: string | null;
 					priority: number;
 					project_id: string | null;
 					recurrence_rule: string | null;
@@ -1170,7 +1024,6 @@ export type Database = {
 					due_time?: string | null;
 					id?: string;
 					notes?: string | null;
-					parent_task_id?: string | null;
 					priority?: number;
 					project_id?: string | null;
 					recurrence_rule?: string | null;
@@ -1191,7 +1044,6 @@ export type Database = {
 					due_time?: string | null;
 					id?: string;
 					notes?: string | null;
-					parent_task_id?: string | null;
 					priority?: number;
 					project_id?: string | null;
 					recurrence_rule?: string | null;
@@ -1213,13 +1065,6 @@ export type Database = {
 						referencedColumns: ["id"];
 					},
 					{
-						foreignKeyName: "tasks_parent_task_id_fkey";
-						columns: ["parent_task_id"];
-						isOneToOne: false;
-						referencedRelation: "tasks";
-						referencedColumns: ["id"];
-					},
-					{
 						foreignKeyName: "tasks_project_id_fkey";
 						columns: ["project_id"];
 						isOneToOne: false;
@@ -1233,7 +1078,14 @@ export type Database = {
 			[_ in never]: never;
 		};
 		Functions: {
-			[_ in never]: never;
+			note_attachment_add: {
+				Args: { p_item: Json; p_note_id: string };
+				Returns: undefined;
+			};
+			note_attachment_remove: {
+				Args: { p_note_id: string; p_storage_path: string };
+				Returns: undefined;
+			};
 		};
 		Enums: {
 			[_ in never]: never;

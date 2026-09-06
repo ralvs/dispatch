@@ -224,7 +224,7 @@
     <tr><td class="n">D6</td><td><code>/domains</code> rows show last touch, open count, quiet dot</td><td>Today’s page is not touched</td><td><span class="pill done">shipped</span></td></tr>
     <tr><td class="n">D7</td><td>A stat band above the list on some pages</td><td>New reading type — collides with ADR-0042/0046</td><td><span class="pill done">shipped · ADR written</span></td></tr>
     <tr><td class="n">D8</td><td>Routines: edit a routine, tick past days</td><td>Backfill breaks a stated server-clock rule</td><td><span class="pill done">shipped · ADR written</span></td></tr>
-    <tr><td class="n">D9</td><td>Nothing is dropped from the database yet</td><td>Retire in code now, drop in SQL later</td><td><span class="pill done">shipped</span> <span class="pill later">SQL still staged</span></td></tr>
+    <tr><td class="n">D9</td><td>Nothing is dropped from the database yet</td><td>Retire in code now, drop in SQL later</td><td><span class="pill done">shipped</span> <span class="pill done">SQL dropped</span></td></tr>
     <tr><td class="n">D10</td><td>The task form gains a project field</td><td>Never existed on the form; only capture can set one</td><td><span class="pill done">shipped</span></td></tr>
     <tr><td class="n">D11</td><td>Add a task from a project, project locked</td><td>The same dialog — ADR-0040 stays true</td><td><span class="pill done">shipped</span></td></tr>
     <tr><td class="n">D12</td><td>Repeats gains a Custom rule</td><td><code>weekly:tu,sa</code> — needed a migration after all; a CHECK pinned the column</td><td><span class="pill done">shipped</span></td></tr>
@@ -714,7 +714,7 @@
         <li>Only after living without it long enough to be sure.</li>
         <li>Its own ADR, following the ADR-0007 precedent.</li>
       </ul>
-      <p style="font-size:14px;margin:.7rem 0 0;color:var(--ink-3)">Not scheduled. Not in this plan.</p>
+      <p style="font-size:14px;margin:.7rem 0 0;color:var(--ink-3)"><strong>Done</strong> — 6 Sep 2026, migration <code>20260906160000_phase_b_drops.sql</code>, ADR-0056. Not reversible: there is no down script.</p>
     </div>
   </div>
 
@@ -722,18 +722,18 @@
   <table class="summary">
     <thead><tr><th>Thing</th><th>State today</th><th>Phase A</th><th>Phase B</th></tr></thead>
     <tbody>
-      <tr><td><code>milestones</code></td><td>Live — drives % on 3 surfaces</td><td>Remove UI and rollup; % becomes done/open</td><td>Candidate to drop</td></tr>
-      <tr><td><code>project_checklist_items</code></td><td>Dead — generated types only</td><td>Delete the orphan schemas</td><td>Candidate to drop</td></tr>
-      <tr><td><code>projects.client_id</code></td><td>Dead — schema only</td><td>Remove from schema</td><td>Candidate to drop</td></tr>
-      <tr><td><code>projects.hours_logged</code></td><td>Dead — schema only</td><td>Remove from schema</td><td>Candidate to drop</td></tr>
-      <tr><td><code>projects.quoted_hours</code></td><td>Live in the project form</td><td>Remove field and schema</td><td>Candidate to drop</td></tr>
-      <tr><td><code>projects.engagement_type</code></td><td>Live in the project form</td><td>Remove field and schema</td><td>Candidate to drop</td></tr>
-      <tr><td><code>tasks.parent_task_id</code></td><td>Dead — schema only</td><td>Remove from schema</td><td>Candidate to drop</td></tr>
-      <tr><td><code>activity_log</code></td><td>Dead — no reader, no writer</td><td>Nothing to remove</td><td>Candidate to drop</td></tr>
-      <tr><td><code>action_log</code></td><td>Dead — no reader, no writer</td><td>Nothing to remove</td><td>Candidate to drop</td></tr>
-      <tr><td><code>inventory_items</code> · <code>inventory_categories</code></td><td>Dead — no reader, no writer</td><td>Nothing to remove</td><td>Candidate to drop</td></tr>
-      <tr><td><code>buildCadenceLines</code></td><td>Computed every request, rendered nowhere</td><td><strong>Revived</strong> by §04, or deleted</td><td>—</td></tr>
-      <tr class="dim"><td><code>observations</code></td><td>Dead — no reader, no writer</td><td><strong>Wired</strong> by §04</td><td>Kept</td></tr>
+      <tr><td><code>milestones</code></td><td>Live — drives % on 3 surfaces</td><td>Remove UI and rollup; % becomes done/open</td><td><span class="pill done">dropped</span> with its 2 rows</td></tr>
+      <tr><td><code>project_checklist_items</code></td><td>Dead — generated types only</td><td>Delete the orphan schemas</td><td><span class="pill done">dropped</span></td></tr>
+      <tr><td><code>projects.client_id</code></td><td>Dead — schema only</td><td>Remove from schema</td><td><span class="pill done">dropped</span></td></tr>
+      <tr><td><code>projects.hours_logged</code></td><td>Dead — schema only</td><td>Remove from schema</td><td><span class="pill done">dropped</span></td></tr>
+      <tr><td><code>projects.quoted_hours</code></td><td>Live in the project form</td><td>Remove field and schema</td><td><span class="pill done">dropped</span></td></tr>
+      <tr><td><code>projects.engagement_type</code></td><td>Live in the project form</td><td>Remove field and schema</td><td><span class="pill done">dropped</span></td></tr>
+      <tr><td><code>tasks.parent_task_id</code></td><td>Dead — schema only</td><td>Remove from schema</td><td><span class="pill done">dropped</span></td></tr>
+      <tr><td><code>activity_log</code></td><td>Dead — no reader, no writer</td><td>Nothing to remove</td><td><span class="pill done">dropped</span></td></tr>
+      <tr><td><code>action_log</code></td><td>Dead — no reader, no writer</td><td>Nothing to remove</td><td><span class="pill done">dropped</span></td></tr>
+      <tr><td><code>inventory_items</code> · <code>inventory_categories</code></td><td>Dead — no reader, no writer</td><td>Nothing to remove</td><td><span class="pill done">dropped</span></td></tr>
+      <tr><td><code>buildCadenceLines</code></td><td>Computed every request, rendered nowhere</td><td>Neither — §04 found two readers still on it</td><td><span class="pill done">deleted</span> in 533d4c2</td></tr>
+      <tr class="dim"><td><code>observations</code></td><td>Dead — no reader, no writer</td><td><strong>Wired</strong> by §04</td><td>Kept — the sweep writes to it</td></tr>
     </tbody>
   </table>
   </div>
@@ -918,10 +918,12 @@
   separately once its two readers were moved onto the counts directly, which also dropped the <code>cadence</code> array from the widget
   JSON. And O3’s note source became <code>notes.updated_at</code> rather than <code>created_at</code>, so filing or editing a note now
   revives a quiet domain — the migration the plan deferred.</p>
-  <p><strong>What is deliberately still open.</strong> D9’s Phase B — dropping <code>milestones</code>, <code>project_checklist_items</code>,
-  the billing columns, <code>parent_task_id</code>, <code>activity_log</code>, <code>action_log</code> and <code>inventory_items</code> in SQL
-  — is not scheduled, by the plan’s own rule. Journal is still not a last-touch source: <code>journal_entries</code> has no domain link, and
-  inventing one is a guess. §05’s remaining stat-band candidates were left alone on purpose.</p>
+  <p><strong>Phase B ran too.</strong> On the same day, against the plan’s own “only after living without it long enough to be sure”:
+  every candidate except <code>milestones</code> was already empty, and <code>engagement_type</code> held its own default on all nine rows,
+  so there was nothing left to be sure about. <code>milestones</code> lost two rows — one done, one open — dropped on an explicit
+  instruction rather than by accident. ADR-0056 records it. The drop is not reversible.</p>
+  <p><strong>What is deliberately still open.</strong> Journal is still not a last-touch source: <code>journal_entries</code> has no domain
+  link, and inventing one is a guess. §05’s remaining stat-band candidates were left alone on purpose.</p>
   <p>Sources: <code>docs/review-jerad-ops-v2-2026-08-15.html</code> (the reference read), the repository at <code>main</code>, and a design interview on 21 Aug 2026. Every claim about Dispatch above was checked against the code rather than inferred.</p>
 </footer>
 
