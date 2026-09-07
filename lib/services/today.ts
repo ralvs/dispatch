@@ -163,26 +163,6 @@ export function pickResurfaced(
 	return null;
 }
 
-/**
- * Flat "doing today" list from a day schedule: top 3 first, then open band
- * (deduped). Widget + chat project from daySchedule instead of a parallel field.
- */
-export function doingTodayFromSchedule(schedule: DaySchedule): TaskRow[] {
-	const seen = new Set<string>();
-	const out: TaskRow[] = [];
-	for (const t of schedule.top3) {
-		if (seen.has(t.id)) continue;
-		seen.add(t.id);
-		out.push(t);
-	}
-	for (const t of schedule.open) {
-		if (seen.has(t.id)) continue;
-		seen.add(t.id);
-		out.push(t);
-	}
-	return out;
-}
-
 /** The one-sentence commitments anchor under the masthead. */
 export function buildAnchor(input: {
 	events: CalendarEventRow[];
@@ -199,27 +179,6 @@ export function buildAnchor(input: {
 		openCount: input.openCount,
 		overdueCount: input.overdueCount,
 	};
-}
-
-/**
- * The numeric cadence threshold hiding in a domain's failure_patterns jsonb
- * (seed shape: [{"rule":"no_activity_days","value":7}, …]). Defensive: any
- * malformed shape yields null and the domain simply has no cadence rule.
- */
-export function cadenceThresholdDays(failurePatterns: unknown): number | null {
-	if (!Array.isArray(failurePatterns)) return null;
-	for (const entry of failurePatterns) {
-		if (typeof entry !== "object" || entry === null) continue;
-		const { rule, value } = entry as { rule?: unknown; value?: unknown };
-		if (
-			(rule === "no_activity_days" || rule === "days_since_journal") &&
-			typeof value === "number" &&
-			value > 0
-		) {
-			return value;
-		}
-	}
-	return null;
 }
 
 /**

@@ -6,7 +6,6 @@ import type { CompletionRow, RoutineRow } from "@/lib/services/routines";
 import {
 	bucketRoutines,
 	buildAnchor,
-	cadenceThresholdDays,
 	pickResurfaced,
 	quoteOfDay,
 	summarizeProjects,
@@ -158,22 +157,6 @@ describe("buildAnchor", () => {
 			nowUtcIso: `${TODAY}T12:00:00.000Z`,
 		});
 		expect(anchor.nextEvent).toBeNull();
-	});
-});
-
-describe("cadenceThresholdDays", () => {
-	it("reads the numeric no_activity_days / days_since_journal rule", () => {
-		expect(cadenceThresholdDays([{ rule: "no_activity_days", value: 7 }])).toBe(7);
-		expect(cadenceThresholdDays([{ rule: "days_since_journal", value: 3 }])).toBe(3);
-	});
-
-	it("returns null for malformed or missing shapes", () => {
-		expect(cadenceThresholdDays(null)).toBeNull();
-		expect(cadenceThresholdDays("weekly")).toBeNull();
-		expect(cadenceThresholdDays([])).toBeNull();
-		expect(cadenceThresholdDays([{ rule: "no_activity_days", value: "7" }])).toBeNull();
-		expect(cadenceThresholdDays([{ rule: "unknown_rule", value: 7 }])).toBeNull();
-		expect(cadenceThresholdDays([{ rule: "no_activity_days", value: 0 }])).toBeNull();
 	});
 });
 

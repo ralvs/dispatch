@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { todayInTz } from "@/lib/dates";
+import { doingTodayFromSchedule } from "@/lib/day-schedule";
 import { env, isSupabaseConfigured } from "@/lib/env";
 import { isAuthorized } from "@/lib/secret-auth";
 import { getAppTimezone } from "@/lib/services/settings";
-import { doingTodayFromSchedule, getToday } from "@/lib/services/today";
+import { getToday } from "@/lib/services/today";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // ─────────────────────────────────────────────────────────────────────────

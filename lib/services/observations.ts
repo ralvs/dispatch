@@ -1,10 +1,9 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { dateOfInstant, todayInTz } from "@/lib/dates";
-import { listDomains } from "@/lib/services/domains";
+import { cadenceThresholdDays, listDomains } from "@/lib/services/domains";
 import { unwrap } from "@/lib/services/errors";
 import { getAppTimezone } from "@/lib/services/settings";
-import { cadenceThresholdDays } from "@/lib/services/today";
 
 // ─── The neglect sweep ─────────────────────────────────────────────────
 //

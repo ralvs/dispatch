@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDaySchedule, eventFallsOnDay } from "@/lib/day-schedule";
+import { buildDaySchedule, doingTodayFromSchedule, eventFallsOnDay } from "@/lib/day-schedule";
 import type { CalendarEventRow } from "@/lib/schemas/calendar";
 import type { TaskRow } from "@/lib/schemas/task";
 
@@ -334,5 +334,58 @@ describe("eventFallsOnDay", () => {
 
 	it("excludes a row with an unreadable start rather than throwing", () => {
 		expect(eventFallsOnDay(event({ id: "e1", start_at: "sometime" }), AUG_18, SP)).toBe(false);
+	});
+});
+
+describe("doingTodayFromSchedule", () => {
+	it("lists top 3 first, then open", () => {
+		const starred = task({ id: "a", title: "Star" });
+		const open = task({ id: "b", title: "Open" });
+		expect(
+			doingTodayFromSchedule({
+				allDay: [],
+				timeline: [],
+				top3: [starred],
+				open: [open],
+			}).map((t) => t.id),
+		).toEqual(["a", "b"]);
+	});
+
+	it("skips a task that is already in top 3", () => {
+		const starred = task({ id: "a", title: "Star" });
+		expect(
+			doingTodayFromSchedule({
+				allDay: [],
+				timeline: [],
+				top3: [starred],
+				open: [starred],
+			}).map((t) => t.id),
+		).toEqual(["a"]);
+	});
+
+	it("is empty when both bands are empty", () => {
+		expect(doingTodayFromSchedule({ allDay: [], timeline: [], top3: [], open: [] })).toEqual([]);
+	});
+
+	it("omits a timeline-only task", () => {
+		const timed = task({ id: "c", title: "Timed", due_date: TODAY, due_time: "11:00:00" });
+		const starred = task({ id: "a", title: "Star" });
+		const open = task({ id: "b", title: "Open" });
+		expect(
+			doingTodayFromSchedule({
+				allDay: [],
+				timeline: [
+					{
+						kind: "task",
+						key: "task:c",
+						sortAt: `${TODAY}T14:00:00.000Z`,
+						time: "11:00",
+						task: timed,
+					},
+				],
+				top3: [starred],
+				open: [open],
+			}).map((t) => t.id),
+		).toEqual(["a", "b"]);
 	});
 });

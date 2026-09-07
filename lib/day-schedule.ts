@@ -21,9 +21,9 @@
 // tasks, then by title, so the same input always yields the same order.
 //
 // This module is deliberately client-safe — no `server-only`, no Supabase, no
-// env. SSR reads it through lib/services/today.ts (which re-exports it) and
-// the optimistic day bands import it directly from a client component; a
-// server-only home would drag `env` into the browser graph and fail the build.
+// env. SSR reads it through lib/services/today.ts and the optimistic day bands
+// import it directly from a client component; a server-only home would drag
+// `env` into the browser graph and fail the build.
 
 import {
 	dateOfInstant,
@@ -241,6 +241,27 @@ export function buildDaySchedule(input: {
 		dateIso: input.dateIso,
 		tz: input.tz,
 	});
+}
+
+/**
+ * Attention list: top 3 first, then the open band, deduped. Widget and chat
+ * project this from the schedule instead of a parallel "doing today" field.
+ * Timeline tasks stay off the list — they already have a clock.
+ */
+export function doingTodayFromSchedule(schedule: DaySchedule): TaskRow[] {
+	const seen = new Set<string>();
+	const out: TaskRow[] = [];
+	for (const task of schedule.top3) {
+		if (seen.has(task.id)) continue;
+		seen.add(task.id);
+		out.push(task);
+	}
+	for (const task of schedule.open) {
+		if (seen.has(task.id)) continue;
+		seen.add(task.id);
+		out.push(task);
+	}
+	return out;
 }
 
 /** Flatten every task the day currently shows, deduped by id. */

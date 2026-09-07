@@ -1,9 +1,8 @@
 import { ListSection, PageHeader, StatBand } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
-import { listDomains } from "@/lib/services/domains";
+import { cadenceThresholdDays, listDomains } from "@/lib/services/domains";
 import { listDomainTouches } from "@/lib/services/observations";
 import { getAppTimezone } from "@/lib/services/settings";
-import { cadenceThresholdDays } from "@/lib/services/today";
 import { DomainCreateButton } from "./domain-form";
 import { DomainRowItem } from "./domain-row";
 import { domainStats } from "./domain-stats";

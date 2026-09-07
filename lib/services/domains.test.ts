@@ -2,12 +2,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import {
 	archiveDomain,
+	cadenceThresholdDays,
 	createDomain,
 	markDomainShipped,
 	updateDomain,
 	withCadenceThresholdDays,
 } from "@/lib/services/domains";
-import { cadenceThresholdDays } from "@/lib/services/today";
 
 // Stub covering .from().insert().select().single() and .from().update().eq().
 // These writers used to read the row back first, to refuse the system Inbox
@@ -119,10 +119,26 @@ describe("withCadenceThresholdDays", () => {
 		]);
 	});
 
-	it("round-trips through the reader that decides In brief", () => {
+	it("round-trips through the reader that decides neglect", () => {
 		expect(cadenceThresholdDays(withCadenceThresholdDays([], 9))).toBe(9);
 		expect(
 			cadenceThresholdDays(withCadenceThresholdDays([{ rule: "no_activity_days" }], null)),
 		).toBe(null);
+	});
+});
+
+describe("cadenceThresholdDays", () => {
+	it("reads the numeric no_activity_days / days_since_journal rule", () => {
+		expect(cadenceThresholdDays([{ rule: "no_activity_days", value: 7 }])).toBe(7);
+		expect(cadenceThresholdDays([{ rule: "days_since_journal", value: 3 }])).toBe(3);
+	});
+
+	it("returns null for malformed or missing shapes", () => {
+		expect(cadenceThresholdDays(null)).toBeNull();
+		expect(cadenceThresholdDays("weekly")).toBeNull();
+		expect(cadenceThresholdDays([])).toBeNull();
+		expect(cadenceThresholdDays([{ rule: "no_activity_days", value: "7" }])).toBeNull();
+		expect(cadenceThresholdDays([{ rule: "unknown_rule", value: 7 }])).toBeNull();
+		expect(cadenceThresholdDays([{ rule: "no_activity_days", value: 0 }])).toBeNull();
 	});
 });

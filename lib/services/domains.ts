@@ -72,13 +72,13 @@ export async function markDomainShipped(sb: SupabaseClient, id: string): Promise
 
 // ─── Cadence rule ───────────────────────────────────────────────────────
 //
-// The numeric threshold that decides whether a domain shows up in Today's
-// cadence flagging. The reader is cadenceThresholdDays in lib/services/today.ts;
-// these two must agree on the failure_patterns shape, which is why the writer
-// recognises exactly the same rule names.
+// The numeric threshold hiding in failure_patterns jsonb. Read and write
+// live here so observations, /domains, and the editor cannot drift on the
+// shape (seed: [{"rule":"no_activity_days","value":7}, …]).
 
-const CADENCE_RULES = ["no_activity_days", "days_since_journal"];
+const CADENCE_RULES = ["no_activity_days", "days_since_journal"] as const;
 
+type CadenceRule = (typeof CADENCE_RULES)[number];
 type FailurePattern = { rule: string; value?: unknown };
 
 function isFailurePattern(entry: unknown): entry is FailurePattern {
@@ -87,6 +87,23 @@ function isFailurePattern(entry: unknown): entry is FailurePattern {
 		entry !== null &&
 		typeof (entry as FailurePattern).rule === "string"
 	);
+}
+
+function isCadenceRule(rule: string): rule is CadenceRule {
+	return (CADENCE_RULES as readonly string[]).includes(rule);
+}
+
+/**
+ * The domain's "flag after N days" number, or null when it has no cadence
+ * rule. Defensive: any malformed shape yields null.
+ */
+export function cadenceThresholdDays(failurePatterns: unknown): number | null {
+	if (!Array.isArray(failurePatterns)) return null;
+	for (const entry of failurePatterns) {
+		if (!isFailurePattern(entry) || !isCadenceRule(entry.rule)) continue;
+		if (typeof entry.value === "number" && entry.value > 0) return entry.value;
+	}
+	return null;
 }
 
 /**
@@ -101,9 +118,9 @@ export function withCadenceThresholdDays(
 	days: number | null,
 ): FailurePattern[] {
 	const existing = Array.isArray(failurePatterns) ? failurePatterns.filter(isFailurePattern) : [];
-	const others = existing.filter((p) => !CADENCE_RULES.includes(p.rule));
+	const others = existing.filter((p) => !isCadenceRule(p.rule));
 	if (days === null) return others;
-	const previous = existing.find((p) => CADENCE_RULES.includes(p.rule));
+	const previous = existing.find((p) => isCadenceRule(p.rule));
 	return [...others, { ...previous, rule: previous?.rule ?? CADENCE_RULES[0], value: days }];
 }
 
