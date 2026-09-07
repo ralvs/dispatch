@@ -173,22 +173,33 @@ export async function searchTasksByTitle(
 	return (data ?? []) as unknown as TaskSearchResult[];
 }
 
-/** Minimal columns for complete/top3 — avoids joined domain/project on the hot path. */
+/**
+ * Columns completeTask needs — no joined domain/project on the hot path.
+ *
+ * Wider than it looks because completing a recurring task copies the row into
+ * its successor (docs/adr/0059); every field the copy carries has to be read
+ * here, since the close clears `recurrence_rule` before the insert runs.
+ */
 type TaskHotRow = {
 	id: string;
+	title: string;
+	notes: string | null;
 	recurrence_rule: string | null;
 	due_date: string | null;
+	due_time: string | null;
+	priority: number;
+	domain_id: string | null;
+	project_id: string | null;
+	reminder_offsets: number[];
+	source: string;
 	top3_for_date: string | null;
 };
 
+const TASK_HOT_SELECT =
+	"id, title, notes, recurrence_rule, due_date, due_time, priority, domain_id, project_id, reminder_offsets, source, top3_for_date";
+
 async function getTaskHot(sb: SupabaseClient, id: string): Promise<TaskHotRow | null> {
-	const data = unwrap(
-		await sb
-			.from("tasks")
-			.select("id, recurrence_rule, due_date, top3_for_date")
-			.eq("id", id)
-			.maybeSingle(),
-	);
+	const data = unwrap(await sb.from("tasks").select(TASK_HOT_SELECT).eq("id", id).maybeSingle());
 	return (data as TaskHotRow | null) ?? null;
 }
 
@@ -209,6 +220,9 @@ export async function createTask(
 		project_id?: string | null;
 		recurrence_rule?: string | null;
 		source?: string;
+		// Set only by spawnNextOccurrence, which copies a completed recurring row.
+		reminder_offsets?: number[];
+		top3_for_date?: string | null;
 	},
 	opts: TaskWriteOpts = {},
 ): Promise<TaskRow> {
@@ -294,53 +308,115 @@ export async function updateTask(
 }
 
 /**
- * Complete a task. Recurring tasks don't close — the due date rolls forward
- * to the next occurrence (reference semantics: an overdue weekly task rolls
- * from today, never into the past).
+ * Complete a task.
  *
- * The write is preconditioned on the occurrence the caller was looking at
- * (docs/adr/0037): the roll is the one non-idempotent write in the app, and a
- * replay — a stale render, a second tab — would advance the due date another
- * whole interval. `observed.dueDate` is what the clicked row showed; if the
- * row has moved on since, nothing is written and `applied` comes back false.
+ * Every task closes, recurring included (docs/adr/0059). A recurring task then
+ * spawns its successor as a NEW row dated at the next occurrence — so the day
+ * you ticked it keeps a real, done row forever, instead of the single
+ * roll-forward row that made every past day claim the task was never done.
+ *
+ * Order matters and is not an implementation detail:
+ *
+ *   1. Read the row first. The close clears `recurrence_rule`, so the copy's
+ *      source has to be in hand before the close runs.
+ *   2. Close, guarded on `status = open`. This is the replay gate — a stale
+ *      render or a second tab finds the row already done, changes nothing, and
+ *      never reaches step 3. Without it a replay would spawn a duplicate
+ *      occurrence, which is worse than ADR-0037's double roll.
+ *   3. Only if the close really moved a row, insert the successor.
+ *
+ * The completed row also gives up its rule. Re-opening and re-ticking a past
+ * occurrence is then an ordinary close: the series lives on exactly one row,
+ * the newest one, so it can never fork.
+ *
+ * The close keeps ADR-0037's precondition on the occurrence the caller was
+ * looking at. `observed.dueDate` is what the clicked row showed; if the row has
+ * moved on since, nothing is written and `applied` comes back false.
  */
 export async function completeTask(
 	sb: SupabaseClient,
 	id: string,
 	todayIso: string,
 	observed: { dueDate: string | null },
-): Promise<{ rolled: boolean; nextDue: string | null; applied: boolean }> {
+): Promise<{ spawned: boolean; nextDue: string | null; applied: boolean }> {
 	const task = await getTaskHot(sb, id);
 	if (!task) throw new Error("Task not found");
 
 	const nowIso = nowUtc();
 	const next = nextCompleteFields(task, { todayIso, nowIso });
-	if (next.rolled) {
-		const due = next.due_date;
-		// A recurring task may legitimately have no due date at all
-		// (nextDueDate accepts a null currentDue), and `= NULL` matches nothing
-		// in Postgres — the null case has to go through `is`, not `eq`.
-		const q = sb.from("tasks").update({ due_date: due }).eq("id", id);
-		const rows = unwrap(
-			await (observed.dueDate === null
-				? q.is("due_date", null)
-				: q.eq("due_date", observed.dueDate)
-			).select("id"),
-		);
-		return { rolled: true, nextDue: due, applied: (rows ?? []).length > 0 };
-	}
 
 	// Guarding on status=open makes a replayed close a no-op rather than a
-	// second write of completed_at, which would reshuffle "Recently done".
-	const rows = unwrap(
-		await sb
-			.from("tasks")
-			.update({ status: "done", completed_at: next.completed_at })
-			.eq("id", id)
-			.eq("status", "open")
-			.select("id"),
+	// second write of completed_at, which would reshuffle "Recently done" —
+	// and, for a recurring task, rather than a second spawned occurrence.
+	// A null observed due date has to go through `is`, not `eq`: `= NULL`
+	// matches nothing in Postgres.
+	const close = sb
+		.from("tasks")
+		.update({
+			status: "done",
+			completed_at: next.completed_at,
+			// The rule leaves with the successor.
+			recurrence_rule: next.spawn ? null : task.recurrence_rule,
+		})
+		.eq("id", id)
+		.eq("status", "open");
+	const closed = unwrap(
+		await (observed.dueDate === null
+			? close.is("due_date", null)
+			: close.eq("due_date", observed.dueDate)
+		).select("id"),
 	);
-	return { rolled: false, nextDue: null, applied: (rows ?? []).length > 0 };
+	const applied = (closed ?? []).length > 0;
+
+	if (!applied || !next.spawn) {
+		return { spawned: false, nextDue: null, applied };
+	}
+
+	const due = next.spawn.due_date;
+	await spawnNextOccurrence(sb, task, due);
+	return { spawned: true, nextDue: due, applied: true };
+}
+
+/**
+ * Create the next occurrence of a just-completed recurring task.
+ *
+ * A copy of the source row, with four deliberate departures:
+ *   - `due_date` is the next occurrence; `due_time` rides along unchanged.
+ *   - `recurrence_rule` is the rule the completed row gave up.
+ *   - `top3_for_date` follows the star to the new due date, so a task you had
+ *     pinned stays pinned to the day it is next due. An unstarred task, or one
+ *     whose successor has no due date, spawns unpinned.
+ *   - `reminders_sent` and `completed_at` reset by column default: this is a
+ *     fresh occurrence, and its reminders have not fired.
+ *
+ * Mentions are not copied — createTask re-derives them from the title and
+ * notes, which is the same text (docs/adr/0030 keeps the graph text-owned).
+ */
+async function spawnNextOccurrence(
+	sb: SupabaseClient,
+	source: TaskHotRow,
+	dueDate: string | null,
+): Promise<void> {
+	await createTask(
+		sb,
+		{
+			title: source.title,
+			notes: source.notes,
+			due_date: dueDate,
+			due_time: source.due_time,
+			priority: source.priority,
+			domain_id: source.domain_id,
+			project_id: source.project_id,
+			recurrence_rule: source.recurrence_rule,
+			source: source.source,
+			reminder_offsets: source.reminder_offsets,
+			top3_for_date: source.top3_for_date !== null ? dueDate : null,
+		},
+		// The occurrence must exist even if the person graph chokes on text that
+		// already resolved once for the source row; a lost mention re-derives on
+		// the next edit, a lost occurrence breaks the series.
+		{ graphFail: "swallow" },
+	);
 }
 
 export async function reopenTask(sb: SupabaseClient, id: string): Promise<void> {

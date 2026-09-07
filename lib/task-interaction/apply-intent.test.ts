@@ -52,7 +52,11 @@ describe("applyTaskLists", () => {
 		});
 	});
 
-	it("rolls a recurring task due date and keeps it open", () => {
+	// docs/adr/0059: a recurring tick closes the row it landed on, keeping its
+	// own due date, and gives up the rule. The successor is a server-created
+	// row, so it is deliberately absent from the optimistic projection — it
+	// arrives with the RSC payload.
+	it("closes a recurring task and leaves its successor to the server", () => {
 		const open = [
 			task({
 				id: "r",
@@ -66,19 +70,20 @@ describe("applyTaskLists", () => {
 			{ type: "complete", id: "r", observedDueDate: null },
 			{ todayIso: TODAY },
 		);
-		expect(next.open).toHaveLength(1);
-		expect(next.open[0]?.status).toBe("open");
-		expect(next.open[0]?.due_date).toBe("2026-07-22");
-		expect(next.done).toHaveLength(0);
+		expect(next.open).toHaveLength(0);
+		expect(next.done).toHaveLength(1);
+		expect(next.done[0]?.status).toBe("done");
+		expect(next.done[0]?.due_date).toBe("2026-07-10");
+		expect(next.done[0]?.recurrence_rule).toBeNull();
 	});
 
-	// Characterization, not a wish: the reducer is deliberately NOT idempotent
-	// here. Early completion of a not-yet-due recurring task has to roll too
-	// (nextDueDate starts from max(currentDue, today)), so any "only roll if
-	// due_date <= todayIso" rule would silently break it. Replay is stopped a
-	// layer up instead — see lib/task-interaction/intent-lock.ts and
-	// docs/adr/0037. This test is the reason that lock exists.
-	it("rolls two intervals when the same recurring task is completed twice", () => {
+	// The reducer is now idempotent for recurring completes, which is what
+	// dropped rule off the closed row buys: a replayed tick finds a done row
+	// with no rule and closes nothing twice. The lock
+	// (lib/task-interaction/intent-lock.ts, docs/adr/0037) still runs first,
+	// but it is no longer the only thing between a double click and a second
+	// occurrence — see completeTask's status=open guard.
+	it("is idempotent when the same recurring task is completed twice", () => {
 		const open = [
 			task({ id: "r", title: "Weekly", recurrence_rule: "weekly", due_date: "2026-07-10" }),
 		];
@@ -93,8 +98,9 @@ describe("applyTaskLists", () => {
 			{ todayIso: TODAY },
 		);
 
-		expect(once.open[0]?.due_date).toBe("2026-07-22");
-		expect(twice.open[0]?.due_date).toBe("2026-07-29");
+		expect(once.done).toHaveLength(1);
+		expect(twice.done).toHaveLength(1);
+		expect(twice.done[0]?.due_date).toBe("2026-07-10");
 	});
 
 	it("reopens a done task", () => {
@@ -182,7 +188,7 @@ describe("applyTaskLists", () => {
 });
 
 describe("completeTaskFields", () => {
-	it("shares roll math for both surfaces", () => {
+	it("closes a recurring task on both surfaces", () => {
 		const t = task({
 			id: "r",
 			title: "Weekly",
@@ -190,11 +196,13 @@ describe("completeTaskFields", () => {
 			due_date: "2026-07-10",
 			top3_for_date: TODAY,
 		});
-		const rolled = completeTaskFields(t, { todayIso: TODAY }, { clearTop3: true });
-		expect(rolled.due_date).toBe("2026-07-22");
-		expect(rolled.status).toBe("open");
-		// clearTop3 only applies to non-recurring completion.
-		expect(rolled.top3_for_date).toBe(TODAY);
+		const closed = completeTaskFields(t, { todayIso: TODAY }, { clearTop3: true });
+		expect(closed.status).toBe("done");
+		expect(closed.due_date).toBe("2026-07-10");
+		expect(closed.recurrence_rule).toBeNull();
+		// The row is done now, so clearTop3 reaches it like any other close —
+		// the star the series keeps is written by the server onto the successor.
+		expect(closed.top3_for_date).toBeNull();
 	});
 
 	it("clears top3 only when asked", () => {
@@ -217,22 +225,20 @@ describe("completeTaskFields", () => {
 });
 
 describe("projectComplete", () => {
-	it("is the roll both adapters share", () => {
+	it("is the close both adapters share, and names the successor's due date", () => {
 		const t = task({
 			id: "r",
 			title: "Weekly",
 			recurrence_rule: "weekly",
 			due_date: "2026-07-10",
 		});
-		const next = projectComplete(t, { todayIso: TODAY });
-		expect(nextCompleteFields(t, { todayIso: TODAY })).toEqual({
-			rolled: true,
-			due_date: "2026-07-22",
+		const next = projectComplete(t, { todayIso: TODAY, nowIso: `${TODAY}T12:00:00.000Z` });
+		expect(nextCompleteFields(t, { todayIso: TODAY, nowIso: `${TODAY}T12:00:00.000Z` })).toEqual({
+			completed_at: `${TODAY}T12:00:00.000Z`,
+			spawn: { due_date: "2026-07-22" },
 		});
-		expect(next).toMatchObject({ id: "r", status: "open", due_date: "2026-07-22" });
-		expect(completeTaskFields(t, { todayIso: TODAY }, { clearTop3: true }).due_date).toBe(
-			next.due_date,
-		);
+		expect(next).toMatchObject({ id: "r", status: "done", due_date: "2026-07-10" });
+		expect(next.recurrence_rule).toBeNull();
 	});
 
 	it("closes a non-recurring task", () => {
@@ -264,13 +270,14 @@ describe("applyDayTaskList", () => {
 		expect(next[0].top3_for_date).toBe(TODAY);
 	});
 
-	it("rolls a recurring task forward and leaves it open", () => {
+	it("closes a recurring task in place, keeping the day it was ticked", () => {
 		const tasks = [
 			task({ id: "a", title: "Water plants", due_date: TODAY, recurrence_rule: "daily" }),
 		];
 		const next = applyDayTaskList(tasks, { type: "complete", id: "a", observedDueDate: null }, ctx);
-		expect(next[0].status).toBe("open");
-		expect(next[0].due_date).toBe("2026-07-16");
+		expect(next[0].status).toBe("done");
+		expect(next[0].due_date).toBe(TODAY);
+		expect(next[0].recurrence_rule).toBeNull();
 	});
 
 	it("reopens a done task in place", () => {
@@ -323,7 +330,10 @@ describe("applyDayIntent", () => {
 		expect(next.allDay).toHaveLength(0);
 	});
 
-	it("drops a rolled recurring task from the day", () => {
+	// The whole point of docs/adr/0059: the day you ticked a recurring task
+	// keeps a done row standing on it, instead of watching the only row roll
+	// away and leave the day claiming the task was never done.
+	it("keeps a completed recurring task on the day, ticked", () => {
 		const t = task({
 			id: "r",
 			title: "Weekly",
@@ -337,7 +347,8 @@ describe("applyDayIntent", () => {
 			ctx,
 		);
 		expect(next.allDay).toHaveLength(0);
-		expect(next.open).toHaveLength(0);
+		expect(next.open).toHaveLength(1);
+		expect(next.open[0]?.status).toBe("done");
 	});
 
 	it("moves a row into Top 3 when starred", () => {

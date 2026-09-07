@@ -17,7 +17,7 @@ export type ApplyContext = {
 	/**
 	 * Which day a ☆ toggle pins to. Defaults to todayIso. Today's day navigation
 	 * passes the day on screen — the two part company there, and only for the
-	 * star: a completed recurring task still rolls forward from the real today.
+	 * star: a recurring task's next occurrence is dated from the real today.
 	 */
 	top3DateIso?: string;
 	/** ISO instant for completed_at; defaults to now when omitted. */
@@ -45,34 +45,43 @@ function nowOf(ctx: Pick<ApplyContext, "nowIso">): string {
 	return ctx.nowIso ?? new Date().toISOString();
 }
 
-export type CompleteProjection =
-	| { rolled: true; due_date: string | null }
-	| { rolled: false; completed_at: string };
+/**
+ * What completing a task writes.
+ *
+ * Every completion closes its row, recurring included (docs/adr/0059). A
+ * recurring row additionally hands back `spawn` — the due date of the next
+ * occurrence, which the server materialises as a NEW row. The completed row
+ * keeps its history (title, notes, completed_at, the day it was starred for)
+ * and gives up its rule: `recurrence_rule` moves to the spawned row, so
+ * re-opening and re-ticking the old occurrence can never spawn a second one.
+ */
+export type CompleteProjection = {
+	completed_at: string;
+	/** Non-null only for a recurring row: the next occurrence to create. */
+	spawn: { due_date: string | null } | null;
+};
 
 /**
- * The one complete projector: recurrence rolls the due date and stays open;
- * everything else closes. Tasks-page cosmetics (clearTop3) sit outside this.
+ * The one complete projector. Tasks-page cosmetics (clearTop3) sit outside it.
  */
 export function nextCompleteFields(
 	task: { recurrence_rule: string | null; due_date: string | null },
 	ctx: Pick<ApplyContext, "todayIso" | "nowIso">,
 ): CompleteProjection {
 	// isRecurrenceRule, not isRecurrencePattern: a custom weekly rule must
-	// roll forward like any other. Guarding on the seven literals let an
-	// unknown rule fall through to "completed", so the optimistic tick showed
-	// the task closing and then snapped back when the server disagreed
-	// (shape plan §06).
-	if (task.recurrence_rule && isRecurrenceRule(task.recurrence_rule)) {
-		return {
-			rolled: true,
-			due_date: nextDueDate({
-				currentDue: task.due_date,
-				rule: task.recurrence_rule,
-				todayIso: ctx.todayIso,
-			}),
-		};
-	}
-	return { rolled: false, completed_at: nowOf(ctx) };
+	// spawn like any other. Guarding on the seven literals let an unknown rule
+	// fall through to a plain close, silently ending the series (shape plan §06).
+	const spawn =
+		task.recurrence_rule && isRecurrenceRule(task.recurrence_rule)
+			? {
+					due_date: nextDueDate({
+						currentDue: task.due_date,
+						rule: task.recurrence_rule,
+						todayIso: ctx.todayIso,
+					}),
+				}
+			: null;
+	return { completed_at: nowOf(ctx), spawn };
 }
 
 export function projectComplete(
@@ -80,8 +89,13 @@ export function projectComplete(
 	ctx: Pick<ApplyContext, "todayIso" | "nowIso">,
 ): TaskRow {
 	const fields = nextCompleteFields(task, ctx);
-	if (fields.rolled) return { ...task, due_date: fields.due_date };
-	return { ...task, status: "done", completed_at: fields.completed_at };
+	return {
+		...task,
+		status: "done",
+		completed_at: fields.completed_at,
+		// The rule leaves with the spawned occurrence.
+		recurrence_rule: fields.spawn ? null : task.recurrence_rule,
+	};
 }
 
 /**
@@ -91,6 +105,10 @@ export function projectComplete(
  * `clearTop3` is true on the Tasks page only — a shortlist cosmetic the server
  * never writes. Clearing it on Today would flash a starred row out of Top 3
  * and back in on the next RSC render (docs/adr/0038).
+ *
+ * The spawned occurrence is deliberately NOT projected here: it is a server-
+ * generated row with a server-generated id, so the optimistic pass closes the
+ * ticked row and lets the RSC payload deliver its successor.
  */
 export function completeTaskFields(
 	task: TaskRow,
@@ -117,7 +135,7 @@ export function setTop3Fields(task: TaskRow, starred: boolean, forDateIso: strin
 
 /**
  * Project open+done lists for the Tasks page after an intent.
- * Pure — same recurrence roll math as completeTask (lib/recurrence.nextDueDate).
+ * Pure — same next-occurrence math as completeTask (lib/recurrence.nextDueDate).
  */
 export function applyTaskLists(lists: TaskLists, intent: TaskIntent, ctx: ApplyContext): TaskLists {
 	switch (intent.type) {
@@ -150,14 +168,9 @@ export function applyTaskLists(lists: TaskLists, intent: TaskIntent, ctx: ApplyC
 			const task = findIn(lists.open, intent.id) ?? findIn(lists.done, intent.id);
 			if (!task) return lists;
 
+			// Every completion closes, recurring included. The next occurrence is a
+			// separate row the server creates; it arrives with the RSC payload.
 			const next = completeTaskFields(task, ctx, { clearTop3: true });
-			if (next.status === "open") {
-				// Recurrence roll — stays open with a new due date.
-				return {
-					open: mapId(lists.open, intent.id, () => next),
-					done: withoutId(lists.done, intent.id),
-				};
-			}
 			return {
 				open: withoutId(lists.open, intent.id),
 				done: [next, ...withoutId(lists.done, intent.id)].slice(0, 10),
@@ -170,7 +183,9 @@ export function applyTaskLists(lists: TaskLists, intent: TaskIntent, ctx: ApplyC
  * Project a flat day-task list after an intent, in place.
  *
  * Completing a task does NOT drop it: Today's bands keep the day's finished
- * work on screen (docs/adr/0038). Re-band via applyDayIntent in day-schedule.
+ * work on screen (docs/adr/0038) — which is now also what makes a past day
+ * honest about a recurring task that was ticked on it. Re-band via
+ * applyDayIntent in day-schedule.
  */
 export function applyDayTaskList(
 	tasks: TaskRow[],

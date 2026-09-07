@@ -22,14 +22,16 @@ beforeEach(() => {
 
 const TODAY = "2026-07-15";
 
-// Minimal chainable stub covering exactly the two call shapes completeTask
-// uses: .from().select().eq().maybeSingle() (via getTask) and
-// .from().update().eq()…​.select() (the preconditioned mutation). Records every
-// update() patch and every predicate so tests can assert on wiring without a
+// Minimal chainable stub covering exactly the call shapes completeTask uses:
+// .from().select().eq().maybeSingle() (via getTaskHot), the preconditioned
+// .from().update().eq()…​.select() mutation, and .from().insert().select()
+// .single() (the spawned occurrence). Records every update() patch, every
+// insert() payload and every predicate so tests can assert on wiring without a
 // real database. `updated` is what the UPDATE…RETURNING resolves to — an empty
 // array is a precondition that matched nothing.
 function stubSupabase(row: Record<string, unknown>, updated: unknown[] = [{ id: row.id }]) {
 	const updatePatches: Array<Record<string, unknown>> = [];
+	const inserts: Array<Record<string, unknown>> = [];
 	const predicates: Array<{ op: string; col: string; value: unknown }> = [];
 
 	const sb = {
@@ -39,6 +41,17 @@ function stubSupabase(row: Record<string, unknown>, updated: unknown[] = [{ id: 
 					maybeSingle: vi.fn(async () => ({ data: row, error: null })),
 				})),
 			})),
+			insert: vi.fn((payload: Record<string, unknown>) => {
+				inserts.push(payload);
+				return {
+					select: vi.fn(() => ({
+						single: vi.fn(async () => ({
+							data: { ...payload, id: "spawned" },
+							error: null,
+						})),
+					})),
+				};
+			}),
 			update: vi.fn((patch: Record<string, unknown>) => {
 				updatePatches.push(patch);
 				// biome-ignore lint/suspicious/noExplicitAny: hand-rolled test double
@@ -57,28 +70,41 @@ function stubSupabase(row: Record<string, unknown>, updated: unknown[] = [{ id: 
 		})),
 	} as unknown as SupabaseClient;
 
-	return { sb, updatePatches, predicates };
+	return { sb, updatePatches, inserts, predicates };
 }
 
 describe("completeTask", () => {
-	it("rolls due_date forward and touches nothing else for a recurring task", async () => {
-		const { sb, updatePatches } = stubSupabase({
+	// docs/adr/0059: a recurring tick closes the row it landed on and creates
+	// the next occurrence beside it, so the day it was ticked keeps a done row.
+	it("closes a recurring task and spawns the next occurrence", async () => {
+		const { sb, updatePatches, inserts } = stubSupabase({
 			id: "task-1",
+			title: "Weekly",
 			recurrence_rule: "weekly",
 			due_date: "2026-07-10",
 		});
 
 		const result = await completeTask(sb, "task-1", TODAY, { dueDate: "2026-07-10" });
 
-		expect(result).toMatchObject({ rolled: true, applied: true });
+		expect(result).toMatchObject({ spawned: true, applied: true, nextDue: "2026-07-22" });
 		expect(updatePatches).toHaveLength(1);
-		expect(updatePatches[0]).toHaveProperty("due_date");
-		expect(updatePatches[0]).not.toHaveProperty("status");
-		expect(updatePatches[0]).not.toHaveProperty("completed_at");
+		expect(updatePatches[0]).toMatchObject({ status: "done" });
+		expect(updatePatches[0].completed_at).toEqual(expect.any(String));
+		// The closed occurrence keeps no rule — re-ticking it can never fork the
+		// series, because the rule now lives on the row that was just created.
+		expect(updatePatches[0]).toMatchObject({ recurrence_rule: null });
+		// The due date is the successor's business; the closed row keeps its own.
+		expect(updatePatches[0]).not.toHaveProperty("due_date");
+		expect(inserts).toHaveLength(1);
+		expect(inserts[0]).toMatchObject({
+			title: "Weekly",
+			due_date: "2026-07-22",
+			recurrence_rule: "weekly",
+		});
 	});
 
 	it("sets status done and completed_at for a non-recurring task", async () => {
-		const { sb, updatePatches } = stubSupabase({
+		const { sb, updatePatches, inserts } = stubSupabase({
 			id: "task-2",
 			recurrence_rule: null,
 			due_date: "2026-07-10",
@@ -86,18 +112,18 @@ describe("completeTask", () => {
 
 		const result = await completeTask(sb, "task-2", TODAY, { dueDate: "2026-07-10" });
 
-		expect(result).toMatchObject({ rolled: false, applied: true });
+		expect(result).toMatchObject({ spawned: false, applied: true });
 		expect(updatePatches).toHaveLength(1);
-		expect(updatePatches[0]).toMatchObject({ status: "done" });
+		expect(updatePatches[0]).toMatchObject({ status: "done", recurrence_rule: null });
 		expect(updatePatches[0].completed_at).toEqual(expect.any(String));
+		expect(inserts).toHaveLength(0);
 	});
 
-	// A recurring "daily 09:00" task keeps its 09:00 across every roll —
-	// getTaskHot doesn't even select due_time, and the update patch below only
-	// ever writes due_date, so there is nothing in this path that could touch it.
-	it("preserves due_time when rolling a recurring task forward", async () => {
-		const { sb, updatePatches } = stubSupabase({
+	// A recurring "daily 09:00" task keeps its 09:00 across every occurrence.
+	it("carries due_time onto the spawned occurrence", async () => {
+		const { sb, inserts } = stubSupabase({
 			id: "task-3",
+			title: "Meds",
 			recurrence_rule: "daily",
 			due_date: "2026-07-10",
 			due_time: "09:00:00",
@@ -105,13 +131,41 @@ describe("completeTask", () => {
 
 		const result = await completeTask(sb, "task-3", TODAY, { dueDate: "2026-07-10" });
 
-		expect(result).toMatchObject({ rolled: true });
-		expect(updatePatches).toHaveLength(1);
-		expect(updatePatches[0]).toHaveProperty("due_date");
-		expect(updatePatches[0]).not.toHaveProperty("due_time");
+		expect(result).toMatchObject({ spawned: true });
+		expect(inserts[0]).toMatchObject({ due_time: "09:00:00" });
 	});
 
-	// ── The replay guard (docs/adr/0037) ────────────────────────────────────
+	// The star follows the series rather than the finished row: a task pinned to
+	// the day you ticked it comes back pinned to the day it is next due.
+	it("moves a star onto the spawned occurrence's due date", async () => {
+		const { sb, inserts } = stubSupabase({
+			id: "task-8",
+			title: "Weekly",
+			recurrence_rule: "weekly",
+			due_date: "2026-07-10",
+			top3_for_date: TODAY,
+		});
+
+		await completeTask(sb, "task-8", TODAY, { dueDate: "2026-07-10" });
+
+		expect(inserts[0]).toMatchObject({ top3_for_date: "2026-07-22" });
+	});
+
+	it("spawns an unstarred occurrence when the completed one was not starred", async () => {
+		const { sb, inserts } = stubSupabase({
+			id: "task-9",
+			title: "Weekly",
+			recurrence_rule: "weekly",
+			due_date: "2026-07-10",
+			top3_for_date: null,
+		});
+
+		await completeTask(sb, "task-9", TODAY, { dueDate: "2026-07-10" });
+
+		expect(inserts[0]).toMatchObject({ top3_for_date: null });
+	});
+
+	// ── The replay guard (docs/adr/0037, tightened by 0043) ──────────────────
 
 	it("carries the observed due_date as an UPDATE predicate", async () => {
 		const { sb, predicates } = stubSupabase({
@@ -140,19 +194,32 @@ describe("completeTask", () => {
 		expect(predicates).not.toContainEqual({ op: "eq", col: "due_date", value: null });
 	});
 
-	// The headline case: a second click lands after the first already rolled
-	// the occurrence forward. The precondition matches nothing, so the due date
-	// is not advanced a second interval — and it is a no-op, not an error.
+	// The headline case, and the reason the insert is gated on the close having
+	// moved a row: a second click that matched nothing must not leave a
+	// duplicate occurrence behind.
 	it("makes a replayed complete against a moved occurrence a no-op", async () => {
-		const { sb, updatePatches } = stubSupabase(
+		const { sb, updatePatches, inserts } = stubSupabase(
 			{ id: "task-6", recurrence_rule: "weekly", due_date: "2026-07-17" },
 			[],
 		);
 
 		const result = await completeTask(sb, "task-6", TODAY, { dueDate: "2026-07-10" });
 
-		expect(result).toMatchObject({ rolled: true, applied: false });
+		expect(result).toMatchObject({ spawned: false, applied: false });
 		expect(updatePatches).toHaveLength(1); // attempted once, never retried
+		expect(inserts).toHaveLength(0);
+	});
+
+	it("guards a recurring close on status=open", async () => {
+		const { sb, predicates } = stubSupabase({
+			id: "task-10",
+			recurrence_rule: "weekly",
+			due_date: null,
+		});
+
+		await completeTask(sb, "task-10", TODAY, { dueDate: null });
+
+		expect(predicates).toContainEqual({ op: "eq", col: "status", value: "open" });
 	});
 
 	it("guards a non-recurring close on status=open", async () => {

@@ -57,7 +57,7 @@ describe("toastTaskToggle", () => {
 			}),
 			TODAY,
 		);
-		expect(toastSuccessMock).toHaveBeenCalledWith("Done", "due in 7d");
+		expect(toastSuccessMock).toHaveBeenCalledWith("Done", "Next due in 7d");
 	});
 
 	it("toasts Reopened as a neutral notice", () => {

@@ -12,10 +12,10 @@ const DEFAULT_ERROR = "Couldn't update that task. Try again.";
 export type TaskIntentRun = (intent: TaskIntent, action: () => Promise<unknown>) => boolean;
 
 /**
- * Recurring complete does not close the row — the checkbox springs back
- * (docs/adr/0037). The due-date label is the only other signal and is easy
- * to miss, so the success pill is the confirmation. Fired on claim, not
- * after the server round-trip, so the pill lands with the optimistic tick.
+ * A recurring tick closes the row you clicked and creates the next occurrence
+ * elsewhere (docs/adr/0059). The checkbox now stays ticked, so the pill's job
+ * is to name where the series went next. Fired on claim, not after the server
+ * round-trip, so it lands with the optimistic tick.
  */
 export function toastTaskToggle(
 	kind: "complete" | "reopen",
@@ -27,8 +27,8 @@ export function toastTaskToggle(
 		return;
 	}
 	const next = nextCompleteFields(task, { todayIso });
-	if (next.rolled && next.due_date) {
-		toastSuccess("Done", formatDueLabel(next.due_date, todayIso));
+	if (next.spawn?.due_date) {
+		toastSuccess("Done", `Next ${formatDueLabel(next.spawn.due_date, todayIso)}`);
 		return;
 	}
 	toastSuccess("Done");
@@ -74,7 +74,7 @@ export type TaskWriteActions = {
 	complete: (input: {
 		id: string;
 		observedDueDate: string | null;
-	}) => Promise<{ rolled: boolean; nextDue: string | null; applied: boolean }>;
+	}) => Promise<{ spawned: boolean; nextDue: string | null; applied: boolean }>;
 	reopen: (id: string) => Promise<void>;
 	setTop3: (input: { id: string; starred: boolean; forDateIso?: string }) => Promise<void>;
 	delete?: (id: string) => Promise<void>;
@@ -83,7 +83,7 @@ export type TaskWriteActions = {
 /**
  * Bind a row's checkbox / star / delete to intent + preconditioned actions.
  * `top3DateIso` is the day the star pins to (today on Tasks; day on screen on Today).
- * `todayIso` is the real calendar today — recurrence rolls from it, not the day on screen.
+ * `todayIso` is the real calendar today — a spawned occurrence is dated from it, not the day on screen.
  */
 export function bindTaskHandlers(
 	task: TaskRow,
