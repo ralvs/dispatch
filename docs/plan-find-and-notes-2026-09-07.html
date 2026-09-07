@@ -164,13 +164,13 @@
   <h1>Find, and two note instruments</h1>
   <p class="lede">
     Three things, one pass. A way to find a task — in its title <em>or</em> its notes — or a sentence inside a note.
-    A Grok-style section widget on the left of a note: equal ticks, a hover pill, chevrons.
+    Grok’s tick rail, copied onto the note: inside the note box, right edge, ticks sized by block height.
     Colour on a selected word, from the app palette, including orange, yellow and red.
   </p>
   <div class="callout">
-    <strong>This is a plan, not a build.</strong> Revised after the owner’s Grok screenshots
-    and three corrections: Find must read <code>tasks.notes</code>; ink may use accent / yellow / red
-    inside a note; the tape is Grok’s tick widget, not a proportional minimap.
+    <strong>This is a plan, not a build.</strong> The tick rail now follows the owner’s Grok.com spec
+    verbatim: inside the note column, right edge, proportional ticks, hover wave, preview pill.
+    The last draft put a separate stack on the left. That is the thing being corrected.
   </div>
 </header>
 
@@ -181,11 +181,11 @@
     <tr><td class="n">D1</td><td>The new surface is <strong>Find</strong>, a palette, not a page</td><td>⌘K. Same Dialog primitive as Capture. Not a third header pill.</td><td><span class="pill do">locked</span></td></tr>
     <tr><td class="n">D2</td><td>v1 corpus is tasks and notes</td><td>Task <code>title</code> <strong>and</strong> <code>notes</code>. Note <code>title</code> and <code>body</code>. The link picker’s title-only search is not this.</td><td><span class="pill do">locked</span></td></tr>
     <tr><td class="n">D3</td><td>“Smart” means ranked substring, not a model</td><td>Title hits beat body/notes hits. A snippet. No embeddings. Chat stays Ask.</td><td><span class="pill do">locked</span></td></tr>
-    <tr><td class="n">D4</td><td>The section widget is Grok’s ticks, on the left</td><td>Equal dashes, one per heading. Hover pill with the heading text. Chevrons. Overlay, not a layout column. Not a minimap.</td><td><span class="pill do">locked</span></td></tr>
+    <tr><td class="n">D4</td><td>The tick rail is Grok’s, inside the note box</td><td>Right edge of the prose column. One tick per top-level block. Height ∝ rendered block. Hover wave + preview pill. Spec below is the build contract.</td><td><span class="pill do">locked</span></td></tr>
     <tr><td class="n">D5</td><td>Text colour is a palette slug, never a hex</td><td>Nine domain slots <strong>plus</strong> <code>accent</code> and <code>error</code>. Chrome collision does not apply inside a note.</td><td><span class="pill do">locked</span></td></tr>
     <tr><td class="n">D6</td><td>Colour round-trips as one allowlisted HTML span</td><td><code>&lt;span data-ink="health"&gt;…&lt;/span&gt;</code> in the stored markdown. ADR-0009 is amended, not replaced.</td><td><span class="pill do">locked</span></td></tr>
     <tr><td class="n">D7</td><td>Colour UI is a selection bubble, not a toolbar</td><td>Select a word, eleven dots appear. Markdown shortcuts still own bold/italic.</td><td><span class="pill do">locked</span></td></tr>
-    <tr><td class="n">D8</td><td>Zero migrations</td><td>Find is a read. Tape is layout. Colour lives in <code>notes.body</code>.</td><td><span class="pill do">locked</span></td></tr>
+    <tr><td class="n">D8</td><td>Zero migrations</td><td>Find is a read. Ticks are overlay. Colour lives in <code>notes.body</code>.</td><td><span class="pill do">locked</span></td></tr>
   </tbody>
 </table>
 </div>
@@ -273,62 +273,131 @@
 
 
 <section class="point">
-  <h2><span class="num">03</span> The section ticks</h2>
-  <p class="sub">The first draft of this plan drew a proportional minimap: long section, long mark, heading depth as inset. That is not the widget. The owner’s Grok screenshots are the spec. Copy that instrument. Put it on the left of the note, because the right is already the links rail.</p>
+  <h2><span class="num">03</span> The tick rail — Grok’s, on a note</h2>
+  <p class="sub">The last figure put the ticks in a separate stack to the left of the note. That reads as another section. The owner’s spec is Grok.com’s conversation tick rail, copied. The chat column becomes the note box. The spec below is the build contract. Do not re-interpret it into a TOC or a minimap column.</p>
 
-  <h3>What the screenshots actually are</h3>
-  <p>At rest: a vertical stack of short equal dashes on the far edge, one per section. No labels. No chevrons. Quiet ink-4 lines, a couple of pixels thick, maybe 16px wide. The current section is a slightly brighter dash, not a different shape.</p>
-  <p>On hover of the stack: chevrons appear above and below, and the dash under the pointer grows a rounded pill to its side with a snippet of that section — in Grok, the first line of the turn. Click the dash or the pill, that section comes to you. Click a chevron, previous / next section.</p>
-  <p>It is an overlay in the margin. It does not take a grid column. It does not scale with section length. It does not indent by heading level. Those three were the last draft, and they are out.</p>
+  <div class="two">
+    <div class="pane">
+      <h4>Wrong — last draft</h4>
+      <ul>
+        <li>A stack sitting <em>beside</em> the note, as its own column.</li>
+        <li>Equal-height dashes.</li>
+        <li>One tick per heading, paragraphs merged under it.</li>
+        <li>Left of the measure, because the links rail is on the right.</li>
+      </ul>
+    </div>
+    <div class="pane">
+      <h4>Right — this spec</h4>
+      <ul>
+        <li>Ticks live <em>inside</em> the note box, on its right edge, next to the text.</li>
+        <li>Tick height ∝ that block’s rendered height.</li>
+        <li>One tick per top-level block. Do not merge.</li>
+        <li>The links rail stays a sibling. The page scrollbar is not this rail.</li>
+      </ul>
+    </div>
+  </div>
 
   <figure>
     <div class="fig-body">
-      <svg viewBox="0 0 720 360" role="img" aria-label="Note page with Grok-style ticks on the left: equal dashes, hover pill with the heading, chevrons, prose, and the links rail on the right.">
-        <!-- ticks + chevrons, left overlay -->
-        <text x="36" y="88" font-size="11" fill="var(--ink-4)" text-anchor="middle">⌃</text>
-        <rect x="24" y="102" width="24" height="2.5" rx="1" fill="var(--ink-4)"/>
-        <rect x="24" y="116" width="24" height="2.5" rx="1" fill="var(--ink)"/>
-        <rect x="24" y="130" width="24" height="2.5" rx="1" fill="var(--ink-4)"/>
-        <rect x="24" y="144" width="24" height="2.5" rx="1" fill="var(--ink-4)"/>
-        <text x="36" y="168" font-size="11" fill="var(--ink-4)" text-anchor="middle">⌄</text>
+      <svg viewBox="0 0 720 380" role="img" aria-label="Note box with Grok-style proportional ticks on the right edge inside the box. Hover pill sits left of the ticks. Links rail is a sibling further right.">
+        <!-- THE NOTE BOX — ticks are inside it -->
+        <rect x="24" y="20" width="460" height="340" rx="10" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="40" y="48" font-size="16" font-weight="500" fill="var(--ink)">Plano de saúde 2026</text>
+        <text x="40" y="80" font-size="13" font-weight="500" fill="var(--ink)">Cobertura</text>
+        <rect x="40" y="92" width="360" height="5" rx="2" fill="var(--line)"/>
+        <rect x="40" y="106" width="330" height="5" rx="2" fill="var(--line)"/>
+        <rect x="40" y="120" width="348" height="5" rx="2" fill="var(--line)"/>
+        <rect x="40" y="134" width="300" height="5" rx="2" fill="var(--line)"/>
+        <rect x="40" y="148" width="340" height="5" rx="2" fill="var(--line)"/>
+        <text x="40" y="184" font-size="13" font-weight="500" fill="var(--ink)">Dentista</text>
+        <rect x="40" y="196" width="280" height="5" rx="2" fill="var(--line)"/>
+        <rect x="40" y="210" width="310" height="5" rx="2" fill="var(--line)"/>
+        <text x="40" y="344" font-size="10" class="mono" fill="var(--ink-4)">note box · measure-prose · ticks live in here</text>
 
-        <!-- hover pill to the right of the ticks -->
-        <rect x="56" y="100" width="168" height="36" rx="18" fill="var(--surface-2)" stroke="var(--line-strong)"/>
-        <text x="140" y="122" font-size="12.5" fill="var(--ink)" text-anchor="middle">Cobertura</text>
+        <!-- hover pill INSIDE the box, left of ticks -->
+        <rect x="248" y="108" width="168" height="44" rx="12" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+        <text x="264" y="126" font-size="11" fill="var(--ink-3)">Paragraph · 3/7</text>
+        <text x="264" y="142" font-size="12" fill="var(--ink)">cobertura do dentista…</text>
 
-        <!-- prose -->
-        <rect x="240" y="24" width="250" height="312" rx="8" fill="var(--surface)" stroke="var(--line)"/>
-        <text x="256" y="52" font-size="16" font-weight="500" fill="var(--ink)">Plano de saúde 2026</text>
-        <text x="256" y="88" font-size="13" font-weight="500" fill="var(--ink)">Cobertura</text>
-        <rect x="256" y="100" width="210" height="6" rx="2" fill="var(--line)"/>
-        <rect x="256" y="114" width="190" height="6" rx="2" fill="var(--line)"/>
-        <rect x="256" y="128" width="200" height="6" rx="2" fill="var(--line)"/>
-        <text x="256" y="168" font-size="13" font-weight="500" fill="var(--ink-3)">Dentista</text>
-        <rect x="256" y="180" width="170" height="6" rx="2" fill="var(--line)"/>
-        <rect x="256" y="194" width="185" height="6" rx="2" fill="var(--line)"/>
-        <text x="256" y="314" font-size="11" class="mono" fill="var(--ink-4)">65ch · measure-prose</text>
+        <!-- chevrons + proportional ticks on RIGHT EDGE of the box -->
+        <text x="456" y="48" font-size="10" fill="var(--ink-4)" text-anchor="middle">⌃</text>
+        <!-- title: short -->
+        <rect x="452" y="58" width="2" height="10" rx="1" fill="var(--ink-4)"/>
+        <!-- heading: short -->
+        <rect x="452" y="72" width="2" height="8" rx="1" fill="var(--ink-4)"/>
+        <!-- long paragraph: tall, active, slightly shifted left (hover wave) -->
+        <rect x="448" y="84" width="3" height="56" rx="1.5" fill="var(--ink)"/>
+        <!-- short para -->
+        <rect x="452" y="144" width="2" height="12" rx="1" fill="var(--ink-4)"/>
+        <!-- heading -->
+        <rect x="452" y="160" width="2" height="8" rx="1" fill="var(--ink-4)"/>
+        <!-- medium para -->
+        <rect x="452" y="172" width="2" height="28" rx="1" fill="var(--ink-4)"/>
+        <!-- short -->
+        <rect x="452" y="204" width="2" height="10" rx="1" fill="var(--ink-4)"/>
+        <text x="456" y="230" font-size="10" fill="var(--ink-4)" text-anchor="middle">⌄</text>
 
-        <!-- rail -->
-        <rect x="506" y="24" width="198" height="312" rx="8" fill="var(--surface)" stroke="var(--line)"/>
-        <text x="522" y="48" font-size="11" class="mono" letter-spacing="1.1" fill="var(--ink-4)">LINKED</text>
-        <rect x="522" y="62" width="166" height="28" rx="6" fill="var(--surface-2)"/>
-        <text x="534" y="80" font-size="12" fill="var(--ink-2)">Marcar dentista</text>
-        <text x="605" y="348" font-size="9" class="mono" fill="var(--ink-4)" text-anchor="middle">rail 260 · untouched</text>
+        <!-- LINKS RAIL — sibling, not the tick rail -->
+        <rect x="504" y="20" width="196" height="340" rx="10" fill="var(--surface)" stroke="var(--line)"/>
+        <text x="520" y="44" font-size="11" class="mono" letter-spacing="1.1" fill="var(--ink-4)">LINKED</text>
+        <rect x="520" y="58" width="164" height="28" rx="6" fill="var(--surface-2)"/>
+        <text x="532" y="76" font-size="12" fill="var(--ink-2)">Marcar dentista</text>
+        <text x="602" y="372" font-size="9" class="mono" fill="var(--ink-4)" text-anchor="middle">links rail · sibling · not the ticks</text>
       </svg>
     </div>
-    <figcaption>Hover state, copied from the Grok shots. At rest the chevrons and the pill are gone — only the dashes remain, as in the second screenshot. The links rail does not move.</figcaption>
+    <figcaption>The ticks sit on the right edge of the note box, inside it, next to the text. Long block, long tick. The 260px links rail is a different column. The page scrollbar is not drawn because this rail must never cover it.</figcaption>
   </figure>
 
-  <h3>What a “section” is, on a note</h3>
-  <p>Grok’s unit is a chat turn. A note’s unit is a heading: the title, then every <code>#</code> / <code>##</code> / <code>###</code> in the body. The pill shows that heading’s text, truncated. A note with no headings has one tick (the title) and the widget hides — a stack of one is not a navigator.</p>
-  <p>It still hides when the whole note fits in the viewport. Chevrons with nowhere to go are chrome.</p>
+  <h3>Placement</h3>
+  <ul>
+    <li>Fixed to the <strong>right edge of the note column</strong> (<code>.measure-prose</code> / the editor article). Inside that box. Not over the page scrollbar. Not in the links rail. Not a sibling column to the left.</li>
+    <li>Rail width ~8–12px. Hit strip ~16–24px. Text to the left stays selectable — the hit strip must not steal clicks on words.</li>
+    <li>Hide / fade when the note column is under ~768px. Phone does not get a cramped rail.</li>
+    <li>Rail height = the <em>visible</em> note viewport, not the full document. The ticks map the whole note onto that viewport height, the same way Grok maps the whole transcript onto the visible chat pane.</li>
+  </ul>
 
-  <h3>Left, overlay, not a column</h3>
-  <p>Grok parks this on the right because a chat has empty margin there. A Dispatch note already spends that margin on the 260px rail (ADR-0047). The widget sits in the left padding of the note column, overlay, sticky with the editor. It must not shrink the 65ch. On a phone the same overlay: dashes only, tap jumps, no hover pill (there is no hover). Chevrons may appear while a finger is down on the stack.</p>
+  <h3>Nodes — what a “message” is, on a note</h3>
+  <p>Grok: one tick per eligible bubble, user and assistant separate, never merge a turn. A note has one author, so the dimmer-for-assistant rule has nothing to colour. The unit that must not be merged is the <strong>top-level block</strong>.</p>
+  <ul>
+    <li><strong>Include:</strong> the title input; every top-level TipTap block in the body — heading, paragraph, list, task list, blockquote. Each is one tick. A long paragraph is a long tick; a heading is a short one.</li>
+    <li><strong>Exclude:</strong> empty paragraphs (the <code>&amp;nbsp;</code> blank-line hack), the attachment strip, the source/domain meta line, the Resolve/Delete row, the links rail. Those are chrome, not content. Analogous to Grok’s thinking shells, tool rows, system markers.</li>
+    <li><strong>Do not merge</strong> the paragraphs under a heading into one tick. That was the last draft. It is the “turn-merged ticks” the spec forbids.</li>
+    <li>Tick id = a stable block id (ProseMirror pos at last recalc, or a data attribute written onto the rendered node). Scroll target = that node. <code>block: start</code>. Short focus ring.</li>
+  </ul>
+
+  <h3>Tick size — this is the Grok look</h3>
+  <p>Width: 2px inactive, ~3px active. Height is proportional to that block’s rendered height in the note:</p>
+  <p><code>h = clamp(minH, maxH, blockHeight / totalContentHeight * railInnerHeight)</code></p>
+  <p>Then a minimum gap (~2–4px). If ticks would collide, shrink all proportionally, never below minH (~4–6px). Long replies = long ticks. Short prompts = short ticks. Rounded rect. Same shape for every block. Active = higher contrast only — no second colour, no heading-vs-paragraph colour. No labels on the rail.</p>
+  <p>This formula is a pure helper with unit tests. The last two drafts argued about equal vs proportional in prose. The helper ends the argument.</p>
+
+  <h3>Active state</h3>
+  <ul>
+    <li>Reading line = ~viewport top + 25–35% of the visible note pane (clamp near the bottom on the last block).</li>
+    <li>Highlight the tick whose block rect contains that line.</li>
+    <li>While the owner is free-scrolling <code>#main</code>, active follows scroll.</li>
+    <li>Programmatic next/prev uses a cursor lock so a tall block does not snap the highlight back mid-jump.</li>
+  </ul>
+
+  <h3>Hover / motion</h3>
+  <ul>
+    <li>Default: ticks idle. No titles. No chevrons.</li>
+    <li>Hover the rail: ticks within ~40–80px of the cursor translate 2–4px <strong>left</strong> (toward the text) with distance falloff. Spring ~180ms. The rail is on the right, so “toward content” is left — the spec’s direction only makes sense here.</li>
+    <li>Hovered tick shows a floating preview, anchored to that tick, not the cursor: role (<code>Heading</code> / <code>Paragraph</code> / <code>List</code>) + 1–2 line snippet + index/total. <code>role="tooltip"</code>.</li>
+    <li><code>prefers-reduced-motion</code>: no wave, instant highlight, no spring.</li>
+  </ul>
+
+  <h3>Interaction</h3>
+  <ul>
+    <li>Click tick → scroll that block into view (<code>block: start</code>).</li>
+    <li>Optional ↑/↓ next to the rail, previous/next in list order. Show them on rail hover, the way Grok does. They are extra, not the rail.</li>
+    <li>Ticks are <code>&lt;button&gt;</code>. <code>aria-label = "{Heading|Paragraph|List}: {preview}"</code>. <code>aria-current</code> on the active tick.</li>
+    <li>Recalc on resize, on editor update, and after images change height (<code>ResizeObserver</code> on the editor root). Attachments that live outside the editor do not get ticks and do not enter the height math.</li>
+    <li>The note is not a virtual list. No <code>scrollToIndex</code> path. Do not querySelector a node that is not mounted.</li>
+  </ul>
 
   <h3>How it is built</h3>
-  <p>A client companion of <code>NoteEditor</code>. On update, collect the title plus every heading node. Equal ticks, in document order, not mapped to rendered height. Scroll-spy against <code>#main</code> (the shell is the scroller, ADR-0028) lights the current dash. Click / chevron calls <code>scrollIntoView</code>. Hover of a dash opens the pill. <code>prefers-reduced-motion</code> jumps, it does not smooth-scroll.</p>
-  <p>The stack is a list of links with <code>aria-label="Note sections"</code>. The pill is <code>role="tooltip"</code>. Keyboard users already have the headings in the body; the ticks are a pointing-device shortcut and stay out of the long tab path.</p>
+  <p>A client overlay mounted <em>inside</em> the <code>NoteEditor</code> article, not in <code>page.tsx</code>’s grid. <code>position: sticky</code> on the rail, right: 0 of the article, height = visible pane. A pure <code>layoutTicks(blocks, railInnerHeight)</code> helper owns the clamp / gap / shrink math and is unit-tested. Scroll-spy reads <code>#main</code> (ADR-0028). The links rail and the page scrollbar are not touched.</p>
 </section>
 
 
@@ -408,10 +477,12 @@
   <div class="skip"><span class="x">×</span><span class="t">Journal, quotes, people, links in v1</span><span class="r">Growth path: add a kind, add a query, add a group. Not this pass.</span></div>
   <div class="skip"><span class="x">×</span><span class="t">A formatting toolbar</span><span class="r">Bold and italic stay markdown shortcuts. The bubble is colour and clear, nothing else.</span></div>
   <div class="skip"><span class="x">×</span><span class="t">Highlight / background marks</span><span class="r">Asked for text colour. A marker is a different mark and a different stored tag.</span></div>
-  <div class="skip"><span class="x">×</span><span class="t">A proportional minimap</span><span class="r">The first draft. Long section ≠ long tick. Grok’s equal dashes plus a hover pill are the spec.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">A left sibling column</span><span class="r">The last draft. Ticks that sit beside the note read as another section. They belong inside the note box.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">Equal-size ticks</span><span class="r">The screenshots look even when the blocks are similar. The spec is proportional. Long block, long tick.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">Heading-merged ticks</span><span class="r">Do not fold paragraphs into their heading. One block, one tick. Same as “do not merge a turn.”</span></div>
   <div class="skip"><span class="x">×</span><span class="t">Colour as domain filing</span><span class="r">A green word is not Health. An orange word is not overdue. Filing is still the picker under the editor.</span></div>
-  <div class="skip"><span class="x">×</span><span class="t">A labelled outline / TOC</span><span class="r">The ticks stay unlabeled. The pill on hover is the name, the same way Grok names a turn.</span></div>
-  <div class="skip"><span class="x">×</span><span class="t">Moving the links rail</span><span class="r">ADR-0047 stands. Ticks overlay the left padding. The rail stays on the right.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">Permanent titles on the rail</span><span class="r">Idle rail is dashes only. The pill exists on hover, anchored to the tick.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">Covering the page scrollbar</span><span class="r">The rail is inside the note column. <code>#main</code> keeps its own scrollbar. The links rail is not this rail.</span></div>
   <div class="skip"><span class="x">×</span><span class="t">complete_task, morning push</span><span class="r">Still the right next product work. Not this file. Do not smuggle them in.</span></div>
 </section>
 
@@ -436,15 +507,14 @@
   </div>
 
   <div class="rec">
-    <div class="rec-head"><span class="rid">P2</span><h3>Section ticks</h3><span class="pill later">second</span></div>
-    <p class="why">Grok’s widget on the left of <code>/notes/[id]</code>: equal dashes, hover pill, chevrons. Overlay in the padding, not a new grid column. Hidden when there are fewer than two headings. Scroll-spy against <code>#main</code>. A short ADR so the next reader does not rebuild the minimap this plan just killed.</p>
+    <div class="rec-head"><span class="rid">P2</span><h3>Tick rail</h3><span class="pill later">second</span></div>
+    <p class="why">Grok’s rail, mounted <em>inside</em> <code>NoteEditor</code>, right edge of the article. Proportional ticks via a tested <code>layoutTicks</code> helper. Hover wave toward the text. Preview pill. Optional chevrons. Hidden under ~768px. Page grid and links rail do not change.</p>
     <ul class="files">
-      <li><span class="op new">new</span><span class="fp">app/(authed)/notes/[id]/section-ticks.tsx — dashes, pill, chevrons</span></li>
-      <li><span class="op new">new</span><span class="fp">a small heading-list helper + tests (title + heading nodes, document order)</span></li>
-      <li><span class="op mod">mod</span><span class="fp">app/(authed)/notes/[id]/note-editor.tsx — expose heading list</span></li>
-      <li><span class="op mod">mod</span><span class="fp">app/(authed)/notes/[id]/page.tsx — overlay host, grid unchanged</span></li>
+      <li><span class="op new">new</span><span class="fp">lib/note-ticks/layout.ts + layout.test.ts — clamp, gap, shrink-all, never below minH</span></li>
+      <li><span class="op new">new</span><span class="fp">app/(authed)/notes/[id]/tick-rail.tsx — overlay, buttons, pill, chevrons, ResizeObserver</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/notes/[id]/note-editor.tsx — host the rail inside the article; data attributes on blocks</span></li>
     </ul>
-    <div class="meta"><span><b>depends on</b> nothing</span><span><b>migration</b> none</span><span><b>needs ADR</b> 0060 — Grok ticks, not a minimap; rail untouched</span></div>
+    <div class="meta"><span><b>depends on</b> nothing</span><span><b>migration</b> none</span><span><b>needs ADR</b> 0060 — Grok tick rail inside the note box; the spec in §03 is the contract</span></div>
   </div>
 
   <div class="rec">
@@ -486,6 +556,7 @@
         <li><code>lib/schemas/color.ts</code> — the nine domain slugs stay. Ink adds <code>accent</code> and <code>error</code> at the ink layer, not as new domain slots.</li>
         <li><code>components/color-swatch-picker.tsx</code> — visual language to copy, not a component to reuse on a bubble (it is a form fieldset).</li>
         <li><code>#main</code> is the scroller. The ticks spy on that, not <code>window</code>.</li>
+        <li><code>NoteEditor</code> hosts the rail inside the article. <code>page.tsx</code>’s grid does not gain a column.</li>
       </ul>
     </div>
   </div>
@@ -511,8 +582,8 @@
 
 
 <footer>
-  <p>Plan for Find + Grok-style section ticks + ink marks. Not a build. Companion to <code>docs/plan-dispatch-shape-2026-08-21.html</code> in form, not in job: that plan removed. This one adds three instruments to a model that is already honest.</p>
-  <p>Revised 7 Sep 2026 from the owner’s Grok screenshots. Next: O1 / O2 if they still matter, then P1.</p>
+  <p>Plan for Find + Grok tick rail + ink marks. Not a build. Companion to <code>docs/plan-dispatch-shape-2026-08-21.html</code> in form, not in job.</p>
+  <p>Revised twice on 7 Sep 2026. Last correction: the rail is inside the note box, right edge, proportional ticks, per the Grok.com spec in §03. Next: O1 / O2 if they still matter, then P1.</p>
 </footer>
 
 </div>
