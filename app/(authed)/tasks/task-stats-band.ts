@@ -7,12 +7,12 @@ import {
 	shiftDay,
 } from "@/lib/dates";
 import type { TaskRow } from "@/lib/services/tasks";
-import { isWant } from "@/lib/task-predicates";
+import { isQuiet } from "@/lib/task-predicates";
 
 /**
  * The band /tasks carries below its header (ADR-0053).
  *
- * Open / overdue / today / wants already live on the status strip, so repeating
+ * Open / overdue / today / quiet already live on the status strip, so repeating
  * them here taught the same counts twice. These three are the ones you cannot
  * get by looking at the list: recent throughput, the week's dated load, and
  * how long the oldest still-open task has been sitting.
@@ -21,10 +21,12 @@ import { isWant } from "@/lib/task-predicates";
  * /routines and /domains.
  */
 export function taskStats(
-	open: Pick<TaskRow, "someday" | "due_date" | "created_at">[],
+	open: Pick<TaskRow, "due_date" | "project_id" | "created_at">[],
 	done: Pick<TaskRow, "completed_at">[],
 	todayIso: string,
 	tz: string,
+	/** Ids of projects that are not active — see lib/services/quiet.ts. */
+	quietProjectIds: ReadonlySet<string>,
 ): Stat[] {
 	const sinceDate = recentDoneSinceDate(todayIso);
 	const recentDone = done.filter(
@@ -32,7 +34,7 @@ export function taskStats(
 	).length;
 
 	const weekEnd = shiftDay(todayIso, 6);
-	const active = open.filter((t) => !isWant(t));
+	const active = open.filter((t) => !isQuiet(t, quietProjectIds));
 	const due7 = active.filter(
 		(t) => t.due_date !== null && t.due_date >= todayIso && t.due_date <= weekEnd,
 	).length;

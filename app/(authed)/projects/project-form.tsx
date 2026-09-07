@@ -4,7 +4,6 @@ import { CreateDialogButton } from "@/components/create-dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui";
 import type { DomainRow } from "@/lib/services/domains";
 import { createProjectAction } from "./actions";
-import { KINDS, PROJECT_TYPES } from "./constants";
 
 /**
  * Create a project — dialog behind the header's `+` (Gate B / B1, ADR-0043
@@ -41,24 +40,6 @@ export function ProjectCreateButton({ domains }: { domains: DomainRow[] }) {
 						{domains.map((d) => (
 							<option key={d.id} value={d.id}>
 								{d.name}
-							</option>
-						))}
-					</Select>
-				</Field>
-				<Field label="Type">
-					<Select name="type" defaultValue="">
-						{PROJECT_TYPES.map((t) => (
-							<option key={t.value} value={t.value}>
-								{t.label}
-							</option>
-						))}
-					</Select>
-				</Field>
-				<Field label="Kind">
-					<Select name="kind" defaultValue="project">
-						{KINDS.map((k) => (
-							<option key={k.value} value={k.value}>
-								{k.label}
 							</option>
 						))}
 					</Select>

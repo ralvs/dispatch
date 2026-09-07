@@ -11,6 +11,7 @@ import {
 	completeTask,
 	createTask,
 	listInboxTasks,
+	listTasks,
 	setTop3,
 	updateTask,
 } from "@/lib/services/tasks";
@@ -287,6 +288,11 @@ function stubBuilder(result: { data?: unknown; error?: unknown }) {
 			calls.push({ op: "is", payload: { col, value } });
 			return builder;
 		};
+		builder.neq = (col: string, value: unknown) => {
+			calls.push({ op: "neq", payload: { col, value } });
+			return builder;
+		};
+		builder.or = record("or");
 		builder.single = async () => result;
 		builder.maybeSingle = async () => result;
 		// biome-ignore lint/suspicious/noThenProperty: intentional thenable test double
@@ -396,5 +402,69 @@ describe("assignDomain", () => {
 
 		expect(calls[0]).toMatchObject({ op: "insert", payload: { domain_id: null } });
 		expect(calls).toContainEqual({ op: "update", payload: { domain_id: "dom-home" } });
+	});
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Quiet tasks: undated work in a project that is not active. The rule lives
+// on projects.status, so listTasks reads the quiet project ids first and then
+// negates "undated AND in a quiet project" in one PostgREST `or`.
+// ─────────────────────────────────────────────────────────────────────────
+
+/** Table-aware double: `projects` answers the quiet lookup, `tasks` the list. */
+function stubBoard(quietProjects: Array<{ id: string }>) {
+	const calls: Array<{ op: string; payload: unknown }> = [];
+	const from = vi.fn((table: string) => {
+		const result =
+			table === "projects" ? { data: quietProjects, error: null } : { data: [], error: null };
+		// biome-ignore lint/suspicious/noExplicitAny: hand-rolled test double
+		const builder: any = {};
+		const record = (op: string) => (payload: unknown) => {
+			calls.push({ op, payload });
+			return builder;
+		};
+		builder.select = () => builder;
+		builder.order = () => builder;
+		builder.eq = () => builder;
+		builder.is = () => builder;
+		builder.neq = () => builder;
+		builder.or = record("or");
+		// biome-ignore lint/suspicious/noThenProperty: intentional thenable test double
+		builder.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
+			Promise.resolve(result).then(resolve, reject);
+		return builder;
+	});
+	return { sb: { from } as unknown as SupabaseClient, calls };
+}
+
+describe("listTasks · excludeQuiet", () => {
+	it("keeps dated tasks, unprojected tasks, and tasks in active projects", async () => {
+		const { sb, calls } = stubBoard([{ id: "p-paused" }, { id: "p-archived" }]);
+
+		await listTasks(sb, { status: "open", excludeQuiet: true });
+
+		const or = calls.find((c) => c.op === "or");
+		expect(or).toBeDefined();
+		// A due date always wins; a task with no project is never quiet; a task
+		// in an active project is never quiet.
+		expect(or?.payload).toBe(
+			"due_date.not.is.null,project_id.is.null,project_id.not.in.(p-paused,p-archived)",
+		);
+	});
+
+	it("skips the filter entirely when every project is active", async () => {
+		const { sb, calls } = stubBoard([]);
+
+		await listTasks(sb, { status: "open", excludeQuiet: true });
+
+		expect(calls.some((c) => c.op === "or")).toBe(false);
+	});
+
+	it("does not touch the query when excludeQuiet is off", async () => {
+		const { sb, calls } = stubBoard([{ id: "p-paused" }]);
+
+		await listTasks(sb, { status: "open" });
+
+		expect(calls.some((c) => c.op === "or")).toBe(false);
 	});
 });

@@ -1,10 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ColorDot } from "@/components/color-dot";
-import { Badge, ListRow, rowTitle } from "@/components/ui";
+import { ListRow, rowTitle } from "@/components/ui";
 import type { ProjectRow } from "@/lib/services/projects";
 import type { TaskRow } from "@/lib/services/tasks";
-import { projectTypeLabel } from "./constants";
 
 /** Plan O5: open tasks only, up to five, then "+N more". */
 const INLINE_TASK_LIMIT = 5;
@@ -48,12 +47,7 @@ export function ProjectRowItem({
 			align="start"
 			leading={<ColorDot color={domainColor} hold />}
 			trailing={
-				project.type || addTask ? (
-					<div className="flex shrink-0 items-center gap-2">
-						{project.type ? <Badge tone="neutral">{projectTypeLabel(project.type)}</Badge> : null}
-						{addTask}
-					</div>
-				) : undefined
+				addTask ? <div className="flex shrink-0 items-center gap-2">{addTask}</div> : undefined
 			}
 		>
 			<Link href={`/projects/${project.id}`} className="block min-w-0 hover:text-accent-ink">

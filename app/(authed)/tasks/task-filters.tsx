@@ -2,7 +2,7 @@
 
 import { type ScopeOption, ScopeSelect } from "@/components/ui";
 
-export type TaskStatusFilter = "open" | "overdue" | "today" | "wants";
+export type TaskStatusFilter = "open" | "overdue" | "today" | "quiet";
 
 export type TaskFilterOption = ScopeOption;
 
@@ -32,23 +32,23 @@ export function TaskStatusStrip({
 	openCount,
 	overdueCount,
 	todayCount,
-	wantsCount,
+	quietCount,
 }: {
 	status: TaskStatusFilter;
 	onStatusChange: (status: TaskStatusFilter) => void;
 	openCount: number;
 	overdueCount: number;
 	todayCount: number;
-	/** Wants parked (shape plan §03) — excluded from every other reading here. */
-	wantsCount: number;
+	/** Quiet: open, undated tasks in projects that are not active — excluded from every other reading here. */
+	quietCount: number;
 }) {
 	const counts: { value: TaskStatusFilter; count: number; label: string }[] = [
 		{ value: "open", count: openCount, label: "open" },
 		{ value: "overdue", count: overdueCount, label: "overdue" },
 		{ value: "today", count: todayCount, label: "today" },
-		// Last, and never in the accent: a want is not late and never needs you
-		// (DESIGN.md, The One Orange Rule).
-		{ value: "wants", count: wantsCount, label: "wants" },
+		// Last, and never in the accent: a quiet task is not late and never needs
+		// you (DESIGN.md, The One Orange Rule).
+		{ value: "quiet", count: quietCount, label: "quiet" },
 	];
 
 	return (

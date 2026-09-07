@@ -30,7 +30,7 @@ import {
 	type TaskIntent,
 } from "@/lib/task-interaction/apply-intent";
 import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
-import { KINDS, kindLabel, PROJECT_TYPES, projectTypeLabel, statusLabel } from "../constants";
+import { statusLabel } from "../constants";
 import { archiveProjectAction, completeProjectAction, updateProjectAction } from "./actions";
 
 /** Flat-list projector — `applyTaskLists` caps done at 10 for the Tasks page. */
@@ -112,16 +112,13 @@ export function ProjectDetail({
 					← Projects
 				</Link>
 			</nav>
-			{/* Name is the title; type + status are facts (plain), the task
+			{/* Name is the title; status is the fact (plain), the task
 			    rollup the measure (Pass 4.5 Gate A). Domain rides the subtitle
 			    with its colour — the list row already settled that domain, not
 			    project colour, is the colour that leads. */}
 			<PageHeader
 				title={project.name}
-				facts={[
-					...(project.type ? [projectTypeLabel(project.type)] : []),
-					statusLabel(project.status),
-				]}
+				facts={[statusLabel(project.status)]}
 				measure={
 					optTasks.length > 0
 						? [{ count: `${doneTasks.length}/${optTasks.length}`, label: "tasks done" }]
@@ -164,24 +161,6 @@ export function ProjectDetail({
 										))}
 									</Select>
 								</Field>
-								<Field label="Type">
-									<Select name="type" defaultValue={project.type ?? ""}>
-										{PROJECT_TYPES.map((t) => (
-											<option key={t.value} value={t.value}>
-												{t.label}
-											</option>
-										))}
-									</Select>
-								</Field>
-								<Field label="Kind">
-									<Select name="kind" defaultValue={project.kind}>
-										{KINDS.map((k) => (
-											<option key={k.value} value={k.value}>
-												{k.label}
-											</option>
-										))}
-									</Select>
-								</Field>
 								<Field label="Start date">
 									<Input name="start_date" type="date" defaultValue={project.start_date ?? ""} />
 								</Field>
@@ -202,14 +181,6 @@ export function ProjectDetail({
 				) : (
 					<div>
 						<dl className="grid grid-cols-2 gap-2 text-sm text-ink">
-							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Type</dt>
-								<dd>{project.type ? projectTypeLabel(project.type) : "—"}</dd>
-							</div>
-							<div>
-								<dt className="font-mono text-eyebrow uppercase text-ink-3">Kind</dt>
-								<dd>{kindLabel(project.kind)}</dd>
-							</div>
 							<div>
 								<dt className="font-mono text-eyebrow uppercase text-ink-3">Start date</dt>
 								<dd>{project.start_date ?? "—"}</dd>

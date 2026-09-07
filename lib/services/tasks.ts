@@ -4,6 +4,7 @@ import { dayWindowUtc, nowUtc } from "@/lib/dates";
 import { TASK_SELECT, type TaskRow } from "@/lib/schemas/task";
 import { unwrap } from "@/lib/services/errors";
 import { type GraphFail, syncTaskMentionsFromText } from "@/lib/services/mentions";
+import { listQuietProjectIds } from "@/lib/services/quiet";
 import { nextCompleteFields } from "@/lib/task-interaction/apply-intent";
 
 export type { TaskRow } from "@/lib/schemas/task";
@@ -27,10 +28,12 @@ export async function listTasks(
 		unfiled?: boolean;
 		projectId?: string;
 		/**
-		 * Drop wants — tasks with the clock switched off (shape plan §03). Today
+		 * Drop quiet tasks — undated tasks in a project that is not active. Today
 		 * asks for this; /tasks loads them and files them into their own view.
+		 * A dated task always surfaces, and a task with no project never goes
+		 * quiet (lib/task-predicates.ts, `isQuiet`).
 		 */
-		excludeWants?: boolean;
+		excludeQuiet?: boolean;
 	} = {},
 ): Promise<TaskRow[]> {
 	let q = sb
@@ -43,7 +46,18 @@ export async function listTasks(
 	if (filters.domainId) q = q.eq("domain_id", filters.domainId);
 	if (filters.unfiled) q = q.is("domain_id", null);
 	if (filters.projectId) q = q.eq("project_id", filters.projectId);
-	if (filters.excludeWants) q = q.eq("someday", false);
+	if (filters.excludeQuiet) {
+		const quiet = await listQuietProjectIds(sb);
+		// Nothing is quiet when every project is active — skip the filter rather
+		// than build an empty `in.()`, which PostgREST rejects.
+		if (quiet.size > 0) {
+			// Read it as the negation of "undated AND in a quiet project": keep the
+			// row if it has a date, or has no project, or its project is active.
+			q = q.or(
+				`due_date.not.is.null,project_id.is.null,project_id.not.in.(${[...quiet].join(",")})`,
+			);
+		}
+	}
 	const data = unwrap(await q);
 	return (data ?? []).map(flatten);
 }
@@ -51,12 +65,13 @@ export async function listTasks(
 /**
  * The /inbox queue: open tasks that were captured without a domain.
  *
- * Wants are excluded. An intent with no time is not a thing waiting to be
- * filed — it is already parked, and putting it in the queue makes the inbox
- * count lie about how much is outstanding (shape plan §03).
+ * Quiet tasks are excluded for consistency with Today and /tasks, though the
+ * two narrows barely overlap: a task with no project is never quiet, so this
+ * only ever drops an undated task that was tagged to a non-active project and
+ * left unfiled.
  */
 export async function listInboxTasks(sb: SupabaseClient): Promise<TaskRow[]> {
-	return listTasks(sb, { status: "open", unfiled: true, excludeWants: true });
+	return listTasks(sb, { status: "open", unfiled: true, excludeQuiet: true });
 }
 
 /**
@@ -193,7 +208,6 @@ export async function createTask(
 		domain_id?: string | null;
 		project_id?: string | null;
 		recurrence_rule?: string | null;
-		someday?: boolean;
 		source?: string;
 	},
 	opts: TaskWriteOpts = {},
@@ -204,17 +218,12 @@ export async function createTask(
 	// coercion in updateTask below rather than rejecting: a time with no
 	// date to sit on is silently dropped instead of degrading the capture.
 	const due_time = input.due_date ? input.due_time : null;
-	// A want has the clock switched off (shape plan §03) — same invariant the
-	// DB check constraint holds, coerced here rather than rejected so a capture
-	// that guesses both never fails.
-	const someday = input.due_date ? false : input.someday;
 	const data = unwrap(
 		await sb
 			.from("tasks")
 			.insert({
 				...input,
 				due_time,
-				someday,
 				// A task without a stated destination is unfiled — no domain at all,
 				// which is what the /inbox route selects on (docs/adr/0027). Stated
 				// explicitly rather than left to the column default so the write says
@@ -245,7 +254,6 @@ export async function updateTask(
 		domain_id: string;
 		project_id: string | null;
 		recurrence_rule: string | null;
-		someday: boolean;
 	}>,
 	opts: TaskWriteOpts = {},
 ): Promise<void> {
@@ -255,12 +263,7 @@ export async function updateTask(
 	// becomes invalid once merged into the row it's patching. Coerce rather
 	// than reject: clearing the date silently clears whatever time no longer
 	// has a date to sit on, whether or not the caller also touched due_time.
-	const dateCleared = patch.due_date === null ? { ...patch, due_time: null } : patch;
-	// A want has the clock switched off (shape plan §03) — the same invariant
-	// the DB check constraint holds. A patch that sets both loses the flag, not
-	// the date: the user just named a day, which is the promotion gesture.
-	const nextPatch =
-		dateCleared.someday && dateCleared.due_date ? { ...dateCleared, someday: false } : dateCleared;
+	const nextPatch = patch.due_date === null ? { ...patch, due_time: null } : patch;
 	unwrap(await sb.from("tasks").update(nextPatch).eq("id", id));
 
 	// Mentions only re-derive when text moves (not complete/star/domain).
