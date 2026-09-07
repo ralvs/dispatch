@@ -18,10 +18,11 @@ A title-only create on `/tasks` is a separate **sentence → task** path
 
 ## inbox
 
-Where a **task** waits when it was captured without a domain. `createTask`'s
-default is the only thing that ever puts one there (`INBOX_DOMAIN_ID`);
-`assignDomain` gives it a real home and **refuses the Inbox as a target**, so
-filing is one-way. UI route is **`/inbox`**; `/triage` — the name this queue
+Where a **task** waits when it was captured without a domain — which is to say
+`domain_id is null`, not a row of its own (ADR-0027). `createTask` simply
+leaves the column unset when nothing named a domain; `assignDomain` gives the
+task a real home, and since the Inbox is the absence of a domain there is
+nothing to assign back to, so filing is one-way. UI route is **`/inbox`**; `/triage` — the name this queue
 carried between ADR-0014 and ADR-0024 — permanently redirects. Today's alerts
 row surfaces the count. The word "triage" is retired (docs/adr/0024).
 
@@ -33,15 +34,26 @@ specific day; `toggleTop3` sets or clears it and `isTop3Today` tests it against
 "today" in the app timezone. The Today page lists top-3 tasks ahead of merely
 due/overdue ones.
 
+## quiet project
+
+A project whose `status` is anything other than `active` — `paused`, `done` or
+`archived`. Its **undated** tasks stay out of Today and the default `/tasks`
+views, out of the domain open-task count and out of the neglect sweep; a task
+with a `due_date`, or with no project at all, is never quiet. `/projects`
+labels the `paused` group "Quiet" (label only — the stored value is unchanged),
+and `/tasks` keeps a filter chip to see them. The word "want", and the
+`tasks.someday` column behind it, are retired (docs/adr/0057, 0058).
+
 ## stewardship domain
 
-A long-lived area of life Renan is responsible for — the seven seeded domains
-are Engine, Health, Family, Spirituality, Finance, Code, Travel, plus the
-system **Inbox** (`stewardship_domains`), which is flagged `is_system` and
-carries none of the semantics below. Each carries a `fruit_definition`
+A long-lived area of life Renan is responsible for — the eight active domains
+are Code, Engine, Family, Finance, Health, Home, Spirituality and Travel
+(`stewardship_domains`). There is no Inbox row and no `is_system` column: an
+unfiled task is one with `domain_id is null` (see **inbox**, and ADR-0027).
+Each carries a `fruit_definition`
 (what "tended well" looks like) and `failure_patterns` (e.g. "no activity for N
-days") that the observations cron reads to flag neglect. Every task belongs to
-exactly one domain.
+days") that the observations cron reads to flag neglect. A task belongs to at
+most one domain; a task with none is in the **inbox**.
 
 ## needs_review
 
