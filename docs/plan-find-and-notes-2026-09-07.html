@@ -164,13 +164,12 @@
   <h1>Find, and two note instruments</h1>
   <p class="lede">
     Three things, one pass. A way to find a task — in its title <em>or</em> its notes — or a sentence inside a note.
-    Grok’s tick rail, copied onto the note: inside the note box, right edge, ticks sized by block height.
+    Grok.com’s tick rail, copied onto the note: short dashes on the right of the text, chevrons, a hover pill.
     Colour on a selected word, from the app palette, including orange, yellow and red.
   </p>
   <div class="callout">
-    <strong>This is a plan, not a build.</strong> The tick rail now follows the owner’s Grok.com spec
-    verbatim: inside the note column, right edge, proportional ticks, hover wave, preview pill.
-    The last draft put a separate stack on the left. That is the thing being corrected.
+    <strong>This is a plan, not a build.</strong> The tick rail copies Grok.com. The SVG mock in this
+    file is not the contract — the owner’s screenshots are.
   </div>
 </header>
 
@@ -181,7 +180,7 @@
     <tr><td class="n">D1</td><td>The new surface is <strong>Find</strong>, a palette, not a page</td><td>⌘K. Same Dialog primitive as Capture. Not a third header pill.</td><td><span class="pill do">locked</span></td></tr>
     <tr><td class="n">D2</td><td>v1 corpus is tasks and notes</td><td>Task <code>title</code> <strong>and</strong> <code>notes</code>. Note <code>title</code> and <code>body</code>. The link picker’s title-only search is not this.</td><td><span class="pill do">locked</span></td></tr>
     <tr><td class="n">D3</td><td>“Smart” means ranked substring, not a model</td><td>Title hits beat body/notes hits. A snippet. No embeddings. Chat stays Ask.</td><td><span class="pill do">locked</span></td></tr>
-    <tr><td class="n">D4</td><td>The tick rail is Grok’s, inside the note box</td><td>Right edge of the prose column. One tick per top-level block. Height ∝ rendered block. Hover wave + preview pill. Spec below is the build contract.</td><td><span class="pill do">locked</span></td></tr>
+    <tr><td class="n">D4</td><td>The tick rail is Grok.com’s, pixel-faithful</td><td>The owner’s Grok screenshots are the visual contract. Short horizontal dashes, chevrons, hover pill. The SVG in this file is not. Do not ship a scrollbar.</td><td><span class="pill do">locked</span></td></tr>
     <tr><td class="n">D5</td><td>Text colour is a palette slug, never a hex</td><td>Nine domain slots <strong>plus</strong> <code>accent</code> and <code>error</code>. Chrome collision does not apply inside a note.</td><td><span class="pill do">locked</span></td></tr>
     <tr><td class="n">D6</td><td>Colour round-trips as one allowlisted HTML span</td><td><code>&lt;span data-ink="health"&gt;…&lt;/span&gt;</code> in the stored markdown. ADR-0009 is amended, not replaced.</td><td><span class="pill do">locked</span></td></tr>
     <tr><td class="n">D7</td><td>Colour UI is a selection bubble, not a toolbar</td><td>Select a word, eleven dots appear. Markdown shortcuts still own bold/italic.</td><td><span class="pill do">locked</span></td></tr>
@@ -274,7 +273,11 @@
 
 <section class="point">
   <h2><span class="num">03</span> The tick rail — Grok’s, on a note</h2>
-  <p class="sub">The last figure put the ticks in a separate stack to the left of the note. That reads as another section. The owner’s spec is Grok.com’s conversation tick rail, copied. The chat column becomes the note box. The spec below is the build contract. Do not re-interpret it into a TOC or a minimap column.</p>
+  <p class="sub">Copy Grok.com’s conversation tick rail onto the note. The owner’s screenshots are the visual contract. The SVG in this file once drew a scrollbar thumb; that drawing is wrong and is not what we ship. Open grok.com, look at the right edge of a chat, and match that.</p>
+
+  <div class="callout">
+    <strong>Visual source of truth.</strong> Grok.com, and the screenshots the owner attached (short horizontal dashes, chevrons above/below, a rounded pill on hover). Not the figure below. If a build looks like a scroll thumb inside a card, it has failed D4.
+  </div>
 
   <div class="two">
     <div class="pane">
@@ -287,12 +290,12 @@
       </ul>
     </div>
     <div class="pane">
-      <h4>Right — this spec</h4>
+      <h4>Right — Grok.com</h4>
       <ul>
-        <li>Ticks live <em>inside</em> the note box, on its right edge, next to the text.</li>
-        <li>Tick height ∝ that block’s rendered height.</li>
-        <li>One tick per top-level block. Do not merge.</li>
-        <li>The links rail stays a sibling. The page scrollbar is not this rail.</li>
+        <li>A stack of short <em>horizontal</em> dashes (like minus signs), on the right of the text.</li>
+        <li>Chevrons above and below the stack on hover.</li>
+        <li>Hover a dash → a rounded pill to its left, with a snippet.</li>
+        <li>Idle: dashes only. No box, no track, no thumb.</li>
       </ul>
     </div>
   </div>
@@ -345,7 +348,7 @@
         <text x="602" y="372" font-size="9" class="mono" fill="var(--ink-4)" text-anchor="middle">links rail · sibling · not the ticks</text>
       </svg>
     </div>
-    <figcaption>The ticks sit on the right edge of the note box, inside it, next to the text. Long block, long tick. The 260px links rail is a different column. The page scrollbar is not drawn because this rail must never cover it.</figcaption>
+    <figcaption>Placement only: ticks on the right of the note text, links rail is a sibling. Do not copy the tall white bar in this drawing — that was the mock bug. The real ticks are the short dashes in the owner’s Grok screenshot.</figcaption>
   </figure>
 
   <h3>Placement</h3>
@@ -365,11 +368,10 @@
     <li>Tick id = a stable block id (ProseMirror pos at last recalc, or a data attribute written onto the rendered node). Scroll target = that node. <code>block: start</code>. Short focus ring.</li>
   </ul>
 
-  <h3>Tick size — this is the Grok look</h3>
-  <p>Width: 2px inactive, ~3px active. Height is proportional to that block’s rendered height in the note:</p>
-  <p><code>h = clamp(minH, maxH, blockHeight / totalContentHeight * railInnerHeight)</code></p>
-  <p>Then a minimum gap (~2–4px). If ticks would collide, shrink all proportionally, never below minH (~4–6px). Long replies = long ticks. Short prompts = short ticks. Rounded rect. Same shape for every block. Active = higher contrast only — no second colour, no heading-vs-paragraph colour. No labels on the rail.</p>
-  <p>This formula is a pure helper with unit tests. The last two drafts argued about equal vs proportional in prose. The helper ends the argument.</p>
+  <h3>Tick size — match the screenshot, not a scrollbar</h3>
+  <p>Grok’s ticks are short horizontal dashes. About 16px wide, 2px thick idle, ~3px thick when active. They sit in a vertical stack with a small gap. Chevrons above and below. That is the whole look.</p>
+  <p>If block height is used at all, it may only nudge dash thickness by a pixel or two. It must never turn a dash into a tall thumb, a track, or a minimap. A tick that is taller than ~8px has already left Grok and failed the screenshot test.</p>
+  <p>Same shape for every block. Active = higher contrast only. No labels on the rail. No second colour.</p>
 
   <h3>Active state</h3>
   <ul>
@@ -397,7 +399,7 @@
   </ul>
 
   <h3>How it is built</h3>
-  <p>A client overlay mounted <em>inside</em> the <code>NoteEditor</code> article, not in <code>page.tsx</code>’s grid. <code>position: sticky</code> on the rail, right: 0 of the article, height = visible pane. A pure <code>layoutTicks(blocks, railInnerHeight)</code> helper owns the clamp / gap / shrink math and is unit-tested. Scroll-spy reads <code>#main</code> (ADR-0028). The links rail and the page scrollbar are not touched.</p>
+  <p>A client overlay mounted <em>inside</em> the <code>NoteEditor</code> article, not in <code>page.tsx</code>’s grid. Sticky on the right of the article. Stack of dashes with a gap. Scroll-spy reads <code>#main</code> (ADR-0028). QA is a side-by-side with grok.com. The links rail and the page scrollbar are not touched.</p>
 </section>
 
 
@@ -478,7 +480,7 @@
   <div class="skip"><span class="x">×</span><span class="t">A formatting toolbar</span><span class="r">Bold and italic stay markdown shortcuts. The bubble is colour and clear, nothing else.</span></div>
   <div class="skip"><span class="x">×</span><span class="t">Highlight / background marks</span><span class="r">Asked for text colour. A marker is a different mark and a different stored tag.</span></div>
   <div class="skip"><span class="x">×</span><span class="t">A left sibling column</span><span class="r">The last draft. Ticks that sit beside the note read as another section. They belong inside the note box.</span></div>
-  <div class="skip"><span class="x">×</span><span class="t">Equal-size ticks</span><span class="r">The screenshots look even when the blocks are similar. The spec is proportional. Long block, long tick.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">A scrollbar thumb</span><span class="r">The mock drew one. Grok does not. Short horizontal dashes only.</span></div>
   <div class="skip"><span class="x">×</span><span class="t">Heading-merged ticks</span><span class="r">Do not fold paragraphs into their heading. One block, one tick. Same as “do not merge a turn.”</span></div>
   <div class="skip"><span class="x">×</span><span class="t">Colour as domain filing</span><span class="r">A green word is not Health. An orange word is not overdue. Filing is still the picker under the editor.</span></div>
   <div class="skip"><span class="x">×</span><span class="t">Permanent titles on the rail</span><span class="r">Idle rail is dashes only. The pill exists on hover, anchored to the tick.</span></div>
@@ -508,13 +510,13 @@
 
   <div class="rec">
     <div class="rec-head"><span class="rid">P2</span><h3>Tick rail</h3><span class="pill later">second</span></div>
-    <p class="why">Grok’s rail, mounted <em>inside</em> <code>NoteEditor</code>, right edge of the article. Proportional ticks via a tested <code>layoutTicks</code> helper. Hover wave toward the text. Preview pill. Optional chevrons. Hidden under ~768px. Page grid and links rail do not change.</p>
+    <p class="why">Grok.com’s dash stack, mounted on the right of the note text. Short horizontal dashes, chevrons, hover pill. The screenshots are the QA. A scrollbar thumb is a fail.</p>
     <ul class="files">
-      <li><span class="op new">new</span><span class="fp">lib/note-ticks/layout.ts + layout.test.ts — clamp, gap, shrink-all, never below minH</span></li>
-      <li><span class="op new">new</span><span class="fp">app/(authed)/notes/[id]/tick-rail.tsx — overlay, buttons, pill, chevrons, ResizeObserver</span></li>
-      <li><span class="op mod">mod</span><span class="fp">app/(authed)/notes/[id]/note-editor.tsx — host the rail inside the article; data attributes on blocks</span></li>
+      <li><span class="op new">new</span><span class="fp">app/(authed)/notes/[id]/tick-rail.tsx — dashes, pill, chevrons, ResizeObserver</span></li>
+      <li><span class="op new">new</span><span class="fp">lib/note-ticks/layout.ts + layout.test.ts — stack dashes with gap; never emit a thumb</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/notes/[id]/note-editor.tsx — host the rail on the right of the article</span></li>
     </ul>
-    <div class="meta"><span><b>depends on</b> nothing</span><span><b>migration</b> none</span><span><b>needs ADR</b> 0060 — Grok tick rail inside the note box; the spec in §03 is the contract</span></div>
+    <div class="meta"><span><b>depends on</b> nothing</span><span><b>migration</b> none</span><span><b>QA</b> side-by-side with grok.com — dashes, not a scroll thumb</span></div>
   </div>
 
   <div class="rec">
@@ -583,7 +585,7 @@
 
 <footer>
   <p>Plan for Find + Grok tick rail + ink marks. Not a build. Companion to <code>docs/plan-dispatch-shape-2026-08-21.html</code> in form, not in job.</p>
-  <p>Revised twice on 7 Sep 2026. Last correction: the rail is inside the note box, right edge, proportional ticks, per the Grok.com spec in §03. Next: O1 / O2 if they still matter, then P1.</p>
+  <p>Revised 7 Sep 2026. Last correction: the SVG mock is not the contract. Grok.com’s dash rail is. Next: say go, then P1.</p>
 </footer>
 
 </div>
