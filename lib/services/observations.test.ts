@@ -120,7 +120,7 @@ describe("neglectObservationBody", () => {
 });
 
 describe("resolveTouch · open task count", () => {
-	it("takes the count it is handed — the fold excludes wants upstream", () => {
+	it("takes the count it is handed — the fold excludes quiet tasks upstream", () => {
 		expect(resolveTouch(touchInput({ openTasks: 2 })).openTasks).toBe(2);
 	});
 });

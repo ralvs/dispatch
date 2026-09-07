@@ -18,13 +18,24 @@ export function isDueToday(task: Pick<TaskRow, "status" | "due_date">, todayIso:
 }
 
 /**
- * A want: an intent with no time (shape plan §03). Hidden from Today and from
- * the default /tasks views, so an open-ended wish stops looking overdue-ish
- * forever. Promotion is clearing the flag, so this is the only thing that
- * separates a want from a task.
+ * A task is quiet when it has no due date and its project is not active.
+ *
+ * Quiet tasks are held back from Today and the default /tasks views: an
+ * undated task inside a paused, done or archived project is not work you are
+ * carrying right now. Two escapes, both deliberate — a due date always wins
+ * (naming a day is the promotion gesture), and a task with no project at all
+ * is never quiet.
+ *
+ * Pure like its neighbours: the caller supplies the set of non-active project
+ * ids (lib/services/quiet.ts) rather than this file reaching for the database.
  */
-export function isWant(task: Pick<TaskRow, "someday">): boolean {
-	return task.someday === true;
+export function isQuiet(
+	task: Pick<TaskRow, "due_date" | "project_id">,
+	quietProjectIds: ReadonlySet<string>,
+): boolean {
+	if (task.due_date !== null) return false;
+	if (task.project_id === null) return false;
+	return quietProjectIds.has(task.project_id);
 }
 
 /** A task is starred for "today's top 3" if it's pinned to today's date. */

@@ -3,7 +3,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { dateOfInstant, todayInTz } from "@/lib/dates";
 import { cadenceThresholdDays, listDomains } from "@/lib/services/domains";
 import { unwrap } from "@/lib/services/errors";
+import { listQuietProjectIds } from "@/lib/services/quiet";
 import { getAppTimezone } from "@/lib/services/settings";
+import { isQuiet } from "@/lib/task-predicates";
 
 // ─── The neglect sweep ─────────────────────────────────────────────────
 //
@@ -149,19 +151,23 @@ export async function listDomainTouches(
 ): Promise<DomainTouch[]> {
 	const tz = await getAppTimezone(sb);
 	const todayIso = todayInTz(tz, nowMs);
-	const [domains, taskRows, projectRows, noteRows] = await Promise.all([
+	const [domains, taskRows, projectRows, noteRows, quietProjectIds] = await Promise.all([
 		listDomains(sb),
 		unwrap(
 			// Explicit range: PostgREST caps an unbounded select at its
 			// configured max-rows (1000 by default), and a silently truncated
 			// read would make MAX(last touch) and the open counts wrong
 			// without erroring.
-			await sb.from("tasks").select("domain_id, status, completed_at, someday").range(0, 49_999),
+			await sb
+				.from("tasks")
+				.select("domain_id, status, completed_at, due_date, project_id")
+				.range(0, 49_999),
 		) as Array<{
 			domain_id: string | null;
 			status: string;
 			completed_at: string | null;
-			someday: boolean;
+			due_date: string | null;
+			project_id: string | null;
 		}> | null,
 		unwrap(await sb.from("projects").select("domain_id, updated_at").range(0, 49_999)) as Array<{
 			domain_id: string | null;
@@ -171,6 +177,7 @@ export async function listDomainTouches(
 			domain_id: string | null;
 			updated_at: string | null;
 		}> | null,
+		listQuietProjectIds(sb),
 	]);
 
 	const tasks = taskRows ?? [];
@@ -182,12 +189,13 @@ export async function listDomainTouches(
 		(noteRows ?? []).map((n) => ({ domain_id: n.domain_id, at: n.updated_at })),
 	);
 
-	// Wants are not open work — an intent with no time is already parked
-	// (shape plan §03), and counting it would make a domain look busy for
-	// something nobody intends to do on a date.
+	// Quiet tasks are not open work — an undated task in a project that is not
+	// active is already parked, and counting it would make a domain look busy
+	// for something nobody is carrying right now.
 	const openByDomain = new Map<string, number>();
 	for (const t of tasks) {
-		if (t.domain_id === null || t.status !== "open" || t.someday) continue;
+		if (t.domain_id === null || t.status !== "open") continue;
+		if (isQuiet(t, quietProjectIds)) continue;
 		openByDomain.set(t.domain_id, (openByDomain.get(t.domain_id) ?? 0) + 1);
 	}
 

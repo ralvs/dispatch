@@ -29,6 +29,10 @@ export default async function TasksPage({
 	const { openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions } = board;
 
 	const inboxCount = openTasks.filter((t) => t.domain_id === null).length;
+	// The quiet rule lives on the project's status, and the board already
+	// carries every project — so the client can derive it without a second read
+	// (lib/services/quiet.ts holds the server-side definition).
+	const quietProjectIds = projects.filter((p) => p.status !== "active").map((p) => p.id);
 
 	return (
 		// Header included: the count strip is the status filter, so it lives in
@@ -48,6 +52,7 @@ export default async function TasksPage({
 			people={people}
 			taskMentions={taskMentions}
 			inboxCount={inboxCount}
+			quietProjectIds={quietProjectIds}
 		/>
 	);
 }

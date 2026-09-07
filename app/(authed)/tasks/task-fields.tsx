@@ -152,8 +152,6 @@ export type TaskFieldDefaults = {
 	/** null = no project; undefined = no task yet (create form). */
 	project_id?: string | null;
 	recurrence_rule?: string | null;
-	/** A want — the clock switched off (shape plan §03). */
-	someday?: boolean;
 };
 
 /**
@@ -235,12 +233,6 @@ export function TaskMetaFields({
 	// so it posts "" — the same as Never, which is what it means.
 	const storedRecurrence =
 		recurrence === CUSTOM_OPTION ? formatCustomWeekly(customDays) : recurrence;
-	// A want is this same form with the clock switched off (shape plan §03), so
-	// it is a toggle in the Due group rather than a field of its own: switching
-	// it on clears and disables date, time and repeat, and switching it off
-	// hands the whole group back. Promotion is exactly that second gesture.
-	const [someday, setSomeday] = useState(defaults.someday ?? false);
-
 	function resetSchedule() {
 		setDue("");
 		setTime("");
@@ -253,27 +245,17 @@ export function TaskMetaFields({
 			current.includes(day) ? current.filter((d) => d !== day) : [...current, day].sort(),
 		);
 	}
-	const scheduleIsEmpty = due === "" && time === "" && recurrence === "" && !someday;
-
-	function toggleSomeday() {
-		const next = !someday;
-		setSomeday(next);
-		if (next) resetSchedule();
-	}
+	const scheduleIsEmpty = due === "" && time === "" && recurrence === "";
 
 	return (
 		<div className="space-y-10">
 			<div className="field-unit min-w-0">
 				<span className={FIELD_LABEL}>Due</span>
 				<div className={DUE_GRID}>
-					{/* Only posted when set: an absent field is `false` to the schema,
-					    which is also what an unchecked checkbox would do. */}
-					{someday && <input type="hidden" name="someday" value="on" />}
 					<DatePicker
 						name="due_date"
 						value={due}
 						todayIso={todayIso}
-						disabled={someday}
 						aria-label="Due date"
 						onChange={(next) => {
 							setDue(next);
@@ -285,7 +267,7 @@ export function TaskMetaFields({
 					<TimePicker
 						name="due_time"
 						value={time}
-						disabled={someday || due === ""}
+						disabled={due === ""}
 						aria-label="Due time"
 						onChange={setTime}
 					/>
@@ -298,23 +280,12 @@ export function TaskMetaFields({
 								type="button"
 								title={title}
 								aria-label={title}
-								disabled={someday}
 								onClick={() => setDue(shiftDay(todayIso, days))}
 								className={`${CHIP} disabled:pointer-events-none disabled:opacity-30`}
 							>
 								{label}
 							</button>
 						))}
-						<button
-							type="button"
-							title="Someday — a want, with no due date"
-							aria-label="Someday — a want, with no due date"
-							aria-pressed={someday}
-							onClick={toggleSomeday}
-							className={`${CHIP} ${someday ? "bg-surface text-accent-ink" : ""}`}
-						>
-							someday
-						</button>
 						<button
 							type="button"
 							onClick={resetSchedule}
@@ -341,7 +312,6 @@ export function TaskMetaFields({
 					<input type="hidden" name="recurrence_rule" value={storedRecurrence} />
 					<Select
 						value={recurrence}
-						disabled={someday}
 						aria-label="Repeats"
 						onChange={(event) => setRecurrence(event.target.value)}
 						className="w-full"
@@ -366,7 +336,6 @@ export function TaskMetaFields({
 										aria-pressed={on}
 										aria-label={WEEKDAY_NAMES[day]}
 										title={WEEKDAY_NAMES[day]}
-										disabled={someday}
 										onClick={() => toggleWeekday(day)}
 										className={`h-9 flex-1 rounded-control border font-mono text-meta transition-colors ${
 											on

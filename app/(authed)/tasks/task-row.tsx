@@ -170,7 +170,6 @@ export function TaskRowItem({
 						project_id: task.project_id,
 						priority: task.priority,
 						recurrence_rule: task.recurrence_rule,
-						someday: task.someday,
 					}}
 				/>
 			)}

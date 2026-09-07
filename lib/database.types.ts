@@ -691,12 +691,10 @@ export type Database = {
 					description: string | null;
 					domain_id: string | null;
 					id: string;
-					kind: string;
 					name: string;
 					start_date: string | null;
 					status: string;
 					target_date: string | null;
-					type: string | null;
 					updated_at: string;
 				};
 				Insert: {
@@ -706,12 +704,10 @@ export type Database = {
 					description?: string | null;
 					domain_id?: string | null;
 					id?: string;
-					kind?: string;
 					name: string;
 					start_date?: string | null;
 					status?: string;
 					target_date?: string | null;
-					type?: string | null;
 					updated_at?: string;
 				};
 				Update: {
@@ -721,12 +717,10 @@ export type Database = {
 					description?: string | null;
 					domain_id?: string | null;
 					id?: string;
-					kind?: string;
 					name?: string;
 					start_date?: string | null;
 					status?: string;
 					target_date?: string | null;
-					type?: string | null;
 					updated_at?: string;
 				};
 				Relationships: [
@@ -1009,7 +1003,6 @@ export type Database = {
 					recurrence_rule: string | null;
 					reminder_offsets: Json;
 					reminders_sent: Json;
-					someday: boolean;
 					source: string;
 					status: string;
 					title: string;
@@ -1029,7 +1022,6 @@ export type Database = {
 					recurrence_rule?: string | null;
 					reminder_offsets?: Json;
 					reminders_sent?: Json;
-					someday?: boolean;
 					source?: string;
 					status?: string;
 					title: string;
@@ -1049,7 +1041,6 @@ export type Database = {
 					recurrence_rule?: string | null;
 					reminder_offsets?: Json;
 					reminders_sent?: Json;
-					someday?: boolean;
 					source?: string;
 					status?: string;
 					title?: string;

@@ -76,19 +76,15 @@ export { EMPTY_TASK_COUNTS, type ProjectTaskCounts, taskProgress };
 /**
  * done/open task counts for every project, in one query.
  *
- * Wants are excluded from both halves. A parked want is not open work, so
- * counting it would inflate "open" and drag every project's progress down for
- * something nobody intends to do on a date (shape plan §03).
+ * Nothing is excluded. A quiet task is quiet only elsewhere — on Today and in
+ * the default /tasks views. The project's own page exists to show the project
+ * whole, so its counts have to include every task tagged to it.
  */
 export async function countTasksByProject(
 	sb: SupabaseClient,
 ): Promise<Record<string, ProjectTaskCounts>> {
 	const data = unwrap(
-		await sb
-			.from("tasks")
-			.select("project_id, status")
-			.not("project_id", "is", null)
-			.eq("someday", false),
+		await sb.from("tasks").select("project_id, status").not("project_id", "is", null),
 	) as Array<{ project_id: string | null; status: string }> | null;
 
 	const out: Record<string, ProjectTaskCounts> = {};
@@ -111,7 +107,7 @@ export async function listTasksForProject(
 	projectId: string,
 	filters: { status?: "open" | "done" } = {},
 ): Promise<TaskRow[]> {
-	// Wants excluded, for the same reason countTasksByProject excludes them:
-	// the section's own percentage has to agree with the row's.
-	return listTasks(sb, { projectId, excludeWants: true, ...filters });
+	// Nothing excluded, for the same reason countTasksByProject excludes
+	// nothing: the section's own list has to agree with the row's counts.
+	return listTasks(sb, { projectId, ...filters });
 }
