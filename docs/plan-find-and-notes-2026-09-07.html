@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Find, and two note instruments</title>
+<style>
+  :root {
+    --bg: #fbfaf9; --surface: #ffffff; --surface-2: #f4f2f0;
+    --ink: #1a1817; --ink-2: #45403c; --ink-3: #6b645e; --ink-4: #948c85;
+    --line: #e6e2de; --line-strong: #d3cdc7;
+    --accent: #b4541f; --accent-bg: #fbeee6;
+    --add-bg: #e8f3ec; --add-ink: #1c5433; --add-line: #a9d3bb;
+    --del-bg: #fbecec; --del-ink: #7a2222; --del-line: #e2b4b4;
+    --warn-bg: #fdf3e2; --warn-line: #e8cd9a; --warn-ink: #7a5410;
+    --engine: #514ad4; --health: #2aa649; --family: #c345fc; --spirit: #8b6031;
+    --finance: #0a7cfe; --code: #1b93ba; --pine: #158266; --burgundy: #db149b;
+    --travel: #ffcc0f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1817; --surface: #232120; --surface-2: #2c2927;
+      --ink: #f2efec; --ink-2: #cfc8c2; --ink-3: #a49c95; --ink-4: #7d746d;
+      --line: #35322f; --line-strong: #48433f;
+      --accent: #e0803f; --accent-bg: #33251a;
+      --add-bg: #1a2c21; --add-ink: #8fd0a8; --add-line: #2f5941;
+      --del-bg: #2f1e1e; --del-ink: #e5a2a2; --del-line: #5e3232;
+      --warn-bg: #2e2413; --warn-line: #574522; --warn-ink: #e0bd7c;
+      --engine: #5e5ae6; --health: #30d158; --family: #c756fc; --spirit: #a5733c;
+      --finance: #318ffe; --code: #2cc9fc; --pine: #21b18c; --burgundy: #fc2cb4;
+      --travel: #ffd60a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1a1817; --surface: #232120; --surface-2: #2c2927;
+    --ink: #f2efec; --ink-2: #cfc8c2; --ink-3: #a49c95; --ink-4: #7d746d;
+    --line: #35322f; --line-strong: #48433f;
+    --accent: #e0803f; --accent-bg: #33251a;
+    --add-bg: #1a2c21; --add-ink: #8fd0a8; --add-line: #2f5941;
+    --del-bg: #2f1e1e; --del-ink: #e5a2a2; --del-line: #5e3232;
+    --warn-bg: #2e2413; --warn-line: #574522; --warn-ink: #e0bd7c;
+    --engine: #5e5ae6; --health: #30d158; --family: #c756fc; --spirit: #a5733c;
+    --finance: #318ffe; --code: #2cc9fc; --pine: #21b18c; --burgundy: #fc2cb4;
+    --travel: #ffd60a;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 400 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 61rem; margin: 0 auto; padding: 3.5rem 1.5rem 6rem; }
+
+  header.top { margin-bottom: 2.5rem; }
+  .eyebrow {
+    font: 400 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 .6rem;
+  }
+  h1 { font-size: clamp(28px, 4.4vw, 38px); font-weight: 500; letter-spacing: -0.025em; line-height: 1.12; margin: 0 0 .7rem; }
+  .lede { color: var(--ink-2); font-size: 17px; max-width: 62ch; margin: 0; }
+
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .89em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: .08em .32em; }
+  strong { color: var(--ink); font-weight: 500; }
+
+  .callout {
+    margin: 1.75rem 0 0; padding: .9rem 1.1rem; border-radius: 10px;
+    background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink);
+    font-size: 14.5px; line-height: 1.55;
+  }
+  .callout strong { color: inherit; }
+  .callout code { background: transparent; border-color: currentColor; opacity: .95; }
+
+  table.summary { width: 100%; border-collapse: collapse; margin: 2.5rem 0 0; font-size: 14.5px; }
+  table.summary th, table.summary td { text-align: left; padding: .65rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.summary th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); font-weight: 500; border-bottom-color: var(--line-strong); }
+  table.summary td.n { color: var(--ink-4); font-variant-numeric: tabular-nums; width: 2.6rem; font-family: ui-monospace, monospace; font-size: 12.5px; }
+  .tbl-scroll { overflow-x: auto; }
+
+  .pill { display: inline-block; padding: .12rem .5rem; border-radius: 999px; font-size: 11.5px; font-weight: 500; letter-spacing: .02em; white-space: nowrap; border: 1px solid; }
+  .pill.do    { background: var(--add-bg); color: var(--add-ink); border-color: var(--add-line); }
+  .pill.ask   { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-line); }
+  .pill.later { background: var(--surface-2); color: var(--ink-3); border-color: var(--line-strong); }
+  .pill.gap   { background: var(--del-bg); color: var(--del-ink); border-color: var(--del-line); }
+
+  section.point { margin-top: 3.5rem; border-top: 1px solid var(--line-strong); padding-top: 1.75rem; }
+  section.point > h2 { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; margin: 0 0 .3rem; display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+  .num { font: 400 13px/1 ui-monospace, monospace; color: var(--ink-4); border: 1px solid var(--line-strong); border-radius: 5px; padding: .25rem .4rem; }
+  .sub { color: var(--ink-3); font-size: 14.5px; margin: 0 0 1.4rem; max-width: 68ch; }
+
+  h3 { font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-3); margin: 1.8rem 0 .6rem; }
+  p { margin: 0 0 .85rem; color: var(--ink-2); }
+  ul { margin: 0 0 .9rem; padding-left: 1.15rem; color: var(--ink-2); }
+  li { margin-bottom: .35rem; }
+
+  .verdict { background: var(--surface-2); border: 1px solid var(--line-strong); border-left: 3px solid var(--accent); border-radius: 8px; padding: .8rem 1rem; margin-top: 1.2rem; font-size: 14.5px; line-height: 1.55; color: var(--ink-2); }
+  .verdict b { color: var(--ink); font-weight: 500; }
+
+  .skip { display: flex; gap: .85rem; padding: .7rem .2rem; border-bottom: 1px solid var(--line); font-size: 14px; align-items: baseline; }
+  .skip:last-child { border-bottom: 0; }
+  .skip .x { color: var(--ink-4); font-family: ui-monospace, monospace; font-size: 13px; flex: 0 0 1rem; }
+  .skip .t { flex: 0 0 16rem; color: var(--ink); font-weight: 500; }
+  .skip .r { color: var(--ink-3); }
+  @media (max-width: 760px) { .skip { flex-direction: column; gap: .15rem; } .skip .t { flex: none; } }
+
+  figure { margin: 1.2rem 0 1.4rem; }
+  figure .fig-body { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem .9rem .6rem; overflow-x: auto; }
+  figcaption { font-size: 13px; color: var(--ink-4); margin-top: .55rem; line-height: 1.5; }
+  svg { display: block; max-width: 100%; height: auto; }
+  svg text { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  svg .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.2rem; }
+  @media (max-width: 820px) { .two { grid-template-columns: 1fr; } }
+  .pane { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .95rem 1.05rem 1rem; }
+  .pane h4 { margin: 0 0 .5rem; font-size: 12px; text-transform: uppercase; letter-spacing: .09em; font-weight: 500; color: var(--ink-3); }
+  .pane ul { margin: 0; font-size: 14px; }
+
+  dl.band { margin: 1rem 0 0; display: grid; grid-template-columns: 11rem 1fr; gap: .1rem 1rem; font-size: 14px; }
+  dl.band dt { font-family: ui-monospace, monospace; font-size: 12.5px; color: var(--accent); padding: .4rem 0; border-top: 1px solid var(--line); }
+  dl.band dd { margin: 0; color: var(--ink-2); padding: .4rem 0; border-top: 1px solid var(--line); }
+  @media (max-width: 700px) { dl.band { grid-template-columns: 1fr; } dl.band dd { border-top: 0; padding-top: 0; } }
+
+  .rec { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.15rem 1.1rem; margin-bottom: 1rem; }
+  .rec.top { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-bg); }
+  .rec-head { display: flex; align-items: baseline; gap: .65rem; flex-wrap: wrap; margin-bottom: .15rem; }
+  .rec-head .rid { font: 500 12px/1 ui-monospace, monospace; color: var(--accent); border: 1px solid var(--accent); background: var(--accent-bg); border-radius: 5px; padding: .3rem .42rem; }
+  .rec-head h3 { margin: 0; font-size: 16.5px; text-transform: none; letter-spacing: -.02em; color: var(--ink); font-weight: 500; }
+  .rec .why { font-size: 14px; color: var(--ink-2); margin: .5rem 0 .7rem; }
+  .rec .meta { display: flex; gap: 1.4rem; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-4); font-family: ui-monospace, monospace; border-top: 1px solid var(--line); padding-top: .6rem; margin-top: .75rem; }
+  .rec .meta b { color: var(--ink-3); font-weight: 500; }
+  .files { list-style: none; padding: 0; margin: 0; font-size: 13.5px; }
+  .files li { display: flex; gap: .55rem; margin-bottom: .28rem; align-items: baseline; min-width: 0; }
+  .files .op { font: 500 10.5px/1.5 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .06em; border-radius: 4px; padding: .05rem .32rem; flex: 0 0 3.4rem; text-align: center; border: 1px solid; }
+  .files .op.new { background: var(--add-bg); color: var(--add-ink); border-color: var(--add-line); }
+  .files .op.mod { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-line); }
+  .files .fp { font-family: ui-monospace, monospace; font-size: 12.5px; color: var(--ink-2); overflow-wrap: anywhere; min-width: 0; }
+
+  .swatches { display: flex; flex-wrap: wrap; gap: .7rem 1.1rem; margin: .4rem 0 0; }
+  .swatch { display: flex; align-items: center; gap: .45rem; font-size: 13px; color: var(--ink-2); }
+  .swatch i { width: 14px; height: 14px; border-radius: 50%; display: block; flex: none; }
+  .swatch.dead { opacity: .45; text-decoration: line-through; }
+
+  .qa { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--warn-line); border-radius: 8px; padding: .85rem 1.05rem; margin: 0 0 .9rem; font-size: 14.5px; }
+  .qa .qid { font: 500 11.5px/1 ui-monospace, monospace; color: var(--warn-ink); background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 5px; padding: .28rem .4rem; margin-right: .5rem; }
+  .qa .qt { color: var(--ink); font-weight: 500; }
+  .qa p { margin: .55rem 0 0; font-size: 14px; }
+  .qa .rec-line { color: var(--ink-2); border-top: 1px solid var(--line); margin-top: .6rem; padding-top: .5rem; }
+  .qa .rec-line b { color: var(--accent); font-weight: 500; }
+
+  footer { margin-top: 4rem; border-top: 1px solid var(--line-strong); padding-top: 1.25rem; color: var(--ink-4); font-size: 13.5px; }
+  footer p { color: inherit; margin: 0 0 .4rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">Dispatch · plan · 7 Sep 2026 · not built</p>
+  <h1>Find, and two note instruments</h1>
+  <p class="lede">
+    Three things, one pass. A way to find a task or a sentence inside a note.
+    A left-edge tape of the note’s sections, in the spirit of Grok’s chat ticks.
+    Colour on a selected word, from the palette the app already has — no picker.
+  </p>
+  <div class="callout">
+    <strong>This is a plan, not a build.</strong> No code, no migration, no ADR
+    file until the owner says go. The decisions below are locked so the build
+    does not invent. Say if D2 or D5 is wrong; the rest follows from the
+    product as it stands.
+  </div>
+</header>
+
+<div class="tbl-scroll">
+<table class="summary">
+  <thead><tr><th class="n">#</th><th>Decision</th><th>Settled as</th><th>State</th></tr></thead>
+  <tbody>
+    <tr><td class="n">D1</td><td>The new surface is <strong>Find</strong>, a palette, not a page</td><td>⌘K. Same Dialog primitive as Capture. Not a third header pill.</td><td><span class="pill do">locked</span></td></tr>
+    <tr><td class="n">D2</td><td>v1 corpus is tasks and notes</td><td>Task <code>title</code> + <code>notes</code>. Note <code>title</code> + <code>body</code>. Nothing else.</td><td><span class="pill do">locked</span></td></tr>
+    <tr><td class="n">D3</td><td>“Smart” means ranked substring, not a model</td><td>Title hits beat body hits. A snippet. No embeddings. Chat stays Ask.</td><td><span class="pill do">locked</span></td></tr>
+    <tr><td class="n">D4</td><td>The section tape lives on the left of the note</td><td>One tick per heading, length = that section’s share of the doc. Right rail is untouched.</td><td><span class="pill do">locked</span></td></tr>
+    <tr><td class="n">D5</td><td>Text colour is a palette slug, never a hex</td><td>Eight of the nine domain slots. Travel yellow is out. Accent is out.</td><td><span class="pill do">locked</span></td></tr>
+    <tr><td class="n">D6</td><td>Colour round-trips as one allowlisted HTML span</td><td><code>&lt;span data-ink="health"&gt;…&lt;/span&gt;</code> in the stored markdown. ADR-0009 is amended, not replaced.</td><td><span class="pill do">locked</span></td></tr>
+    <tr><td class="n">D7</td><td>Colour UI is a selection bubble, not a toolbar</td><td>Select a word, eight dots appear. Markdown shortcuts still own bold/italic.</td><td><span class="pill do">locked</span></td></tr>
+    <tr><td class="n">D8</td><td>Zero migrations</td><td>Find is a read. Tape is layout. Colour lives in <code>notes.body</code>.</td><td><span class="pill do">locked</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+
+<section class="point">
+  <h2><span class="num">01</span> Three verbs, already almost there</h2>
+  <p class="sub">The shell already has Capture (⌘J, filled pill) and Ask (the outlined pill to <code>/chat</code>). Find is the missing third verb. It does not get a pill. DESIGN.md spent the two standing actions on purpose; a third one would make Capture ordinary.</p>
+
+  <dl class="band">
+    <dt>Capture · ⌘J</dt>
+    <dd>A thought in. The plus. Persist first, parse second. Already the product.</dd>
+    <dt>Find · ⌘K</dt>
+    <dd>A thing that already exists. Tasks and notes. This plan.</dd>
+    <dt>Ask · /chat</dt>
+    <dd>A question over a snapshot. Read-only. Stays that. Find locates; Ask talks.</dd>
+  </dl>
+
+  <div class="verdict">
+    <b>Why Find is not Chat.</b> Chat answers “what did I say about the dentist.”
+    Find answers “where is the dentist.” Mixing them makes both worse: a locate
+    tool that writes prose, and a reader that you have to wait on to open a row.
+    The owner already has both jobs. They get two doors.
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">02</span> Find</h2>
+  <p class="sub">A command palette over the two piles you actually lose things in. The link picker already searches task titles with <code>ilike</code>. This is that idea, grown up: titles and bodies, tasks and notes, one box, ranked.</p>
+
+  <h3>The scene</h3>
+  <p>At the keyboard. You remember a word, not a route. You press ⌘K. You type <em>dentista</em>. Two groups appear: Tasks, then Notes. A title match sits above a body match. A body match shows a one-line snippet with the word marked. Enter opens the row — <code>/tasks?edit=</code> or <code>/notes/[id]</code>. Escape closes. The composer never creates anything.</p>
+  <p>On a phone there is no ⌘K. Find sits in the More menu, Daily section, next to Ask. Same palette, same action, opened from the menu instead of a key.</p>
+
+  <figure>
+    <div class="fig-body">
+      <svg viewBox="0 0 720 420" role="img" aria-label="Find palette: a search field over two groups of results, Tasks and Notes, with a snippet under one note.">
+        <rect x="110" y="18" width="500" height="384" rx="16" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <rect x="128" y="36" width="464" height="40" rx="10" fill="var(--surface-2)" stroke="var(--line)"/>
+        <text x="144" y="61" font-size="14" fill="var(--ink)">dentista</text>
+        <text x="560" y="61" font-size="11" class="mono" fill="var(--ink-4)" text-anchor="end">⌘K</text>
+
+        <text x="144" y="106" font-size="11" class="mono" letter-spacing="1.2" fill="var(--ink-4)">TASKS</text>
+        <text x="548" y="106" font-size="11" class="mono" fill="var(--ink-4)" text-anchor="end">2</text>
+        <rect x="128" y="116" width="464" height="44" rx="8" fill="var(--accent-bg)"/>
+        <text x="144" y="135" font-size="14" font-weight="500" fill="var(--ink)">Marcar dentista</text>
+        <text x="144" y="152" font-size="11.5" fill="var(--ink-3)">open · Health · tomorrow</text>
+        <text x="144" y="185" font-size="14" fill="var(--ink)">Ligar pro dentista — retorno</text>
+        <text x="144" y="202" font-size="11.5" fill="var(--ink-3)">done</text>
+
+        <text x="144" y="242" font-size="11" class="mono" letter-spacing="1.2" fill="var(--ink-4)">NOTES</text>
+        <text x="548" y="242" font-size="11" class="mono" fill="var(--ink-4)" text-anchor="end">1</text>
+        <text x="144" y="270" font-size="14" font-weight="500" fill="var(--ink)">Plano de saúde 2026</text>
+        <text x="144" y="290" font-size="12.5" fill="var(--ink-3)">…cobertura do </text>
+        <text x="248" y="290" font-size="12.5" font-weight="500" fill="var(--accent)">dentista</text>
+        <text x="308" y="290" font-size="12.5" fill="var(--ink-3)"> particular, guardar o…</text>
+        <text x="144" y="314" font-size="11.5" fill="var(--ink-4)">in the body</text>
+
+        <text x="144" y="368" font-size="11.5" class="mono" fill="var(--ink-4)">↑↓ to move · enter to open · esc to close</text>
+      </svg>
+    </div>
+    <figcaption>Find is a locate tool. The selected row is a trough, not a filled pill. The snippet exists so a body hit is honest about <em>why</em> it matched.</figcaption>
+  </figure>
+
+  <h3>What “smart” is, and what it is not</h3>
+  <p>The gap today is that nothing reads <code>notes.body</code> or <code>tasks.notes</code>. The link picker looks at task titles. Chat looks at a capped snapshot and then talks. Neither is Find.</p>
+  <p>Smart, here, is ranking and a snippet:</p>
+  <ul>
+    <li>A title hit outranks a body hit. Always. You named it; that is the thing.</li>
+    <li>Inside a group, open tasks sit above done; <code>needs_review</code> notes sit above the rest. Then recency.</li>
+    <li>A body hit carries ~80 characters around the first match, markdown stripped, the query marked in accent-ink. The stored body is never mutated.</li>
+    <li>Quiet tasks still appear. Find is not Today. Parking a project must not hide the row from a search for its words.</li>
+    <li>Two characters minimum. Empty query shows recents: five open tasks, five recent notes. A blank box is a dead control.</li>
+    <li>Cap eight per group. A palette is not a search-engine page.</li>
+  </ul>
+  <p>Not smart: embeddings, a second model, typo-tolerant trigrams, “search everything.” <code>pg_trgm</code> is a later index if ILIKE ever feels slow, which a single-user corpus will not. Journal, quotes, people, links, events, the notification ledger — named as a growth path, not built. Searching “Ana” already hits a task whose title or notes contain Ana; mentions do not need a second index.</p>
+
+  <h3>How it is built</h3>
+  <p>One server action behind <code>requireOwner()</code>. One service, <code>lib/services/find.ts</code>, that queries tasks and notes in parallel with the same escaped <code>ilike</code> the link picker already uses. Ranking is applied in process on the small cap, not in SQL. No generated <code>tsvector</code> column. No migration. Bilingual content is stored verbatim; <code>ilike</code> is case-insensitive and language-agnostic, which is the honest choice for mixed PT-BR/EN. An English FTS config would stem the wrong language.</p>
+  <p>The palette is a sibling of <code>CapturePalette</code>: a bus, a shortcut helper, a Dialog, mounted once in the authed shell. ⌘J stays Capture. ⌘K is Find. They must not steal each other’s key. Debounce 150ms on the client so a fast typist does not fire six round-trips.</p>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">03</span> The section tape</h2>
+  <p class="sub">Grok puts a column of little lines on the right of a chat, one per turn. A note is not a chat, and the right side of this page is already the links rail (ADR-0047). The tape goes on the left. It is a scroll widget, not a table of contents.</p>
+
+  <h3>The argument</h3>
+  <p>A long note is a document you are inside. Headings already exist — the closed ramp, <code>#</code> / <code>##</code> / <code>###</code>. What is missing is a way to <em>see the shape</em> without scrolling it. Equal-height ticks would be a TOC. Proportional ticks are a map: a long section is a long mark, a short one is a nick, and the mark that is “now” is ink. Click a mark, the heading comes to you.</p>
+  <p>The title of the note is the first mark. Headings in the body are the rest. Depth is encoded as inset, not as a second colour: <code>h1</code> reaches the left edge, <code>h2</code> steps in, <code>h3</code> steps in again. Colour is reserved for “you are here.” Accent is not used — accent means overdue, and a heading is not overdue.</p>
+
+  <figure>
+    <div class="fig-body">
+      <svg viewBox="0 0 720 340" role="img" aria-label="Note page: a thin left tape of proportional ticks, the 65ch prose column, and the 260px links rail on the right.">
+        <!-- tape -->
+        <rect x="16" y="24" width="18" height="292" rx="4" fill="var(--surface-2)"/>
+        <rect x="20" y="32" width="10" height="22" rx="1.5" fill="var(--ink)"/>
+        <rect x="23" y="58" width="7" height="70" rx="1.5" fill="var(--line-strong)"/>
+        <rect x="26" y="132" width="4" height="28" rx="1.5" fill="var(--line-strong)"/>
+        <rect x="20" y="164" width="10" height="48" rx="1.5" fill="var(--line-strong)"/>
+        <rect x="23" y="216" width="7" height="86" rx="1.5" fill="var(--line-strong)"/>
+        <text x="25" y="328" font-size="9" class="mono" fill="var(--ink-4)" text-anchor="middle">tape</text>
+
+        <!-- prose -->
+        <rect x="46" y="24" width="430" height="292" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+        <text x="62" y="52" font-size="18" font-weight="500" fill="var(--ink)">Plano de saúde 2026</text>
+        <text x="62" y="84" font-size="13" font-weight="500" fill="var(--ink)">Cobertura</text>
+        <rect x="62" y="96" width="380" height="6" rx="2" fill="var(--line)"/>
+        <rect x="62" y="110" width="340" height="6" rx="2" fill="var(--line)"/>
+        <rect x="62" y="124" width="360" height="6" rx="2" fill="var(--line)"/>
+        <text x="62" y="160" font-size="13" font-weight="500" fill="var(--ink-3)">Dentista</text>
+        <rect x="62" y="172" width="300" height="6" rx="2" fill="var(--line)"/>
+        <rect x="62" y="186" width="320" height="6" rx="2" fill="var(--line)"/>
+        <text x="62" y="222" font-size="12" fill="var(--ink-4)" class="mono">65ch · measure-prose</text>
+
+        <!-- rail -->
+        <rect x="490" y="24" width="214" height="292" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+        <text x="506" y="48" font-size="11" class="mono" letter-spacing="1.1" fill="var(--ink-4)">LINKED</text>
+        <rect x="506" y="62" width="182" height="28" rx="6" fill="var(--surface-2)"/>
+        <text x="518" y="80" font-size="12" fill="var(--ink-2)">Marcar dentista</text>
+        <rect x="506" y="98" width="182" height="28" rx="6" fill="var(--surface-2)"/>
+        <text x="518" y="116" font-size="12" fill="var(--ink-2)">Almoço com a Ana</text>
+        <text x="597" y="328" font-size="9" class="mono" fill="var(--ink-4)" text-anchor="middle">rail 260</text>
+      </svg>
+    </div>
+    <figcaption>Desk. The tape is a 12–16px sticky column to the left of the measure. The rail stays 260px. ADR-0047’s leftover-width rule is intact: the rail still spends the extra, the tape spends almost nothing.</figcaption>
+  </figure>
+
+  <h3>When it appears</h3>
+  <ul>
+    <li>Hidden when the note has fewer than two marks (title plus one heading). A tape of one is a decoration.</li>
+    <li>Hidden when the whole note fits in the viewport. A map of a room you can already see is noise.</li>
+    <li>On a phone, it becomes a 6px overlay on the left edge of the editor, not a grid column. It must not steal the 65ch. Tap still jumps. Hover labels do not exist on a phone; the jump is the feedback.</li>
+    <li>Hover/focus on desk names the heading in a native <code>title</code> and an accessible name. The ticks themselves stay unlabeled. Grok’s lines are unlabeled too — the point is the shape, not another outline.</li>
+  </ul>
+
+  <h3>How it is built</h3>
+  <p>A client companion of <code>NoteEditor</code>, reading the TipTap doc on update: the title input plus every <code>heading</code> node, with its position in the document and its depth. Positions map onto the tape’s height as a fraction of the article’s rendered height, so a section that is half the note is half the tape. Scroll-spy against <code>#main</code> (the shell is the scroller, ADR-0028) marks the current section. Click calls <code>scrollIntoView</code> on that heading. <code>prefers-reduced-motion</code> jumps, it does not smooth-scroll.</p>
+  <p>No new primitive. No PageHeader. The breadcrumb stays the locator. The tape is not a nav landmark; it is <code>aria-label="Note sections"</code> on a list of links, and it is omitted from the tab order’s long way through — ticks are pointing devices first, keyboard gets the headings in the body.</p>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">04</span> Colour on a word</h2>
+  <p class="sub">Select a word, apply one of the colours the app already speaks. No picker, no hex, no highlight-marker. The stored value is a palette slug so light and dark both resolve it, the same way a domain dot already does.</p>
+
+  <h3>The set</h3>
+  <p>Domains already have nine slugs in <code>lib/schemas/color.ts</code>. Body text is not a 9px dot, so the Travel exemption that lets yellow be a full yellow (1.45:1 on light ground) cannot come along. Accent cannot come along either: it is the overdue/interactive state, and a coloured word must not look like a control. That leaves eight.</p>
+
+  <div class="swatches">
+    <span class="swatch"><i style="background:var(--engine)"></i>Indigo · engine</span>
+    <span class="swatch"><i style="background:var(--health)"></i>Green · health</span>
+    <span class="swatch"><i style="background:var(--family)"></i>Orchid · family</span>
+    <span class="swatch"><i style="background:var(--spirit)"></i>Clay · spirit</span>
+    <span class="swatch"><i style="background:var(--finance)"></i>Blue · finance</span>
+    <span class="swatch"><i style="background:var(--code)"></i>Cyan · code</span>
+    <span class="swatch"><i style="background:var(--pine)"></i>Teal · pine</span>
+    <span class="swatch"><i style="background:var(--burgundy)"></i>Rose · burgundy</span>
+    <span class="swatch dead"><i style="background:var(--travel)"></i>Yellow · travel</span>
+  </div>
+  <p style="margin-top:1rem">A coloured word is <em>not</em> a domain tag. Colouring a sentence green does not file the note under Health. Filing stays the <code>ScopeSelect</code> under the editor. The slug is reused because it is the closed set the owner already knows from the domain picker, and because <code>ColorSwatchPicker</code> already renders it.</p>
+
+  <figure>
+    <div class="fig-body">
+      <svg viewBox="0 0 720 200" role="img" aria-label="A selected word in a note, with a small bubble of eight colour dots above it.">
+        <text x="36" y="130" font-size="16" fill="var(--ink)">Guardar o recibo do </text>
+        <rect x="196" y="112" width="72" height="26" rx="4" fill="var(--accent-bg)"/>
+        <text x="204" y="130" font-size="16" font-weight="500" fill="var(--health)">dentista</text>
+        <text x="272" y="130" font-size="16" fill="var(--ink)"> particular.</text>
+
+        <rect x="176" y="28" width="268" height="64" rx="12" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <circle cx="204" cy="60" r="9" fill="var(--engine)"/>
+        <circle cx="230" cy="60" r="9" fill="var(--health)" stroke="var(--ink)" stroke-width="2"/>
+        <circle cx="256" cy="60" r="9" fill="var(--family)"/>
+        <circle cx="282" cy="60" r="9" fill="var(--spirit)"/>
+        <circle cx="308" cy="60" r="9" fill="var(--finance)"/>
+        <circle cx="334" cy="60" r="9" fill="var(--code)"/>
+        <circle cx="360" cy="60" r="9" fill="var(--pine)"/>
+        <circle cx="386" cy="60" r="9" fill="var(--burgundy)"/>
+        <circle cx="420" cy="60" r="8" fill="none" stroke="var(--line-strong)" stroke-width="1.5"/>
+        <path d="M415 56 L425 64 M425 56 L415 64" stroke="var(--ink-3)" stroke-width="1.2"/>
+        <polygon points="300,92 308,84 316,92" fill="var(--surface)" stroke="var(--line-strong)"/>
+      </svg>
+    </div>
+    <figcaption>Selection bubble. Eight dots plus a clear. The active slug gets the same ink ring the domain picker already uses. No toolbar, no hex, no second row of formatting.</figcaption>
+  </figure>
+
+  <h3>Storage, and why markdown stays</h3>
+  <p>ADR-0009 stores the body as markdown text, serialized by <code>tiptap-markdown</code> with <code>html: false</code>. That rule stands. Colour is one inline mark with a slug attribute. On the way out it writes:</p>
+  <p><code>&lt;span data-ink="health"&gt;dentista&lt;/span&gt;</code></p>
+  <p>On the way in, only a <code>span[data-ink]</code> whose value is one of the eight slugs becomes a mark. Any other HTML stays text. Unknown slugs strip to plain. Hex, <code>style=</code>, <code>&lt;font&gt;</code> — gone. Capture can still dump a raw angle bracket into a note and it will show as a bracket, not as markup.</p>
+  <p>This is the same escape hatch empty paragraphs already use (<code>&amp;nbsp;</code> in, empty <code>&lt;p&gt;</code> out). We are not turning the editor into an HTML store. We are naming one tag the serializer may emit, and we are writing that down in an amendment to ADR-0009 so the next reader does not treat it as drift.</p>
+
+  <h3>The bubble</h3>
+  <p>The editor has no toolbar today. Markdown shortcuts own bold, italic, lists, headings. That does not change. Colour has no markdown shortcut worth teaching, so it appears only when the selection is non-empty: a TipTap <code>BubbleMenu</code> of eight swatches plus clear. Reuse the swatch language from <code>ColorSwatchPicker</code> — same size, same ring, same labels — in a compact row. Applying a colour to a selection that already has one replaces it. Clear removes the mark and the word returns to <code>ink</code>.</p>
+  <p>iOS selection handles and the bubble will fight; that is a known TipTap tax. The bubble must sit above the selection, not over the native handles, and it must not steal the first tap. If that cannot be made decent on a phone, colour is a desk feature and the bubble does not mount below <code>lg</code>. That fallback is allowed. Inventing a second colour UI for the phone is not.</p>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">05</span> What this pass does not do</h2>
+  <p class="sub">The last month taught us that a column which only describes the work is a column we will delete. Same standard here.</p>
+
+  <div class="skip"><span class="x">×</span><span class="t">A /search page</span><span class="r">One operator, at a keyboard. A palette is the whole surface. A URL for a query is a feature for sharing, and this app does not share.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">A third header pill</span><span class="r">Capture and Ask already spent the two standing actions. Find is a key and a More-menu row.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">Embeddings, Chat-as-search</span><span class="r">Ask already synthesises. Find locates. A second model in the locate path is cost with no scene.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">Journal, quotes, people, links in v1</span><span class="r">Growth path: add a kind, add a query, add a group. Not this pass.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">A formatting toolbar</span><span class="r">Bold and italic stay markdown shortcuts. The bubble is colour and clear, nothing else.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">Highlight / background marks</span><span class="r">Asked for text colour. A marker is a different mark and a different stored tag.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">Travel yellow, accent orange</span><span class="r">Unreadable as body, and a state colour. The eight that remain are the set.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">Colour as domain filing</span><span class="r">A green word is not Health. Filing is still the picker under the editor.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">A labelled outline / TOC</span><span class="r">The tape is a map of mass, not a list of titles. Hover names a tick; the body names the rest.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">Moving the links rail</span><span class="r">ADR-0047 stands. Tape on the left, rail on the right.</span></div>
+  <div class="skip"><span class="x">×</span><span class="t">complete_task, morning push</span><span class="r">Still the right next product work. Not this file. Do not smuggle them in.</span></div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">06</span> Build order</h2>
+  <p class="sub">Three independently committable pieces. Find first because it is the daily win and it does not touch the editor. Tape next because it is layout on one page. Colour last because it is the storage change and the one that needs an ADR amendment.</p>
+
+  <div class="rec top">
+    <div class="rec-head"><span class="rid">P1</span><h3>Find palette</h3><span class="pill do">first</span></div>
+    <p class="why">⌘K, the action, the service, the More-menu row. Recents on empty. Snippets on body hits. Opens the existing task dialog or note page. Write ADR-0059 when this lands — Find is a new verb in the shell, and the “not a third pill” rule will be forgotten without it.</p>
+    <ul class="files">
+      <li><span class="op new">new</span><span class="fp">lib/services/find.ts + find.test.ts — parallel ilike, rank, snippet, recents</span></li>
+      <li><span class="op new">new</span><span class="fp">lib/find/shortcuts.ts + palette-bus.ts — ⌘K, same shape as capture/</span></li>
+      <li><span class="op new">new</span><span class="fp">components/find-palette.tsx — Dialog, grouped rows, debounce</span></li>
+      <li><span class="op new">new</span><span class="fp">app/(authed)/find/actions.ts — requireOwner, the one read</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/layout.tsx — mount next to CapturePalette</span></li>
+      <li><span class="op mod">mod</span><span class="fp">components/nav-links.ts · more-menu — Daily section gains Find</span></li>
+      <li><span class="op mod">mod</span><span class="fp">CONTEXT.md — Find is a glossary term, sibling of capture and inbox</span></li>
+    </ul>
+    <div class="meta"><span><b>depends on</b> nothing</span><span><b>migration</b> none</span><span><b>needs ADR</b> 0059 — the find palette</span></div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head"><span class="rid">P2</span><h3>Section tape</h3><span class="pill later">second</span></div>
+    <p class="why">Left sticky ticks on <code>/notes/[id]</code>. Heading map from the live TipTap doc. Scroll-spy against <code>#main</code>. Hidden when there is nothing to map. Phone overlay, not a column. Amends ADR-0047 with one sentence: a 12–16px tape may sit to the left of the measure; the rail still owns the leftover.</p>
+    <ul class="files">
+      <li><span class="op new">new</span><span class="fp">app/(authed)/notes/[id]/section-tape.tsx + a small position helper with tests</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/notes/[id]/note-editor.tsx — expose heading positions</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/notes/[id]/page.tsx — desk grid gains the tape column</span></li>
+    </ul>
+    <div class="meta"><span><b>depends on</b> nothing</span><span><b>migration</b> none</span><span><b>needs ADR</b> amend 0047, or a short 0060 if the amendment would bury the original</span></div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head"><span class="rid">P3</span><h3>Ink marks</h3><span class="pill later">third</span></div>
+    <p class="why">The TipTap mark, the allowlisted serializer, the selection bubble, the CSS that resolves <code>data-ink</code> to <code>var(--domain-&lt;slug&gt;)</code>. Round-trip tests: slug in, slug out, unknown slug stripped, raw HTML still text. Amends ADR-0009 so “plain markdown” still means “plain markdown, plus this one span.”</p>
+    <ul class="files">
+      <li><span class="op new">new</span><span class="fp">app/(authed)/notes/[id]/ink-mark.ts — the mark + markdown serialize/parse</span></li>
+      <li><span class="op new">new</span><span class="fp">app/(authed)/notes/[id]/ink-bubble.tsx — eight dots + clear, desk-first</span></li>
+      <li><span class="op new">new</span><span class="fp">lib/ink.ts + ink.test.ts — slug set, strip, CSS var. Reuses COLOR_SLUGS minus travel.</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/(authed)/notes/[id]/note-editor.tsx — register the mark, mount the bubble</span></li>
+      <li><span class="op mod">mod</span><span class="fp">app/globals.css — <code>[data-ink="…"]</code> colour rules, both themes</span></li>
+      <li><span class="op mod">mod</span><span class="fp">docs/adr/0009 — amendment: one allowlisted span</span></li>
+    </ul>
+    <div class="meta"><span><b>depends on</b> nothing (can ship without P2)</span><span><b>migration</b> none</span><span><b>needs ADR</b> amend 0009</span></div>
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">07</span> Constraints the build may not invent past</h2>
+
+  <div class="two">
+    <div class="pane">
+      <h4>Still true</h4>
+      <ul>
+        <li>Iron rules 1–6. Find is a read, so #6 does not fire. Colour is user-authored, so #5 (verbatim) still holds — we store the words, plus a slug.</li>
+        <li><code>requireOwner()</code> on the Find action. No <code>/api/find</code>.</li>
+        <li>Services take <code>sb</code> first.</li>
+        <li>UI chrome English. Content in the language it was written.</li>
+        <li>Semantic tokens only. No raw hex in components.</li>
+        <li>The two standing header actions stay two.</li>
+      </ul>
+    </div>
+    <div class="pane">
+      <h4>Load-bearing files</h4>
+      <ul>
+        <li><code>lib/services/tasks.ts</code> — <code>searchTasksByTitle</code> is the ancestor, not the implementation. Leave it; the link picker still needs a title-only search.</li>
+        <li><code>app/(authed)/notes/[id]/note-editor.tsx</code> — <code>html: false</code> stays. The mark’s own serializer is the hatch.</li>
+        <li><code>lib/schemas/color.ts</code> — do not add a tenth slug. Subtract travel at the ink layer.</li>
+        <li><code>components/color-swatch-picker.tsx</code> — visual language to copy, not a component to reuse on a bubble (it is a form fieldset).</li>
+        <li><code>#main</code> is the scroller. The tape spies on that, not <code>window</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<section class="point">
+  <h2><span class="num">08</span> Two things to confirm</h2>
+  <p class="sub">Everything else is locked. These two change the build if you disagree. The recommendation is the locked value in the table above.</p>
+
+  <div class="qa">
+    <span class="qid">O1</span><span class="qt">Is v1 really only tasks and notes?</span>
+    <p>Journal, quotes, people and links are all findable in principle. Adding them is a group in the palette and a query in the service. The cost is a fatter empty-recents state and a ranking that has to mean something across four kinds.</p>
+    <p class="rec-line"><b>Recommend:</b> tasks + notes only. You lose things in those two. Quotes you reread from Today. People you open from a mention. Grow the corpus after you have used Find for a week.</p>
+  </div>
+
+  <div class="qa">
+    <span class="qid">O2</span><span class="qt">Colour on a phone — ship it, or desk-only?</span>
+    <p>iOS selection handles and a bubble menu share one thumb. If the first tap dismisses the native selection, colour becomes a fight, not a feature. Desk is the design-leading scene (PRODUCT.md).</p>
+    <p class="rec-line"><b>Recommend:</b> build the bubble for desk. If the phone pass is decent, keep it. If it is not, do not mount below <code>lg</code> and do not invent a second UI. Colour remains in the stored markdown either way, so a phone still <em>renders</em> it.</p>
+  </div>
+</section>
+
+
+<footer>
+  <p>Plan for Find + note tape + ink marks. Not a build. Companion to <code>docs/plan-dispatch-shape-2026-08-21.html</code> in form, not in job: that plan removed. This one adds three instruments to a model that is already honest.</p>
+  <p>Next: owner confirms or corrects D2 / D5 / O1 / O2, then P1.</p>
+</footer>
+
+</div>
+</body>
+</html>
