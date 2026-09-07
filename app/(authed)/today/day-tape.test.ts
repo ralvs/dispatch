@@ -122,3 +122,52 @@ describe("tapeBlocks", () => {
 		expect(blocks.map((b) => b.key)).toEqual(["early", "late"]);
 	});
 });
+
+// Two meetings at the same hour used to be one block: the later drew over the
+// earlier and a double-booked morning read as a single commitment. They now
+// split the track into rows, per cluster of touching events rather than per
+// day, so one clash does not halve every other meeting.
+
+describe("overlapping events", () => {
+	it("puts two events at the same hour in two rows", () => {
+		const blocks = tapeBlocks([
+			event("a", "09:00", "2026-08-07T12:00:00Z", "2026-08-07T13:00:00Z"),
+			event("b", "09:30", "2026-08-07T12:30:00Z", "2026-08-07T13:30:00Z"),
+		]);
+		expect(blocks.map((b) => [b.lane, b.lanes])).toEqual([
+			[0, 2],
+			[1, 2],
+		]);
+	});
+
+	it("keeps back-to-back events in one row", () => {
+		const blocks = tapeBlocks([
+			event("a", "09:00", "2026-08-07T12:00:00Z", "2026-08-07T13:00:00Z"),
+			event("b", "10:00", "2026-08-07T13:00:00Z", "2026-08-07T14:00:00Z"),
+		]);
+		expect(blocks.every((b) => b.lane === 0 && b.lanes === 1)).toBe(true);
+	});
+
+	it("splits only the cluster that clashes, not the whole day", () => {
+		const blocks = tapeBlocks([
+			event("clash-a", "09:00", "2026-08-07T12:00:00Z", "2026-08-07T13:00:00Z"),
+			event("clash-b", "09:30", "2026-08-07T12:30:00Z", "2026-08-07T13:30:00Z"),
+			event("alone", "15:00", "2026-08-07T18:00:00Z", "2026-08-07T19:00:00Z"),
+		]);
+		const alone = blocks.find((b) => b.key === "alone");
+		expect(alone).toMatchObject({ lane: 0, lanes: 1 });
+	});
+
+	it("gives a three-deep clash three rows and reuses a freed one", () => {
+		const blocks = tapeBlocks([
+			event("a", "09:00", "2026-08-07T12:00:00Z", "2026-08-07T13:00:00Z"),
+			event("b", "09:15", "2026-08-07T12:15:00Z", "2026-08-07T13:15:00Z"),
+			event("c", "09:30", "2026-08-07T12:30:00Z", "2026-08-07T13:30:00Z"),
+			// Starts after `a` ends, so it takes `a`'s row back.
+			event("d", "10:00", "2026-08-07T13:00:00Z", "2026-08-07T14:00:00Z"),
+		]);
+		const lane = (key: string) => blocks.find((b) => b.key === key)?.lane;
+		expect([lane("a"), lane("b"), lane("c"), lane("d")]).toEqual([0, 1, 2, 0]);
+		expect(blocks.every((b) => b.lanes === 3)).toBe(true);
+	});
+});

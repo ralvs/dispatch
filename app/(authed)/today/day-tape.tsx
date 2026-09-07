@@ -23,8 +23,10 @@ import { type DomainColorSource, eventColor } from "@/lib/ui/event-color";
  * lives in the Timeline list directly below — which was always the tape's
  * contract. Evidence: .impeccable/mocks/tape-lab.html.
  *
- * Hover (fine pointer only) draws a quiet scrub line with the wall-clock at
- * that x. It is orientation, not data — nothing moves, nothing is selected.
+ * Hover (fine pointer only) draws a quiet scrub line and prints the wall-clock
+ * at that x on the ruler below the track, where every other clock reading on
+ * the tape already lives. Above the track belongs to the events' own start
+ * times. It is orientation, not data — nothing moves, nothing is selected.
  */
 
 /** The pinned window: 06:00–22:00, 960 minutes. */
@@ -81,6 +83,10 @@ export type TapeBlock = {
 	durationMin: number;
 	color: string;
 	time: string;
+	/** Row this block sits in, 0-based, when its cluster stacks. */
+	lane: number;
+	/** How many rows its cluster splits the track into. 1 = full height. */
+	lanes: number;
 };
 
 /** The day's timed items as positioned blocks. Pure, so SSR and the client agree. */
@@ -100,6 +106,8 @@ export function tapeBlocks(
 				durationMin: Number.isFinite(ms) ? Math.max(0, Math.round(ms / 60_000)) : 0,
 				color: eventColor(item.event.calendar_name, domains),
 				time: item.time,
+				lane: 0,
+				lanes: 1,
 			});
 		} else {
 			const slug = item.task.domain?.color;
@@ -110,10 +118,63 @@ export function tapeBlocks(
 				durationMin: 0,
 				color: isColorSlug(slug) ? colorSlugVar(slug) : "var(--ink-3)",
 				time: item.time,
+				lane: 0,
+				lanes: 1,
 			});
 		}
 	}
-	return blocks.sort((a, b) => a.startMin - b.startMin);
+	return assignTapeLanes(blocks.sort((a, b) => a.startMin - b.startMin));
+}
+
+/**
+ * Two meetings at the same hour used to be one block: the later one simply
+ * drew over the earlier, so a double-booked morning read as a single
+ * commitment. Overlapping events now split the track into rows instead.
+ *
+ * The split is per cluster, not per day. A run of events that touch each other
+ * gets as many rows as its busiest moment needs, and the rest of the tape keeps
+ * full-height blocks — so one double-booking at 09:00 does not halve every
+ * other meeting on the day. Blocks that only meet end-to-start do not overlap
+ * and stay in one row.
+ *
+ * Tasks take no part: a scheduled task is a point in time, not a span, and its
+ * tick stays full height so the shape still tells you which is which.
+ *
+ * Mutates in place and returns the same array — it is only ever called on the
+ * freshly built list above, and staying pure in its inputs keeps SSR and the
+ * client in agreement.
+ */
+export function assignTapeLanes(blocks: TapeBlock[]): TapeBlock[] {
+	const spans = blocks.filter((b) => b.kind === "event" && b.durationMin > 0);
+	let cluster: TapeBlock[] = [];
+	let laneEnds: number[] = [];
+	let clusterEnd = Number.NEGATIVE_INFINITY;
+
+	const closeCluster = () => {
+		const lanes = Math.max(1, laneEnds.length);
+		for (const b of cluster) b.lanes = lanes;
+		cluster = [];
+		laneEnds = [];
+		clusterEnd = Number.NEGATIVE_INFINITY;
+	};
+
+	for (const b of spans) {
+		if (b.startMin >= clusterEnd) closeCluster();
+		const end = b.startMin + b.durationMin;
+		let lane = laneEnds.findIndex((laneEnd) => laneEnd <= b.startMin);
+		if (lane === -1) {
+			lane = laneEnds.length;
+			laneEnds.push(end);
+		} else {
+			laneEnds[lane] = end;
+		}
+		b.lane = lane;
+		cluster.push(b);
+		clusterEnd = Math.max(clusterEnd, end);
+	}
+	closeCluster();
+
+	return blocks;
 }
 
 function formatHour(h: number): string {
@@ -230,6 +291,16 @@ export function DayTape({
 		[startMin, endMin],
 	);
 	const onPointerLeave = useCallback(() => setHover(null), []);
+	// Half a "11:30" at 11px: nearer than this to an end and the centred
+	// label would be clipped, so it anchors to that edge instead.
+	const hoverEdge =
+		hover === null
+			? undefined
+			: pxGap(hover.at, 0) < TIME_LABEL_WIDTH_PX / 2
+				? "start"
+				: pxGap(hover.at, 100) < TIME_LABEL_WIDTH_PX / 2
+					? "end"
+					: undefined;
 
 	return (
 		<section className="t-day-owned mt-10" aria-label="Day tape">
@@ -288,6 +359,13 @@ export function DayTape({
 									b.kind === "event"
 										? `calc(${at(b.startMin + b.durationMin) - at(b.startMin)}% - 2px)`
 										: 0,
+								// Only a clash sets a row. One row is left to the stylesheet, so
+								// the ordinary block still fills the track to the pixel; the 1px
+								// insets below exist to part two rows, not to shrink one.
+								...(b.lanes > 1 && {
+									top: `calc(${(b.lane * 100) / b.lanes}% + ${b.lane === 0 ? 0 : 1}px)`,
+									height: `calc(${100 / b.lanes}% - ${b.lane === 0 || b.lane === b.lanes - 1 ? 1 : 2}px)`,
+								}),
 								[b.kind === "event" ? "background" : "color"]: b.color,
 								// Clock order, so the day assembles left to right.
 								animationDelay: `${0.02 + i * 0.05}s`,
@@ -295,14 +373,7 @@ export function DayTape({
 						/>
 					))}
 					{nowAt !== null && <div className="t-now" style={{ left: `${nowAt}%` }} />}
-					{hover !== null && (
-						<>
-							<div className="t-hover" style={{ left: `${hover.at}%` }} />
-							<span className="t-hover-label" style={{ left: `${hover.at}%` }}>
-								{hover.label}
-							</span>
-						</>
-					)}
+					{hover !== null && <div className="t-hover" style={{ left: `${hover.at}%` }} />}
 				</div>
 				<div className="t-ticks">
 					{ticks.map((h, i) => {
@@ -316,6 +387,15 @@ export function DayTape({
 						if (!isEnd && nowAt !== null && pxGap(at(h * 60), nowAt) < NOW_CLEARANCE_PX)
 							return null;
 						if (!isEnd && pxGap(at(h * 60), 100) < END_CLEARANCE_PX) return null;
+						// The hover reading now sits on this same row, so it displaces a
+						// ruled hour exactly as the now-label does — including the closing
+						// one, which is the only reading the scrub can reach at the edge.
+						if (
+							hover !== null &&
+							pxGap(isEnd ? 100 : at(h * 60), hover.at) <
+								(isEnd ? END_CLEARANCE_PX : NOW_CLEARANCE_PX)
+						)
+							return null;
 						// The last tick anchors to the right edge instead of its own
 						// position, so the closing hour is never half off the page.
 						// `left` is omitted rather than overridden: an inline left
@@ -332,9 +412,24 @@ export function DayTape({
 							</span>
 						);
 					})}
-					{nowAt !== null && nowLabel !== null && (
-						<span data-now="" data-keep="true" style={{ left: `${nowAt}%` }}>
-							{nowLabel}
+					{nowAt !== null &&
+						nowLabel !== null &&
+						!(hover !== null && pxGap(nowAt, hover.at) < NOW_CLEARANCE_PX) && (
+							<span data-now="" data-keep="true" style={{ left: `${nowAt}%` }}>
+								{nowLabel}
+							</span>
+						)}
+					{hover !== null && (
+						// Centred like any tick, except at the two ends, where it anchors
+						// the way 06:00 and the closing hour do — a scrub at the very edge
+						// must not hang half off the page.
+						<span
+							data-hover=""
+							data-keep="true"
+							data-edge={hoverEdge}
+							style={hoverEdge === "end" ? undefined : { left: `${hover.at}%` }}
+						>
+							{hover.label}
 						</span>
 					)}
 				</div>

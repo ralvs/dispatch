@@ -88,10 +88,13 @@ const TODAY_CSS = `
 	background: var(--surface-2);
 	border-radius: 12px;
 }
+/* top/height come from the block: events that overlap in time split the track
+   into rows rather than drawing over one another. A day with no double-booking
+   sets one row and the block fills the track exactly as before. */
 .t-blk {
 	position: absolute;
 	top: 0;
-	bottom: 0;
+	height: 100%;
 	min-width: 7px;
 	border-radius: 8px;
 }
@@ -112,9 +115,12 @@ const TODAY_CSS = `
 	z-index: 3;
 }
 /* Hover scrub: quieter than the now-mark (1px ink-3, no weight), and pointer-
-   events none so it never steals the next move. Label rides above the track so
-   it never fights the now-label on the ruler. Fine-pointer only — touch has no
-   hover and a finger scrub would fight scroll. */
+   events none so it never steals the next move. Its label sits on the ruler
+   below the track with the other clock readings — above the track is the
+   events' own start times — and any hour it lands on gives way. Fine-pointer
+   only, and gated in one place: the component sets the scrub for pointerType
+   "mouse" alone, so on touch there is nothing to draw and no hour is displaced.
+   A finger scrub would fight scroll and earn nothing. */
 .t-hover {
 	position: absolute;
 	top: -4px;
@@ -123,22 +129,6 @@ const TODAY_CSS = `
 	background: var(--ink-3);
 	z-index: 2;
 	pointer-events: none;
-}
-.t-hover-label {
-	position: absolute;
-	top: -18px;
-	transform: translateX(-50%);
-	font-family: var(--font-mono);
-	font-size: 11px;
-	color: var(--ink-3);
-	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
-	pointer-events: none;
-	z-index: 2;
-}
-@media (hover: none), (pointer: coarse) {
-	.t-hover,
-	.t-hover-label { display: none }
 }
 .t-ticks {
 	position: relative;
@@ -159,6 +149,12 @@ const TODAY_CSS = `
 	color: var(--ink);
 	font-weight: 500;
 	transform: translateX(-50%);
+}
+/* The scrub reading: same row and same rhythm as the ruled hours, one step
+   quieter than the now-label because it is only where the pointer is. */
+.t-ticks > span[data-hover] {
+	color: var(--ink-3);
+	pointer-events: none;
 }
 
 /* At 393pt the tape runs 0.37px/min: a 30-minute meeting is 11px, and the
