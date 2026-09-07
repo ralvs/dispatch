@@ -90,8 +90,10 @@ describe("deleteObjects", () => {
 		await deleteObjects(["notes/a/one.webp", "notes/a/two.pdf"]);
 
 		expect(fetchMock).toHaveBeenCalledTimes(2);
-		const urls = fetchMock.mock.calls.map(([req]) => (req as Request).url);
-		expect(urls).toEqual([`${BASE}/notes/a/one.webp`, `${BASE}/notes/a/two.pdf`]);
+		// deleteObjects fans out through Promise.all, so the calls race — assert
+		// the set, not the order, or this passes or fails on scheduler timing.
+		const urls = fetchMock.mock.calls.map(([req]) => (req as Request).url).sort();
+		expect(urls).toEqual([`${BASE}/notes/a/one.webp`, `${BASE}/notes/a/two.pdf`].sort());
 	});
 
 	// S3 DELETE is idempotent; a missing key is success, not an error.
