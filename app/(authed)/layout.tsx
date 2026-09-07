@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { CapturePalette } from "@/components/capture-palette";
+import { FindPalette } from "@/components/find-palette";
 import { MoreMenu } from "@/components/more-menu";
 import { NavShortcuts } from "@/components/nav-shortcuts";
 import { requireOwnerPage } from "@/lib/auth";
@@ -67,6 +68,7 @@ async function AuthedShell({ children }: { children: React.ReactNode }) {
 					</div>
 				</main>
 				<CapturePalette />
+				<FindPalette />
 				<MoreMenu />
 				<NavShortcuts />
 			</div>

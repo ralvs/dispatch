@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { isActive, MORE_SECTIONS } from "@/components/nav-links";
+import { openFindPalette } from "@/lib/find/palette-bus";
 import { CLOSE_MORE_MENU_EVENT, closeMoreMenu, TOGGLE_MORE_MENU_EVENT } from "@/lib/more-menu-bus";
 
 /**
@@ -112,6 +113,23 @@ export function MoreMenu() {
 								{section.title}
 							</p>
 							<ul className="mt-1">
+								{section.title === "Daily" ? (
+									<li>
+										<button
+											type="button"
+											onClick={() => {
+												closeMoreMenu();
+												openFindPalette();
+											}}
+											className="flex w-full items-center justify-between rounded-control px-2 py-2.5 text-left text-[15px] font-normal text-ink transition-colors hover:bg-surface-2"
+										>
+											Find
+											<span aria-hidden="true" className="font-mono text-meta text-ink-4">
+												⌘K
+											</span>
+										</button>
+									</li>
+								) : null}
 								{section.items.map((item) => {
 									const active = isActive(item, pathname);
 									return (

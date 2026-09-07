@@ -16,6 +16,14 @@ A title-only create on `/tasks` is a separate **sentence → task** path
 (`quickAddTask`) — no `captured_data`, no `needs_review` degrade
 (docs/adr/0019 D3, 0043). Dispatch does not transcribe audio (docs/adr/0017).
 
+## find
+
+A command palette (⌘K) that locates a **task** or a **note** by substring.
+Tasks are matched on `title` and `notes`; notes on `title` and `body`. Title
+hits rank above body/notes hits. An empty query shows recents. Find does not
+create anything and does not replace Chat (Ask). Quiet and done tasks still
+appear — locating is not Today. Docs/adr/0059.
+
 ## inbox
 
 Where a **task** waits when it was captured without a domain — which is to say
