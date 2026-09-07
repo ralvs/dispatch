@@ -20,8 +20,11 @@ import {
 	saveNoteAction,
 	setNoteDomainAction,
 } from "../actions";
+import { InkBubble } from "./ink-bubble";
+import { Ink } from "./ink-mark";
 import { Mention } from "./mention-extension";
 import { createMentionSuggestionExtension } from "./mention-suggestion";
+import { TickRail } from "./tick-rail";
 import { Wikilink } from "./wikilink-extension";
 import { createWikilinkSuggestionExtension, type WikilinkCandidate } from "./wikilink-suggestion";
 
@@ -94,6 +97,8 @@ export function NoteEditor({
 	const [domainId, setDomainId] = useState(note.domain_id ?? "");
 	const [saveState, setSaveState] = useState<SaveState>("idle");
 	const titleRef = useRef(note.title ?? "");
+	const titleInputRef = useRef<HTMLInputElement>(null);
+	const articleRef = useRef<HTMLElement>(null);
 	const bodyRef = useRef(note.body);
 	const lastSavedRef = useRef(`${note.title ?? ""}\u0000${note.body}`);
 	const savedIndicatorTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -149,7 +154,10 @@ export function NoteEditor({
 			createWikilinkSuggestionExtension(noteTitles, note.id),
 			Mention,
 			createMentionSuggestionExtension(people),
-			Markdown.configure({ html: false }),
+			Ink,
+			// html: true so the allowlisted <span data-ink> round-trips
+			// (docs/adr/0009 amendment). The schema only accepts that span.
+			Markdown.configure({ html: true }),
 		],
 		content: note.body,
 		editorProps: {
@@ -179,8 +187,15 @@ export function NoteEditor({
 	});
 
 	return (
-		<article className="measure-prose">
+		<article ref={articleRef} className="relative measure-prose lg:pr-8">
+			{editor ? (
+				<>
+					<TickRail editor={editor} titleRef={titleInputRef} articleRef={articleRef} />
+					<InkBubble editor={editor} />
+				</>
+			) : null}
 			<input
+				ref={titleInputRef}
 				aria-label="Note title"
 				defaultValue={note.title ?? ""}
 				placeholder="Untitled"

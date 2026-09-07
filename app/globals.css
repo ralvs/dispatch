@@ -412,6 +412,18 @@ html[data-standalone] .app-shell {
 .prose-authored :where(ul[data-type="taskList"] input) {
 	accent-color: var(--accent);
 }
+/* Named text colour in notes (docs/adr/0009). Tokens, never hex. */
+.prose-authored [data-ink="accent"] { color: var(--accent); }
+.prose-authored [data-ink="error"] { color: var(--error); }
+.prose-authored [data-ink="engine"] { color: var(--domain-engine); }
+.prose-authored [data-ink="health"] { color: var(--domain-health); }
+.prose-authored [data-ink="family"] { color: var(--domain-family); }
+.prose-authored [data-ink="spirit"] { color: var(--domain-spirit); }
+.prose-authored [data-ink="finance"] { color: var(--domain-finance); }
+.prose-authored [data-ink="code"] { color: var(--domain-code); }
+.prose-authored [data-ink="travel"] { color: var(--domain-travel); }
+.prose-authored [data-ink="pine"] { color: var(--domain-pine); }
+.prose-authored [data-ink="burgundy"] { color: var(--domain-burgundy); }
 
 /* Hairline rules — the structural 1px dividers used everywhere. */
 .hairline {

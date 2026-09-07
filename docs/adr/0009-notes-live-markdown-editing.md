@@ -28,3 +28,15 @@ The owner's habit is Mem/Apple Notes, not form-mode editing. Storing markdown
 text (not HTML) keeps the change purely presentational: capture, the
 `needs_review` degrade path, and iron rule #5 (bilingual verbatim storage)
 are all untouched — they already read/write `notes.body` as plain text.
+
+## Amendment: one allowlisted colour span (2026-09-07)
+
+The stored body is still markdown text. One inline HTML tag is now legal:
+
+`<span data-ink="health">word</span>`
+
+`data-ink` is a palette slug (the nine domain slots, plus `accent` and
+`error`) — never a hex. Unknown slugs strip to plain text. `tiptap-markdown`
+parses HTML so this span round-trips; the schema only accepts `span[data-ink]`.
+Colour is a selection bubble, not a toolbar. Chrome colour meanings (overdue,
+error) do not apply inside a note.
