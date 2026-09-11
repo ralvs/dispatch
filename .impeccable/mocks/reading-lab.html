@@ -49,19 +49,22 @@
 			.v-b :where(p, ul, ol) { margin: 0 0 1.15em; }
 			.v-b :where(h2) { margin: 2em 0 0.6em; font-size: 18px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.35; }
 			.v-b :where(h3) { margin: 1.7em 0 0.5em; font-size: 16px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.35; }
-			.v-b :where(ul) { list-style: disc; padding-left: 1.5em; }
+			.v-b :where(ul) { list-style: disc; padding-left: var(--ind, 1.5em); }
 			.v-b :where(li) { margin: 0.5em 0; }
 			.v-b :where(li)::marker { color: var(--ink-4); }
 			.v-b :where(li > ul) { margin: 0.5em 0 0.15em; }
 			.v-b strong { font-weight: 500; }
 
 			/* ══ C — air + one more weight for what a person emphasised ═══════ */
-			.v-c .note-title { font-weight: 600; letter-spacing: -0.9px; padding-bottom: 10px; }
+			/* Shipped: the title stays 500. It sits alone above a rule with nothing to
+			   compete against, so size already separates it and weight buys nothing.
+			   The 600 is spent inside the body, where things do compete. */
+			.v-c .note-title { padding-bottom: 10px; }
 			.v-c .note-body { font-size: 16px; font-weight: 400; line-height: 1.65; letter-spacing: -0.01em; color: var(--ink); }
 			.v-c :where(p, ul, ol) { margin: 0 0 1.15em; }
 			.v-c :where(h2) { margin: 2em 0 0.6em; font-size: 18px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.35; }
 			.v-c :where(h3) { margin: 1.7em 0 0.5em; font-size: 16px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.35; }
-			.v-c :where(ul) { list-style: disc; padding-left: 1.5em; }
+			.v-c :where(ul) { list-style: disc; padding-left: var(--ind, 1.5em); }
 			.v-c :where(li) { margin: 0.5em 0; }
 			.v-c :where(li)::marker { color: var(--ink-4); }
 			.v-c :where(li > ul) { margin: 0.5em 0 0.15em; }
@@ -87,6 +90,7 @@
 				<div class="grp" id="sample">
 					<button type="button" data-s="list" aria-pressed="true">List note</button>
 					<button type="button" data-s="prose" aria-pressed="false">Prose note</button>
+					<button type="button" data-s="indent" aria-pressed="false">Indent test</button>
 				</div>
 				<div class="grp" id="theme">
 					<button type="button" data-t="light" aria-pressed="true">Light</button>
@@ -174,14 +178,34 @@
 				 "bullet gap <b>4px</b><br>indent <b>20px</b><br>line-height <b>1.6</b><br>heaviest <b>500</b>"],
 				["b", "B · air", "li 0.5em · pad 1.5em · lh 1.65 · max weight 500",
 				 "bullet gap <b>8px</b><br>indent <b>24px</b><br>line-height <b>1.65</b><br>heaviest <b>500</b>"],
-				["c", "C · air + weight", "li 0.5em · pad 1.5em · lh 1.65 · max weight 600",
+				["c", "C · shipped", "li 0.5em · pad 1.5em · lh 1.65 · body weight 600",
 				 "bullet gap <b>8px</b><br>indent <b>24px</b><br>line-height <b>1.65</b><br>heaviest <b>600</b>"],
 			];
 
 			const deck = document.getElementById("deck");
 			let sample = "list";
 
+			const indents = [
+				["24px", "C · 24px", "1.5em — one notch up from today",
+				 "level 1 <b>24px</b><br>level 2 <b>48px</b><br>level 3 <b>72px</b><br>text left at L3 <b>72px</b>"],
+				["28px", "C · 28px", "Mem's apparent indent",
+				 "level 1 <b>28px</b><br>level 2 <b>56px</b><br>level 3 <b>84px</b><br>text left at L3 <b>84px</b>"],
+				["32px", "C · 32px", "2em — the next clean step",
+				 "level 1 <b>32px</b><br>level 2 <b>64px</b><br>level 3 <b>96px</b><br>text left at L3 <b>96px</b>"],
+			];
+
 			function render() {
+				if (sample === "indent") {
+					deck.innerHTML = indents
+						.map(([ind, name, rule, specs]) => `
+							<section class="col v-c" style="--ind:${ind}">
+								<header><b>${name}</b><span>${rule}</span></header>
+								${listNote}
+								<div class="specs">${specs}</div>
+							</section>`)
+						.join("");
+					return;
+				}
 				const html = sample === "list" ? listNote : proseNote;
 				deck.innerHTML = variants
 					.map(([k, name, rule, specs]) => `

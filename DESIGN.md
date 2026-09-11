@@ -224,12 +224,13 @@ paper-white ground, the warm stone ink, the one orange — exists to keep those
 measurements legible, and nothing on a page is allowed to compete with them.
 
 Type and colour are lifted from bydefault.so exactly, and geometry from
-collectiveos: Geist Sans at **two weights only**, a 56/44/36/30/18/16/14/12
-ramp, a neutral-50 ground under a warm stone ink ladder, one orange accent, and
-large soft-cornered cards on a gentle lift. Hierarchy comes from size and colour
-and never from weight, because there is no weight above 500 to reach for. The
-result is quiet without being cold: the warmth is in the greys, not in
-decoration.
+collectiveos: Geist Sans at **two weights in the chrome**, a
+56/44/36/30/18/16/14/12 ramp, a neutral-50 ground under a warm stone ink
+ladder, one orange accent, and large soft-cornered cards on a gentle lift.
+Hierarchy comes from size and colour and never from weight, because the chrome
+has no weight above 500 to reach for. A body a person wrote is the one
+exception and reaches 600; see the Two Weights Rule. The result is quiet
+without being cold: the warmth is in the greys, not in decoration.
 
 Three visual worlds have been rejected before this one, and each rejection is
 load-bearing. An editorial identity (warm linen, terracotta, a serif display
@@ -237,12 +238,13 @@ face) was replaced. A fully monochrome restyle was rejected for being
 colourless. The Vercel/Geist system that followed — near-black canvas, Signal
 Blue, 600-weight display type, a mesh-gradient wordmark — is the immediate
 predecessor and the direct anti-reference for this one: revision A is
-light-first, is 500 at its heaviest, and has no gradient anywhere.
+light-first, is 500 at its heaviest in the chrome, and has no gradient
+anywhere.
 
 **Key Characteristics:**
 
 - Light by default; dark is a complete peer, not an afterthought
-- Two type weights, ever: 400 and 500
+- Two type weights in the chrome: 400 and 500. Authored prose reaches 600
 - One orange, and it means exactly one thing: this needs you
 - Nine measured domain colours, which are data — never decoration
 - Large radii and a soft warm lift; hairlines still do the dividing
@@ -348,13 +350,15 @@ section heading can sit at body size and still read as a heading.
   phone width.
 - **Title** (500, 30px, 1.15, −0.75px): a section title large enough to open a
   page region.
-- **Lead** (400, 18px, 1.7): a pull-quote, standfirst copy, and an authored
-  prose `h2` inside a note body (Pass 3).
+- **Lead** (400, 18px, 1.7): a pull-quote and standfirst copy. An authored
+  prose `h2` inside a note body takes the same 18px at **600** (Pass 3).
 - **Body** (400, 16px, 1.5–1.6, −0.01em): every row title, every task, every
-  list, and long-form prose (note body, chat message, journal entry).
-- **Section** (500, 16px, −0.02em): a section heading, and an authored prose
-  `h3` inside a note body. Same size as body — the weight step is the entire
-  signal, which is why it is enough.
+  list, and long-form prose (chat message, journal entry). A **note body** is
+  the same 16/400 on a looser **1.65** — it is the one surface read straight
+  through, and the Reading Air Rule owns its rhythm.
+- **Section** (500, 16px, −0.02em): a section heading. Same size as body —
+  the weight step is the entire signal, which is why it is enough. An authored
+  prose `h3` inside a note body takes the same 16px at **600**.
 - **Small** (400, 14px): a chip, a pill's label, a supporting line.
 - **Meta** (mono, 400, 12px): clock times, counts, streaks, ruler hours.
 - **Eyebrow** (mono, 400, 12px, 0.1em, uppercase): the dateline, `ALL DAY`, a
@@ -367,9 +371,19 @@ section heading can sit at body size and still read as a heading.
 
 ### Named Rules
 
-**The Two Weights Rule.** 400 and 500. There is no 600 and no bold. If
-something is not standing out enough, it needs to be bigger, in a different
-colour, or in the mono register — never heavier.
+**The Two Weights Rule.** 400 and 500 in the chrome. There is no 600 and no
+bold. If something is not standing out enough, it needs to be bigger, in a
+different colour, or in the mono register — never heavier.
+
+**One exception, and it is scoped to `.prose-authored`:** a heading or a bold
+run inside a body a person wrote takes **600**. Chrome is what the app says;
+authored prose is what the writer said, and a writer's bold is content the same
+way their words are. The exception was never really optional — Tailwind's
+preflight already rendered `strong` at `bolder`, which against a 400 body is
+700, so a note's bold had been off the ramp since the day markdown shipped. The
+rule now caps it at 600 and spends the same step on the writer's headings
+instead of pretending it is not there. Outside `.prose-authored`, nothing above
+500 exists.
 
 **Row names rest at 400.** Pass 2 Gate A (`.impeccable/mocks/lists-lab.html`,
 option A1). Every list-row name is body size at 400 — project, person, note,
@@ -412,10 +426,26 @@ and a title step, not a rewrite of three surfaces. Body stays 16 either way.
 
 **Authored prose is on the ramp.** A note's headings are content, not chrome —
 `#` in a markdown body is the writer's hierarchy, spent on existing steps
-rather than inventing 24/20. The note title is **Title** (30/500). In-body
-`h1` is Title (30/500), `h2` is Lead size at 500 (18), `h3` is Section
-(16/500). Body is Body (16/400, 1.6). `.prose-authored` is the class; the
-comment that once claimed "serif headings" is gone with the serif.
+rather than inventing 24/20. Sizes are the closed ramp; only the weight steps
+up. The note title stays **Title** (30/500) — it sits alone above a rule with
+nothing to compete against, so size already does the separating and weight
+would buy nothing. In-body `h1` is Title size at 600, `h2` is Lead size at 600
+(18), `h3` is Section size at 600 (16), and `strong` is 600. Body is Body
+(16/400, **1.65**). `.prose-authored` is the class; the comment that once
+claimed "serif headings" is gone with the serif.
+
+**The Reading Air Rule.** A note is read, not scanned, and a list is where that
+breaks first. Rows sit **0.5em** apart, a child list opens **0.5em** under its
+parent, blocks are **1.15em** apart, and every heading takes far more space above
+than below, so it belongs to what follows rather than to what it ends: `h1`
+1.6em over 0.55em, `h2` 2em over 0.6em, `h3` 1.7em over 0.5em. The three differ
+because the gap is read against the heading's own size — one number would leave
+`h2` cramped or `h3` adrift. The bullet marker is `ink-4`: the text leads the row and the marker
+only says where it starts. Indent is **1.5em (24px)**, the `comfortable`
+spacing step. Gate `.impeccable/mocks/reading-lab.html`. Indent was measured
+against a three-level list on the 65ch measure — 20, 24, 28 and 32 all wrap the
+same lines for the same body height, so depth costs nothing and the spacing
+scale decides rather than a number copied off another editor.
 
 **Speaker registers in chat.** A person wrote the user message → sans body at
 400, right-aligned, `ink-2`. The assistant's answer is running prose → sans
@@ -736,7 +766,8 @@ compositions. Reverting the whole page from rings to bars is one line there.
 ### Do:
 
 - **Do** use size, colour, or the mono register to create hierarchy. Weight is
-  not available: the ramp stops at 500.
+  not available in the chrome: the ramp stops at 500. Inside `.prose-authored`
+  it is, at 600, and only there.
 - **Do** resolve a domain colour through `var(--domain-<slug>)` from the stored
   slug. Never write a domain hex into a component.
 - **Do** pair colour with a shape or a word whenever it carries meaning — an

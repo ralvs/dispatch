@@ -4,7 +4,7 @@
  * Dispatch design tokens — revision A, two themes.
  *
  * The world is ported from .impeccable/mocks/_a.css: type and colour lifted
- * from bydefault.so (Geist Sans at weights 400 and 500 ONLY, ramp
+ * from bydefault.so (Geist Sans at weights 400 and 500 in the chrome, ramp
  * 56/44/36/30/18/16/14/12, neutral-50 ground, warm stone ink, a single orange
  * accent), geometry from collectiveos (pill controls, large card radii, a soft
  * lift). It replaces the Vercel/Geist world outright — that palette was
@@ -22,7 +22,10 @@
  *   --bg = ground   --surface = paper   --surface-2 = ground-2
  *   --line = rule   --line-strong = rule-2   --accent-bg = accent-soft
  *
- * Hierarchy comes from size and colour, never from weight above 500.
+ * Hierarchy comes from size and colour, never from weight above 500 — in the
+ * chrome. Inside `.prose-authored`, a body a person wrote, headings and bold
+ * take 600. That is the only exception and it is the Two Weights Rule's own;
+ * see the block comment above `.prose-authored` below for why.
  *
  * --ink-3 / --ink-4 miss WCAG AA at 12px (3.3:1 and 2.0:1 on paper). That is
  * the pinned bydefault.so palette and a recorded decision — fidelity over the
@@ -325,50 +328,75 @@ html[data-standalone] .app-shell {
 .prose-authored {
 	font-size: 16px;
 	font-weight: 400;
-	line-height: 1.6;
+	line-height: 1.65;
 	letter-spacing: -0.01em;
 	color: var(--ink);
 }
 .prose-authored :where(p, ul, ol, blockquote) {
-	margin: 0 0 1em;
+	margin: 0 0 1.15em;
 }
+/*
+ * Headings and emphasis inside an authored body take 600 — the one place the
+ * Two Weights Rule does not hold, and the rule now says so. The exception was
+ * already leaking anyway: Tailwind's preflight renders `strong` at `bolder`,
+ * which against a 400 body is 700, so a note's bold has never been on the
+ * ramp. This caps that at 600 and spends the same step deliberately on the
+ * writer's own headings. Chrome is untouched and still stops at 500.
+ */
 .prose-authored :where(h1) {
-	margin: 1.25em 0 0.5em;
+	margin: 1.6em 0 0.55em;
 	font-size: 30px;
-	font-weight: 500;
+	font-weight: 600;
 	letter-spacing: -0.75px;
 	line-height: 1.15;
 	color: var(--ink);
 }
 .prose-authored :where(h2) {
-	margin: 1.4em 0 0.45em;
+	margin: 2em 0 0.6em;
 	font-size: 18px;
-	font-weight: 500;
+	font-weight: 600;
 	letter-spacing: -0.02em;
 	line-height: 1.35;
 	color: var(--ink);
 }
 .prose-authored :where(h3) {
-	margin: 1.25em 0 0.4em;
+	margin: 1.7em 0 0.5em;
 	font-size: 16px;
-	font-weight: 500;
+	font-weight: 600;
 	letter-spacing: -0.02em;
 	line-height: 1.35;
 	color: var(--ink);
 }
+.prose-authored :where(strong, b) {
+	font-weight: 600;
+}
 .prose-authored :where(h1, h2, h3):first-child {
 	margin-top: 0;
 }
+/*
+ * 1.5em is 24px — the `comfortable` spacing step, not a number picked to look
+ * like someone else's editor. Indent was measured against a three-level list
+ * at the 65ch measure: 20 / 24 / 28 / 32 all wrap the same lines and produce
+ * the same body height, so depth costs nothing here and the scale decides.
+ */
 .prose-authored :where(ul) {
 	list-style: disc;
-	padding-left: 1.25em;
+	padding-left: 1.5em;
 }
 .prose-authored :where(ol) {
 	list-style: decimal;
-	padding-left: 1.25em;
+	padding-left: 1.5em;
 }
 .prose-authored :where(li) {
-	margin: 0.25em 0;
+	margin: 0.5em 0;
+}
+/* The text leads a row; the bullet only marks where it starts. */
+.prose-authored :where(li)::marker {
+	color: var(--ink-4);
+}
+/* A child list opens under its parent without doubling the row gap. */
+.prose-authored :where(li > ul, li > ol) {
+	margin: 0.5em 0 0.15em;
 }
 .prose-authored :where(a) {
 	color: var(--accent-ink);
@@ -399,7 +427,7 @@ html[data-standalone] .app-shell {
 	padding-left: 0;
 }
 .prose-authored :where(ul[data-type="taskList"] ul[data-type="taskList"]) {
-	padding-left: 1.25em;
+	padding-left: 1.5em;
 }
 .prose-authored :where(ul[data-type="taskList"] li) {
 	display: flex;
