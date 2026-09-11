@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Reading — note body air, weight, rhythm</title>
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" />
+		<link rel="stylesheet" href="_a.css" />
+		<style>
+			body { background: var(--ground); }
+			.lab { max-width: 1880px; margin: 0 auto; padding: 40px 32px 140px; }
+			.lab-head { max-width: 72ch; }
+			.lab-head h1 { font-size: 36px; font-weight: 500; letter-spacing: -0.9px; line-height: 1.1; margin: 0; }
+			.lab-head p { font-size: 16px; line-height: 1.6; color: var(--ink-2); margin: 14px 0 0; }
+			.lab-head code { font-family: var(--mono); font-size: 14px; }
+
+			.controls { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 26px 0 10px; padding: 14px 0; background: var(--ground); }
+			.grp { display: flex; gap: 2px; padding: 4px; border-radius: var(--r-pill); background: var(--paper); border: 1px solid var(--rule); }
+			.grp button { border: 0; background: transparent; border-radius: var(--r-pill); padding: 6px 14px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); cursor: pointer; }
+			.grp button[aria-pressed="true"] { background: var(--ink); color: var(--ground); }
+
+			.deck { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; align-items: start; }
+			.col { min-width: 0; }
+			.col > header { display: flex; align-items: baseline; gap: 10px; padding-bottom: 10px; margin-bottom: 22px; border-bottom: 1px solid var(--rule); }
+			.col > header b { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 400; color: var(--ink); }
+			.col > header span { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: var(--ink-3); }
+			.specs { margin-top: 26px; padding-top: 12px; border-top: 1px solid var(--rule); font-family: var(--mono); font-size: 11px; line-height: 1.9; letter-spacing: 0.04em; color: var(--ink-3); }
+			.specs b { font-weight: 400; color: var(--ink-2); }
+
+			/* ── the note frame, as the real editor renders it ──────────────── */
+			.note-title { font-size: 30px; font-weight: 500; letter-spacing: -0.75px; line-height: 1.15; color: var(--ink); margin: 0; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+			.note-body { margin-top: 28px; }
+			.note-meta { margin-top: 14px; font-family: var(--mono); font-size: 12px; color: var(--ink-4); }
+			.hide { display: none; }
+
+			/* ══ A — current .prose-authored, copied value for value ══════════ */
+			.v-a .note-body { font-size: 16px; font-weight: 400; line-height: 1.6; letter-spacing: -0.01em; color: var(--ink); }
+			.v-a :where(p, ul, ol) { margin: 0 0 1em; }
+			.v-a :where(h2) { margin: 1.4em 0 0.45em; font-size: 18px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.35; }
+			.v-a :where(h3) { margin: 1.25em 0 0.4em; font-size: 16px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.35; }
+			.v-a :where(ul) { list-style: disc; padding-left: 1.25em; }
+			.v-a :where(li) { margin: 0.25em 0; }
+			.v-a strong { font-weight: 500; }
+
+			/* ══ B — air, still two weights ═══════════════════════════════════ */
+			.v-b .note-title { padding-bottom: 10px; }
+			.v-b .note-body { font-size: 16px; font-weight: 400; line-height: 1.65; letter-spacing: -0.01em; color: var(--ink); }
+			.v-b :where(p, ul, ol) { margin: 0 0 1.15em; }
+			.v-b :where(h2) { margin: 2em 0 0.6em; font-size: 18px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.35; }
+			.v-b :where(h3) { margin: 1.7em 0 0.5em; font-size: 16px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.35; }
+			.v-b :where(ul) { list-style: disc; padding-left: 1.5em; }
+			.v-b :where(li) { margin: 0.5em 0; }
+			.v-b :where(li)::marker { color: var(--ink-4); }
+			.v-b :where(li > ul) { margin: 0.5em 0 0.15em; }
+			.v-b strong { font-weight: 500; }
+
+			/* ══ C — air + one more weight for what a person emphasised ═══════ */
+			.v-c .note-title { font-weight: 600; letter-spacing: -0.9px; padding-bottom: 10px; }
+			.v-c .note-body { font-size: 16px; font-weight: 400; line-height: 1.65; letter-spacing: -0.01em; color: var(--ink); }
+			.v-c :where(p, ul, ol) { margin: 0 0 1.15em; }
+			.v-c :where(h2) { margin: 2em 0 0.6em; font-size: 18px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.35; }
+			.v-c :where(h3) { margin: 1.7em 0 0.5em; font-size: 16px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.35; }
+			.v-c :where(ul) { list-style: disc; padding-left: 1.5em; }
+			.v-c :where(li) { margin: 0.5em 0; }
+			.v-c :where(li)::marker { color: var(--ink-4); }
+			.v-c :where(li > ul) { margin: 0.5em 0 0.15em; }
+			.v-c strong { font-weight: 600; }
+
+			.tag { color: var(--accent-ink); }
+			s { color: var(--ink-4); }
+		</style>
+	</head>
+	<body>
+		<main class="lab">
+			<div class="lab-head">
+				<h1>Reading a note</h1>
+				<p>
+					Same note, three settings of the body. <b>A</b> is today's
+					<code>.prose-authored</code>, value for value. <b>B</b> adds air and keeps the
+					Two Weights Rule. <b>C</b> adds the air and one more weight for the words a
+					person emphasised. Read the list, do not study it.
+				</p>
+			</div>
+
+			<div class="controls">
+				<div class="grp" id="sample">
+					<button type="button" data-s="list" aria-pressed="true">List note</button>
+					<button type="button" data-s="prose" aria-pressed="false">Prose note</button>
+				</div>
+				<div class="grp" id="theme">
+					<button type="button" data-t="light" aria-pressed="true">Light</button>
+					<button type="button" data-t="dark" aria-pressed="false">Dark</button>
+				</div>
+			</div>
+
+			<div class="deck" id="deck"></div>
+		</main>
+
+		<script>
+			const listNote = `
+<h1 class="note-title">Subscriptions Costs</h1>
+<div class="note-body">
+	<p><em>2026</em></p>
+	<ul>
+		<li><span class="tag">Apps</span>
+			<ul>
+				<li><s>Willow: $ 144/y, due on Aug 1</s></li>
+				<li><s>SuperWhisper lifetime $175 (REYSU30)</s> &larr; <strong>asked for a refund</strong></li>
+				<li><s>Raycast: $ 36 (6MRAYCASTPRO)</s> &rarr; $ 96/y due on May 27</li>
+				<li>1Password: R$ 299.90/y, due on July 18</li>
+				<li>Claude: R$ 1180/y, due on March 1</li>
+				<li><s>Tradingview: $126/y, due on Feb 2</s>
+					<ul><li>R$ 1400 due on Sep 2027 (bought on May 15)</li></ul>
+				</li>
+				<li>Leo Moves: R$ 800/y</li>
+				<li>Apple Arcade: R$ 99.90/y, due on May 4</li>
+				<li>Mercury Weather: R$ 79.9/y, due on January 22</li>
+				<li>Timepage calendar: R$ 124.9/y, due on May 3</li>
+				<li>Oura Ring: $ 5.99/m, due on March 16</li>
+			</ul>
+		</li>
+		<li>Storage
+			<ul>
+				<li>iCloud: R$ 19.9/m, due on the 11</li>
+				<li>Google One: R$ 149.9/y, due on January 2</li>
+			</ul>
+		</li>
+		<li><span class="tag">Streaming</span>
+			<ul>
+				<li>Youtube: R$ 53.90/m + R$ 19.99/m, due on the 3</li>
+				<li>Apple TV: R$ 219/y, due on July 19</li>
+				<li>Netflix: 0 (paid by my father)</li>
+				<li>HBO: R$ 22.45/m</li>
+				<li>Disney: 0, included with Meli+</li>
+				<li>Prime: R$ 166.8/y, due on April 3</li>
+				<li><s>Universal+: R$ 18/m</s></li>
+				<li>Paramount+: R$ 309.9/y, due on April 3</li>
+			</ul>
+		</li>
+	</ul>
+</div>
+<p class="note-meta">capture &middot; Finance &middot; Saved</p>`;
+
+			const proseNote = `
+<h1 class="note-title">Offshore Structure Planning Meeting</h1>
+<div class="note-body">
+	<h2>Attendees</h2>
+	<ul>
+		<li><strong>Renan M Alves</strong> (Client)</li>
+		<li><strong>Tiago Barbosa da Silva</strong> (Astrid &mdash; Accounting/Legal)</li>
+		<li><strong>Camila Corte Suwa</strong> (Liberta &mdash; Investments)</li>
+	</ul>
+	<h2>Summary</h2>
+	<p>Renan is looking to migrate his current offshore structure from Investor Trust to a more robust and efficient setup in BVI or the Bahamas. The primary goals are asset protection and seamless succession planning for his parents and his brother, avoiding probate.</p>
+	<h2>Proposed structure</h2>
+	<p>Tiago recommended a BVI structure due to its speed and modernisation.</p>
+	<ul>
+		<li><strong>Jurisdiction:</strong> BVI, preferred over the Bahamas for speed.</li>
+		<li><strong>Succession:</strong> a Trust instrument is added to ensure automatic transfer of ownership.</li>
+		<li><strong>Tax models:</strong> a decision between Opaco and Transparente lands in early 2027, on the investment profile.</li>
+	</ul>
+	<h3>Costs and timelines</h3>
+	<ul>
+		<li><strong>Opening (BVI):</strong> $1,650, about 10 days.</li>
+		<li><strong>Trust setup:</strong> $2,000, one time.</li>
+		<li><strong>Maintenance:</strong> $1,980 a year, or $165 a month.</li>
+	</ul>
+</div>
+<p class="note-meta">capture &middot; Finance &middot; Saved</p>`;
+
+			const variants = [
+				["a", "A · today", "li 0.25em · pad 1.25em · lh 1.6 · max weight 500",
+				 "bullet gap <b>4px</b><br>indent <b>20px</b><br>line-height <b>1.6</b><br>heaviest <b>500</b>"],
+				["b", "B · air", "li 0.5em · pad 1.5em · lh 1.65 · max weight 500",
+				 "bullet gap <b>8px</b><br>indent <b>24px</b><br>line-height <b>1.65</b><br>heaviest <b>500</b>"],
+				["c", "C · air + weight", "li 0.5em · pad 1.5em · lh 1.65 · max weight 600",
+				 "bullet gap <b>8px</b><br>indent <b>24px</b><br>line-height <b>1.65</b><br>heaviest <b>600</b>"],
+			];
+
+			const deck = document.getElementById("deck");
+			let sample = "list";
+
+			function render() {
+				const html = sample === "list" ? listNote : proseNote;
+				deck.innerHTML = variants
+					.map(([k, name, rule, specs]) => `
+						<section class="col v-${k}">
+							<header><b>${name}</b><span>${rule}</span></header>
+							${html}
+							<div class="specs">${specs}</div>
+						</section>`)
+					.join("");
+			}
+
+			document.getElementById("sample").addEventListener("click", (e) => {
+				const btn = e.target.closest("button");
+				if (!btn) return;
+				sample = btn.dataset.s;
+				for (const b of e.currentTarget.children) b.setAttribute("aria-pressed", String(b === btn));
+				render();
+			});
+
+			document.getElementById("theme").addEventListener("click", (e) => {
+				const btn = e.target.closest("button");
+				if (!btn) return;
+				document.documentElement.dataset.theme = btn.dataset.t === "dark" ? "dark" : "";
+				for (const b of e.currentTarget.children) b.setAttribute("aria-pressed", String(b === btn));
+			});
+
+			render();
+		</script>
+	</body>
+</html>

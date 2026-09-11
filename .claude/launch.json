@@ -4,26 +4,56 @@
 		{
 			"name": "dispatch",
 			"runtimeExecutable": "/Volumes/stuff/renan/dispatch/node_modules/.bin/next",
-			"runtimeArgs": ["dev", "--turbopack"],
+			"runtimeArgs": [
+				"dev",
+				"--turbopack"
+			],
 			"port": 3000
 		},
 		{
 			"name": "dispatch-alt",
 			"runtimeExecutable": "/Volumes/stuff/renan/dispatch/node_modules/.bin/next",
-			"runtimeArgs": ["dev", "--turbopack", "-p", "3100"],
+			"runtimeArgs": [
+				"dev",
+				"--turbopack",
+				"-p",
+				"3100"
+			],
 			"port": 3100
 		},
 		{
 			"name": "mocks",
 			"runtimeExecutable": "python3",
-			"runtimeArgs": ["-m", "http.server", "4500", "--directory", ".impeccable/mocks"],
+			"runtimeArgs": [
+				"-m",
+				"http.server",
+				"4500",
+				"--directory",
+				".impeccable/mocks"
+			],
 			"port": 4500
 		},
 		{
 			"name": "dispatch-prod",
 			"runtimeExecutable": "/Volumes/stuff/renan/dispatch/node_modules/.bin/next",
-			"runtimeArgs": ["start", "-p", "3200"],
+			"runtimeArgs": [
+				"start",
+				"-p",
+				"3200"
+			],
 			"port": 3200
+		},
+		{
+			"name": "mocks-alt",
+			"runtimeExecutable": "python3",
+			"runtimeArgs": [
+				"-m",
+				"http.server",
+				"4600",
+				"--directory",
+				".impeccable/mocks"
+			],
+			"port": 4600
 		}
 	]
 }
