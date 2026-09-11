@@ -187,13 +187,8 @@ export function NoteEditor({
 	});
 
 	return (
-		<article ref={articleRef} className="relative measure-prose lg:pr-8">
-			{editor ? (
-				<>
-					<TickRail editor={editor} titleRef={titleInputRef} articleRef={articleRef} />
-					<InkBubble editor={editor} />
-				</>
-			) : null}
+		<article ref={articleRef} className="relative measure-prose">
+			{editor ? <InkBubble editor={editor} /> : null}
 			<input
 				ref={titleInputRef}
 				aria-label="Note title"
@@ -271,6 +266,11 @@ export function NoteEditor({
 					Delete
 				</Button>
 			</div>
+			{/* Last in the DOM on purpose: the rail is fixed, so its position does
+			    not depend on order, but tab order does — the note comes first. */}
+			{editor ? (
+				<TickRail editor={editor} titleRef={titleInputRef} articleRef={articleRef} />
+			) : null}
 		</article>
 	);
 }

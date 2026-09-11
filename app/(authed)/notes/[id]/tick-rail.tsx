@@ -2,18 +2,26 @@
 
 import type { Editor } from "@tiptap/react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { type RefObject, useCallback, useEffect, useState } from "react";
+import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import {
+	activeIndexForScroll,
+	blocksOverflow,
+	maxTicksForHeight,
 	previewFromText,
 	roleForNodeName,
+	scrollTopForTick,
 	TICK_GAP_PX,
-	TICK_WIDTH_PX,
 	type TickSpec,
 	tickThickness,
+	tickWidth,
+	tickWindow,
 } from "@/lib/note-ticks/layout";
 
 type LiveTick = TickSpec & { el: HTMLElement };
+
+/** Chevrons plus breathing room. What the dash stack may not eat. */
+const RAIL_CHROME_PX = 120;
 
 function collectTicks(editor: Editor, titleEl: HTMLInputElement | null): LiveTick[] {
 	const ticks: LiveTick[] = [];
@@ -41,24 +49,23 @@ function collectTicks(editor: Editor, titleEl: HTMLInputElement | null): LiveTic
 	return ticks;
 }
 
-function readingLineTop(scroller: HTMLElement): number {
-	const rect = scroller.getBoundingClientRect();
-	return rect.top + rect.height * 0.3;
+/*
+ * Content-space tops, read fresh. Caching them was tempting and wrong: a font
+ * swap or a streamed-in panel moves the blocks without changing the article's
+ * own box, so a cached offset silently points at the wrong paragraph. One
+ * batch of reads per animation frame is cheap; being wrong is not.
+ */
+function topsOf(ticks: LiveTick[], scroller: HTMLElement): number[] {
+	const origin = scroller.getBoundingClientRect().top - scroller.scrollTop;
+	return ticks.map((t) => t.el.getBoundingClientRect().top - origin);
 }
 
-function indexAtReadingLine(ticks: LiveTick[], scroller: HTMLElement): number {
-	const line = readingLineTop(scroller);
-	for (let i = 0; i < ticks.length; i++) {
-		const rect = ticks[i].el.getBoundingClientRect();
-		if (rect.top <= line && rect.bottom > line) return i;
-	}
+/** Vertical run from the first indexed block to the last. */
+function blockSpan(ticks: LiveTick[]): number {
 	if (ticks.length === 0) return 0;
-	if (ticks[0].el.getBoundingClientRect().top >= line) return 0;
-	return ticks.length - 1;
-}
-
-function noteFits(article: HTMLElement, scroller: HTMLElement): boolean {
-	return article.getBoundingClientRect().height <= scroller.clientHeight - 24;
+	const first = ticks[0].el.getBoundingClientRect().top;
+	const last = ticks[ticks.length - 1].el.getBoundingClientRect().bottom;
+	return last - first;
 }
 
 export function TickRail({
@@ -73,11 +80,25 @@ export function TickRail({
 	const [ticks, setTicks] = useState<LiveTick[]>([]);
 	const [active, setActive] = useState(0);
 	const [hovered, setHovered] = useState<number | null>(null);
-	const [railHot, setRailHot] = useState(false);
 	const [hidden, setHidden] = useState(true);
+	const [railHeight, setRailHeight] = useState(0);
+	const ticksRef = useRef<LiveTick[]>([]);
+	const frameRef = useRef(0);
 
-	const recalc = useCallback(() => {
-		if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
+	const syncActive = useCallback((scroller: HTMLElement) => {
+		setActive(
+			activeIndexForScroll(
+				topsOf(ticksRef.current, scroller),
+				scroller.scrollTop,
+				scroller.clientHeight,
+				scroller.scrollHeight,
+			),
+		);
+	}, []);
+
+	/* Rebuild the dash list. Runs on edits and layout changes, never on scroll. */
+	const measure = useCallback(() => {
+		if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
 			setHidden(true);
 			return;
 		}
@@ -88,121 +109,144 @@ export function TickRail({
 			return;
 		}
 		const next = collectTicks(editor, titleRef.current);
+		ticksRef.current = next;
 		setTicks(next);
-		if (next.length < 2 || noteFits(article, scroller)) {
+		setRailHeight(Math.max(0, scroller.clientHeight - RAIL_CHROME_PX));
+		if (next.length < 2 || !blocksOverflow(blockSpan(next), scroller.clientHeight)) {
 			setHidden(true);
 			return;
 		}
 		setHidden(false);
-		setActive(indexAtReadingLine(next, scroller));
-	}, [articleRef, editor, titleRef]);
+		syncActive(scroller);
+	}, [articleRef, editor, syncActive, titleRef]);
 
 	useEffect(() => {
-		recalc();
+		measure();
 		const scroller = document.getElementById("main");
 		const article = articleRef.current;
 		if (!scroller) return;
-		const onScroll = () => {
-			const live = collectTicks(editor, titleRef.current);
-			setTicks(live);
-			setActive(indexAtReadingLine(live, scroller));
-		};
-		scroller.addEventListener("scroll", onScroll, { passive: true });
-		window.addEventListener("resize", recalc);
-		const ro = article ? new ResizeObserver(recalc) : null;
-		if (article) ro?.observe(article);
-		editor.on("update", recalc);
-		return () => {
-			scroller.removeEventListener("scroll", onScroll);
-			window.removeEventListener("resize", recalc);
-			ro?.disconnect();
-			editor.off("update", recalc);
-		};
-	}, [articleRef, editor, recalc, titleRef]);
 
-	function jump(index: number) {
-		const tick = ticks[index];
-		if (!tick) return;
-		tick.el.scrollIntoView({ block: "start" });
-		tick.el.focus?.({ preventScroll: true });
+		const onScroll = () => {
+			if (frameRef.current) return;
+			frameRef.current = requestAnimationFrame(() => {
+				frameRef.current = 0;
+				syncActive(scroller);
+			});
+		};
+
+		scroller.addEventListener("scroll", onScroll, { passive: true });
+		window.addEventListener("resize", measure);
+		const ro = article ? new ResizeObserver(measure) : null;
+		if (article) ro?.observe(article);
+		editor.on("update", measure);
+		// The title is a plain input, so the editor's update event never sees it.
+		const titleEl = titleRef.current;
+		titleEl?.addEventListener("input", measure);
+		return () => {
+			if (frameRef.current) cancelAnimationFrame(frameRef.current);
+			frameRef.current = 0;
+			scroller.removeEventListener("scroll", onScroll);
+			window.removeEventListener("resize", measure);
+			ro?.disconnect();
+			editor.off("update", measure);
+			titleEl?.removeEventListener("input", measure);
+		};
+	}, [articleRef, editor, measure, syncActive, titleRef]);
+
+	const jump = useCallback((index: number) => {
+		const scroller = document.getElementById("main");
+		if (!scroller) return;
+		const tops = topsOf(ticksRef.current, scroller);
+		const top = tops[index];
+		if (top === undefined) return;
+		const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		scroller.scrollTo({
+			top: scrollTopForTick(top, scroller.clientHeight),
+			behavior: smooth ? "smooth" : "auto",
+		});
 		setActive(index);
-	}
+	}, []);
 
 	if (hidden || ticks.length < 2) return null;
 
+	const max = maxTicksForHeight(railHeight);
+	const { start, end } = tickWindow(ticks.length, active, max);
+	const shown = ticks.slice(start, end);
+
 	return (
-		<aside
+		<nav
 			aria-label="Note sections"
-			onMouseEnter={() => setRailHot(true)}
-			onMouseLeave={() => {
-				setRailHot(false);
-				setHovered(null);
+			/* Keyboard focus outranks the mouse: leaving the rail must not blank a
+			   pill the user reached with Tab. */
+			onMouseLeave={(e) => {
+				if (!e.currentTarget.contains(document.activeElement)) setHovered(null);
 			}}
-			className="pointer-events-none absolute top-2 right-0 z-10 hidden w-6 flex-col items-end lg:flex"
+			/* Fixed, not sticky: the rail belongs to the viewport's right gutter,
+			   outside the 6xl frame, and stays centred whatever the note does. */
+			className="group fixed top-1/2 right-2 z-20 hidden -translate-y-1/2 flex-col items-end lg:flex xl:right-5"
 		>
-			<div className="pointer-events-auto sticky top-24 flex flex-col items-end">
-				{railHot ? (
-					<button
-						type="button"
-						aria-label="Previous section"
-						disabled={active <= 0}
-						onClick={() => jump(Math.max(0, active - 1))}
-						className="mb-1 text-ink-4 hover:text-ink disabled:opacity-30"
-					>
-						<Icon icon={ChevronUp} size="sm" />
-					</button>
-				) : null}
+			<button
+				type="button"
+				aria-label="Previous section"
+				disabled={active <= 0}
+				onClick={() => jump(Math.max(0, active - 1))}
+				/* Kept mounted and tabbable, revealed by hover or by focus landing
+				   anywhere in the rail — an invisible focusable control is a trap.
+				   Opacity is the reveal channel and nothing else: dimming the
+				   disabled state with it would outrank `opacity-0` and leave a
+				   ghost chevron in the gutter, so disabled reads as colour. */
+				className="mb-2 text-ink-3 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:text-ink focus-visible:opacity-100 disabled:text-line motion-reduce:transition-none"
+			>
+				<Icon icon={ChevronUp} size="sm" />
+			</button>
 
-				<div className="relative flex flex-col items-end" style={{ gap: TICK_GAP_PX }}>
-					{ticks.map((tick, i) => {
-						const isActive = i === active;
-						const isHover = i === hovered;
-						const thick = tickThickness(isActive || isHover);
-						return (
-							<div key={tick.id} className="relative">
-								<button
-									type="button"
-									aria-label={`${tick.role}: ${tick.preview}`}
-									aria-current={isActive ? "true" : undefined}
-									onMouseEnter={() => setHovered(i)}
-									onClick={() => jump(i)}
-									className={`block rounded-pill transition-transform motion-reduce:transition-none ${
-										isHover ? "-translate-x-1" : ""
-									}`}
-									style={{
-										width: TICK_WIDTH_PX,
-										height: thick,
-										backgroundColor: isActive || isHover ? "var(--ink)" : "var(--ink-4)",
-									}}
-								/>
-								{isHover ? (
-									<div
-										role="tooltip"
-										className="absolute top-1/2 right-7 z-20 w-56 -translate-y-1/2 rounded-[18px] border border-line bg-surface-2 px-3.5 py-2.5 elevation-overlay"
-									>
-										<p className="truncate text-sm font-medium text-ink">{tick.preview}</p>
-										<p className="mt-0.5 font-mono text-meta text-ink-4">
-											{tick.role} · {i + 1}/{ticks.length}
-										</p>
-									</div>
-								) : null}
-							</div>
-						);
-					})}
-				</div>
-
-				{railHot ? (
-					<button
-						type="button"
-						aria-label="Next section"
-						disabled={active >= ticks.length - 1}
-						onClick={() => jump(Math.min(ticks.length - 1, active + 1))}
-						className="mt-1 text-ink-4 hover:text-ink disabled:opacity-30"
-					>
-						<Icon icon={ChevronDown} size="sm" />
-					</button>
-				) : null}
+			<div className="flex flex-col items-end" style={{ gap: TICK_GAP_PX }}>
+				{shown.map((tick, i) => {
+					const index = start + i;
+					const isActive = index === active;
+					const isHover = index === hovered;
+					return (
+						<div key={tick.id} className="relative flex items-center justify-end">
+							<button
+								type="button"
+								aria-label={`${tick.role}: ${tick.preview}`}
+								aria-current={isActive ? "true" : undefined}
+								onMouseEnter={() => setHovered(index)}
+								onFocus={() => setHovered(index)}
+								onBlur={() => setHovered(null)}
+								onClick={() => jump(index)}
+								className="block rounded-pill transition-all duration-150 motion-reduce:transition-none"
+								style={{
+									width: tickWidth(isActive || isHover),
+									height: tickThickness(isActive || isHover),
+									backgroundColor: isActive || isHover ? "var(--ink)" : "var(--ink-3)",
+								}}
+							/>
+							{isHover ? (
+								<div
+									role="tooltip"
+									className="pointer-events-none absolute top-1/2 right-8 z-20 w-56 -translate-y-1/2 rounded-control border border-line bg-surface-2 px-3.5 py-2.5 elevation-overlay"
+								>
+									<p className="truncate text-sm font-medium text-ink">{tick.preview}</p>
+									<p className="mt-0.5 font-mono text-meta text-ink-4">
+										{tick.role} · {index + 1}/{ticks.length}
+									</p>
+								</div>
+							) : null}
+						</div>
+					);
+				})}
 			</div>
-		</aside>
+
+			<button
+				type="button"
+				aria-label="Next section"
+				disabled={active >= ticks.length - 1}
+				onClick={() => jump(Math.min(ticks.length - 1, active + 1))}
+				className="mt-2 text-ink-3 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:text-ink focus-visible:opacity-100 disabled:text-line motion-reduce:transition-none"
+			>
+				<Icon icon={ChevronDown} size="sm" />
+			</button>
+		</nav>
 	);
 }
