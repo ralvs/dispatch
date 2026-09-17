@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ParseContext } from "@/lib/ai/parser";
+import { isVerbatim } from "@/lib/ai/verbatim";
 import { nowUtc, todayInTz } from "@/lib/dates";
 import type { CreateTaskAction } from "@/lib/schemas/capture";
 import { listDomains } from "@/lib/services/domains";
@@ -48,13 +49,52 @@ function normalize(s: string): string {
 
 /**
  * Resolves an action's `domain`/`project` names to ids. A resolved project
- * inherits its domain; an explicitly resolved domain wins over that
- * inheritance. Unresolved names are reported, never guessed.
+ * carries its own domain; a separately named domain only applies when the
+ * project left the question open. Unresolved names are reported, never
+ * guessed.
+ *
+ * A named domain used to override the project's, which stored a pair the data
+ * cannot mean: a task in a Work project filed under Home. That was the same
+ * defect the task form had, and it reached the database from here — so the
+ * rule is now the one the form enforces, applied at the other end.
+ *
+ * The project wins because it is the more specific claim and both answers come
+ * from the same model: naming a project already names a domain, so a
+ * contradicting domain is the model's mistake, not a refinement. (Where the
+ * domain is stated by a HUMAN, the opposite is true and the human wins — that
+ * is quick-add's `withStatedDomain`, which drops the project instead.)
  */
-export function resolveTaskRouting(action: CreateTaskAction, lists: RoutingLists): TaskRouting {
+export function resolveTaskRouting(
+	action: CreateTaskAction,
+	lists: RoutingLists,
+	text?: string,
+): TaskRouting {
 	let domain_id: string | null = null;
 	let project_id: string | null = null;
+	let domainFromProject = false;
 	const unresolved: string[] = [];
+
+	/**
+	 * Whether an unmatched name is worth reporting, or is the model filling a
+	 * field it was told to leave out.
+	 *
+	 * The prompt has been told four ways not to write a stand-in, and the model
+	 * still does: `project` has come back as `""`, `":"`, `","`, `"#OMIT#"` and
+	 * `"skip"` on utterances that named no project at all. The schema's
+	 * `OptionalText` catches the punctuation ones; a word-shaped stand-in walks
+	 * straight past it and lands in the task's notes as a bogus
+	 * `[capture: unresolved project "skip"]`.
+	 *
+	 * The test that separates the two is whether the user said it. A genuine
+	 * miss is a name from the utterance that this app has no row for yet — "the
+	 * Reviews plugin" — and that is real signal worth carrying to `/inbox`. A
+	 * name that appears in neither the known list nor the user's own words is
+	 * from nowhere, and nowhere is not a destination.
+	 *
+	 * Without `text` (a caller that has no utterance to check against) every
+	 * unmatched name is reported, which is the behaviour this had before.
+	 */
+	const worthReporting = (name: string) => text === undefined || isVerbatim(name, text);
 
 	if (action.project) {
 		const norm = normalize(action.project);
@@ -62,7 +102,10 @@ export function resolveTaskRouting(action: CreateTaskAction, lists: RoutingLists
 		if (match) {
 			project_id = match.id;
 			domain_id = match.domain_id;
-		} else {
+			// A project with no domain settles nothing, so a named domain may
+			// still answer — it cannot contradict what was never stated.
+			domainFromProject = match.domain_id !== null;
+		} else if (worthReporting(action.project)) {
 			unresolved.push(`project "${action.project}"`);
 		}
 	}
@@ -71,8 +114,8 @@ export function resolveTaskRouting(action: CreateTaskAction, lists: RoutingLists
 		const norm = normalize(action.domain);
 		const match = lists.domains.find((d) => normalize(d.name) === norm);
 		if (match) {
-			domain_id = match.id;
-		} else {
+			if (!domainFromProject) domain_id = match.id;
+		} else if (worthReporting(action.domain)) {
 			unresolved.push(`domain "${action.domain}"`);
 		}
 	}
@@ -103,8 +146,9 @@ export function withUnresolvedNotes(
 export function taskInputFromAction(
 	action: CreateTaskAction,
 	lists: RoutingLists,
+	text?: string,
 ): Parameters<typeof createTask>[1] {
-	const routing = resolveTaskRouting(action, lists);
+	const routing = resolveTaskRouting(action, lists, text);
 	return {
 		title: action.title,
 		notes: withUnresolvedNotes(action.notes, routing.unresolved),

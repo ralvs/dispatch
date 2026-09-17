@@ -105,7 +105,9 @@ export async function quickAddTask(
 		return { task, parsed: false };
 	}
 
-	const input = taskInputFromAction(parsed.task, routing);
+	// The utterance is passed so a routing name the user never said is dropped
+	// rather than reported as a miss (see resolveTaskRouting).
+	const input = taskInputFromAction(parsed.task, routing, text);
 	const task = await createTask(sb, withStatedDomain(input, stated, routing), {
 		graphFail: "swallow",
 	});

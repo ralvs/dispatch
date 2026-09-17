@@ -11,6 +11,17 @@ size for that; Sonnet was spending seconds on a judgement that does not need
 it. Chat stays on Sonnet. Override `PARSER_MODEL` if a capture starts
 mis-filing the task/event boundary.
 
+> **Amended (2026-09-17): `PARSER_MODEL` defaults to Sonnet 5.** "Haiku is the
+> right size" was a judgement, never a measurement, and the measurement
+> disagrees. On one prompt, scored with `bun run eval:parser`, Haiku 4.5
+> dropped the day word from "home: Ask refunds today" in 15 of 15 runs and
+> invented a `project` in 8 of 9 runs where none was spoken; Sonnet 5 scored
+> 27/27 on the same cases. The "seconds" this ADR was avoiding are hidden by
+> the palette's provisional receipt, which never blocks on the parse, and a
+> capture is a few hundred tokens — the cost difference is fractions of a cent.
+> The override direction is now the other way: drop to Haiku only with an eval
+> run that says it is safe.
+
 > **Superseded for transcription (2026-07-20).** An earlier revision of this
 > ADR planned gateway multimodal audio transcription
 > (`TRANSCRIBE_MODEL` / Whisper alternative). That path was cut — see

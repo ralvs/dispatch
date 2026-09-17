@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { CreateTaskFormSchema } from "@/lib/schemas/task";
 
+const DOMAIN = "11111111-1111-4111-8111-111111111111";
+
 // The form schema and the capture schema (lib/schemas/capture.ts) validate the
 // same concept from different inputs; they share the WallClockTimeSchema leaf
 // so a time impossible on one path is impossible on the other too.
@@ -10,6 +12,9 @@ describe("CreateTaskFormSchema due_time", () => {
 	const parse = (due_time: string) =>
 		CreateTaskFormSchema.safeParse({
 			title: "ligar pro dentista",
+			// Mandatory since the task form stopped offering "Unfiled" — every
+			// fixture here has to carry one or it fails for the wrong reason.
+			domain_id: DOMAIN,
 			due_date: "2026-08-01",
 			due_time,
 		});
@@ -35,6 +40,7 @@ describe("CreateTaskFormSchema due_time-requires-due_date invariant", () => {
 	it("rejects a due_time with no due_date", () => {
 		const result = CreateTaskFormSchema.safeParse({
 			title: "ligar pro dentista",
+			domain_id: DOMAIN,
 			due_time: "15:00",
 		});
 		expect(result.success).toBe(false);
@@ -43,6 +49,7 @@ describe("CreateTaskFormSchema due_time-requires-due_date invariant", () => {
 	it("rejects a due_time paired with an empty due_date", () => {
 		const result = CreateTaskFormSchema.safeParse({
 			title: "ligar pro dentista",
+			domain_id: DOMAIN,
 			due_date: "",
 			due_time: "15:00",
 		});
@@ -52,6 +59,7 @@ describe("CreateTaskFormSchema due_time-requires-due_date invariant", () => {
 	it("accepts a due_time paired with a due_date", () => {
 		const result = CreateTaskFormSchema.safeParse({
 			title: "ligar pro dentista",
+			domain_id: DOMAIN,
 			due_date: "2026-08-01",
 			due_time: "15:00",
 		});
@@ -60,7 +68,7 @@ describe("CreateTaskFormSchema due_time-requires-due_date invariant", () => {
 });
 
 describe("CreateTaskFormSchema · project_id", () => {
-	const base = { title: "Ship it", priority: "4" };
+	const base = { title: "Ship it", priority: "4", domain_id: DOMAIN };
 
 	it("accepts a project id", () => {
 		const parsed = CreateTaskFormSchema.parse({
@@ -76,5 +84,23 @@ describe("CreateTaskFormSchema · project_id", () => {
 
 	it("rejects anything that is not a uuid", () => {
 		expect(CreateTaskFormSchema.safeParse({ ...base, project_id: "nope" }).success).toBe(false);
+	});
+});
+
+describe("CreateTaskFormSchema · domain_id", () => {
+	const base = { title: "Ship it", priority: "4" };
+
+	// The one field the form may not leave blank. `required` on the select is
+	// browser-side only; this is where the rule actually holds.
+	it("rejects a missing domain", () => {
+		expect(CreateTaskFormSchema.safeParse(base).success).toBe(false);
+	});
+
+	it("rejects the empty string a blank select would post", () => {
+		expect(CreateTaskFormSchema.safeParse({ ...base, domain_id: "" }).success).toBe(false);
+	});
+
+	it("accepts a domain id", () => {
+		expect(CreateTaskFormSchema.safeParse({ ...base, domain_id: DOMAIN }).success).toBe(true);
 	});
 });

@@ -93,18 +93,32 @@ export function routingBlock(ctx: ParseContext): string[] {
 	lines.push(
 		"Set domain/project ONLY when the utterance actually says that name; copy",
 		"it EXACTLY as listed above. No clear match → OMIT, never guess.",
-		"domain and project are INDEPENDENT. Naming a domain is not a reason to",
-		"fill project: if no project from the list was spoken, omit project",
-		"entirely. Never echo the domain into project, never copy a word out of",
-		"the task into it, and never pick a list entry that was not said.",
+		// This used to read "domain and project are INDEPENDENT", which was
+		// false about the data and is now false about the app: every project
+		// belongs to a domain, the task form settles one from the other, and
+		// resolveTaskRouting drops a contradicting domain. Saying otherwise
+		// invited the model to emit a pair that then had to be repaired.
+		"A project already belongs to a domain, so naming a project is enough —",
+		"do not also name a domain for it. Name a domain on its own only when no",
+		"project was spoken. If both are named and they disagree, keep the",
+		"project and leave the domain out.",
+		"Naming a domain is never a reason to fill project: if no project from",
+		"the list was spoken, leave project out. Never echo the domain into",
+		"project, never copy a word out of the task into it, and never pick a",
+		"list entry that was not said.",
 		// Omission had to be spelled out as a mechanical rule. Told only to
 		// "omit", the measured failure was not a wrong guess but a placeholder:
 		// the model answered project as "", ":" or "," in 8 of 9 runs where no
 		// project was spoken. An empty string is not an omission, and saying so
 		// is cheaper than repairing it downstream.
-		"To omit a field, LEAVE THE KEY OUT of the JSON object entirely. Never",
-		'answer a field with "", " ", ":" or any other placeholder — an empty',
-		"string is not an omission and will be treated as a real answer.",
+		// The literal words here matter. An earlier draft said "to OMIT a field"
+		// in capitals, and the model started answering `project: "#OMIT#"` —
+		// reading the instruction's own keyword as the value to write. State
+		// the mechanism, never a token that could be mistaken for one.
+		"A field you have no answer for must be ABSENT from the JSON object —",
+		"do not include its key at all. Never write a stand-in value such as",
+		'"", " ", ":", "none", "null" or a word from these instructions. Any',
+		"string you write will be treated as a real answer.",
 		"Dictated text has no punctuation, so a destination is often just the",
 		'first word with no separator — "saúde marcar dentista" names Health and',
 		'the title is "marcar dentista". Only strip that word when it is a',

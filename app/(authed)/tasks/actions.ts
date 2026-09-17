@@ -26,7 +26,8 @@ export async function createTaskAction(formData: FormData) {
 		due_date: parsed.due_date || null,
 		due_time: parsed.due_time || null,
 		priority: parsed.priority,
-		domain_id: parsed.domain_id || null,
+		// Guaranteed by CreateTaskFormSchema — this form cannot make an unfiled task.
+		domain_id: parsed.domain_id,
 		project_id: parsed.project_id || null,
 		recurrence_rule: parsed.recurrence_rule || null,
 	});
@@ -57,10 +58,10 @@ export async function updateTaskAction(id: string, formData: FormData) {
 		due_date: parsed.due_date || null,
 		due_time: parsed.due_time || null,
 		priority: parsed.priority,
-		// `undefined`, not `null` — an empty domain field means "leave the task's
-		// domain alone", where null would reset it to Inbox. The create path above
-		// wants the opposite, which is why the two mappings stay separate.
-		domain_id: parsed.domain_id || undefined,
+		// The two mappings used to differ: an empty domain meant "leave it alone"
+		// on edit and "Inbox" on create. The field cannot be empty any more, so
+		// there is one answer and both paths send it.
+		domain_id: parsed.domain_id,
 		// Null, not undefined: clearing the select is how a task leaves a
 		// project, and the field is always present on the form.
 		project_id: parsed.project_id || null,

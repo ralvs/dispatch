@@ -118,9 +118,14 @@ async function runOne(
 	try {
 		switch (action.action) {
 			case "create_task": {
-				const task = await createTask(sb, taskInputFromAction(action, prov.routing), {
-					graphFail: "swallow",
-				});
+				// The transcript is passed so a routing name the user never said is
+				// dropped rather than written into the task's notes as a miss
+				// (see resolveTaskRouting).
+				const task = await createTask(
+					sb,
+					taskInputFromAction(action, prov.routing, prov.transcript),
+					{ graphFail: "swallow" },
+				);
 				return { action: "create_task", ok: true, entity: { table: "tasks", id: task.id } };
 			}
 			case "create_event":

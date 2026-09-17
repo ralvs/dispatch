@@ -74,7 +74,13 @@ export const CreateTaskFormSchema = z
 		due_date: z.iso.date().optional().or(z.literal("")),
 		due_time: WallClockTimeSchema.optional().or(z.literal("")),
 		priority: z.coerce.number().int().min(1).max(4).default(4),
-		domain_id: z.uuid().optional().or(z.literal("")),
+		// Required, unlike every other optional here. The form's own `required`
+		// is HTML5 constraint validation, which a disabled control skips and a
+		// non-browser caller never runs at all — so on its own it is a hint,
+		// not the rule. A task may still BE unfiled (capture routes there when
+		// it cannot tell, docs/adr/0027); this form is simply not a way to make
+		// one, and that has to be true where the write happens.
+		domain_id: z.uuid(),
 		// The project tag, settable at last (shape plan §06). The service has
 		// always accepted it; only the form was missing, which left capture's
 		// guess the sole writer and no way to correct it.

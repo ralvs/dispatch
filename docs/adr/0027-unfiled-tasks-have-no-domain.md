@@ -79,3 +79,15 @@ capture time is a choice, not a side effect of the form's ordering.
 - A second system-ish row, if one is ever wanted, no longer has a flag to hang
   itself on. That is the trade: ADR-0024 kept `is_system` because it "survives
   a second system row", and no second row ever arrived.
+
+> **Amended (2026-09-17): the task form can no longer make an unfiled task.**
+> Unfiled is still exactly what this ADR says it is — no domain, the `/inbox`
+> queue, one-way filing — and capture still routes there when it cannot tell.
+> What changed is who may put a task in it. The task form used to offer
+> "Unfiled" whenever it was already the answer, which made it the one surface
+> that could fill a review queue on purpose. The picker now opens on a disabled
+> "Pick a domain" placeholder and the select is `required`, with `domain_id`
+> required in `CreateTaskFormSchema` too — `required` on a control is skipped
+> by a disabled select and absent for any non-browser caller, so the rule has
+> to hold where the write happens. An inbox task opened for editing must be
+> given a domain to save, which is the filing gesture `/inbox` exists for.

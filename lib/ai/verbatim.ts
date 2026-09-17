@@ -48,6 +48,14 @@ const INFLECTION_MIN = 4;
  * invent: "work: send invoice" would accept the title "send worksheet",
  * because "worksheet" starts with "work". That is the same class of failure
  * as "Heff Hounds", just wearing a stem that happens to be in the text.
+ *
+ * Three is deliberately tight, and it costs something: a doubled English
+ * gerund ("plan"/"planning") or a Portuguese first-person-plural future
+ * ("marcar"/"marcaremos") grows by four and is rejected. Those titles fall
+ * back to the raw utterance, which is clumsy but still the user's own words —
+ * whereas loosening to four would let "work" license "workshop". The guard
+ * exists to make the failure boring rather than baffling, so it errs that way.
+ * Raising it needs an eval case, not an intuition.
  */
 const INFLECTION_MAX_GROWTH = 3;
 
