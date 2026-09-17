@@ -16,7 +16,13 @@ const EnvSchema = z.object({
 
 	// AI Gateway (Phase 2)
 	AI_GATEWAY_API_KEY: z.string().min(1).optional(),
-	PARSER_MODEL: z.string().default("anthropic/claude-haiku-4.5"),
+	// Measured against the gateway on the same prompt: Haiku 4.5 dropped the
+	// day word from "home: Ask refunds today" in 15 of 15 runs and invented a
+	// project in 8 of 9, while Sonnet 5 got 10 of 11 captures fully right. A
+	// capture is a few hundred tokens, so the cost difference is fractions of a
+	// cent; the latency difference (~1.5s → ~3s) is hidden by the palette's
+	// provisional receipt, which never blocks on the parse.
+	PARSER_MODEL: z.string().default("anthropic/claude-sonnet-5"),
 	CHAT_MODEL: z.string().default("anthropic/claude-sonnet-5"),
 
 	// External-surface secrets (Phase 7)

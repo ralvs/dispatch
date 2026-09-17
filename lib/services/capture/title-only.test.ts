@@ -13,11 +13,20 @@ describe("titleOnlyCreate", () => {
 		expect(titleOnlyCreate(form({ title: "x", priority: "4" }))).toBe(true);
 	});
 
+	it("stays true when a domain is picked, because picking one is mandatory", () => {
+		// A set domain used to mean "the operator reached for the filing row".
+		// It cannot mean that any more — the field has no empty answer — so
+		// reading it that way would retire the sentence parser outright.
+		expect(titleOnlyCreate(form({ title: "pay rent every monday", domain_id: "dom-1" }))).toBe(
+			true,
+		);
+	});
+
 	it("is false once any other field has been touched", () => {
 		expect(titleOnlyCreate(form({ title: "x", due_date: "2026-07-15" }))).toBe(false);
 		expect(titleOnlyCreate(form({ title: "x", due_time: "09:00" }))).toBe(false);
 		expect(titleOnlyCreate(form({ title: "x", notes: "hello" }))).toBe(false);
-		expect(titleOnlyCreate(form({ title: "x", domain_id: "dom-1" }))).toBe(false);
+		expect(titleOnlyCreate(form({ title: "x", project_id: "proj-1" }))).toBe(false);
 		expect(titleOnlyCreate(form({ title: "x", recurrence_rule: "weekly" }))).toBe(false);
 		expect(titleOnlyCreate(form({ title: "x", priority: "1" }))).toBe(false);
 	});

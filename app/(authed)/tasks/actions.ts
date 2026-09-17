@@ -26,17 +26,27 @@ export async function createTaskAction(formData: FormData) {
 		due_date: parsed.due_date || null,
 		due_time: parsed.due_time || null,
 		priority: parsed.priority,
-		domain_id: parsed.domain_id || null,
+		// Guaranteed by CreateTaskFormSchema — this form cannot make an unfiled task.
+		domain_id: parsed.domain_id,
 		project_id: parsed.project_id || null,
 		recurrence_rule: parsed.recurrence_rule || null,
 	});
 	afterMutation("task.write");
 }
 
-export async function quickAddTaskAction({ text }: { text: string }) {
+export async function quickAddTaskAction({ text, domainId }: { text: string; domainId: string }) {
 	const { sb } = await requireOwnerPage();
-	const parsed = z.object({ text: z.string().trim().min(1).max(1000) }).parse({ text });
-	await quickAddTask(sb, parsed.text);
+	// The domain the operator picked on the form, which the parser must not
+	// override (lib/services/capture/quick-add.ts). Untrusted like any client
+	// argument, so it is parsed rather than trusted — and REQUIRED, for the
+	// same reason CreateTaskFormSchema requires it: this is the form's other
+	// submit path, and a rule that only one of the two enforces is not a rule.
+	// The service keeps `domainId` optional because capture legitimately has
+	// none; this action is the form, and the form always does.
+	const parsed = z
+		.object({ text: z.string().trim().min(1).max(1000), domainId: z.uuid() })
+		.parse({ text, domainId });
+	await quickAddTask(sb, parsed.text, { domainId: parsed.domainId });
 	afterMutation("task.write");
 }
 
@@ -49,10 +59,10 @@ export async function updateTaskAction(id: string, formData: FormData) {
 		due_date: parsed.due_date || null,
 		due_time: parsed.due_time || null,
 		priority: parsed.priority,
-		// `undefined`, not `null` — an empty domain field means "leave the task's
-		// domain alone", where null would reset it to Inbox. The create path above
-		// wants the opposite, which is why the two mappings stay separate.
-		domain_id: parsed.domain_id || undefined,
+		// The two mappings used to differ: an empty domain meant "leave it alone"
+		// on edit and "Inbox" on create. The field cannot be empty any more, so
+		// there is one answer and both paths send it.
+		domain_id: parsed.domain_id,
 		// Null, not undefined: clearing the select is how a task leaves a
 		// project, and the field is always present on the form.
 		project_id: parsed.project_id || null,

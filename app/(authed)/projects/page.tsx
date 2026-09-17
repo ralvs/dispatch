@@ -24,7 +24,7 @@ export default async function ProjectsPage() {
 
 	// The task form only needs a name to pick; the domain options carry colour
 	// because the form's Domain select shares them with /tasks.
-	const projectOptions = projects.map((p) => ({ id: p.id, name: p.name }));
+	const projectOptions = projects.map((p) => ({ id: p.id, name: p.name, domain_id: p.domain_id }));
 	const domainOptions = domains.map((d) => ({ id: d.id, name: d.name, color: d.color }));
 	const todayIso = todayInTz(tz);
 
@@ -72,7 +72,7 @@ export default async function ProjectsPage() {
 											doneCount={taskCounts[p.id]?.done ?? 0}
 											addTask={
 												<AddTaskButton
-													project={{ id: p.id, name: p.name }}
+													project={{ id: p.id, name: p.name, domain_id: p.domain_id }}
 													domainId={p.domain_id}
 													projects={projectOptions}
 													domains={domainOptions}

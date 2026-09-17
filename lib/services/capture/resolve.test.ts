@@ -46,9 +46,31 @@ describe("resolveTaskRouting", () => {
 		expect(result).toEqual({ domain_id: "dom-home", project_id: null, unresolved: [] });
 	});
 
-	it("an explicitly resolved domain wins over a resolved project's inherited domain", () => {
+	it("keeps the project's own domain when the action names a different one", () => {
+		// This used to be "an explicit domain wins", which stored a task in a
+		// Work project under Home — a pair the data cannot mean. Both answers
+		// come from the same model here, and naming a project already names a
+		// domain, so a contradicting domain is the model's mistake.
 		const result = resolveTaskRouting(task({ project: "Reviews", domain: "Home" }), LISTS);
-		expect(result).toEqual({ domain_id: "dom-home", project_id: "proj-reviews", unresolved: [] });
+		expect(result).toEqual({ domain_id: "dom-work", project_id: "proj-reviews", unresolved: [] });
+	});
+
+	it("lets a named domain answer for a project that has none of its own", () => {
+		const lists: RoutingLists = {
+			...LISTS,
+			projects: [{ id: "proj-loose", name: "Solto", domain_id: null }],
+		};
+		const result = resolveTaskRouting(task({ project: "Solto", domain: "Home" }), lists);
+		expect(result).toEqual({ domain_id: "dom-home", project_id: "proj-loose", unresolved: [] });
+	});
+
+	it("still reports an unmatched domain name even when the project decided", () => {
+		const result = resolveTaskRouting(task({ project: "Reviews", domain: "Nope" }), LISTS);
+		expect(result).toEqual({
+			domain_id: "dom-work",
+			project_id: "proj-reviews",
+			unresolved: ['domain "Nope"'],
+		});
 	});
 
 	it("reports a miss instead of guessing, and falls back to no routing", () => {
@@ -68,6 +90,27 @@ describe("resolveTaskRouting", () => {
 	it("returns no routing when the action names neither domain nor project", () => {
 		const result = resolveTaskRouting(task(), LISTS);
 		expect(result).toEqual({ domain_id: null, project_id: null, unresolved: [] });
+	});
+
+	it("drops an unmatched name the utterance never contained", () => {
+		// A word-shaped stand-in the model wrote into a field it was told to
+		// leave out. It is not a miss worth carrying to /inbox; it is noise.
+		const result = resolveTaskRouting(task({ project: "skip" }), LISTS, "gym every Tuesday");
+		expect(result).toEqual({ domain_id: null, project_id: null, unresolved: [] });
+	});
+
+	it("still reports an unmatched name the utterance really did contain", () => {
+		const result = resolveTaskRouting(
+			task({ project: "Reviews plugin" }),
+			LISTS,
+			"ship it on the Reviews plugin",
+		);
+		expect(result.unresolved).toEqual(['project "Reviews plugin"']);
+	});
+
+	it("reports every unmatched name when given no utterance to check against", () => {
+		const result = resolveTaskRouting(task({ project: "Ghost" }), LISTS);
+		expect(result.unresolved).toEqual(['project "Ghost"']);
 	});
 
 	it("finds no match against empty lists", () => {

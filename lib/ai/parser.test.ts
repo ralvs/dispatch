@@ -165,9 +165,50 @@ describe("parse", () => {
 		expect(system).toContain("KNOWN DOMAINS: Home");
 		expect(system).toContain("KNOWN PROJECTS: Reviews");
 	});
+
+	// Three rules the prompt lost or got wrong once each, and whose absence is
+	// invisible until a capture comes back wrong days later. Asserting the copy
+	// is blunt, but the prompt IS the implementation for these.
+	it("tells the model a project already carries its domain", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+
+		await parse("hmm", { ...CTX, domains: ["Home"], projects: ["Reviews"] });
+
+		const system = (generateObject as Mock).mock.calls[0][0].system as string;
+		expect(system).toContain("A project already belongs to a domain");
+		// The old copy, which contradicted both the data and resolveTaskRouting.
+		expect(system).not.toContain("INDEPENDENT");
+	});
+
+	it("asks for an absent key rather than a stand-in value", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+
+		await parse("hmm", { ...CTX, domains: ["Home"], projects: ["Reviews"] });
+
+		const system = (generateObject as Mock).mock.calls[0][0].system as string;
+		expect(system).toContain("must be ABSENT from the JSON object");
+		// An earlier draft said "to OMIT a field" in capitals and the model
+		// began answering `project: "#OMIT#"` — writing the keyword as a value.
+		expect(system).not.toContain("LEAVE THE KEY OUT");
+	});
 });
 
 describe("shared prompt fragments", () => {
+	it("names the day words, rather than only asking for 'relative dates'", async () => {
+		// "Resolve relative dates" alone was not actionable: the measured result
+		// was "today" dropped in 15 of 15 runs, landing in neither the title nor
+		// due_date.
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+		await parse("hmm", CTX);
+		const system = (generateObject as Mock).mock.calls[0][0].system as string;
+		expect(system).toContain("ANY word naming a day is a due_date");
+		expect(system).toContain("today/tonight/hoje");
+		expect(system).toContain("tomorrow/amanhã");
+	});
+
 	it("resolves relative dates against the app timezone", async () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
 		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });

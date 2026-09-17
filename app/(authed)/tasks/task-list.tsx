@@ -25,7 +25,7 @@ import {
 } from "./actions";
 import { NewTaskButton } from "./new-task-button";
 import { TaskDialog } from "./task-dialog";
-import type { TaskDomainOption } from "./task-fields";
+import type { TaskDomainOption, TaskProjectOption } from "./task-fields";
 import {
 	type TaskFilterOption,
 	TaskScopeFilters,
@@ -73,9 +73,23 @@ function optimisticTask(overrides: Partial<TaskRow> = {}): TaskRow {
 	};
 }
 
-/** Raw text — everything else defaults; the parsed row swaps in on revalidation. */
-function optimisticTaskFromText(text: string): TaskRow {
-	return optimisticTask({ title: text });
+/**
+ * Raw text plus the domain the form stated; everything else defaults and the
+ * parsed row swaps in on revalidation. The domain is carried rather than left
+ * null because the list is filtered BY domain — a fake row filed nowhere would
+ * vanish from the view that created it and reappear a moment later.
+ */
+function optimisticTaskFromText(
+	text: string,
+	domainId: string,
+	domains: TaskDomainOption[],
+): TaskRow {
+	const domain = domains.find((d) => d.id === domainId);
+	return optimisticTask({
+		title: text,
+		domain_id: domainId || null,
+		domain: domain ? { id: domain.id, name: domain.name, color: domain.color ?? null } : null,
+	});
 }
 
 function optimisticTaskFromForm(
@@ -127,7 +141,12 @@ export function TaskList({
 	doneTasks: TaskRow[];
 	todayIso: string;
 	domains: TaskDomainOption[];
-	projects?: TaskFilterOption[];
+	/**
+	 * Carries `domain_id` because the task form needs it: choosing a project
+	 * there settles the domain (app/(authed)/tasks/task-fields.tsx), so the
+	 * narrow's filter options are no longer a wide enough shape to pass on.
+	 */
+	projects?: TaskProjectOption[];
 	/** From `?edit=` — opens that row's form and cleans the URL. */
 	editTaskId?: string | null;
 	/** From `?status=` — initial value only; every later change is client state. */
@@ -285,14 +304,14 @@ export function TaskList({
 		});
 	}
 
-	function onQuickAdd(text: string): Promise<void> {
-		const optimistic = optimisticTaskFromText(text);
+	function onQuickAdd(text: string, domainId: string): Promise<void> {
+		const optimistic = optimisticTaskFromText(text, domainId, domains);
 		sessionCreatedIds.add(optimistic.id);
 		// Mirrors onCreate — same shared transition, same rollback-on-reject.
 		return new Promise((resolve, reject) => {
 			startTransition(() => {
 				dispatchOptimistic({ type: "create", task: optimistic });
-				quickAddTaskAction({ text })
+				quickAddTaskAction({ text, domainId })
 					.then(resolve)
 					.catch((err) => {
 						reject(err);

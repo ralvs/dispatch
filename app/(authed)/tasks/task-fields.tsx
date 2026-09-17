@@ -38,8 +38,14 @@ export type TaskDomainOption = {
 	color: string | null;
 };
 
-/** A project as the task form needs it — a name to pick, nothing more. */
-export type TaskProjectOption = { id: string; name: string };
+/**
+ * A project as the task form needs it. `domain_id` is not decoration: a
+ * project already belongs to a domain, so the form must not offer the two as
+ * independent answers the way it used to — picking a project now settles the
+ * domain, and the domain control locks (see TaskMetaFields). A project with no
+ * domain is possible in the data, and leaves the domain free to pick.
+ */
+export type TaskProjectOption = { id: string; name: string; domain_id: string | null };
 
 /** Label always stacks above its control (block, not inline beside). */
 const FIELD_LABEL = "field-caption mb-2 block text-xs";
@@ -233,6 +239,36 @@ export function TaskMetaFields({
 	// so it posts "" — the same as Never, which is what it means.
 	const storedRecurrence =
 		recurrence === CUSTOM_OPTION ? formatCustomWeekly(customDays) : recurrence;
+
+	// ── Project decides the domain ───────────────────────────────────────
+	//
+	// These two were independent selects, which let the form state something
+	// the data cannot hold: a task in a Work project filed under Home. A
+	// project already belongs to a domain, so the project is the stronger
+	// answer and the domain follows it.
+	//
+	// One piece of state for the domain rather than two, and picking a project
+	// writes through to it. The alternative — deriving the domain while a
+	// project is chosen — loses the answer the moment the project is cleared,
+	// which is exactly when the user wants to keep it and adjust.
+	const [projectId, setProjectId] = useState(defaults.project_id ?? "");
+	const [domainId, setDomainId] = useState(defaults.domain_id ?? "");
+	const selectedProject = projects.find((p) => p.id === projectId);
+	// A project with no domain of its own settles nothing, so the control stays
+	// free rather than locking on an empty answer.
+	const domainFollowsProject = selectedProject?.domain_id != null;
+	const domainDisabled = lockDomain || domainFollowsProject;
+	// Locked either way: the caller's lock keeps the task's own domain, the
+	// project's lock keeps the project's.
+	const postedDomainId = domainFollowsProject ? (selectedProject?.domain_id ?? "") : domainId;
+
+	function chooseProject(next: string) {
+		setProjectId(next);
+		const domain = projects.find((p) => p.id === next)?.domain_id;
+		// Clearing the project leaves its domain behind, now editable — the task
+		// is still about the same area of life, it just left the project.
+		if (domain) setDomainId(domain);
+	}
 	function resetSchedule() {
 		setDue("");
 		setTime("");
@@ -353,27 +389,33 @@ export function TaskMetaFields({
 
 				<div className={META_TRIO}>
 					<Field label="Domain" className="min-w-0">
-						{/* Locked: same hidden-input contract as Project — a disabled
-							select posts nothing. */}
-						{lockDomain && (
-							<input type="hidden" name="domain_id" value={defaults.domain_id ?? ""} />
-						)}
+						{/* Locked: a disabled select posts nothing, so the answer rides a
+							hidden input. Two ways to get here now — the caller locked it,
+							or the chosen project settled it — and both post the same way. */}
+						{domainDisabled && <input type="hidden" name="domain_id" value={postedDomainId} />}
 						{/* No color dot on <option> — styling native option elements is
 						    unreliable cross-browser, so this stays a plain name list. */}
 						<Select
-							name={lockDomain ? undefined : "domain_id"}
-							defaultValue={defaults.domain_id ?? ""}
-							disabled={lockDomain}
+							name={domainDisabled ? undefined : "domain_id"}
+							value={postedDomainId}
+							onChange={(event) => setDomainId(event.target.value)}
+							disabled={domainDisabled}
+							required
 							aria-label="Domain"
 							className="w-full"
 						>
-							{/* "Unfiled" is offered only when it is already the answer — on the
-							    create form (undefined) or for a task sitting in the inbox (null).
-							    A filed task never sees it, which is what keeps filing one-way
-							    (docs/adr/0027). It also has to be listed in the inbox case, or
-							    the <select> would drop its own value and silently reassign the
-							    task to whichever domain sorts first. */}
-							{defaults.domain_id == null && <option value="">Unfiled</option>}
+							{/* A placeholder, not a choice. "Unfiled" used to be offered here
+							    whenever it was already the answer, which made this form the one
+							    place a task could be created straight into the /inbox review
+							    queue — a queue nobody wants to fill on purpose. The field is
+							    `required` instead: unfiled is still a state a task can be IN
+							    (capture routes there when it cannot tell), but no longer one
+							    this form can put it in. An inbox task opened for editing shows
+							    this placeholder and must be given a domain to save, which is
+							    the filing gesture /inbox exists for anyway (docs/adr/0027). */}
+							<option value="" disabled>
+								Pick a domain
+							</option>
 							{domains.map((d) => (
 								<option key={d.id} value={d.id}>
 									{d.name}
@@ -391,7 +433,8 @@ export function TaskMetaFields({
 						)}
 						<Select
 							name={lockProject ? undefined : "project_id"}
-							defaultValue={defaults.project_id ?? ""}
+							value={projectId}
+							onChange={(event) => chooseProject(event.target.value)}
 							disabled={lockProject}
 							aria-label="Project"
 							className="w-full"

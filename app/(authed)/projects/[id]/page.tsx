@@ -35,9 +35,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 			todayIso={todayIso}
 			addTask={
 				<AddTaskButton
-					project={{ id: project.id, name: project.name }}
+					project={{ id: project.id, name: project.name, domain_id: project.domain_id }}
 					domainId={project.domain_id}
-					projects={projects.map((p) => ({ id: p.id, name: p.name }))}
+					projects={projects.map((p) => ({ id: p.id, name: p.name, domain_id: p.domain_id }))}
 					domains={domains.map((d) => ({ id: d.id, name: d.name, color: d.color }))}
 					todayIso={todayIso}
 				/>

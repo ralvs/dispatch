@@ -13,8 +13,13 @@ import {
 	routingBlock,
 	TASK_FIELD_FORMATS,
 } from "@/lib/ai/parser";
+import { guardTitle } from "@/lib/ai/verbatim";
 import { type CreateTaskAction, CreateTaskActionSchema } from "@/lib/schemas/capture";
-import { loadCaptureContext, taskInputFromAction } from "@/lib/services/capture/resolve";
+import {
+	loadCaptureContext,
+	type RoutingLists,
+	taskInputFromAction,
+} from "@/lib/services/capture/resolve";
 import { createTask, type TaskRow } from "@/lib/services/tasks";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -63,31 +68,80 @@ export async function parseTaskCapture(text: string, ctx: ParseContext): Promise
 			}),
 		);
 		if (!object.task) return { ok: false, reason: "empty", raw: text };
-		return { ok: true, task: object.task };
+		// Same guard as the firehose parser: a title made of words the user
+		// never typed is worse than the raw sentence (lib/ai/verbatim.ts).
+		const { title, substituted } = guardTitle(object.task.title, text);
+		if (substituted) console.warn("quick-add title not verbatim");
+		return { ok: true, task: { ...object.task, title } };
 	} catch (error) {
 		logParseFailure("quick-add", error);
 		return { ok: false, reason: "failed", raw: text };
 	}
 }
 
+/**
+ * `domainId` is a domain the operator PICKED on the form, not one the parser
+ * inferred. The task dialog sends it because its domain field is mandatory now
+ * while its sentence parsing is not, so a create can legitimately be both "read
+ * this sentence" and "file it here". A stated answer beats an inferred one, so
+ * it overrides whatever the parse resolved — including on the degraded path,
+ * where there is no parse at all and it is the only filing there is.
+ */
 export async function quickAddTask(
 	sb: SupabaseClient,
 	text: string,
+	options: { domainId?: string | null } = {},
 ): Promise<{ task: TaskRow; parsed: boolean }> {
+	const stated = options.domainId || null;
 	const { routing, ctx } = await loadCaptureContext(sb);
 	const parsed = await parseTaskCapture(text, ctx);
 
 	if (!parsed.ok) {
 		const task = await createTask(
 			sb,
-			{ title: text.trim(), source: "manual" },
+			{ title: text.trim(), domain_id: stated, source: "manual" },
 			{ graphFail: "swallow" },
 		);
 		return { task, parsed: false };
 	}
 
-	const task = await createTask(sb, taskInputFromAction(parsed.task, routing), {
+	// The utterance is passed so a routing name the user never said is dropped
+	// rather than reported as a miss (see resolveTaskRouting).
+	const input = taskInputFromAction(parsed.task, routing, text);
+	const task = await createTask(sb, withStatedDomain(input, stated, routing), {
 		graphFail: "swallow",
 	});
 	return { task, parsed: true };
+}
+
+/**
+ * Overrides the parse's domain with the one the operator stated, and drops the
+ * parsed project when the two disagree.
+ *
+ * Dropping it is the whole point. A project already belongs to a domain, so
+ * filing a task in project P under some other domain states something the data
+ * cannot hold — which is exactly the pairing the task form was just changed to
+ * make impossible, and it would have walked straight back in through this
+ * path: the form's default create IS title-only, so every such create now
+ * arrives with a stated domain, and a sentence naming a project ("add a
+ * changelog page to Dispatch") would have kept that project under whatever
+ * domain the operator happened to pick.
+ *
+ * Neither field is silently wrong afterwards: the operator's domain is what
+ * they said, and the project falls away rather than dragging the domain with
+ * it. A project with no domain of its own contradicts nothing, so it stays.
+ */
+function withStatedDomain(
+	input: Parameters<typeof createTask>[1],
+	stated: string | null,
+	lists: RoutingLists,
+): Parameters<typeof createTask>[1] {
+	if (!stated) return input;
+	const project = lists.projects.find((p) => p.id === input.project_id);
+	const conflicts = project != null && project.domain_id != null && project.domain_id !== stated;
+	return {
+		...input,
+		domain_id: stated,
+		project_id: conflicts ? null : input.project_id,
+	};
 }

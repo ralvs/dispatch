@@ -89,6 +89,17 @@ the submitted `FormData` rather than tracked state, because the fields are
 uncontrolled by design and remount on every open, so the payload is the only
 thing that cannot drift from what is on screen.
 
+> **Amended (2026-09-17): the domain is no longer one of those fields.** The
+> form has no "Unfiled" state left to open in — a domain is mandatory
+> ([ADR-0027](./0027-unfiled-tasks-have-no-domain.md)) — so reading a set
+> domain as "the operator reached for the filing row" would make
+> `titleOnlyCreate` permanently false and retire this decision by accident,
+> through a change about something else. The two compose instead: the sentence
+> still goes to the parser, and the stated domain is applied over whatever the
+> parse inferred, because it was stated rather than guessed. `project_id` is
+> still a signal — choosing a project is a real act of filing, and it settles
+> the domain with it.
+
 The rule holds for **Enter and for the footer's primary equally**, so the two
 can never disagree — which is the whole reason it is one rule and not two paths.
 ADR-0040's keyboard contract is unchanged: Enter still submits from single-line

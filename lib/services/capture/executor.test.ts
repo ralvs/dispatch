@@ -114,7 +114,9 @@ describe("runActions", () => {
 			{ action: "create_task", title: "ship it", project: "Ghost project", notes: "context" },
 		];
 
-		await runActions(sb, actions, PROV);
+		// The transcript has to NAME it. A miss is only worth reporting when the
+		// user actually said the name — see the next test.
+		await runActions(sb, actions, { ...PROV, transcript: "ship it on the Ghost project" });
 
 		expect(createTask).toHaveBeenCalledWith(
 			sb,
@@ -123,6 +125,25 @@ describe("runActions", () => {
 				project_id: null,
 				notes: 'context\n[capture: unresolved project "Ghost project"]',
 			}),
+			{ graphFail: "swallow" },
+		);
+	});
+
+	it("drops a routing name the transcript never contained", async () => {
+		// The measured failure: told to leave `project` out, the model answers
+		// "skip" (or "#OMIT#") instead. Reporting that as a miss writes a bogus
+		// `[capture: unresolved project "skip"]` into the user's notes.
+		(createTask as Mock).mockResolvedValue({ id: "task-1" });
+
+		const actions: CaptureAction[] = [
+			{ action: "create_task", title: "gym", project: "skip", notes: "context" },
+		];
+
+		await runActions(sb, actions, { ...PROV, transcript: "gym every Tuesday and Saturday" });
+
+		expect(createTask).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({ domain_id: null, project_id: null, notes: "context" }),
 			{ graphFail: "swallow" },
 		);
 	});

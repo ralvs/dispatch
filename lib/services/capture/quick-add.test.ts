@@ -106,6 +106,95 @@ describe("quickAddTask", () => {
 		);
 	});
 
+	it("lets a stated domain override the one the parser inferred", async () => {
+		// The task form's domain field is mandatory while its sentence parsing
+		// is not, so a create is legitimately both "read this" and "file it
+		// here". Stated beats inferred.
+		(listDomains as Mock).mockResolvedValue([
+			{ id: "dom-home", name: "Casa", active: true },
+			{ id: "dom-work", name: "Trabalho", active: true },
+		]);
+		parsedTask({ action: "create_task", title: "pagar aluguel", domain: "Casa" });
+		(createTask as Mock).mockResolvedValue({ id: "task-3" });
+
+		await quickAddTask(sb, "pagar aluguel", { domainId: "dom-work" });
+
+		expect(createTask).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({ title: "pagar aluguel", domain_id: "dom-work" }),
+			{ graphFail: "swallow" },
+		);
+	});
+
+	describe("when a stated domain disagrees with the parsed project", () => {
+		// The pairing the task form was changed to make impossible must not walk
+		// back in here: the form's default create IS title-only, so every one of
+		// them now arrives with a stated domain.
+		beforeEach(() => {
+			(listDomains as Mock).mockResolvedValue([
+				{ id: "dom-code", name: "Code", active: true },
+				{ id: "dom-home", name: "Casa", active: true },
+			]);
+			(listProjects as Mock).mockResolvedValue([
+				{ id: "proj-dispatch", name: "Dispatch", domain_id: "dom-code" },
+				{ id: "proj-loose", name: "Solto", domain_id: null },
+			]);
+			(createTask as Mock).mockResolvedValue({ id: "task-5" });
+		});
+
+		it("drops the project rather than filing it under the wrong domain", async () => {
+			parsedTask({ action: "create_task", title: "changelog", project: "Dispatch" });
+
+			await quickAddTask(sb, "add a changelog page to Dispatch", { domainId: "dom-home" });
+
+			expect(createTask).toHaveBeenCalledWith(
+				sb,
+				expect.objectContaining({ domain_id: "dom-home", project_id: null }),
+				{ graphFail: "swallow" },
+			);
+		});
+
+		it("keeps the project when the stated domain is its own", async () => {
+			parsedTask({ action: "create_task", title: "changelog", project: "Dispatch" });
+
+			await quickAddTask(sb, "add a changelog page to Dispatch", { domainId: "dom-code" });
+
+			expect(createTask).toHaveBeenCalledWith(
+				sb,
+				expect.objectContaining({ domain_id: "dom-code", project_id: "proj-dispatch" }),
+				{ graphFail: "swallow" },
+			);
+		});
+
+		it("keeps a project that has no domain of its own, since it contradicts nothing", async () => {
+			parsedTask({ action: "create_task", title: "algo", project: "Solto" });
+
+			await quickAddTask(sb, "algo no Solto", { domainId: "dom-home" });
+
+			expect(createTask).toHaveBeenCalledWith(
+				sb,
+				expect.objectContaining({ domain_id: "dom-home", project_id: "proj-loose" }),
+				{ graphFail: "swallow" },
+			);
+		});
+	});
+
+	it("files a stated domain even when the parse degrades", async () => {
+		// The degraded path has no parse to take a domain from, so the stated
+		// one is the only filing there is — losing it would drop the task into
+		// the inbox the form exists to keep it out of.
+		(isAiConfigured as Mock).mockReturnValue(false);
+		(createTask as Mock).mockResolvedValue({ id: "task-4" });
+
+		await quickAddTask(sb, "pagar aluguel", { domainId: "dom-work" });
+
+		expect(createTask).toHaveBeenCalledWith(
+			sb,
+			{ title: "pagar aluguel", domain_id: "dom-work", source: "manual" },
+			{ graphFail: "swallow" },
+		);
+	});
+
 	it.each(["unavailable", "failed", "empty"] as const)(
 		"falls back to a raw-title Inbox task when the parser reports %s",
 		async (reason) => {
@@ -121,6 +210,8 @@ describe("quickAddTask", () => {
 				sb,
 				{
 					title: "call the dentist",
+					// No domain was stated, so the degraded task is still unfiled.
+					domain_id: null,
 					source: "manual",
 				},
 				{ graphFail: "swallow" },

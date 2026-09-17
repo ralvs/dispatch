@@ -84,7 +84,8 @@ export function TaskDialog({
 	/** @mention candidates (docs/adr/0030) for title and notes. */
 	people?: MentionCandidate[];
 	onCreate?: (formData: FormData) => Promise<void>;
-	onQuickAdd?: (text: string) => Promise<void>;
+	/** `domainId` is the form's own pick — mandatory there, so always present. */
+	onQuickAdd?: (text: string, domainId: string) => Promise<void>;
 	taskId?: string;
 	onDelete?: () => void;
 	onSaved?: () => void;
@@ -108,9 +109,13 @@ export function TaskDialog({
 	/**
 	 * Whether the form carries anything beyond its title. Every value here is
 	 * the field's own untouched state — the create form opens with no date, no
-	 * time, no notes, Unfiled, Never, and P4 — so this is "the operator typed a
-	 * sentence and nothing else", which is exactly when reading the sentence is
-	 * the helpful thing to do (ADR-0043).
+	 * time, no notes, Never, and P4 — so this is "the operator typed a sentence
+	 * and nothing else", which is exactly when reading the sentence is the
+	 * helpful thing to do (ADR-0043).
+	 *
+	 * The domain is NOT among them: it is mandatory now, so it has no untouched
+	 * state to read (ADR-0027, ADR-0043's amendment). It rides along to the
+	 * parser instead of suppressing it.
 	 *
 	 * Read off FormData rather than tracked in state on purpose: the fields are
 	 * uncontrolled by design and remount on every open, so the submitted payload
@@ -126,7 +131,12 @@ export function TaskDialog({
 						return updateTaskAction(taskId, formData);
 					}
 					const title = String(formData.get("title") ?? "").trim();
-					if (onQuickAdd && title && titleOnlyCreate(formData)) return onQuickAdd(title);
+					if (onQuickAdd && title && titleOnlyCreate(formData)) {
+						// The sentence goes to the parser, the domain goes as stated —
+						// the field is mandatory now, so it is never "untouched" and
+						// cannot be read as the operator declining to file.
+						return onQuickAdd(title, String(formData.get("domain_id") ?? ""));
+					}
 					return onCreate ? onCreate(formData) : createTaskAction(formData);
 				},
 				mode === "edit" ? "Couldn't save task. Try again." : "Couldn't add that task. Try again.",
