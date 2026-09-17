@@ -13,6 +13,7 @@ import {
 	routingBlock,
 	TASK_FIELD_FORMATS,
 } from "@/lib/ai/parser";
+import { guardTitle } from "@/lib/ai/verbatim";
 import { type CreateTaskAction, CreateTaskActionSchema } from "@/lib/schemas/capture";
 import { loadCaptureContext, taskInputFromAction } from "@/lib/services/capture/resolve";
 import { createTask, type TaskRow } from "@/lib/services/tasks";
@@ -63,7 +64,11 @@ export async function parseTaskCapture(text: string, ctx: ParseContext): Promise
 			}),
 		);
 		if (!object.task) return { ok: false, reason: "empty", raw: text };
-		return { ok: true, task: object.task };
+		// Same guard as the firehose parser: a title made of words the user
+		// never typed is worse than the raw sentence (lib/ai/verbatim.ts).
+		const { title, substituted } = guardTitle(object.task.title, text);
+		if (substituted) console.warn("quick-add title not verbatim");
+		return { ok: true, task: { ...object.task, title } };
 	} catch (error) {
 		logParseFailure("quick-add", error);
 		return { ok: false, reason: "failed", raw: text };

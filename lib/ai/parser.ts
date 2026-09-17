@@ -2,6 +2,7 @@ import "server-only";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { isAiConfigured, parserModel } from "@/lib/ai/gateway";
+import { guardTitle } from "@/lib/ai/verbatim";
 import { type CaptureAction, CaptureActionsSchema } from "@/lib/schemas/capture";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -48,6 +49,20 @@ export function dateResolution(ctx: ParseContext): string[] {
 	return [
 		`Resolve relative dates against NOW=${ctx.nowUtc}, TODAY=${ctx.todayIso},`,
 		`timezone ${ctx.tz}. Output due_date as YYYY-MM-DD and due_time as HH:mm.`,
+		// "Resolve relative dates" alone was not an instruction the model could
+		// act on: measured against the gateway, a small parser model dropped
+		// "today" from "home: Ask refunds today" in 15 out of 15 runs, and
+		// "sexta" in 3 out of 3 — the word simply vanished, landing in neither
+		// the title nor due_date. Naming the words and demanding the field is
+		// what makes a day word turn into a date.
+		"ANY word naming a day is a due_date — never drop it and never leave it",
+		"in the title. today/tonight/hoje → TODAY. tomorrow/amanhã → TODAY+1.",
+		"A weekday name (Monday, segunda, sexta, …) → the NEXT such weekday,",
+		"counting today only if the utterance says so. next week/semana que vem",
+		"→ TODAY+7. A bare day number (the 5th, dia 5) → that day of the current",
+		"month, or the next month if it has already passed.",
+		"If you cannot resolve a day word to a date, keep it in the title rather",
+		"than discarding it.",
 	];
 }
 
@@ -82,6 +97,14 @@ export function routingBlock(ctx: ParseContext): string[] {
 		"fill project: if no project from the list was spoken, omit project",
 		"entirely. Never echo the domain into project, never copy a word out of",
 		"the task into it, and never pick a list entry that was not said.",
+		// Omission had to be spelled out as a mechanical rule. Told only to
+		// "omit", the measured failure was not a wrong guess but a placeholder:
+		// the model answered project as "", ":" or "," in 8 of 9 runs where no
+		// project was spoken. An empty string is not an omission, and saying so
+		// is cheaper than repairing it downstream.
+		"To omit a field, LEAVE THE KEY OUT of the JSON object entirely. Never",
+		'answer a field with "", " ", ":" or any other placeholder — an empty',
+		"string is not an omission and will be treated as a real answer.",
 		"Dictated text has no punctuation, so a destination is often just the",
 		'first word with no separator — "saúde marcar dentista" names Health and',
 		'the title is "marcar dentista". Only strip that word when it is a',
@@ -197,6 +220,20 @@ function systemPrompt(ctx: ParseContext): string {
 	].join("\n");
 }
 
+/**
+ * Applies the verbatim guard to the one field it can protect on each action:
+ * the line the user will actually read in a list. `create_note`,
+ * `create_quote` and `create_journal_entry` are exempt — their body IS the
+ * utterance, copied whole, so a guard there would only ever compare the text
+ * to itself.
+ */
+function guardActionTitle(action: CaptureAction, text: string): CaptureAction {
+	if (action.action !== "create_task" && action.action !== "create_event") return action;
+	const { title, substituted } = guardTitle(action.title, text);
+	if (substituted) console.warn("parse title not verbatim", { action: action.action });
+	return { ...action, title };
+}
+
 export async function parse(text: string, ctx: ParseContext): Promise<ParseResult> {
 	try {
 		// Config lookup is INSIDE the try: env() is lazily validated and can throw,
@@ -214,7 +251,7 @@ export async function parse(text: string, ctx: ParseContext): Promise<ParseResul
 			}),
 		);
 		if (object.actions.length === 0) return { ok: false, reason: "empty", raw: text };
-		return { ok: true, actions: object.actions };
+		return { ok: true, actions: object.actions.map((a) => guardActionTitle(a, text)) };
 	} catch (error) {
 		// Model error OR output that failed CaptureActionsSchema (unknown verb,
 		// malformed action). Degrade — the raw text is never lost.

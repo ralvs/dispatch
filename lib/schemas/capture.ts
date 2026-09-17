@@ -26,10 +26,27 @@ import { WallClockTimeSchema } from "@/lib/schemas/time";
 export const CaptureTranscriptSourceSchema = z.enum(["voice", "text"]);
 export type CaptureTranscriptSource = z.infer<typeof CaptureTranscriptSourceSchema>;
 
+/**
+ * A free-text field the model may fill with nothing useful. Measured against
+ * the gateway, a small parser model answers an omitted `project` as `""`, `":"`
+ * or `","` roughly two times in three — and because every one of those failed
+ * `z.string().min(1)`, the WHOLE parse threw and the capture degraded to its
+ * raw text. One junk optional field must never cost the title, the date, and
+ * the domain that were all correct, so blank-and-punctuation-only answers are
+ * normalised to "omitted" before validation rather than rejected.
+ */
+const OptionalText = z.preprocess((v) => {
+	if (typeof v !== "string") return v;
+	const trimmed = v.trim();
+	// Nothing left once separators and quotes are removed → the model emitted a
+	// placeholder, not an answer.
+	return /[\p{L}\p{N}]/u.test(trimmed) ? trimmed : undefined;
+}, z.string().min(1).optional());
+
 export const CreateTaskActionSchema = z.object({
 	action: z.literal("create_task"),
 	title: z.string().min(1),
-	notes: z.string().min(1).optional(),
+	notes: OptionalText,
 	due_date: z.string().date().optional(),
 	// Range-guarded (lib/schemas/time.ts), so a malformed time fails
 	// schema-parse (→ typed failed → degrade) rather than reaching the executor.
@@ -47,8 +64,8 @@ export const CreateTaskActionSchema = z.object({
 		.optional(),
 	// Names copied verbatim from the routing lists injected into the prompt —
 	// never ids (docs/adr/0019 D1). Resolved server-side; no match → Inbox.
-	domain: z.string().min(1).optional(),
-	project: z.string().min(1).optional(),
+	domain: OptionalText,
+	project: OptionalText,
 });
 export type CreateTaskAction = z.infer<typeof CreateTaskActionSchema>;
 
