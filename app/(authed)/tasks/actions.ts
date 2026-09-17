@@ -34,16 +34,17 @@ export async function createTaskAction(formData: FormData) {
 	afterMutation("task.write");
 }
 
-export async function quickAddTaskAction({ text, domainId }: { text: string; domainId?: string }) {
+export async function quickAddTaskAction({ text, domainId }: { text: string; domainId: string }) {
 	const { sb } = await requireOwnerPage();
 	// The domain the operator picked on the form, which the parser must not
 	// override (lib/services/capture/quick-add.ts). Untrusted like any client
-	// argument, so it is parsed rather than trusted.
+	// argument, so it is parsed rather than trusted — and REQUIRED, for the
+	// same reason CreateTaskFormSchema requires it: this is the form's other
+	// submit path, and a rule that only one of the two enforces is not a rule.
+	// The service keeps `domainId` optional because capture legitimately has
+	// none; this action is the form, and the form always does.
 	const parsed = z
-		.object({
-			text: z.string().trim().min(1).max(1000),
-			domainId: z.uuid().optional().or(z.literal("")),
-		})
+		.object({ text: z.string().trim().min(1).max(1000), domainId: z.uuid() })
 		.parse({ text, domainId });
 	await quickAddTask(sb, parsed.text, { domainId: parsed.domainId });
 	afterMutation("task.write");

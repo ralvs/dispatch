@@ -109,9 +109,13 @@ export function TaskDialog({
 	/**
 	 * Whether the form carries anything beyond its title. Every value here is
 	 * the field's own untouched state — the create form opens with no date, no
-	 * time, no notes, Unfiled, Never, and P4 — so this is "the operator typed a
-	 * sentence and nothing else", which is exactly when reading the sentence is
-	 * the helpful thing to do (ADR-0043).
+	 * time, no notes, Never, and P4 — so this is "the operator typed a sentence
+	 * and nothing else", which is exactly when reading the sentence is the
+	 * helpful thing to do (ADR-0043).
+	 *
+	 * The domain is NOT among them: it is mandatory now, so it has no untouched
+	 * state to read (ADR-0027, ADR-0043's amendment). It rides along to the
+	 * parser instead of suppressing it.
 	 *
 	 * Read off FormData rather than tracked in state on purpose: the fields are
 	 * uncontrolled by design and remount on every open, so the submitted payload
