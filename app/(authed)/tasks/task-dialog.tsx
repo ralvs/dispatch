@@ -84,7 +84,8 @@ export function TaskDialog({
 	/** @mention candidates (docs/adr/0030) for title and notes. */
 	people?: MentionCandidate[];
 	onCreate?: (formData: FormData) => Promise<void>;
-	onQuickAdd?: (text: string) => Promise<void>;
+	/** `domainId` is the form's own pick — mandatory there, so always present. */
+	onQuickAdd?: (text: string, domainId: string) => Promise<void>;
 	taskId?: string;
 	onDelete?: () => void;
 	onSaved?: () => void;
@@ -126,7 +127,12 @@ export function TaskDialog({
 						return updateTaskAction(taskId, formData);
 					}
 					const title = String(formData.get("title") ?? "").trim();
-					if (onQuickAdd && title && titleOnlyCreate(formData)) return onQuickAdd(title);
+					if (onQuickAdd && title && titleOnlyCreate(formData)) {
+						// The sentence goes to the parser, the domain goes as stated —
+						// the field is mandatory now, so it is never "untouched" and
+						// cannot be read as the operator declining to file.
+						return onQuickAdd(title, String(formData.get("domain_id") ?? ""));
+					}
 					return onCreate ? onCreate(formData) : createTaskAction(formData);
 				},
 				mode === "edit" ? "Couldn't save task. Try again." : "Couldn't add that task. Try again.",

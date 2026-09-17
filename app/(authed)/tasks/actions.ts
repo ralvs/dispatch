@@ -33,10 +33,18 @@ export async function createTaskAction(formData: FormData) {
 	afterMutation("task.write");
 }
 
-export async function quickAddTaskAction({ text }: { text: string }) {
+export async function quickAddTaskAction({ text, domainId }: { text: string; domainId?: string }) {
 	const { sb } = await requireOwnerPage();
-	const parsed = z.object({ text: z.string().trim().min(1).max(1000) }).parse({ text });
-	await quickAddTask(sb, parsed.text);
+	// The domain the operator picked on the form, which the parser must not
+	// override (lib/services/capture/quick-add.ts). Untrusted like any client
+	// argument, so it is parsed rather than trusted.
+	const parsed = z
+		.object({
+			text: z.string().trim().min(1).max(1000),
+			domainId: z.uuid().optional().or(z.literal("")),
+		})
+		.parse({ text, domainId });
+	await quickAddTask(sb, parsed.text, { domainId: parsed.domainId });
 	afterMutation("task.write");
 }
 

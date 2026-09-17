@@ -106,6 +106,42 @@ describe("quickAddTask", () => {
 		);
 	});
 
+	it("lets a stated domain override the one the parser inferred", async () => {
+		// The task form's domain field is mandatory while its sentence parsing
+		// is not, so a create is legitimately both "read this" and "file it
+		// here". Stated beats inferred.
+		(listDomains as Mock).mockResolvedValue([
+			{ id: "dom-home", name: "Casa", active: true },
+			{ id: "dom-work", name: "Trabalho", active: true },
+		]);
+		parsedTask({ action: "create_task", title: "pagar aluguel", domain: "Casa" });
+		(createTask as Mock).mockResolvedValue({ id: "task-3" });
+
+		await quickAddTask(sb, "pagar aluguel", { domainId: "dom-work" });
+
+		expect(createTask).toHaveBeenCalledWith(
+			sb,
+			expect.objectContaining({ title: "pagar aluguel", domain_id: "dom-work" }),
+			{ graphFail: "swallow" },
+		);
+	});
+
+	it("files a stated domain even when the parse degrades", async () => {
+		// The degraded path has no parse to take a domain from, so the stated
+		// one is the only filing there is — losing it would drop the task into
+		// the inbox the form exists to keep it out of.
+		(isAiConfigured as Mock).mockReturnValue(false);
+		(createTask as Mock).mockResolvedValue({ id: "task-4" });
+
+		await quickAddTask(sb, "pagar aluguel", { domainId: "dom-work" });
+
+		expect(createTask).toHaveBeenCalledWith(
+			sb,
+			{ title: "pagar aluguel", domain_id: "dom-work", source: "manual" },
+			{ graphFail: "swallow" },
+		);
+	});
+
 	it.each(["unavailable", "failed", "empty"] as const)(
 		"falls back to a raw-title Inbox task when the parser reports %s",
 		async (reason) => {
@@ -121,6 +157,8 @@ describe("quickAddTask", () => {
 				sb,
 				{
 					title: "call the dentist",
+					// No domain was stated, so the degraded task is still unfiled.
+					domain_id: null,
 					source: "manual",
 				},
 				{ graphFail: "swallow" },

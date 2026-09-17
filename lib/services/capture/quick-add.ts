@@ -75,24 +75,37 @@ export async function parseTaskCapture(text: string, ctx: ParseContext): Promise
 	}
 }
 
+/**
+ * `domainId` is a domain the operator PICKED on the form, not one the parser
+ * inferred. The task dialog sends it because its domain field is mandatory now
+ * while its sentence parsing is not, so a create can legitimately be both "read
+ * this sentence" and "file it here". A stated answer beats an inferred one, so
+ * it overrides whatever the parse resolved — including on the degraded path,
+ * where there is no parse at all and it is the only filing there is.
+ */
 export async function quickAddTask(
 	sb: SupabaseClient,
 	text: string,
+	options: { domainId?: string | null } = {},
 ): Promise<{ task: TaskRow; parsed: boolean }> {
+	const stated = options.domainId || null;
 	const { routing, ctx } = await loadCaptureContext(sb);
 	const parsed = await parseTaskCapture(text, ctx);
 
 	if (!parsed.ok) {
 		const task = await createTask(
 			sb,
-			{ title: text.trim(), source: "manual" },
+			{ title: text.trim(), domain_id: stated, source: "manual" },
 			{ graphFail: "swallow" },
 		);
 		return { task, parsed: false };
 	}
 
-	const task = await createTask(sb, taskInputFromAction(parsed.task, routing), {
-		graphFail: "swallow",
-	});
+	const input = taskInputFromAction(parsed.task, routing);
+	const task = await createTask(
+		sb,
+		{ ...input, domain_id: stated ?? input.domain_id },
+		{ graphFail: "swallow" },
+	);
 	return { task, parsed: true };
 }
