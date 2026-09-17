@@ -126,6 +126,59 @@ describe("quickAddTask", () => {
 		);
 	});
 
+	describe("when a stated domain disagrees with the parsed project", () => {
+		// The pairing the task form was changed to make impossible must not walk
+		// back in here: the form's default create IS title-only, so every one of
+		// them now arrives with a stated domain.
+		beforeEach(() => {
+			(listDomains as Mock).mockResolvedValue([
+				{ id: "dom-code", name: "Code", active: true },
+				{ id: "dom-home", name: "Casa", active: true },
+			]);
+			(listProjects as Mock).mockResolvedValue([
+				{ id: "proj-dispatch", name: "Dispatch", domain_id: "dom-code" },
+				{ id: "proj-loose", name: "Solto", domain_id: null },
+			]);
+			(createTask as Mock).mockResolvedValue({ id: "task-5" });
+		});
+
+		it("drops the project rather than filing it under the wrong domain", async () => {
+			parsedTask({ action: "create_task", title: "changelog", project: "Dispatch" });
+
+			await quickAddTask(sb, "add a changelog page to Dispatch", { domainId: "dom-home" });
+
+			expect(createTask).toHaveBeenCalledWith(
+				sb,
+				expect.objectContaining({ domain_id: "dom-home", project_id: null }),
+				{ graphFail: "swallow" },
+			);
+		});
+
+		it("keeps the project when the stated domain is its own", async () => {
+			parsedTask({ action: "create_task", title: "changelog", project: "Dispatch" });
+
+			await quickAddTask(sb, "add a changelog page to Dispatch", { domainId: "dom-code" });
+
+			expect(createTask).toHaveBeenCalledWith(
+				sb,
+				expect.objectContaining({ domain_id: "dom-code", project_id: "proj-dispatch" }),
+				{ graphFail: "swallow" },
+			);
+		});
+
+		it("keeps a project that has no domain of its own, since it contradicts nothing", async () => {
+			parsedTask({ action: "create_task", title: "algo", project: "Solto" });
+
+			await quickAddTask(sb, "algo no Solto", { domainId: "dom-home" });
+
+			expect(createTask).toHaveBeenCalledWith(
+				sb,
+				expect.objectContaining({ domain_id: "dom-home", project_id: "proj-loose" }),
+				{ graphFail: "swallow" },
+			);
+		});
+	});
+
 	it("files a stated domain even when the parse degrades", async () => {
 		// The degraded path has no parse to take a domain from, so the stated
 		// one is the only filing there is — losing it would drop the task into

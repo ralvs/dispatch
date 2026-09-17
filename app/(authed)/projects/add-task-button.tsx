@@ -61,7 +61,13 @@ export function AddTaskButton({
 				domains={domains}
 				projects={projects}
 				lockProject
-				lockDomain
+				/* Only when the project HAS a domain. A project may be Unassigned,
+				   and locking then disables a control with no value in it — a
+				   disabled select skips `required` and its hidden input posts "",
+				   which files the new task straight into the inbox the task form
+				   exists to keep it out of. Left unlocked, the domain field is the
+				   mandatory pick it is everywhere else. */
+				lockDomain={domainId != null}
 				todayIso={todayIso}
 				defaults={{ project_id: project.id, domain_id: domainId }}
 			/>

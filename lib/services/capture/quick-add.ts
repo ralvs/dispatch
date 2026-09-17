@@ -15,7 +15,11 @@ import {
 } from "@/lib/ai/parser";
 import { guardTitle } from "@/lib/ai/verbatim";
 import { type CreateTaskAction, CreateTaskActionSchema } from "@/lib/schemas/capture";
-import { loadCaptureContext, taskInputFromAction } from "@/lib/services/capture/resolve";
+import {
+	loadCaptureContext,
+	type RoutingLists,
+	taskInputFromAction,
+} from "@/lib/services/capture/resolve";
 import { createTask, type TaskRow } from "@/lib/services/tasks";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -102,10 +106,40 @@ export async function quickAddTask(
 	}
 
 	const input = taskInputFromAction(parsed.task, routing);
-	const task = await createTask(
-		sb,
-		{ ...input, domain_id: stated ?? input.domain_id },
-		{ graphFail: "swallow" },
-	);
+	const task = await createTask(sb, withStatedDomain(input, stated, routing), {
+		graphFail: "swallow",
+	});
 	return { task, parsed: true };
+}
+
+/**
+ * Overrides the parse's domain with the one the operator stated, and drops the
+ * parsed project when the two disagree.
+ *
+ * Dropping it is the whole point. A project already belongs to a domain, so
+ * filing a task in project P under some other domain states something the data
+ * cannot hold — which is exactly the pairing the task form was just changed to
+ * make impossible, and it would have walked straight back in through this
+ * path: the form's default create IS title-only, so every such create now
+ * arrives with a stated domain, and a sentence naming a project ("add a
+ * changelog page to Dispatch") would have kept that project under whatever
+ * domain the operator happened to pick.
+ *
+ * Neither field is silently wrong afterwards: the operator's domain is what
+ * they said, and the project falls away rather than dragging the domain with
+ * it. A project with no domain of its own contradicts nothing, so it stays.
+ */
+function withStatedDomain(
+	input: Parameters<typeof createTask>[1],
+	stated: string | null,
+	lists: RoutingLists,
+): Parameters<typeof createTask>[1] {
+	if (!stated) return input;
+	const project = lists.projects.find((p) => p.id === input.project_id);
+	const conflicts = project != null && project.domain_id != null && project.domain_id !== stated;
+	return {
+		...input,
+		domain_id: stated,
+		project_id: conflicts ? null : input.project_id,
+	};
 }

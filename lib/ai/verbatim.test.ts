@@ -27,6 +27,14 @@ describe("isVerbatim", () => {
 		expect(isVerbatim("marcarei", "marcar dentista")).toBe(true);
 	});
 
+	it("does not let a routing prefix license an invented word", () => {
+		// "worksheet" starts with "work", which the utterance really does
+		// contain — the same class as "Heff Hounds", wearing a stem from the
+		// text. Inflection adds a short suffix; this adds five characters.
+		expect(isVerbatim("send worksheet", "work: send invoice")).toBe(false);
+		expect(isVerbatim("marcar dentistry", "marcar dentista")).toBe(false);
+	});
+
 	it("does not let short words match by shared prefix", () => {
 		// "do" must not be accepted because "dog" was said — below INFLECTION_MIN
 		// the two languages collide constantly and the guard would go blind.

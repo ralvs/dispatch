@@ -39,6 +39,19 @@ function tokens(s: string): string[] {
 const INFLECTION_MIN = 4;
 
 /**
+ * Most an inflected form may add to its stem. Inflection is a short suffix —
+ * "refund"/"refunds" (+1), "marcar"/"marcarei" (+2), "post"/"posting" (+3) —
+ * so bounding the difference is what separates it from an unrelated longer
+ * word that merely begins the same way.
+ *
+ * Without the bound, a routing prefix in the utterance becomes a licence to
+ * invent: "work: send invoice" would accept the title "send worksheet",
+ * because "worksheet" starts with "work". That is the same class of failure
+ * as "Heff Hounds", just wearing a stem that happens to be in the text.
+ */
+const INFLECTION_MAX_GROWTH = 3;
+
+/**
  * A title word counts as spoken when the utterance has it exactly, or has a
  * word it shares a stem with. The second arm exists because a model rendering
  * a title is allowed to inflect — "ask refunds" written back as "ask refund",
@@ -46,13 +59,15 @@ const INFLECTION_MIN = 4;
  * back to raw text several times a day.
  */
 function spoken(word: string, source: string[]): boolean {
-	return source.some(
-		(t) =>
-			t === word ||
-			(word.length >= INFLECTION_MIN &&
-				t.length >= INFLECTION_MIN &&
-				(t.startsWith(word) || word.startsWith(t))),
-	);
+	return source.some((t) => {
+		if (t === word) return true;
+		const [shorter, longer] = t.length < word.length ? [t, word] : [word, t];
+		return (
+			shorter.length >= INFLECTION_MIN &&
+			longer.length - shorter.length <= INFLECTION_MAX_GROWTH &&
+			longer.startsWith(shorter)
+		);
+	});
 }
 
 /**

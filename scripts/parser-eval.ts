@@ -127,18 +127,33 @@ function taskPrompt(): string {
 
 type Miss = { field: string; want: unknown; got: unknown };
 
+/** Case, accents and punctuation are not answers — everything else is. */
+function normalized(s: string): string {
+	return s
+		.toLowerCase()
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.replace(/[^\p{L}\p{N}]+/gu, " ")
+		.trim();
+}
+
 function score(got: Record<string, unknown> | null, want: Expected, text: string): Miss[] {
 	if (!got) return [{ field: "task", want: "a task", got: null }];
 	const misses: Miss[] = [];
 	for (const [field, expected] of Object.entries(want)) {
 		const actual = got[field] ?? null;
 		if (field === "title") {
-			// Titles are compared through the same guard the app applies, not by
-			// string equality: "Ask refunds" and "ask refunds" are the same answer,
-			// and a title that merely keeps a word we would have stripped is a
-			// nuisance, not a failure. What is scored is invented words.
-			if (typeof actual === "string" && guardTitle(actual, text).substituted) {
+			// Not string equality — "Ask refunds" and "ask refunds" are the same
+			// answer and punctuation is noise — but not the guard alone either.
+			// The guard only asks whether words were ADDED, so on its own it
+			// scored "home: Ask refunds today" as a clean title for that very
+			// utterance, and every case's title passed for free.
+			if (typeof actual !== "string") {
+				misses.push({ field, want: expected, got: actual });
+			} else if (guardTitle(actual, text).substituted) {
 				misses.push({ field, want: "words from the utterance", got: actual });
+			} else if (normalized(actual) !== normalized(String(expected))) {
+				misses.push({ field, want: expected, got: actual });
 			}
 			continue;
 		}
