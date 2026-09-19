@@ -32,7 +32,7 @@ import { z } from "zod";
 import { parserModel } from "@/lib/ai/gateway";
 import {
 	dateResolution,
-	hedge,
+	parseCallOptions,
 	recurrenceRules,
 	routingBlock,
 	TASK_FIELD_FORMATS,
@@ -47,7 +47,7 @@ const TODAY = "2026-09-17";
 const CTX = {
 	tz: "America/Sao_Paulo",
 	todayIso: TODAY,
-	nowUtc: `${TODAY}T14:00:00.000Z`,
+	nowUtc: `${TODAY}T14:00:00Z`,
 	domains: ["Home", "Work", "Health", "Money", "Learning"],
 	projects: ["Dispatch", "Apartment move", "Taxes 2026"],
 };
@@ -180,17 +180,13 @@ for (const testCase of CASES) {
 	for (let i = 0; i < runs; i++) {
 		attempts += 1;
 		try {
-			const { object } = await hedge((signal) =>
-				generateObject({
-					model: parserModel(),
-					schema: z.object({ task: CreateTaskActionSchema.nullable() }),
-					system,
-					prompt: testCase.text,
-					maxRetries: 1,
-					maxOutputTokens: 400,
-					abortSignal: signal,
-				}),
-			);
+			const { object } = await generateObject({
+				model: parserModel(),
+				schema: z.object({ task: CreateTaskActionSchema.nullable() }),
+				system,
+				prompt: testCase.text,
+				...parseCallOptions(),
+			});
 			const misses = score(
 				object.task as Record<string, unknown> | null,
 				testCase.expect,

@@ -47,7 +47,9 @@ export const TASK_FIELD_FORMATS =
 // "now" (iron rule #1) — both prompts state it identically.
 export function dateResolution(ctx: ParseContext): string[] {
 	return [
-		`Resolve relative dates against NOW=${ctx.nowUtc}, TODAY=${ctx.todayIso},`,
+		// Whole seconds: the model gains nothing from milliseconds, and a
+		// changing millisecond makes every prompt unique.
+		`Resolve relative dates against NOW=${ctx.nowUtc.replace(/\.\d+Z$/, "Z")}, TODAY=${ctx.todayIso},`,
 		`timezone ${ctx.tz}. Output due_date as YYYY-MM-DD and due_time as HH:mm.`,
 		// "Resolve relative dates" alone was not an instruction the model could
 		// act on: measured against the gateway, a small parser model dropped
@@ -148,49 +150,16 @@ const PARSE_TIMEOUT_MS = 30_000;
  * error, never the user's text.
  */
 export function logParseFailure(where: string, error: unknown): void {
-	// Promise.any wraps every attempt's rejection in an AggregateError whose own
-	// message is just "All promises were rejected" — useless on its own, so
-	// report the first real cause underneath it.
-	const cause = error instanceof AggregateError ? (error.errors[0] ?? error) : error;
-	const e = cause as { name?: string; message?: string };
+	const e = error as { name?: string; message?: string };
 	console.warn("parse failed", { where, name: e?.name, message: e?.message });
 }
 
-export function parseCallOptions(signal?: AbortSignal) {
+export function parseCallOptions() {
 	return {
 		maxRetries: PARSE_MAX_RETRIES,
 		maxOutputTokens: PARSE_MAX_OUTPUT_TOKENS,
-		abortSignal: signal ?? AbortSignal.timeout(PARSE_TIMEOUT_MS),
+		abortSignal: AbortSignal.timeout(PARSE_TIMEOUT_MS),
 	};
-}
-
-// How many identical attempts to race. The gateway's latency is dominated by
-// queueing variance, not by our prompt: the SAME utterance measured 1.7s at
-// best and 21s at worst over 24 runs. Two racing attempts turn that tail into
-// the better of two draws — measured p50 5.8s → 2.3s, p90 13.3s → 6.0s, and
-// calls over 8s from 10/24 down to 1/24. The cost is one extra ~2.6k-token
-// Haiku call per capture (fractions of a cent); the loser is aborted the
-// moment the winner resolves. Set to 1 to disable.
-const PARSE_HEDGE = 2;
-
-/**
- * Race `PARSE_HEDGE` identical attempts and take the first that SUCCEEDS.
- * Promise.any (not race) is deliberate: a fast schema miss on one attempt must
- * not beat a good answer on the other. Every attempt shares one deadline, so
- * hedging widens the chance of finishing, never the time budget.
- */
-export async function hedge<T>(attempt: (signal: AbortSignal) => Promise<T>): Promise<T> {
-	const deadline = AbortSignal.timeout(PARSE_TIMEOUT_MS);
-	if (PARSE_HEDGE <= 1) return attempt(deadline);
-
-	const loserCutoff = new AbortController();
-	const signal = AbortSignal.any([deadline, loserCutoff.signal]);
-	try {
-		return await Promise.any(Array.from({ length: PARSE_HEDGE }, () => attempt(signal)));
-	} finally {
-		// The winner has already resolved, so this only stops the losers.
-		loserCutoff.abort();
-	}
 }
 
 function systemPrompt(ctx: ParseContext): string {
@@ -255,15 +224,13 @@ export async function parse(text: string, ctx: ParseContext): Promise<ParseResul
 		if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
 
 		const system = systemPrompt(ctx);
-		const { object } = await hedge((signal) =>
-			generateObject({
-				model: parserModel(),
-				schema: z.object({ actions: CaptureActionsSchema }),
-				system,
-				prompt: text,
-				...parseCallOptions(signal),
-			}),
-		);
+		const { object } = await generateObject({
+			model: parserModel(),
+			schema: z.object({ actions: CaptureActionsSchema }),
+			system,
+			prompt: text,
+			...parseCallOptions(),
+		});
 		if (object.actions.length === 0) return { ok: false, reason: "empty", raw: text };
 		return { ok: true, actions: object.actions.map((a) => guardActionTitle(a, text)) };
 	} catch (error) {

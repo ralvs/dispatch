@@ -112,36 +112,11 @@ describe("parse", () => {
 		}
 	});
 
-	// Latency here is queueing variance, not prompt size: the same utterance
-	// measured 1.7s and 21s across runs. Racing two attempts halves the median.
-	it("races more than one attempt and takes the first success", async () => {
+	it("makes one model call per parse", async () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
-		let call = 0;
-		(generateObject as Mock).mockImplementation(async () => {
-			call += 1;
-			// The first attempt fails; the race must still yield the second's answer.
-			if (call === 1) throw new Error("gateway hiccup");
-			return { object: { actions: [{ action: "create_task", title: "ligar" }] } };
-		});
-
-		const result = await parse("ligar", CTX);
-
-		expect((generateObject as Mock).mock.calls.length).toBeGreaterThan(1);
-		expect(result).toEqual({ ok: true, actions: [{ action: "create_task", title: "ligar" }] });
-	});
-
-	it("aborts the losing attempt once a winner returns", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		const signals: AbortSignal[] = [];
-		(generateObject as Mock).mockImplementation(async (opts: { abortSignal: AbortSignal }) => {
-			signals.push(opts.abortSignal);
-			return { object: { actions: [] } };
-		});
-
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
 		await parse("hmm", CTX);
-
-		expect(signals.length).toBeGreaterThan(1);
-		expect(signals.every((s) => s.aborted)).toBe(true);
+		expect(generateObject).toHaveBeenCalledTimes(1);
 	});
 
 	it("omits the routing block when no domains/projects are given", async () => {
@@ -218,6 +193,14 @@ describe("shared prompt fragments", () => {
 		expect(system).toContain("TODAY=2026-07-15");
 		expect(system).toContain("timezone America/Sao_Paulo");
 		expect(system).toContain("priority is 1 (highest) to 4.");
+	});
+
+	it("gives NOW in whole seconds", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+		await parse("hmm", { ...CTX, nowUtc: "2026-07-15T12:00:00.123Z" });
+		const system = (generateObject as Mock).mock.calls[0][0].system as string;
+		expect(system).toContain("NOW=2026-07-15T12:00:00Z,");
 	});
 });
 
