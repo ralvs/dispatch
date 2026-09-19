@@ -45,6 +45,7 @@ import {
 import { guardTitle } from "@/lib/ai/verbatim";
 import { CaptureActionsSchema, CreateTaskActionSchema } from "@/lib/schemas/capture";
 import { taskCaptureSystemPrompt } from "@/lib/services/capture/quick-add";
+import { type RoutingLists, resolveTaskRouting } from "@/lib/services/capture/resolve";
 
 // A fixed world, so a case's expected date never depends on the day the eval
 // runs. TODAY is a Thursday, which makes "sexta"/"Friday" a one-day hop and
@@ -64,6 +65,39 @@ const CTX = {
 		{ name: "Taxes 2026", domain: "Money" },
 	],
 };
+
+// The same world as rows, with each name as its own id, so a resolved id reads
+// back as the name it matched.
+const LISTS: RoutingLists = {
+	domains: CTX.domains.map((name) => ({ id: name, name })),
+	projects: CTX.projects.map((p) => ({ id: p.name, name: p.name, domain_id: p.domain })),
+};
+
+/**
+ * A task's domain and project as the APP would file them, not as the model
+ * wrote them. The model may answer with a phrase ("the apartment") that the
+ * fuzzy matcher resolves (lib/services/capture/match.ts), so its raw text is
+ * not the answer being scored. A name that resolves to nothing but was said is
+ * kept as written, so it still misses; a stand-in the app drops scores as
+ * absent, because absent is what gets stored.
+ */
+function routed(got: Record<string, unknown>, text: string): Record<string, unknown> {
+	if (got.action !== undefined && got.action !== "create_task") return got;
+	const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+	const r = resolveTaskRouting(
+		{ action: "create_task", title: "-", project: str(got.project), domain: str(got.domain) },
+		LISTS,
+		text,
+	);
+	const missed = (kind: string) => r.unresolved.some((u) => u.startsWith(kind));
+	return {
+		...got,
+		project: r.project_id ?? (missed("project") ? got.project : null),
+		domain: r.project_id
+			? (got.domain ?? null)
+			: (r.domain_id ?? (missed("domain") ? got.domain : null)),
+	};
+}
 
 /** Field → expected value. `null` means "must be absent". */
 type Fields = Record<string, string | null>;
@@ -151,6 +185,13 @@ const QUICK_ADD: QuickAddCase[] = [
 		text: "learning ler o capítulo 3 amanhã",
 		expect: { title: "ler o capítulo 3", domain: "Learning", due_date: TOMORROW, project: null },
 	},
+	// ── Fuzzy routing: added 2026-09-19 with lib/services/capture/match.ts ──
+	// A project named by a short phrase, not its list name.
+	{
+		text: "book the movers for the apartment friday",
+		expect: { project: "Apartment move", due_date: TOMORROW },
+	},
+	{ text: "find last year's receipts for taxes", expect: { project: "Taxes 2026" } },
 	// An English day word inside pt-BR must not be translated, and neither
 	// must the title.
 	{
@@ -244,7 +285,8 @@ function normalized(s: string): string {
 // Fields compared as text rather than by exact value.
 const TEXT_FIELDS = new Set(["title", "text", "source_author"]);
 
-function scoreFields(got: Record<string, unknown>, want: Fields, text: string): Miss[] {
+function scoreFields(raw: Record<string, unknown>, want: Fields, text: string): Miss[] {
+	const got = routed(raw, text);
 	const misses: Miss[] = [];
 	for (const [field, expected] of Object.entries(want)) {
 		if (field === "action") continue;

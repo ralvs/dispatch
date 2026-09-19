@@ -106,10 +106,8 @@ const RELATIVE_DAYS = [
 ] as const;
 
 /**
- * Three labels, matching the dashboard's high / med / low ring. Storage is
- * still 1–4: high is 1, med is 2, low is 4 (the create default). An existing
- * P3 also reads as low so the picker never shows an empty group, and saving
- * without a change keeps 3.
+ * Three labels, matching the dashboard's high / med / low ring, and three
+ * stored levels: high is 1, med is 2, low is 3 (the create default).
  */
 export const PRIORITIES = [
 	{ value: 1, label: "high", title: "High" },

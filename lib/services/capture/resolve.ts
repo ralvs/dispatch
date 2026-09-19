@@ -4,6 +4,7 @@ import type { ParseContext } from "@/lib/ai/parser";
 import { isVerbatim } from "@/lib/ai/verbatim";
 import { nowUtc, todayInTz } from "@/lib/dates";
 import type { CreateTaskAction } from "@/lib/schemas/capture";
+import { bestMatch } from "@/lib/services/capture/match";
 import { listDomains } from "@/lib/services/domains";
 import { listProjects } from "@/lib/services/projects";
 import { getAppTimezone } from "@/lib/services/settings";
@@ -20,10 +21,11 @@ import type { createTask } from "@/lib/services/tasks";
 //   context assembled from them.
 //
 // Routing is name-based because the parser is only ever given names (never
-// ids — hallucinated-UUID risk), so matching is exact, case- and
-// diacritic-insensitive only. No fuzzy match (deferred per ADR-0016's
-// match.ts). A miss never fails the capture: the task is left unfiled (no
-// domain at all) and the miss is recorded for filing from /inbox.
+// ids — hallucinated-UUID risk). An exact name (case- and
+// diacritic-insensitive) wins; failing that, a phrase the user actually said
+// is fuzzy-matched (match.ts, docs/adr/0061). A miss never fails the capture:
+// the task is left unfiled (no domain at all) and the miss is recorded for
+// filing from /inbox.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type RoutingLists = {
@@ -95,20 +97,40 @@ export function resolveTaskRouting(
 	 */
 	const worthReporting = (name: string) => text === undefined || isVerbatim(name, text);
 
+	/**
+	 * An exact name first; then, only for a phrase the user said, the closest
+	 * fuzzy one. A phrase from nowhere is a stand-in, and fuzzy-matching it
+	 * would turn the model's filler into a filing decision.
+	 */
+	const find = <T extends { name: string }>(name: string, rows: T[]): T | undefined => {
+		const norm = normalize(name);
+		const exact = rows.find((r) => normalize(r.name) === norm);
+		if (exact) return exact;
+		if (text !== undefined && !isVerbatim(name, text)) return undefined;
+		return bestMatch(name, rows) ?? undefined;
+	};
+
+	// A project answer that is exactly a domain's name is the domain echoed
+	// into the wrong field — "home: …" answered as project "Home" — and would
+	// otherwise fuzzy-match a project like "Home office". The prompt forbids
+	// the echo; this makes it harmless when it happens anyway.
+	const isDomainName = (name: string) =>
+		lists.domains.some((d) => normalize(d.name) === normalize(name));
+
 	if (action.project) {
-		const norm = normalize(action.project);
-		const match = lists.projects.find((p) => normalize(p.name) === norm);
+		const match = isDomainName(action.project)
+			? lists.projects.find((p) => normalize(p.name) === normalize(action.project ?? ""))
+			: find(action.project, lists.projects);
 		if (match) {
 			project_id = match.id;
 			domain_id = match.domain_id;
-		} else if (worthReporting(action.project)) {
+		} else if (!isDomainName(action.project) && worthReporting(action.project)) {
 			unresolved.push(`project "${action.project}"`);
 		}
 	}
 
 	if (action.domain) {
-		const norm = normalize(action.domain);
-		const match = lists.domains.find((d) => normalize(d.name) === norm);
+		const match = find(action.domain, lists.domains);
 		if (match) {
 			if (project_id === null) domain_id = match.id;
 		} else if (worthReporting(action.domain)) {

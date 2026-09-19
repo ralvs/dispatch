@@ -65,12 +65,40 @@ describe("resolveTaskRouting", () => {
 	});
 
 	it("reports a miss instead of guessing, and falls back to no routing", () => {
-		const result = resolveTaskRouting(task({ project: "Reviews plugin" }), LISTS);
+		const result = resolveTaskRouting(task({ project: "Garden plugin" }), LISTS);
 		expect(result).toEqual({
 			domain_id: null,
 			project_id: null,
-			unresolved: ['project "Reviews plugin"'],
+			unresolved: ['project "Garden plugin"'],
 		});
+	});
+
+	it("fuzzy-matches a project phrase the user said", () => {
+		const result = resolveTaskRouting(
+			task({ project: "the Reviews plugin" }),
+			LISTS,
+			"ship it on the Reviews plugin",
+		);
+		expect(result).toEqual({ domain_id: "dom-work", project_id: "proj-reviews", unresolved: [] });
+	});
+
+	it("never fuzzy-matches a phrase the user did not say", () => {
+		// The model's own filler must not become a filing decision.
+		const result = resolveTaskRouting(task({ project: "reviews stuff" }), LISTS, "water plants");
+		expect(result).toEqual({ domain_id: null, project_id: null, unresolved: [] });
+	});
+
+	it("does not fuzzy-match a domain name echoed into project", () => {
+		const lists: RoutingLists = {
+			...LISTS,
+			projects: [{ id: "proj-office", name: "Home office", domain_id: "dom-home" }],
+		};
+		const result = resolveTaskRouting(
+			task({ project: "Home", domain: "Home" }),
+			lists,
+			"home: fix the sink",
+		);
+		expect(result).toEqual({ domain_id: "dom-home", project_id: null, unresolved: [] });
 	});
 
 	it("reports both misses when neither domain nor project match", () => {
@@ -92,11 +120,11 @@ describe("resolveTaskRouting", () => {
 
 	it("still reports an unmatched name the utterance really did contain", () => {
 		const result = resolveTaskRouting(
-			task({ project: "Reviews plugin" }),
+			task({ project: "Garden plugin" }),
 			LISTS,
-			"ship it on the Reviews plugin",
+			"ship it on the Garden plugin",
 		);
-		expect(result.unresolved).toEqual(['project "Reviews plugin"']);
+		expect(result.unresolved).toEqual(['project "Garden plugin"']);
 	});
 
 	it("reports every unmatched name when given no utterance to check against", () => {

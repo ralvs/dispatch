@@ -104,3 +104,16 @@ describe("CreateTaskFormSchema · domain_id", () => {
 		expect(CreateTaskFormSchema.safeParse({ ...base, domain_id: DOMAIN }).success).toBe(true);
 	});
 });
+
+describe("CreateTaskFormSchema · priority", () => {
+	const base = { title: "Ship it", domain_id: DOMAIN };
+
+	it("accepts 1–3, defaults to 3 (low), and rejects 4", () => {
+		for (const p of ["1", "2", "3"]) {
+			expect(CreateTaskFormSchema.safeParse({ ...base, priority: p }).success).toBe(true);
+		}
+		const parsed = CreateTaskFormSchema.safeParse(base);
+		expect(parsed.success && parsed.data.priority).toBe(3);
+		expect(CreateTaskFormSchema.safeParse({ ...base, priority: "4" }).success).toBe(false);
+	});
+});

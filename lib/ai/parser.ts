@@ -36,11 +36,11 @@ export type ParseResult =
 // ── Shared prompt fragments ────────────────────────────────────────────
 //
 // Shared with the sentence → task module (lib/services/capture/quick-add.ts).
-// The two prompts are NOT variants of one another — systemPrompt asks for an
+// The two prompts are NOT variants of one another — captureSystemPrompt asks for an
 // array of mixed actions, the task prompt for a single task or null — so only
 // the copy they genuinely share lives here.
 
-// The task field formats. Indentation is the caller's, since systemPrompt
+// The task field formats. Indentation is the caller's, since captureSystemPrompt
 // nests this under its create_task bullet and the task prompt does not.
 export const TASK_FIELD_FORMATS =
 	"priority is 1 (high), 2 (medium) or 3 (low). due_date is YYYY-MM-DD, due_time is HH:mm.";
@@ -96,8 +96,11 @@ export function routingBlock(): string[] {
 		"Routing a task to a domain or project:",
 		"<context> lists the known domains, and the known projects with the",
 		"domain each belongs to. With no list there, never set domain or project.",
-		"Set domain/project ONLY when the utterance actually says that name; copy",
-		"it EXACTLY as listed in <context>. No clear match → OMIT, never guess.",
+		"Set domain/project ONLY when the utterance actually names one. Write the",
+		"name as listed in <context> when you can tell which one it is; otherwise",
+		'write the short phrase the user said for it ("the apartment") and the app',
+		"finds the closest name. Never write a phrase the user did not say. No",
+		"clear match → OMIT, never guess.",
 		// This used to read "domain and project are INDEPENDENT", which was
 		// false about the data and is now false about the app: every project
 		// belongs to a domain, the task form settles one from the other, and
