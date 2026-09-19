@@ -6,6 +6,9 @@ Date: 2026-07-20
 > transcription failure path) is **superseded by
 > [ADR-0017](./0017-no-in-app-audio-transcription.md)** — Dispatch does not
 > transcribe audio. Decision 1 and the vocabulary table below still stand.
+>
+> **Update (2026-09-19).** `match.ts` has landed for task routing (projects
+> and domains) — see [ADR-0061](./0061-the-parser-request-follows-the-reference.md).
 
 ## Context
 

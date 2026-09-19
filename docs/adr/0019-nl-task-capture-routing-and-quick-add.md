@@ -2,6 +2,10 @@
 
 Date: 2026-07-23
 
+> **Partial supersession (2026-09-19).** Routing lists now travel in the
+> user message, not the system prompt, and resolution is exact-then-fuzzy —
+> see [ADR-0061](./0061-the-parser-request-follows-the-reference.md).
+
 ## Context
 
 NL task capture already worked end-to-end via the Cmd+J palette (`parse()` →
