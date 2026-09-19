@@ -72,11 +72,12 @@ describe("parseTaskCapture", () => {
 	it("resolves relative dates against the app timezone", async () => {
 		parsedTask(null);
 		await parseTaskCapture("hmm", CTX);
-		const { system } = (generateObject as Mock).mock.calls[0][0];
-		expect(system).toContain("NOW=2026-07-15T12:00:00Z");
-		expect(system).toContain("TODAY=2026-07-15");
-		expect(system).toContain("timezone America/Sao_Paulo");
-		expect(system).toContain("priority is 1 (high), 2 (medium) or 3 (low).");
+		const { system, prompt } = (generateObject as Mock).mock.calls[0][0];
+		expect(prompt).toContain('"now": "2026-07-15T12:00:00Z"');
+		expect(prompt).toContain('"today": "2026-07-15"');
+		expect(prompt).toContain('"timezone": "America/Sao_Paulo"');
+		expect(prompt).toContain("<utterance>\nhmm\n</utterance>");
+		expect(JSON.stringify(system)).toContain("priority is 1 (high), 2 (medium) or 3 (low).");
 	});
 });
 

@@ -21,10 +21,12 @@ export type ParseContext = {
 	tz: string;
 	todayIso: string;
 	nowUtc: string;
-	// Known routing destinations, injected so the model can name one instead of
-	// guessing (docs/adr/0019 D1/D2). Omitted or empty → routing block skipped.
+	// Known routing destinations, sent so the model can name one instead of
+	// guessing (docs/adr/0019 D1/D2). Each project carries its domain's name,
+	// so the model can see which domain a project already settles. Names only,
+	// never ids: routing matches by name, and an id is one more thing to invent.
 	domains?: string[];
-	projects?: string[];
+	projects?: { name: string; domain?: string }[];
 };
 
 export type ParseResult =
@@ -44,13 +46,13 @@ export const TASK_FIELD_FORMATS =
 	"priority is 1 (high), 2 (medium) or 3 (low). due_date is YYYY-MM-DD, due_time is HH:mm.";
 
 // Relative dates resolve against the app timezone, never the model's guess at
-// "now" (iron rule #1) — both prompts state it identically.
-export function dateResolution(ctx: ParseContext): string[] {
+// "now" (iron rule #1) — both prompts state it identically. The values
+// themselves arrive per call in <context> (captureUserMessage); only the rule
+// lives here, so the system prompt never changes between calls.
+export function dateResolution(): string[] {
 	return [
-		// Whole seconds: the model gains nothing from milliseconds, and a
-		// changing millisecond makes every prompt unique.
-		`Resolve relative dates against NOW=${ctx.nowUtc.replace(/\.\d+Z$/, "Z")}, TODAY=${ctx.todayIso},`,
-		`timezone ${ctx.tz}. Output due_date as YYYY-MM-DD and due_time as HH:mm.`,
+		"Resolve relative dates against now, today and timezone in <context>.",
+		"Output due_date as YYYY-MM-DD and due_time as HH:mm.",
 		// "Resolve relative dates" alone was not an instruction the model could
 		// act on: measured against the gateway, a small parser model dropped
 		// "today" from "home: Ask refunds today" in 15 out of 15 runs, and
@@ -58,10 +60,10 @@ export function dateResolution(ctx: ParseContext): string[] {
 		// the title nor due_date. Naming the words and demanding the field is
 		// what makes a day word turn into a date.
 		"ANY word naming a day is a due_date — never drop it and never leave it",
-		"in the title. today/tonight/hoje → TODAY. tomorrow/amanhã → TODAY+1.",
+		"in the title. today/tonight/hoje → today. tomorrow/amanhã → today+1.",
 		"A weekday name (Monday, segunda, sexta, …) → the NEXT such weekday,",
 		"counting today only if the utterance says so. next week/semana que vem",
-		"→ TODAY+7. A bare day number (the 5th, dia 5) → that day of the current",
+		"→ today+7. A bare day number (the 5th, dia 5) → that day of the current",
 		"month, or the next month if it has already passed.",
 		"If you cannot resolve a day word to a date, keep it in the title rather",
 		"than discarding it.",
@@ -85,16 +87,17 @@ export function recurrenceRules(): string[] {
 	];
 }
 
-export function routingBlock(ctx: ParseContext): string[] {
-	const domains = ctx.domains ?? [];
-	const projects = ctx.projects ?? [];
-	if (domains.length === 0 && projects.length === 0) return [];
-	const lines = ["", "Routing a task to a domain or project:"];
-	if (domains.length > 0) lines.push(`KNOWN DOMAINS: ${domains.join(", ")}`);
-	if (projects.length > 0) lines.push(`KNOWN PROJECTS: ${projects.join(", ")}`);
-	lines.push(
+// The rules only. The lists they apply to arrive per call in <context>, so the
+// system prompt is byte-identical from call to call — which is what lets it be
+// cached (docs/adr/0061). An empty list is simply absent from <context>.
+export function routingBlock(): string[] {
+	return [
+		"",
+		"Routing a task to a domain or project:",
+		"<context> lists the known domains, and the known projects with the",
+		"domain each belongs to. With no list there, never set domain or project.",
 		"Set domain/project ONLY when the utterance actually says that name; copy",
-		"it EXACTLY as listed above. No clear match → OMIT, never guess.",
+		"it EXACTLY as listed in <context>. No clear match → OMIT, never guess.",
 		// This used to read "domain and project are INDEPENDENT", which was
 		// false about the data and is now false about the app: every project
 		// belongs to a domain, the task form settles one from the other, and
@@ -125,8 +128,37 @@ export function routingBlock(ctx: ParseContext): string[] {
 		'first word with no separator — "saúde marcar dentista" names Health and',
 		'the title is "marcar dentista". Only strip that word when it is a',
 		"destination; when it belongs to the sentence, keep it and omit routing.",
-	);
-	return lines;
+	];
+}
+
+/**
+ * The per-call half of the request: everything that changes between captures,
+ * followed by the utterance itself. It goes in the user message, AFTER the
+ * system prompt, because prompt caching matches the start of a request byte for
+ * byte — one changing line near the top of the system prompt (the clock, or a
+ * renamed project) used to make every request unique.
+ *
+ * The tags also separate the two halves for the model: <context> is data about
+ * the app, and only <utterance> is something the user said.
+ */
+export function captureUserMessage(text: string, ctx: ParseContext): string {
+	const context: Record<string, unknown> = {
+		// Whole seconds: the model gains nothing from milliseconds.
+		now: ctx.nowUtc.replace(/\.\d+Z$/, "Z"),
+		today: ctx.todayIso,
+		timezone: ctx.tz,
+	};
+	if (ctx.domains && ctx.domains.length > 0) context.domains = ctx.domains;
+	if (ctx.projects && ctx.projects.length > 0) context.projects = ctx.projects;
+	return [
+		"<context>",
+		JSON.stringify(context, null, 2),
+		"</context>",
+		"",
+		"<utterance>",
+		text,
+		"</utterance>",
+	].join("\n");
 }
 
 // Shared generateObject budget. Default retries (2) can triple a schema miss;
@@ -163,9 +195,11 @@ export function parseCallOptions() {
 	};
 }
 
-export function captureSystemPrompt(ctx: ParseContext): string {
+export function captureSystemPrompt(): string {
 	return [
 		"You convert ONE spoken or typed utterance into a JSON array of actions.",
+		"The user message holds <context> (app data: the date, the known domains",
+		"and projects) and then <utterance>, the only thing the user said.",
 		"Allowed actions ONLY:",
 		"- create_task { title, notes?, due_date?, due_time?, priority?,",
 		"  recurrence_rule?, domain?, project? } — something to do.",
@@ -197,8 +231,8 @@ export function captureSystemPrompt(ctx: ParseContext): string {
 		"NEVER translate. Copy every free-text field (title, body, reason) verbatim",
 		"in the language spoken.",
 		"",
-		...dateResolution(ctx),
-		...routingBlock(ctx),
+		...dateResolution(),
+		...routingBlock(),
 		"",
 		'Return a JSON object of the form {"actions": [ ...actions... ]}.',
 	].join("\n");
@@ -224,12 +258,11 @@ export async function parse(text: string, ctx: ParseContext): Promise<ParseResul
 		// and parserModel() reads it too. A config failure degrades, never escapes.
 		if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
 
-		const system = captureSystemPrompt(ctx);
 		const { object } = await generateObject({
 			model: parserModel(),
 			schema: z.object({ actions: CaptureActionsSchema }),
-			system,
-			prompt: text,
+			system: captureSystemPrompt(),
+			prompt: captureUserMessage(text, ctx),
 			...parseCallOptions(),
 		});
 		if (object.actions.length === 0) return { ok: false, reason: "empty", raw: text };

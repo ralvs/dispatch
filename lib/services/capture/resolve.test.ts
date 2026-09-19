@@ -224,6 +224,19 @@ describe("loadCaptureContext", () => {
 		});
 		expect(result.ctx.tz).toBe("America/Sao_Paulo");
 		expect(result.ctx.domains).toEqual(["Home"]);
-		expect(result.ctx.projects).toEqual(["Reviews"]);
+		// dom-work is not in the domain list, so the project goes unpaired.
+		expect(result.ctx.projects).toEqual([{ name: "Reviews" }]);
+	});
+
+	it("pairs each project with its domain's name", async () => {
+		(getAppTimezone as Mock).mockResolvedValue("America/Sao_Paulo");
+		(listDomains as Mock).mockResolvedValue([{ id: "dom-home", name: "Home" }]);
+		(listProjects as Mock).mockResolvedValue([
+			{ id: "proj-move", name: "Apartment move", domain_id: "dom-home" },
+		]);
+
+		const result = await loadCaptureContext(sb);
+
+		expect(result.ctx.projects).toEqual([{ name: "Apartment move", domain: "Home" }]);
 	});
 });

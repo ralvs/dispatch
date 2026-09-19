@@ -4,6 +4,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { isAiConfigured, parserModel } from "@/lib/ai/gateway";
 import {
+	captureUserMessage,
 	dateResolution,
 	logParseFailure,
 	type ParseContext,
@@ -34,10 +35,12 @@ export type ParseTaskResult =
 	| { ok: true; task: CreateTaskAction }
 	| { ok: false; reason: "unavailable" | "failed" | "empty"; raw: string };
 
-export function taskCaptureSystemPrompt(ctx: ParseContext): string {
+export function taskCaptureSystemPrompt(): string {
 	return [
 		"You convert ONE spoken or typed utterance into a single task, or null if",
 		"the utterance describes nothing actionable.",
+		"The user message holds <context> (app data: the date, the known domains",
+		"and projects) and then <utterance>, the only thing the user said.",
 		"Output shape: { title, notes?, due_date?, due_time?, priority?,",
 		"  recurrence_rule?, domain?, project? }.",
 		"title is required — the task itself, verbatim in the language spoken",
@@ -45,8 +48,8 @@ export function taskCaptureSystemPrompt(ctx: ParseContext): string {
 		TASK_FIELD_FORMATS,
 		...recurrenceRules(),
 		"",
-		...dateResolution(ctx),
-		...routingBlock(ctx),
+		...dateResolution(),
+		...routingBlock(),
 		"",
 		'Return a JSON object of the form {"task": { ... }} or {"task": null}.',
 	].join("\n");
@@ -56,12 +59,11 @@ export async function parseTaskCapture(text: string, ctx: ParseContext): Promise
 	try {
 		if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
 
-		const system = taskCaptureSystemPrompt(ctx);
 		const { object } = await generateObject({
 			model: parserModel(),
 			schema: z.object({ task: CreateTaskActionSchema.nullable() }),
-			system,
-			prompt: text,
+			system: taskCaptureSystemPrompt(),
+			prompt: captureUserMessage(text, ctx),
 			...parseCallOptions(),
 		});
 		if (!object.task) return { ok: false, reason: "empty", raw: text };

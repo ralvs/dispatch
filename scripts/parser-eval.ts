@@ -36,7 +36,7 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { parserModel } from "@/lib/ai/gateway";
-import { captureSystemPrompt, parseCallOptions } from "@/lib/ai/parser";
+import { captureSystemPrompt, captureUserMessage, parseCallOptions } from "@/lib/ai/parser";
 import { guardTitle } from "@/lib/ai/verbatim";
 import { CaptureActionsSchema, CreateTaskActionSchema } from "@/lib/schemas/capture";
 import { taskCaptureSystemPrompt } from "@/lib/services/capture/quick-add";
@@ -53,7 +53,11 @@ const CTX = {
 	todayIso: TODAY,
 	nowUtc: `${TODAY}T14:00:00Z`,
 	domains: ["Home", "Work", "Health", "Money", "Learning"],
-	projects: ["Dispatch", "Apartment move", "Taxes 2026"],
+	projects: [
+		{ name: "Dispatch", domain: "Work" },
+		{ name: "Apartment move", domain: "Home" },
+		{ name: "Taxes 2026", domain: "Money" },
+	],
 };
 
 /** Field → expected value. `null` means "must be absent". */
@@ -416,7 +420,7 @@ const suiteTotals: string[] = [];
 
 if (suite !== "palette") {
 	console.log("── quick-add ──");
-	const system = taskCaptureSystemPrompt(CTX);
+	const system = taskCaptureSystemPrompt();
 	let suiteClean = 0;
 	for (const testCase of QUICK_ADD) {
 		suiteClean += await runCase(testCase.text, async () => {
@@ -425,7 +429,7 @@ if (suite !== "palette") {
 					model: parserModel(),
 					schema: z.object({ task: CreateTaskActionSchema.nullable() }),
 					system,
-					prompt: testCase.text,
+					prompt: captureUserMessage(testCase.text, CTX),
 					...parseCallOptions(),
 					...effortOverride,
 				}),
@@ -442,7 +446,7 @@ if (suite !== "palette") {
 
 if (suite !== "quick-add") {
 	console.log("── palette ──");
-	const system = captureSystemPrompt(CTX);
+	const system = captureSystemPrompt();
 	let suiteClean = 0;
 	for (const testCase of PALETTE) {
 		suiteClean += await runCase(testCase.text, async () => {
@@ -451,7 +455,7 @@ if (suite !== "quick-add") {
 					model: parserModel(),
 					schema: z.object({ actions: CaptureActionsSchema }),
 					system,
-					prompt: testCase.text,
+					prompt: captureUserMessage(testCase.text, CTX),
 					...parseCallOptions(),
 					...effortOverride,
 				}),

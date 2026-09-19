@@ -200,7 +200,12 @@ export async function loadCaptureContext(
 			todayIso: todayInTz(tz),
 			nowUtc: nowUtc(),
 			domains: routing.domains.map((d) => d.name),
-			projects: routing.projects.map((p) => p.name),
+			projects: routing.projects.map((p) => {
+				// A project in a domain the list leaves out (a system domain)
+				// still goes, just without the pairing.
+				const domain = routing.domains.find((d) => d.id === p.domain_id)?.name;
+				return domain ? { name: p.name, domain } : { name: p.name };
+			}),
 		},
 	};
 }

@@ -13,6 +13,17 @@ import { isAiConfigured } from "@/lib/ai/gateway";
 import { CaptureActionsSchema, CreateTaskActionSchema } from "@/lib/schemas/capture";
 
 const CTX = { tz: "America/Sao_Paulo", todayIso: "2026-07-15", nowUtc: "2026-07-15T12:00:00Z" };
+const ROUTED = { ...CTX, domains: ["Home"], projects: [{ name: "Reviews", domain: "Work" }] };
+
+/** The system prompt's text, whether it was sent as a string or a message. */
+function systemText(): string {
+	const { system } = (generateObject as Mock).mock.calls[0][0];
+	return typeof system === "string" ? system : system.content;
+}
+
+function userMessage(): string {
+	return (generateObject as Mock).mock.calls[0][0].prompt;
+}
 
 beforeEach(() => {
 	vi.clearAllMocks();
@@ -132,26 +143,47 @@ describe("parse", () => {
 		expect(generateObject).toHaveBeenCalledTimes(1);
 	});
 
-	it("omits the routing block when no domains/projects are given", async () => {
+	it("leaves the lists out of <context> when there are none", async () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
 		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
 
 		await parse("hmm", CTX);
 
-		const { system } = (generateObject as Mock).mock.calls[0][0];
-		expect(system).not.toContain("KNOWN DOMAINS");
-		expect(system).not.toContain("KNOWN PROJECTS");
+		expect(userMessage()).not.toContain('"domains"');
+		expect(userMessage()).not.toContain('"projects"');
 	});
 
-	it("includes the routing block when domains/projects are given", async () => {
+	it("sends the lists in <context>, each project with its domain", async () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
 		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
 
-		await parse("hmm", { ...CTX, domains: ["Home"], projects: ["Reviews"] });
+		await parse("hmm", ROUTED);
 
-		const { system } = (generateObject as Mock).mock.calls[0][0];
-		expect(system).toContain("KNOWN DOMAINS: Home");
-		expect(system).toContain("KNOWN PROJECTS: Reviews");
+		const context = JSON.parse(userMessage().split("<context>")[1].split("</context>")[0]);
+		expect(context.domains).toEqual(["Home"]);
+		expect(context.projects).toEqual([{ name: "Reviews", domain: "Work" }]);
+	});
+
+	// Caching matches the start of the request byte for byte. Anything that
+	// changes per call inside the system prompt makes every request unique.
+	it("keeps the system prompt identical whatever the context", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+
+		await parse("hmm", CTX);
+		await parse("other", { ...ROUTED, nowUtc: "2027-01-01T00:00:00Z", todayIso: "2027-01-01" });
+
+		const [first, second] = (generateObject as Mock).mock.calls.map((c) => c[0].system);
+		expect(second).toEqual(first);
+	});
+
+	it("puts the utterance after the context, inside its own tags", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+
+		await parse("comprar pão", ROUTED);
+
+		expect(userMessage()).toMatch(/<\/context>\s+<utterance>\ncomprar pão\n<\/utterance>$/);
 	});
 
 	// Three rules the prompt lost or got wrong once each, and whose absence is
@@ -161,9 +193,9 @@ describe("parse", () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
 		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
 
-		await parse("hmm", { ...CTX, domains: ["Home"], projects: ["Reviews"] });
+		await parse("hmm", ROUTED);
 
-		const system = (generateObject as Mock).mock.calls[0][0].system as string;
+		const system = systemText();
 		expect(system).toContain("A project already belongs to a domain");
 		// The old copy, which contradicted both the data and resolveTaskRouting.
 		expect(system).not.toContain("INDEPENDENT");
@@ -173,9 +205,9 @@ describe("parse", () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
 		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
 
-		await parse("hmm", { ...CTX, domains: ["Home"], projects: ["Reviews"] });
+		await parse("hmm", ROUTED);
 
-		const system = (generateObject as Mock).mock.calls[0][0].system as string;
+		const system = systemText();
 		expect(system).toContain("must be ABSENT from the JSON object");
 		// An earlier draft said "to OMIT a field" in capitals and the model
 		// began answering `project: "#OMIT#"` — writing the keyword as a value.
@@ -191,7 +223,7 @@ describe("shared prompt fragments", () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
 		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
 		await parse("hmm", CTX);
-		const system = (generateObject as Mock).mock.calls[0][0].system as string;
+		const system = systemText();
 		expect(system).toContain("ANY word naming a day is a due_date");
 		expect(system).toContain("today/tonight/hoje");
 		expect(system).toContain("tomorrow/amanhã");
@@ -201,19 +233,17 @@ describe("shared prompt fragments", () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
 		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
 		await parse("hmm", CTX);
-		const system = (generateObject as Mock).mock.calls[0][0].system as string;
-		expect(system).toContain("NOW=2026-07-15T12:00:00Z");
-		expect(system).toContain("TODAY=2026-07-15");
-		expect(system).toContain("timezone America/Sao_Paulo");
-		expect(system).toContain("priority is 1 (high), 2 (medium) or 3 (low).");
+		expect(userMessage()).toContain('"now": "2026-07-15T12:00:00Z"');
+		expect(userMessage()).toContain('"today": "2026-07-15"');
+		expect(userMessage()).toContain('"timezone": "America/Sao_Paulo"');
+		expect(systemText()).toContain("priority is 1 (high), 2 (medium) or 3 (low).");
 	});
 
 	it("gives NOW in whole seconds", async () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
 		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
 		await parse("hmm", { ...CTX, nowUtc: "2026-07-15T12:00:00.123Z" });
-		const system = (generateObject as Mock).mock.calls[0][0].system as string;
-		expect(system).toContain("NOW=2026-07-15T12:00:00Z,");
+		expect(userMessage()).toContain('"now": "2026-07-15T12:00:00Z"');
 	});
 });
 
