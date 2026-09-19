@@ -100,7 +100,7 @@ function routed(got: Record<string, unknown>, text: string): Record<string, unkn
 }
 
 /** Field → expected value. `null` means "must be absent". */
-type Fields = Record<string, string | null>;
+type Fields = Record<string, string | number | null>;
 type ExpectedAction = { action: string } & Fields;
 
 type QuickAddCase = { text: string; expect: Fields };
@@ -128,7 +128,10 @@ const QUICK_ADD: QuickAddCase[] = [
 		expect: { title: "marcar dentista", due_date: TOMORROW, domain: "Health", project: null },
 	},
 	// Nothing to route, nothing to schedule — the case a parser must not embellish.
-	{ text: "buy milk", expect: { title: "buy milk", due_date: null, domain: null, project: null } },
+	{
+		text: "buy milk",
+		expect: { title: "buy milk", due_date: null, domain: null, project: null, priority: null },
+	},
 	// A project IS named here, so the one thing the other cases forbid is required.
 	{
 		text: "add a changelog page to Dispatch next week",
@@ -192,6 +195,25 @@ const QUICK_ADD: QuickAddCase[] = [
 		expect: { project: "Apartment move", due_date: TOMORROW },
 	},
 	{ text: "find last year's receipts for taxes", expect: { project: "Taxes 2026" } },
+	// ── Priority and filler: added 2026-09-19 with the signal-word rule ──
+	// A signal word sets priority and leaves the title.
+	{
+		text: "urgent: pay the tax bill",
+		expect: { title: "pay the tax bill", priority: 1, project: null },
+	},
+	{
+		text: "importante ligar pro contador amanhã",
+		expect: { title: "ligar pro contador", priority: 1, due_date: TOMORROW, project: null },
+	},
+	{
+		text: "medium priority clean the garage",
+		expect: { title: "clean the garage", priority: 2, project: null },
+	},
+	// Hesitation and a lead-in are not the task; every word left was said.
+	{
+		text: "uh I need to call the bank tomorrow",
+		expect: { title: "call the bank", due_date: TOMORROW, priority: null, project: null },
+	},
 	// An English day word inside pt-BR must not be translated, and neither
 	// must the title.
 	{
@@ -260,6 +282,30 @@ const PALETTE: PaletteCase[] = [
 	},
 	// Nothing to do.
 	{ text: "hmm", expect: [] },
+	// ── Note / quote / journal signals: added 2026-09-19 ──
+	{
+		text: "save a quote from Deep Work by Cal Newport: clarity about what matters provides clarity about what does not",
+		expect: [
+			{
+				action: "create_quote",
+				text: "clarity about what matters provides clarity about what does not",
+				source_author: "Cal Newport",
+			},
+		],
+	},
+	{
+		text: "I was reading an article about sleep and it made me think naps are underrated",
+		expect: [{ action: "create_note", source_type: "reading_response" }],
+	},
+	{
+		text: "hoje eu acordei cedo e fui correr na praia",
+		expect: [{ action: "create_journal_entry" }],
+	},
+	// "today I" opens a task as often as a journal entry.
+	{
+		text: "today I need to call the bank",
+		expect: [{ action: "create_task", title: "call the bank", due_date: TODAY, project: null }],
+	},
 	// A task and an event from one pt-BR sentence.
 	{
 		text: "reunião com o João amanhã às 10 e antes disso imprimir o contrato",
@@ -301,7 +347,7 @@ function scoreFields(raw: Record<string, unknown>, want: Fields, text: string): 
 				misses.push({ field, want: expected, got: actual });
 			} else if (field === "title" && guardTitle(actual, text).substituted) {
 				misses.push({ field, want: "words from the utterance", got: actual });
-			} else if (normalized(actual) !== normalized(expected)) {
+			} else if (normalized(actual) !== normalized(String(expected))) {
 				misses.push({ field, want: expected, got: actual });
 			}
 			continue;

@@ -45,6 +45,34 @@ export type ParseResult =
 export const TASK_FIELD_FORMATS =
 	"priority is 1 (high), 2 (medium) or 3 (low). due_date is YYYY-MM-DD, due_time is HH:mm.";
 
+/** Who the prompt is for. Jerad's prompt opens this way; it costs one line. */
+export const PERSONA =
+	"You are the capture parser for Dispatch, Renan's personal operations dashboard.";
+
+// Priority is set only on a spoken signal. With no signal the key stays out
+// and the database default (3, low) applies — so a plain "buy milk" is never
+// promoted, which is the reference's rule mapped onto three levels.
+export function priorityRules(): string[] {
+	return [
+		"  priority is set ONLY when the user signals it: urgent, asap, important,",
+		"  high priority, urgente, importante, prioridade alta → 1. medium",
+		"  priority, média prioridade → 2. low priority, baixa prioridade → 3.",
+		"  No signal → leave priority out. The signal word is not part of the title.",
+	];
+}
+
+// The reference strips filler from titles. Dispatch keeps the verbatim guard
+// (lib/ai/verbatim.ts), which rejects a title with any word the user did not
+// say — so dropping words is safe here, and rewording is not.
+export function titleRules(): string[] {
+	return [
+		"  title is the task in the user's own words, under 100 characters. Leave",
+		"  out hesitations and lead-ins that are not the task: uh, um, like, so, I",
+		"  need to, remind me to, don't forget to, preciso, tenho que, lembrar de,",
+		"  não esquecer de. Never reword, reorder or add a word.",
+	];
+}
+
 // Relative dates resolve against the app timezone, never the model's guess at
 // "now" (iron rule #1) — both prompts state it identically. The values
 // themselves arrive per call in <context> (captureUserMessage); only the rule
@@ -217,8 +245,40 @@ export function parseCallOptions() {
 	};
 }
 
+// Worked examples. The day-word fix showed that named cases move the model
+// where abstract rules do not. They use a made-up world (domain Casa, project
+// Kitchen reno, a Thursday) that shares no names with the eval's, so the eval
+// still measures the rules rather than recall of an example.
+export const EXAMPLE_WORLD =
+	'Examples, for a <context> with today 2026-01-15 (a Thursday), domains ["Casa", "Work"] and projects [{"name": "Kitchen reno", "domain": "Casa"}]:';
+
+export function taskExamples(): string[] {
+	return [
+		'- "casa: fix the faucet tomorrow" → {"title": "fix the faucet", "due_date": "2026-01-16", "domain": "Casa"}',
+		'- "order tiles for the kitchen" → {"title": "order tiles", "project": "Kitchen reno"}',
+		'- "urgente pagar o DARF sexta" → {"title": "pagar o DARF", "priority": 1, "due_date": "2026-01-16"}',
+		'- "uh remind me to water the plants every Sunday" → {"title": "water the plants", "recurrence_rule": "weekly", "due_date": "2026-01-18"}',
+		'- "buy stamps" → {"title": "buy stamps"}',
+	];
+}
+
+export function paletteExamples(): string[] {
+	return [
+		EXAMPLE_WORLD,
+		'- "casa: fix the faucet tomorrow" → [{"action": "create_task", "title": "fix the faucet", "due_date": "2026-01-16", "domain": "Casa"}]',
+		'- "order tiles for the kitchen and call the plumber at 3pm" → [{"action": "create_task", "title": "order tiles", "project": "Kitchen reno"}, {"action": "create_event", "title": "call the plumber", "start_date": "2026-01-15", "start_time": "15:00", "end_time": "15:30"}]',
+		'- "jantar com a Bia sábado às 20h" → [{"action": "create_event", "title": "jantar com a Bia", "start_date": "2026-01-17", "start_time": "20:00", "end_time": "21:30"}]',
+		'- "note to self the kitchen light flickers when the fan is on" → [{"action": "create_note", "body": "the kitchen light flickers when the fan is on", "source_type": "observation"}]',
+		'- "quote from Seneca: we suffer more in imagination than in reality" → [{"action": "create_quote", "text": "we suffer more in imagination than in reality", "source_author": "Seneca"}]',
+		'- "journal: long day, but the demo went well" → [{"action": "create_journal_entry", "body": "long day, but the demo went well"}]',
+		'- "add to the Seneca quote that this is about anxiety" → [{"action": "needs_review", "reason": "refers to a saved quote", "proposed_kind": "create_quote_annotation"}]',
+		'- "ok" → []',
+	];
+}
+
 export function captureSystemPrompt(): string {
 	return [
+		PERSONA,
 		"You convert ONE spoken or typed utterance into a JSON array of actions.",
 		"The user message holds <context> (app data: the date, the known domains",
 		"and projects) and then <utterance>, the only thing the user said.",
@@ -226,6 +286,8 @@ export function captureSystemPrompt(): string {
 		"- create_task { title, notes?, due_date?, due_time?, priority?,",
 		"  recurrence_rule?, domain?, project? } — something to do.",
 		`  ${TASK_FIELD_FORMATS}`,
+		...titleRules(),
+		...priorityRules(),
 		...recurrenceRules(),
 		"- create_event { title, start_date, start_time, end_date?, end_time,",
 		"  location?, description? } — something happening AT a time, with other",
@@ -248,6 +310,22 @@ export function captureSystemPrompt(): string {
 		"  project, person, or quote). Set proposed_kind to the action you would",
 		"  have taken (e.g. create_project) and reason to a short explanation.",
 		"If nothing is actionable, use an empty actions array.",
+		"",
+		"Choosing between note, quote and journal entry:",
+		"- create_quote: the user saves SOMEONE ELSE's words. Signals: save a",
+		'  quote, quote from <book/author>, quotation marks, an attribution ("—',
+		'  Author", "as X said"). text is the quoted words only; source_author is',
+		"  the person named.",
+		"- create_journal_entry: the user records THEIR OWN day. Signals: journal,",
+		'  diário, journal entry, log for today, or "today I…"/"hoje eu…" telling',
+		'  what happened or how it felt. "today I need to…" is a task, not a',
+		"  journal entry.",
+		"- create_note: anything else worth remembering: an idea, note to self, a",
+		'  thought after reading ("I was reading…" → source_type reading_response)',
+		"  or after a meeting (meeting_note). The safe default when it is not a",
+		"  task, event, quote or journal entry.",
+		"",
+		...paletteExamples(),
 		"",
 		"Language: the user speaks Portuguese (pt-BR) or English. Detect it, and",
 		"NEVER translate. Copy every free-text field (title, body, reason) verbatim",

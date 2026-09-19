@@ -7,12 +7,17 @@ import {
 	cachedSystem,
 	captureUserMessage,
 	dateResolution,
+	EXAMPLE_WORLD,
 	logParseFailure,
 	type ParseContext,
+	PERSONA,
 	parseCallOptions,
+	priorityRules,
 	recurrenceRules,
 	routingBlock,
 	TASK_FIELD_FORMATS,
+	taskExamples,
+	titleRules,
 } from "@/lib/ai/parser";
 import { guardTitle } from "@/lib/ai/verbatim";
 import { type CreateTaskAction, CreateTaskActionSchema } from "@/lib/schemas/capture";
@@ -38,6 +43,7 @@ export type ParseTaskResult =
 
 export function taskCaptureSystemPrompt(): string {
 	return [
+		PERSONA,
 		"You convert ONE spoken or typed utterance into a single task, or null if",
 		"the utterance describes nothing actionable.",
 		"The user message holds <context> (app data: the date, the known domains",
@@ -47,10 +53,16 @@ export function taskCaptureSystemPrompt(): string {
 		"title is required — the task itself, verbatim in the language spoken",
 		"(pt-BR or English). NEVER translate.",
 		TASK_FIELD_FORMATS,
+		...titleRules(),
+		...priorityRules(),
 		...recurrenceRules(),
 		"",
 		...dateResolution(),
 		...routingBlock(),
+		"",
+		EXAMPLE_WORLD,
+		...taskExamples(),
+		'- "that was a nice movie" → null',
 		"",
 		'Return a JSON object of the form {"task": { ... }} or {"task": null}.',
 	].join("\n");

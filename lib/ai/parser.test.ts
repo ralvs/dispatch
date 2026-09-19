@@ -229,6 +229,30 @@ describe("parse", () => {
 });
 
 describe("shared prompt fragments", () => {
+	it("sets priority only on a spoken signal", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+		await parse("hmm", CTX);
+		const system = systemText();
+		expect(system).toContain("priority is set ONLY when the user signals it");
+		expect(system).toContain("No signal → leave priority out.");
+	});
+
+	it("drops filler words but never rewords a title", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+		await parse("hmm", CTX);
+		expect(systemText()).toContain("Never reword, reorder or add a word.");
+	});
+
+	it("lets the model name a project by the phrase the user said", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+		await parse("hmm", CTX);
+		expect(systemText()).toContain("Never write a phrase the user did not say.");
+		expect(systemText()).not.toContain("EXACTLY as listed");
+	});
+
 	it("names the day words, rather than only asking for 'relative dates'", async () => {
 		// "Resolve relative dates" alone was not actionable: the measured result
 		// was "today" dropped in 15 of 15 runs, landing in neither the title nor
