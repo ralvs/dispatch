@@ -13,6 +13,7 @@
  *   bun run eval:parser
  *   bun run eval:parser --runs 5
  *   bun run eval:parser --model anthropic/claude-haiku-4.5
+ *   bun run eval:parser --effort low
  *
  * Needs AI_GATEWAY_API_KEY, so load the env first:
  *   set -a && . ./.env.local && set +a && bun run eval:parser
@@ -169,24 +170,34 @@ const flag = (name: string) => {
 };
 const runs = Number(flag("runs") ?? 3);
 if (flag("model")) process.env.PARSER_MODEL = flag("model");
+// Anthropic effort, forwarded through the gateway. Unset = the model default
+// (high on Sonnet 5, with adaptive thinking on).
+const effort = flag("effort");
+const providerOptions = effort ? { anthropic: { effort } } : undefined;
 
 const system = taskPrompt();
 let attempts = 0;
 let clean = 0;
 const byField = new Map<string, number>();
+const latencies: number[] = [];
+let outputTokens = 0;
 
 for (const testCase of CASES) {
 	const caseMisses: Miss[][] = [];
 	for (let i = 0; i < runs; i++) {
 		attempts += 1;
 		try {
-			const { object } = await generateObject({
+			const started = performance.now();
+			const { object, usage } = await generateObject({
 				model: parserModel(),
 				schema: z.object({ task: CreateTaskActionSchema.nullable() }),
 				system,
 				prompt: testCase.text,
 				...parseCallOptions(),
+				providerOptions,
 			});
+			latencies.push(performance.now() - started);
+			outputTokens += usage.outputTokens ?? 0;
 			const misses = score(
 				object.task as Record<string, unknown> | null,
 				testCase.expect,
@@ -215,7 +226,16 @@ for (const testCase of CASES) {
 }
 
 console.log(`\nmodel ${process.env.PARSER_MODEL ?? "(env default)"}`);
+console.log(`effort ${effort ?? "(model default)"}`);
 console.log(`clean ${clean}/${attempts} (${Math.round((clean / attempts) * 100)}%)`);
+if (latencies.length > 0) {
+	const sorted = [...latencies].sort((a, b) => a - b);
+	const pct = (p: number) =>
+		(sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))] / 1000).toFixed(1);
+	console.log(
+		`latency p50 ${pct(0.5)}s, p90 ${pct(0.9)}s · output tokens avg ${Math.round(outputTokens / latencies.length)}`,
+	);
+}
 if (byField.size > 0) {
 	const worst = [...byField.entries()].sort((a, b) => b[1] - a[1]);
 	console.log(`misses by field: ${worst.map(([f, n]) => `${f}=${n}`).join(", ")}`);
