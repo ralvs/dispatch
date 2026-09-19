@@ -7,6 +7,8 @@ import {
 	taskProgress,
 } from "@/lib/services/projects";
 
+const DOMAIN_ID = "11111111-1111-4111-8111-111111111111";
+
 // Stub covering .from().insert().select().single() and .from().update().eq().
 function stubSupabase() {
 	const inserts: Array<Record<string, unknown>> = [];
@@ -38,10 +40,10 @@ describe("createProject", () => {
 	it("stores the given fields", async () => {
 		const { sb, inserts } = stubSupabase();
 
-		const project = await createProject(sb, { name: "Rebuild deck", domain_id: null });
+		const project = await createProject(sb, { name: "Rebuild deck", domain_id: DOMAIN_ID });
 
 		expect(project.id).toBe("row-1");
-		expect(inserts[0]).toMatchObject({ name: "Rebuild deck", domain_id: null });
+		expect(inserts[0]).toMatchObject({ name: "Rebuild deck", domain_id: DOMAIN_ID });
 	});
 });
 

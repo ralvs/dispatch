@@ -28,7 +28,7 @@ import type { createTask } from "@/lib/services/tasks";
 
 export type RoutingLists = {
 	domains: { id: string; name: string }[];
-	projects: { id: string; name: string; domain_id: string | null }[];
+	projects: { id: string; name: string; domain_id: string }[];
 };
 
 export type TaskRouting = {
@@ -71,7 +71,6 @@ export function resolveTaskRouting(
 ): TaskRouting {
 	let domain_id: string | null = null;
 	let project_id: string | null = null;
-	let domainFromProject = false;
 	const unresolved: string[] = [];
 
 	/**
@@ -102,9 +101,6 @@ export function resolveTaskRouting(
 		if (match) {
 			project_id = match.id;
 			domain_id = match.domain_id;
-			// A project with no domain settles nothing, so a named domain may
-			// still answer — it cannot contradict what was never stated.
-			domainFromProject = match.domain_id !== null;
 		} else if (worthReporting(action.project)) {
 			unresolved.push(`project "${action.project}"`);
 		}
@@ -114,7 +110,7 @@ export function resolveTaskRouting(
 		const norm = normalize(action.domain);
 		const match = lists.domains.find((d) => normalize(d.name) === norm);
 		if (match) {
-			if (!domainFromProject) domain_id = match.id;
+			if (project_id === null) domain_id = match.id;
 		} else if (worthReporting(action.domain)) {
 			unresolved.push(`domain "${action.domain}"`);
 		}

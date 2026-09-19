@@ -152,8 +152,7 @@ export function ProjectDetail({
 							</Field>
 							<div className="grid grid-cols-2 gap-3">
 								<Field label="Domain">
-									<Select name="domain_id" defaultValue={project.domain_id ?? ""}>
-										<option value="">Unassigned</option>
+									<Select name="domain_id" defaultValue={project.domain_id} required>
 										{domains.map((d) => (
 											<option key={d.id} value={d.id}>
 												{d.name}

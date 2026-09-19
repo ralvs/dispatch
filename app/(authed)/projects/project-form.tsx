@@ -35,8 +35,10 @@ export function ProjectCreateButton({ domains }: { domains: DomainRow[] }) {
 			</Field>
 			<div className="grid grid-cols-2 gap-3">
 				<Field label="Domain">
-					<Select name="domain_id" defaultValue="">
-						<option value="">Unassigned</option>
+					<Select name="domain_id" defaultValue="" required>
+						<option value="" disabled>
+							Choose a domain
+						</option>
 						{domains.map((d) => (
 							<option key={d.id} value={d.id}>
 								{d.name}

@@ -45,7 +45,7 @@ export type TaskDomainOption = {
  * domain, and the domain control locks (see TaskMetaFields). A project with no
  * domain is possible in the data, and leaves the domain free to pick.
  */
-export type TaskProjectOption = { id: string; name: string; domain_id: string | null };
+export type TaskProjectOption = { id: string; name: string; domain_id: string };
 
 /** Label always stacks above its control (block, not inline beside). */
 const FIELD_LABEL = "field-caption mb-2 block text-xs";
@@ -254,13 +254,10 @@ export function TaskMetaFields({
 	const [projectId, setProjectId] = useState(defaults.project_id ?? "");
 	const [domainId, setDomainId] = useState(defaults.domain_id ?? "");
 	const selectedProject = projects.find((p) => p.id === projectId);
-	// A project with no domain of its own settles nothing, so the control stays
-	// free rather than locking on an empty answer.
-	const domainFollowsProject = selectedProject?.domain_id != null;
-	const domainDisabled = lockDomain || domainFollowsProject;
+	const domainDisabled = lockDomain || selectedProject != null;
 	// Locked either way: the caller's lock keeps the task's own domain, the
 	// project's lock keeps the project's.
-	const postedDomainId = domainFollowsProject ? (selectedProject?.domain_id ?? "") : domainId;
+	const postedDomainId = selectedProject?.domain_id ?? domainId;
 
 	function chooseProject(next: string) {
 		setProjectId(next);

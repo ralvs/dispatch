@@ -21,7 +21,7 @@ import { Button, HeaderCreateButton } from "@/components/ui";
  */
 export function AddTaskButton({
 	project,
-	domainId = null,
+	domainId,
 	projects,
 	domains,
 	todayIso,
@@ -29,7 +29,7 @@ export function AddTaskButton({
 }: {
 	project: TaskProjectOption;
 	/** The project's domain — locked on the form, same as the project. */
-	domainId?: string | null;
+	domainId: string;
 	/** Full list — the locked select still renders every name so the answer reads. */
 	projects: TaskProjectOption[];
 	domains: TaskDomainOption[];
@@ -61,13 +61,7 @@ export function AddTaskButton({
 				domains={domains}
 				projects={projects}
 				lockProject
-				/* Only when the project HAS a domain. A project may be Unassigned,
-				   and locking then disables a control with no value in it — a
-				   disabled select skips `required` and its hidden input posts "",
-				   which files the new task straight into the inbox the task form
-				   exists to keep it out of. Left unlocked, the domain field is the
-				   mandatory pick it is everywhere else. */
-				lockDomain={domainId != null}
+				lockDomain
 				todayIso={todayIso}
 				defaults={{ project_id: project.id, domain_id: domainId }}
 			/>

@@ -55,15 +55,6 @@ describe("resolveTaskRouting", () => {
 		expect(result).toEqual({ domain_id: "dom-work", project_id: "proj-reviews", unresolved: [] });
 	});
 
-	it("lets a named domain answer for a project that has none of its own", () => {
-		const lists: RoutingLists = {
-			...LISTS,
-			projects: [{ id: "proj-loose", name: "Solto", domain_id: null }],
-		};
-		const result = resolveTaskRouting(task({ project: "Solto", domain: "Home" }), lists);
-		expect(result).toEqual({ domain_id: "dom-home", project_id: "proj-loose", unresolved: [] });
-	});
-
 	it("still reports an unmatched domain name even when the project decided", () => {
 		const result = resolveTaskRouting(task({ project: "Reviews", domain: "Nope" }), LISTS);
 		expect(result).toEqual({

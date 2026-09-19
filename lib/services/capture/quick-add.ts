@@ -5,7 +5,6 @@ import { z } from "zod";
 import { isAiConfigured, parserModel } from "@/lib/ai/gateway";
 import {
 	dateResolution,
-	hedge,
 	logParseFailure,
 	type ParseContext,
 	parseCallOptions,
@@ -58,15 +57,13 @@ export async function parseTaskCapture(text: string, ctx: ParseContext): Promise
 		if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
 
 		const system = taskCaptureSystemPrompt(ctx);
-		const { object } = await hedge((signal) =>
-			generateObject({
-				model: parserModel(),
-				schema: z.object({ task: CreateTaskActionSchema.nullable() }),
-				system,
-				prompt: text,
-				...parseCallOptions(signal),
-			}),
-		);
+		const { object } = await generateObject({
+			model: parserModel(),
+			schema: z.object({ task: CreateTaskActionSchema.nullable() }),
+			system,
+			prompt: text,
+			...parseCallOptions(),
+		});
 		if (!object.task) return { ok: false, reason: "empty", raw: text };
 		// Same guard as the firehose parser: a title made of words the user
 		// never typed is worse than the raw sentence (lib/ai/verbatim.ts).
@@ -129,7 +126,7 @@ export async function quickAddTask(
  *
  * Neither field is silently wrong afterwards: the operator's domain is what
  * they said, and the project falls away rather than dragging the domain with
- * it. A project with no domain of its own contradicts nothing, so it stays.
+ * it.
  */
 function withStatedDomain(
 	input: Parameters<typeof createTask>[1],
@@ -138,7 +135,7 @@ function withStatedDomain(
 ): Parameters<typeof createTask>[1] {
 	if (!stated) return input;
 	const project = lists.projects.find((p) => p.id === input.project_id);
-	const conflicts = project != null && project.domain_id != null && project.domain_id !== stated;
+	const conflicts = project != null && project.domain_id !== stated;
 	return {
 		...input,
 		domain_id: stated,

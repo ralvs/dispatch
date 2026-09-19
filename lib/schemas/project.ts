@@ -10,7 +10,7 @@ export const ProjectSchema = z.object({
 	id: z.string().uuid(),
 	name: z.string().min(1),
 	description: z.string().nullable().optional(),
-	domain_id: z.string().uuid().nullable().optional(),
+	domain_id: z.string().uuid(),
 	status: ProjectStatusSchema,
 	start_date: z.string().date().nullable().optional(),
 	target_date: z.string().date().nullable().optional(),
@@ -27,7 +27,9 @@ export const ProjectSchema = z.object({
 export const CreateProjectSchema = z.object({
 	name: z.string().min(1),
 	description: z.string().nullable().optional(),
-	domain_id: z.string().uuid().nullable().optional(),
+	// Required, never null: a project always has a domain, and its tasks
+	// inherit it (docs/adr/0019).
+	domain_id: z.string().uuid(),
 	start_date: z.string().date().nullable().optional(),
 	target_date: z.string().date().nullable().optional(),
 	color: ColorSlugSchema.nullable().optional(),
@@ -58,7 +60,7 @@ export const ProjectRowSchema = z.object({
 	id: z.string().uuid(),
 	name: z.string(),
 	description: z.string().nullable(),
-	domain_id: z.string().uuid().nullable(),
+	domain_id: z.string().uuid(),
 	status: ProjectStatusSchema,
 	start_date: z.string().nullable(),
 	target_date: z.string().nullable(),
@@ -68,7 +70,6 @@ export const ProjectRowSchema = z.object({
 	updated_at: z.string(),
 	domain: z
 		.object({ id: z.string().uuid(), name: z.string(), color: z.string().nullable() })
-		.nullable()
 		.optional(),
 });
 export type ProjectRow = z.infer<typeof ProjectRowSchema>;

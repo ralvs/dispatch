@@ -9,8 +9,7 @@ import type { TaskRow } from "@/lib/services/tasks";
 const INLINE_TASK_LIMIT = 5;
 
 /**
- * Domain leads left and holds its slot when unassigned — same encoding as
- * task-row / day-row. The project's own colour is not a second dot on the row;
+ * Domain leads left — same encoding as task-row / day-row. The project's own colour is not a second dot on the row;
  * two dots of different meaning is what the measured palette exists to prevent
  * (Pass 2 / Gate A lab). Project colour still lives on the detail header.
  *

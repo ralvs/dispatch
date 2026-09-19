@@ -137,7 +137,6 @@ describe("quickAddTask", () => {
 			]);
 			(listProjects as Mock).mockResolvedValue([
 				{ id: "proj-dispatch", name: "Dispatch", domain_id: "dom-code" },
-				{ id: "proj-loose", name: "Solto", domain_id: null },
 			]);
 			(createTask as Mock).mockResolvedValue({ id: "task-5" });
 		});
@@ -162,18 +161,6 @@ describe("quickAddTask", () => {
 			expect(createTask).toHaveBeenCalledWith(
 				sb,
 				expect.objectContaining({ domain_id: "dom-code", project_id: "proj-dispatch" }),
-				{ graphFail: "swallow" },
-			);
-		});
-
-		it("keeps a project that has no domain of its own, since it contradicts nothing", async () => {
-			parsedTask({ action: "create_task", title: "algo", project: "Solto" });
-
-			await quickAddTask(sb, "algo no Solto", { domainId: "dom-home" });
-
-			expect(createTask).toHaveBeenCalledWith(
-				sb,
-				expect.objectContaining({ domain_id: "dom-home", project_id: "proj-loose" }),
 				{ graphFail: "swallow" },
 			);
 		});
