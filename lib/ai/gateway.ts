@@ -34,3 +34,14 @@ export function parserModel() {
 export function chatModel() {
 	return gateway()(env().CHAT_MODEL);
 }
+
+/**
+ * Provider options for EVERY model call in the app — parser and chat alike.
+ *
+ * With no `thinking` setting, Opus 5 and Sonnet 5 think adaptively at the
+ * default effort, `high`. Measured on the parser eval, that was worse than
+ * `low`, not better: Sonnet 5 at the default scored 34/36, at `low` 72/72,
+ * faster and with half the output tokens. Chat quality at `low` is not
+ * measured; the eval covers only the parser.
+ */
+export const MODEL_PROVIDER_OPTIONS = { anthropic: { effort: "low" } } as const;

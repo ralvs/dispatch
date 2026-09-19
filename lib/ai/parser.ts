@@ -1,7 +1,7 @@
 import "server-only";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { isAiConfigured, parserModel } from "@/lib/ai/gateway";
+import { isAiConfigured, MODEL_PROVIDER_OPTIONS, parserModel } from "@/lib/ai/gateway";
 import { guardTitle } from "@/lib/ai/verbatim";
 import { type CaptureAction, CaptureActionsSchema } from "@/lib/schemas/capture";
 
@@ -159,6 +159,7 @@ export function parseCallOptions() {
 		maxRetries: PARSE_MAX_RETRIES,
 		maxOutputTokens: PARSE_MAX_OUTPUT_TOKENS,
 		abortSignal: AbortSignal.timeout(PARSE_TIMEOUT_MS),
+		providerOptions: MODEL_PROVIDER_OPTIONS,
 	};
 }
 

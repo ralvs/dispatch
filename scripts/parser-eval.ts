@@ -313,10 +313,11 @@ if (!["all", "quick-add", "palette"].includes(suite)) {
 	process.exit(2);
 }
 if (flag("model")) process.env.PARSER_MODEL = flag("model");
-// Anthropic effort, forwarded through the gateway. Unset = the model default
-// (high on Sonnet 5, with adaptive thinking on).
+// Anthropic effort, forwarded through the gateway. Unset = the app's own
+// setting (MODEL_PROVIDER_OPTIONS, via parseCallOptions), so a bare run scores
+// exactly what production sends.
 const effort = flag("effort");
-const providerOptions = effort ? { anthropic: { effort } } : undefined;
+const effortOverride = effort ? { providerOptions: { anthropic: { effort } } } : {};
 
 let attempts = 0;
 let clean = 0;
@@ -426,7 +427,7 @@ if (suite !== "palette") {
 					system,
 					prompt: testCase.text,
 					...parseCallOptions(),
-					providerOptions,
+					...effortOverride,
 				}),
 			);
 			return scoreQuickAdd(
@@ -452,7 +453,7 @@ if (suite !== "quick-add") {
 					system,
 					prompt: testCase.text,
 					...parseCallOptions(),
-					providerOptions,
+					...effortOverride,
 				}),
 			);
 			return scorePalette(
@@ -466,7 +467,7 @@ if (suite !== "quick-add") {
 }
 
 console.log(`\nmodel ${process.env.PARSER_MODEL ?? "(env default)"}`);
-console.log(`effort ${effort ?? "(model default)"}`);
+console.log(`effort ${effort ?? "(app default)"}`);
 console.log(
 	`clean ${clean}/${attempts} (${Math.round((clean / attempts) * 100)}%) · ${suiteTotals.join(" · ")}`,
 );

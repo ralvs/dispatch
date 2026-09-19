@@ -5,6 +5,7 @@ vi.mock("ai", () => ({ generateObject: vi.fn() }));
 vi.mock("@/lib/ai/gateway", () => ({
 	isAiConfigured: vi.fn(() => true),
 	parserModel: vi.fn(() => ({})),
+	MODEL_PROVIDER_OPTIONS: { anthropic: { effort: "low" } },
 }));
 vi.mock("@/lib/services/domains", () => ({ listDomains: vi.fn(async () => []) }));
 vi.mock("@/lib/services/projects", () => ({ listProjects: vi.fn(async () => []) }));

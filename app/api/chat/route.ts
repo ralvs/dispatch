@@ -2,7 +2,7 @@ import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { buildChatSystemPrompt } from "@/lib/ai/chat-context";
-import { chatModel, isAiConfigured } from "@/lib/ai/gateway";
+import { chatModel, isAiConfigured, MODEL_PROVIDER_OPTIONS } from "@/lib/ai/gateway";
 import { ownerRoute } from "@/lib/auth";
 import { todayInTz } from "@/lib/dates";
 import { getAppTimezone } from "@/lib/services/settings";
@@ -37,6 +37,7 @@ export const POST = ownerRoute(async (request, { sb }) => {
 		model: chatModel(),
 		system,
 		messages: await convertToModelMessages(messages),
+		providerOptions: MODEL_PROVIDER_OPTIONS,
 	});
 
 	return result.toUIMessageStreamResponse();

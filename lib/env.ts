@@ -22,8 +22,12 @@ const EnvSchema = z.object({
 	// capture is a few hundred tokens, so the cost difference is fractions of a
 	// cent; the latency difference (~1.5s → ~3s) is hidden by the palette's
 	// provisional receipt, which never blocks on the parse.
-	PARSER_MODEL: z.string().default("anthropic/claude-sonnet-5"),
-	CHAT_MODEL: z.string().default("anthropic/claude-sonnet-5"),
+	// Then Sonnet 5 against Opus 5 (2026-09-19, 28 cases × 4 runs, both at
+	// effort low): Sonnet 107/112 — broken JSON, a quote filed as a note, junk
+	// projects — and Opus 112/112 at the same ~1.8s median. Effort is set on
+	// every call in lib/ai/gateway.ts, not here.
+	PARSER_MODEL: z.string().default("anthropic/claude-opus-5"),
+	CHAT_MODEL: z.string().default("anthropic/claude-opus-5"),
 
 	// External-surface secrets (Phase 7)
 	CAPTURE_WEBHOOK_SECRET: z.string().min(20).optional(),

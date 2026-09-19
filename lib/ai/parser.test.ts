@@ -4,6 +4,7 @@ import { parse } from "@/lib/ai/parser";
 vi.mock("@/lib/ai/gateway", () => ({
 	isAiConfigured: vi.fn(),
 	parserModel: vi.fn(() => ({})),
+	MODEL_PROVIDER_OPTIONS: { anthropic: { effort: "low" } },
 }));
 vi.mock("ai", () => ({ generateObject: vi.fn() }));
 
@@ -85,6 +86,18 @@ describe("parse", () => {
 		expect(call.maxRetries).toBe(1);
 		expect(call.maxOutputTokens).toBe(400);
 		expect(call.abortSignal).toBeInstanceOf(AbortSignal);
+	});
+
+	// Measured: effort low beat the default (high) on the parser eval, on both
+	// Sonnet 5 and Opus 5. Leaving it unset silently restores the default.
+	it("asks for effort low", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+
+		await parse("hmm", CTX);
+
+		const call = (generateObject as Mock).mock.calls[0][0];
+		expect(call.providerOptions).toEqual({ anthropic: { effort: "low" } });
 	});
 
 	// The budget covers the whole call — every attempt plus the backoff between
