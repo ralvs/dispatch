@@ -162,7 +162,7 @@ export function parseCallOptions() {
 	};
 }
 
-function systemPrompt(ctx: ParseContext): string {
+export function captureSystemPrompt(ctx: ParseContext): string {
 	return [
 		"You convert ONE spoken or typed utterance into a JSON array of actions.",
 		"Allowed actions ONLY:",
@@ -223,7 +223,7 @@ export async function parse(text: string, ctx: ParseContext): Promise<ParseResul
 		// and parserModel() reads it too. A config failure degrades, never escapes.
 		if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
 
-		const system = systemPrompt(ctx);
+		const system = captureSystemPrompt(ctx);
 		const { object } = await generateObject({
 			model: parserModel(),
 			schema: z.object({ actions: CaptureActionsSchema }),

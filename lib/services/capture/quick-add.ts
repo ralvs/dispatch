@@ -34,7 +34,7 @@ export type ParseTaskResult =
 	| { ok: true; task: CreateTaskAction }
 	| { ok: false; reason: "unavailable" | "failed" | "empty"; raw: string };
 
-function taskCaptureSystemPrompt(ctx: ParseContext): string {
+export function taskCaptureSystemPrompt(ctx: ParseContext): string {
 	return [
 		"You convert ONE spoken or typed utterance into a single task, or null if",
 		"the utterance describes nothing actionable.",
