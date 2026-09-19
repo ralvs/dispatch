@@ -68,7 +68,7 @@ describe("CreateTaskFormSchema due_time-requires-due_date invariant", () => {
 });
 
 describe("CreateTaskFormSchema · project_id", () => {
-	const base = { title: "Ship it", priority: "4", domain_id: DOMAIN };
+	const base = { title: "Ship it", priority: "3", domain_id: DOMAIN };
 
 	it("accepts a project id", () => {
 		const parsed = CreateTaskFormSchema.parse({
@@ -88,7 +88,7 @@ describe("CreateTaskFormSchema · project_id", () => {
 });
 
 describe("CreateTaskFormSchema · domain_id", () => {
-	const base = { title: "Ship it", priority: "4" };
+	const base = { title: "Ship it", priority: "3" };
 
 	// The one field the form may not leave blank. `required` on the select is
 	// browser-side only; this is where the rule actually holds.

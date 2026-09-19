@@ -51,7 +51,7 @@ export const CreateTaskActionSchema = z.object({
 	// Range-guarded (lib/schemas/time.ts), so a malformed time fails
 	// schema-parse (→ typed failed → degrade) rather than reaching the executor.
 	due_time: WallClockTimeSchema.optional(),
-	priority: z.number().int().min(1).max(4).optional(),
+	priority: z.number().int().min(1).max(3).optional(),
 	// Validated through lib/recurrence.ts so the LLM can never violate the DB
 	// check constraint (docs/adr/0019) — the seven literals, or the custom
 	// weekly form `weekly:tu,sa` (shape plan §06). Sharing the predicate rather

@@ -30,7 +30,7 @@ export const TaskSchema = z.object({
 	status: TaskStatusSchema,
 	due_date: nullableDate(),
 	due_time: nullableString(),
-	priority: z.number().int().min(1).max(4),
+	priority: z.number().int().min(1).max(3),
 	project_id: z.string().uuid().nullable().optional(),
 	// null means unfiled — the /inbox queue (docs/adr/0027).
 	domain_id: z.string().uuid().nullable(),
@@ -73,7 +73,7 @@ export const CreateTaskFormSchema = z
 		notes: z.string().trim().max(5000).optional(),
 		due_date: z.iso.date().optional().or(z.literal("")),
 		due_time: WallClockTimeSchema.optional().or(z.literal("")),
-		priority: z.coerce.number().int().min(1).max(4).default(4),
+		priority: z.coerce.number().int().min(1).max(3).default(3),
 		// Required, unlike every other optional here. The form's own `required`
 		// is HTML5 constraint validation, which a disabled control skips and a
 		// non-browser caller never runs at all — so on its own it is a hint,

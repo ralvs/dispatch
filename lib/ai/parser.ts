@@ -41,7 +41,7 @@ export type ParseResult =
 // The task field formats. Indentation is the caller's, since systemPrompt
 // nests this under its create_task bullet and the task prompt does not.
 export const TASK_FIELD_FORMATS =
-	"priority is 1 (highest) to 4. due_date is YYYY-MM-DD, due_time is HH:mm.";
+	"priority is 1 (high), 2 (medium) or 3 (low). due_date is YYYY-MM-DD, due_time is HH:mm.";
 
 // Relative dates resolve against the app timezone, never the model's guess at
 // "now" (iron rule #1) — both prompts state it identically.

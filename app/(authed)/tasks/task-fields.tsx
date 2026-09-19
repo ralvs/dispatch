@@ -114,7 +114,7 @@ const RELATIVE_DAYS = [
 export const PRIORITIES = [
 	{ value: 1, label: "high", title: "High" },
 	{ value: 2, label: "med", title: "Medium" },
-	{ value: 4, label: "low", title: "Low" },
+	{ value: 3, label: "low", title: "Low" },
 ] as const;
 
 /**
@@ -125,17 +125,11 @@ export const PRIORITIES = [
 const PRIORITY_CELL: Record<number, string> = {
 	1: "peer-checked:text-priority-high peer-checked:shadow-[inset_0_-2px_0_currentColor,0_0_0_3.5px_var(--priority-high-halo)]",
 	2: "peer-checked:text-priority-med peer-checked:shadow-[inset_0_-2px_0_currentColor,0_0_0_3.5px_var(--priority-med-halo)]",
-	4: "peer-checked:text-ink-2 peer-checked:shadow-[inset_0_-2px_0_currentColor]",
+	3: "peer-checked:text-ink-2 peer-checked:shadow-[inset_0_-2px_0_currentColor]",
 };
 
-function isPrioritySelected(value: number, current: number) {
-	if (value === 1) return current === 1;
-	if (value === 2) return current === 2;
-	return current !== 1 && current !== 2;
-}
-
 /*
- * `PriorityBadge` used to live here — a P1–P4 chip in one of four tones, drawn
+ * `PriorityBadge` used to live here — a P1–P4 chip in one of four tones (priority had four levels then), drawn
  * at the head of a task row's meta line. Pass 1 moved priority onto the
  * checkbox as a ring, which put the signal on the thing you actually reach for
  * and let one encoding serve both Today and Tasks. That left the badge with no
@@ -444,7 +438,7 @@ export function TaskMetaFields({
 						</Select>
 					</Field>
 
-					<PriorityPicker defaultValue={defaults.priority ?? 4} />
+					<PriorityPicker defaultValue={defaults.priority ?? 3} />
 				</div>
 			</div>
 		</div>
@@ -546,8 +540,7 @@ function TaskNotesField({
  * shares the grid's rhythm with Domain instead of leaving a gap at the end
  * of the row.
  */
-export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) {
-	const lowValue = defaultValue === 1 || defaultValue === 2 ? 4 : defaultValue;
+export function PriorityPicker({ defaultValue = 3 }: { defaultValue?: number }) {
 	return (
 		<div className="field-unit min-w-0">
 			<span className={FIELD_LABEL}>Priority</span>
@@ -557,7 +550,6 @@ export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) 
 				aria-label="Priority"
 			>
 				{PRIORITIES.map((p, i) => {
-					const value = p.value === 4 ? lowValue : p.value;
 					const ends =
 						i === 0 ? "rounded-l-control" : i === PRIORITIES.length - 1 ? "rounded-r-control" : "";
 					return (
@@ -569,8 +561,8 @@ export function PriorityPicker({ defaultValue = 4 }: { defaultValue?: number }) 
 							<input
 								type="radio"
 								name="priority"
-								value={value}
-								defaultChecked={isPrioritySelected(p.value, defaultValue)}
+								value={p.value}
+								defaultChecked={p.value === defaultValue}
 								className="peer sr-only"
 							/>
 							<span

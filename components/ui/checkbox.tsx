@@ -63,7 +63,7 @@ export const checkbox = tv({
 	},
 });
 
-/** P1 is high, P2 medium, P3/P4 low. Three intensities, four stored levels. */
+/** 1 is high, 2 medium, 3 low. */
 export function priorityRing(priority: number | null | undefined): "high" | "medium" | "low" {
 	if (priority === 1) return "high";
 	if (priority === 2) return "medium";
@@ -74,7 +74,7 @@ type CheckboxProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "size"
 	children?: ReactNode;
 	className?: string;
 	/**
-	 * Draw the task's priority as a ring. Pass the stored 1–4; the mapping to
+	 * Draw the task's priority as a ring. Pass the stored 1–3; the mapping to
 	 * three intensities lives here so no call site repeats it. Omit on
 	 * checkboxes that are not tasks — routines have no priority.
 	 */

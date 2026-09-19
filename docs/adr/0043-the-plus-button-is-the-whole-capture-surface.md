@@ -84,7 +84,8 @@ The natural-language path is not lost, it is relocated. In create mode:
 > has touched any other field is taken literally.**
 
 "Nothing but a title" means every other field is still in the state the form
-opened in — no date, no time, no notes, Unfiled, Never, P4. The check reads off
+opened in — no date, no time, no notes, Unfiled, Never, Low priority (P4
+until 2026-09-19, when priority became three levels, 1–3). The check reads off
 the submitted `FormData` rather than tracked state, because the fields are
 uncontrolled by design and remount on every open, so the payload is the only
 thing that cannot drift from what is on screen.

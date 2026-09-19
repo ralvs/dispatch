@@ -59,7 +59,7 @@ function optimisticTask(overrides: Partial<TaskRow> = {}): TaskRow {
 		status: "open",
 		due_date: null,
 		due_time: null,
-		priority: 4,
+		priority: 3,
 		project_id: null,
 		domain_id: null,
 		recurrence_rule: null,
@@ -108,7 +108,7 @@ function optimisticTaskFromForm(
 		notes: String(formData.get("notes") ?? "") || null,
 		due_date: String(formData.get("due_date") ?? "") || null,
 		due_time: String(formData.get("due_time") ?? "") || null,
-		priority: Number.isFinite(priorityRaw) ? priorityRaw : 4,
+		priority: Number.isFinite(priorityRaw) ? priorityRaw : 3,
 		domain_id: domainId,
 		// The optimistic builder hard-coded `project_id: null` while the form
 		// could not set one. It can now (shape plan §06), so the fake row has

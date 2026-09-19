@@ -10,7 +10,7 @@ function form(fields: Record<string, string>): FormData {
 describe("titleOnlyCreate", () => {
 	it("is true when only a title is set (or every other field is still default)", () => {
 		expect(titleOnlyCreate(form({ title: "pay rent every monday 9am" }))).toBe(true);
-		expect(titleOnlyCreate(form({ title: "x", priority: "4" }))).toBe(true);
+		expect(titleOnlyCreate(form({ title: "x", priority: "3" }))).toBe(true);
 	});
 
 	it("stays true when a domain is picked, because picking one is mandatory", () => {

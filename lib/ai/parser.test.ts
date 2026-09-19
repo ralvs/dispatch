@@ -192,7 +192,7 @@ describe("shared prompt fragments", () => {
 		expect(system).toContain("NOW=2026-07-15T12:00:00Z");
 		expect(system).toContain("TODAY=2026-07-15");
 		expect(system).toContain("timezone America/Sao_Paulo");
-		expect(system).toContain("priority is 1 (highest) to 4.");
+		expect(system).toContain("priority is 1 (high), 2 (medium) or 3 (low).");
 	});
 
 	it("gives NOW in whole seconds", async () => {
@@ -224,5 +224,12 @@ describe("CreateTaskActionSchema", () => {
 			recurrence_rule: "every monday",
 		});
 		expect(result.success).toBe(false);
+	});
+
+	it("accepts priority 1–3 and rejects 4, which no longer exists", () => {
+		const task = (priority: number) =>
+			CreateTaskActionSchema.safeParse({ action: "create_task", title: "x", priority }).success;
+		expect([1, 2, 3].map(task)).toEqual([true, true, true]);
+		expect(task(4)).toBe(false);
 	});
 });

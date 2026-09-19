@@ -13,7 +13,7 @@ const TestSchema = z.object({
 	notes: z.string().nullable().optional(), // nullable — blank clears
 	kind: z.string().optional(), // optional, non-nullable — blank omits
 	rating: z.number().nullable().optional(),
-	priority: z.number().int().min(1).max(4), // required number
+	priority: z.number().int().min(1).max(3), // required number
 	active: z.boolean().optional(),
 });
 
@@ -135,10 +135,10 @@ describe("decodeForm", () => {
 	it("lets overrides merge last and win over decoded form fields", () => {
 		const parsed = decodeForm(TestSchema, fd({ title: "x", priority: "2", rating: "5" }), {
 			spec: NUMERIC_SPEC,
-			overrides: { rating: 9, priority: 4 },
+			overrides: { rating: 9, priority: 3 },
 		});
 		expect(parsed.rating).toBe(9);
-		expect(parsed.priority).toBe(4);
+		expect(parsed.priority).toBe(3);
 	});
 
 	it("respects an explicit FormSpec for number/boolean coercion", () => {

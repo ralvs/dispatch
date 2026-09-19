@@ -18,7 +18,7 @@ function task(partial: Partial<TaskRow> & Pick<TaskRow, "id" | "title">): TaskRo
 		status: "open",
 		due_date: null,
 		due_time: null,
-		priority: 4,
+		priority: 3,
 		project_id: null,
 		domain_id: "domain-1",
 		recurrence_rule: null,

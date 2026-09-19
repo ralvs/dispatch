@@ -75,7 +75,7 @@ describe("parseTaskCapture", () => {
 		expect(system).toContain("NOW=2026-07-15T12:00:00Z");
 		expect(system).toContain("TODAY=2026-07-15");
 		expect(system).toContain("timezone America/Sao_Paulo");
-		expect(system).toContain("priority is 1 (highest) to 4.");
+		expect(system).toContain("priority is 1 (high), 2 (medium) or 3 (low).");
 	});
 });
 

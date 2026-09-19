@@ -109,7 +109,7 @@ export function TaskDialog({
 	/**
 	 * Whether the form carries anything beyond its title. Every value here is
 	 * the field's own untouched state — the create form opens with no date, no
-	 * time, no notes, Never, and P4 — so this is "the operator typed a sentence
+	 * time, no notes, Never, and Low priority — so this is "the operator typed a sentence
 	 * and nothing else", which is exactly when reading the sentence is the
 	 * helpful thing to do (ADR-0043).
 	 *
