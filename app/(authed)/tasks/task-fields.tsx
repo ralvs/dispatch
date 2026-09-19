@@ -42,8 +42,7 @@ export type TaskDomainOption = {
  * A project as the task form needs it. `domain_id` is not decoration: a
  * project already belongs to a domain, so the form must not offer the two as
  * independent answers the way it used to — picking a project now settles the
- * domain, and the domain control locks (see TaskMetaFields). A project with no
- * domain is possible in the data, and leaves the domain free to pick.
+ * domain, and the domain control locks (see TaskMetaFields).
  */
 export type TaskProjectOption = { id: string; name: string; domain_id: string };
 

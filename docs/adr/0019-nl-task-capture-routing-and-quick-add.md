@@ -39,11 +39,14 @@ explicitly resolved `domain` on the same action wins over that inheritance.
 > under Home — and it reached the database from `resolveTaskRouting`. Every
 > project belongs to a domain, so naming a project already names one, and a
 > contradicting `domain` from the same model is its mistake rather than a
-> refinement. A named domain still answers when the matched project has no
-> domain of its own, and an unmatched domain name is still reported as
-> unresolved. Where the domain is stated by a HUMAN the precedence inverts and
+> refinement. An unmatched domain name is still reported as unresolved.
+> Where the domain is stated by a HUMAN the precedence inverts and
 > the human wins: quick-add's `withStatedDomain` keeps the stated domain and
 > drops the conflicting project instead (docs/adr/0043).
+>
+> **Amended (2026-09-19): a project always has a domain.** `projects.domain_id`
+> is NOT NULL (migration `20260919120000_projects_domain_required`), so the
+> "matched project with no domain" case is gone from routing and the forms.
 
 **This is a deliberate deviation from ADR-0008's "unresolved entity →
 needs_review".** A routing miss is not a capture failure — the task itself

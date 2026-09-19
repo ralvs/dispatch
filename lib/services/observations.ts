@@ -170,7 +170,7 @@ export async function listDomainTouches(
 			project_id: string | null;
 		}> | null,
 		unwrap(await sb.from("projects").select("domain_id, updated_at").range(0, 49_999)) as Array<{
-			domain_id: string | null;
+			domain_id: string;
 			updated_at: string | null;
 		}> | null,
 		unwrap(await sb.from("notes").select("domain_id, updated_at").range(0, 49_999)) as Array<{

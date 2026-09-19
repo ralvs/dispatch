@@ -689,7 +689,7 @@ export type Database = {
 					completed_at: string | null;
 					created_at: string;
 					description: string | null;
-					domain_id: string | null;
+					domain_id: string;
 					id: string;
 					name: string;
 					start_date: string | null;
@@ -702,7 +702,7 @@ export type Database = {
 					completed_at?: string | null;
 					created_at?: string;
 					description?: string | null;
-					domain_id?: string | null;
+					domain_id: string;
 					id?: string;
 					name: string;
 					start_date?: string | null;
@@ -715,7 +715,7 @@ export type Database = {
 					completed_at?: string | null;
 					created_at?: string;
 					description?: string | null;
-					domain_id?: string | null;
+					domain_id?: string;
 					id?: string;
 					name?: string;
 					start_date?: string | null;
