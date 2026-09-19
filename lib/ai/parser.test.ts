@@ -177,6 +177,19 @@ describe("parse", () => {
 		expect(second).toEqual(first);
 	});
 
+	it("marks the system prompt for prompt caching", async () => {
+		(isAiConfigured as Mock).mockReturnValue(true);
+		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+
+		await parse("hmm", CTX);
+
+		const { system } = (generateObject as Mock).mock.calls[0][0];
+		expect(system.role).toBe("system");
+		expect(system.providerOptions).toEqual({
+			anthropic: { cacheControl: { type: "ephemeral" } },
+		});
+	});
+
 	it("puts the utterance after the context, inside its own tags", async () => {
 		(isAiConfigured as Mock).mockReturnValue(true);
 		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });

@@ -4,6 +4,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { isAiConfigured, parserModel } from "@/lib/ai/gateway";
 import {
+	cachedSystem,
 	captureUserMessage,
 	dateResolution,
 	logParseFailure,
@@ -62,7 +63,7 @@ export async function parseTaskCapture(text: string, ctx: ParseContext): Promise
 		const { object } = await generateObject({
 			model: parserModel(),
 			schema: z.object({ task: CreateTaskActionSchema.nullable() }),
-			system: taskCaptureSystemPrompt(),
+			system: cachedSystem(taskCaptureSystemPrompt()),
 			prompt: captureUserMessage(text, ctx),
 			...parseCallOptions(),
 		});

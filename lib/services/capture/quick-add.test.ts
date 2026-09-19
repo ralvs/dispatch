@@ -77,7 +77,8 @@ describe("parseTaskCapture", () => {
 		expect(prompt).toContain('"today": "2026-07-15"');
 		expect(prompt).toContain('"timezone": "America/Sao_Paulo"');
 		expect(prompt).toContain("<utterance>\nhmm\n</utterance>");
-		expect(JSON.stringify(system)).toContain("priority is 1 (high), 2 (medium) or 3 (low).");
+		expect(system.content).toContain("priority is 1 (high), 2 (medium) or 3 (low).");
+		expect(system.providerOptions.anthropic.cacheControl).toEqual({ type: "ephemeral" });
 	});
 });
 

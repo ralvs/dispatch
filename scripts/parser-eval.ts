@@ -36,7 +36,12 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { parserModel } from "@/lib/ai/gateway";
-import { captureSystemPrompt, captureUserMessage, parseCallOptions } from "@/lib/ai/parser";
+import {
+	cachedSystem,
+	captureSystemPrompt,
+	captureUserMessage,
+	parseCallOptions,
+} from "@/lib/ai/parser";
 import { guardTitle } from "@/lib/ai/verbatim";
 import { CaptureActionsSchema, CreateTaskActionSchema } from "@/lib/schemas/capture";
 import { taskCaptureSystemPrompt } from "@/lib/services/capture/quick-add";
@@ -328,6 +333,9 @@ let clean = 0;
 const byField = new Map<string, number>();
 const latencies: number[] = [];
 let outputTokens = 0;
+let cacheReadTokens = 0;
+let cacheWriteTokens = 0;
+let cacheHits = 0;
 
 /**
  * An error that says nothing about the parser: no credit, a bad key, a rate
@@ -406,13 +414,22 @@ async function runCase(text: string, call: () => Promise<Miss[]>): Promise<numbe
 	return cleanRuns;
 }
 
-async function timed<T extends { usage: { outputTokens?: number } }>(
-	call: () => Promise<T>,
-): Promise<T> {
+type Usage = {
+	outputTokens?: number;
+	inputTokenDetails?: { cacheReadTokens?: number; cacheWriteTokens?: number };
+};
+
+async function timed<T extends { usage: Usage }>(call: () => Promise<T>): Promise<T> {
 	const started = performance.now();
 	const result = await call();
 	latencies.push(performance.now() - started);
 	outputTokens += result.usage.outputTokens ?? 0;
+	// Zero reads across a whole run means the cache is not working: the prefix
+	// is under the model's floor, or the gateway dropped the cache mark.
+	const read = result.usage.inputTokenDetails?.cacheReadTokens ?? 0;
+	cacheReadTokens += read;
+	cacheWriteTokens += result.usage.inputTokenDetails?.cacheWriteTokens ?? 0;
+	if (read > 0) cacheHits += 1;
 	return result;
 }
 
@@ -420,7 +437,7 @@ const suiteTotals: string[] = [];
 
 if (suite !== "palette") {
 	console.log("── quick-add ──");
-	const system = taskCaptureSystemPrompt();
+	const system = cachedSystem(taskCaptureSystemPrompt());
 	let suiteClean = 0;
 	for (const testCase of QUICK_ADD) {
 		suiteClean += await runCase(testCase.text, async () => {
@@ -446,7 +463,7 @@ if (suite !== "palette") {
 
 if (suite !== "quick-add") {
 	console.log("── palette ──");
-	const system = captureSystemPrompt();
+	const system = cachedSystem(captureSystemPrompt());
 	let suiteClean = 0;
 	for (const testCase of PALETTE) {
 		suiteClean += await runCase(testCase.text, async () => {
@@ -481,6 +498,9 @@ if (latencies.length > 0) {
 		(sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))] / 1000).toFixed(1);
 	console.log(
 		`latency p50 ${pct(0.5)}s, p90 ${pct(0.9)}s · output tokens avg ${Math.round(outputTokens / latencies.length)}`,
+	);
+	console.log(
+		`cache hits ${cacheHits}/${latencies.length} · read ${cacheReadTokens} · written ${cacheWriteTokens} tokens`,
 	);
 }
 if (byField.size > 0) {

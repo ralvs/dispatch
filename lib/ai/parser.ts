@@ -1,5 +1,5 @@
 import "server-only";
-import { generateObject } from "ai";
+import { generateObject, type SystemModelMessage } from "ai";
 import { z } from "zod";
 import { isAiConfigured, MODEL_PROVIDER_OPTIONS, parserModel } from "@/lib/ai/gateway";
 import { guardTitle } from "@/lib/ai/verbatim";
@@ -132,6 +132,25 @@ export function routingBlock(): string[] {
 }
 
 /**
+ * A system prompt marked for Anthropic prompt caching. The mark ends the
+ * cached prefix, so everything before it must be static — captureUserMessage
+ * is where the per-call data goes.
+ *
+ * Opus 5 caches only a prefix of 512 tokens or more, silently; both parser
+ * prompts are above that. The cache lives 5 minutes: a write costs 1.25× the
+ * input price and a read 0.1×, so it pays when two captures land close
+ * together, and it cuts latency on a hit. Whether a call hit shows as
+ * usage.inputTokenDetails.cacheReadTokens (the eval prints it).
+ */
+export function cachedSystem(content: string): SystemModelMessage {
+	return {
+		role: "system",
+		content,
+		providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
+	};
+}
+
+/**
  * The per-call half of the request: everything that changes between captures,
  * followed by the utterance itself. It goes in the user message, AFTER the
  * system prompt, because prompt caching matches the start of a request byte for
@@ -261,7 +280,7 @@ export async function parse(text: string, ctx: ParseContext): Promise<ParseResul
 		const { object } = await generateObject({
 			model: parserModel(),
 			schema: z.object({ actions: CaptureActionsSchema }),
-			system: captureSystemPrompt(),
+			system: cachedSystem(captureSystemPrompt()),
 			prompt: captureUserMessage(text, ctx),
 			...parseCallOptions(),
 		});
