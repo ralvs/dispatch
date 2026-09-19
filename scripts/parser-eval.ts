@@ -325,6 +325,44 @@ const latencies: number[] = [];
 let outputTokens = 0;
 
 /**
+ * An error that says nothing about the parser: no credit, a bad key, a rate
+ * limit. Scoring these as misses turns a billing problem into a fake model
+ * result and keeps spending calls, so the eval stops at the first one. The AI
+ * SDK can wrap the real error (retries), so the chain is walked.
+ */
+const INFRASTRUCTURE_ERRORS = new Set([
+	"GatewayAuthenticationError",
+	"GatewayForbiddenError",
+	"GatewayRateLimitError",
+	"GatewayModelNotFoundError",
+]);
+
+// The gateway colours its messages for a terminal; strip that before matching.
+const ANSI_COLOR = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
+
+function infrastructureError(error: unknown): string | null {
+	let current: unknown = error;
+	for (let depth = 0; current && depth < 5; depth++) {
+		const e = current as {
+			name?: string;
+			statusCode?: number;
+			message?: string;
+			lastError?: unknown;
+			cause?: unknown;
+		};
+		const message = (e.message ?? "").replace(ANSI_COLOR, "").split("\n")[0];
+		if (e.name && INFRASTRUCTURE_ERRORS.has(e.name)) return `${e.name}: ${message}`;
+		if (e.statusCode && [401, 402, 403, 429].includes(e.statusCode)) {
+			return `HTTP ${e.statusCode}: ${message}`;
+		}
+		if (/credit balance|unauthenticated|unauthori[sz]ed|rate limit|quota/i.test(message))
+			return message;
+		current = e.lastError ?? e.cause;
+	}
+	return null;
+}
+
+/**
  * Runs one case `runs` times in parallel and prints its line. A throw is the
  * worst outcome in production too — it is what degrades a capture to its raw
  * text — so it is scored, not skipped.
@@ -335,6 +373,11 @@ async function runCase(text: string, call: () => Promise<Miss[]>): Promise<numbe
 			try {
 				return await call();
 			} catch (error) {
+				const fatal = infrastructureError(error);
+				if (fatal) {
+					console.error(`\nstopped: not a parser failure — ${fatal}`);
+					process.exit(3);
+				}
 				return [{ field: "threw", want: "a parse", got: (error as Error).message }];
 			}
 		}),
