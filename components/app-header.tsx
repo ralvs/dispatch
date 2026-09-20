@@ -4,6 +4,7 @@ import { MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "@/components/brand-mark";
+import { IntentLink } from "@/components/intent-link";
 import { isActive, TABS } from "@/components/nav-links";
 import { button } from "@/components/ui/button-variants";
 import { Icon } from "@/components/ui/icon";
@@ -66,13 +67,13 @@ export function AppHeaderView({ pathname }: { pathname: string | null }) {
 						}
 						return (
 							<li key={tab.key}>
-								<Link
+								<IntentLink
 									href={tab.href}
 									aria-current={active ? "page" : undefined}
 									className={className}
 								>
 									{tab.label}
-								</Link>
+								</IntentLink>
 							</li>
 						);
 					})}

@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
 	outputFileTracingIncludes: {
 		"/api/notes/*/attachments": ["./node_modules/@img/**/*"],
 	},
+	// React Compiler memoizes components and hook results automatically, so the
+	// big client trees stop re-rendering on every parent tick — task-list (560
+	// lines), task-fields (577), day-tape (439). It costs build time, not
+	// runtime, and it is what the reference app (pingdotgg/t3code) uses.
+	reactCompiler: true,
 	// Partial Prerendering + `"use cache"` (docs/adr/0033).
 	cacheComponents: true,
 	// One profile for every `"use cache"` entry in lib/cache/*.

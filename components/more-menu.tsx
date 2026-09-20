@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { IntentLink } from "@/components/intent-link";
 import { isActive, MORE_SECTIONS } from "@/components/nav-links";
 import { openFindPalette } from "@/lib/find/palette-bus";
 import { CLOSE_MORE_MENU_EVENT, closeMoreMenu, TOGGLE_MORE_MENU_EVENT } from "@/lib/more-menu-bus";
@@ -134,7 +134,7 @@ export function MoreMenu() {
 									const active = isActive(item, pathname);
 									return (
 										<li key={item.key}>
-											<Link
+											<IntentLink
 												href={item.href}
 												aria-current={active ? "page" : undefined}
 												onClick={() => closeMoreMenu()}
@@ -146,7 +146,7 @@ export function MoreMenu() {
 												<span aria-hidden="true" className="font-mono text-meta text-ink-4">
 													→
 												</span>
-											</Link>
+											</IntentLink>
 										</li>
 									);
 								})}

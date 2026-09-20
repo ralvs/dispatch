@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { IntentLink } from "@/components/intent-link";
 import { isActive, TABS } from "@/components/nav-links";
 import { toggleMoreMenu } from "@/lib/more-menu-bus";
 import { DOCK_ACTION_SLOT_ID, DOCK_HEIGHT, DOCK_SURFACE } from "@/lib/ui/dock";
@@ -46,43 +46,41 @@ export function BottomTabBar() {
  */
 export function BottomTabBarView({ pathname }: { pathname: string | null }) {
 	return (
-		<>
-			<nav aria-label="Primary" className="pointer-events-auto min-w-0">
-				<ul className={`flex items-center gap-0.5 p-[5px] ${DOCK_HEIGHT} ${DOCK_SURFACE}`}>
-					{TABS.map((tab) => {
-						const active = isActive(tab, pathname);
-						const className = `flex h-full items-center rounded-pill px-[9px] text-center font-mono text-[11px] uppercase tracking-[0.08em] transition-colors duration-200 active:opacity-70 ${
-							active ? "bg-accent-bg text-accent-ink" : "text-ink-3"
-						}`;
-						if (tab.key === "more") {
-							return (
-								<li key={tab.key} className="h-full">
-									<button
-										type="button"
-										aria-haspopup="dialog"
-										aria-current={active ? "true" : undefined}
-										onClick={() => toggleMoreMenu()}
-										className={className}
-									>
-										{tab.label}
-									</button>
-								</li>
-							);
-						}
+		<nav aria-label="Primary" className="pointer-events-auto min-w-0">
+			<ul className={`flex items-center gap-0.5 p-[5px] ${DOCK_HEIGHT} ${DOCK_SURFACE}`}>
+				{TABS.map((tab) => {
+					const active = isActive(tab, pathname);
+					const className = `flex h-full items-center rounded-pill px-[9px] text-center font-mono text-[11px] uppercase tracking-[0.08em] transition-colors duration-200 active:opacity-70 ${
+						active ? "bg-accent-bg text-accent-ink" : "text-ink-3"
+					}`;
+					if (tab.key === "more") {
 						return (
 							<li key={tab.key} className="h-full">
-								<Link
-									href={tab.href}
-									aria-current={active ? "page" : undefined}
+								<button
+									type="button"
+									aria-haspopup="dialog"
+									aria-current={active ? "true" : undefined}
+									onClick={() => toggleMoreMenu()}
 									className={className}
 								>
 									{tab.label}
-								</Link>
+								</button>
 							</li>
 						);
-					})}
-				</ul>
-			</nav>
-		</>
+					}
+					return (
+						<li key={tab.key} className="h-full">
+							<IntentLink
+								href={tab.href}
+								aria-current={active ? "page" : undefined}
+								className={className}
+							>
+								{tab.label}
+							</IntentLink>
+						</li>
+					);
+				})}
+			</ul>
+		</nav>
 	);
 }
