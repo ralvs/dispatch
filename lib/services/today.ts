@@ -327,6 +327,10 @@ export async function loadTodayDigest(
 		completionHistory,
 		activeProjects,
 		linksUnread,
+		// countTasksByProject depends on nothing above it, so awaiting it after
+		// the fan-out bought one extra serial round trip on the critical path of
+		// Today, /api/widget and /api/chat, for nothing.
+		taskCountsByProject,
 	] = await Promise.all([
 		listRoutines(sb),
 		listCompletionsOn(sb, todayIso),
@@ -338,9 +342,8 @@ export async function loadTodayDigest(
 		listCompletionsSince(sb, shiftDay(todayIso, -STREAK_HISTORY_DAYS)),
 		listProjects(sb, { status: "active" }),
 		unreadLinkCount(sb),
+		countTasksByProject(sb),
 	]);
-
-	const taskCountsByProject = await countTasksByProject(sb);
 
 	return {
 		routines,

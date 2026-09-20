@@ -15,6 +15,24 @@ const nextConfig: NextConfig = {
 	},
 	// Partial Prerendering + `"use cache"` (docs/adr/0033).
 	cacheComponents: true,
+	// One profile for every `"use cache"` entry in lib/cache/*.
+	//
+	// These entries are kept honest by tags, not by the clock: every in-app
+	// write goes through afterMutation and every cron / external write through
+	// afterExternalMutation (lib/mutation-feedback/invalidate.ts), and both call
+	// revalidateTag(tag, "max"). A short `expire` therefore bought no freshness
+	// at all — it only guaranteed that coming back to the app after ten minutes
+	// away paid the full Supabase fan-out again, behind a skeleton.
+	//
+	// `revalidate: 1h` is the real lever: past an hour Next serves the stale
+	// entry immediately and refreshes behind the response, so nobody waits.
+	// `expire: 7d` is the outer bound where a genuinely abandoned entry has to
+	// be re-read blocking — reachable only if no write touched its tag for a
+	// week. `stale: 5m` matches staleTimes.dynamic, which SoftRefresh already
+	// treats as the tolerable staleness for a screen.
+	cacheLife: {
+		tagged: { stale: 300, revalidate: 3600, expire: 604800 },
+	},
 	// Server Actions default to a 1MB body cap — fine for forms, fatal for
 	// phone photos posted through upload actions. Match the reference's 25MB.
 	experimental: {

@@ -86,8 +86,12 @@ describe("invalidationFor", () => {
 			expect(tags).toContain(CacheTag.todayDigest);
 		});
 
-		it("a note write busts notes", () => {
-			expect(invalidationFor("notes.write").tags).toContain(CacheTag.notes);
+		it("a note write busts notes and the Today chrome", () => {
+			// The chrome carries the needs-review count (countNeedsReview), so a
+			// note resolved in the app has to name todayDigest too.
+			const { tags } = invalidationFor("notes.write");
+			expect(tags).toContain(CacheTag.notes);
+			expect(tags).toContain(CacheTag.todayDigest);
 		});
 
 		it("a link write busts links and the Today chrome", () => {

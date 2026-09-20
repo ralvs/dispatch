@@ -15,7 +15,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function getCachedLinks() {
 	"use cache";
 	cacheTag(CacheTag.links);
-	cacheLife({ stale: 60, revalidate: 300, expire: 900 });
+	cacheLife("tagged");
 
 	return listLinks(createAdminClient(), { limit: 200 });
 }

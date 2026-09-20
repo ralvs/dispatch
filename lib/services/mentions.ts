@@ -183,7 +183,11 @@ export async function listMentionsForPerson(
 	const data = unwrap(
 		await sb
 			.from("mentions")
-			.select("source_type, task:tasks(*), note:notes(*)")
+			// Named columns, not `*`: the Mentioned-in panel renders a task's
+			// title and status and a note's displayTitle, and nothing else. The
+			// star variant pulled every column of both tables — including full
+			// note bodies — for every mention of the person.
+			.select("source_type, task:tasks(id, title, status), note:notes(id, title, body)")
 			.eq("person_id", personId)
 			.order("created_at", { ascending: false }),
 	) as unknown as Array<{ source_type: "task" | "note"; task: unknown; note: unknown }>;
