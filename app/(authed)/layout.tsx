@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { AppHeader, AppHeaderView } from "@/components/app-header";
-import { BottomTabBar, BottomTabBarView } from "@/components/bottom-tab-bar";
+import { BottomTabBar, BottomTabBarFrame, BottomTabBarView } from "@/components/bottom-tab-bar";
 import { CapturePalette } from "@/components/capture-palette";
 import { FindPalette } from "@/components/find-palette";
 import { MoreMenu } from "@/components/more-menu";
@@ -79,9 +79,11 @@ function AuthedShell({ children }: { children: React.ReactNode }) {
 				</Suspense>
 				<NavShortcuts />
 			</div>
-			<Suspense fallback={<BottomTabBarView pathname={null} />}>
-				<BottomTabBar />
-			</Suspense>
+			<BottomTabBarFrame>
+				<Suspense fallback={<BottomTabBarView pathname={null} />}>
+					<BottomTabBar />
+				</Suspense>
+			</BottomTabBarFrame>
 		</div>
 	);
 }
