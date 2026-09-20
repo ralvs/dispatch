@@ -28,18 +28,33 @@ import { useState } from "react";
 export function IntentLink({
 	href,
 	children,
+	// Pulled out of `rest` on purpose. Spreading rest after these three would
+	// let a caller's own handler replace `heat`, and intent prefetch would stop
+	// with nothing to show for it — a silent loss, not a visible break. Compose
+	// instead: warm first, then hand the event on.
+	onMouseEnter,
+	onTouchStart,
+	onFocus,
 	...rest
 }: Omit<React.ComponentProps<typeof Link>, "prefetch">) {
 	const [warm, setWarm] = useState(false);
-	const heat = () => setWarm(true);
 
 	return (
 		<Link
 			href={href}
 			prefetch={warm ? true : undefined}
-			onMouseEnter={heat}
-			onTouchStart={heat}
-			onFocus={heat}
+			onMouseEnter={(event) => {
+				setWarm(true);
+				onMouseEnter?.(event);
+			}}
+			onTouchStart={(event) => {
+				setWarm(true);
+				onTouchStart?.(event);
+			}}
+			onFocus={(event) => {
+				setWarm(true);
+				onFocus?.(event);
+			}}
 			{...rest}
 		>
 			{children}
