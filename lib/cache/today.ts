@@ -16,6 +16,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function getCachedTodayDigest(todayIso: string) {
 	"use cache";
 	cacheTag(CacheTag.todayDigest);
-	cacheLife({ stale: 60, revalidate: 120, expire: 600 });
+	cacheLife("tagged");
 	return loadTodayDigest(createAdminClient(), todayIso);
 }

@@ -13,14 +13,41 @@ const nextConfig: NextConfig = {
 	outputFileTracingIncludes: {
 		"/api/notes/*/attachments": ["./node_modules/@img/**/*"],
 	},
+	// React Compiler memoizes components and hook results automatically, so the
+	// big client trees stop re-rendering on every parent tick — task-list (560
+	// lines), task-fields (577), day-tape (439). It costs build time, not
+	// runtime, and it is what the reference app (pingdotgg/t3code) uses.
+	reactCompiler: true,
 	// Partial Prerendering + `"use cache"` (docs/adr/0033).
 	cacheComponents: true,
+	// One profile for every `"use cache"` entry in lib/cache/*.
+	//
+	// These entries are kept honest by tags, not by the clock: every in-app
+	// write goes through afterMutation and every cron / external write through
+	// afterExternalMutation (lib/mutation-feedback/invalidate.ts), and both call
+	// revalidateTag(tag, "max"). A short `expire` therefore bought no freshness
+	// at all — it only guaranteed that coming back to the app after ten minutes
+	// away paid the full Supabase fan-out again, behind a skeleton.
+	//
+	// `revalidate: 1h` is the real lever: past an hour Next serves the stale
+	// entry immediately and refreshes behind the response, so nobody waits.
+	// `expire: 7d` is the outer bound where a genuinely abandoned entry has to
+	// be re-read blocking — reachable only if no write touched its tag for a
+	// week. `stale: 5m` matches staleTimes.dynamic, which SoftRefresh already
+	// treats as the tolerable staleness for a screen.
+	cacheLife: {
+		tagged: { stale: 300, revalidate: 3600, expire: 604800 },
+	},
 	// Server Actions default to a 1MB body cap — fine for forms, fatal for
 	// phone photos posted through upload actions. Match the reference's 25MB.
 	experimental: {
 		serverActions: {
 			bodySizeLimit: "25mb",
 		},
+		// Rewrites `import { X } from "pkg"` to the one module X lives in, so a
+		// barrel cannot drag its siblings into a route's chunk. lucide-react has
+		// 15 import sites; @/components/ui has 79, including loading.tsx files.
+		optimizePackageImports: ["lucide-react", "@/components/ui"],
 		// Dynamic authed routes default to 0s client RSC retention — every tab
 		// revisit re-fetched the full tree. Every authed route is dynamic
 		// (requireOwnerPage reads cookies) and every one has a loading.tsx, so
@@ -46,6 +73,16 @@ const nextConfig: NextConfig = {
 			// lived at /triage under ADR-0014, when the link reading list was
 			// competing for the word "inbox"; that list is /links now.
 			{ source: "/triage", destination: "/inbox", permanent: true },
+			// Both of these used to be a page whose whole body was redirect().
+			// Config redirects are applied in the routing phase, ahead of the
+			// proxy, so they cost no function invocation and no getClaims() pass —
+			// a typed URL or a shared link at / was paying for two full auth
+			// passes to arrive at Today. Not `permanent`: a 308 is cached by the
+			// browser forever, and / should stay re-pointable.
+			{ source: "/", destination: "/today", permanent: false },
+			// /more is no longer a page (Pass 4 / C4). More is a menu. Old
+			// bookmarks and deep links land on Today rather than 404.
+			{ source: "/more", destination: "/today", permanent: false },
 		];
 	},
 };

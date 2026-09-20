@@ -4,6 +4,7 @@ import { MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "@/components/brand-mark";
+import { IntentLink } from "@/components/intent-link";
 import { isActive, TABS } from "@/components/nav-links";
 import { button } from "@/components/ui/button-variants";
 import { Icon } from "@/components/ui/icon";
@@ -25,8 +26,14 @@ import { toggleMoreMenu } from "@/lib/more-menu-bus";
  * Hidden below `lg`, where the dock carries the same five tabs.
  */
 export function AppHeader() {
-	const pathname = usePathname();
+	return <AppHeaderView pathname={usePathname()} />;
+}
 
+/**
+ * The same header with the active tab passed in, so the layout can prerender it
+ * as the Suspense fallback with `pathname={null}`.
+ */
+export function AppHeaderView({ pathname }: { pathname: string | null }) {
 	return (
 		<header className="mb-16 hidden items-center justify-between gap-5 lg:flex">
 			<Link href="/today" className="flex items-center gap-2.5 type-section text-ink">
@@ -60,13 +67,13 @@ export function AppHeader() {
 						}
 						return (
 							<li key={tab.key}>
-								<Link
+								<IntentLink
 									href={tab.href}
 									aria-current={active ? "page" : undefined}
 									className={className}
 								>
 									{tab.label}
-								</Link>
+								</IntentLink>
 							</li>
 						);
 					})}

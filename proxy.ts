@@ -91,6 +91,13 @@ export const config = {
 		// deliberately INCLUDED so token refresh happens here, serially.
 		// /sign-in stays out so the recovery client on that page can refresh
 		// without a proxy redirect loop (docs/adr/0032).
-		"/((?!_next/static|_next/image|favicon.ico|sign-in|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+		//
+		// js/json/webmanifest/woff2 are excluded for cost, not for taste: /sw.js
+		// and /manifest.webmanifest are fetched on every service-worker update
+		// check and every PWA launch, and running the full auth pass on them
+		// also meant a cold PWA got a 307 to /sign-in *for its manifest*. No
+		// route in this app ends in one of these, and RSC payloads are a query
+		// param on a normal path, so nothing that needs auth is let through.
+		"/((?!_next/static|_next/image|favicon.ico|sign-in|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|js|json|webmanifest|woff2?)$).*)",
 	],
 };

@@ -1,17 +1,44 @@
 "use client";
 
 import { RotateCcw } from "lucide-react";
+import dynamic from "next/dynamic";
 import { type ReactNode, useId, useState } from "react";
 import { MentionTextarea, MentionTextInput } from "@/components/mention-input";
-import { DatePicker, Field, fieldControl, Icon, Select, TimePicker } from "@/components/ui";
+import { Field, fieldControl, Icon, Select } from "@/components/ui";
 import { shiftDay } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
+
 import {
 	formatCustomWeekly,
 	parseCustomWeekly,
 	RECURRENCE_LABELS,
 	RECURRENCE_PATTERNS,
 } from "@/lib/recurrence";
+
+/*
+ * The two pickers are react-aria-components + @internationalized/date: ~435 KB,
+ * the single heaviest thing in the client graph, and the only page that wants
+ * them is the task form — which lives inside Dialog, whose children are mounted
+ * only while it is open. Statically imported they rode the @/components/ui
+ * barrel into every /tasks load anyway, for a form most visits never open.
+ *
+ * `ssr: false` because the dialog has no server render to match: it returns
+ * null until `mounted`. The placeholder is the field shell at its real height,
+ * so opening the form does not reflow while the chunk arrives.
+ */
+const PickerPlaceholder = () => (
+	<div className="field-shell h-9 w-full min-w-0 animate-pulse" aria-hidden="true" />
+);
+
+const DatePicker = dynamic(() => import("@/components/ui/date-picker").then((m) => m.DatePicker), {
+	ssr: false,
+	loading: PickerPlaceholder,
+});
+
+const TimePicker = dynamic(() => import("@/components/ui/time-picker").then((m) => m.TimePicker), {
+	ssr: false,
+	loading: PickerPlaceholder,
+});
 
 /**
  * The Repeats select's own value for "weekly on these weekdays". Never stored

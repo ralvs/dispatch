@@ -14,7 +14,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function getCachedNoteLists() {
 	"use cache";
 	cacheTag(CacheTag.notes);
-	cacheLife({ stale: 60, revalidate: 300, expire: 900 });
+	cacheLife("tagged");
 
 	const sb = createAdminClient();
 	const [needsReview, allNotes] = await Promise.all([

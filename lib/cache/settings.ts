@@ -8,6 +8,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function getCachedAppTimezone(): Promise<string> {
 	"use cache";
 	cacheTag(CacheTag.settings);
-	cacheLife({ stale: 300, revalidate: 600, expire: 3600 });
+	cacheLife("tagged");
 	return getAppTimezone(createAdminClient());
 }

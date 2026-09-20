@@ -161,8 +161,14 @@ export function invalidationFor(kind: MutationKind, detail?: { id?: string }): I
 		case "today.only":
 			return { tags: [CacheTag.todayDigest, CacheTag.daySchedule], paths: p("/today") };
 		case "notes.write":
+			// todayDigest because loadTodayDigest counts needs_review notes
+			// (lib/services/today.ts). The cron path was already covered — the
+			// sweep sends capture.settled, which carries todayDigest — but a note
+			// resolved or created in the app is the same write and must say so,
+			// or Today's needs-review counter sits on a stale count for a whole
+			// cacheLife window.
 			return {
-				tags: [CacheTag.notes],
+				tags: [CacheTag.notes, CacheTag.todayDigest],
 				paths: detail?.id ? p("/notes", `/notes/${detail.id}`) : p("/notes"),
 			};
 		case "quotes.write":

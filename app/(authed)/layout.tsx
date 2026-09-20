@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { AppHeader } from "@/components/app-header";
-import { BottomTabBar } from "@/components/bottom-tab-bar";
+import { AppHeader, AppHeaderView } from "@/components/app-header";
+import { BottomTabBar, BottomTabBarFrame, BottomTabBarView } from "@/components/bottom-tab-bar";
 import { CapturePalette } from "@/components/capture-palette";
 import { FindPalette } from "@/components/find-palette";
 import { MoreMenu } from "@/components/more-menu";
@@ -22,33 +22,26 @@ const SHELL = "app-shell flex h-[100dvh] flex-col pt-[env(safe-area-inset-top)]"
  */
 const FRAME = "mx-auto w-full max-w-md px-5 pb-28 pt-6 lg:max-w-6xl lg:px-11 lg:pb-20 lg:pt-8";
 
-function AuthedShellFallback() {
-	return (
-		<div className={SHELL}>
-			<div className="relative flex flex-1 flex-col overflow-hidden">
-				<main id="main" tabIndex={-1} className="flex-1 w-full overflow-y-auto overscroll-contain">
-					<div className={FRAME}>
-						<span role="status" className="sr-only">
-							Loading
-						</span>
-						<div className="space-y-4" aria-hidden="true">
-							<div className="h-8 w-40 rounded bg-surface animate-pulse" />
-							<div className="h-4 w-full rounded bg-surface animate-pulse" />
-							<div className="h-4 w-3/4 rounded bg-surface animate-pulse" />
-						</div>
-					</div>
-				</main>
-			</div>
-		</div>
-	);
+/**
+ * Iron rule #2 — the shell is a page load, so the boundary runs here even
+ * though nothing below reads the claims any more: identity and sign-out live
+ * on /settings (Pass 4 / C4).
+ *
+ * It renders nothing, and it sits in its own Suspense, because awaiting it in
+ * AuthedShell put the entire app chrome inside one dynamic hole. The
+ * prerendered shell of every authed route was then literally the word
+ * "Loading" — the nav, the dock and the page frame all waited on a cookie read
+ * in a serverless function on another continent before anything could paint.
+ * Nothing here is secret: the frame is the same markup for every route, and
+ * the data behind it is still guarded, because every page awaits
+ * requireOwnerPage() before its own first read.
+ */
+async function OwnerGate() {
+	await requireOwnerPage();
+	return null;
 }
 
-async function AuthedShell({ children }: { children: React.ReactNode }) {
-	// Iron rule #2 — the shell is a page load, so the boundary runs here even
-	// though nothing below reads the claims any more: identity and sign-out
-	// live on /settings (Pass 4 / C4).
-	await requireOwnerPage();
-
+function AuthedShell({ children }: { children: React.ReactNode }) {
 	return (
 		<div className={SHELL}>
 			<a
@@ -60,31 +53,47 @@ async function AuthedShell({ children }: { children: React.ReactNode }) {
 			<div className="relative flex flex-1 flex-col overflow-hidden">
 				<main id="main" tabIndex={-1} className="flex-1 w-full overflow-y-auto overscroll-contain">
 					<div className={FRAME}>
+						<Suspense fallback={null}>
+							<OwnerGate />
+						</Suspense>
 						{/* Theme comes from data-theme on <html> (boot script); the
 						 * header is client. Below `lg` it hides and the dock carries
-						 * the same five destinations. */}
-						<AppHeader />
+						 * the same five destinations.
+						 *
+						 * The Suspense is for usePathname, which Cache Components
+						 * treats as dynamic data on a dynamic route (/notes/[id] and
+						 * friends). The fallback is the same markup with no tab lit,
+						 * so the chrome still comes out of the prerendered shell. */}
+						<Suspense fallback={<AppHeaderView pathname={null} />}>
+							<AppHeader />
+						</Suspense>
 						{children}
 					</div>
 				</main>
 				<CapturePalette />
 				<FindPalette />
-				<MoreMenu />
+				{/* Renders nothing until opened, so an empty fallback is the
+				    whole component at rest. */}
+				<Suspense fallback={null}>
+					<MoreMenu />
+				</Suspense>
 				<NavShortcuts />
 			</div>
-			<BottomTabBar />
+			<BottomTabBarFrame>
+				<Suspense fallback={<BottomTabBarView pathname={null} />}>
+					<BottomTabBar />
+				</Suspense>
+			</BottomTabBarFrame>
 		</div>
 	);
 }
 
 /**
- * Auth is dynamic (cookies / getClaims). Cache Components require that hop
- * behind Suspense so the route does not block as a "blocking route" (ADR-0033).
+ * The shell itself is static and prerendered. Auth is still dynamic (cookies /
+ * getClaims), but it is a hole inside the shell now rather than the shell being
+ * a hole inside the route — see OwnerGate. Each page's own body remains its own
+ * dynamic hole, covered by that route's loading.tsx.
  */
 export default function AuthedLayout({ children }: { children: React.ReactNode }) {
-	return (
-		<Suspense fallback={<AuthedShellFallback />}>
-			<AuthedShell>{children}</AuthedShell>
-		</Suspense>
-	);
+	return <AuthedShell>{children}</AuthedShell>;
 }

@@ -27,7 +27,7 @@ export async function getCachedTaskBoard(sinceUtc: string) {
 	// settings.domain names it (see invalidationFor), because a renamed domain
 	// changes how every task row reads.
 	cacheTag(CacheTag.tasks, CacheTag.notes, CacheTag.people, CacheTag.projects);
-	cacheLife({ stale: 60, revalidate: 300, expire: 900 });
+	cacheLife("tagged");
 
 	const sb = createAdminClient();
 	const [openTasks, doneTasks, domains, projects, people] = await Promise.all([

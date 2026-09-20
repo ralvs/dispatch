@@ -211,14 +211,29 @@ export async function deleteNote(sb: SupabaseClient, id: string): Promise<void> 
 	}
 }
 
-/** Minimal id/title/body projection for wikilink resolution — all notes, no filtering. */
+/**
+ * Minimal id/title/body projection for wikilink resolution — all notes, no
+ * filtering.
+ *
+ * `body` is cut to its first line before it leaves this function. The only
+ * consumer is displayTitle (lib/note-display.ts), which reads
+ * `body.split("\n")[0]` as the label for an untitled note, so the labels are
+ * identical — but the full bodies were being serialized into the RSC payload
+ * of every /notes/[id] open and shipped over the network to the phone. Cutting
+ * here rather than in the select keeps this a single unindexed read; moving it
+ * into SQL would need a view or an RPC.
+ */
 export async function listNoteTitles(
 	sb: SupabaseClient,
 ): Promise<Array<{ id: string; title: string | null; body: string }>> {
 	const data = unwrap(
 		await sb.from("notes").select("id, title, body").order("created_at", { ascending: false }),
-	);
-	return (data ?? []) as unknown as Array<{ id: string; title: string | null; body: string }>;
+	) as unknown as Array<{ id: string; title: string | null; body: string }> | null;
+	return (data ?? []).map((note) => ({
+		id: note.id,
+		title: note.title,
+		body: note.body?.split("\n", 1)[0] ?? "",
+	}));
 }
 
 export async function countNeedsReview(sb: SupabaseClient): Promise<number> {
