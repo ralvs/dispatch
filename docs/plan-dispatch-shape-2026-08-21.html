@@ -89,7 +89,6 @@
   .pill.fixed { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
   .pill.done  { background: var(--add-ink); color: var(--add-bg); border-color: var(--add-ink); }
   .rec.shipped { border-color: var(--add-line); }
-  .rec.shipped .rid { color: var(--add-ink); border-color: var(--add-line); background: transparent; }
   .shipline { font: 400 12.5px/1.5 ui-monospace, monospace; color: var(--ink-3); margin: .6rem 0 0; }
   .shipline b { color: var(--add-ink); font-weight: 500; }
 
@@ -146,6 +145,8 @@
   .rec.top { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-bg); }
   .rec-head { display: flex; align-items: baseline; gap: .65rem; flex-wrap: wrap; margin-bottom: .15rem; }
   .rec-head .rid { font: 500 12px/1 ui-monospace, monospace; color: var(--accent); border: 1px solid var(--accent); background: var(--accent-bg); border-radius: 5px; padding: .3rem .42rem; }
+  /* Shipped cards retint the id badge; it must come after .rec-head .rid to win. */
+  .rec.shipped .rid { color: var(--add-ink); border-color: var(--add-line); background: transparent; }
   .rec-head h3 { margin: 0; font-size: 16.5px; text-transform: none; letter-spacing: -.02em; color: var(--ink); font-weight: 500; }
   .rec .why { font-size: 14px; color: var(--ink-2); margin: .5rem 0 .7rem; }
   .rec .meta { display: flex; gap: 1.4rem; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-4); font-family: ui-monospace, monospace; border-top: 1px solid var(--line); padding-top: .6rem; margin-top: .75rem; }

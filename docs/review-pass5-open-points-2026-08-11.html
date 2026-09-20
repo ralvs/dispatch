@@ -66,8 +66,6 @@
     background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink);
     font-size: 14.5px; line-height: 1.55;
   }
-  .callout strong { color: inherit; }
-
   table.summary { width: 100%; border-collapse: collapse; margin: 2.5rem 0 0; font-size: 14.5px; }
   table.summary th, table.summary td { text-align: left; padding: .65rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
   table.summary th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); font-weight: 500; border-bottom-color: var(--line-strong); }
@@ -92,6 +90,8 @@
   li { margin-bottom: .35rem; }
   code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .89em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: .08em .32em; }
   strong { color: var(--ink); font-weight: 500; }
+  /* A callout is already tinted; its bold text keeps the callout colour. */
+  .callout strong { color: inherit; }
 
   .ev { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .3rem 0; margin: 0 0 1rem; }
   .ev-row { display: flex; gap: .9rem; padding: .45rem .95rem; border-bottom: 1px solid var(--line); font-size: 14px; }
