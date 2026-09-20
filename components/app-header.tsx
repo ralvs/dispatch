@@ -25,8 +25,14 @@ import { toggleMoreMenu } from "@/lib/more-menu-bus";
  * Hidden below `lg`, where the dock carries the same five tabs.
  */
 export function AppHeader() {
-	const pathname = usePathname();
+	return <AppHeaderView pathname={usePathname()} />;
+}
 
+/**
+ * The same header with the active tab passed in, so the layout can prerender it
+ * as the Suspense fallback with `pathname={null}`.
+ */
+export function AppHeaderView({ pathname }: { pathname: string | null }) {
 	return (
 		<header className="mb-16 hidden items-center justify-between gap-5 lg:flex">
 			<Link href="/today" className="flex items-center gap-2.5 type-section text-ink">

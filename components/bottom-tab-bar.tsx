@@ -17,8 +17,14 @@ import { DOCK_ACTION_SLOT_ID, DOCK_HEIGHT, DOCK_SURFACE } from "@/lib/ui/dock";
  * (lib/ui/dock.ts). Two signals, and they can never be read as one.
  */
 export function BottomTabBar() {
-	const pathname = usePathname();
+	return <BottomTabBarView pathname={usePathname()} />;
+}
 
+/**
+ * The same dock with the active tab passed in, so the layout can prerender it
+ * as the Suspense fallback with `pathname={null}`.
+ */
+export function BottomTabBarView({ pathname }: { pathname: string | null }) {
 	return (
 		<div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex items-center justify-center gap-2 px-4 pb-[max(env(safe-area-inset-bottom),0.5rem)] lg:hidden">
 			<nav aria-label="Primary" className="pointer-events-auto min-w-0">

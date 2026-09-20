@@ -64,6 +64,16 @@ const nextConfig: NextConfig = {
 			// lived at /triage under ADR-0014, when the link reading list was
 			// competing for the word "inbox"; that list is /links now.
 			{ source: "/triage", destination: "/inbox", permanent: true },
+			// Both of these used to be a page whose whole body was redirect().
+			// Config redirects are applied in the routing phase, ahead of the
+			// proxy, so they cost no function invocation and no getClaims() pass —
+			// a typed URL or a shared link at / was paying for two full auth
+			// passes to arrive at Today. Not `permanent`: a 308 is cached by the
+			// browser forever, and / should stay re-pointable.
+			{ source: "/", destination: "/today", permanent: false },
+			// /more is no longer a page (Pass 4 / C4). More is a menu. Old
+			// bookmarks and deep links land on Today rather than 404.
+			{ source: "/more", destination: "/today", permanent: false },
 		];
 	},
 };

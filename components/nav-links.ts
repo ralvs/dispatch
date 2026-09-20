@@ -67,7 +67,15 @@ export const TABS: NavItem[] = [
 	},
 ];
 
-export function isActive(item: NavItem, pathname: string): boolean {
+/**
+ * `pathname` is nullable because the nav renders once before it is known. On a
+ * dynamic route (/notes/[id] and friends) usePathname is dynamic data under
+ * Cache Components, so the nav is prerendered from a Suspense fallback that
+ * passes null — the bar paints from the CDN with no tab lit, and the lit tab
+ * arrives with the stream. Nothing is lit rather than the wrong thing.
+ */
+export function isActive(item: NavItem, pathname: string | null): boolean {
+	if (pathname === null) return false;
 	if (pathname === item.href || pathname.startsWith(`${item.href}/`)) return true;
 	return (item.aliases ?? []).some((a) => pathname === a || pathname.startsWith(`${a}/`));
 }
