@@ -44,6 +44,10 @@ const nextConfig: NextConfig = {
 		serverActions: {
 			bodySizeLimit: "25mb",
 		},
+		// Rewrites `import { X } from "pkg"` to the one module X lives in, so a
+		// barrel cannot drag its siblings into a route's chunk. lucide-react has
+		// 15 import sites; @/components/ui has 79, including loading.tsx files.
+		optimizePackageImports: ["lucide-react", "@/components/ui"],
 		// Dynamic authed routes default to 0s client RSC retention — every tab
 		// revisit re-fetched the full tree. Every authed route is dynamic
 		// (requireOwnerPage reads cookies) and every one has a loading.tsx, so

@@ -20,7 +20,6 @@ export { Button } from "./button";
 export { type ButtonVariants, button } from "./button-variants";
 export { Card, card } from "./card";
 export { Checkbox, checkbox } from "./checkbox";
-export { DatePicker } from "./date-picker";
 export { Dialog, DialogBody, DialogFooter } from "./dialog";
 export { EmptyState } from "./empty-state";
 export { Field, Input, Select, Textarea } from "./field";
@@ -42,4 +41,10 @@ export {
 	suggestionOption,
 	suggestionPanel,
 } from "./suggestion-surface";
-export { TimePicker } from "./time-picker";
+
+// DatePicker and TimePicker are deliberately NOT re-exported here. They are
+// react-aria-components + @internationalized/date, ~435 KB, and this barrel has
+// 79 import sites including loading.tsx files — one of them re-exporting the
+// pickers is how that weight reached every route. Import them from
+// "./date-picker" / "./time-picker" directly, and lazily where you can
+// (app/(authed)/tasks/task-fields.tsx does).
