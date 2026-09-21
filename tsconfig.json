@@ -4,6 +4,12 @@
 		"lib": ["dom", "dom.iterable", "esnext"],
 		"allowJs": true,
 		"skipLibCheck": true,
+		// TypeScript 7 defaults `types` to [] instead of auto-loading every
+		// node_modules/@types/* package, and defaults noUncheckedSideEffectImports
+		// to true. Both are spelled out here so the 5.9 -> 7 jump changes the
+		// compiler only, not the shape of the program it checks.
+		"types": ["node"],
+		"noUncheckedSideEffectImports": true,
 		"strict": true,
 		"noEmit": true,
 		"esModuleInterop": true,
