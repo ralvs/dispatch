@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The performance pass — what changed and why</title>
+<style>
+  :root {
+    --bg: #fbfaf9; --surface: #ffffff; --surface-2: #f4f2f0;
+    --ink: #1a1817; --ink-2: #45403c; --ink-3: #6b645e; --ink-4: #948c85;
+    --line: #e6e2de; --line-strong: #d3cdc7;
+    --accent: #b4541f; --accent-bg: #fbeee6;
+    --add-bg: #e8f3ec; --add-ink: #1c5433; --add-line: #a9d3bb;
+    --del-bg: #fbecec; --del-ink: #7a2222; --del-line: #e2b4b4;
+    --warn-bg: #fdf3e2; --warn-line: #e8cd9a; --warn-ink: #7a5410;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1817; --surface: #232120; --surface-2: #2c2927;
+      --ink: #f2efec; --ink-2: #cfc8c2; --ink-3: #a49c95; --ink-4: #7d746d;
+      --line: #35322f; --line-strong: #48433f;
+      --accent: #e0803f; --accent-bg: #33251a;
+      --add-bg: #1a2c21; --add-ink: #8fd0a8; --add-line: #2f5941;
+      --del-bg: #2f1e1e; --del-ink: #e5a2a2; --del-line: #5e3232;
+      --warn-bg: #2e2413; --warn-line: #574522; --warn-ink: #e0bd7c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1a1817; --surface: #232120; --surface-2: #2c2927;
+    --ink: #f2efec; --ink-2: #cfc8c2; --ink-3: #a49c95; --ink-4: #7d746d;
+    --line: #35322f; --line-strong: #48433f;
+    --accent: #e0803f; --accent-bg: #33251a;
+    --add-bg: #1a2c21; --add-ink: #8fd0a8; --add-line: #2f5941;
+    --del-bg: #2f1e1e; --del-ink: #e5a2a2; --del-line: #5e3232;
+    --warn-bg: #2e2413; --warn-line: #574522; --warn-ink: #e0bd7c;
+  }
+  :root[data-theme="light"] {
+    --bg: #fbfaf9; --surface: #ffffff; --surface-2: #f4f2f0;
+    --ink: #1a1817; --ink-2: #45403c; --ink-3: #6b645e; --ink-4: #948c85;
+    --line: #e6e2de; --line-strong: #d3cdc7;
+    --accent: #b4541f; --accent-bg: #fbeee6;
+    --add-bg: #e8f3ec; --add-ink: #1c5433; --add-line: #a9d3bb;
+    --del-bg: #fbecec; --del-ink: #7a2222; --del-line: #e2b4b4;
+    --warn-bg: #fdf3e2; --warn-line: #e8cd9a; --warn-ink: #7a5410;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 400 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 58rem; margin: 0 auto; padding: 3.5rem 1.5rem 6rem; }
+
+  header.top { margin-bottom: 2.25rem; }
+  .eyebrow {
+    font: 400 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 .6rem;
+  }
+  h1 { font-size: clamp(28px, 4.4vw, 38px); font-weight: 500; letter-spacing: -0.025em; line-height: 1.12; margin: 0 0 .7rem; }
+  .lede { color: var(--ink-2); font-size: 17px; max-width: 62ch; margin: 0; }
+
+  p { margin: 0 0 .85rem; color: var(--ink-2); }
+  ul { margin: 0 0 .9rem; padding-left: 1.15rem; color: var(--ink-2); }
+  li { margin-bottom: .35rem; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .89em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: .08em .32em; }
+  strong { color: var(--ink); font-weight: 500; }
+  a { color: var(--accent); }
+
+  .callout {
+    margin: 1.75rem 0 0; padding: .9rem 1.1rem; border-radius: 10px;
+    background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink);
+    font-size: 14.5px; line-height: 1.55;
+  }
+  .callout strong { color: inherit; }
+
+  h2.band {
+    font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: .09em;
+    color: var(--ink-3); margin: 3.25rem 0 1rem; padding-bottom: .5rem;
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  .cause { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.15rem; margin: 0 0 .9rem; }
+  .cause h3 { margin: 0 0 .35rem; font-size: 16.5px; font-weight: 500; color: var(--ink); letter-spacing: -.015em; }
+  .cause p { margin: 0; font-size: 14.5px; }
+
+  section.change { margin-top: 2.25rem; }
+  section.change > h3 {
+    font-size: 20px; font-weight: 500; letter-spacing: -0.02em; margin: 0 0 .25rem;
+    display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap;
+  }
+  .num { font: 400 13px/1 ui-monospace, monospace; color: var(--ink-4); border: 1px solid var(--line-strong); border-radius: 5px; padding: .25rem .4rem; }
+  .sub { color: var(--ink-3); font-size: 14px; margin: 0 0 .9rem; font-family: ui-monospace, monospace; }
+
+  .win { display: inline-block; margin: .3rem 0 0; padding: .35rem .7rem; border-radius: 7px; font-size: 13.5px;
+         background: var(--add-bg); color: var(--add-ink); border: 1px solid var(--add-line); }
+
+  table.summary { width: 100%; border-collapse: collapse; margin: 1rem 0 0; font-size: 14.5px; }
+  table.summary th, table.summary td { text-align: left; padding: .6rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.summary th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); font-weight: 500; border-bottom-color: var(--line-strong); }
+  .tbl-scroll { overflow-x: auto; }
+
+  .skip { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--line-strong); border-radius: 0 8px 8px 0; padding: .8rem 1rem; margin: 0 0 .8rem; }
+  .skip h4 { margin: 0 0 .3rem; font-size: 15px; font-weight: 500; color: var(--ink); }
+  .skip p { margin: 0; font-size: 14px; }
+
+  footer.end { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line-strong); color: var(--ink-3); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">Dispatch · 20 September 2026</p>
+  <h1>The performance pass</h1>
+  <p class="lede">
+    The app was slow to open and worse to come back to. This is what was
+    wrong, what changed, and what was left alone on purpose. The decisions
+    themselves live in
+    <a href="./adr/0062-the-server-moved-to-the-database.md">ADR-0062</a>; this
+    page is the readable version.
+  </p>
+</header>
+
+<h2 class="band">What was actually wrong</h2>
+
+<p>
+  Three causes, found by measuring rather than guessing. The first one was
+  most of the problem.
+</p>
+
+<div class="cause">
+  <h3>1. The server was on the wrong continent</h3>
+  <p>
+    Functions were built for <code>iad1</code> (Virginia). Supabase is in
+    <code>sa-east-1</code> (São Paulo), and the only person using the app is in
+    Brazil. So every page was: browser → São Paulo edge → <strong>Virginia</strong>
+    → back to <strong>São Paulo</strong> for the data → and back again. Today
+    makes two or three waves of queries. That is most of a second spent purely
+    travelling, before any work happens.
+  </p>
+</div>
+
+<div class="cause">
+  <h3>2. The cache died after ten minutes</h3>
+  <p>
+    Cached reads expired after 600–900 seconds. But every write in the app
+    already clears the cache by tag, so the clock was not keeping anything
+    honest — it only guaranteed that coming back after ten minutes away paid
+    the whole database fan-out again, behind a skeleton. This is exactly the
+    "away for a while and it's slow" symptom.
+  </p>
+</div>
+
+<div class="cause">
+  <h3>3. Nothing could paint until a cookie was read</h3>
+  <p>
+    The prerendered page of every screen was <em>literally the word
+    "Loading"</em>. The shell waited on an auth check, so the header, the dock,
+    the page frame and the palettes were all trapped behind one server call on
+    another continent. Partial Prerendering had nothing to serve.
+  </p>
+</div>
+
+<h2 class="band">What changed</h2>
+
+<section class="change">
+  <h3><span class="num">01</span> The server moved to São Paulo</h3>
+  <p class="sub">vercel.json · commit 2e4d7cf</p>
+  <p>
+    <code>regions: ["gru1"]</code>. The server now sits next to the database
+    and next to you. This is a <em>latency</em> decision, not a preference —
+    the region has to follow wherever Supabase lives.
+  </p>
+  <p>
+    Also trimmed the auth proxy so <code>/sw.js</code> and
+    <code>/manifest.webmanifest</code> stop paying a full auth check on every
+    service-worker poll and every app launch. A cold PWA was being redirected
+    to the sign-in page <em>for its manifest file</em>.
+  </p>
+  <p class="win">Database round trip: ~230ms → ~5ms. Verified live: every function reads <code>[gru1]</code>.</p>
+</section>
+
+<section class="change">
+  <h3><span class="num">02</span> Cached reads live a week, not ten minutes</h3>
+  <p class="sub">next.config.ts, lib/cache/* · commit 538fb65</p>
+  <p>
+    One shared profile replaces five hand-written ones: <strong>stale 5
+    minutes, refresh after 1 hour, expire after 7 days</strong>. The hour is
+    the part that matters — past it, the app serves what it has
+    <em>immediately</em> and refreshes behind the response. Nobody waits.
+  </p>
+  <p>
+    This is only safe because tags, not time, keep the cache honest. Which
+    made one real bug visible and worth fixing: resolving a note in the app
+    did not clear Today's "needs review" counter. Harmless at ten minutes;
+    not at seven days.
+  </p>
+  <p>
+    Three query fixes rode along: a needless extra round trip on Today's
+    critical path, full note bodies being shipped to the browser for every
+    note-page open, and a <code>select("*")</code> on the people page.
+  </p>
+</section>
+
+<section class="change">
+  <h3><span class="num">03</span> The app frame paints from the CDN</h3>
+  <p class="sub">app/(authed)/layout.tsx · commits ea158bf, 3351afe</p>
+  <p>
+    The auth check moved out of the shell and into a component that renders
+    nothing, inside its own boundary. Now the nav, the dock and the page frame
+    are prerendered and served from the edge; only the data waits on the
+    server.
+  </p>
+  <p>
+    Nothing got less secure. The frame is the same markup on every screen and
+    carries no data, the proxy still turns away anyone not signed in, and
+    every page still checks ownership before reading anything. An independent
+    reviewer confirmed this before the merge.
+  </p>
+  <p>
+    <strong>This broke something, and the fix is worth knowing about.</strong>
+    The Capture button is placed into the dock by a portal. Once the dock was
+    inside a loading boundary, the page froze on its skeleton forever — a
+    hydration failure that looks exactly like a slow server. The slot now
+    lives outside the boundary.
+  </p>
+  <p class="win">Shells went from “Dispatch Loading” to the full frame, 12K, from the CDN.</p>
+</section>
+
+<section class="change">
+  <h3><span class="num">04</span> Tabs prefetch when you reach for them</h3>
+  <p class="sub">components/intent-link.tsx · commit a3a66d7</p>
+  <p>
+    Borrowed from t3code's <code>defaultPreload: "intent"</code>. Pointing at
+    a tab — hover, first touch, or keyboard focus — fetches that screen's data
+    a moment before you click it.
+  </p>
+  <p>
+    The obvious alternative, prefetching all five tabs on page load, would
+    fire five full page renders every time you open the app. On a phone that
+    is the worst possible moment for it.
+  </p>
+  <p>
+    React Compiler is also on now, which memoizes the big interactive lists
+    automatically. Checked in the build output rather than assumed: 133
+    generated memo sites.
+  </p>
+</section>
+
+<section class="change">
+  <h3><span class="num">05</span> The date pickers load when you open the form</h3>
+  <p class="sub">app/(authed)/tasks/task-fields.tsx · commit 1829384</p>
+  <p>
+    The date and time pickers are the heaviest thing in the app — about 435 KB
+    — and the only place they appear is inside the task form. They were being
+    downloaded on every single visit to Tasks, for a form most visits never
+    open. Now they arrive when the form does.
+  </p>
+  <p class="win">/tasks JavaScript: 1685 KB → 1310 KB.</p>
+</section>
+
+<h2 class="band">The numbers</h2>
+
+<div class="tbl-scroll">
+<table class="summary">
+  <thead><tr><th>What</th><th>Before</th><th>After</th></tr></thead>
+  <tbody>
+    <tr><td>Server region</td><td>iad1 (Virginia)</td><td>gru1 (São Paulo)</td></tr>
+    <tr><td>One database round trip</td><td>~230ms</td><td>~5ms</td></tr>
+    <tr><td>Cache lifetime</td><td>10–15 min</td><td>7 days, refreshed hourly in the background</td></tr>
+    <tr><td>Prerendered page</td><td>the word “Loading”</td><td>full frame, 12K, from the CDN</td></tr>
+    <tr><td>JavaScript on /tasks</td><td>1685 KB</td><td>1310 KB</td></tr>
+    <tr><td>Server bundle</td><td>2.18 MB</td><td>2.03 MB</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 class="band">Left alone on purpose</h2>
+
+<p>
+  Each of these was considered and rejected with a reason, recorded so a
+  future pass does not spend the same hours re-deciding them.
+</p>
+
+<div class="skip">
+  <h4>Luxon stays in the browser bundle (72 KB)</h4>
+  <p>
+    Removing it means splitting <code>lib/dates.ts</code>, which iron rule #1
+    makes the single home of date logic. The functions the browser actually
+    calls take Luxon format strings. Reimplementing a date-format parser to
+    save 4% is how dates start disagreeing with themselves.
+  </p>
+</div>
+
+<div class="skip">
+  <h4>The note editor still loads up front</h4>
+  <p>
+    Deferring the editor on the page whose entire purpose is the editor only
+    adds a wait before you can type.
+  </p>
+</div>
+
+<div class="skip">
+  <h4>The session keeper still loads Supabase eagerly (220 KB)</h4>
+  <p>
+    Delaying it would delay the token refresh, and ADR-0025 and ADR-0032 are
+    emphatic that the browser must refresh ahead of the request fan-out. That
+    bug — the PWA bouncing you to sign-in — cost more than 220 KB is worth.
+  </p>
+</div>
+
+<div class="skip">
+  <h4>Today's 5-minute auto-refresh still clears the whole client cache</h4>
+  <p>
+    Rewiring it risks the day-navigation logic ADR-0034 carefully pinned down,
+    and the same refresh also updates the counters, the badge and the midnight
+    rollover — a naive swap fixes the day bands and quietly stops updating all
+    of that. <strong>This one was judged, not measured.</strong> There is a
+    handoff document for it if you want it revisited; measure first.
+  </p>
+</div>
+
+<h2 class="band">Still yours to check</h2>
+
+<div class="callout">
+  <strong>Two behaviour checks were never run,</strong> because they write to
+  real data and that is not mine to touch. Tick a task on Today and confirm
+  the counter moves and stays moved. Resolve a note that needs review and
+  confirm Today's needs-review count drops — that second one exercises the
+  cache-tag bug fixed in <code>538fb65</code>.
+</div>
+
+<footer class="end">
+  Seven commits on <code>main</code>, <code>2e4d7cf</code> through
+  <code>dff44c0</code>. Reviewed before merge by an independent checker on a
+  different model family, which found one real issue (a prefetch handler that
+  could silently switch itself off) — fixed in <code>dff44c0</code>.
+  Decisions: <a href="./adr/0062-the-server-moved-to-the-database.md">ADR-0062</a>.
+</footer>
+
+</div>
+</body>
+</html>

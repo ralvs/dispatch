@@ -1,5 +1,14 @@
 # Cache Components with tagged data for a single-user ops app
 
+> **Decision 3 superseded (2026-09-20).** Wrapping the authed shell's
+> `requireOwnerPage()` in `<Suspense>` put the whole app chrome inside one
+> dynamic hole, so the prerendered shell of every authed route was the word
+> "Loading". The shell is now synchronous and prerenders; the guard moved into
+> an `OwnerGate` component that renders nothing inside its own boundary. The
+> cache-life values in Decision 4 are also superseded by one `tagged` profile.
+> See [ADR-0062](./0062-the-server-moved-to-the-database.md). Decisions 1, 2,
+> 5, 6 and 7 stand.
+>
 > **Superseded for day navigation (2026-07-31).** Decision 4's `day-schedule`
 > segment is no longer read on the day-nav path, and Decision 7 is narrowed:
 > day bands are now read uncached on the RLS client, because the cached copy
