@@ -1,6 +1,11 @@
 import path from "node:path";
 import { configDefaults, defineConfig } from "vitest/config";
 
+// .mts, not .ts: Vite 8.3 loads a .ts config as CommonJS and warns on every run
+// that the ESM syntax here is unsupported by the `native` config loader it plans
+// to default to. The extension says ESM outright — which is why the paths below
+// use import.meta.dirname rather than __dirname.
+
 export default defineConfig({
 	test: {
 		environment: "node",
@@ -13,8 +18,8 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: {
-			"server-only": path.resolve(__dirname, "test/stubs/empty.ts"),
-			"@": path.resolve(__dirname, "."),
+			"server-only": path.resolve(import.meta.dirname, "test/stubs/empty.ts"),
+			"@": path.resolve(import.meta.dirname, "."),
 		},
 	},
 });
