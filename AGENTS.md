@@ -18,7 +18,7 @@ what is specific to Dispatch, and wins where the two disagree.
 - **Tailwind CSS v4** — tokens in `app/globals.css` `@theme inline`; semantic names only (`bg-bg`, `text-ink-3`, `border-line`, `text-accent-slip`)
 - **Supabase** — Postgres + Auth + Storage; migrations in `supabase/migrations/`
 - **Vercel AI SDK via AI Gateway** — one `AI_GATEWAY_API_KEY`, no provider keys; models in `lib/env.ts`
-- **Luxon** for all date math; **Vitest** colocated `*.test.ts`
+- **Luxon** for all date math; **Vitest** + React Testing Library, tests colocated (see Testing)
 
 ## Iron rules
 
@@ -44,6 +44,30 @@ never reordered.
 5. **Bilingual PT-BR/EN.** Content is stored verbatim in the language written —
    never translated. UI chrome is English.
 6. **Every autonomous/external action writes a `notifications` row.**
+
+## Testing
+
+Five layers (docs/adr/0063). Tests sit next to the code they test.
+
+| Layer | File | Covers | Runs in |
+|---|---|---|---|
+| Static | — | types, lint (Biome, `tsc`) | `bun run check` |
+| Unit | `*.test.ts` | pure logic: dates, recurrence, parser, reducers, the store | `bun run check` |
+| Component | `*.test.tsx` | client components, in happy-dom | `bun run check` |
+| Integration | `*.int.test.ts` | services and server actions against real Postgres + RLS | `bun run test:integration` |
+| End-to-end | — | async Server Components, critical flows (Playwright, #10) | not yet |
+
+- Integration needs Docker and the local stack: `supabase start`, then
+  `bun run test:integration`. After you add a migration, run
+  `supabase db reset` first — the reset baseline refuses a moved schema.
+- Every table is reset before each integration test. Clients come from
+  `test/integration/clients.ts`: `ownerClient()` (RLS, seeded owner),
+  `serviceClient()` (secret key), `anonClient()` (no session).
+- Do not stub Supabase query chains in new tests. Behaviour against the
+  database is an integration test.
+- Component tests do **not** run through the React Compiler. Write components
+  that are correct without it; the compiler only memoizes.
+- The AI gateway is always faked. No test makes a paid call.
 
 ## Conventions
 
