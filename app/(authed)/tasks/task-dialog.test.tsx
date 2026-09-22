@@ -44,7 +44,10 @@ describe("TaskDialog", () => {
 		await user.click(screen.getByRole("button", { name: "Add task" }));
 
 		expect(await screen.findByText("Pick a domain.")).toBeInTheDocument();
-		expect(screen.getByLabelText("Domain")).toHaveAttribute("aria-invalid", "true");
+		const domain = screen.getByLabelText("Domain");
+		expect(domain).toHaveAttribute("aria-invalid", "true");
+		expect(domain).toHaveAccessibleDescription("Pick a domain.");
+		await waitFor(() => expect(domain).toHaveFocus());
 		expect(screen.getByLabelText("Task title")).toHaveValue("Buy milk");
 		expect(screen.getByRole("dialog")).toBeInTheDocument();
 	});

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Field, Input } from "@/components/ui";
@@ -29,6 +29,8 @@ describe("SettingsForm", () => {
 
 		expect(await screen.findByText("Must be a wall-clock time (HH:MM).")).toBeInTheDocument();
 		expect(input).toHaveAttribute("aria-invalid", "true");
+		expect(input).toHaveAccessibleDescription("Must be a wall-clock time (HH:MM).");
+		await waitFor(() => expect(input).toHaveFocus());
 		expect(input).toHaveValue("9am");
 	});
 

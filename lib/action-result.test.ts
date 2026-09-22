@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { formValues, fromZodError, runFormAction } from "./action-result";
@@ -72,6 +72,11 @@ describe("runFormAction", () => {
 		await expect(
 			runFormAction(form({}), async () => {
 				redirect("/sign-in");
+			}),
+		).rejects.toThrow();
+		await expect(
+			runFormAction(form({}), async () => {
+				notFound();
 			}),
 		).rejects.toThrow();
 	});

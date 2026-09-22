@@ -42,7 +42,10 @@ describe("CollapsibleForm", () => {
 		await user.click(screen.getByRole("button", { name: "Save entry" }));
 
 		expect(await screen.findByText("Write the entry.")).toBeInTheDocument();
-		expect(screen.getByLabelText("Entry")).toHaveAttribute("aria-invalid", "true");
+		const entry = screen.getByLabelText("Entry");
+		expect(entry).toHaveAttribute("aria-invalid", "true");
+		expect(entry).toHaveAccessibleDescription("Write the entry.");
+		await waitFor(() => expect(entry).toHaveFocus());
 		expect(screen.getByLabelText("Tags")).toHaveValue("work");
 	});
 

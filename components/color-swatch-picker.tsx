@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useFieldValue } from "@/components/ui/form-state";
 import { Icon } from "@/components/ui/icon";
 import { COLOR_SLUG_LABELS, COLOR_SLUGS, colorSlugVar } from "@/lib/schemas/color";
 
@@ -21,6 +22,9 @@ export function ColorSwatchPicker({
 	name: string;
 	defaultValue?: string | null;
 }) {
+	// A rejected submit hands back the pick, so the form's reset keeps it (#23).
+	const echoed = useFieldValue(name);
+	const checked = echoed ?? defaultValue;
 	return (
 		<fieldset className="block min-w-0">
 			<legend className="font-mono text-eyebrow uppercase text-ink-3">Color</legend>
@@ -34,7 +38,7 @@ export function ColorSwatchPicker({
 						name={name}
 						value=""
 						aria-label="None"
-						defaultChecked={!defaultValue}
+						defaultChecked={!checked}
 						className="peer sr-only"
 					/>
 					<span className="flex size-7 items-center justify-center rounded-pill border border-line font-mono text-meta text-ink-4 transition-colors hover:border-line-strong peer-checked:border-ink peer-checked:text-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent">
@@ -52,7 +56,7 @@ export function ColorSwatchPicker({
 							name={name}
 							value={slug}
 							aria-label={COLOR_SLUG_LABELS[slug]}
-							defaultChecked={defaultValue === slug}
+							defaultChecked={checked === slug}
 							className="peer sr-only"
 						/>
 						<span

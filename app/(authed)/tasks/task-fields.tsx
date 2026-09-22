@@ -312,6 +312,12 @@ export function TaskMetaFields({
 		);
 	}
 	const scheduleIsEmpty = due === "" && time === "" && recurrence === "";
+	const dueError = useFieldError("due_date");
+	const timeError = useFieldError("due_time");
+	const repeatError = useFieldError("recurrence_rule");
+	const dueErrorId = useId();
+	const timeErrorId = useId();
+	const repeatErrorId = useId();
 
 	return (
 		<div className="space-y-10">
@@ -323,6 +329,8 @@ export function TaskMetaFields({
 						value={due}
 						todayIso={todayIso}
 						aria-label="Due date"
+						invalid={Boolean(dueError)}
+						aria-describedby={dueError ? dueErrorId : undefined}
 						onChange={(next) => {
 							setDue(next);
 							// A time with no date to sit on is meaningless (DB check
@@ -335,6 +343,8 @@ export function TaskMetaFields({
 						value={time}
 						disabled={due === ""}
 						aria-label="Due time"
+						invalid={Boolean(timeError)}
+						aria-describedby={timeError ? timeErrorId : undefined}
 						onChange={setTime}
 					/>
 					{/* Same column as Priority on sm+. On a phone it spans the
@@ -364,8 +374,8 @@ export function TaskMetaFields({
 						</button>
 					</div>
 				</div>
-				<FieldError name="due_date" />
-				<FieldError name="due_time" />
+				<FieldError name="due_date" id={dueErrorId} />
+				<FieldError name="due_time" id={timeErrorId} />
 			</div>
 
 			<div className="space-y-10">
@@ -381,6 +391,8 @@ export function TaskMetaFields({
 					<Select
 						value={recurrence}
 						aria-label="Repeats"
+						invalid={Boolean(repeatError)}
+						aria-describedby={repeatError ? repeatErrorId : undefined}
 						onChange={(event) => setRecurrence(event.target.value)}
 						className="w-full"
 					>
@@ -417,7 +429,7 @@ export function TaskMetaFields({
 							})}
 						</fieldset>
 					)}
-					<FieldError name="recurrence_rule" />
+					<FieldError name="recurrence_rule" id={repeatErrorId} />
 				</div>
 
 				<div className={META_TRIO}>

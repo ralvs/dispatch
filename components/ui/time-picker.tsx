@@ -29,17 +29,25 @@ export function TimePicker({
 	value,
 	onChange,
 	disabled = false,
+	invalid = false,
 	"aria-label": ariaLabel,
+	"aria-describedby": ariaDescribedBy,
 }: {
 	name: string;
 	value: string;
 	onChange: (next: string) => void;
 	disabled?: boolean;
 	"aria-label": string;
+	/** The last submit rejected this value (#23). */
+	invalid?: boolean;
+	/** The id of the message that says why. */
+	"aria-describedby"?: string;
 }) {
 	return (
 		<ComboBox
 			aria-label={ariaLabel}
+			aria-describedby={ariaDescribedBy}
+			isInvalid={invalid}
 			isDisabled={disabled}
 			menuTrigger="focus"
 			value={value || null}

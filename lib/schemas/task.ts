@@ -6,7 +6,7 @@ import { isRecurrenceRule } from "@/lib/recurrence";
 // lib/recurrence.ts rather than re-listed here, so the schema and the parser
 // cannot drift on what a valid rule is.
 const RecurrenceRuleSchema = z.string().refine(isRecurrenceRule, {
-	message: "not a recurrence rule",
+	message: "Pick how it repeats.",
 });
 
 import { WallClockTimeSchema } from "@/lib/schemas/time";
