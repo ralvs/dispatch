@@ -196,3 +196,28 @@ export async function listNoteIdsForTargets(
 	}
 	return result;
 }
+
+export type LinkTargetLabels = {
+	tasks: Array<{ id: string; title: string; status: "open" | "done" }>;
+	events: Array<{ id: string; title: string; start_at: string }>;
+};
+
+/** Label info for a note's manual link targets, in one batch per table — avoids N+1 per row. */
+export async function listLinkTargetLabels(
+	sb: SupabaseClient,
+	taskIds: string[],
+	eventIds: string[],
+): Promise<LinkTargetLabels> {
+	const [tasks, events] = await Promise.all([
+		taskIds.length > 0
+			? sb.from("tasks").select("id, title, status").in("id", taskIds).then(unwrap)
+			: [],
+		eventIds.length > 0
+			? sb.from("calendar_events").select("id, title, start_at").in("id", eventIds).then(unwrap)
+			: [],
+	]);
+	return {
+		tasks: (tasks ?? []) as LinkTargetLabels["tasks"],
+		events: (events ?? []) as LinkTargetLabels["events"],
+	};
+}
