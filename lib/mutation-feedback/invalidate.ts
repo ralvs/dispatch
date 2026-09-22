@@ -106,8 +106,9 @@ export function invalidationFor(kind: MutationKind, detail?: { id?: string }): I
 			};
 		// Capture can land as task, note (incl. needs_review), event, quote, or
 		// journal — own the full write surface so palette and external callers
-		// cannot under-stack. Notification ledger stays a separate kind (iron
-		// rule #6 is external/autonomous only; palette never writes a row).
+		// cannot under-stack. The notification ledger stays a separate kind:
+		// every caller that can write a row sends notification.write too. That
+		// includes the palette, whose create_event records one in the executor.
 		case "capture.settled":
 			return {
 				tags: [

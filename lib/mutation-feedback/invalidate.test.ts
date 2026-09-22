@@ -273,11 +273,15 @@ describe("cached readers name the writes that move their data", () => {
 	});
 
 	it("a server action that runs capture busts notification.write", () => {
-		const actions = read(
-			path.resolve(import.meta.dirname, "../../app/(authed)/capture/actions.ts"),
-		);
-		expect(actions).toContain("await capture(");
-		expect(actions).toContain('afterMutation("notification.write")');
+		const authed = path.resolve(import.meta.dirname, "../../app/(authed)");
+		const callers = readdirSync(authed, { recursive: true, encoding: "utf8" })
+			.filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f))
+			.map((f) => [f, read(path.join(authed, f))] as const)
+			.filter(([, src]) => src.includes("await capture("));
+		expect(callers.length).toBeGreaterThan(0);
+		for (const [file, src] of callers) {
+			expect(src, file).toContain('afterMutation("notification.write")');
+		}
 	});
 
 	it("a route that records a notification busts the notification tags (iron rule #6)", () => {

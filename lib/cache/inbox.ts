@@ -6,10 +6,14 @@ import { listNoteIdsForTargets } from "@/lib/services/note-links";
 import { listInboxTasks } from "@/lib/services/tasks";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/** Cross-request cache for /inbox (docs/adr/0035): unfiled tasks and their linked notes. */
+/**
+ * Cross-request cache for /inbox (docs/adr/0035): unfiled tasks and their
+ * linked notes. The list leaves out quiet tasks, and quiet depends on a
+ * project's status — so a project write moves it too.
+ */
 export async function getCachedInbox() {
 	"use cache";
-	cacheTag(CacheTag.tasks, CacheTag.notes);
+	cacheTag(CacheTag.tasks, CacheTag.notes, CacheTag.projects);
 	cacheLife("tagged");
 
 	const sb = createAdminClient();
@@ -38,6 +42,7 @@ export const readers: CachedReader[] = [
 				writes: ["notes.write", "capture.settled"],
 				external: ["capture", "sweep"],
 			},
+			{ tag: CacheTag.projects, writes: ["projects.write", "projects.detail"] },
 		],
 	},
 ];
