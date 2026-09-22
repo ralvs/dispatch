@@ -52,7 +52,6 @@ export function Dialog({
 }) {
 	const overlayRef = useRef<HTMLDivElement>(null);
 	const dialogRef = useRef<HTMLDivElement>(null);
-	const restoreFocusRef = useRef<HTMLElement | null>(null);
 	const titleId = useId();
 	const descId = useId();
 
@@ -61,10 +60,10 @@ export function Dialog({
 	const [mounted, setMounted] = useState(false);
 	useEffect(() => setMounted(true), []);
 
-	// Move focus in on open, back to the trigger on close.
+	// Move focus in on open. Focus goes back to the trigger in the effect below,
+	// which owns `inert`.
 	useEffect(() => {
 		if (!open) return;
-		restoreFocusRef.current = document.activeElement as HTMLElement | null;
 		// After paint, so the first field exists to receive it.
 		const frame = requestAnimationFrame(() => {
 			const target =
@@ -73,18 +72,21 @@ export function Dialog({
 			target?.focus();
 			if (target instanceof HTMLInputElement) target.select();
 		});
-		return () => {
-			cancelAnimationFrame(frame);
-			restoreFocusRef.current?.focus();
-		};
+		return () => cancelAnimationFrame(frame);
 	}, [open]);
 
 	// Lock background scroll and `inert` the shell behind the modal, so the page
 	// underneath is neither scrollable, clickable, nor reachable by screen
 	// readers. Live regions stay out of it, or toasts raised while the dialog is
 	// open would be hidden from assistive tech. Same contract as CapturePalette.
+	//
+	// This effect also returns focus to the trigger on close, because only it
+	// knows when `inert` comes off: a browser will not focus an inert element,
+	// and the trigger sits in the shell this effect made inert. The focus effect
+	// above runs first, so the trigger still holds focus when it is read here.
 	useEffect(() => {
 		if (!open) return;
+		const trigger = document.activeElement as HTMLElement | null;
 		const previousOverflow = document.body.style.overflow;
 		document.body.style.overflow = "hidden";
 		const siblings = Array.from(document.body.children).filter(
@@ -97,6 +99,7 @@ export function Dialog({
 		return () => {
 			document.body.style.overflow = previousOverflow;
 			for (const el of siblings) el.removeAttribute("inert");
+			trigger?.focus();
 		};
 	}, [open]);
 
