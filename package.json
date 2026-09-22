@@ -11,7 +11,7 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run --project unit --project component",
 		"test:integration": "vitest run --project integration",
-		"test:watch": "vitest",
+		"test:watch": "vitest --project unit --project component",
 		"eval:parser": "bun --conditions=react-server scripts/parser-eval.ts",
 		"check": "biome check . && tsc --noEmit && vitest run --project unit --project component"
 	},

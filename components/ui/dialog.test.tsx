@@ -43,6 +43,10 @@ describe("Dialog", () => {
 		render(<Harness />);
 
 		await user.click(screen.getByRole("button", { name: "New project" }));
+		// Escape is handled on the panel, so focus has to be inside it first.
+		await waitFor(() =>
+			expect(screen.getByRole("button", { name: "Close new project" })).toHaveFocus(),
+		);
 		await user.keyboard("{Escape}");
 
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
