@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { env, isSupabaseConfigured } from "@/lib/env";
-import { afterExternalMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/mutation-feedback/invalidate";
 import { isAuthorized } from "@/lib/secret-auth";
 import { sweepRawCaptures } from "@/lib/services/capture/sweep";
 import { recordNotification } from "@/lib/services/notifications";
@@ -30,7 +30,7 @@ async function runSweep(request: Request) {
 		// notes list, the needs-review alert count, and the ledger badge — all
 		// three read through a cached entry.
 		// capture.settled owns the notes tag; ledger is separate.
-		afterExternalMutation("capture.settled", "notification.write");
+		afterExternalMutation(...EXTERNAL_WRITES.sweep);
 
 		await recordNotification(sb, {
 			type: "cron.sweep",

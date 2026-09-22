@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { todayInTz } from "@/lib/dates";
 import { env, isSupabaseConfigured } from "@/lib/env";
-import { afterExternalMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/mutation-feedback/invalidate";
 import { isAuthorized } from "@/lib/secret-auth";
 import { runTaskReminders } from "@/lib/services/reminders";
 import { getAppTimezone } from "@/lib/services/settings";
@@ -35,7 +35,7 @@ async function runReminders(request: Request) {
 	// A fired reminder writes a `reminder.fired` ledger row, which the Today
 	// masthead badge counts out of the cached chrome. Suppressed ones only
 	// stamp reminders_sent, which renders nowhere.
-	if (result.fired > 0) afterExternalMutation("notification.write");
+	if (result.fired > 0) afterExternalMutation(...EXTERNAL_WRITES.cronReminders);
 
 	return NextResponse.json(result);
 }

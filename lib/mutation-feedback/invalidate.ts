@@ -212,6 +212,36 @@ export function afterMutation(kind: MutationKind, detail?: { id?: string }): voi
 }
 
 /**
+ * Every write that reaches the database from outside a browser session — the
+ * crons, the capture webhook, the calendar bridge — and the kinds it moves.
+ * Route handlers spread one of these into afterExternalMutation rather than
+ * listing kinds inline, so a cached reader can name the external writers of
+ * its data (lib/cache/manifest.ts) and a test can check both sides agree.
+ *
+ * Iron rule #6: an autonomous action writes a notifications row, so a writer
+ * that can record one carries "notification.write".
+ */
+export const EXTERNAL_WRITES = {
+	/** /api/capture with a bare URL: a link, plus its ledger row. */
+	captureLink: ["links.write", "notification.write"],
+	/** /api/capture: a task, note, event, quote or journal entry, plus its ledger row. */
+	capture: ["capture.settled", "notification.write"],
+	/** cron/sweep: re-parses needs_review notes. */
+	sweep: ["capture.settled", "notification.write"],
+	cronObservations: ["notification.write"],
+	/** cron/reminders: each delivered reminder is a ledger row. */
+	cronReminders: ["notification.write"],
+	/** cron/caldav: calendar events only; silent by design. */
+	cronCaldav: ["today.only"],
+	/** /api/calendar/bridge on success: calendar events only; quiet by design. */
+	calendarBridge: ["today.only"],
+	/** /api/calendar/bridge on failure: the ledger row that reports it. */
+	calendarBridgeFailure: ["notification.write"],
+} as const satisfies Record<string, readonly MutationKind[]>;
+
+export type ExternalWriter = keyof typeof EXTERNAL_WRITES;
+
+/**
  * From a Route Handler — the crons and the external capture surface.
  *
  * Tags only, deliberately. These routes are invoked by cron-job.org and the
@@ -225,7 +255,7 @@ export function afterMutation(kind: MutationKind, detail?: { id?: string }): voi
  * task or note AND a notification row (iron rule #6), and the ledger row is
  * what the Today masthead badge counts.
  */
-export function afterExternalMutation(...kinds: MutationKind[]): void {
+export function afterExternalMutation(...kinds: readonly MutationKind[]): void {
 	const tags = new Set<CacheTagName>();
 	for (const kind of kinds) for (const t of invalidationFor(kind).tags) tags.add(t);
 	bustTags([...tags]);

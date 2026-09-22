@@ -1,5 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
+import type { CachedReader } from "@/lib/cache/manifest";
 import { CacheTag } from "@/lib/cache/tags";
 import { listNotes } from "@/lib/services/notes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -23,3 +24,16 @@ export async function getCachedNoteLists() {
 	]);
 	return { needsReview, allNotes };
 }
+
+export const readers: CachedReader[] = [
+	{
+		reader: "getCachedNoteLists",
+		reads: [
+			{
+				tag: CacheTag.notes,
+				writes: ["notes.write", "capture.settled", "settings.timezone"],
+				external: ["capture", "sweep"],
+			},
+		],
+	},
+];

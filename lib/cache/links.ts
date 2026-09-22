@@ -1,5 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
+import type { CachedReader } from "@/lib/cache/manifest";
 import { CacheTag } from "@/lib/cache/tags";
 import { listLinks } from "@/lib/services/links";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -19,3 +20,10 @@ export async function getCachedLinks() {
 
 	return listLinks(createAdminClient(), { limit: 200 });
 }
+
+export const readers: CachedReader[] = [
+	{
+		reader: "getCachedLinks",
+		reads: [{ tag: CacheTag.links, writes: ["links.write"], external: ["captureLink"] }],
+	},
+];
