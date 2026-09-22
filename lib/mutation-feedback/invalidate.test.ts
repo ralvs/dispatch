@@ -251,6 +251,35 @@ describe("cached readers name the writes that move their data", () => {
 		}
 	});
 
+	it("every module that records a notification is one whose write paths were checked", () => {
+		// recordNotification is also reached from inside services, where no route
+		// scan can see it. The callers are pinned; a new one fails here until its
+		// write paths are shown to bust notification.write:
+		// - capture/executor.ts: reached by /api/capture and cron/sweep (both
+		//   declare notification.write) and by the palette's captureText (below).
+		// - reminders.ts: reached by cron/reminders only.
+		const root = path.resolve(import.meta.dirname, "../..");
+		const callers = ["app", "lib"]
+			.flatMap((dir) =>
+				readdirSync(path.join(root, dir), { recursive: true, encoding: "utf8" }).map((f) =>
+					path.join(dir, f),
+				),
+			)
+			.filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f) && !f.startsWith("app/api/"))
+			.filter((f) => read(path.join(root, f)).includes("recordNotification("))
+			.filter((f) => f !== "lib/services/notifications.ts")
+			.sort();
+		expect(callers).toEqual(["lib/services/capture/executor.ts", "lib/services/reminders.ts"]);
+	});
+
+	it("a server action that runs capture busts notification.write", () => {
+		const actions = read(
+			path.resolve(import.meta.dirname, "../../app/(authed)/capture/actions.ts"),
+		);
+		expect(actions).toContain("await capture(");
+		expect(actions).toContain('afterMutation("notification.write")');
+	});
+
 	it("a route that records a notification busts the notification tags (iron rule #6)", () => {
 		const writesNotifications = new Set<string>(
 			(Object.keys(EXTERNAL_WRITES) as ExternalWriter[]).filter((w) =>

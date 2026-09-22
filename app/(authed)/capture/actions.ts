@@ -7,9 +7,10 @@ import { type CapturedRecord, capture } from "@/lib/services/capture";
 
 /**
  * Palette (Cmd+J) capture entry point. User-initiated, so it runs under the
- * RLS client returned by requireOwnerPage() and writes NO notification ledger
- * row — the ledger is for autonomous/external actions (iron rule #6). External
- * external capture is deferred (docs/adr/0008).
+ * RLS client returned by requireOwnerPage(). It writes no ledger row of its
+ * own, but one parsed action does: create_event puts an event on the external
+ * calendar, and the executor records that (iron rule #6). So this busts
+ * notification.write as well as capture.settled.
  *
  * The raw text is validated then handed to capture(), which persists it before
  * doing anything else, so a parse/execute failure never loses the input.
@@ -32,5 +33,6 @@ export async function captureText(input: {
 	});
 
 	afterMutation("capture.settled");
+	afterMutation("notification.write");
 	return record;
 }
