@@ -1,22 +1,19 @@
 import { PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
-import { listDomains } from "@/lib/services/domains";
-import { listNoteIdsForTargets } from "@/lib/services/note-links";
-import { listInboxTasks } from "@/lib/services/tasks";
+import { getCachedDomains } from "@/lib/cache/domains";
+import { getCachedInbox } from "@/lib/cache/inbox";
 import { InboxList } from "./inbox-list";
 
 // Tasks captured without a domain, waiting to be given one (docs/adr/0024).
 // Filing is one-way: a task leaves here and never comes back.
 export default async function InboxPage() {
-	const { sb } = await requireOwnerPage();
-	const [tasks, domains] = await Promise.all([listInboxTasks(sb), listDomains(sb)]);
-	const taskNoteIds = Object.fromEntries(
-		await listNoteIdsForTargets(
-			sb,
-			"task",
-			tasks.map((t) => t.id),
-		),
-	);
+	// Security boundary first (iron rule #2) — the cached reads use the
+	// service-role client.
+	await requireOwnerPage();
+	const [{ tasks, taskNoteIds }, domains] = await Promise.all([
+		getCachedInbox(),
+		getCachedDomains(false),
+	]);
 
 	return (
 		<div>

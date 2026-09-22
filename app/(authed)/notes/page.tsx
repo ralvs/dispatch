@@ -1,9 +1,8 @@
 import { HeaderCreateButton, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
+import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedNoteLists } from "@/lib/cache/notes";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { listDomains } from "@/lib/services/domains";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createBlankNoteAction } from "./actions";
 import { NoteList } from "./note-list";
 
@@ -14,7 +13,7 @@ export default async function NotesPage() {
 	const [{ needsReview, allNotes }, tz, domains] = await Promise.all([
 		getCachedNoteLists(),
 		getCachedAppTimezone(),
-		listDomains(createAdminClient()),
+		getCachedDomains(false),
 	]);
 
 	return (

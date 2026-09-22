@@ -58,10 +58,9 @@ import { CacheTag, type CacheTagName } from "@/lib/cache/tags";
  * buys the former. Tags are worth wiring for the server-side query saving
  * alone, which is why tasks / notes / links are now cached in lib/cache/.
  *
- * Still consumed by nothing, and therefore no-ops: day-schedule (orphaned when
- * 38df3e3 removed its last reader), routines, quotes, journal, people,
- * projects, notifications. They are kept, not deleted, so that the external
- * write paths below stay correct-by-construction if a cached read is added.
+ * Every tag now has a live reader in lib/cache/. Each reader names the writes
+ * that move its data (lib/cache/manifest.ts), and invalidate.test.ts fails when
+ * one of those writes does not bust the reader's tag.
  */
 /**
  * One path to revalidate. `layout` mirrors revalidatePath's second argument.
@@ -136,7 +135,7 @@ export function invalidationFor(kind: MutationKind, detail?: { id?: string }): I
 		case "settings.domain":
 			// Kind name kept for call-site stability; domains live on /domains now.
 			return {
-				tags: [CacheTag.settings, CacheTag.todayDigest, CacheTag.tasks],
+				tags: [CacheTag.settings, CacheTag.todayDigest, CacheTag.tasks, CacheTag.domains],
 				paths: p("/domains", "/today", "/tasks", "/projects"),
 			};
 		case "settings.timezone":

@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
+import { getCachedDomains } from "@/lib/cache/domains";
+import { getCachedProject } from "@/lib/cache/projects";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { todayInTz } from "@/lib/dates";
-import { listDomains } from "@/lib/services/domains";
-import { getProject, listProjects, listTasksForProject } from "@/lib/services/projects";
-import { getAppTimezone } from "@/lib/services/settings";
 import { AddTaskButton } from "../add-task-button";
 import { ProjectDetail } from "./project-detail";
 
@@ -14,16 +14,16 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 	if (!parsedId.success) notFound();
 	const id = parsedId.data;
 
-	const { sb } = await requireOwnerPage();
-	const project = await getProject(sb, id);
-	if (!project) notFound();
-
-	const [tasks, domains, projects, tz] = await Promise.all([
-		listTasksForProject(sb, id),
-		listDomains(sb, { includeArchived: true }),
-		listProjects(sb),
-		getAppTimezone(sb),
+	// Security boundary first (iron rule #2) — the cached reads use the
+	// service-role client.
+	await requireOwnerPage();
+	const [detail, domains, tz] = await Promise.all([
+		getCachedProject(id),
+		getCachedDomains(true),
+		getCachedAppTimezone(),
 	]);
+	if (!detail) notFound();
+	const { project, tasks, projects } = detail;
 
 	const todayIso = todayInTz(tz);
 

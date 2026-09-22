@@ -1,12 +1,14 @@
 import { EmptyState, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
-import { listQuotes } from "@/lib/services/quotes";
+import { getCachedQuotes } from "@/lib/cache/quotes";
 import { QuoteCreateButton } from "./quote-form";
 import { QuoteRowItem } from "./quote-row";
 
 export default async function QuotesPage() {
-	const { sb } = await requireOwnerPage();
-	const quotes = await listQuotes(sb);
+	// Security boundary first (iron rule #2) — the cached reads use the
+	// service-role client.
+	await requireOwnerPage();
+	const quotes = await getCachedQuotes();
 
 	return (
 		<div>

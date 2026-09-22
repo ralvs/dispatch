@@ -1,25 +1,24 @@
 import { EmptyState, ListSection, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
+import { getCachedDomains } from "@/lib/cache/domains";
+import { getCachedProjectBoard } from "@/lib/cache/projects";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { todayInTz } from "@/lib/dates";
-import { listDomains } from "@/lib/services/domains";
-import { countTasksByProject, listProjects } from "@/lib/services/projects";
-import { getAppTimezone } from "@/lib/services/settings";
-import { listTasks } from "@/lib/services/tasks";
 import { AddTaskButton } from "./add-task-button";
 import { STATUS_GROUPS } from "./constants";
 import { ProjectCreateButton } from "./project-form";
 import { ProjectRowItem } from "./project-row";
 
 export default async function ProjectsPage() {
-	const { sb } = await requireOwnerPage();
-	const [projects, domains, openTasks, taskCounts, tz] = await Promise.all([
-		listProjects(sb),
-		listDomains(sb, { includeArchived: true }),
-		// Open tasks for the inline lists (plan O5). One read for the whole
-		// page rather than one per row.
-		listTasks(sb, { status: "open" }),
-		countTasksByProject(sb),
-		getAppTimezone(sb),
+	// Security boundary first (iron rule #2) — the cached reads use the
+	// service-role client.
+	await requireOwnerPage();
+	// Open tasks for the inline lists (plan O5) come with the board: one read
+	// for the whole page rather than one per row.
+	const [{ projects, openTasks, taskCounts }, domains, tz] = await Promise.all([
+		getCachedProjectBoard(),
+		getCachedDomains(true),
+		getCachedAppTimezone(),
 	]);
 
 	// The task form only needs a name to pick; the domain options carry colour

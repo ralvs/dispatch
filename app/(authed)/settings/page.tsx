@@ -3,7 +3,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PageHeader, SectionHead } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
-import { getAppTimezone, getReminderSettings } from "@/lib/services/settings";
+import { getCachedAppTimezone, getCachedReminderSettings } from "@/lib/cache/settings";
 import { ReminderForm } from "./reminder-form";
 import { TimezoneForm } from "./timezone-form";
 
@@ -12,8 +12,13 @@ import { TimezoneForm } from "./timezone-form";
  * the More menu (Pass 4 / C4). Domains are a Library page now.
  */
 export default async function SettingsPage() {
-	const { sb, claims } = await requireOwnerPage();
-	const [tz, reminderSettings] = await Promise.all([getAppTimezone(sb), getReminderSettings(sb)]);
+	// Security boundary first (iron rule #2) — the cached reads use the
+	// service-role client.
+	const { claims } = await requireOwnerPage();
+	const [tz, reminderSettings] = await Promise.all([
+		getCachedAppTimezone(),
+		getCachedReminderSettings(),
+	]);
 
 	return (
 		<div>

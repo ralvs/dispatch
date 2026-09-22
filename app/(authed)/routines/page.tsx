@@ -1,26 +1,21 @@
 import { EmptyState, PageHeader, StatBand } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
+import { getCachedRoutines } from "@/lib/cache/routines";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { shiftDay, todayInTz } from "@/lib/dates";
 import { BACKFILL_DAYS, computeRoutineStats, recentDaysGrid } from "@/lib/routine-stats";
-import { listCompletionsForRoutines, listRoutines } from "@/lib/services/routines";
-import { getAppTimezone } from "@/lib/services/settings";
 import { RoutineCreateButton } from "./routine-form";
 import { RoutineRowItem } from "./routine-row";
 import { routineStats } from "./routine-stats-band";
 
 export default async function RoutinesPage() {
-	const { sb } = await requireOwnerPage();
-	// Completions depend on the routine ids, so that hop stays sequential; the
-	// timezone read does not, and used to sit in front of both.
-	const [tz, routines] = await Promise.all([getAppTimezone(sb), listRoutines(sb)]);
+	// Security boundary first (iron rule #2) — the cached reads use the
+	// service-role client.
+	await requireOwnerPage();
+	// The window start is the cache key, so the day is settled before the read.
+	const tz = await getCachedAppTimezone();
 	const todayIso = todayInTz(tz);
-	const sinceIso = shiftDay(todayIso, -35);
-
-	const completionsByRoutine = await listCompletionsForRoutines(
-		sb,
-		routines.map((r) => r.id),
-		sinceIso,
-	);
+	const { routines, completionsByRoutine } = await getCachedRoutines(shiftDay(todayIso, -35));
 
 	// Computed once here and handed to both the band and the rows — two
 	// passes over the same completion log could drift.
