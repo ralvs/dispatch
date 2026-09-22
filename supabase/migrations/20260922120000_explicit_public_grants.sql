@@ -11,7 +11,11 @@
 -- On the hosted project this is a no-op: it mirrors, privilege for privilege,
 -- the grants and default privileges already in place there (checked 2026-09-22).
 
-grant all on all tables in schema public to anon, authenticated, service_role;
+-- Tables list their privileges rather than `all`: on Postgres 17 `all` also
+-- carries MAINTAIN, which the hosted tables do not have, so `all` would not be
+-- a no-op there. The default privileges below do include it, as they do there.
+grant select, insert, update, delete, truncate, references, trigger
+  on all tables in schema public to anon, authenticated, service_role;
 grant all on all sequences in schema public to anon, authenticated, service_role;
 grant all on all functions in schema public to anon, authenticated, service_role;
 
