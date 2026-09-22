@@ -39,3 +39,12 @@ export const UpdateAppSettingsSchema = z.object({
 
 export type AppSettings = z.infer<typeof AppSettingsSchema>;
 export type UpdateAppSettings = z.infer<typeof UpdateAppSettingsSchema>;
+
+/** The /settings timezone form. */
+export const TimezoneFormSchema = z.object({ timezone: TimezoneSchema });
+
+/** The /settings reminders form. */
+export const ReminderFormSchema = z.object({
+	reminder_offset_minutes: ReminderOffsetMinutesSchema,
+	reminder_anchor_time: ReminderAnchorTimeSchema,
+});

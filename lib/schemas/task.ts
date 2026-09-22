@@ -69,7 +69,11 @@ export const TaskSchema = z.object({
 // the two paths cannot drift on what a valid time or cadence is.
 export const CreateTaskFormSchema = z
 	.object({
-		title: z.string().trim().min(1).max(500),
+		title: z
+			.string({ error: "Give the task a title." })
+			.trim()
+			.min(1, "Give the task a title.")
+			.max(500),
 		notes: z.string().trim().max(5000).optional(),
 		due_date: z.iso.date().optional().or(z.literal("")),
 		due_time: WallClockTimeSchema.optional().or(z.literal("")),
@@ -80,7 +84,7 @@ export const CreateTaskFormSchema = z
 		// not the rule. A task may still BE unfiled (capture routes there when
 		// it cannot tell, docs/adr/0027); this form is simply not a way to make
 		// one, and that has to be true where the write happens.
-		domain_id: z.uuid(),
+		domain_id: z.uuid({ error: "Pick a domain." }),
 		// The project tag, settable at last (shape plan §06). The service has
 		// always accepted it; only the form was missing, which left capture's
 		// guess the sole writer and no way to correct it.
@@ -92,7 +96,7 @@ export const CreateTaskFormSchema = z
 	// validation error rather than letting it reach the service, where it
 	// would otherwise be silently coerced away.
 	.refine((v) => !(v.due_time && !v.due_date), {
-		message: "due_time requires due_date",
+		message: "A time needs a date.",
 		path: ["due_time"],
 	});
 

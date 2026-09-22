@@ -40,7 +40,7 @@ const DB_SOURCE_TYPES = ["book", "article", "podcast", "video", "conversation", 
 const DB_ADDED_VIA = ["voice", "readwise_import", "manual", "journal_extraction"] as const;
 
 export const CreateQuoteSchema = z.object({
-	text: z.string().min(1),
+	text: z.string({ error: "Write the quote." }).min(1, "Write the quote."),
 	page_number: z.number().int().nullable().optional(),
 	chapter: z.string().nullable().optional(),
 	source_type: z.enum(DB_SOURCE_TYPES).nullable().optional(),

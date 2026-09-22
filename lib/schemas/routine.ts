@@ -44,7 +44,7 @@ export const RoutineSchema = z.object({
 });
 
 export const CreateRoutineSchema = z.object({
-	name: z.string().min(1),
+	name: z.string({ error: "Give the routine a name." }).min(1, "Give the routine a name."),
 	description: z.string().nullable().optional(),
 	position: z.number().int().optional(),
 	time_of_day: TimeOfDayBucketSchema.optional(),
