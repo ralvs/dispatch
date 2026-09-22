@@ -1,26 +1,30 @@
 "use server";
 
-import { z } from "zod";
+import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
+import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { ReminderFormSchema, TimezoneFormSchema } from "@/lib/schemas/app-settings";
 import { updateAppTimezone, updateReminderSettings } from "@/lib/services/settings";
 
-export async function updateTimezoneAction(formData: FormData) {
+export async function updateTimezoneAction(formData: FormData): Promise<ActionResult> {
 	const { sb } = await requireOwnerPage();
-	await updateAppTimezone(sb, z.string().min(1).parse(formData.get("timezone")));
-	// Every page derives its day boundary from this one value.
-	afterMutation("settings.timezone");
+	return runFormAction(formData, async () => {
+		const { timezone } = decodeForm(TimezoneFormSchema, formData);
+		await updateAppTimezone(sb, timezone);
+		// Every page derives its day boundary from this one value.
+		afterMutation("settings.timezone");
+	});
 }
 
-export async function updateReminderSettingsAction(formData: FormData) {
+export async function updateReminderSettingsAction(formData: FormData): Promise<ActionResult> {
 	const { sb } = await requireOwnerPage();
-	const offsetMinutes = z.coerce
-		.number()
-		.int()
-		.min(0)
-		.max(2880)
-		.parse(formData.get("reminder_offset_minutes"));
-	const anchorTime = z.string().min(1).parse(formData.get("reminder_anchor_time"));
-	await updateReminderSettings(sb, { offsetMinutes, anchorTime });
-	afterMutation("settings.reminders");
+	return runFormAction(formData, async () => {
+		const parsed = decodeForm(ReminderFormSchema, formData);
+		await updateReminderSettings(sb, {
+			offsetMinutes: parsed.reminder_offset_minutes,
+			anchorTime: parsed.reminder_anchor_time,
+		});
+		afterMutation("settings.reminders");
+	});
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useOptimistic, useState, useTransition } from "react";
 import { EmptyState, PageHeader, SectionHead, StatBand } from "@/components/ui";
+import type { ActionResult } from "@/lib/action-result";
 import { dateOfInstant, recentDoneSinceDate } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { TaskRow } from "@/lib/services/tasks";
@@ -287,19 +288,16 @@ export function TaskList({
 		(t) => t.completed_at !== null && dateOfInstant(t.completed_at, tz) >= sinceDate,
 	);
 
-	function onCreate(formData: FormData): Promise<void> {
+	function onCreate(formData: FormData): Promise<ActionResult> {
 		const optimistic = optimisticTaskFromForm(formData, domains, projects ?? []);
 		sessionCreatedIds.add(optimistic.id);
 		// useOptimistic must run inside a transition owned here (not only the form's).
 		return new Promise((resolve, reject) => {
 			startTransition(() => {
 				dispatchOptimistic({ type: "create", task: optimistic });
-				createTaskAction(formData)
-					.then(resolve)
-					.catch((err) => {
-						// Collapsible form also toasts; keep reject so form stays open.
-						reject(err);
-					});
+				// A rejected field resolves as a failed result, and the optimistic
+				// row falls away when the transition settles with nothing to keep it.
+				createTaskAction(formData).then(resolve).catch(reject);
 			});
 		});
 	}

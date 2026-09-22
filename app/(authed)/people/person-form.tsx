@@ -18,7 +18,7 @@ export function PersonCreateButton() {
 			errorMessage="Couldn't add person. Try again."
 			action={createPersonAction}
 		>
-			<Field>
+			<Field name="name">
 				<Input
 					name="name"
 					required
@@ -29,7 +29,7 @@ export function PersonCreateButton() {
 				/>
 			</Field>
 			<div className="grid grid-cols-2 gap-3">
-				<Field label="Relationship">
+				<Field label="Relationship" name="relationship_type">
 					<Select name="relationship_type" defaultValue="">
 						{RELATIONSHIP_TYPES.map((r) => (
 							<option key={r.value} value={r.value}>
@@ -38,13 +38,13 @@ export function PersonCreateButton() {
 						))}
 					</Select>
 				</Field>
-				<Field label="Company">
+				<Field label="Company" name="company">
 					<Input name="company" placeholder="Optional" />
 				</Field>
-				<Field label="Email">
+				<Field label="Email" name="email">
 					<Input name="email" type="email" placeholder="Optional" />
 				</Field>
-				<Field label="Phone">
+				<Field label="Phone" name="phone">
 					<Input name="phone" placeholder="Optional" />
 				</Field>
 			</div>

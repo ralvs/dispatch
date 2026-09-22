@@ -20,7 +20,7 @@ export function ProjectCreateButton({ domains }: { domains: DomainRow[] }) {
 			action={createProjectAction}
 			size="lg"
 		>
-			<Field>
+			<Field name="name">
 				<Input
 					name="name"
 					required
@@ -30,11 +30,11 @@ export function ProjectCreateButton({ domains }: { domains: DomainRow[] }) {
 					data-autofocus
 				/>
 			</Field>
-			<Field label="Description">
+			<Field label="Description" name="description">
 				<Textarea name="description" rows={2} placeholder="Optional" size="sm" />
 			</Field>
 			<div className="grid grid-cols-2 gap-3">
-				<Field label="Domain">
+				<Field label="Domain" name="domain_id">
 					<Select name="domain_id" defaultValue="" required>
 						<option value="" disabled>
 							Choose a domain
@@ -46,10 +46,10 @@ export function ProjectCreateButton({ domains }: { domains: DomainRow[] }) {
 						))}
 					</Select>
 				</Field>
-				<Field label="Start date">
+				<Field label="Start date" name="start_date">
 					<Input name="start_date" type="date" />
 				</Field>
-				<Field label="Target date">
+				<Field label="Target date" name="target_date">
 					<Input name="target_date" type="date" />
 				</Field>
 			</div>

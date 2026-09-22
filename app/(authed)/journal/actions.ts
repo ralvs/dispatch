@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
@@ -21,18 +22,20 @@ function tagsFromForm(raw: FormDataEntryValue | null): string[] | undefined {
 	return tags.length > 0 ? tags : [];
 }
 
-export async function createEntryAction(formData: FormData) {
+export async function createEntryAction(formData: FormData): Promise<ActionResult> {
 	const { sb } = await requireOwnerPage();
-	const entryDate = formData.get("entry_date");
-	const parsed = decodeForm(CreateJournalEntrySchema, formData, {
-		overrides: {
-			tags: tagsFromForm(formData.get("tags")),
-			entry_date:
-				typeof entryDate === "string" && entryDate ? entryDate : await todayForRequest(sb),
-		},
+	return runFormAction(formData, async () => {
+		const entryDate = formData.get("entry_date");
+		const parsed = decodeForm(CreateJournalEntrySchema, formData, {
+			overrides: {
+				tags: tagsFromForm(formData.get("tags")),
+				entry_date:
+					typeof entryDate === "string" && entryDate ? entryDate : await todayForRequest(sb),
+			},
+		});
+		await createEntry(sb, parsed);
+		revalidateJournalViews();
 	});
-	await createEntry(sb, parsed);
-	revalidateJournalViews();
 }
 
 export async function deleteEntryAction(id: string) {

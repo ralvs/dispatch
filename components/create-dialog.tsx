@@ -11,9 +11,19 @@
 // The trigger is the bare pill `+` shared with `/tasks` (HeaderCreateButton),
 // not a labelled `+ New X`: every object list now carries the same control.
 
-import { type ReactNode, useRef, useState, useTransition } from "react";
-import { Button, Dialog, DialogBody, DialogFooter, HeaderCreateButton } from "@/components/ui";
-import { runAction } from "@/lib/client/toast";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+	Dialog,
+	DialogBody,
+	DialogFooter,
+	FIRST_INVALID,
+	FormButton,
+	FormStateProvider,
+	HeaderCreateButton,
+	SubmitButton,
+	useResultAction,
+} from "@/components/ui";
+import type { ActionResult } from "@/lib/action-result";
 
 /**
  * The standing header `+` on its own, with no dialog behind it.
@@ -39,13 +49,15 @@ export function CreateTrigger({
  * Create an object: a header `+` that opens a dialog, runs a server action,
  * and closes on success (ADR-0044, DESIGN.md "Creating an object").
  *
- * A call site supplies its `<Field>`s and its four strings. Everything else —
- * the open flag, the pending transition, the reset-then-close order on
- * success, the footer's Cancel/submit pair — lives here, so a change to the
- * create contract is one edit rather than four with nothing to catch a miss.
+ * A call site supplies its `<Field name>`s and its four strings. Everything
+ * else — the open flag, the action state, the footer's Cancel/submit pair —
+ * lives here, so a change to the create contract is one edit rather than five
+ * with nothing to catch a miss.
  *
- * Failure is a toast and an open dialog with the typing still in it; success
- * is silent, because the new row appearing in the list is the confirmation.
+ * A rejected field keeps the dialog open with its message under the field and
+ * the typing still in place (#23); focus moves to the first rejected field.
+ * An unexpected failure is a toast. Success is silent, because the new row
+ * appearing in the list is the confirmation.
  */
 export function CreateDialogButton({
 	label,
@@ -64,43 +76,66 @@ export function CreateDialogButton({
 	submitLabel: string;
 	/** The failure toast. There is no success toast. */
 	errorMessage: string;
-	action: (formData: FormData) => Promise<unknown>;
+	action: (formData: FormData) => Promise<ActionResult<unknown>>;
 	/** Widen the panel for a form that runs to a second column of fields. */
 	size?: "sm" | "md" | "lg";
 	/** The form's fields, and only those. */
 	children: ReactNode;
 }) {
 	const [open, setOpen] = useState(false);
-	const [pending, startTransition] = useTransition();
-	const formRef = useRef<HTMLFormElement>(null);
-
-	function submit(formData: FormData) {
-		startTransition(async () => {
-			const ok = await runAction(() => action(formData), errorMessage);
-			if (ok) {
-				formRef.current?.reset();
-				setOpen(false);
-			}
-		});
-	}
 
 	return (
 		<>
 			<CreateTrigger label={label} onClick={() => setOpen(true)} />
 			<Dialog open={open} onClose={() => setOpen(false)} title={title} size={size}>
-				<form ref={formRef} action={submit}>
-					<DialogBody className="space-y-7">{children}</DialogBody>
-					<DialogFooter>
-						<span className="min-w-2 flex-1" />
-						<Button variant="tertiary" size="sm" disabled={pending} onClick={() => setOpen(false)}>
-							Cancel
-						</Button>
-						<Button type="submit" variant="primary" size="sm" isPending={pending}>
-							{submitLabel}
-						</Button>
-					</DialogFooter>
-				</form>
+				{/* Mounted only while open (Dialog), so every open starts clean. */}
+				<CreateDialogForm
+					action={action}
+					errorMessage={errorMessage}
+					submitLabel={submitLabel}
+					onDone={() => setOpen(false)}
+				>
+					{children}
+				</CreateDialogForm>
 			</Dialog>
 		</>
+	);
+}
+
+function CreateDialogForm({
+	action,
+	errorMessage,
+	submitLabel,
+	onDone,
+	children,
+}: {
+	action: (formData: FormData) => Promise<ActionResult<unknown>>;
+	errorMessage: string;
+	submitLabel: string;
+	onDone: () => void;
+	children: ReactNode;
+}) {
+	const formRef = useRef<HTMLFormElement>(null);
+	const [state, formAction] = useResultAction(action, { onSuccess: onDone, errorMessage });
+
+	useEffect(() => {
+		if (state.fieldErrors) formRef.current?.querySelector<HTMLElement>(FIRST_INVALID)?.focus();
+	}, [state]);
+
+	return (
+		<form ref={formRef} action={formAction} noValidate>
+			<FormStateProvider state={state}>
+				<DialogBody className="space-y-7">{children}</DialogBody>
+			</FormStateProvider>
+			<DialogFooter>
+				<span className="min-w-2 flex-1" />
+				<FormButton variant="tertiary" size="sm" onClick={onDone}>
+					Cancel
+				</FormButton>
+				<SubmitButton variant="primary" size="sm">
+					{submitLabel}
+				</SubmitButton>
+			</DialogFooter>
+		</form>
 	);
 }

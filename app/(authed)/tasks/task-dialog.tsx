@@ -1,8 +1,17 @@
 "use client";
 
-import { type KeyboardEvent, useRef, useState, useTransition } from "react";
-import { Button, Dialog, DialogBody, DialogFooter } from "@/components/ui";
-import { runAction } from "@/lib/client/toast";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import {
+	Dialog,
+	DialogBody,
+	DialogFooter,
+	FIRST_INVALID,
+	FormButton,
+	FormStateProvider,
+	SubmitButton,
+	useResultAction,
+} from "@/components/ui";
+import type { ActionResult } from "@/lib/action-result";
 import type { MentionCandidate } from "@/lib/mentions";
 import { titleOnlyCreate } from "@/lib/services/capture/title-only";
 import { createTaskAction, updateTaskAction } from "./actions";
@@ -83,27 +92,75 @@ export function TaskDialog({
 	defaults?: TaskFieldDefaults;
 	/** @mention candidates (docs/adr/0030) for title and notes. */
 	people?: MentionCandidate[];
-	onCreate?: (formData: FormData) => Promise<void>;
+	onCreate?: (formData: FormData) => Promise<ActionResult<unknown>>;
 	/** `domainId` is the form's own pick — mandatory there, so always present. */
 	onQuickAdd?: (text: string, domainId: string) => Promise<void>;
 	taskId?: string;
 	onDelete?: () => void;
 	onSaved?: () => void;
 }) {
-	const formRef = useRef<HTMLFormElement>(null);
-	const [pending, startTransition] = useTransition();
-	// Guards the footer's primary against an empty title without making the
-	// whole form controlled — `required` still carries the real enforcement.
-	const [hasTitle, setHasTitle] = useState(false);
-	// The fields unmount with the dialog, so they reseed from `defaults` on
-	// every open — this flag has to do the same, or a title typed in the
-	// capture bar after mount would still leave the primary disabled.
-	const [wasOpen, setWasOpen] = useState(false);
-	if (open !== wasOpen) {
-		setWasOpen(open);
-		if (open) setHasTitle(Boolean(defaults?.title?.trim()));
-	}
+	return (
+		<Dialog open={open} onClose={onClose} title={COPY[mode].title} size="lg">
+			{/* Mounted only while open (Dialog), so every open reseeds from
+			    `defaults` and starts with no errors. */}
+			<TaskDialogForm
+				mode={mode}
+				domains={domains}
+				projects={projects}
+				lockProject={lockProject}
+				lockDomain={lockDomain}
+				todayIso={todayIso}
+				defaults={defaults}
+				people={people}
+				onCreate={onCreate}
+				onQuickAdd={onQuickAdd}
+				taskId={taskId}
+				onDelete={onDelete}
+				onDone={() => {
+					onSaved?.();
+					onClose();
+				}}
+				onCancel={onClose}
+			/>
+		</Dialog>
+	);
+}
 
+function TaskDialogForm({
+	mode,
+	domains,
+	projects,
+	lockProject,
+	lockDomain,
+	todayIso,
+	defaults,
+	people,
+	onCreate,
+	onQuickAdd,
+	taskId,
+	onDelete,
+	onDone,
+	onCancel,
+}: {
+	mode: TaskDialogMode;
+	domains: TaskDomainOption[];
+	projects: TaskProjectOption[];
+	lockProject: boolean;
+	lockDomain: boolean;
+	todayIso: string;
+	defaults?: TaskFieldDefaults;
+	people: MentionCandidate[];
+	onCreate?: (formData: FormData) => Promise<ActionResult<unknown>>;
+	onQuickAdd?: (text: string, domainId: string) => Promise<void>;
+	taskId?: string;
+	onDelete?: () => void;
+	onDone: () => void;
+	onCancel: () => void;
+}) {
+	const formRef = useRef<HTMLFormElement>(null);
+	// Guards the footer's primary against an empty title without making the
+	// whole form controlled — the server still carries the real enforcement.
+	const [hasTitle, setHasTitle] = useState(Boolean(defaults?.title?.trim()));
 	const copy = COPY[mode];
 
 	/**
@@ -121,31 +178,32 @@ export function TaskDialog({
 	 * uncontrolled by design and remount on every open, so the submitted payload
 	 * is the only place that cannot drift out of sync with what is on screen.
 	 */
-	function submit(formData: FormData) {
-		if (pending) return;
-		startTransition(async () => {
-			const ok = await runAction(
-				() => {
-					if (mode === "edit") {
-						if (!taskId) throw new Error("TaskDialog: edit mode needs a taskId");
-						return updateTaskAction(taskId, formData);
-					}
-					const title = String(formData.get("title") ?? "").trim();
-					if (onQuickAdd && title && titleOnlyCreate(formData)) {
-						// The sentence goes to the parser, the domain goes as stated —
-						// the field is mandatory now, so it is never "untouched" and
-						// cannot be read as the operator declining to file.
-						return onQuickAdd(title, String(formData.get("domain_id") ?? ""));
-					}
-					return onCreate ? onCreate(formData) : createTaskAction(formData);
-				},
-				mode === "edit" ? "Couldn't save task. Try again." : "Couldn't add that task. Try again.",
-			);
-			if (!ok) return;
-			onSaved?.();
-			onClose();
-		});
+	async function write(formData: FormData): Promise<ActionResult<unknown>> {
+		if (mode === "edit") {
+			if (!taskId) throw new Error("TaskDialog: edit mode needs a taskId");
+			return updateTaskAction(taskId, formData);
+		}
+		const title = String(formData.get("title") ?? "").trim();
+		if (onQuickAdd && title && titleOnlyCreate(formData)) {
+			// The sentence goes to the parser, the domain goes as stated — the
+			// field is mandatory now, so it is never "untouched" and cannot be
+			// read as the operator declining to file. Not a form-fed action
+			// (#22 scope), so it still throws on failure.
+			await onQuickAdd(title, String(formData.get("domain_id") ?? ""));
+			return { ok: true, data: undefined };
+		}
+		return onCreate ? onCreate(formData) : createTaskAction(formData);
 	}
+
+	const [state, formAction, pending] = useResultAction(write, {
+		onSuccess: onDone,
+		errorMessage:
+			mode === "edit" ? "Couldn't save task. Try again." : "Couldn't add that task. Try again.",
+	});
+
+	useEffect(() => {
+		if (state.fieldErrors) formRef.current?.querySelector<HTMLElement>(FIRST_INVALID)?.focus();
+	}, [state]);
 
 	function onFormKeyDown(event: KeyboardEvent<HTMLFormElement>) {
 		// Enter saves from single-line fields; the notes textarea keeps newlines,
@@ -166,25 +224,26 @@ export function TaskDialog({
 			return;
 		}
 		event.preventDefault();
-		formRef.current?.requestSubmit();
+		if (!pending) formRef.current?.requestSubmit();
 	}
 
 	return (
-		<Dialog open={open} onClose={onClose} title={copy.title} size="lg">
-			<form
-				ref={formRef}
-				action={submit}
-				onKeyDown={onFormKeyDown}
-				onInput={(event) => {
-					const target = event.target;
-					if (target instanceof HTMLInputElement && target.name === "title") {
-						setHasTitle(target.value.trim().length > 0);
-					}
-				}}
-				className={`flex min-h-0 flex-1 flex-col ${pending ? "opacity-50" : ""}`}
-			>
-				{/* space-y-10: each label belongs to the control under it, and at a
-				    tighter gap it starts reading as a caption on the one above. */}
+		<form
+			ref={formRef}
+			action={formAction}
+			noValidate
+			onKeyDown={onFormKeyDown}
+			onInput={(event) => {
+				const target = event.target;
+				if (target instanceof HTMLInputElement && target.name === "title") {
+					setHasTitle(target.value.trim().length > 0);
+				}
+			}}
+			className={`flex min-h-0 flex-1 flex-col ${pending ? "opacity-50" : ""}`}
+		>
+			{/* space-y-10: each label belongs to the control under it, and at a
+			    tighter gap it starts reading as a caption on the one above. */}
+			<FormStateProvider state={state}>
 				<DialogBody className="space-y-10">
 					<TaskFormFields
 						domains={domains}
@@ -207,29 +266,23 @@ export function TaskDialog({
 						}
 					/>
 				</DialogBody>
+			</FormStateProvider>
 
-				{/* Destructive left · primary right: Delete | … | Cancel | Save */}
-				<DialogFooter>
-					{onDelete && (
-						<Button type="button" variant="danger" size="sm" disabled={pending} onClick={onDelete}>
-							Delete
-						</Button>
-					)}
-					<span className="min-w-2 flex-1" />
-					<Button type="button" variant="tertiary" size="sm" disabled={pending} onClick={onClose}>
-						Cancel
-					</Button>
-					<Button
-						type="submit"
-						variant="primary"
-						size="sm"
-						isPending={pending}
-						disabled={pending || !hasTitle}
-					>
-						{pending ? copy.pending : copy.submit}
-					</Button>
-				</DialogFooter>
-			</form>
-		</Dialog>
+			{/* Destructive left · primary right: Delete | … | Cancel | Save */}
+			<DialogFooter>
+				{onDelete && (
+					<FormButton variant="danger" size="sm" onClick={onDelete}>
+						Delete
+					</FormButton>
+				)}
+				<span className="min-w-2 flex-1" />
+				<FormButton variant="tertiary" size="sm" onClick={onCancel}>
+					Cancel
+				</FormButton>
+				<SubmitButton variant="primary" size="sm" disabled={!hasTitle} pendingLabel={copy.pending}>
+					{copy.submit}
+				</SubmitButton>
+			</DialogFooter>
+		</form>
 	);
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
@@ -11,11 +12,12 @@ function revalidatePeopleViews() {
 	afterMutation("people.write");
 }
 
-export async function createPersonAction(formData: FormData) {
+export async function createPersonAction(formData: FormData): Promise<ActionResult> {
 	const { sb } = await requireOwnerPage();
-	const parsed = decodeForm(CreatePersonSchema, formData);
-	await createPerson(sb, parsed);
-	revalidatePeopleViews();
+	return runFormAction(formData, async () => {
+		await createPerson(sb, decodeForm(CreatePersonSchema, formData));
+		revalidatePeopleViews();
+	});
 }
 
 export async function deletePersonAction(id: string) {
