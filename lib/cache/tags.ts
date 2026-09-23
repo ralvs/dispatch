@@ -17,6 +17,8 @@ export const CacheTag = {
 	people: "people",
 	projects: "projects",
 	settings: "settings",
+	/** Life domains: names, colours, cadence, archive state. */
+	domains: "domains",
 } as const;
 
 export type CacheTagName = (typeof CacheTag)[keyof typeof CacheTag];

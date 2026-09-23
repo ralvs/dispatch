@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { env, isCalendarBridgeConfigured, isSupabaseConfigured } from "@/lib/env";
-import { afterExternalMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/mutation-feedback/invalidate";
 import { BridgeSyncBodySchema } from "@/lib/schemas/calendar";
 import { isAuthorized } from "@/lib/secret-auth";
 import { syncBridgeEvents } from "@/lib/services/calendar-bridge";
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
 			windowEnd: parsed.data.window_end,
 		});
 
-		afterExternalMutation("today.only");
+		afterExternalMutation(...EXTERNAL_WRITES.calendarBridge);
 
 		return NextResponse.json(result);
 	} catch (err) {
@@ -50,6 +50,9 @@ export async function POST(request: Request) {
 				title: "Calendar bridge failed",
 				body: message.slice(0, 500),
 			});
+			// The Today badge counts unread rows from a cached entry; without this
+			// the failure sits unannounced until some other write busts it.
+			afterExternalMutation(...EXTERNAL_WRITES.calendarBridgeFailure);
 		} catch {
 			// Best-effort ledger (ADR-0015).
 		}

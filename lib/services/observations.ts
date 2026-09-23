@@ -150,7 +150,19 @@ export async function listDomainTouches(
 	nowMs: number = Date.now(),
 ): Promise<DomainTouch[]> {
 	const tz = await getAppTimezone(sb);
-	const todayIso = todayInTz(tz, nowMs);
+	return listDomainTouchesOn(sb, todayInTz(tz, nowMs), tz);
+}
+
+/**
+ * The same, for a day the caller already knows. The clock stays with the
+ * caller, so a `"use cache"` reader can key on the day (iron rule #1) instead
+ * of reading "now" inside its cached body.
+ */
+export async function listDomainTouchesOn(
+	sb: SupabaseClient,
+	todayIso: string,
+	tz: string,
+): Promise<DomainTouch[]> {
 	const [domains, taskRows, projectRows, noteRows, quietProjectIds] = await Promise.all([
 		listDomains(sb),
 		unwrap(

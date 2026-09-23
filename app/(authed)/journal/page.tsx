@@ -1,14 +1,16 @@
 import { EmptyState, ListSection, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
+import { getCachedJournal } from "@/lib/cache/journal";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { formatDay, todayInTz } from "@/lib/dates";
-import { listEntries } from "@/lib/services/journal";
-import { getAppTimezone } from "@/lib/services/settings";
 import { EntryRowItem } from "./entry-row";
 import { JournalForm } from "./journal-form";
 
 export default async function JournalPage() {
-	const { sb } = await requireOwnerPage();
-	const [tz, entries] = await Promise.all([getAppTimezone(sb), listEntries(sb)]);
+	// Security boundary first (iron rule #2) — the cached reads use the
+	// service-role client.
+	await requireOwnerPage();
+	const [tz, entries] = await Promise.all([getCachedAppTimezone(), getCachedJournal()]);
 
 	const groups = new Map<string, typeof entries>();
 	for (const entry of entries) {

@@ -6,43 +6,16 @@ import { z } from "zod";
 import { Button, ListRow, rowTitle, SectionHead } from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
 import { requireOwnerPage } from "@/lib/auth";
+import { getCachedDomains } from "@/lib/cache/domains";
+import { getCachedNoteEditorContext, getCachedNoteLinks } from "@/lib/cache/notes";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
-import { listDomains } from "@/lib/services/domains";
-import { unwrap } from "@/lib/services/errors";
-import { listBacklinks, listLinksForNote } from "@/lib/services/note-links";
-import { getNote, listNoteTitles } from "@/lib/services/notes";
-import { listMentionCandidates } from "@/lib/services/people";
-import { getAppTimezone } from "@/lib/services/settings";
+import { getNote } from "@/lib/services/notes";
 import { detachLinkAction } from "../actions";
 import { AttachmentStrip } from "./attachment-strip";
 import { LinkPicker } from "./link-picker";
 import { NoteEditor } from "./note-editor";
-
-type TaskTargetInfo = { id: string; title: string; status: "open" | "done" };
-type EventTargetInfo = { id: string; title: string; start_at: string };
-
-type Sb = Awaited<ReturnType<typeof requireOwnerPage>>["sb"];
-
-/** Batch-fetches label info for manual link targets — avoids N+1 per row. */
-async function loadManualTargets(
-	sb: Sb,
-	taskIds: string[],
-	eventIds: string[],
-): Promise<{ tasks: Map<string, TaskTargetInfo>; events: Map<string, EventTargetInfo> }> {
-	const [taskRows, eventRows] = await Promise.all([
-		taskIds.length > 0
-			? unwrap(await sb.from("tasks").select("id, title, status").in("id", taskIds))
-			: Promise.resolve([]),
-		eventIds.length > 0
-			? unwrap(await sb.from("calendar_events").select("id, title, start_at").in("id", eventIds))
-			: Promise.resolve([]),
-	]);
-	return {
-		tasks: new Map((taskRows as TaskTargetInfo[]).map((t) => [t.id, t])),
-		events: new Map((eventRows as EventTargetInfo[]).map((e) => [e.id, e])),
-	};
-}
 
 /*
  * The editor is what you opened the page for, so it waits only on its own two
@@ -50,17 +23,10 @@ async function loadManualTargets(
  * links, then a dependent second wave for the manual targets' labels — and
  * streams in behind its own boundary rather than holding the note hostage.
  */
-async function EditorSection({
-	sb,
-	note,
-}: {
-	sb: Sb;
-	note: NonNullable<Awaited<ReturnType<typeof getNote>>>;
-}) {
-	const [noteTitles, people, domains] = await Promise.all([
-		listNoteTitles(sb),
-		listMentionCandidates(sb),
-		listDomains(sb),
+async function EditorSection({ note }: { note: NonNullable<Awaited<ReturnType<typeof getNote>>> }) {
+	const [{ noteTitles, people }, domains] = await Promise.all([
+		getCachedNoteEditorContext(),
+		getCachedDomains(false),
 	]);
 	return (
 		<NoteEditor
@@ -95,25 +61,15 @@ function EditorFallback() {
 	);
 }
 
-async function LinkSections({ sb, noteId }: { sb: Sb; noteId: string }) {
-	const [backlinks, links, tz] = await Promise.all([
-		listBacklinks(sb, noteId),
-		listLinksForNote(sb, noteId),
-		getAppTimezone(sb),
+async function LinkSections({ noteId }: { noteId: string }) {
+	const [{ backlinks, links, targets }, tz] = await Promise.all([
+		getCachedNoteLinks(noteId),
+		getCachedAppTimezone(),
 	]);
 
 	const manualLinks = links.filter((l) => l.kind === "manual");
-	const taskIds = manualLinks
-		.filter((l) => l.target_type === "task" && l.target_task_id)
-		.map((l) => l.target_task_id as string);
-	const eventIds = manualLinks
-		.filter((l) => l.target_type === "event" && l.target_event_id)
-		.map((l) => l.target_event_id as string);
-	const { tasks: taskTargets, events: eventTargets } = await loadManualTargets(
-		sb,
-		taskIds,
-		eventIds,
-	);
+	const taskTargets = new Map(targets.tasks.map((t) => [t.id, t]));
+	const eventTargets = new Map(targets.events.map((e) => [e.id, e]));
 
 	const linkedRows = manualLinks
 		.map((link) => {
@@ -225,7 +181,9 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 	const { sb } = await requireOwnerPage();
 	// The note itself stays awaited here: it is one query, and it is what decides
 	// between this page and a 404 — streaming that decision would mean sending
-	// a 200 and swapping in not-found after the fact.
+	// a 200 and swapping in not-found after the fact. It also stays uncached:
+	// the editor autosaves, and every save would bust a cached body at once
+	// (lib/cache/notes.ts). The two sections below read through the cache.
 	const note = await getNote(sb, parsedId.data);
 	if (!note) notFound();
 
@@ -250,13 +208,13 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 				<div className="min-w-0">
 					<AttachmentStrip noteId={note.id} attachments={note.attachments}>
 						<Suspense fallback={<EditorFallback />}>
-							<EditorSection sb={sb} note={note} />
+							<EditorSection note={note} />
 						</Suspense>
 					</AttachmentStrip>
 				</div>
 				<aside className="min-w-0 lg:sticky lg:top-0">
 					<Suspense fallback={<LinkSectionsFallback />}>
-						<LinkSections sb={sb} noteId={note.id} />
+						<LinkSections noteId={note.id} />
 					</Suspense>
 				</aside>
 			</div>

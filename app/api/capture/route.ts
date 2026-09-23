@@ -3,7 +3,7 @@ import { z } from "zod";
 import { deriveReceipt } from "@/lib/capture/receipt";
 import { env, isSupabaseConfigured } from "@/lib/env";
 import { fetchLinkMetadata } from "@/lib/links/metadata";
-import { afterExternalMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/mutation-feedback/invalidate";
 import { isAuthorized } from "@/lib/secret-auth";
 import { capture } from "@/lib/services/capture";
 import { createLink, updateLinkMetadata } from "@/lib/services/links";
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
 		// The asymmetry this closes: the in-app capture action has always called
 		// afterMutation; this, the external surface writing the same rows, never
 		// invalidated anything (ADR-0035).
-		afterExternalMutation("links.write", "notification.write");
+		afterExternalMutation(...EXTERNAL_WRITES.captureLink);
 
 		try {
 			await recordNotification(sb, {
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
 	// Whatever the parser decided — task, note, or a needs_review degradation —
 	// it lands in one of these three. Cheap enough to name all of them.
 	// capture.settled owns notes/quotes/journal tags; ledger is separate.
-	afterExternalMutation("capture.settled", "notification.write");
+	afterExternalMutation(...EXTERNAL_WRITES.capture);
 
 	try {
 		await recordNotification(sb, {

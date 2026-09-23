@@ -1,15 +1,14 @@
 import { PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
-import { listNotifications } from "@/lib/services/notifications";
-import { getAppTimezone } from "@/lib/services/settings";
+import { getCachedNotifications } from "@/lib/cache/notifications";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { NotificationList } from "./notification-list";
 
 export default async function NotificationsPage() {
-	const { sb } = await requireOwnerPage();
-	const [notifications, tz] = await Promise.all([
-		listNotifications(sb, { limit: 100 }),
-		getAppTimezone(sb),
-	]);
+	// Security boundary first (iron rule #2) — the cached reads use the
+	// service-role client.
+	await requireOwnerPage();
+	const [notifications, tz] = await Promise.all([getCachedNotifications(), getCachedAppTimezone()]);
 	const visible = notifications.filter((n) => n.status !== "dismissed");
 
 	return (

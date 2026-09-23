@@ -1,5 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
+import type { CachedReader } from "@/lib/cache/manifest";
 import { CacheTag } from "@/lib/cache/tags";
 import { listDomains } from "@/lib/services/domains";
 import { listMentionsForSources } from "@/lib/services/mentions";
@@ -55,3 +56,32 @@ export async function getCachedTaskBoard(sinceUtc: string) {
 
 	return { openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions };
 }
+
+export const readers: CachedReader[] = [
+	{
+		reader: "getCachedTaskBoard",
+		reads: [
+			{
+				// Tasks, their mentions, and the domains they are filed under.
+				tag: CacheTag.tasks,
+				writes: [
+					"task.write",
+					"task.assign",
+					"capture.settled",
+					"settings.domain",
+					"settings.timezone",
+				],
+				external: ["capture", "sweep"],
+			},
+			// Which tasks have notes linked to them.
+			{
+				tag: CacheTag.notes,
+				writes: ["notes.write", "capture.settled"],
+				external: ["capture", "sweep"],
+			},
+			// Mention candidates for the task form.
+			{ tag: CacheTag.people, writes: ["people.write"] },
+			{ tag: CacheTag.projects, writes: ["projects.write", "projects.detail"] },
+		],
+	},
+];

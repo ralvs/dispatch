@@ -1,6 +1,14 @@
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
+import type { CachedReader } from "@/lib/cache/manifest";
 import { CacheTag } from "@/lib/cache/tags";
-import { invalidationFor, type MutationKind } from "./invalidate";
+import {
+	EXTERNAL_WRITES,
+	type ExternalWriter,
+	invalidationFor,
+	type MutationKind,
+} from "./invalidate";
 
 /**
  * `invalidationFor` is the pure half of the seam — afterMutation and
@@ -146,6 +154,149 @@ describe("invalidationFor", () => {
 		for (const kind of ALL_KINDS) {
 			const layouts = invalidationFor(kind).paths.filter((p) => p.type === "layout");
 			expect(layouts.length, kind).toBe(kind === "settings.timezone" ? 1 : 0);
+		}
+	});
+});
+
+// Plain fs rather than import.meta.glob: Next and Vite both declare that, and
+// their overloads collide under tsc.
+const read = (file: string) => readFileSync(file, "utf8");
+const cacheDir = path.resolve(import.meta.dirname, "../cache");
+const sources = Object.fromEntries(
+	readdirSync(cacheDir)
+		.filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
+		.map((f) => [f, read(path.join(cacheDir, f))]),
+);
+const apiDir = path.resolve(import.meta.dirname, "../../app/api");
+const routeSources = Object.fromEntries(
+	readdirSync(apiDir, { recursive: true, encoding: "utf8" })
+		.filter((f) => f.endsWith("route.ts"))
+		.map((f) => [f, read(path.join(apiDir, f))]),
+);
+const modules: Record<string, { readers?: CachedReader[] }> = Object.fromEntries(
+	await Promise.all(
+		Object.keys(sources).map(async (f) => [f, await import(`../cache/${f.slice(0, -3)}.ts`)]),
+	),
+);
+
+/**
+ * The guard from #9: a cached reader cannot ship without naming the writes that
+ * move its data, and every named write must bust its tag. Kept apart from the
+ * useOptimistic path guard above — #31 inverts that one and must not touch this.
+ */
+describe("cached readers name the writes that move their data", () => {
+	const tagKey = new Map<string, string>(Object.entries(CacheTag).map(([k, v]) => [v, k]));
+	// A file caches when a function body opens with the directive — not when a
+	// comment mentions it (manifest.ts, tags.ts).
+	const cacheFiles = Object.entries(sources).filter(([, src]) => /^\s*"use cache";$/m.test(src));
+
+	/** The exported `"use cache"` functions of a file, with the tags each one caches under. */
+	function cachedFunctions(src: string): Map<string, Set<string>> {
+		const found = new Map<string, Set<string>>();
+		for (const chunk of src.split(/^export async function /m).slice(1)) {
+			if (!/^\s*"use cache";$/m.test(chunk)) continue;
+			const name = chunk.slice(0, chunk.indexOf("("));
+			const tags = new Set<string>();
+			for (const call of chunk.matchAll(/cacheTag\(([^)]*)\)/g)) {
+				for (const m of call[1].matchAll(/CacheTag\.(\w+)/g)) tags.add(m[1]);
+			}
+			found.set(name, tags);
+		}
+		return found;
+	}
+
+	it("finds the cached readers", () => {
+		expect(cacheFiles.length).toBeGreaterThan(0);
+	});
+
+	it.each(cacheFiles)(
+		"%s declares every cached function and every tag it caches under",
+		(path, src) => {
+			const readers = modules[path]?.readers;
+			expect(readers, `${path} caches without \`export const readers\``).toBeDefined();
+			const declared = new Map(
+				(readers ?? []).map((r) => [
+					r.reader,
+					new Set(r.reads.map((read) => tagKey.get(read.tag))),
+				]),
+			);
+			const actual = cachedFunctions(src);
+			expect([...declared.keys()].sort(), path).toEqual([...actual.keys()].sort());
+			for (const [name, tags] of actual) {
+				expect([...(declared.get(name) ?? [])].sort(), `${path} ${name}`).toEqual([...tags].sort());
+			}
+		},
+	);
+
+	const reads = Object.values(modules).flatMap((m) =>
+		(m.readers ?? []).flatMap((r) => r.reads.map((read) => ({ reader: r.reader, ...read }))),
+	);
+
+	it.each(reads)("$reader: every declared write busts $tag", ({ tag, writes, external }) => {
+		expect(writes.length).toBeGreaterThan(0);
+		for (const kind of writes) {
+			expect(invalidationFor(kind).tags, kind).toContain(tag);
+		}
+		for (const writer of external ?? []) {
+			const tags = EXTERNAL_WRITES[writer].flatMap((kind) => invalidationFor(kind).tags);
+			expect(tags, writer).toContain(tag);
+		}
+	});
+
+	it("routes spread a declared external writer into afterExternalMutation", () => {
+		for (const [path, src] of Object.entries(routeSources)) {
+			for (const call of src.matchAll(/afterExternalMutation\(([^)]*)\)/g)) {
+				expect(call[1], path).toMatch(/^\.\.\.EXTERNAL_WRITES\.\w+$/);
+			}
+		}
+	});
+
+	it("every module that records a notification is one whose write paths were checked", () => {
+		// recordNotification is also reached from inside services, where no route
+		// scan can see it. The callers are pinned; a new one fails here until its
+		// write paths are shown to bust notification.write:
+		// - capture/executor.ts: reached by /api/capture and cron/sweep (both
+		//   declare notification.write) and by the palette's captureText (below).
+		// - reminders.ts: reached by cron/reminders only.
+		const root = path.resolve(import.meta.dirname, "../..");
+		const callers = ["app", "lib"]
+			.flatMap((dir) =>
+				readdirSync(path.join(root, dir), { recursive: true, encoding: "utf8" }).map((f) =>
+					path.join(dir, f),
+				),
+			)
+			.filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f) && !f.startsWith("app/api/"))
+			.filter((f) => read(path.join(root, f)).includes("recordNotification("))
+			.filter((f) => f !== "lib/services/notifications.ts")
+			.sort();
+		expect(callers).toEqual(["lib/services/capture/executor.ts", "lib/services/reminders.ts"]);
+	});
+
+	it("a server action that runs capture busts notification.write", () => {
+		const authed = path.resolve(import.meta.dirname, "../../app/(authed)");
+		const callers = readdirSync(authed, { recursive: true, encoding: "utf8" })
+			.filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f))
+			.map((f) => [f, read(path.join(authed, f))] as const)
+			.filter(([, src]) => src.includes("await capture("));
+		expect(callers.length).toBeGreaterThan(0);
+		for (const [file, src] of callers) {
+			expect(src, file).toContain('afterMutation("notification.write")');
+		}
+	});
+
+	it("a route that records a notification busts the notification tags (iron rule #6)", () => {
+		const writesNotifications = new Set<string>(
+			(Object.keys(EXTERNAL_WRITES) as ExternalWriter[]).filter((w) =>
+				(EXTERNAL_WRITES[w] as readonly MutationKind[]).includes("notification.write"),
+			),
+		);
+		for (const [path, src] of Object.entries(routeSources)) {
+			if (!src.includes("recordNotification(")) continue;
+			const used = [...src.matchAll(/EXTERNAL_WRITES\.(\w+)/g)].map((m) => m[1]);
+			expect(
+				used.some((w) => writesNotifications.has(w)),
+				`${path} records a notification but busts no notification tag`,
+			).toBe(true);
 		}
 	});
 });

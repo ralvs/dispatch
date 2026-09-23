@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
-import { listMentionsForPerson } from "@/lib/services/mentions";
-import { getPerson, listFacts, listInteractions } from "@/lib/services/people";
-import { getAppTimezone } from "@/lib/services/settings";
+import { getCachedPerson } from "@/lib/cache/people";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { PersonDetail } from "./person-detail";
 
 export default async function PersonPage({ params }: { params: Promise<{ id: string }> }) {
@@ -12,16 +11,12 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
 	if (!parsedId.success) notFound();
 	const id = parsedId.data;
 
-	const { sb } = await requireOwnerPage();
-	const person = await getPerson(sb, id);
-	if (!person) notFound();
-
-	const [facts, interactions, tz, mentions] = await Promise.all([
-		listFacts(sb, id),
-		listInteractions(sb, id),
-		getAppTimezone(sb),
-		listMentionsForPerson(sb, id),
-	]);
+	// Security boundary first (iron rule #2) — the cached reads use the
+	// service-role client.
+	await requireOwnerPage();
+	const [detail, tz] = await Promise.all([getCachedPerson(id), getCachedAppTimezone()]);
+	if (!detail) notFound();
+	const { person, facts, interactions, mentions } = detail;
 
 	return (
 		<PersonDetail

@@ -1,12 +1,14 @@
 import { EmptyState, PageHeader } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
-import { listPeople } from "@/lib/services/people";
+import { getCachedPeople } from "@/lib/cache/people";
 import { PersonCreateButton } from "./person-form";
 import { PersonRowItem } from "./person-row";
 
 export default async function PeoplePage() {
-	const { sb } = await requireOwnerPage();
-	const people = await listPeople(sb);
+	// Security boundary first (iron rule #2) — the cached reads use the
+	// service-role client.
+	await requireOwnerPage();
+	const people = await getCachedPeople();
 
 	return (
 		<div>

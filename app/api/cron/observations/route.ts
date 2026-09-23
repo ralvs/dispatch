@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { env, isSupabaseConfigured } from "@/lib/env";
-import { afterExternalMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/mutation-feedback/invalidate";
 import { isAuthorized } from "@/lib/secret-auth";
 import { recordNotification } from "@/lib/services/notifications";
 import { sweepNeglect } from "@/lib/services/observations";
@@ -32,7 +32,7 @@ async function runObservations(request: Request) {
 
 	if (result.flagged.length > 0) {
 		// The bell gains a row and /domains gains quiet dots.
-		afterExternalMutation("notification.write");
+		afterExternalMutation(...EXTERNAL_WRITES.cronObservations);
 
 		const names = result.flagged.map((d) => d.name).join(", ");
 		await recordNotification(sb, {

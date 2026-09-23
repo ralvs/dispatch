@@ -1,18 +1,21 @@
 import { ListSection, PageHeader, StatBand } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
-import { cadenceThresholdDays, listDomains } from "@/lib/services/domains";
-import { listDomainTouches } from "@/lib/services/observations";
-import { getAppTimezone } from "@/lib/services/settings";
+import { getCachedDomains, getCachedDomainTouches } from "@/lib/cache/domains";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
+import { todayInTz } from "@/lib/dates";
+import { cadenceThresholdDays } from "@/lib/services/domains";
 import { DomainCreateButton } from "./domain-form";
 import { DomainRowItem } from "./domain-row";
 import { domainStats } from "./domain-stats";
 
 export default async function DomainsPage() {
-	const { sb } = await requireOwnerPage();
-	const [domains, tz, touches] = await Promise.all([
-		listDomains(sb, { includeArchived: true }),
-		getAppTimezone(sb),
-		listDomainTouches(sb),
+	// Security boundary first (iron rule #2) — the cached reads use the
+	// service-role client.
+	await requireOwnerPage();
+	const tz = await getCachedAppTimezone();
+	const [domains, touches] = await Promise.all([
+		getCachedDomains(true),
+		getCachedDomainTouches(todayInTz(tz), tz),
 	]);
 	const active = domains.filter((d) => d.active);
 	const archived = domains.filter((d) => !d.active);
