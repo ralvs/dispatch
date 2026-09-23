@@ -56,16 +56,16 @@ export async function createLink(sb: SupabaseClient, input: CreateLinkInput): Pr
 	return data as unknown as LinkRow;
 }
 
-/** Patch title/description after a persist-first save (POST /api/capture). */
+/** Patch title/description/image after a persist-first save (POST /api/capture). */
 export async function updateLinkMetadata(
 	sb: SupabaseClient,
 	id: string,
-	meta: { title: string | null; description: string | null },
+	meta: { title: string | null; description: string | null; image: string | null },
 ): Promise<LinkRow> {
 	const data = unwrap(
 		await sb
 			.from(TABLE)
-			.update({ title: meta.title, description: meta.description })
+			.update({ title: meta.title, description: meta.description, image_url: meta.image })
 			.eq("id", id)
 			.select(LINK_SELECT)
 			.single(),

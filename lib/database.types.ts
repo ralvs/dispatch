@@ -166,6 +166,7 @@ export type Database = {
 					created_at: string;
 					description: string | null;
 					id: string;
+					image_url: string | null;
 					source: string | null;
 					status: string;
 					title: string | null;
@@ -176,6 +177,7 @@ export type Database = {
 					created_at?: string;
 					description?: string | null;
 					id?: string;
+					image_url?: string | null;
 					source?: string | null;
 					status?: string;
 					title?: string | null;
@@ -186,6 +188,7 @@ export type Database = {
 					created_at?: string;
 					description?: string | null;
 					id?: string;
+					image_url?: string | null;
 					source?: string | null;
 					status?: string;
 					title?: string | null;

@@ -13,6 +13,7 @@
 		"test:integration": "vitest run --project integration",
 		"test:watch": "vitest --project unit --project component",
 		"eval:parser": "bun --conditions=react-server scripts/parser-eval.ts",
+		"backfill:links": "bun --conditions=react-server scripts/backfill-link-metadata.ts",
 		"check": "biome check . && tsc --noEmit && vitest run --project unit --project component"
 	},
 	"dependencies": {

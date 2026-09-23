@@ -3,7 +3,8 @@ import "server-only";
 // ─────────────────────────────────────────────────────────────────────────
 // Link metadata fetch (docs/adr/0022). A shared URL arrives bare, so the
 // reading list at /links used to be a wall of raw hrefs. This resolves a
-// title and a one-line description from the page's own <head>.
+// title, a one-line description and a preview image (docs/adr/0066) from the
+// page's own <head>, or from the provider when it has an API (docs/adr/0026).
 //
 // Every failure mode returns nulls rather than throwing: an unreachable host,
 // a slow server, a login wall, or an HTML page with no metadata must still
@@ -15,12 +16,18 @@ import "server-only";
 // and a hard timeout.
 // ─────────────────────────────────────────────────────────────────────────
 
-export type LinkMetadata = { title: string | null; description: string | null };
+export type LinkMetadata = {
+	title: string | null;
+	description: string | null;
+	/** Absolute https URL of a preview image. Hotlinked, never downloaded. */
+	image: string | null;
+};
 
 const TIMEOUT_MS = 5_000;
 const MAX_BYTES = 512 * 1024;
 const TITLE_MAX = 500;
 const DESCRIPTION_MAX = 5_000;
+const IMAGE_MAX = 2_048;
 
 // A desktop UA: several publishers return a stub or a consent page to an
 // unrecognised agent, which would leave us with a useless title.
@@ -48,6 +55,19 @@ function clean(raw: string | undefined, max: number): string | null {
 	const text = decodeEntities(raw).replace(/\s+/g, " ").trim();
 	if (text.length === 0) return null;
 	return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+/**
+ * An image URL the page can hotlink: absolute, https, and sane in length. A
+ * relative og:image resolves against the page; an http one is dropped, since
+ * it would be blocked as mixed content on an https page anyway.
+ */
+function cleanImage(raw: string | undefined, base?: string): string | null {
+	if (!raw) return null;
+	const resolved = URL.parse(decodeEntities(raw).trim(), base);
+	if (resolved?.protocol !== "https:") return null;
+	const href = resolved.toString();
+	return href.length > IMAGE_MAX ? null : href;
 }
 
 /**
@@ -108,7 +128,12 @@ function stripSiteSuffix(title: string, sites: string[]): string {
 	return head.length >= 5 ? head : title;
 }
 
-export function parseMetadata(html: string, host?: string): LinkMetadata {
+/**
+ * `base` is the page's final URL after redirects. Its host feeds the masthead
+ * match; the whole URL resolves a relative og:image.
+ */
+export function parseMetadata(html: string, base?: string): LinkMetadata {
+	const host = base ? URL.parse(base)?.hostname : undefined;
 	// Only the head can carry the metadata, and stopping there keeps the
 	// regexes off megabytes of body markup.
 	const head = html.split(/<\/head>/i)[0] ?? html;
@@ -133,7 +158,12 @@ export function parseMetadata(html: string, host?: string): LinkMetadata {
 		clean(metaContent(head, "twitter:description"), DESCRIPTION_MAX) ??
 		clean(metaContent(head, "description"), DESCRIPTION_MAX);
 
-	return { title, description };
+	const image =
+		cleanImage(metaContent(head, "og:image:secure_url"), base) ??
+		cleanImage(metaContent(head, "og:image"), base) ??
+		cleanImage(metaContent(head, "twitter:image"), base);
+
+	return { title, description, image };
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -174,7 +204,11 @@ async function fetchOembed(endpoint: string): Promise<LinkMetadata | null> {
 
 		const body: unknown = await response.json();
 		if (typeof body !== "object" || body === null) return null;
-		const { title, author_name } = body as { title?: unknown; author_name?: unknown };
+		const { title, author_name, thumbnail_url } = body as {
+			title?: unknown;
+			author_name?: unknown;
+			thumbnail_url?: unknown;
+		};
 
 		const cleanTitle = typeof title === "string" ? clean(title, TITLE_MAX) : null;
 		if (!cleanTitle) return null;
@@ -182,10 +216,122 @@ async function fetchOembed(endpoint: string): Promise<LinkMetadata | null> {
 		return {
 			title: cleanTitle,
 			description: typeof author_name === "string" ? clean(author_name, DESCRIPTION_MAX) : null,
+			image: typeof thumbnail_url === "string" ? cleanImage(thumbnail_url) : null,
 		};
 	} catch {
 		return null;
 	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// X / Twitter (docs/adr/0066). X's own head is readable but wrong for a
+// reading list: the title is "Name (@handle) on X", the description keeps
+// raw t.co links, and a long post has no description at all. FxTwitter's
+// keyless API returns the post's full text with links expanded, the author,
+// and the media — so it goes first, and the head is the fallback.
+// ─────────────────────────────────────────────────────────────────────────
+
+const X_HOSTS = new Set([
+	"x.com",
+	"www.x.com",
+	"mobile.x.com",
+	"m.x.com",
+	"twitter.com",
+	"www.twitter.com",
+	"mobile.twitter.com",
+	"m.twitter.com",
+]);
+
+function isXHost(host: string): boolean {
+	return X_HOSTS.has(host.toLowerCase());
+}
+
+/**
+ * `/{handle}/status/{id}` (or `/i/web/status/{id}`) → the FxTwitter API URL
+ * for that post, or null. FxTwitter resolves a post by id whatever the handle.
+ */
+export function xStatusEndpoint(parsed: URL): string | null {
+	if (!isXHost(parsed.hostname)) return null;
+	const match = parsed.pathname.match(/^\/(\w{1,15}|i\/web)\/status(?:es)?\/(\d{1,25})(?:\/|$)/);
+	if (!match?.[1] || !match[2]) return null;
+	const handle = match[1] === "i/web" ? "i" : match[1];
+	return `https://api.fxtwitter.com/${handle}/status/${match[2]}`;
+}
+
+const T_CO = /https:\/\/t\.co\/\w+/g;
+
+/**
+ * "Gregor Zunic (@gregpr07)". A display name with no letter or digit in it
+ * (a lone "⃟") says nothing, so the handle stands alone.
+ */
+function xAuthor(name: string | null, handle: string | null): string | null {
+	if (!handle) return name;
+	return name && /[\p{L}\p{N}]/u.test(name) ? `${name} (@${handle})` : `@${handle}`;
+}
+
+type FxMedia = { type?: unknown; url?: unknown; thumbnail_url?: unknown };
+
+/**
+ * The pure half of the X provider: one FxTwitter response body in, metadata
+ * out. Null when the body is not a post, so the caller falls back to the head.
+ */
+export function parseFxTwitter(body: unknown): LinkMetadata | null {
+	if (typeof body !== "object" || body === null) return null;
+	const tweet = (body as { tweet?: unknown }).tweet;
+	if (typeof tweet !== "object" || tweet === null) return null;
+
+	const { text, author, media } = tweet as {
+		text?: unknown;
+		author?: { name?: unknown; screen_name?: unknown };
+		media?: { all?: unknown };
+	};
+	const name = typeof author?.name === "string" ? clean(author.name, TITLE_MAX) : null;
+	const handle = typeof author?.screen_name === "string" ? author.screen_name : null;
+	const title = xAuthor(name, handle);
+	if (!title) return null;
+
+	// Line breaks carry meaning in a post (lists, a hook line), so they stay.
+	const description =
+		typeof text === "string"
+			? decodeEntities(text)
+					// FxTwitter expands links already; a t.co that survives is a dead end.
+					.replace(T_CO, "")
+					.replace(/[^\S\n]+/g, " ")
+					.replace(/\n{3,}/g, "\n\n")
+					.trim()
+					.slice(0, DESCRIPTION_MAX) || null
+			: null;
+
+	const first: FxMedia | undefined = Array.isArray(media?.all) ? media.all[0] : undefined;
+	const rawImage = first?.type === "photo" ? first.url : first?.thumbnail_url; // a video's url is the mp4
+	const image = typeof rawImage === "string" ? cleanImage(rawImage) : null;
+
+	return { title, description, image };
+}
+
+async function fetchFxTwitter(endpoint: string): Promise<LinkMetadata | null> {
+	try {
+		const response = await fetch(endpoint, {
+			redirect: "follow",
+			signal: AbortSignal.timeout(TIMEOUT_MS),
+			headers: { accept: "application/json" },
+		});
+		// 404 is a deleted or protected post; anything else, the service is down.
+		if (!response.ok) return null;
+		return parseFxTwitter(await response.json());
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * When FxTwitter is down and X's own head is all there is, trim what makes it
+ * cryptic: the " on X" tail on the title and the t.co links in the text.
+ */
+export function tidyXHead(meta: LinkMetadata): LinkMetadata {
+	const title = meta.title?.replace(/\s+on (?:X|Twitter)$/, "") ?? null;
+	const description = meta.description?.replace(T_CO, "").replace(/\s+/g, " ").trim() || null;
+	return { ...meta, title, description };
 }
 
 /** Reads at most MAX_BYTES of the body, so a giant or endless page cannot hang us. */
@@ -212,12 +358,12 @@ async function readCapped(response: Response): Promise<string> {
 }
 
 /**
- * Best-effort title/description for a shared URL. Never throws and never
+ * Best-effort title/description/image for a shared URL. Never throws and never
  * rejects — an unreachable page yields `{title: null, description: null}` and
  * the link is stored bare, exactly as it was before this existed.
  */
 export async function fetchLinkMetadata(url: string): Promise<LinkMetadata> {
-	const empty: LinkMetadata = { title: null, description: null };
+	const empty: LinkMetadata = { title: null, description: null, image: null };
 
 	try {
 		const parsed = new URL(url);
@@ -228,6 +374,11 @@ export async function fetchLinkMetadata(url: string): Promise<LinkMetadata> {
 		if (endpoint) {
 			const oembed = await fetchOembed(endpoint);
 			if (oembed) return oembed;
+		}
+		const xEndpoint = xStatusEndpoint(parsed);
+		if (xEndpoint) {
+			const post = await fetchFxTwitter(xEndpoint);
+			if (post) return post;
 		}
 
 		const response = await fetch(parsed, {
@@ -241,9 +392,11 @@ export async function fetchLinkMetadata(url: string): Promise<LinkMetadata> {
 		const contentType = response.headers.get("content-type") ?? "";
 		if (!/text\/html|application\/xhtml\+xml/i.test(contentType)) return empty;
 
-		// The final host after redirects — that is whose masthead the title carries.
-		const host = URL.parse(response.url)?.hostname ?? parsed.hostname;
-		return parseMetadata(await readCapped(response), host);
+		// The final URL after redirects — its host is whose masthead the title
+		// carries, and a relative og:image is relative to it.
+		const finalUrl = response.url || parsed.toString();
+		const meta = parseMetadata(await readCapped(response), finalUrl);
+		return isXHost(URL.parse(finalUrl)?.hostname ?? "") ? tidyXHead(meta) : meta;
 	} catch {
 		// DNS failure, TLS error, timeout, malformed URL — all the same here.
 		return empty;

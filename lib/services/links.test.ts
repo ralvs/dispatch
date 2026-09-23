@@ -120,7 +120,7 @@ describe("createLink", () => {
 });
 
 describe("updateLinkMetadata", () => {
-	it("patches title and description by id", async () => {
+	it("patches title, description and image by id", async () => {
 		const { sb, calls } = stubSupabase({
 			ingest_links: { data: { id: "l1", title: "A post" }, error: null },
 		});
@@ -128,6 +128,7 @@ describe("updateLinkMetadata", () => {
 		const row = await updateLinkMetadata(sb, "l1", {
 			title: "A post",
 			description: "Worth reading",
+			image: "https://example.com/og.png",
 		});
 
 		expect(row).toMatchObject({ id: "l1", title: "A post" });
@@ -135,7 +136,11 @@ describe("updateLinkMetadata", () => {
 			{
 				table: "ingest_links",
 				op: "update",
-				payload: { title: "A post", description: "Worth reading" },
+				payload: {
+					title: "A post",
+					description: "Worth reading",
+					image_url: "https://example.com/og.png",
+				},
 			},
 			{ table: "ingest_links", op: "eq", payload: { col: "id", value: "l1" } },
 		]);

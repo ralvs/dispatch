@@ -81,7 +81,7 @@ export async function POST(request: Request) {
 		const tEnrich = performance.now();
 		const meta = await fetchLinkMetadata(url);
 		let link = saved;
-		if (meta.title || meta.description) {
+		if (meta.title || meta.description || meta.image) {
 			try {
 				link = await updateLinkMetadata(sb, saved.id, meta);
 			} catch {
