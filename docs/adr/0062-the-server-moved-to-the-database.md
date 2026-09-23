@@ -56,6 +56,10 @@ as `THEME_BOOT` (ADR-0033 Decision 2).
    human to change `regions` in `vercel.json` and `EXPECTED_REGION` in the
    script together.
 
+   The job holds `VERCEL_TOKEN`, and a `deployment_status` workflow runs the
+   file from the deployed commit. So Vercel's Git Fork Protection must stay
+   on: a fork's PR never deploys, and its workflow never sees the token.
+
 2. **One `tagged` cacheLife profile, and the clock is not what keeps it
    honest.** `next.config.ts` defines `tagged` as `stale 300 / revalidate 3600
    / expire 604800`, and all five readers in `lib/cache/*` use it. The

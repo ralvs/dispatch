@@ -13,21 +13,19 @@ jobs:
   region:
     # The ruleset on main requires this job by name (docs/adr/0064).
     name: Region
+    # Vercel's earlier pending status skips this job, and a skip reads as
+    # green. The `Vercel` check is also required and stays pending until the
+    # deploy succeeds, which is the event that starts the real run.
     if: github.event.deployment_status.state == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-
-      - name: Check every function runs in gru1
-        # Through env, never ${{ }} inside run. The URL is checked against our
-        # own Vercel hosts before the token goes anywhere near it.
+      # The token step runs first, in an empty directory, before any repo
+      # file exists on the runner: a checked-out package.json or bunfig.toml
+      # can never steer what runs next to the secret. npx, not bunx, for the
+      # same reason. The URL is checked against our own Vercel hosts first.
+      - name: Inspect the deploy
+        working-directory: ${{ runner.temp }}
         env:
           DEPLOY_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -40,7 +38,18 @@ jobs:
             echo "::error::Unexpected deploy URL: $DEPLOY_URL"
             exit 1
           fi
-          echo "Checking $DEPLOY_URL"
-          set -o pipefail
-          bunx vercel@59 inspect "$DEPLOY_URL" --json --scope rlvs --token "$VERCEL_TOKEN" --non-interactive \
-            | bun scripts/check-function-region.ts
+          echo "Inspecting $DEPLOY_URL"
+          npx --yes vercel@59 inspect "$DEPLOY_URL" --json --scope rlvs --token "$VERCEL_TOKEN" \
+            --non-interactive > inspect.json
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      # No secret in this step: it only reads the JSON the step above wrote.
+      - name: Check every function runs in gru1
+        run: bun scripts/check-function-region.ts < "$RUNNER_TEMP/inspect.json"
