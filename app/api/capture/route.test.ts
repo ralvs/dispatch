@@ -13,6 +13,12 @@ describe("bareUrl", () => {
 		expect(bareUrl("  https://example.com/post\n")).toBe("https://example.com/post");
 	});
 
+	it("un-escapes the &amp; a share sheet puts in the query", () => {
+		expect(bareUrl("https://x.com/a/status/1?s=12&amp;t=abc")).toBe(
+			"https://x.com/a/status/1?s=12&t=abc",
+		);
+	});
+
 	it("rejects a sentence that merely contains a link", () => {
 		expect(bareUrl("read this before Friday https://example.com/post")).toBeNull();
 	});

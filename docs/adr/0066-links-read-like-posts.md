@@ -38,7 +38,8 @@ text, not readability.
 
 `ingest_links.image_url` holds the URL of the publisher's image: `og:image`
 (secure_url first, then `twitter:image`) from the head, YouTube's oEmbed
-`thumbnail_url`, a post's photo, or a video's thumbnail. Only absolute https
+`thumbnail_url`, or for a post: its own photo or video thumbnail, then the
+quoted post's media, then its link card, then a long-form article's cover. Only absolute https
 URLs are kept; a relative one resolves against the page's final URL.
 
 The page loads it straight from the publisher with `referrerPolicy="no-referrer"`
@@ -62,3 +63,8 @@ for it.
 - Links saved before this keep their old metadata until
   `bun run backfill:links --write` re-reads them. It is a dry run without
   `--write`, and a field the fetcher cannot resolve keeps its old value.
+- A long-form X article has no post text; its title and opening paragraph
+  become the description.
+- The share sheet sends URLs HTML-escaped (`?s=12&amp;t=…`). `bareUrl`
+  un-escapes `&amp;`, and migration `20260923180000_link_url_unescape.sql`
+  fixes rows saved before that.

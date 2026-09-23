@@ -180,6 +180,42 @@ describe("parseFxTwitter", () => {
 		expect(meta?.description).toBe("one two\n\nthree");
 	});
 
+	it("falls back to the quoted post's media, then the link card", () => {
+		const author = { name: "A", screen_name: "a" };
+		const quoted = parseFxTwitter(
+			post({
+				author,
+				quote: { media: { all: [{ type: "photo", url: "https://pbs.twimg.com/q.jpg" }] } },
+				card: { image: { url: "https://pbs.twimg.com/card.jpg" } },
+			}),
+		);
+		expect(quoted?.image).toBe("https://pbs.twimg.com/q.jpg");
+
+		const carded = parseFxTwitter(
+			post({ author, card: { image: { url: "https://pbs.twimg.com/card.jpg" } } }),
+		);
+		expect(carded?.image).toBe("https://pbs.twimg.com/card.jpg");
+	});
+
+	it("reads a long-form article's title, opening and cover when the post has no text", () => {
+		const meta = parseFxTwitter(
+			post({
+				text: "",
+				author: { name: "dex", screen_name: "dexhorthy" },
+				article: {
+					title: "/show-me: compact visuals",
+					preview_text: "tl;dr make your agent converse visually.",
+					cover_media: { media_info: { original_img_url: "https://pbs.twimg.com/cover.png" } },
+				},
+			}),
+		);
+		expect(meta).toEqual({
+			title: "dex (@dexhorthy)",
+			description: "/show-me: compact visuals\n\ntl;dr make your agent converse visually.",
+			image: "https://pbs.twimg.com/cover.png",
+		});
+	});
+
 	it("returns null for a body that is not a post", () => {
 		expect(parseFxTwitter({ code: 404, message: "NOT_FOUND" })).toBeNull();
 		expect(parseFxTwitter(null)).toBeNull();

@@ -46,7 +46,9 @@ const BodySchema = z.object({
 
 /** The whole message is a single http(s) URL — no surrounding words. */
 export function bareUrl(text: string): string | null {
-	const trimmed = text.trim();
+	// The share sheet hands over the URL HTML-escaped ("?s=12&amp;t=…"). A
+	// literal "&amp;" is never part of a real query string.
+	const trimmed = text.trim().replaceAll("&amp;", "&");
 	if (/\s/.test(trimmed)) return null;
 	if (!/^https?:\/\//i.test(trimmed)) return null;
 	try {
