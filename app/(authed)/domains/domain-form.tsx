@@ -19,7 +19,7 @@ export function DomainCreateButton() {
 			action={createDomainAction}
 			size="lg"
 		>
-			<Field>
+			<Field name="name">
 				<Input
 					name="name"
 					required
@@ -29,10 +29,10 @@ export function DomainCreateButton() {
 					data-autofocus
 				/>
 			</Field>
-			<Field label="Description">
+			<Field label="Description" name="description">
 				<Textarea name="description" rows={2} placeholder="Optional" size="sm" />
 			</Field>
-			<Field label="Fruit definition">
+			<Field label="Fruit definition" name="fruit_definition">
 				<Textarea
 					name="fruit_definition"
 					rows={2}
@@ -40,7 +40,7 @@ export function DomainCreateButton() {
 					size="sm"
 				/>
 			</Field>
-			<Field label="Expected cadence">
+			<Field label="Expected cadence" name="expected_cadence">
 				<Input name="expected_cadence" placeholder="Optional" />
 			</Field>
 			<ColorSwatchPicker name="color" />

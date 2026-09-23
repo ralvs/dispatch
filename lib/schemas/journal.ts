@@ -25,8 +25,8 @@ export type JournalEntry = z.infer<typeof JournalEntrySchema>;
 
 export const CreateJournalEntrySchema = z.object({
 	book_id: z.string().uuid().nullable().optional(),
-	entry_date: z.string().date(),
-	transcription_text: z.string().min(1),
+	entry_date: z.string().date("Pick a date."),
+	transcription_text: z.string({ error: "Write the entry." }).min(1, "Write the entry."),
 	source: JournalEntrySourceSchema.optional(),
 	tags: z.array(z.string()).optional(),
 });

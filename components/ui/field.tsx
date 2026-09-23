@@ -3,15 +3,16 @@
 import { ChevronDown } from "lucide-react";
 import {
 	createContext,
-	forwardRef,
 	type InputHTMLAttributes,
 	type ReactNode,
+	type Ref,
 	type SelectHTMLAttributes,
 	type TextareaHTMLAttributes,
 	useContext,
 	useId,
 } from "react";
 import { type FieldControlVariants, fieldControl } from "./field-variants";
+import { useFieldError, useFieldValue } from "./form-state";
 import { Icon } from "./icon";
 import { tv } from "./tv";
 
@@ -61,6 +62,11 @@ type FieldShellProps = {
 	label?: string;
 	description?: string;
 	error?: string;
+	/**
+	 * The form field this wraps. Inside a form shell, the last submit's error
+	 * for this name shows here when `error` is not given (#23).
+	 */
+	name?: string;
 	htmlFor?: string;
 	children: ReactNode;
 	className?: string;
@@ -70,11 +76,14 @@ type FieldShellProps = {
 export function Field({
 	label,
 	description,
-	error,
+	error: errorProp,
+	name,
 	htmlFor,
 	children,
 	className,
 }: FieldShellProps) {
+	const submitError = useFieldError(name);
+	const error = errorProp ?? submitError;
 	const autoId = useId();
 	const controlId = htmlFor ?? autoId;
 	const descId = description ? `${controlId}-desc` : undefined;
@@ -105,6 +114,22 @@ export function Field({
 	);
 }
 
+/**
+ * The last submit's error for a field that is not wrapped in `<Field>` — a
+ * composite control such as the task form's date and time pair. Link the
+ * control to it with `aria-describedby={errorId(id)}` where the control
+ * accepts one.
+ */
+export function FieldError({ name, id }: { name: string; id?: string }) {
+	const error = useFieldError(name);
+	if (!error) return null;
+	return (
+		<p id={id} role="alert" className="mt-2 text-meta text-error">
+			{error}
+		</p>
+	);
+}
+
 type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> &
 	FieldControlVariants & {
 		invalid?: boolean;
@@ -123,7 +148,11 @@ export function Input({
 	const ctx = useFieldCtx();
 	const isInvalid = invalid ?? ctx?.invalid;
 	const isNativeDate = type === "date" || type === "time" || type === "datetime-local";
-	const resolved = value !== undefined ? value : defaultValue;
+	// A rejected submit hands back what was typed (#23). Uncontrolled only.
+	const echoed = useFieldValue(props.name);
+	const echoable = value === undefined && type !== "checkbox" && type !== "radio";
+	const initial = echoable && echoed !== undefined ? echoed : defaultValue;
+	const resolved = value !== undefined ? value : initial;
 	const dataEmpty = isNativeDate ? (String(resolved ?? "") === "" ? "true" : "false") : undefined;
 
 	return (
@@ -131,7 +160,7 @@ export function Input({
 			id={id ?? ctx?.id}
 			type={type}
 			value={value}
-			defaultValue={defaultValue}
+			defaultValue={initial}
 			data-invalid={isInvalid || undefined}
 			data-empty={dataEmpty}
 			aria-invalid={isInvalid || undefined}
@@ -150,14 +179,24 @@ type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> &
 		invalid?: boolean;
 	};
 
-export function Select({ size = "md", invalid, className, children, id, ...props }: SelectProps) {
+export function Select({
+	size = "md",
+	invalid,
+	className,
+	children,
+	id,
+	defaultValue,
+	...props
+}: SelectProps) {
 	const ctx = useFieldCtx();
 	const isInvalid = invalid ?? ctx?.invalid;
+	const echoed = useFieldValue(props.name);
 
 	return (
 		<div className="relative">
 			<select
 				id={id ?? ctx?.id}
+				defaultValue={props.value === undefined ? (echoed ?? defaultValue) : undefined}
 				data-invalid={isInvalid || undefined}
 				aria-invalid={isInvalid || undefined}
 				aria-describedby={props["aria-describedby"] ?? ctx?.describedBy}
@@ -176,19 +215,28 @@ export function Select({ size = "md", invalid, className, children, id, ...props
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> &
 	FieldControlVariants & {
 		invalid?: boolean;
+		ref?: Ref<HTMLTextAreaElement>;
 	};
 
-export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-	{ size = "md", invalid, className, id, ...props },
+// React 19 passes `ref` as a prop; no forwardRef.
+export function Textarea({
+	size = "md",
+	invalid,
+	className,
+	id,
+	defaultValue,
 	ref,
-) {
+	...props
+}: TextareaProps) {
 	const ctx = useFieldCtx();
 	const isInvalid = invalid ?? ctx?.invalid;
+	const echoed = useFieldValue(props.name);
 
 	return (
 		<textarea
 			ref={ref}
 			id={id ?? ctx?.id}
+			defaultValue={props.value === undefined ? (echoed ?? defaultValue) : undefined}
 			data-invalid={isInvalid || undefined}
 			aria-invalid={isInvalid || undefined}
 			aria-describedby={props["aria-describedby"] ?? ctx?.describedBy}
@@ -196,4 +244,4 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
 			{...props}
 		/>
 	);
-});
+}

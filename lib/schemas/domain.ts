@@ -33,7 +33,7 @@ export const DomainSchema = z.object({
 // not settable on create — new domains are always active, and last_shipped_at
 // starts unset.
 export const CreateDomainSchema = z.object({
-	name: z.string().min(1),
+	name: z.string({ error: "Give the domain a name." }).min(1, "Give the domain a name."),
 	description: z.string().nullable().optional(),
 	fruit_definition: z.string().nullable().optional(),
 	expected_cadence: z.string().nullable().optional(),

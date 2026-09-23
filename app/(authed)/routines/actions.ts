@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { shiftDay } from "@/lib/dates";
 import { decodeForm } from "@/lib/form-decode";
@@ -20,11 +21,12 @@ function revalidateRoutineViews() {
 	afterMutation("routine.write");
 }
 
-export async function createRoutineAction(formData: FormData) {
+export async function createRoutineAction(formData: FormData): Promise<ActionResult> {
 	const { sb } = await requireOwnerPage();
-	const parsed = decodeForm(CreateRoutineSchema, formData);
-	await createRoutine(sb, parsed);
-	revalidateRoutineViews();
+	return runFormAction(formData, async () => {
+		await createRoutine(sb, decodeForm(CreateRoutineSchema, formData));
+		revalidateRoutineViews();
+	});
 }
 
 /**

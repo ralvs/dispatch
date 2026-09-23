@@ -24,7 +24,7 @@ export function QuoteCreateButton() {
 			errorMessage="Couldn't save quote. Try again."
 			action={createQuoteAction}
 		>
-			<Field label="Text">
+			<Field label="Text" name="text">
 				<Textarea
 					name="text"
 					required
@@ -36,7 +36,7 @@ export function QuoteCreateButton() {
 				/>
 			</Field>
 			<div className="grid grid-cols-2 gap-3">
-				<Field label="Source">
+				<Field label="Source" name="source_type">
 					<Select name="source_type" defaultValue="">
 						{SOURCE_TYPES.map((s) => (
 							<option key={s.value} value={s.value}>
@@ -45,10 +45,10 @@ export function QuoteCreateButton() {
 						))}
 					</Select>
 				</Field>
-				<Field label="Author">
+				<Field label="Author" name="source_author">
 					<Input name="source_author" placeholder="Optional" />
 				</Field>
-				<Field label="Tags" className="col-span-2">
+				<Field label="Tags" className="col-span-2" name="tags">
 					<Input name="tags" placeholder="comma, separated" />
 				</Field>
 			</div>

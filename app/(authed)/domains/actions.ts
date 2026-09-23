@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
@@ -18,11 +19,12 @@ function revalidateDomainViews() {
 	afterMutation("settings.domain");
 }
 
-export async function createDomainAction(formData: FormData) {
+export async function createDomainAction(formData: FormData): Promise<ActionResult> {
 	const { sb } = await requireOwnerPage();
-	const parsed = decodeForm(CreateDomainSchema, formData);
-	await createDomain(sb, parsed);
-	revalidateDomainViews();
+	return runFormAction(formData, async () => {
+		await createDomain(sb, decodeForm(CreateDomainSchema, formData));
+		revalidateDomainViews();
+	});
 }
 
 // Blank clears the rule, which stops the observations cron flagging the domain.

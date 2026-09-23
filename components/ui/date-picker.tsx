@@ -45,7 +45,9 @@ export function DatePicker({
 	onChange,
 	todayIso,
 	disabled = false,
+	invalid = false,
 	"aria-label": ariaLabel,
+	"aria-describedby": ariaDescribedBy,
 }: {
 	name: string;
 	value: string;
@@ -56,10 +58,16 @@ export function DatePicker({
 	 *  cleared value is what lands — never a stale one. */
 	disabled?: boolean;
 	"aria-label": string;
+	/** The last submit rejected this value (#23). */
+	invalid?: boolean;
+	/** The id of the message that says why. */
+	"aria-describedby"?: string;
 }) {
 	return (
 		<AriaDatePicker
 			aria-label={ariaLabel}
+			aria-describedby={ariaDescribedBy}
+			isInvalid={invalid}
 			value={toDateValue(value)}
 			placeholderValue={parseDate(todayIso)}
 			onChange={(next) => onChange(next ? next.toString() : "")}

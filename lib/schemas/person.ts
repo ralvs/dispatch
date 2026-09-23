@@ -34,7 +34,7 @@ export const PersonSchema = z.object({
 // All optional fields .nullable() so callers can clear them via PATCH
 // without branching per-field. Mirrors the project/note pattern.
 export const CreatePersonSchema = z.object({
-	name: z.string().min(1),
+	name: z.string({ error: "Give the person a name." }).min(1, "Give the person a name."),
 	relationship_type: RelationshipTypeSchema.nullable().optional(),
 	email: z.string().nullable().optional(),
 	phone: z.string().nullable().optional(),

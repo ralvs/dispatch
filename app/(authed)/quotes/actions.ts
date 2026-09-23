@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
@@ -26,13 +27,15 @@ function tagsFromForm(raw: FormDataEntryValue | null): string[] | undefined {
 	return tags.length > 0 ? tags : [];
 }
 
-export async function createQuoteAction(formData: FormData) {
+export async function createQuoteAction(formData: FormData): Promise<ActionResult> {
 	const { sb } = await requireOwnerPage();
-	const parsed = decodeForm(CreateQuoteSchema, formData, {
-		overrides: { tags: tagsFromForm(formData.get("tags")), added_via: "manual" },
+	return runFormAction(formData, async () => {
+		const parsed = decodeForm(CreateQuoteSchema, formData, {
+			overrides: { tags: tagsFromForm(formData.get("tags")), added_via: "manual" },
+		});
+		await createQuote(sb, parsed);
+		revalidateQuoteViews();
 	});
-	await createQuote(sb, parsed);
-	revalidateQuoteViews();
 }
 
 export async function deleteQuoteAction(id: string) {

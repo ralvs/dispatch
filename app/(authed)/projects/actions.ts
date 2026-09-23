@@ -1,5 +1,6 @@
 "use server";
 
+import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
@@ -10,9 +11,10 @@ function revalidateProjectViews() {
 	afterMutation("projects.write");
 }
 
-export async function createProjectAction(formData: FormData) {
+export async function createProjectAction(formData: FormData): Promise<ActionResult> {
 	const { sb } = await requireOwnerPage();
-	const parsed = decodeForm(CreateProjectSchema, formData, {});
-	await createProject(sb, parsed);
-	revalidateProjectViews();
+	return runFormAction(formData, async () => {
+		await createProject(sb, decodeForm(CreateProjectSchema, formData));
+		revalidateProjectViews();
+	});
 }

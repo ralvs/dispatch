@@ -25,11 +25,11 @@ export const ProjectSchema = z.object({
 // nullable, sending null would fail Zod validation and force the action
 // to branch per-field on "omit vs include" — a footgun.
 export const CreateProjectSchema = z.object({
-	name: z.string().min(1),
+	name: z.string({ error: "Give the project a name." }).min(1, "Give the project a name."),
 	description: z.string().nullable().optional(),
 	// Required, never null: a project always has a domain, and its tasks
 	// inherit it (docs/adr/0019).
-	domain_id: z.string().uuid(),
+	domain_id: z.string({ error: "Pick a domain." }).uuid("Pick a domain."),
 	start_date: z.string().date().nullable().optional(),
 	target_date: z.string().date().nullable().optional(),
 	color: ColorSlugSchema.nullable().optional(),

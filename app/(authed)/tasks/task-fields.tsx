@@ -4,7 +4,15 @@ import { RotateCcw } from "lucide-react";
 import dynamic from "next/dynamic";
 import { type ReactNode, useId, useState } from "react";
 import { MentionTextarea, MentionTextInput } from "@/components/mention-input";
-import { Field, fieldControl, Icon, Select } from "@/components/ui";
+import {
+	Field,
+	FieldError,
+	fieldControl,
+	Icon,
+	Select,
+	useFieldError,
+	useFieldValue,
+} from "@/components/ui";
 import { shiftDay } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 
@@ -197,20 +205,27 @@ export function TaskTitleField({
 	autoFocus?: boolean;
 }) {
 	const [value, setValue] = useState(defaultValue);
+	const error = useFieldError("title");
+	const errorId = useId();
 	return (
-		<MentionTextInput
-			name="title"
-			required
-			value={value}
-			onValueChange={setValue}
-			people={people}
-			placeholder={placeholder}
-			aria-label="Task title"
-			data-autofocus={autoFocus || undefined}
-			// Pass 5 retired `.type-title`; weight and tracking are inlined.
-			// Tracking is now Tailwind's -0.025em rather than the class's -0.02em.
-			className="field-shell h-auto w-full py-1.5 text-base font-medium tracking-tight text-ink placeholder:font-normal placeholder:text-ink-4"
-		/>
+		<div>
+			<MentionTextInput
+				name="title"
+				required
+				value={value}
+				onValueChange={setValue}
+				people={people}
+				placeholder={placeholder}
+				aria-label="Task title"
+				aria-invalid={error ? true : undefined}
+				aria-describedby={error ? errorId : undefined}
+				data-autofocus={autoFocus || undefined}
+				// Pass 5 retired `.type-title`; weight and tracking are inlined.
+				// Tracking is now Tailwind's -0.025em rather than the class's -0.02em.
+				className="field-shell h-auto w-full py-1.5 text-base font-medium tracking-tight text-ink placeholder:font-normal placeholder:text-ink-4"
+			/>
+			<FieldError name="title" id={errorId} />
+		</div>
 	);
 }
 
@@ -297,6 +312,12 @@ export function TaskMetaFields({
 		);
 	}
 	const scheduleIsEmpty = due === "" && time === "" && recurrence === "";
+	const dueError = useFieldError("due_date");
+	const timeError = useFieldError("due_time");
+	const repeatError = useFieldError("recurrence_rule");
+	const dueErrorId = useId();
+	const timeErrorId = useId();
+	const repeatErrorId = useId();
 
 	return (
 		<div className="space-y-10">
@@ -308,6 +329,8 @@ export function TaskMetaFields({
 						value={due}
 						todayIso={todayIso}
 						aria-label="Due date"
+						invalid={Boolean(dueError)}
+						aria-describedby={dueError ? dueErrorId : undefined}
 						onChange={(next) => {
 							setDue(next);
 							// A time with no date to sit on is meaningless (DB check
@@ -320,6 +343,8 @@ export function TaskMetaFields({
 						value={time}
 						disabled={due === ""}
 						aria-label="Due time"
+						invalid={Boolean(timeError)}
+						aria-describedby={timeError ? timeErrorId : undefined}
 						onChange={setTime}
 					/>
 					{/* Same column as Priority on sm+. On a phone it spans the
@@ -349,6 +374,8 @@ export function TaskMetaFields({
 						</button>
 					</div>
 				</div>
+				<FieldError name="due_date" id={dueErrorId} />
+				<FieldError name="due_time" id={timeErrorId} />
 			</div>
 
 			<div className="space-y-10">
@@ -364,6 +391,8 @@ export function TaskMetaFields({
 					<Select
 						value={recurrence}
 						aria-label="Repeats"
+						invalid={Boolean(repeatError)}
+						aria-describedby={repeatError ? repeatErrorId : undefined}
 						onChange={(event) => setRecurrence(event.target.value)}
 						className="w-full"
 					>
@@ -400,10 +429,11 @@ export function TaskMetaFields({
 							})}
 						</fieldset>
 					)}
+					<FieldError name="recurrence_rule" id={repeatErrorId} />
 				</div>
 
 				<div className={META_TRIO}>
-					<Field label="Domain" className="min-w-0">
+					<Field label="Domain" name="domain_id" className="min-w-0">
 						{/* Locked: a disabled select posts nothing, so the answer rides a
 							hidden input. Two ways to get here now — the caller locked it,
 							or the chosen project settled it — and both post the same way. */}
@@ -439,7 +469,7 @@ export function TaskMetaFields({
 						</Select>
 					</Field>
 
-					<Field label="Project" className="min-w-0">
+					<Field label="Project" name="project_id" className="min-w-0">
 						{/* Locked: the select still renders so the answer is
 							visible and named, and a hidden input carries the id
 							a disabled control would not post. */}
@@ -541,6 +571,8 @@ function TaskNotesField({
 }) {
 	const [value, setValue] = useState(defaultValue);
 	const labelId = useId();
+	const error = useFieldError("notes");
+	const errorId = useId();
 	return (
 		<div className="field-unit block">
 			<span id={labelId} className={FIELD_LABEL}>
@@ -553,8 +585,11 @@ function TaskNotesField({
 				onValueChange={setValue}
 				people={people}
 				aria-labelledby={labelId}
+				aria-invalid={error ? true : undefined}
+				aria-describedby={error ? errorId : undefined}
 				className={NOTES_CONTROL}
 			/>
+			<FieldError name="notes" id={errorId} />
 		</div>
 	);
 }
@@ -566,6 +601,9 @@ function TaskNotesField({
  * of the row.
  */
 export function PriorityPicker({ defaultValue = 3 }: { defaultValue?: number }) {
+	// A rejected submit hands back the pick, so the form's reset keeps it (#23).
+	const echoed = useFieldValue("priority");
+	const checked = echoed ? Number(echoed) : defaultValue;
 	return (
 		<div className="field-unit min-w-0">
 			<span className={FIELD_LABEL}>Priority</span>
@@ -587,7 +625,7 @@ export function PriorityPicker({ defaultValue = 3 }: { defaultValue?: number }) 
 								type="radio"
 								name="priority"
 								value={p.value}
-								defaultChecked={p.value === defaultValue}
+								defaultChecked={p.value === checked}
 								className="peer sr-only"
 							/>
 							<span

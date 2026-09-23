@@ -15,7 +15,7 @@ export function RoutineCreateButton() {
 			errorMessage="Couldn't add routine. Try again."
 			action={createRoutineAction}
 		>
-			<Field label="Name">
+			<Field label="Name" name="name">
 				<Input
 					name="name"
 					required
@@ -25,7 +25,7 @@ export function RoutineCreateButton() {
 					data-autofocus
 				/>
 			</Field>
-			<Field label="Time of day">
+			<Field label="Time of day" name="time_of_day">
 				<Select name="time_of_day" defaultValue="anytime">
 					{TIME_OF_DAY_ORDER.map((t) => (
 						<option key={t} value={t}>

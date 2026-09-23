@@ -1,69 +1,22 @@
 "use client";
 
-// Shared choreography + chrome for the "+ New X" collapsible create-forms that
-// recur across the app (tasks, people, quotes, routines, notes, journal
-// entries, domains, projects…). Every one of them
-// wired up the identical dance by hand: a form ref, an `open` flag, a
-// transition wrapping the server action, and byte-identical Tailwind chrome
-// for the collapsed trigger and the open card's footer. This module is that
-// dance, extracted once.
+// Shared choreography + chrome for the "+ New X" collapsible create-form. Only
+// the journal still uses it — the object lists moved to the header `+` dialog
+// (components/create-dialog.tsx, ADR-0044) — but the contract is the same:
+// submit, then reset and collapse on success; on a rejected field, stay open
+// with the message under the field and the typing still in place (#23).
 
-import { unstable_rethrow } from "next/navigation";
-import { type ReactNode, useRef, useState, useTransition } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+	Card,
+	FIRST_INVALID,
+	FormButton,
+	FormStateProvider,
+	SubmitButton,
+	useResultAction,
+} from "@/components/ui";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { toastError } from "@/lib/client/toast";
-
-// The transition-wrapped choreography, pulled out of the hook so it's
-// testable without a DOM: submit the action, then reset and collapse — in
-// that order, and only after the action settles. On reject: leave form open
-// and un-reset (caller/UI toast via useCollapsibleForm).
-export async function runCollapsibleSubmit(
-	action: (formData: FormData) => Promise<unknown>,
-	formData: FormData,
-	callbacks: { reset: () => void; close: () => void },
-): Promise<void> {
-	await action(formData);
-	callbacks.reset();
-	callbacks.close();
-}
-
-export type CollapsibleFormState = {
-	open: boolean;
-	setOpen: (open: boolean) => void;
-	formRef: React.RefObject<HTMLFormElement | null>;
-	pending: boolean;
-	submit: (formData: FormData) => void;
-};
-
-/**
- * Submit → await action → reset → close. On failure: form stays open,
- * toast surfaces the error (failure-only; no success toast).
- */
-export function useCollapsibleForm(
-	action: (formData: FormData) => Promise<unknown>,
-	errorMessage = "Couldn't save. Try again.",
-): CollapsibleFormState {
-	const formRef = useRef<HTMLFormElement>(null);
-	const [open, setOpen] = useState(false);
-	const [pending, startTransition] = useTransition();
-
-	function submit(formData: FormData) {
-		startTransition(async () => {
-			try {
-				await runCollapsibleSubmit(action, formData, {
-					reset: () => formRef.current?.reset(),
-					close: () => setOpen(false),
-				});
-			} catch (error) {
-				unstable_rethrow(error);
-				toastError(errorMessage);
-			}
-		});
-	}
-
-	return { open, setOpen, formRef, pending, submit };
-}
+import type { ActionResult } from "@/lib/action-result";
 
 /** Cancel left of primary; primary is the rightmost control. */
 const FOOTER_CLASS = "flex justify-end gap-2 pt-2";
@@ -87,75 +40,75 @@ export function CollapsedTrigger({ label, onOpen }: { label: string; onOpen: () 
 }
 
 /**
- * The open card: the form element, its footer (submit + cancel), and
- * whatever fields the caller passes as children. Only the submit/pending
- * labels vary between forms.
- */
-export function CollapsibleFormCard({
-	formRef,
-	submit,
-	pending,
-	pendingLabel,
-	submitLabel,
-	onCancel,
-	children,
-}: {
-	formRef: React.RefObject<HTMLFormElement | null>;
-	submit: (formData: FormData) => void;
-	pending: boolean;
-	pendingLabel: string;
-	submitLabel: string;
-	onCancel: () => void;
-	children: ReactNode;
-}) {
-	return (
-		<form ref={formRef} action={submit}>
-			<Card className="space-y-4" padding="default">
-				{children}
-				<div className={FOOTER_CLASS}>
-					<Button type="button" variant="ghost" onClick={onCancel}>
-						Cancel
-					</Button>
-					<Button type="submit" variant="primary" isPending={pending} disabled={pending}>
-						{pending ? pendingLabel : submitLabel}
-					</Button>
-				</div>
-			</Card>
-		</form>
-	);
-}
-
-/**
- * Composes the two chrome pieces above over a `useCollapsibleForm` instance.
- * Renders the collapsed trigger when closed, the card (with the caller's
- * fields as children) when open.
+ * The collapsed trigger when closed; the card, with the caller's `<Field
+ * name>`s, when open. The card mounts on open, so every open starts clean.
  */
 export function CollapsibleForm({
-	form,
+	action,
+	errorMessage = "Couldn't save. Try again.",
 	triggerLabel,
 	submitLabel,
 	pendingLabel,
 	children,
 }: {
-	form: CollapsibleFormState;
+	action: (formData: FormData) => Promise<ActionResult<unknown>>;
+	/** The failure toast, for an unexpected failure. There is no success toast. */
+	errorMessage?: string;
 	triggerLabel: string;
 	submitLabel: string;
 	pendingLabel: string;
 	children: ReactNode;
 }) {
-	if (!form.open) {
-		return <CollapsedTrigger label={triggerLabel} onOpen={() => form.setOpen(true)} />;
-	}
+	const [open, setOpen] = useState(false);
+	if (!open) return <CollapsedTrigger label={triggerLabel} onOpen={() => setOpen(true)} />;
 	return (
 		<CollapsibleFormCard
-			formRef={form.formRef}
-			submit={form.submit}
-			pending={form.pending}
-			pendingLabel={pendingLabel}
+			action={action}
+			errorMessage={errorMessage}
 			submitLabel={submitLabel}
-			onCancel={() => form.setOpen(false)}
+			pendingLabel={pendingLabel}
+			onDone={() => setOpen(false)}
 		>
 			{children}
 		</CollapsibleFormCard>
+	);
+}
+
+function CollapsibleFormCard({
+	action,
+	errorMessage,
+	submitLabel,
+	pendingLabel,
+	onDone,
+	children,
+}: {
+	action: (formData: FormData) => Promise<ActionResult<unknown>>;
+	errorMessage: string;
+	submitLabel: string;
+	pendingLabel: string;
+	onDone: () => void;
+	children: ReactNode;
+}) {
+	const formRef = useRef<HTMLFormElement>(null);
+	const [state, formAction] = useResultAction(action, { onSuccess: onDone, errorMessage });
+
+	useEffect(() => {
+		if (state.fieldErrors) formRef.current?.querySelector<HTMLElement>(FIRST_INVALID)?.focus();
+	}, [state]);
+
+	return (
+		<form ref={formRef} action={formAction} noValidate>
+			<Card className="space-y-4" padding="default">
+				<FormStateProvider state={state}>{children}</FormStateProvider>
+				<div className={FOOTER_CLASS}>
+					<FormButton variant="ghost" onClick={onDone}>
+						Cancel
+					</FormButton>
+					<SubmitButton variant="primary" pendingLabel={pendingLabel}>
+						{submitLabel}
+					</SubmitButton>
+				</div>
+			</Card>
+		</form>
 	);
 }

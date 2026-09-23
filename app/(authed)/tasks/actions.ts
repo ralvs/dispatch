@@ -1,8 +1,10 @@
 "use server";
 
 import { z } from "zod";
+import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { parseDateIso } from "@/lib/dates";
+import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { CreateTaskFormSchema } from "@/lib/schemas/task";
 import { quickAddTask } from "@/lib/services/capture/quick-add";
@@ -17,21 +19,23 @@ import {
 	updateTask,
 } from "@/lib/services/tasks";
 
-export async function createTaskAction(formData: FormData) {
+export async function createTaskAction(formData: FormData): Promise<ActionResult> {
 	const { sb } = await requireOwnerPage();
-	const parsed = CreateTaskFormSchema.parse(Object.fromEntries(formData));
-	await createTask(sb, {
-		title: parsed.title,
-		notes: parsed.notes || null,
-		due_date: parsed.due_date || null,
-		due_time: parsed.due_time || null,
-		priority: parsed.priority,
-		// Guaranteed by CreateTaskFormSchema — this form cannot make an unfiled task.
-		domain_id: parsed.domain_id,
-		project_id: parsed.project_id || null,
-		recurrence_rule: parsed.recurrence_rule || null,
+	return runFormAction(formData, async () => {
+		const parsed = decodeForm(CreateTaskFormSchema, formData);
+		await createTask(sb, {
+			title: parsed.title,
+			notes: parsed.notes || null,
+			due_date: parsed.due_date || null,
+			due_time: parsed.due_time || null,
+			priority: parsed.priority,
+			// Guaranteed by CreateTaskFormSchema — this form cannot make an unfiled task.
+			domain_id: parsed.domain_id,
+			project_id: parsed.project_id || null,
+			recurrence_rule: parsed.recurrence_rule || null,
+		});
+		afterMutation("task.write");
 	});
-	afterMutation("task.write");
 }
 
 export async function quickAddTaskAction({ text, domainId }: { text: string; domainId: string }) {
@@ -50,25 +54,27 @@ export async function quickAddTaskAction({ text, domainId }: { text: string; dom
 	afterMutation("task.write");
 }
 
-export async function updateTaskAction(id: string, formData: FormData) {
+export async function updateTaskAction(id: string, formData: FormData): Promise<ActionResult> {
 	const { sb } = await requireOwnerPage();
-	const parsed = CreateTaskFormSchema.parse(Object.fromEntries(formData));
-	await updateTask(sb, z.uuid().parse(id), {
-		title: parsed.title,
-		notes: parsed.notes || null,
-		due_date: parsed.due_date || null,
-		due_time: parsed.due_time || null,
-		priority: parsed.priority,
-		// The two mappings used to differ: an empty domain meant "leave it alone"
-		// on edit and "Inbox" on create. The field cannot be empty any more, so
-		// there is one answer and both paths send it.
-		domain_id: parsed.domain_id,
-		// Null, not undefined: clearing the select is how a task leaves a
-		// project, and the field is always present on the form.
-		project_id: parsed.project_id || null,
-		recurrence_rule: parsed.recurrence_rule || null,
+	return runFormAction(formData, async () => {
+		const parsed = decodeForm(CreateTaskFormSchema, formData);
+		await updateTask(sb, z.uuid().parse(id), {
+			title: parsed.title,
+			notes: parsed.notes || null,
+			due_date: parsed.due_date || null,
+			due_time: parsed.due_time || null,
+			priority: parsed.priority,
+			// The two mappings used to differ: an empty domain meant "leave it alone"
+			// on edit and "Inbox" on create. The field cannot be empty any more, so
+			// there is one answer and both paths send it.
+			domain_id: parsed.domain_id,
+			// Null, not undefined: clearing the select is how a task leaves a
+			// project, and the field is always present on the form.
+			project_id: parsed.project_id || null,
+			recurrence_rule: parsed.recurrence_rule || null,
+		});
+		afterMutation("task.write");
 	});
-	afterMutation("task.write");
 }
 
 /**
