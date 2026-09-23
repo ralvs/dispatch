@@ -3,7 +3,7 @@ import "server-only";
 // ─────────────────────────────────────────────────────────────────────────
 // Link metadata fetch (docs/adr/0022). A shared URL arrives bare, so the
 // reading list at /links used to be a wall of raw hrefs. This resolves a
-// title, a one-line description and a preview image (docs/adr/0064) from the
+// title, a one-line description and a preview image (docs/adr/0066) from the
 // page's own <head>, or from the provider when it has an API (docs/adr/0026).
 //
 // Every failure mode returns nulls rather than throwing: an unreachable host,
@@ -224,7 +224,7 @@ async function fetchOembed(endpoint: string): Promise<LinkMetadata | null> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// X / Twitter (docs/adr/0064). X's own head is readable but wrong for a
+// X / Twitter (docs/adr/0066). X's own head is readable but wrong for a
 // reading list: the title is "Name (@handle) on X", the description keeps
 // raw t.co links, and a long post has no description at all. FxTwitter's
 // keyless API returns the post's full text with links expanded, the author,

@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────
--- A preview image for each link on /links (docs/adr/0064).
+-- A preview image for each link on /links (docs/adr/0066).
 --
 -- The URL only, never the bytes: the page hotlinks the publisher's own image
 -- (og:image, a tweet's photo or video thumbnail). A dead image hides itself in

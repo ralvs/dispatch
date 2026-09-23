@@ -1,6 +1,6 @@
 /**
  * Link metadata backfill — re-reads title, description and preview image for
- * links saved before the fetcher learned about them (docs/adr/0064).
+ * links saved before the fetcher learned about them (docs/adr/0066).
  *
  * Capture only enriches a link once, at save time. When the fetcher improves,
  * the rows already on /links keep what the old one found — for X posts that is

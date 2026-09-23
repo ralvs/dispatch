@@ -3,7 +3,7 @@ import { createLink, listLinks, updateLinkMetadata } from "@/lib/services/links"
 import { serviceClient } from "@/test/integration/clients";
 
 // The capture route's two writes, against the real table: a bare row first,
-// then the metadata patch (iron rule #4, docs/adr/0064).
+// then the metadata patch (iron rule #4, docs/adr/0066).
 
 describe("links against the local database", () => {
 	it("saves a bare link, then patches title, description and image", async () => {

@@ -21,7 +21,7 @@ const actionClass =
 	"rounded-control border border-line px-2 py-1 font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:border-line-strong hover:text-ink active:opacity-70";
 
 /**
- * The publisher's own preview, hotlinked (docs/adr/0064). No referrer, so a
+ * The publisher's own preview, hotlinked (docs/adr/0066). No referrer, so a
  * host that blocks hotlinking by Referer still serves it; and a dead URL hides
  * itself rather than leaving a broken-image box in the list.
  */

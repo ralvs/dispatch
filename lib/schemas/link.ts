@@ -35,7 +35,7 @@ export const LinkRowSchema = z.object({
 	url: z.string(),
 	title: z.string().nullable(),
 	description: z.string().nullable(),
-	// A hotlinked preview (docs/adr/0064) — the publisher's URL, never a copy.
+	// A hotlinked preview (docs/adr/0066) — the publisher's URL, never a copy.
 	image_url: z.string().nullable(),
 	status: LinkStatusSchema,
 	source: z.string().nullable(),
