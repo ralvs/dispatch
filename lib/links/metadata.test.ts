@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseMetadata } from "@/lib/links/metadata";
+import { parseFxTwitter, parseMetadata } from "@/lib/links/metadata";
 
 // parseMetadata is the pure half of the fetcher — fetchLinkMetadata itself is
 // the network edge and is left to manual verification, like lib/caldav/client.
@@ -38,6 +38,7 @@ describe("parseMetadata", () => {
 		expect(parseMetadata("<html><body>hi</body></html>")).toEqual({
 			title: null,
 			description: null,
+			image: null,
 		});
 	});
 
@@ -59,32 +60,123 @@ describe("parseMetadata", () => {
 
 		it("drops a masthead that only matches the host", () => {
 			const html = "<head><title>How the deal fell apart | Reuters</title></head>";
-			expect(parseMetadata(html, "www.reuters.com").title).toBe("How the deal fell apart");
+			expect(parseMetadata(html, "https://www.reuters.com/").title).toBe("How the deal fell apart");
 		});
 
 		it("trims the brand off og:title as well", () => {
 			const html = `<head><meta property="og:title" content="A quiet week in review | Stratechery"></head>`;
-			expect(parseMetadata(html, "stratechery.com").title).toBe("A quiet week in review");
+			expect(parseMetadata(html, "https://stratechery.com/").title).toBe("A quiet week in review");
 		});
 
 		it("keeps a dash that is part of the headline", () => {
 			const html = "<head><title>Rust 2.0 — what changed and why</title></head>";
-			expect(parseMetadata(html, "example.com").title).toBe("Rust 2.0 — what changed and why");
+			expect(parseMetadata(html, "https://example.com/").title).toBe(
+				"Rust 2.0 — what changed and why",
+			);
 		});
 
 		it("finds the brand under a subdomain", () => {
 			const html = "<head><title>Neuromancer - Wikipedia</title></head>";
-			expect(parseMetadata(html, "en.wikipedia.org").title).toBe("Neuromancer");
+			expect(parseMetadata(html, "https://en.wikipedia.org/").title).toBe("Neuromancer");
 		});
 
 		it("leaves a tail that is not the site alone", () => {
 			const html = "<head><title>Y Combinator | Hacker News</title></head>";
-			expect(parseMetadata(html, "news.ycombinator.com").title).toBe("Y Combinator | Hacker News");
+			expect(parseMetadata(html, "https://news.ycombinator.com/").title).toBe(
+				"Y Combinator | Hacker News",
+			);
 		});
 
 		it("keeps the whole title when stripping would leave a stub", () => {
 			const html = "<head><title>Home | Reuters</title></head>";
-			expect(parseMetadata(html, "reuters.com").title).toBe("Home | Reuters");
+			expect(parseMetadata(html, "https://reuters.com/").title).toBe("Home | Reuters");
 		});
+	});
+
+	describe("preview image", () => {
+		it("prefers og:image:secure_url, then og:image, then twitter:image", () => {
+			const html = `<head><meta name="twitter:image" content="https://a.test/t.png"><meta property="og:image" content="https://a.test/og.png"></head>`;
+			expect(parseMetadata(html).image).toBe("https://a.test/og.png");
+		});
+
+		it("resolves a relative og:image against the page", () => {
+			const html = `<head><meta property="og:image" content="/img/cover.jpg?w=1&amp;h=2"></head>`;
+			expect(parseMetadata(html, "https://blog.test/posts/1").image).toBe(
+				"https://blog.test/img/cover.jpg?w=1&h=2",
+			);
+		});
+
+		it("drops an http image, which an https page would block", () => {
+			const html = `<head><meta property="og:image" content="http://a.test/og.png"></head>`;
+			expect(parseMetadata(html).image).toBeNull();
+		});
+
+		it("drops a relative image when there is no page URL to resolve it against", () => {
+			const html = `<head><meta property="og:image" content="/og.png"></head>`;
+			expect(parseMetadata(html).image).toBeNull();
+		});
+	});
+});
+
+describe("parseFxTwitter", () => {
+	const post = (tweet: Record<string, unknown>) => ({ code: 200, tweet });
+
+	it("titles the post by its author and keeps the full text", () => {
+		const meta = parseFxTwitter(
+			post({
+				text: "Breaking: Browser Use + Jev = Ultrafast\n\n> new action space every step",
+				author: { name: "Gregor Zunic", screen_name: "gregpr07" },
+			}),
+		);
+		expect(meta).toEqual({
+			title: "Gregor Zunic (@gregpr07)",
+			description: "Breaking: Browser Use + Jev = Ultrafast\n\n> new action space every step",
+			image: null,
+		});
+	});
+
+	it("falls back to the handle when the display name is only a symbol", () => {
+		const meta = parseFxTwitter(post({ text: "hi", author: { name: "⃟", screen_name: "anishfn" } }));
+		expect(meta?.title).toBe("@anishfn");
+	});
+
+	it("uses a photo's own URL", () => {
+		const meta = parseFxTwitter(
+			post({
+				author: { name: "TablePlus", screen_name: "TablePlus" },
+				media: { all: [{ type: "photo", url: "https://pbs.twimg.com/media/x.jpg?name=orig" }] },
+			}),
+		);
+		expect(meta?.image).toBe("https://pbs.twimg.com/media/x.jpg?name=orig");
+	});
+
+	it("uses a video's thumbnail, never the mp4", () => {
+		const meta = parseFxTwitter(
+			post({
+				author: { name: "A", screen_name: "a" },
+				media: {
+					all: [
+						{
+							type: "video",
+							url: "https://video.twimg.com/v.mp4",
+							thumbnail_url: "https://pbs.twimg.com/thumb.jpg",
+						},
+					],
+				},
+			}),
+		);
+		expect(meta?.image).toBe("https://pbs.twimg.com/thumb.jpg");
+	});
+
+	it("collapses runs of blank lines but keeps paragraph breaks", () => {
+		const meta = parseFxTwitter(
+			post({ text: "one  two\n\n\n\nthree", author: { name: "A", screen_name: "a" } }),
+		);
+		expect(meta?.description).toBe("one two\n\nthree");
+	});
+
+	it("returns null for a body that is not a post", () => {
+		expect(parseFxTwitter({ code: 404, message: "NOT_FOUND" })).toBeNull();
+		expect(parseFxTwitter(null)).toBeNull();
 	});
 });
