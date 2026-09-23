@@ -10,7 +10,7 @@ permissions:
 jobs:
   title:
     # The squash merge makes this title the commit on main, so it must be a
-    # Conventional Commit (docs/adr/0063). Required on main by name.
+    # Conventional Commit (docs/adr/0064). Required on main by name.
     name: PR title
     runs-on: ubuntu-24.04
     timeout-minutes: 2

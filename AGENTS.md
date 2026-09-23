@@ -69,6 +69,20 @@ Five layers (docs/adr/0063). Tests sit next to the code they test.
   that are correct without it; the compiler only memoizes.
 - The AI gateway is always faked. No test makes a paid call.
 
+## Pull requests
+
+Every change reaches `main` through a PR that Renan merges (docs/adr/0064).
+
+- Squash is the only merge method. The PR title becomes the commit on `main`,
+  so it is a Conventional Commit.
+- `main` requires four checks: `Check`, `PR title`, `Vercel`, `Region`. Watch
+  them with `gh pr checks --watch` before you hand the PR over.
+- Fill in `.github/pull_request_template.md`.
+- Stacks: open each PR with `gh pr create --base <previous branch>`, then
+  `gh stack link`. After a squash merge, rebase the next branch before it
+  merges: `gh stack rebase`, or
+  `git rebase --onto origin/main <old-bottom-branch> <next-branch>`.
+
 ## Conventions
 
 - `bun run check` must be green before every commit

@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   check:
-    # The ruleset on main requires this job by name (docs/adr/0063).
+    # The ruleset on main requires this job by name (docs/adr/0064).
     name: Check
     runs-on: ubuntu-24.04
     timeout-minutes: 10
