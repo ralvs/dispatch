@@ -75,8 +75,13 @@ Every change reaches `main` through a PR that Renan merges (docs/adr/0064).
 
 - Squash is the only merge method. The PR title becomes the commit on `main`,
   so it is a Conventional Commit.
-- `main` requires four checks: `Check`, `PR title`, `Vercel`, `Region`. Watch
-  them with `gh pr checks --watch` before you hand the PR over.
+- `main` requires five checks: `Check`, `PR title`, `Vercel`, `Region`,
+  `Migrations`. Watch them with `gh pr checks --watch` before you hand the PR
+  over.
+- Migrations apply themselves after the merge (docs/adr/0065). Never apply
+  one by hand, with the CLI or the MCP tool's `apply_migration`. Never edit an
+  applied migration; add a new one. A migration must still work with the code
+  that is live: add first, drop in a later PR.
 - Fill in `.github/pull_request_template.md`.
 - Stacks: open each PR with `gh pr create --base <previous branch>`, then
   `gh stack link`. After a squash merge, rebase the next branch before it
