@@ -25,6 +25,7 @@ const sb = createAdminClient();
 const links = await listLinks(sb);
 
 let changed = 0;
+let failed = 0;
 for (const link of links) {
 	const meta = await fetchLinkMetadata(link.url);
 	const next = {
@@ -45,9 +46,17 @@ for (const link of links) {
 	console.info(`  title  ${JSON.stringify(link.title)} → ${JSON.stringify(next.title)}`);
 	console.info(`  image  ${link.image_url ?? "—"} → ${next.image ?? "—"}`);
 	if (next.description !== link.description) console.info("  text   changed");
-	if (write) await updateLinkMetadata(sb, link.id, next);
+	if (!write) continue;
+	try {
+		await updateLinkMetadata(sb, link.id, next);
+	} catch (error) {
+		// One bad row should not stop the rest; it is reported and left as it was.
+		failed++;
+		console.error(`  write failed: ${error instanceof Error ? error.message : String(error)}`);
+	}
 }
 
 console.info(
-	`\n${changed} of ${links.length} links ${write ? "updated" : "would change (dry run; pass --write)"}.`,
+	`\n${changed} of ${links.length} links ${write ? "changed" : "would change (dry run; pass --write)"}${failed ? `, ${failed} failed to write` : ""}.`,
 );
+if (failed) process.exitCode = 1;

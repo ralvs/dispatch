@@ -235,22 +235,30 @@ const X_HOSTS = new Set([
 	"x.com",
 	"www.x.com",
 	"mobile.x.com",
+	"m.x.com",
 	"twitter.com",
 	"www.twitter.com",
 	"mobile.twitter.com",
+	"m.twitter.com",
 ]);
 
 function isXHost(host: string): boolean {
 	return X_HOSTS.has(host.toLowerCase());
 }
 
-/** `/{handle}/status/{id}` → the FxTwitter API URL for that post, or null. */
-function xStatusEndpoint(parsed: URL): string | null {
+/**
+ * `/{handle}/status/{id}` (or `/i/web/status/{id}`) → the FxTwitter API URL
+ * for that post, or null. FxTwitter resolves a post by id whatever the handle.
+ */
+export function xStatusEndpoint(parsed: URL): string | null {
 	if (!isXHost(parsed.hostname)) return null;
-	const match = parsed.pathname.match(/^\/(\w{1,15})\/status(?:es)?\/(\d{1,25})(?:\/|$)/);
-	if (!match) return null;
-	return `https://api.fxtwitter.com/${match[1]}/status/${match[2]}`;
+	const match = parsed.pathname.match(/^\/(\w{1,15}|i\/web)\/status(?:es)?\/(\d{1,25})(?:\/|$)/);
+	if (!match?.[1] || !match[2]) return null;
+	const handle = match[1] === "i/web" ? "i" : match[1];
+	return `https://api.fxtwitter.com/${handle}/status/${match[2]}`;
 }
+
+const T_CO = /https:\/\/t\.co\/\w+/g;
 
 /**
  * "Gregor Zunic (@gregpr07)". A display name with no letter or digit in it
@@ -286,6 +294,8 @@ export function parseFxTwitter(body: unknown): LinkMetadata | null {
 	const description =
 		typeof text === "string"
 			? decodeEntities(text)
+					// FxTwitter expands links already; a t.co that survives is a dead end.
+					.replace(T_CO, "")
 					.replace(/[^\S\n]+/g, " ")
 					.replace(/\n{3,}/g, "\n\n")
 					.trim()
@@ -318,13 +328,9 @@ async function fetchFxTwitter(endpoint: string): Promise<LinkMetadata | null> {
  * When FxTwitter is down and X's own head is all there is, trim what makes it
  * cryptic: the " on X" tail on the title and the t.co links in the text.
  */
-function tidyXHead(meta: LinkMetadata): LinkMetadata {
+export function tidyXHead(meta: LinkMetadata): LinkMetadata {
 	const title = meta.title?.replace(/\s+on (?:X|Twitter)$/, "") ?? null;
-	const description =
-		meta.description
-			?.replace(/https:\/\/t\.co\/\w+/g, "")
-			.replace(/\s+/g, " ")
-			.trim() || null;
+	const description = meta.description?.replace(T_CO, "").replace(/\s+/g, " ").trim() || null;
 	return { ...meta, title, description };
 }
 

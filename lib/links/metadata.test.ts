@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseFxTwitter, parseMetadata } from "@/lib/links/metadata";
+import { parseFxTwitter, parseMetadata, tidyXHead, xStatusEndpoint } from "@/lib/links/metadata";
 
 // parseMetadata is the pure half of the fetcher — fetchLinkMetadata itself is
 // the network edge and is left to manual verification, like lib/caldav/client.
@@ -99,6 +99,11 @@ describe("parseMetadata", () => {
 			expect(parseMetadata(html).image).toBe("https://a.test/og.png");
 		});
 
+		it("takes og:image:secure_url over og:image", () => {
+			const html = `<head><meta property="og:image" content="https://a.test/og.png"><meta property="og:image:secure_url" content="https://cdn.a.test/og.png"></head>`;
+			expect(parseMetadata(html).image).toBe("https://cdn.a.test/og.png");
+		});
+
 		it("resolves a relative og:image against the page", () => {
 			const html = `<head><meta property="og:image" content="/img/cover.jpg?w=1&amp;h=2"></head>`;
 			expect(parseMetadata(html, "https://blog.test/posts/1").image).toBe(
@@ -178,5 +183,44 @@ describe("parseFxTwitter", () => {
 	it("returns null for a body that is not a post", () => {
 		expect(parseFxTwitter({ code: 404, message: "NOT_FOUND" })).toBeNull();
 		expect(parseFxTwitter(null)).toBeNull();
+	});
+});
+
+describe("xStatusEndpoint", () => {
+	const endpoint = (url: string) => xStatusEndpoint(new URL(url));
+
+	it("maps a status URL on any X host, dropping the tracking query", () => {
+		expect(endpoint("https://x.com/TablePlus/status/2102636659049464298?s=20")).toBe(
+			"https://api.fxtwitter.com/TablePlus/status/2102636659049464298",
+		);
+		expect(endpoint("https://mobile.twitter.com/a_b/status/1/photo/1")).toBe(
+			"https://api.fxtwitter.com/a_b/status/1",
+		);
+		expect(endpoint("https://x.com/i/web/status/42")).toBe("https://api.fxtwitter.com/i/status/42");
+	});
+
+	it("ignores profiles, other hosts, and lookalike paths", () => {
+		expect(endpoint("https://x.com/TablePlus")).toBeNull();
+		expect(endpoint("https://example.com/a/status/1")).toBeNull();
+		expect(endpoint("https://x.com/a/status/1abc")).toBeNull();
+	});
+});
+
+describe("tidyXHead", () => {
+	it("drops the ' on X' tail and the t.co links", () => {
+		expect(
+			tidyXHead({
+				title: "TablePlus (@TablePlus) on X",
+				description: "https://t.co/5lmRp4raS3 now only 4 MB https://t.co/glz2pcQktc",
+				image: null,
+			}),
+		).toEqual({ title: "TablePlus (@TablePlus)", description: "now only 4 MB", image: null });
+	});
+
+	it("leaves no description rather than an empty one", () => {
+		expect(
+			tidyXHead({ title: "A (@a) on X", description: "https://t.co/Ec2FhgsLgG", image: null })
+				.description,
+		).toBeNull();
 	});
 });

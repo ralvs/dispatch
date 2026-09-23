@@ -57,7 +57,7 @@ export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
 			trailing={
 				<div className="flex shrink-0 flex-col items-end gap-2">
 					<p className="font-mono text-meta text-ink-4">{formatInstant(link.created_at, tz)}</p>
-					{link.image_url && <Thumbnail src={link.image_url} />}
+					{link.image_url?.startsWith("https://") && <Thumbnail src={link.image_url} />}
 				</div>
 			}
 		>
