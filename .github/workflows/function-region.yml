@@ -21,9 +21,10 @@ jobs:
     timeout-minutes: 5
     steps:
       # The token step runs first, in an empty directory, before any repo
-      # file exists on the runner: a checked-out package.json or bunfig.toml
-      # can never steer what runs next to the secret. npx, not bunx, for the
-      # same reason. The URL is checked against our own Vercel hosts first.
+      # file exists on the runner, so no repo code ever runs next to the
+      # secret. Plain curl against the REST API: the Vercel CLI looks up the
+      # token's user, which a team-scoped token cannot read (404). The builds
+      # endpoint returns the same JSON as `vercel inspect --json`.
       - name: Inspect the deploy
         working-directory: ${{ runner.temp }}
         env:
@@ -38,9 +39,19 @@ jobs:
             echo "::error::Unexpected deploy URL: $DEPLOY_URL"
             exit 1
           fi
-          echo "Inspecting $DEPLOY_URL"
-          npx --yes vercel@59 inspect "$DEPLOY_URL" --json --scope rlvs --token "$VERCEL_TOKEN" \
-            --non-interactive > inspect.json
+          host="${BASH_REMATCH[1]}"
+          echo "Inspecting $host"
+          api() {
+            curl --fail-with-body --silent --show-error \
+              --header "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com$1?slug=rlvs"
+          }
+          id="$(api "/v13/deployments/$host" | jq -r .id)"
+          if [[ ! "$id" =~ ^dpl_[A-Za-z0-9]+$ ]]; then
+            echo "::error::No deployment id for $host"
+            exit 1
+          fi
+          api "/v11/deployments/$id/builds" > inspect.json
 
       - name: Checkout
         uses: actions/checkout@v6

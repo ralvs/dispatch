@@ -4,7 +4,8 @@
 //
 // The built output is the source of truth, not vercel.json: the dashboard's
 // Function Region setting overrides the file without a trace in the repo.
-// .github/workflows/function-region.yml runs this after every Vercel deploy.
+// .github/workflows/function-region.yml runs this after every Vercel deploy,
+// on the same JSON from the REST API (GET /v11/deployments/:id/builds).
 
 import { text } from "node:stream/consumers";
 
