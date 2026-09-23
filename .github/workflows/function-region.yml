@@ -1,0 +1,46 @@
+name: Function region
+
+# Vercel reports every deploy (preview and production) as a GitHub deployment.
+# After each successful one, check the built output: every function must run
+# in gru1, next to the database (docs/adr/0062). A dashboard setting can undo
+# this without any change in the repo, so the deploy is what gets checked.
+on: deployment_status
+
+permissions:
+  contents: read
+
+jobs:
+  region:
+    # The ruleset on main requires this job by name (docs/adr/0064).
+    name: Region
+    if: github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Check every function runs in gru1
+        # Through env, never ${{ }} inside run. The URL is checked against our
+        # own Vercel hosts before the token goes anywhere near it.
+        env:
+          DEPLOY_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [[ -z "$VERCEL_TOKEN" ]]; then
+            echo "::error::VERCEL_TOKEN secret is not set."
+            exit 1
+          fi
+          if [[ ! "$DEPLOY_URL" =~ ^https://(dispatch-[a-z0-9-]+-rlvs\.vercel\.app|dispatch\.alves\.id)/?$ ]]; then
+            echo "::error::Unexpected deploy URL: $DEPLOY_URL"
+            exit 1
+          fi
+          echo "Checking $DEPLOY_URL"
+          set -o pipefail
+          bunx vercel@59 inspect "$DEPLOY_URL" --json --scope rlvs --token "$VERCEL_TOKEN" --non-interactive \
+            | bun scripts/check-function-region.ts
