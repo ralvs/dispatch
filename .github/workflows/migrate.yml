@@ -22,6 +22,9 @@ concurrency:
 jobs:
   migrate:
     name: Migrate
+    # A manual run from another branch would apply unreviewed SQL to
+    # production. Only main, whatever started the run.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:

@@ -22,11 +22,12 @@ one-person repo needs.
    Conventional Commit; `PR title` checks it. Small commits inside a PR stay
    on the PR page.
 3. **The ruleset on `main`** blocks deletion and force pushes, requires a PR,
-   allows squash only, and requires four checks by name:
+   allows squash only, and requires five checks by name:
    - `Check` — `.github/workflows/ci.yml`, runs `bun run check`.
    - `PR title` — `.github/workflows/pr-title.yml`.
    - `Vercel` — the preview deploy built.
    - `Region` — every function in the deploy runs in `gru1` (ADR-0062).
+   - `Migrations` — the migration files are safe to apply on merge (ADR-0065).
    Checks are not strict: a PR does not need a rebase each time `main` moves.
    No one bypasses the ruleset. In an emergency, Renan turns it off in
    Settings → Rules.

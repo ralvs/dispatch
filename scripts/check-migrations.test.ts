@@ -24,6 +24,11 @@ describe("checkMigrations", () => {
 		expect(problems[0]).toContain("must sort after 20260922120000");
 	});
 
+	it("rejects a new migration with the same version as the newest on the base", () => {
+		const problems = checkMigrations(BASE, [{ status: "A", path: at("20260922120000_same.sql") }]);
+		expect(problems[0]).toContain("must sort after 20260922120000");
+	});
+
 	it("rejects an edited, deleted or renamed migration", () => {
 		const problems = checkMigrations(BASE, [
 			{ status: "M", path: at("20260919140000_priority_three_levels.sql") },
