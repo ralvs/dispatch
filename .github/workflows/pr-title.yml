@@ -1,0 +1,30 @@
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  title:
+    # The squash merge makes this title the commit on main, so it must be a
+    # Conventional Commit (docs/adr/0063). Required on main by name.
+    name: PR title
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Check the title is a Conventional Commit
+        # Through env, never ${{ }} inside run: a title is untrusted input.
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(feat|fix|chore|docs|refactor|test|perf|ci|build|style)(\([a-z0-9-]+\))?!?: .+'
+          if [[ "$TITLE" =~ $pattern ]]; then
+            echo "OK: $TITLE"
+          else
+            echo "::error::PR title is not a Conventional Commit: $TITLE"
+            echo "Expected <type>(<scope>)?: <summary>, type one of feat fix chore docs refactor test perf ci build style."
+            exit 1
+          fi
