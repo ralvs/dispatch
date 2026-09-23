@@ -9,6 +9,7 @@ import { eventFallsOnDay } from "@/lib/day-schedule";
 import { env } from "@/lib/env";
 import { type CalendarEventRow, EVENT_SELECT } from "@/lib/schemas/calendar";
 import { ServiceError, unwrap } from "@/lib/services/errors";
+import { inListLiteral } from "@/lib/services/in-list";
 
 // ─────────────────────────────────────────────────────────────────────────
 // iCloud CalDAV sync (docs/adr/0006). Pulls VEVENTs ±21 days from every
@@ -20,11 +21,6 @@ import { ServiceError, unwrap } from "@/lib/services/errors";
 // ─────────────────────────────────────────────────────────────────────────
 
 export type { CalendarEventRow };
-
-/** Postgres text-array literal for a `.not(col, "in", …)` filter, quoted per value. */
-function inListLiteral(values: Iterable<string>): string {
-	return `(${[...values].map((v) => `"${v.replace(/"/g, '\\"')}"`).join(",")})`;
-}
 
 export async function syncCalendar(
 	sb: SupabaseClient,
