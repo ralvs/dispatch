@@ -40,11 +40,21 @@ as `THEME_BOOT` (ADR-0033 Decision 2).
    the check after a deploy is the built output, not the config:
 
    ```
-   vercel inspect dispatch.alves.id | grep -m5 'λ'
+   vercel inspect dispatch.alves.id --json | bun scripts/check-function-region.ts
    ```
 
-   It must print `[gru1]`. Verified live 2026-09-21. Database round trip
-   ~230ms → ~5ms.
+   Every function except `_middleware` (`proxy.ts`, which runs in every
+   region by design) must be in `gru1`. Verified live 2026-09-21. Database
+   round trip ~230ms → ~5ms. The plain `vercel inspect` output hides most
+   functions, so a `grep 'λ'` on it checks only the first five.
+
+   **Guarded since 2026-09-23 (#8).** `.github/workflows/function-region.yml`
+   runs the same check after every successful Vercel deploy, preview and
+   production. Its `Region` job is a required check on `main` (ADR-0064), so
+   a dashboard override fails the PR before it reaches production. It checks
+   the functions, not the database: a Supabase region change still needs a
+   human to change `regions` in `vercel.json` and `EXPECTED_REGION` in the
+   script together.
 
 2. **One `tagged` cacheLife profile, and the clock is not what keeps it
    honest.** `next.config.ts` defines `tagged` as `stale 300 / revalidate 3600
@@ -157,7 +167,9 @@ not spend the same hours re-deciding them.
 ## Consequences
 
 - The region is now part of the deploy contract. A Supabase region change, or
-  a dashboard Function Region setting, silently undoes the largest win here.
+  a dashboard Function Region setting, undoes the largest win here. The
+  `Region` check (Decision 1) catches the dashboard case; the Supabase case
+  still needs a human.
 - A cached reader whose tag is not busted by some write path is wrong for up
   to a week. `lib/mutation-feedback/invalidate.test.ts` asserts the live tags
   are named by the writes that move their data; extend it with each new reader.
