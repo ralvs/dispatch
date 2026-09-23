@@ -1,0 +1,66 @@
+name: Function region
+
+# Vercel reports every deploy (preview and production) as a GitHub deployment.
+# After each successful one, check the built output: every function must run
+# in gru1, next to the database (docs/adr/0062). A dashboard setting can undo
+# this without any change in the repo, so the deploy is what gets checked.
+on: deployment_status
+
+permissions:
+  contents: read
+
+jobs:
+  region:
+    # The ruleset on main requires this job by name (docs/adr/0064).
+    name: Region
+    # Vercel's earlier pending status skips this job, and a skip reads as
+    # green. The `Vercel` check is also required and stays pending until the
+    # deploy succeeds, which is the event that starts the real run.
+    if: github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # The token step runs first, in an empty directory, before any repo
+      # file exists on the runner, so no repo code ever runs next to the
+      # secret. Plain curl against the REST API: the Vercel CLI looks up the
+      # token's user, which a team-scoped token cannot read (404). The builds
+      # endpoint returns the same JSON as `vercel inspect --json`.
+      - name: Inspect the deploy
+        working-directory: ${{ runner.temp }}
+        env:
+          DEPLOY_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [[ -z "$VERCEL_TOKEN" ]]; then
+            echo "::error::VERCEL_TOKEN secret is not set."
+            exit 1
+          fi
+          if [[ ! "$DEPLOY_URL" =~ ^https://(dispatch-[a-z0-9-]+-rlvs\.vercel\.app|dispatch\.alves\.id)/?$ ]]; then
+            echo "::error::Unexpected deploy URL: $DEPLOY_URL"
+            exit 1
+          fi
+          host="${BASH_REMATCH[1]}"
+          echo "Inspecting $host"
+          api() {
+            curl --fail-with-body --silent --show-error \
+              --header "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com$1?slug=rlvs"
+          }
+          id="$(api "/v13/deployments/$host" | jq -r .id)"
+          if [[ ! "$id" =~ ^dpl_[A-Za-z0-9]+$ ]]; then
+            echo "::error::No deployment id for $host"
+            exit 1
+          fi
+          api "/v11/deployments/$id/builds" > inspect.json
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      # No secret in this step: it only reads the JSON the step above wrote.
+      - name: Check every function runs in gru1
+        run: bun scripts/check-function-region.ts < "$RUNNER_TEMP/inspect.json"
