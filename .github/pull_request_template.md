@@ -13,5 +13,6 @@
 - [ ] `bun run check` green
 - [ ] Checker (Grok) PASS — the report shows the command it ran
 - [ ] Screenshots for UI changes (delete if none)
+- [ ] Migration works with the code that is live now (delete if none) — it applies on merge
 
 Closes #

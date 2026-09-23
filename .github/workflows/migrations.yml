@@ -1,0 +1,31 @@
+name: Migrations
+
+# Guards the migration files on every PR, before Migrate applies them to
+# production on merge (docs/adr/0065). Needs no secret.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  migrations:
+    # The ruleset on main requires this job by name (docs/adr/0064).
+    name: Migrations
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Check the migration files
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: bun scripts/check-migrations.ts "origin/$BASE_REF"
