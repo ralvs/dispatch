@@ -3,16 +3,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { nowUtc } from "@/lib/dates";
 import type { BridgeEvent } from "@/lib/schemas/calendar";
 import { ServiceError, unwrap } from "@/lib/services/errors";
+import { inListLiteral } from "@/lib/services/in-list";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Mac EventKit bridge ingest (docs/adr/0018). Replaces Google OAuth: the Mac
 // reads calendars already synced into Apple Calendar and POSTs a windowed
 // snapshot. source='google' (work events); set-difference delete like CalDAV.
 // ─────────────────────────────────────────────────────────────────────────
-
-function inListLiteral(values: Iterable<string>): string {
-	return `(${[...values].map((v) => `"${v.replace(/"/g, '\\"')}"`).join(",")})`;
-}
 
 export type BridgeSyncInput = {
 	events: BridgeEvent[];
