@@ -1,6 +1,6 @@
 // Field-level projectors for task intents. Day membership lives in
 // lib/day-schedule.ts (applyDayIntent). This module stays client-safe.
-import { isRecurrenceRule, nextDueDate } from "@/lib/recurrence";
+import { isRecurrenceRule, nextOccurrence } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/schemas/task";
 
 /** Intents the optimistic layer understands (v1). Edit waits for the server. */
@@ -58,30 +58,36 @@ function nowOf(ctx: Pick<ApplyContext, "nowIso">): string {
 export type CompleteProjection = {
 	completed_at: string;
 	/** Non-null only for a recurring row: the next occurrence to create. */
-	spawn: { due_date: string | null } | null;
+	spawn: { due_date: string | null; recurrence_day: number | null } | null;
 };
 
 /**
  * The one complete projector. Tasks-page cosmetics (clearTop3) sit outside it.
  */
 export function nextCompleteFields(
-	task: { recurrence_rule: string | null; due_date: string | null },
+	task: {
+		recurrence_rule: string | null;
+		due_date: string | null;
+		recurrence_day: number | null;
+	},
 	ctx: Pick<ApplyContext, "todayIso" | "nowIso">,
 ): CompleteProjection {
 	// isRecurrenceRule, not isRecurrencePattern: a custom weekly rule must
 	// spawn like any other. Guarding on the seven literals let an unknown rule
 	// fall through to a plain close, silently ending the series (shape plan §06).
-	const spawn =
-		task.recurrence_rule && isRecurrenceRule(task.recurrence_rule)
-			? {
-					due_date: nextDueDate({
-						currentDue: task.due_date,
-						rule: task.recurrence_rule,
-						todayIso: ctx.todayIso,
-					}),
-				}
-			: null;
-	return { completed_at: nowOf(ctx), spawn };
+	if (!task.recurrence_rule || !isRecurrenceRule(task.recurrence_rule)) {
+		return { completed_at: nowOf(ctx), spawn: null };
+	}
+	const next = nextOccurrence({
+		currentDue: task.due_date,
+		rule: task.recurrence_rule,
+		todayIso: ctx.todayIso,
+		recurrenceDay: task.recurrence_day,
+	});
+	return {
+		completed_at: nowOf(ctx),
+		spawn: { due_date: next.dueDate, recurrence_day: next.recurrenceDay },
+	};
 }
 
 export function projectComplete(
@@ -135,7 +141,7 @@ export function setTop3Fields(task: TaskRow, starred: boolean, forDateIso: strin
 
 /**
  * Project open+done lists for the Tasks page after an intent.
- * Pure — same next-occurrence math as completeTask (lib/recurrence.nextDueDate).
+ * Pure — same next-occurrence math as completeTask (lib/recurrence.nextOccurrence).
  */
 export function applyTaskLists(lists: TaskLists, intent: TaskIntent, ctx: ApplyContext): TaskLists {
 	switch (intent.type) {
