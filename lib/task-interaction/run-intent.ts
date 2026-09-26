@@ -19,7 +19,7 @@ export type TaskIntentRun = (intent: TaskIntent, action: () => Promise<unknown>)
  */
 export function toastTaskToggle(
 	kind: "complete" | "reopen",
-	task: Pick<TaskRow, "recurrence_rule" | "due_date">,
+	task: Pick<TaskRow, "recurrence_rule" | "due_date" | "recurrence_day">,
 	todayIso: string,
 ): void {
 	if (kind === "reopen") {

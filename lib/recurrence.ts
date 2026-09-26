@@ -135,25 +135,51 @@ function addDays(d: Date, n: number): Date {
 	return next;
 }
 
-// Adds N months while clamping to the last valid day. E.g.
-// Jan 31 + 1mo = Feb 28 (or 29 in a leap year), not Mar 3 like
-// JS's native overflow.
-function addMonthsClamped(d: Date, n: number): Date {
-	const y = d.getUTCFullYear();
-	const m = d.getUTCMonth();
-	const day = d.getUTCDate();
-	const targetMonthDate = new Date(Date.UTC(y, m + n, 1, 12, 0, 0));
-	// Last day of the target month: day 0 of the month *after* it.
-	const lastDay = new Date(
-		Date.UTC(targetMonthDate.getUTCFullYear(), targetMonthDate.getUTCMonth() + 1, 0),
-	).getUTCDate();
-	const clamped = Math.min(day, lastDay);
-	return new Date(
-		Date.UTC(targetMonthDate.getUTCFullYear(), targetMonthDate.getUTCMonth(), clamped, 12, 0, 0),
-	);
+function lastDayOfMonth(y: number, m: number): number {
+	// Day 0 of the month *after* it.
+	return new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
 }
 
-// Compute the next due date after completing a recurring task.
+// Adds N months and lands on `day`, clamped to the last valid day. E.g.
+// Jan 31 + 1mo = Feb 28 (or 29 in a leap year), not Mar 3 like JS's native
+// overflow.
+function addMonthsOnDay(d: Date, n: number, day: number): Date {
+	const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1, 12, 0, 0));
+	const y = target.getUTCFullYear();
+	const m = target.getUTCMonth();
+	return new Date(Date.UTC(y, m, Math.min(day, lastDayOfMonth(y, m)), 12, 0, 0));
+}
+
+const MONTH_STEP: Partial<Record<RecurrencePattern, number>> = {
+	monthly: 1,
+	semiannually: 6,
+	yearly: 12,
+};
+
+/**
+ * The day of the month a month-stepped series is meant to fall on.
+ *
+ * A series on the 31st lands on Apr 30 and Feb 28 because those months end
+ * early. The due date alone would then say "the 30th", and the series would
+ * drift one clamp at a time. `tasks.recurrence_day` keeps the 31 for as long
+ * as the due date sits clamped on a month end below it.
+ *
+ * The stored day counts only in that position. A due date moved by hand to
+ * any other day is the new day of the series, and the stored day drops.
+ */
+function intendedMonthDay(due: Date, recurrenceDay: number | null | undefined): number {
+	const day = due.getUTCDate();
+	const clamped = day === lastDayOfMonth(due.getUTCFullYear(), due.getUTCMonth());
+	return recurrenceDay != null && recurrenceDay > day && clamped ? recurrenceDay : day;
+}
+
+export type NextOccurrence = {
+	dueDate: string;
+	/** For `tasks.recurrence_day`: the intended day when `dueDate` is clamped, else null. */
+	recurrenceDay: number | null;
+};
+
+// Compute the next occurrence after completing a recurring task.
 //
 // Behavior decisions worth flagging:
 //
@@ -171,13 +197,15 @@ function addMonthsClamped(d: Date, n: number): Date {
 //      weekday after max(currentDue, today). The day set is the cadence, so
 //      there is no interval to count.
 //
-//   4. Month steps are counted from the current due date, not chained, so
-//      catching up from Jan 31 lands on Mar 31, not on a clamped Mar 28.
-export function nextDueDate(params: {
+//   4. Month steps keep the day of the month. A month too short for it
+//      clamps to its last day, and the next long-enough month returns to it:
+//      Jan 31 → Feb 28 → Mar 31, never Mar 28. See intendedMonthDay.
+export function nextOccurrence(params: {
 	currentDue: string | null | undefined;
 	rule: RecurrencePattern | string;
 	todayIso: string;
-}): string {
+	recurrenceDay?: number | null;
+}): NextOccurrence {
 	const today = parseIsoDate(params.todayIso);
 	const anchor = params.currentDue ? parseIsoDate(params.currentDue) : today;
 
@@ -188,32 +216,32 @@ export function nextDueDate(params: {
 		for (let i = 0; i < 7 && !dayset.includes(next.getUTCDay()); i++) {
 			next = addDays(next, 1);
 		}
-		return formatIsoDate(next);
+		return { dueDate: formatIsoDate(next), recurrenceDay: null };
 	}
 
 	const rule = params.rule as Exclude<RecurrencePattern, "weekdays">;
+	const months = MONTH_STEP[rule];
+	const day = intendedMonthDay(anchor, params.recurrenceDay);
 	// The k-th occurrence after the anchor.
 	const nth = (k: number): Date => {
-		switch (rule) {
-			case "daily":
-				return addDays(anchor, k);
-			case "weekly":
-				return addDays(anchor, 7 * k);
-			case "biweekly":
-				return addDays(anchor, 14 * k);
-			case "monthly":
-				return addMonthsClamped(anchor, k);
-			case "semiannually":
-				return addMonthsClamped(anchor, 6 * k);
-			case "yearly":
-				return addMonthsClamped(anchor, 12 * k);
-		}
+		if (months !== undefined) return addMonthsOnDay(anchor, months * k, day);
+		const days = rule === "daily" ? 1 : rule === "weekly" ? 7 : 14;
+		return addDays(anchor, days * k);
 	};
 
 	// Terminates: every rule moves strictly forward as k grows.
 	let k = 1;
 	while (nth(k) <= today) k++;
-	return formatIsoDate(nth(k));
+	const next = nth(k);
+	return {
+		dueDate: formatIsoDate(next),
+		recurrenceDay: months !== undefined && next.getUTCDate() < day ? day : null,
+	};
+}
+
+/** The next due date alone — for callers that only show it. */
+export function nextDueDate(params: Parameters<typeof nextOccurrence>[0]): string {
+	return nextOccurrence(params).dueDate;
 }
 
 // ─── Period-window helpers for recurring checklist items ──────────────

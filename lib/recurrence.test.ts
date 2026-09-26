@@ -4,6 +4,7 @@ import {
 	isCurrentlyDoneRecurring,
 	isRecurrenceRule,
 	nextDueDate,
+	nextOccurrence,
 	parseCustomWeekly,
 	periodStart,
 	RECURRENCE_LABELS,
@@ -56,6 +57,24 @@ describe("nextDueDate", () => {
 		);
 	});
 
+	it("keeps the weekday for weekly: a Monday series stays on Mondays", () => {
+		// Monday 2026-09-21, ticked early on Friday, on time, and two weeks late.
+		for (const todayIso of ["2026-09-18", "2026-09-21", "2026-10-06"]) {
+			const next = nextDueDate({ currentDue: "2026-09-21", rule: "weekly", todayIso });
+			expect(new Date(`${next}T12:00:00Z`).getUTCDay()).toBe(1);
+		}
+	});
+
+	it("keeps the day of the month: the 15th stays on the 15th", () => {
+		expect(nextDueDate({ currentDue: "2026-09-15", rule: "monthly", todayIso: "2026-09-15" })).toBe(
+			"2026-10-15",
+		);
+		// Ticked late on the 20th.
+		expect(nextDueDate({ currentDue: "2026-09-15", rule: "monthly", todayIso: "2026-09-20" })).toBe(
+			"2026-10-15",
+		);
+	});
+
 	it("counts month steps from the due date, so catching up does not drift", () => {
 		// Jan 31 → Feb 28 (clamped) → Mar 31, not Mar 28.
 		expect(nextDueDate({ currentDue: "2026-01-31", rule: "monthly", todayIso: "2026-03-01" })).toBe(
@@ -84,6 +103,89 @@ describe("nextDueDate", () => {
 		expect(nextDueDate({ currentDue: "2026-12-31", rule: "daily", todayIso: "2026-12-31" })).toBe(
 			"2027-01-01",
 		);
+	});
+});
+
+describe("nextOccurrence · the 31st across short months", () => {
+	// Tick each occurrence on its due day, carrying recurrenceDay forward the
+	// way completeTask copies it onto the spawned row.
+	function series(start: string, rule: string, steps: number): string[] {
+		let due = start;
+		let recurrenceDay: number | null = null;
+		const out: string[] = [];
+		for (let i = 0; i < steps; i++) {
+			const next = nextOccurrence({ currentDue: due, rule, todayIso: due, recurrenceDay });
+			due = next.dueDate;
+			recurrenceDay = next.recurrenceDay;
+			out.push(due);
+		}
+		return out;
+	}
+
+	it("clamps to a short month's last day, then returns to the 31st", () => {
+		expect(series("2026-01-31", "monthly", 6)).toEqual([
+			"2026-02-28",
+			"2026-03-31",
+			"2026-04-30",
+			"2026-05-31",
+			"2026-06-30",
+			"2026-07-31",
+		]);
+	});
+
+	it("uses Feb 29 in a leap year and still returns to the 30th", () => {
+		expect(series("2028-01-30", "monthly", 3)).toEqual(["2028-02-29", "2028-03-30", "2028-04-30"]);
+	});
+
+	it("keeps Feb 29 for a yearly series", () => {
+		expect(series("2028-02-29", "yearly", 5)).toEqual([
+			"2029-02-28",
+			"2030-02-28",
+			"2031-02-28",
+			"2032-02-29",
+			"2033-02-28",
+		]);
+	});
+
+	it("keeps the 31st across a six-month step", () => {
+		expect(series("2026-08-31", "semiannually", 2)).toEqual(["2027-02-28", "2027-08-31"]);
+	});
+
+	it("stores the intended day only while the due date is clamped", () => {
+		expect(
+			nextOccurrence({ currentDue: "2026-01-31", rule: "monthly", todayIso: "2026-01-31" }),
+		).toEqual({ dueDate: "2026-02-28", recurrenceDay: 31 });
+		expect(
+			nextOccurrence({
+				currentDue: "2026-02-28",
+				rule: "monthly",
+				todayIso: "2026-02-28",
+				recurrenceDay: 31,
+			}),
+		).toEqual({ dueDate: "2026-03-31", recurrenceDay: null });
+	});
+
+	it("drops the stored day when the due date was moved off the month end", () => {
+		// Clamped Feb 28 moved by hand to Feb 15: the 15th is the new day.
+		expect(
+			nextOccurrence({
+				currentDue: "2026-02-15",
+				rule: "monthly",
+				todayIso: "2026-02-15",
+				recurrenceDay: 31,
+			}),
+		).toEqual({ dueDate: "2026-03-15", recurrenceDay: null });
+	});
+
+	it("never stores a day for day-stepped rules", () => {
+		expect(
+			nextOccurrence({
+				currentDue: "2026-04-30",
+				rule: "weekly",
+				todayIso: "2026-04-30",
+				recurrenceDay: 31,
+			}),
+		).toEqual({ dueDate: "2026-05-07", recurrenceDay: null });
 	});
 });
 
