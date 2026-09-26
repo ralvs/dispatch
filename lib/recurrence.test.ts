@@ -21,9 +21,46 @@ describe("nextDueDate", () => {
 		expect(nextDueDate({ ...base, rule: "yearly" })).toBe("2027-07-20");
 	});
 
-	it("advances from today when the task is overdue (never re-spawns in the past)", () => {
+	it("keeps the due weekday when a weekly task is ticked late", () => {
+		// Due Saturday 2026-09-19, ticked Monday 2026-09-21 → next Saturday, not next Monday.
+		expect(nextDueDate({ currentDue: "2026-09-19", rule: "weekly", todayIso: "2026-09-21" })).toBe(
+			"2026-09-26",
+		);
+	});
+
+	it("skips missed occurrences but stays on the cadence (never re-spawns in the past)", () => {
+		// Monday 2026-06-01, ticked Tuesday 2026-07-14 → the next Monday.
 		const next = nextDueDate({ currentDue: "2026-06-01", rule: "weekly", todayIso: "2026-07-14" });
-		expect(next).toBe("2026-07-21");
+		expect(next).toBe("2026-07-20");
+		// Biweekly keeps its parity: 06-01 + 14k lands on 07-27, not 07-20.
+		expect(
+			nextDueDate({ currentDue: "2026-06-01", rule: "biweekly", todayIso: "2026-07-14" }),
+		).toBe("2026-07-27");
+		expect(nextDueDate({ currentDue: "2026-03-10", rule: "monthly", todayIso: "2026-05-20" })).toBe(
+			"2026-06-10",
+		);
+		expect(nextDueDate({ currentDue: "2026-06-01", rule: "daily", todayIso: "2026-07-14" })).toBe(
+			"2026-07-15",
+		);
+	});
+
+	it("moves a full interval when ticked on the due day", () => {
+		expect(nextDueDate({ currentDue: "2026-09-26", rule: "weekly", todayIso: "2026-09-26" })).toBe(
+			"2026-10-03",
+		);
+	});
+
+	it("steps from today when there is no due date", () => {
+		expect(nextDueDate({ currentDue: null, rule: "weekly", todayIso: "2026-09-21" })).toBe(
+			"2026-09-28",
+		);
+	});
+
+	it("counts month steps from the due date, so catching up does not drift", () => {
+		// Jan 31 → Feb 28 (clamped) → Mar 31, not Mar 28.
+		expect(nextDueDate({ currentDue: "2026-01-31", rule: "monthly", todayIso: "2026-03-01" })).toBe(
+			"2026-03-31",
+		);
 	});
 
 	it("clamps month-end: Jan 31 + 1 month lands on the last day of February", () => {

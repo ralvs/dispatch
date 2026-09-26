@@ -235,7 +235,7 @@ describe("projectComplete", () => {
 		const next = projectComplete(t, { todayIso: TODAY, nowIso: `${TODAY}T12:00:00.000Z` });
 		expect(nextCompleteFields(t, { todayIso: TODAY, nowIso: `${TODAY}T12:00:00.000Z` })).toEqual({
 			completed_at: `${TODAY}T12:00:00.000Z`,
-			spawn: { due_date: "2026-07-22" },
+			spawn: { due_date: "2026-07-17" },
 		});
 		expect(next).toMatchObject({ id: "r", status: "done", due_date: "2026-07-10" });
 		expect(next.recurrence_rule).toBeNull();

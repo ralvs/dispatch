@@ -86,7 +86,7 @@ describe("completeTask", () => {
 
 		const result = await completeTask(sb, "task-1", TODAY, { dueDate: "2026-07-10" });
 
-		expect(result).toMatchObject({ spawned: true, applied: true, nextDue: "2026-07-22" });
+		expect(result).toMatchObject({ spawned: true, applied: true, nextDue: "2026-07-17" });
 		expect(updatePatches).toHaveLength(1);
 		expect(updatePatches[0]).toMatchObject({ status: "done" });
 		expect(updatePatches[0].completed_at).toEqual(expect.any(String));
@@ -98,7 +98,7 @@ describe("completeTask", () => {
 		expect(inserts).toHaveLength(1);
 		expect(inserts[0]).toMatchObject({
 			title: "Weekly",
-			due_date: "2026-07-22",
+			due_date: "2026-07-17",
 			recurrence_rule: "weekly",
 		});
 	});
@@ -148,7 +148,7 @@ describe("completeTask", () => {
 
 		await completeTask(sb, "task-8", TODAY, { dueDate: "2026-07-10" });
 
-		expect(inserts[0]).toMatchObject({ top3_for_date: "2026-07-22" });
+		expect(inserts[0]).toMatchObject({ top3_for_date: "2026-07-17" });
 	});
 
 	it("spawns an unstarred occurrence when the completed one was not starred", async () => {

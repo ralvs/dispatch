@@ -157,70 +157,63 @@ function addMonthsClamped(d: Date, n: number): Date {
 //
 // Behavior decisions worth flagging:
 //
-//   1. We advance from max(currentDue, today). If you complete a weekly
-//      task that was overdue by a month, we don't re-spawn it 7 days in
-//      the past — we move 7 days from today. Otherwise you'd immediately
-//      have to mark it done again, which defeats the purpose.
+//   1. The series keeps its own cadence. A weekly task due Saturday and
+//      ticked late on Monday comes back the next Saturday, not the next
+//      Monday: the day you tick it says nothing about the day it is due.
+//      Fixed-interval rules count whole intervals from the current due date
+//      until they clear today.
 //
-//   2. We never return a date in the past. If somehow the math lands on
-//      <= today we add another increment until we clear today.
+//   2. We never return a date in the past, or today. A task overdue by a
+//      month skips the occurrences it missed rather than spawning them, so
+//      you do not have to tick it again straight away.
 //
-//   3. For 'weekdays', we always land on Mon-Fri. Stepping to Sat/Sun
-//      pushes through to Monday.
-//   4. A custom weekly rule (`weekly:tu,sa`) advances to the next listed
-//      weekday. The loop runs at most seven times, so it needs no special
-//      safety belt beyond the one already here.
+//   3. Day-set rules ('weekdays', `weekly:tu,sa`) advance to the next listed
+//      weekday after max(currentDue, today). The day set is the cadence, so
+//      there is no interval to count.
+//
+//   4. Month steps are counted from the current due date, not chained, so
+//      catching up from Jan 31 lands on Mar 31, not on a clamped Mar 28.
 export function nextDueDate(params: {
 	currentDue: string | null | undefined;
 	rule: RecurrencePattern | string;
 	todayIso: string;
 }): string {
 	const today = parseIsoDate(params.todayIso);
-	const baseFromCurrent = params.currentDue ? parseIsoDate(params.currentDue) : null;
-	// Start from whichever is later — current due, or today.
-	const start = baseFromCurrent && baseFromCurrent > today ? baseFromCurrent : today;
+	const anchor = params.currentDue ? parseIsoDate(params.currentDue) : today;
 
-	const customDays = parseCustomWeekly(params.rule);
-	if (customDays !== null) {
-		let next = addDays(start, 1);
+	const dayset = params.rule === "weekdays" ? [1, 2, 3, 4, 5] : parseCustomWeekly(params.rule);
+	if (dayset !== null) {
+		let next = addDays(anchor > today ? anchor : today, 1);
 		// At most seven steps: one of the seven weekdays is always in the set.
-		for (let i = 0; i < 7 && !customDays.includes(next.getUTCDay()); i++) {
+		for (let i = 0; i < 7 && !dayset.includes(next.getUTCDay()); i++) {
 			next = addDays(next, 1);
 		}
 		return formatIsoDate(next);
 	}
 
-	const rule = params.rule as RecurrencePattern;
-	const step = (from: Date): Date => {
+	const rule = params.rule as Exclude<RecurrencePattern, "weekdays">;
+	// The k-th occurrence after the anchor.
+	const nth = (k: number): Date => {
 		switch (rule) {
 			case "daily":
-				return addDays(from, 1);
-			case "weekdays": {
-				let d = addDays(from, 1);
-				while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d = addDays(d, 1);
-				return d;
-			}
+				return addDays(anchor, k);
 			case "weekly":
-				return addDays(from, 7);
+				return addDays(anchor, 7 * k);
 			case "biweekly":
-				return addDays(from, 14);
+				return addDays(anchor, 14 * k);
 			case "monthly":
-				return addMonthsClamped(from, 1);
+				return addMonthsClamped(anchor, k);
 			case "semiannually":
-				return addMonthsClamped(from, 6);
+				return addMonthsClamped(anchor, 6 * k);
 			case "yearly":
-				return addMonthsClamped(from, 12);
+				return addMonthsClamped(anchor, 12 * k);
 		}
 	};
 
-	let next = step(start);
-	// Safety belt: if (somehow) we landed on or before today, step again.
-	// Capped at a few iterations so a buggy rule can't infinite-loop.
-	let safety = 8;
-	while (next <= today && safety-- > 0) {
-		next = step(next);
-	}
-	return formatIsoDate(next);
+	// Terminates: every rule moves strictly forward as k grows.
+	let k = 1;
+	while (nth(k) <= today) k++;
+	return formatIsoDate(nth(k));
 }
 
 // ─── Period-window helpers for recurring checklist items ──────────────
