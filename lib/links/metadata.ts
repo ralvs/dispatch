@@ -269,7 +269,56 @@ function xAuthor(name: string | null, handle: string | null): string | null {
 	return name && /[\p{L}\p{N}]/u.test(name) ? `${name} (@${handle})` : `@${handle}`;
 }
 
-type FxMedia = { type?: unknown; url?: unknown; thumbnail_url?: unknown };
+type FxMedia = { all?: unknown };
+type FxPost = {
+	text?: unknown;
+	author?: { name?: unknown; screen_name?: unknown };
+	media?: FxMedia;
+	quote?: { media?: FxMedia };
+	card?: { image?: { url?: unknown } };
+	article?: {
+		title?: unknown;
+		preview_text?: unknown;
+		cover_media?: { media_info?: { original_img_url?: unknown } };
+	};
+};
+
+const str = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
+
+/** Line breaks carry meaning in a post (lists, a hook line), so they stay. */
+function postText(raw: string | undefined): string | null {
+	if (!raw) return null;
+	return (
+		decodeEntities(raw)
+			// FxTwitter expands links already; a t.co that survives is a dead end.
+			.replace(T_CO, "")
+			.replace(/[^\S\n]+/g, " ")
+			.replace(/\n{3,}/g, "\n\n")
+			.trim()
+			.slice(0, DESCRIPTION_MAX) || null
+	);
+}
+
+/** A photo's own URL, or a video's thumbnail — a video's url is the mp4. */
+function mediaImage(media: FxMedia | undefined): string | null {
+	const first: { type?: unknown; url?: unknown; thumbnail_url?: unknown } | undefined =
+		Array.isArray(media?.all) ? media.all[0] : undefined;
+	const raw = first?.type === "photo" ? str(first.url) : str(first?.thumbnail_url);
+	return cleanImage(raw);
+}
+
+/**
+ * The picture a reader sees first: the post's own media, then the post it
+ * quotes, then its link card, then a long-form article's cover.
+ */
+function postImage(post: FxPost): string | null {
+	return (
+		mediaImage(post.media) ??
+		mediaImage(post.quote?.media) ??
+		cleanImage(str(post.card?.image?.url)) ??
+		cleanImage(str(post.article?.cover_media?.media_info?.original_img_url))
+	);
+}
 
 /**
  * The pure half of the X provider: one FxTwitter response body in, metadata
@@ -277,36 +326,21 @@ type FxMedia = { type?: unknown; url?: unknown; thumbnail_url?: unknown };
  */
 export function parseFxTwitter(body: unknown): LinkMetadata | null {
 	if (typeof body !== "object" || body === null) return null;
-	const tweet = (body as { tweet?: unknown }).tweet;
-	if (typeof tweet !== "object" || tweet === null) return null;
+	const post = (body as { tweet?: unknown }).tweet;
+	if (typeof post !== "object" || post === null) return null;
+	const { author, article } = post as FxPost;
 
-	const { text, author, media } = tweet as {
-		text?: unknown;
-		author?: { name?: unknown; screen_name?: unknown };
-		media?: { all?: unknown };
-	};
-	const name = typeof author?.name === "string" ? clean(author.name, TITLE_MAX) : null;
-	const handle = typeof author?.screen_name === "string" ? author.screen_name : null;
-	const title = xAuthor(name, handle);
+	const name = clean(str(author?.name), TITLE_MAX);
+	const title = xAuthor(name, str(author?.screen_name) ?? null);
 	if (!title) return null;
 
-	// Line breaks carry meaning in a post (lists, a hook line), so they stay.
-	const description =
-		typeof text === "string"
-			? decodeEntities(text)
-					// FxTwitter expands links already; a t.co that survives is a dead end.
-					.replace(T_CO, "")
-					.replace(/[^\S\n]+/g, " ")
-					.replace(/\n{3,}/g, "\n\n")
-					.trim()
-					.slice(0, DESCRIPTION_MAX) || null
-			: null;
+	// A long-form X article has no post text; its title and opening stand in.
+	const articleText = [str(article?.title), str(article?.preview_text)]
+		.filter(Boolean)
+		.join("\n\n");
+	const description = postText(str((post as FxPost).text)) ?? postText(articleText);
 
-	const first: FxMedia | undefined = Array.isArray(media?.all) ? media.all[0] : undefined;
-	const rawImage = first?.type === "photo" ? first.url : first?.thumbnail_url; // a video's url is the mp4
-	const image = typeof rawImage === "string" ? cleanImage(rawImage) : null;
-
-	return { title, description, image };
+	return { title, description, image: postImage(post as FxPost) };
 }
 
 async function fetchFxTwitter(endpoint: string): Promise<LinkMetadata | null> {
