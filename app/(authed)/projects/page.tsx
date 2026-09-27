@@ -1,4 +1,6 @@
-import { EmptyState, ListSection, PageHeader } from "@/components/ui";
+import { Suspense } from "react";
+import { CreateTrigger } from "@/components/create-dialog";
+import { EmptyState, ListSection, PageHeader, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedProjectBoard } from "@/lib/cache/projects";
@@ -9,7 +11,7 @@ import { STATUS_GROUPS } from "./constants";
 import { ProjectCreateButton } from "./project-form";
 import { ProjectRowItem } from "./project-row";
 
-export default async function ProjectsPage() {
+async function ProjectsBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
@@ -88,5 +90,26 @@ export default async function ProjectsPage() {
 				</div>
 			)}
 		</div>
+	);
+}
+
+function ProjectsFallback() {
+	return (
+		<PageSkeleton
+			title="Projects"
+			// Disabled rather than absent — create is not data (PageSkeleton).
+			action={<CreateTrigger label="New project" disabled />}
+		/>
+	);
+}
+
+// The header carries data (its measure), so the whole body streams in behind
+// the page's own boundary and the old loading.tsx is its fallback (#21). The
+// async child is where the entity store gets seeded (#26-#30).
+export default function ProjectsPage() {
+	return (
+		<Suspense fallback={<ProjectsFallback />}>
+			<ProjectsBody />
+		</Suspense>
 	);
 }

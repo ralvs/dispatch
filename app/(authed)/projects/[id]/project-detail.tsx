@@ -104,14 +104,6 @@ export function ProjectDetail({
 
 	return (
 		<div className={pending ? "opacity-50" : ""}>
-			<nav aria-label="Breadcrumb" className="pb-4">
-				<Link
-					href="/projects"
-					className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
-				>
-					← Projects
-				</Link>
-			</nav>
 			{/* Name is the title; status is the fact (plain), the task
 			    rollup the measure (Pass 4.5 Gate A). Domain rides the subtitle
 			    with its colour — the list row already settled that domain, not

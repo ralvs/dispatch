@@ -1,10 +1,13 @@
 import { PageHeader } from "@/components/ui";
-import { requireOwnerPage } from "@/lib/auth";
 import { ChatThread } from "./chat-thread";
 
-export default async function ChatPage() {
-	await requireOwnerPage();
-
+/*
+ * Fully static: the page reads nothing, so it has no requireOwnerPage() of its
+ * own and comes out of the prerendered shell whole. The layout's OwnerGate
+ * still bounces a non-owner, and every read happens in /api/chat, which runs
+ * the owner check itself (iron rule #2).
+ */
+export default function ChatPage() {
 	return (
 		<div>
 			{/* "Ask" is what the shell's action calls this, so it is the name.

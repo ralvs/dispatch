@@ -1,4 +1,6 @@
-import { EmptyState, PageHeader, StatBand } from "@/components/ui";
+import { Suspense } from "react";
+import { CreateTrigger } from "@/components/create-dialog";
+import { EmptyState, PageHeader, PageSkeleton, StatBand } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedRoutines } from "@/lib/cache/routines";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -8,7 +10,7 @@ import { RoutineCreateButton } from "./routine-form";
 import { RoutineRowItem } from "./routine-row";
 import { routineStats } from "./routine-stats-band";
 
-export default async function RoutinesPage() {
+async function RoutinesBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
@@ -56,5 +58,20 @@ export default async function RoutinesPage() {
 				</ul>
 			)}
 		</div>
+	);
+}
+
+function RoutinesFallback() {
+	return <PageSkeleton title="Routines" action={<CreateTrigger label="New routine" disabled />} />;
+}
+
+// The header carries data (its measure), so the whole body streams in behind
+// the page's own boundary and the old loading.tsx is its fallback (#21). The
+// async child is where the entity store gets seeded (#26-#30).
+export default function RoutinesPage() {
+	return (
+		<Suspense fallback={<RoutinesFallback />}>
+			<RoutinesBody />
+		</Suspense>
 	);
 }

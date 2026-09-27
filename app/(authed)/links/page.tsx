@@ -1,11 +1,12 @@
-import { EmptyState, ListSection, PageHeader } from "@/components/ui";
+import { Suspense } from "react";
+import { EmptyState, ListSection, PageHeader, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedLinks } from "@/lib/cache/links";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { LinkRowItem } from "./link-row";
 
 // The link reading list (ADR-0014, renamed from /ingest in ADR-0022).
-export default async function LinksPage() {
+async function LinksBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
@@ -56,5 +57,20 @@ export default async function LinksPage() {
 				</div>
 			)}
 		</div>
+	);
+}
+
+function LinksFallback() {
+	return <PageSkeleton title="Links" />;
+}
+
+// The header carries data (its measure), so the whole body streams in behind
+// the page's own boundary and the old loading.tsx is its fallback (#21). The
+// async child is where the entity store gets seeded (#26-#30).
+export default function LinksPage() {
+	return (
+		<Suspense fallback={<LinksFallback />}>
+			<LinksBody />
+		</Suspense>
 	);
 }

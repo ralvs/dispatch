@@ -40,6 +40,26 @@ function TitlePlaceholder() {
 	);
 }
 
+/**
+ * The rows alone, for a route whose header is static and renders for real
+ * above the boundary: only the list below it is still in flight.
+ */
+export function SkeletonRows({ rows = 6 }: { rows?: number }) {
+	return (
+		<>
+			<span role="status" className="sr-only">
+				Loading
+			</span>
+			<div className="space-y-3" aria-hidden="true">
+				{Array.from({ length: rows }).map((_, i) => (
+					// biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows, never reordered.
+					<div key={i} className="h-4 animate-pulse rounded bg-surface" />
+				))}
+			</div>
+		</>
+	);
+}
+
 export function PageSkeleton({
 	title,
 	subtitle,
@@ -56,15 +76,7 @@ export function PageSkeleton({
 	return (
 		<div>
 			<PageHeader title={title ?? <TitlePlaceholder />} subtitle={subtitle} action={action} />
-			<span role="status" className="sr-only">
-				Loading
-			</span>
-			<div className="space-y-3" aria-hidden="true">
-				{Array.from({ length: rows }).map((_, i) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows, never reordered.
-					<div key={i} className="h-4 animate-pulse rounded bg-surface" />
-				))}
-			</div>
+			<SkeletonRows rows={rows} />
 		</div>
 	);
 }

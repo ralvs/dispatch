@@ -1,4 +1,6 @@
-import { ListSection, PageHeader, StatBand } from "@/components/ui";
+import { Suspense } from "react";
+import { CreateTrigger } from "@/components/create-dialog";
+import { ListSection, PageHeader, PageSkeleton, StatBand } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains, getCachedDomainTouches } from "@/lib/cache/domains";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -8,7 +10,7 @@ import { DomainCreateButton } from "./domain-form";
 import { DomainRowItem } from "./domain-row";
 import { domainStats } from "./domain-stats";
 
-export default async function DomainsPage() {
+async function DomainsBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
@@ -72,5 +74,20 @@ export default async function DomainsPage() {
 				)}
 			</div>
 		</div>
+	);
+}
+
+function DomainsFallback() {
+	return <PageSkeleton title="Domains" action={<CreateTrigger label="New domain" disabled />} />;
+}
+
+// The header carries data (its measure), so the whole body streams in behind
+// the page's own boundary and the old loading.tsx is its fallback (#21). The
+// async child is where the entity store gets seeded (#26-#30).
+export default function DomainsPage() {
+	return (
+		<Suspense fallback={<DomainsFallback />}>
+			<DomainsBody />
+		</Suspense>
 	);
 }

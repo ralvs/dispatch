@@ -104,7 +104,9 @@ export function PushToggle() {
 		}
 	}
 
-	if (status === "checking") return null;
+	// Holds the button's height while the browser is asked, so the section
+	// does not jump when it lands. /settings prerenders this state.
+	if (status === "checking") return <div className="h-9" aria-hidden="true" />;
 
 	if (status === "unsupported") {
 		return (

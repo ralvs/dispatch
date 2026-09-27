@@ -31,7 +31,7 @@ export { ICON_SIZES, Icon, type IconSize } from "./icon";
 export { ListRow, rowTitle } from "./list-row";
 export { ListSection } from "./list-section";
 export { type Measure, PageHeader } from "./page-header";
-export { PageSkeleton } from "./page-skeleton";
+export { PageSkeleton, SkeletonRows } from "./page-skeleton";
 export { Progress } from "./progress";
 export { Radio, radio } from "./radio";
 export { type ScopeOption, ScopeSelect, UNFILED } from "./scope-select";
