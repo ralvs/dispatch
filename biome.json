@@ -9,7 +9,10 @@
 			"!.claude",
 			"!.codex",
 			"!.impeccable",
-			"!supabase/.temp"
+			"!supabase/.temp",
+			"!test/e2e/.auth",
+			"!test-results",
+			"!playwright-report"
 		]
 	},
 	"assist": {
