@@ -4,8 +4,9 @@ import { OWNER_USER_ID, readLocalStack } from "./test/integration/stack";
 
 // The end-to-end layer (docs/adr/0063): the production build against the local
 // Supabase stack, never the hosted project. `readLocalStack` refuses any
-// non-local host, and the env below is explicit so nothing from the shell or a
-// stray .env.local leaks into the build.
+// non-local host. Every key below is set explicitly, even to "": Next fills a
+// key from .env.local only when it is undefined, so a listed key can never pick
+// up a production value from a stray .env.local (the main checkout has one).
 const stack = readLocalStack();
 const PORT = 3300;
 
@@ -41,11 +42,12 @@ export default defineConfig({
 			NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: stack.publishableKey,
 			SUPABASE_SECRET_KEY: stack.secretKey,
 			OWNER_USER_ID,
-			// The gateway is always faked: a dummy key, so AI-gated UI renders as it
-			// does in production, but a call that slipped through would be refused
-			// (401), never billed. The smoke also blocks the gateway host.
-			AI_GATEWAY_API_KEY: "e2e-dummy-not-a-real-key",
-			// Every other integration is off. "" reads as unset (lib/env.ts).
+			// Every integration is off. "" reads as unset (lib/env.ts), so
+			// isAiConfigured() is false and no server path calls the gateway — the
+			// same as the integration layer. Never delete a key here: an undefined
+			// key would be filled from .env.local. The smoke also blocks the gateway
+			// host in the browser.
+			AI_GATEWAY_API_KEY: "",
 			CAPTURE_WEBHOOK_SECRET: "",
 			CRON_SECRET: "",
 			WIDGET_SECRET: "",
