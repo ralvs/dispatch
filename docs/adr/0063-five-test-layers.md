@@ -35,7 +35,7 @@ it.
    | Unit | Vitest, node | `*.test.ts` | `bun run check` |
    | Component | Vitest + RTL, happy-dom | `*.test.tsx` | `bun run check` |
    | Integration | Vitest + local Supabase | `*.int.test.ts` | `bun run test:integration` |
-   | End-to-end | Playwright, production build | (#10) | (#10) |
+   | End-to-end | Playwright, production build | `test/e2e/*.spec.ts` | `bun run test:e2e` |
 
    Vitest cannot render async Server Components (Next.js docs), so those are
    covered end to end. The layers are Vitest `projects` in
