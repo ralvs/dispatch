@@ -64,6 +64,7 @@ function optimisticTask(overrides: Partial<TaskRow> = {}): TaskRow {
 		project_id: null,
 		domain_id: null,
 		recurrence_rule: null,
+		recurrence_day: null,
 		top3_for_date: null,
 		source: "manual",
 		created_at: new Date().toISOString(),

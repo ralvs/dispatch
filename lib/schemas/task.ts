@@ -118,6 +118,7 @@ export const TaskRowSchema = z.object({
 	project_id: z.string().uuid().nullable(),
 	domain_id: z.string().uuid().nullable(),
 	recurrence_rule: z.string().nullable(),
+	recurrence_day: z.number().nullable(),
 	top3_for_date: z.string().nullable(),
 	source: z.string(),
 	created_at: z.string(),

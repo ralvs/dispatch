@@ -185,6 +185,7 @@ type TaskHotRow = {
 	title: string;
 	notes: string | null;
 	recurrence_rule: string | null;
+	recurrence_day: number | null;
 	due_date: string | null;
 	due_time: string | null;
 	priority: number;
@@ -196,7 +197,7 @@ type TaskHotRow = {
 };
 
 const TASK_HOT_SELECT =
-	"id, title, notes, recurrence_rule, due_date, due_time, priority, domain_id, project_id, reminder_offsets, source, top3_for_date";
+	"id, title, notes, recurrence_rule, recurrence_day, due_date, due_time, priority, domain_id, project_id, reminder_offsets, source, top3_for_date";
 
 async function getTaskHot(sb: SupabaseClient, id: string): Promise<TaskHotRow | null> {
 	const data = unwrap(await sb.from("tasks").select(TASK_HOT_SELECT).eq("id", id).maybeSingle());
@@ -221,6 +222,7 @@ export async function createTask(
 		recurrence_rule?: string | null;
 		source?: string;
 		// Set only by spawnNextOccurrence, which copies a completed recurring row.
+		recurrence_day?: number | null;
 		reminder_offsets?: number[];
 		top3_for_date?: string | null;
 	},
@@ -373,16 +375,18 @@ export async function completeTask(
 	}
 
 	const due = next.spawn.due_date;
-	await spawnNextOccurrence(sb, task, due);
+	await spawnNextOccurrence(sb, task, next.spawn);
 	return { spawned: true, nextDue: due, applied: true };
 }
 
 /**
  * Create the next occurrence of a just-completed recurring task.
  *
- * A copy of the source row, with four deliberate departures:
+ * A copy of the source row, with five deliberate departures:
  *   - `due_date` is the next occurrence; `due_time` rides along unchanged.
  *   - `recurrence_rule` is the rule the completed row gave up.
+ *   - `recurrence_day` is recomputed, not copied: it is set only while the new
+ *     due date is clamped to a short month's last day (lib/recurrence.ts).
  *   - `top3_for_date` follows the star to the new due date, so a task you had
  *     pinned stays pinned to the day it is next due. An unstarred task, or one
  *     whose successor has no due date, spawns unpinned.
@@ -395,8 +399,9 @@ export async function completeTask(
 async function spawnNextOccurrence(
 	sb: SupabaseClient,
 	source: TaskHotRow,
-	dueDate: string | null,
+	next: { due_date: string | null; recurrence_day: number | null },
 ): Promise<void> {
+	const dueDate = next.due_date;
 	await createTask(
 		sb,
 		{
@@ -408,6 +413,7 @@ async function spawnNextOccurrence(
 			domain_id: source.domain_id,
 			project_id: source.project_id,
 			recurrence_rule: source.recurrence_rule,
+			recurrence_day: next.recurrence_day,
 			source: source.source,
 			reminder_offsets: source.reminder_offsets,
 			top3_for_date: source.top3_for_date !== null ? dueDate : null,

@@ -25,6 +25,7 @@ function task(partial: Partial<TaskRow> & Pick<TaskRow, "id" | "title">): TaskRo
 		project_id: null,
 		domain_id: "domain-1",
 		recurrence_rule: null,
+		recurrence_day: null,
 		top3_for_date: null,
 		source: "manual",
 		created_at: "2026-07-01T12:00:00.000Z",
@@ -57,7 +58,7 @@ describe("toastTaskToggle", () => {
 			}),
 			TODAY,
 		);
-		expect(toastSuccessMock).toHaveBeenCalledWith("Done", "Next due in 7d");
+		expect(toastSuccessMock).toHaveBeenCalledWith("Done", "Next due in 2d");
 	});
 
 	it("toasts Reopened as a neutral notice", () => {

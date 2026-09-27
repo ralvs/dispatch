@@ -1003,6 +1003,7 @@ export type Database = {
 					notes: string | null;
 					priority: number;
 					project_id: string | null;
+					recurrence_day: number | null;
 					recurrence_rule: string | null;
 					reminder_offsets: Json;
 					reminders_sent: Json;
@@ -1022,6 +1023,7 @@ export type Database = {
 					notes?: string | null;
 					priority?: number;
 					project_id?: string | null;
+					recurrence_day?: number | null;
 					recurrence_rule?: string | null;
 					reminder_offsets?: Json;
 					reminders_sent?: Json;
@@ -1041,6 +1043,7 @@ export type Database = {
 					notes?: string | null;
 					priority?: number;
 					project_id?: string | null;
+					recurrence_day?: number | null;
 					recurrence_rule?: string | null;
 					reminder_offsets?: Json;
 					reminders_sent?: Json;
