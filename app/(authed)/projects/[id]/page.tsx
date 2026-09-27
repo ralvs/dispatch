@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
@@ -66,26 +67,30 @@ async function ProjectBody({ params }: { params: Promise<{ id: string }> }) {
 
 function ProjectFallback() {
 	return (
-		<div>
-			<nav aria-label="Breadcrumb" className="pb-4">
-				<span className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-					← Projects
-				</span>
-			</nav>
-			{/* No title: this route's h1 is the project's name, which is the data
-			    still in flight. The + is not data — hold its slot disabled. */}
-			<PageSkeleton rows={5} action={<HeaderCreateButton label="Add task" disabled />} />
-		</div>
+		// No title: this route's h1 is the project's name, which is the data
+		// still in flight. The + is not data — hold its slot disabled.
+		<PageSkeleton rows={5} action={<HeaderCreateButton label="Add task" disabled />} />
 	);
 }
 
 // The data streams in behind the page's own boundary, so the route keeps no
 // loading.tsx (#21). `params` is handed down unawaited: awaiting it here would
-// make the whole page one dynamic hole again.
+// make the whole page one dynamic hole again. The breadcrumb is not data, so it
+// sits above the boundary and comes out of the prerendered shell.
 export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
 	return (
-		<Suspense fallback={<ProjectFallback />}>
-			<ProjectBody params={params} />
-		</Suspense>
+		<div>
+			<nav aria-label="Breadcrumb" className="pb-4">
+				<Link
+					href="/projects"
+					className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
+				>
+					← Projects
+				</Link>
+			</nav>
+			<Suspense fallback={<ProjectFallback />}>
+				<ProjectBody params={params} />
+			</Suspense>
+		</div>
 	);
 }

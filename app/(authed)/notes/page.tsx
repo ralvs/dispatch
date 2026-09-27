@@ -56,8 +56,9 @@ function NotesFallback() {
 	);
 }
 
-// The data streams in behind the page's own boundary, so the route keeps no
-// loading.tsx and its static parts come out of the prerendered shell (#21).
+// The header carries data (its measure), so the whole body streams in behind
+// the page's own boundary and the old loading.tsx is its fallback (#21). The
+// async child is where the entity store gets seeded (#26-#30).
 export default function NotesPage() {
 	return (
 		<Suspense fallback={<NotesFallback />}>

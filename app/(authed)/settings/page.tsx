@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { PushToggle } from "@/components/push-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { PageHeader, SectionHead, SkeletonRows } from "@/components/ui";
+import { PageHeader, SectionHead } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone, getCachedReminderSettings } from "@/lib/cache/settings";
 import { ReminderForm } from "./reminder-form";
@@ -24,6 +24,24 @@ async function AppSettings() {
 				offsetMinutes={reminderSettings.offsetMinutes}
 				anchorTime={reminderSettings.anchorTime}
 			/>
+		</>
+	);
+}
+
+/* Two SettingsForm blocks: a labelled field with Save, and the note under it. */
+function AppSettingsFallback() {
+	return (
+		<>
+			<span role="status" className="sr-only">
+				Loading
+			</span>
+			{[0, 1].map((i) => (
+				<div key={i} className="mt-2 space-y-2" aria-hidden="true">
+					<div className="h-3 w-20 animate-pulse rounded bg-surface" />
+					<div className="h-9 w-full animate-pulse rounded bg-surface sm:w-56" />
+					<div className="h-3 w-3/4 animate-pulse rounded bg-surface" />
+				</div>
+			))}
 		</>
 	);
 }
@@ -59,7 +77,7 @@ export default function SettingsPage() {
 
 			<section className="mt-9" aria-label="App">
 				<SectionHead title="App" />
-				<Suspense fallback={<SkeletonRows rows={4} />}>
+				<Suspense fallback={<AppSettingsFallback />}>
 					<AppSettings />
 				</Suspense>
 			</section>
