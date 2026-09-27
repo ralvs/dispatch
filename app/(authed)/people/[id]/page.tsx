@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
@@ -59,8 +60,20 @@ function PersonFallback() {
 // make the whole page one dynamic hole again.
 export default function PersonPage({ params }: { params: Promise<{ id: string }> }) {
 	return (
-		<Suspense fallback={<PersonFallback />}>
-			<PersonBody params={params} />
-		</Suspense>
+		<div>
+			{/* The way back, as on the note and project pages. Not data, so it
+			    sits above the boundary and comes out of the prerendered shell. */}
+			<nav aria-label="Breadcrumb" className="pb-4">
+				<Link
+					href="/people"
+					className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
+				>
+					← People
+				</Link>
+			</nav>
+			<Suspense fallback={<PersonFallback />}>
+				<PersonBody params={params} />
+			</Suspense>
+		</div>
 	);
 }
