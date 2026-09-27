@@ -13,9 +13,12 @@ import { afterEach, vi } from "vitest";
  * just a module of async functions. A test that renders a component calling
  * one mocks that module itself — `vi.mock("@/app/(authed)/tasks/actions")`.
  */
-vi.mock("next/navigation", async () => {
+vi.mock("next/navigation", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("next/navigation")>();
 	const navigation = await import("./navigation");
-	return navigation.nextNavigationMock;
+	// unstable_rethrow needs no router — it only inspects the error — so the
+	// real one stays. A spy would make every error look like a redirect.
+	return { ...navigation.nextNavigationMock, unstable_rethrow: actual.unstable_rethrow };
 });
 
 // Vitest runs without globals, so Testing Library's auto-cleanup never

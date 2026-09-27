@@ -146,6 +146,9 @@ describe("inbox scope", () => {
 			{ kind: "task", intent: { type: "create", task: filed } },
 			NOW,
 		);
+		// Optimistic: the pending unfiled create shows at once; the filed one never does.
+		expect(selectView(a1, viewKey.inbox())?.map((r) => r.id)).toEqual(["u"]);
+		expect(selectView(a2, viewKey.inbox())?.map((r) => r.id)).toEqual(["u"]);
 		const c1 = confirmWrite(a2, t1, { at: T2, rows: [unfiled] });
 		const c2 = confirmWrite(c1, t2, { at: T2, rows: [filed] });
 		expect(selectView(c2, viewKey.inbox())?.map((r) => r.id)).toEqual(["u"]);

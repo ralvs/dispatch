@@ -61,7 +61,16 @@ describe("useRunIntent", () => {
 		expect(toastError).toHaveBeenCalledWith("Gone");
 	});
 
-	it("throw → rollback + toast + release, no unhandled rejection", async () => {
+	it.each([
+		{ name: "a plain error", error: () => new Error("boom"), toasts: true },
+		{
+			// A Next control-flow error: the router navigates, so no failure toast.
+			name: "a redirect",
+			error: () =>
+				Object.assign(new Error("NEXT_REDIRECT"), { digest: "NEXT_REDIRECT;replace;/x;307;" }),
+			toasts: false,
+		},
+	])("throw ($name) → rollback + release, no unhandled rejection", async ({ error, toasts }) => {
 		const unhandled = vi.fn();
 		process.on("unhandledRejection", unhandled);
 		const lock = { claim: vi.fn(() => true), release: vi.fn() };
@@ -70,10 +79,7 @@ describe("useRunIntent", () => {
 		});
 		act(() => {
 			result.current(intent, async () => {
-				// A Next control-flow error: the shape unstable_rethrow rethrows.
-				throw Object.assign(new Error("NEXT_REDIRECT"), {
-					digest: "NEXT_REDIRECT;replace;/x;307;",
-				});
+				throw error();
 			});
 		});
 		await flush();
@@ -81,7 +87,8 @@ describe("useRunIntent", () => {
 		process.off("unhandledRejection", unhandled);
 		expect(store.getState().pending).toEqual([]);
 		expect(store.getState().confirmed).toEqual([]);
-		expect(toastError).toHaveBeenCalledWith("Nope");
+		if (toasts) expect(toastError).toHaveBeenCalledWith("Nope");
+		else expect(toastError).not.toHaveBeenCalled();
 		expect(lock.release).toHaveBeenCalledWith(intent);
 		expect(unhandled).not.toHaveBeenCalled();
 	});

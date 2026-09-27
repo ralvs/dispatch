@@ -19,8 +19,9 @@ export function createDispatchStore(
 		...core.initialState(),
 		seed: (snap) => set((s) => core.applySeed(s, snap)),
 		apply: (i) => {
-			// Read the time first: nothing may run between reading the state and
-			// writing it back, or a seed landing there would be lost.
+			// The functional set is what makes this atomic: the intent folds into
+			// the state as it is at write time, so a seed that lands meanwhile is
+			// kept. The time is read before it, so the updater stays pure.
 			const at = now();
 			let token = 0;
 			set((s) => {
