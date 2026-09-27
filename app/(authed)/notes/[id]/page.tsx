@@ -1,7 +1,8 @@
 import { X } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 import { z } from "zod";
 import { Button, ListRow, rowTitle, SectionHead } from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
@@ -173,18 +174,38 @@ function LinkSectionsFallback() {
 	);
 }
 
+/*
+ * The note body stays uncached: the editor autosaves, and every save would
+ * bust a cached body at once (lib/cache/notes.ts). React cache() dedupes the
+ * one read that generateMetadata and the page both need.
+ */
+const loadNote = cache(async (id: string) => {
+	// Security boundary first (iron rule #2).
+	const { sb } = await requireOwnerPage();
+	return getNote(sb, id);
+});
+
+export async function generateMetadata({
+	params,
+}: {
+	params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+	const parsedId = z.uuid().safeParse((await params).id);
+	if (!parsedId.success) return {};
+	// A missing note leaves the default title; the page's notFound() decides the 404.
+	const note = await loadNote(parsedId.data);
+	return note ? { title: displayTitle(note) } : {};
+}
+
 export default async function NotePage({ params }: { params: Promise<{ id: string }> }) {
 	const { id: rawId } = await params;
 	const parsedId = z.uuid().safeParse(rawId);
 	if (!parsedId.success) notFound();
 
-	const { sb } = await requireOwnerPage();
 	// The note itself stays awaited here: it is one query, and it is what decides
 	// between this page and a 404 — streaming that decision would mean sending
-	// a 200 and swapping in not-found after the fact. It also stays uncached:
-	// the editor autosaves, and every save would bust a cached body at once
-	// (lib/cache/notes.ts). The two sections below read through the cache.
-	const note = await getNote(sb, parsedId.data);
+	// a 200 and swapping in not-found after the fact.
+	const note = await loadNote(parsedId.data);
 	if (!note) notFound();
 
 	return (

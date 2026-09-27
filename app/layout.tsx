@@ -17,7 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "Dispatch",
+	// Dynamic routes set their own title through generateMetadata (#15).
+	title: { default: "Dispatch", template: "%s · Dispatch" },
 	description: "Personal operations. Voice in, order out.",
 	appleWebApp: {
 		capable: true,

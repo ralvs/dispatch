@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
@@ -7,6 +8,21 @@ import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { todayInTz } from "@/lib/dates";
 import { AddTaskButton } from "../add-task-button";
 import { ProjectDetail } from "./project-detail";
+
+export async function generateMetadata({
+	params,
+}: {
+	params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+	const parsedId = z.uuid().safeParse((await params).id);
+	if (!parsedId.success) return {};
+	// Security boundary first (iron rule #2). Same cached read as the page, so
+	// no extra round trip; a missing project leaves the default title and the
+	// page's notFound() decides the 404.
+	await requireOwnerPage();
+	const detail = await getCachedProject(parsedId.data);
+	return detail ? { title: detail.project.name } : {};
+}
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
 	const { id: rawId } = await params;
