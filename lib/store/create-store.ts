@@ -15,12 +15,19 @@ export function createDispatchStore(
 ): DispatchStore {
 	const now = opts.now ?? (() => nowUtc());
 	const core = opts.core ?? defaultCore;
-	return createStore<Store>()((set, get) => ({
+	return createStore<Store>()((set) => ({
 		...core.initialState(),
 		seed: (snap) => set((s) => core.applySeed(s, snap)),
 		apply: (i) => {
-			const [next, token] = core.applyIntent(get(), i, now());
-			set(next);
+			// Read the time first: nothing may run between reading the state and
+			// writing it back, or a seed landing there would be lost.
+			const at = now();
+			let token = 0;
+			set((s) => {
+				const [next, t] = core.applyIntent(s, i, at);
+				token = t;
+				return next;
+			});
 			return token;
 		},
 		confirm: (token, write) => set((s) => core.confirmWrite(s, token, write)),

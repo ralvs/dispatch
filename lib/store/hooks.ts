@@ -2,6 +2,7 @@
 
 import { useContext, useMemo } from "react";
 import { useStore } from "zustand";
+import { useShallow } from "zustand/react/shallow";
 import { selectAggregate, selectView } from "@/lib/store/core";
 import { useDispatchStore, VirtualStateContext } from "@/lib/store/provider";
 import type {
@@ -15,31 +16,34 @@ import type {
 } from "@/lib/store/types";
 
 /**
- * The state this subtree reads: the nearest `<Seed>`'s virtual state, else the
- * real store. The whole-state subscription returns a stable reference between
- * changes; derived values are memoized on it, so selectors stay pure and never
- * hand useSyncExternalStore a fresh object.
+ * Read a slice of the state this subtree sees: the nearest `<Seed>`'s virtual
+ * state, else the real store. The real store is subscribed through `select`
+ * (shallow-compared), so a consumer re-renders only when its slice changes.
  */
-function useStoreState(): Store {
-	const real = useStore(useDispatchStore());
-	return useContext(VirtualStateContext) ?? real;
+function useSlice<T>(select: (s: Store) => T): T {
+	const virtual = useContext(VirtualStateContext);
+	const real = useStore(useDispatchStore(), useShallow(select));
+	return virtual ? select(virtual) : real;
 }
 
 export function useView<T extends ViewType>(key: ViewKey<T>): ViewTypes[T]["out"] | undefined {
-	const state = useStoreState();
-	return useMemo(() => selectView(state, key), [state, key]);
+	const [entry, rows, pending, clock] = useSlice(
+		(s) => [s.views[key], s.rows, s.pending, s.clock] as const,
+	);
+	return useMemo(
+		() => selectView({ views: { [key]: entry }, rows, pending, clock } as Store, key),
+		[key, entry, rows, pending, clock],
+	);
 }
 
 export function useAggregate(key: AggregateKey): number | undefined {
-	const state = useStoreState();
-	return useMemo(() => selectAggregate(state, key), [state, key]);
+	// A primitive: an unrelated apply leaves it equal, so nothing re-renders.
+	return useSlice((s) => selectAggregate(s, key));
 }
 
 /** Throws when no snapshot has reached this subtree: the consumer sits outside any Seed. */
 export function useClock(): Clock {
-	const clock = useStoreState().clock;
-	const todayIso = clock?.todayIso;
-	const tz = clock?.tz;
+	const [todayIso, tz] = useSlice((s) => [s.clock?.todayIso, s.clock?.tz] as const);
 	const value = useMemo(
 		() => (todayIso !== undefined && tz !== undefined ? { todayIso, tz } : null),
 		[todayIso, tz],
