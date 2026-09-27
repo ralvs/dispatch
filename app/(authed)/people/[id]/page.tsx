@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { z } from "zod";
+import { PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedPerson } from "@/lib/cache/people";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -21,7 +23,7 @@ export async function generateMetadata({
 	return detail ? { title: detail.person.name } : {};
 }
 
-export default async function PersonPage({ params }: { params: Promise<{ id: string }> }) {
+async function PersonBody({ params }: { params: Promise<{ id: string }> }) {
 	const { id: rawId } = await params;
 	const parsedId = z.uuid().safeParse(rawId);
 	if (!parsedId.success) notFound();
@@ -43,5 +45,22 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
 			mentionedTasks={mentions.tasks as { id: string; title: string; status: string }[]}
 			mentionedNotes={mentions.notes as { id: string; title: string | null; body: string }[]}
 		/>
+	);
+}
+
+// No title: this route's h1 is the person's name, which is the data still in
+// flight. PageSkeleton holds the h1's geometry with a placeholder instead.
+function PersonFallback() {
+	return <PageSkeleton rows={5} />;
+}
+
+// The data streams in behind the page's own boundary, so the route keeps no
+// loading.tsx (#21). `params` is handed down unawaited: awaiting it here would
+// make the whole page one dynamic hole again.
+export default function PersonPage({ params }: { params: Promise<{ id: string }> }) {
+	return (
+		<Suspense fallback={<PersonFallback />}>
+			<PersonBody params={params} />
+		</Suspense>
 	);
 }

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { z } from "zod";
+import { HeaderCreateButton, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedProject } from "@/lib/cache/projects";
@@ -24,7 +26,7 @@ export async function generateMetadata({
 	return detail ? { title: detail.project.name } : {};
 }
 
-export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
+async function ProjectBody({ params }: { params: Promise<{ id: string }> }) {
 	const { id: rawId } = await params;
 	const parsedId = z.uuid().safeParse(rawId);
 	if (!parsedId.success) notFound();
@@ -59,5 +61,31 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 				/>
 			}
 		/>
+	);
+}
+
+function ProjectFallback() {
+	return (
+		<div>
+			<nav aria-label="Breadcrumb" className="pb-4">
+				<span className="font-mono text-eyebrow uppercase tracking-widest text-ink-3">
+					← Projects
+				</span>
+			</nav>
+			{/* No title: this route's h1 is the project's name, which is the data
+			    still in flight. The + is not data — hold its slot disabled. */}
+			<PageSkeleton rows={5} action={<HeaderCreateButton label="Add task" disabled />} />
+		</div>
+	);
+}
+
+// The data streams in behind the page's own boundary, so the route keeps no
+// loading.tsx (#21). `params` is handed down unawaited: awaiting it here would
+// make the whole page one dynamic hole again.
+export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
+	return (
+		<Suspense fallback={<ProjectFallback />}>
+			<ProjectBody params={params} />
+		</Suspense>
 	);
 }

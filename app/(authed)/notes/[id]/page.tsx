@@ -197,17 +197,58 @@ export async function generateMetadata({
 	return note ? { title: displayTitle(note) } : {};
 }
 
-export default async function NotePage({ params }: { params: Promise<{ id: string }> }) {
+/*
+ * Everything the note decides: the editor, its attachments, and the rail. The
+ * breadcrumb above it is static and comes out of the prerendered shell.
+ */
+async function NoteBody({ params }: { params: Promise<{ id: string }> }) {
 	const { id: rawId } = await params;
 	const parsedId = z.uuid().safeParse(rawId);
 	if (!parsedId.success) notFound();
 
-	// The note itself stays awaited here: it is one query, and it is what decides
-	// between this page and a 404 — streaming that decision would mean sending
-	// a 200 and swapping in not-found after the fact.
+	// One uncached query, and the one that decides between this note and the
+	// 404, so it is awaited before either section below starts.
 	const note = await loadNote(parsedId.data);
 	if (!note) notFound();
 
+	return (
+		// Column + rail (W2): prose left on the measure, panels right on desk,
+		// stack below on phone. One tree.
+		<div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_16.25rem] lg:items-start lg:gap-10">
+			{/* The strip wraps the editor rather than following it: the drop
+			    target is the whole note, not a landing pad below it. */}
+			<div className="min-w-0">
+				<AttachmentStrip noteId={note.id} attachments={note.attachments}>
+					<Suspense fallback={<EditorFallback />}>
+						<EditorSection note={note} />
+					</Suspense>
+				</AttachmentStrip>
+			</div>
+			<aside className="min-w-0 lg:sticky lg:top-0">
+				<Suspense fallback={<LinkSectionsFallback />}>
+					<LinkSections noteId={note.id} />
+				</Suspense>
+			</aside>
+		</div>
+	);
+}
+
+/*
+ * The note read is in flight: the same column-and-rail geometry, so nothing
+ * moves when it lands.
+ */
+function NoteFallback() {
+	return (
+		<div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_16.25rem] lg:items-start lg:gap-10">
+			<EditorFallback />
+			<LinkSectionsFallback />
+		</div>
+	);
+}
+
+// The route keeps no loading.tsx (#21). `params` is handed down unawaited:
+// awaiting it here would make the whole page one dynamic hole again.
+export default function NotePage({ params }: { params: Promise<{ id: string }> }) {
 	return (
 		<div>
 			{/* Breadcrumb is the editor's header — the note title is content
@@ -221,24 +262,9 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 				</Link>
 			</nav>
 
-			{/* Column + rail (W2): prose left on the measure, panels right on
-			    desk, stack below on phone. One tree. */}
-			<div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_16.25rem] lg:items-start lg:gap-10">
-				{/* The strip wraps the editor rather than following it: the drop
-				    target is the whole note, not a landing pad below it. */}
-				<div className="min-w-0">
-					<AttachmentStrip noteId={note.id} attachments={note.attachments}>
-						<Suspense fallback={<EditorFallback />}>
-							<EditorSection note={note} />
-						</Suspense>
-					</AttachmentStrip>
-				</div>
-				<aside className="min-w-0 lg:sticky lg:top-0">
-					<Suspense fallback={<LinkSectionsFallback />}>
-						<LinkSections noteId={note.id} />
-					</Suspense>
-				</aside>
-			</div>
+			<Suspense fallback={<NoteFallback />}>
+				<NoteBody params={params} />
+			</Suspense>
 		</div>
 	);
 }
