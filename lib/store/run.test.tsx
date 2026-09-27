@@ -10,10 +10,6 @@ import { NOW, snapshot, T1, T2, task } from "@/lib/store/test-fixtures";
 import type { TaskIntent } from "@/lib/task-interaction/apply-intent";
 
 vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn() }));
-vi.mock("next/navigation", async () => {
-	const { nextNavigationMock } = await import("@/test/component/navigation");
-	return { ...nextNavigationMock, unstable_rethrow: vi.fn() };
-});
 
 const intent: TaskIntent = { type: "complete", id: "a", observedDueDate: null };
 const done = task({ id: "a", status: "done", completed_at: NOW });
@@ -65,18 +61,29 @@ describe("useRunIntent", () => {
 		expect(toastError).toHaveBeenCalledWith("Gone");
 	});
 
-	it("throw → rollback + toast", async () => {
-		const { result } = renderHook(() => useRunIntent("task", { errorMessage: "Nope" }), {
+	it("throw → rollback + toast + release, no unhandled rejection", async () => {
+		const unhandled = vi.fn();
+		process.on("unhandledRejection", unhandled);
+		const lock = { claim: vi.fn(() => true), release: vi.fn() };
+		const { result } = renderHook(() => useRunIntent("task", { lock, errorMessage: "Nope" }), {
 			wrapper,
 		});
 		act(() => {
 			result.current(intent, async () => {
-				throw new Error("network");
+				// A Next control-flow error: the shape unstable_rethrow rethrows.
+				throw Object.assign(new Error("NEXT_REDIRECT"), {
+					digest: "NEXT_REDIRECT;replace;/x;307;",
+				});
 			});
 		});
 		await flush();
+		await new Promise((r) => setTimeout(r, 0));
+		process.off("unhandledRejection", unhandled);
 		expect(store.getState().pending).toEqual([]);
+		expect(store.getState().confirmed).toEqual([]);
 		expect(toastError).toHaveBeenCalledWith("Nope");
+		expect(lock.release).toHaveBeenCalledWith(intent);
+		expect(unhandled).not.toHaveBeenCalled();
 	});
 
 	it("a refused claim applies nothing", () => {
