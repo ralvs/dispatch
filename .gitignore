@@ -32,3 +32,8 @@ supabase/.branches/
 
 # Mac EventKit bridge binary (build with scripts/mac-calendar-bridge/build.sh)
 scripts/mac-calendar-bridge/calendar-bridge
+
+# playwright (e2e session + seeded ids, reports)
+test/e2e/.auth/
+test-results/
+playwright-report/

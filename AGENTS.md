@@ -55,7 +55,7 @@ Five layers (docs/adr/0063). Tests sit next to the code they test.
 | Unit | `*.test.ts` | pure logic: dates, recurrence, parser, reducers, the store | `bun run check` |
 | Component | `*.test.tsx` | client components, in happy-dom | `bun run check` |
 | Integration | `*.int.test.ts` | services and server actions against real Postgres + RLS | `bun run test:integration` |
-| End-to-end | — | async Server Components, critical flows (Playwright, #10) | not yet |
+| End-to-end | `test/e2e/*.spec.ts` | async Server Components, critical flows (Playwright, production build) | `bun run test:e2e` |
 
 - Integration needs Docker and the local stack: `supabase start`, then
   `bun run test:integration`. After you add a migration, run
