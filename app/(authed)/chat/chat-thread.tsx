@@ -7,6 +7,10 @@ import { Button } from "@/components/ui";
 
 export function ChatThread() {
 	const { messages, sendMessage, status } = useChat({
+		// A fixed id: left out, the SDK draws a random one during render, and
+		// this page is prerendered whole (#21), where Math.random() is refused.
+		// The thread lives only in this component, so one name is enough.
+		id: "ask",
 		transport: new DefaultChatTransport({ api: "/api/chat" }),
 	});
 	const [input, setInput] = useState("");
