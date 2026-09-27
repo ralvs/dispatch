@@ -121,3 +121,33 @@ describe("task adapter", () => {
 		expect(selectView(next, viewKey.inbox())).toEqual([]);
 	});
 });
+
+describe("inbox scope", () => {
+	it("admits an unfiled create on confirm, not a filed one", () => {
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [
+				{
+					key: viewKey.inbox(),
+					type: "taskList",
+					data: { rows: [], scope: { unfiled: true, status: "open" } },
+				},
+			]),
+		);
+		const unfiled = task({ id: "u", domain_id: null });
+		const filed = task({ id: "f", domain_id: "domain-1" });
+		const [a1, t1] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "create", task: unfiled } },
+			NOW,
+		);
+		const [a2, t2] = applyIntent(
+			a1,
+			{ kind: "task", intent: { type: "create", task: filed } },
+			NOW,
+		);
+		const c1 = confirmWrite(a2, t1, { at: T2, rows: [unfiled] });
+		const c2 = confirmWrite(c1, t2, { at: T2, rows: [filed] });
+		expect(selectView(c2, viewKey.inbox())?.map((r) => r.id)).toEqual(["u"]);
+	});
+});

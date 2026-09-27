@@ -3,6 +3,7 @@
 
 import { dateOfInstant } from "@/lib/dates";
 import {
+	applyDayIntent,
 	collectDayEvents,
 	collectDayTasks,
 	type DaySchedulePayload,
@@ -127,18 +128,14 @@ export const dayView: ViewAdapter<"day"> = {
 	fromSeed: (data) => ({ base: data, params: undefined }),
 	rowsOf: (view) => collectDayTasks(view.schedule),
 	reduce: (view, intent: TaskIntent, ctx) => {
-		const pool = applyDayTaskList(collectDayTasks(view.schedule), intent, {
-			todayIso: ctx.todayIso,
-			top3DateIso: view.dateIso,
-			nowIso: ctx.nowIso,
-		});
+		const schedule = applyDayIntent(view.schedule, intent, { ...ctx, dateIso: view.dateIso });
+		const next = { ...view, schedule };
 		// ADR-0038 rule 2: a finished task stays struck on today's view only; a
 		// cached other day drops it (its completion does not fall on that day).
-		const tasks =
-			intent.type === "complete" && view.dateIso !== ctx.todayIso
-				? pool.filter((t) => t.id !== intent.id)
-				: pool;
-		return replace(view, tasks, ctx);
+		if (intent.type !== "complete" || view.dateIso === ctx.todayIso) return next;
+		const pool = collectDayTasks(schedule);
+		const tasks = without(pool, new Set([intent.id]));
+		return tasks === pool ? next : replace(next, tasks, ctx);
 	},
 	upsert: (view, rows, clock) => {
 		const pool = collectDayTasks(view.schedule);
