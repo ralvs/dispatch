@@ -1,4 +1,5 @@
-import { EmptyState, ListSection, PageHeader } from "@/components/ui";
+import { Suspense } from "react";
+import { EmptyState, ListSection, PageHeader, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedJournal } from "@/lib/cache/journal";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -6,7 +7,7 @@ import { formatDay, todayInTz } from "@/lib/dates";
 import { EntryRowItem } from "./entry-row";
 import { JournalForm } from "./journal-form";
 
-export default async function JournalPage() {
+async function JournalBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
@@ -53,5 +54,19 @@ export default async function JournalPage() {
 				</div>
 			)}
 		</div>
+	);
+}
+
+function JournalFallback() {
+	return <PageSkeleton title="Journal" />;
+}
+
+// The data streams in behind the page's own boundary, so the route keeps no
+// loading.tsx and its static parts come out of the prerendered shell (#21).
+export default function JournalPage() {
+	return (
+		<Suspense fallback={<JournalFallback />}>
+			<JournalBody />
+		</Suspense>
 	);
 }

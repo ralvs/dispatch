@@ -1,10 +1,12 @@
-import { EmptyState, PageHeader } from "@/components/ui";
+import { Suspense } from "react";
+import { CreateTrigger } from "@/components/create-dialog";
+import { EmptyState, PageHeader, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedPeople } from "@/lib/cache/people";
 import { PersonCreateButton } from "./person-form";
 import { PersonRowItem } from "./person-row";
 
-export default async function PeoplePage() {
+async function PeopleBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
@@ -30,5 +32,19 @@ export default async function PeoplePage() {
 				</ul>
 			)}
 		</div>
+	);
+}
+
+function PeopleFallback() {
+	return <PageSkeleton title="People" action={<CreateTrigger label="New person" disabled />} />;
+}
+
+// The data streams in behind the page's own boundary, so the route keeps no
+// loading.tsx and its static parts come out of the prerendered shell (#21).
+export default function PeoplePage() {
+	return (
+		<Suspense fallback={<PeopleFallback />}>
+			<PeopleBody />
+		</Suspense>
 	);
 }

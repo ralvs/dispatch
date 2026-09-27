@@ -1,10 +1,13 @@
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { getCachedTaskBoard } from "@/lib/cache/tasks";
 import { recentDoneSinceUtc, todayInTz } from "@/lib/dates";
+import { NewTaskButton } from "./new-task-button";
 import { TaskList } from "./task-list";
 
-export default async function TasksPage({
+async function TasksBody({
 	searchParams,
 }: {
 	searchParams: Promise<{ edit?: string; status?: string; project?: string; domain?: string }>;
@@ -54,5 +57,32 @@ export default async function TasksPage({
 			inboxCount={inboxCount}
 			quietProjectIds={quietProjectIds}
 		/>
+	);
+}
+
+function TasksFallback() {
+	return (
+		<PageSkeleton
+			title="Tasks"
+			rows={8}
+			// Disabled rather than absent: the page has exactly one standing
+			// action and it is not data, so the slot is held. The dialog it opens
+			// needs the domain list, which is what is still in flight.
+			action={<NewTaskButton disabled />}
+		/>
+	);
+}
+
+// The data streams in behind the page's own boundary, so the route keeps no
+// loading.tsx and its static parts come out of the prerendered shell (#21).
+export default function TasksPage({
+	searchParams,
+}: {
+	searchParams: Promise<{ edit?: string; status?: string; project?: string; domain?: string }>;
+}) {
+	return (
+		<Suspense fallback={<TasksFallback />}>
+			<TasksBody searchParams={searchParams} />
+		</Suspense>
 	);
 }
