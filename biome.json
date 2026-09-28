@@ -9,6 +9,7 @@
 			"!.claude",
 			"!.codex",
 			"!.impeccable",
+			"!docs",
 			"!supabase/.temp",
 			"!test/e2e/.auth",
 			"!test-results",
