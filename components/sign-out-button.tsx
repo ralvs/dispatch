@@ -2,14 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { toastError } from "@/lib/client/toast";
-import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { browserAuth } from "@/lib/supabase/browser";
 
 export function SignOutButton() {
 	const router = useRouter();
 
 	async function signOut() {
 		try {
-			await createBrowserSupabase().auth.signOut();
+			await browserAuth().signOut();
 			router.push("/sign-in");
 			router.refresh();
 		} catch {

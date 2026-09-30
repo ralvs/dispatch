@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { browserAuth } from "@/lib/supabase/browser";
 
 /**
  * Keeps the access token fresh from the browser (docs/adr/0025, 0032).
@@ -19,15 +19,15 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
  * 2. auth-js starts its expiry-margin ticker and visibilitychange listener
  *    as soon as any page hydrates — including the sign-in form.
  *
- * Constructing the browser client is the whole job: auth-js wires the ticker
- * and serializes refreshes behind navigatorLock, writing the same cookies the
- * proxy reads.
+ * Constructing the browser auth client is the whole job: auth-js wires the
+ * ticker and runs one refresh at a time, writing the same cookies the proxy
+ * reads.
  */
 export function SessionKeeper() {
 	useEffect(() => {
 		// Constructing it is the subscription: the client is a browser-wide
 		// singleton that wires up its own ticker and visibility listener.
-		createBrowserSupabase();
+		browserAuth();
 	}, []);
 
 	return null;

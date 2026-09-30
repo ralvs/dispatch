@@ -155,7 +155,7 @@ not spend the same hours re-deciding them.
   (220 KB on every route). Deferring it would delay the refresh ticker past
   hydration, and ADR-0025 and ADR-0032 are explicit that the browser has to
   refresh ahead of the request fan-out. That bug cost more than 220 KB is
-  worth.
+  worth. (Shrunk without deferring by ADR-0067.)
 
 - **`SoftRefresh` still calls `router.refresh()` on a 5-minute interval**,
   which per ADR-0034 fact #2 expires the client router cache for every route.
