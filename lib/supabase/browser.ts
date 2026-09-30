@@ -15,11 +15,11 @@ let cached: GoTrueClient | undefined;
  * the PostgREST, Storage, Realtime and Functions clients: the browser only
  * ever calls `auth.*` (docs/adr/0067). Same options, same storage key, same
  * cookie adapter, same browser-wide singleton — so the refresh ticker,
- * visibility listener and navigatorLock behave exactly as before
+ * visibility listener and single-flight refresh behave exactly as before
  * (docs/adr/0025, 0032).
  *
- * `@supabase/auth-js` is pinned to the version `@supabase/supabase-js`
- * depends on. Bump them together.
+ * `@supabase/auth-js` and `@supabase/supabase-js` are both pinned exact, to
+ * the same version. Bump them together.
  *
  * Env vars are read as literal `process.env.NEXT_PUBLIC_*` expressions:
  * Next.js only inlines them into client bundles when accessed that way.
@@ -35,7 +35,7 @@ export function browserAuth(): GoTrueClient {
 		false,
 	);
 	const base = new URL(url);
-	cached = new GoTrueClient({
+	const client = new GoTrueClient({
 		url: new URL("auth/v1", base).href,
 		headers: { Authorization: `Bearer ${key}`, apikey: key },
 		// supabase-js's default key; the proxy and server clients derive the same one.
@@ -46,5 +46,8 @@ export function browserAuth(): GoTrueClient {
 		detectSessionInUrl: true,
 		persistSession: true,
 	});
-	return cached;
+	// Like createBrowserClient: a singleton only in the browser, never shared
+	// across server requests.
+	if (typeof window !== "undefined") cached = client;
+	return client;
 }

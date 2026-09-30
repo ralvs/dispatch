@@ -61,11 +61,11 @@ test("an expired session on /sign-in refreshes in the browser and lands on /toda
 		expires_at: Math.floor(Date.now() / 1000) - 60,
 	});
 
-	const refresh = page.waitForRequest(
-		(req) => req.url().includes("/auth/v1/token") && req.url().includes("refresh_token"),
+	const refresh = page.waitForResponse(
+		(res) => res.url().includes("/auth/v1/token") && res.url().includes("refresh_token"),
 	);
 	await page.goto("/sign-in");
-	await refresh;
+	expect((await refresh).status(), "the browser refresh succeeded").toBe(200);
 	await page.waitForURL("**/today");
 
 	const after = await readSession(page);

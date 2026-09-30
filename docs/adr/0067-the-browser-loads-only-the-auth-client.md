@@ -17,16 +17,17 @@ bundles all four.
 1. **`lib/supabase/browser.ts` builds a `GoTrueClient` from
    `@supabase/auth-js`, not a full client.** It passes the options
    `createBrowserClient` passes to auth: PKCE, auto refresh, session in URL,
-   persisted session, and the default `sb-<ref>-auth-token` storage key. It is
-   a browser-wide singleton, as before.
+   persisted session, and the default `sb-<ref>-auth-token` storage key. No
+   `lock` is passed, as before. It is a singleton only in the browser, as
+   before.
 2. **The cookie adapter is `@supabase/ssr`'s own `createStorageFromOptions`**,
    with `base64url` encoding and `AUTH_COOKIE_OPTIONS`. The package does not
    export it from its root, so the import reaches into
    `@supabase/ssr/dist/module/cookies`. Copying it would let the format drift
    from what the proxy and `requireOwner()` read.
-3. **`@supabase/auth-js` is a direct dependency, pinned to the exact version
-   `@supabase/supabase-js` depends on.** Bump the two together, or the server
-   and the browser run different auth code.
+3. **`@supabase/auth-js` is a direct dependency. It and
+   `@supabase/supabase-js` are both pinned exact, to the same version.** Bump
+   the two together, or the server and the browser run different auth code.
 4. **The client is still built in the same `useEffect`, at the same time.**
    Nothing about when the ticker starts changes, so the reason ADR-0062 gave
    for leaving this alone does not apply.
@@ -38,8 +39,8 @@ bundles all four.
   `base64-` encoding. A wrong storage key or encoding fails it.
 - `test/e2e/session-refresh.spec.ts`, on the production build: an expired
   session on `/sign-in` (outside the proxy matcher) is refreshed by the
-  browser, the refresh token rotates, and the owner lands on `/today` with no
-  password.
+  browser with a 200 from `/token`, the refresh token rotates, and the owner
+  lands on `/today` with no password.
 - The auth chunk dropped from 237 KB to 117 KB raw, 61 KB to 28 KB gzip.
 
 ## Consequences
