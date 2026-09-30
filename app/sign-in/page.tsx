@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button, Field, Input } from "@/components/ui";
 import { Wordmark } from "@/components/wordmark";
-import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { browserAuth } from "@/lib/supabase/browser";
 
 const SignInSchema = z.object({
 	email: z.email(),
@@ -50,7 +50,7 @@ export default function SignInPage() {
 
 	useEffect(() => {
 		let cancelled = false;
-		const supabase = createBrowserSupabase();
+		const auth = browserAuth();
 
 		// Cold-start path: proxy bounced us here because the *server* couldn't
 		// prove ownership (expired access + concurrent refresh, or a brief
@@ -59,7 +59,7 @@ export default function SignInPage() {
 		// refresh recovers it — password re-entry is the wrong fix.
 		void (async () => {
 			try {
-				const { data, error } = await supabase.auth.getSession();
+				const { data, error } = await auth.getSession();
 				if (cancelled) return;
 				if (!error && data.session) {
 					router.replace("/today");
@@ -79,8 +79,8 @@ export default function SignInPage() {
 
 	async function onSubmit(values: SignInValues) {
 		setServerError(null);
-		const supabase = createBrowserSupabase();
-		const { error } = await supabase.auth.signInWithPassword(values);
+		const auth = browserAuth();
+		const { error } = await auth.signInWithPassword(values);
 		if (error) {
 			setServerError(mapSignInError(error.message));
 			return;
