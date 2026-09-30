@@ -35,6 +35,15 @@ describe("tasks against the local database", () => {
 		expect((await getTask(sb, task.id))?.status).toBe("open");
 	});
 
+	it("reports a deleted task as not applied instead of throwing", async () => {
+		const sb = await ownerClient();
+		const task = await createTask(sb, { title: "Gone before the tick" });
+		await sb.from("tasks").delete().eq("id", task.id);
+
+		const result = await completeTask(sb, task.id, TODAY, { dueDate: null });
+		expect(result).toEqual({ applied: false, spawned: false, nextDue: null, successor: null });
+	});
+
 	it("matches a null due date with `is`, not `eq`", async () => {
 		const sb = await ownerClient();
 		const task = await createTask(sb, { title: "Someday, maybe" });

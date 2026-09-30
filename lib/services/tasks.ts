@@ -350,7 +350,9 @@ export async function completeTask(
 	successor: TaskRow | null;
 }> {
 	const task = await getTaskHot(sb, id);
-	if (!task) throw new Error("Task not found");
+	// Gone already (deleted in another tab): nothing to close. Not an error —
+	// the caller reports the row as gone and the client drops it.
+	if (!task) return { spawned: false, nextDue: null, applied: false, successor: null };
 
 	const nowIso = nowUtc();
 	const next = nextCompleteFields(task, { todayIso, nowIso });

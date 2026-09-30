@@ -155,6 +155,11 @@ export type KindAdapter<K extends Kind> = {
 	provisionalIds(intent: IntentMap[K]): string[];
 	/** Aggregate deltas, computed at apply from the row before the intent. */
 	deltas?(intent: IntentMap[K], before: EntityMap[K] | undefined, ctx: IntentCtx): Deltas;
+	/**
+	 * The deltas to keep once the server answered. Called at confirm; the
+	 * result is what later seeds replay. Omitted: the applied deltas stand.
+	 */
+	settle?(intent: IntentMap[K], write: StoreWrite<EntityMap[K]>, deltas: Deltas): Deltas;
 };
 
 export type Adapters = {

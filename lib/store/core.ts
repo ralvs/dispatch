@@ -49,6 +49,7 @@ type LooseKind = {
 	idOf(row: unknown): string;
 	provisionalIds(intent: unknown): string[];
 	deltas?(intent: unknown, before: unknown, ctx: IntentCtx): Deltas;
+	settle?(intent: unknown, write: StoreWrite, deltas: Deltas): Deltas;
 };
 type LooseRows = Record<string, Record<string, RowEntry<unknown>>>;
 
@@ -169,7 +170,11 @@ export function makeCore(adapters: Adapters) {
 	function confirmWrite<S extends StoreState>(s: S, token: Token, write: StoreWrite): S {
 		const p = s.pending.find((x) => x.token === token);
 		if (!p) return s;
-		const c = { ...p, write } as Confirmed;
+		// The server's answer can say the intent did not happen; its deltas go
+		// with it, here and on every later replay.
+		const settle = kindOf(p.kind).settle;
+		const deltas = settle ? settle(p.intent, write, p.deltas) : p.deltas;
+		const c = { ...p, deltas, write } as Confirmed;
 		const clock: Clock = s.clock ?? p.ctx;
 
 		let views = s.views;

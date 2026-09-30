@@ -323,3 +323,46 @@ describe("Today's task counters", () => {
 		expect(read(applied)).toEqual([1, 0, 0]);
 	});
 });
+
+describe("a completion the server refused (ADR-0037)", () => {
+	const late = task({ id: "late", due_date: YESTERDAY });
+	const seedAt = (readAt: string) =>
+		snapshot(
+			readAt,
+			[{ key: viewKey.tasks(), type: "taskLists", data: { open: [late], done: [] } }],
+			{ aggregates: { "tasks.open": 1, "tasks.overdue": 1, "tasks.inbox": 0 } },
+		);
+
+	it("comes back open: the row returns to the open list and the counters move back", () => {
+		const s = applySeed(initialState(), seedAt(T1));
+		const [applied, token] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "complete", id: "late", observedDueDate: "2026-07-01" } },
+			NOW,
+		);
+		expect(selectView(applied, viewKey.tasks())?.open).toEqual([]);
+		// The row moved on since it was seen: still open, with another due date.
+		const moved = task({ id: "late", due_date: TODAY });
+		const confirmed = confirmWrite(applied, token, { at: T2, rows: [moved] });
+		expect(selectView(confirmed, viewKey.tasks())).toEqual({ open: [moved], done: [] });
+		expect(selectAggregate(confirmed, "tasks.open")).toBe(1);
+		expect(selectAggregate(confirmed, "tasks.overdue")).toBe(1);
+
+		// A seed read between the view's and the write's replays the same answer.
+		const replayed = applySeed(confirmed, seedAt("2026-07-15T12:01:30.000Z"));
+		expect(selectView(replayed, viewKey.tasks())).toEqual({ open: [moved], done: [] });
+		expect(selectAggregate(replayed, "tasks.open")).toBe(1);
+	});
+
+	it("gone: a deleted row's tombstone drops it everywhere", () => {
+		const s = applySeed(initialState(), seedAt(T1));
+		const [applied, token] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "complete", id: "late", observedDueDate: YESTERDAY } },
+			NOW,
+		);
+		const confirmed = confirmWrite(applied, token, { at: T2, rows: [], deletedIds: ["late"] });
+		expect(selectView(confirmed, viewKey.tasks())).toEqual({ open: [], done: [] });
+		expect(selectAggregate(confirmed, "tasks.open")).toBe(0);
+	});
+});
