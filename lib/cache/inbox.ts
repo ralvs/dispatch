@@ -2,6 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import type { CachedReader } from "@/lib/cache/manifest";
 import { CacheTag } from "@/lib/cache/tags";
+import { nowUtc } from "@/lib/dates";
 import { listNoteIdsForTargets } from "@/lib/services/note-links";
 import { listInboxTasks } from "@/lib/services/tasks";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -16,6 +17,10 @@ export async function getCachedInbox() {
 	cacheTag(CacheTag.tasks, CacheTag.notes, CacheTag.projects);
 	cacheLife("tagged");
 
+	// Stamped inside the cache, before the reads, so the instant travels with
+	// the data: a stale entry served after a write keeps its old stamp, and the
+	// entity store's conflict rule replays the write over it (lib/store/types.ts).
+	const readAt = nowUtc();
 	const sb = createAdminClient();
 	const tasks = await listInboxTasks(sb);
 	const taskNoteIds = Object.fromEntries(
@@ -25,7 +30,7 @@ export async function getCachedInbox() {
 			tasks.map((t) => t.id),
 		),
 	);
-	return { tasks, taskNoteIds };
+	return { readAt, tasks, taskNoteIds };
 }
 
 export const readers: CachedReader[] = [

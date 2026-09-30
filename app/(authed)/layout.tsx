@@ -6,6 +6,7 @@ import { FindPalette } from "@/components/find-palette";
 import { MoreMenu } from "@/components/more-menu";
 import { NavShortcuts } from "@/components/nav-shortcuts";
 import { requireOwnerPage } from "@/lib/auth";
+import { StoreProvider } from "@/lib/store/provider";
 
 /*
  * Full-height shell. `dvh` tracks the collapsing toolbars in a browser tab;
@@ -95,5 +96,11 @@ function AuthedShell({ children }: { children: React.ReactNode }) {
  * dynamic hole, covered by that route's loading.tsx.
  */
 export default function AuthedLayout({ children }: { children: React.ReactNode }) {
-	return <AuthedShell>{children}</AuthedShell>;
+	return (
+		// One entity store per tab (#24), above every page, so a row written on
+		// one page is already right on the next. Pages feed it through <Seed>.
+		<StoreProvider>
+			<AuthedShell>{children}</AuthedShell>
+		</StoreProvider>
+	);
 }

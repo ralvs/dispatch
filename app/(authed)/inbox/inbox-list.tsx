@@ -1,47 +1,42 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
 import { assignDomainAction, deleteTaskAction } from "@/app/(authed)/tasks/actions";
 import { ColorDot } from "@/components/color-dot";
 import { EmptyState } from "@/components/ui";
-import { runAction } from "@/lib/client/toast";
 import type { TaskRow } from "@/lib/services/tasks";
+import { useView, viewKey } from "@/lib/store";
+import { useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
 import { InboxRow } from "./inbox-row";
 
 type DomainOption = { id: string; name: string; color: string | null };
 
+const NO_TASKS: TaskRow[] = [];
+
 /**
- * Owns useOptimistic so filing or deleting a row removes it immediately —
- * no wait for the inbox RSC revalidation.
+ * Reads the inbox from the entity store (#26). Filing or deleting a row is an
+ * intent: the row leaves at once, the server's answer confirms it, and a
+ * failure puts it back. Filing leaves because the inbox view's scope is
+ * "unfiled and open" (lib/store/kinds/task.ts).
  */
 export function InboxList({
-	tasks,
 	domains,
 	taskNoteIds,
 }: {
-	tasks: TaskRow[];
 	domains: DomainOption[];
 	taskNoteIds: Record<string, string>;
 }) {
-	const [, startTransition] = useTransition();
-	const [rows, removeOptimistic] = useOptimistic(tasks, (current, id: string) =>
-		current.filter((t) => t.id !== id),
-	);
+	const rows = useView(viewKey.inbox()) ?? NO_TASKS;
+	const removeRun = useTaskIntentRunner("Couldn't delete task.");
+	const fileRun = useTaskIntentRunner("Couldn't file task.");
 
 	function remove(task: TaskRow) {
 		// Matches the confirm treatment task-row.tsx uses for the same action.
 		if (!window.confirm(`Delete "${task.title}"?`)) return;
-		startTransition(async () => {
-			removeOptimistic(task.id);
-			await runAction(() => deleteTaskAction(task.id), "Couldn't delete task.");
-		});
+		removeRun({ type: "delete", id: task.id }, () => deleteTaskAction(task.id));
 	}
 
 	function file(task: TaskRow, domainId: string) {
-		startTransition(async () => {
-			removeOptimistic(task.id);
-			await runAction(() => assignDomainAction(task.id, domainId), "Couldn't file task.");
-		});
+		fileRun({ type: "assign", id: task.id, domainId }, () => assignDomainAction(task.id, domainId));
 	}
 
 	if (rows.length === 0) {

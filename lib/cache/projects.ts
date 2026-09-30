@@ -2,6 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import type { CachedReader } from "@/lib/cache/manifest";
 import { CacheTag } from "@/lib/cache/tags";
+import { nowUtc } from "@/lib/dates";
 import {
 	countTasksByProject,
 	getProject,
@@ -36,12 +37,16 @@ export async function getCachedProject(id: string) {
 	cacheTag(CacheTag.projects, CacheTag.tasks);
 	cacheLife("tagged");
 
+	// Stamped inside the cache, before the reads, so the instant travels with
+	// the data: a stale entry served after a write keeps its old stamp, and the
+	// entity store's conflict rule replays the write over it (lib/store/types.ts).
+	const readAt = nowUtc();
 	const sb = createAdminClient();
 	const project = await getProject(sb, id);
 	if (!project) return null;
 	// Every project, for the task form's project picker.
 	const [tasks, projects] = await Promise.all([listTasksForProject(sb, id), listProjects(sb)]);
-	return { project, tasks, projects };
+	return { readAt, project, tasks, projects };
 }
 
 const reads: CachedReader["reads"] = [

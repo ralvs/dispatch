@@ -43,10 +43,10 @@ import { CacheTag, type CacheTagName } from "@/lib/cache/tags";
  *   `staleTimes.dynamic` worth configuring at all: a bigger window only pays
  *   off between mutations, since any mutation wipes it anyway.
  *
- * One concrete dependent: `revalidatePath("/today")` in taskViews() is what
- * re-renders DayView, and its prop-sync effect is what drops the
- * other days from the client day cache (lib/day-nav/revalidation.ts). Dropping
- * that path would leave a stale day on screen for up to REVALIDATE_AFTER_MS.
+ * Tasks and Today's day view no longer depend on the fresh payload: they read
+ * the client entity store (lib/store, #26), which the action's returned rows
+ * confirm. The other lists still do until #27-#30 move them, and #31 drops
+ * the paths once every consumer has moved.
  *
  * ADR-0034 recorded a hope that wiring the unused tags to `"use cache"` reads
  * would let these `revalidatePath` calls become `revalidateTag` and stop wiping

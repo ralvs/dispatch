@@ -14,7 +14,7 @@ describe("tasks against the local database", () => {
 		expect(task.status).toBe("open");
 
 		const first = await completeTask(sb, task.id, TODAY, { dueDate: TODAY });
-		expect(first).toEqual({ applied: true, spawned: false, nextDue: null });
+		expect(first).toEqual({ applied: true, spawned: false, nextDue: null, successor: null });
 
 		const done = await getTask(sb, task.id);
 		expect(done?.status).toBe("done");

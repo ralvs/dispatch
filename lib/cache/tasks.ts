@@ -2,6 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import type { CachedReader } from "@/lib/cache/manifest";
 import { CacheTag } from "@/lib/cache/tags";
+import { nowUtc } from "@/lib/dates";
 import { listDomains } from "@/lib/services/domains";
 import { listMentionsForSources } from "@/lib/services/mentions";
 import { listNoteIdsForTargets } from "@/lib/services/note-links";
@@ -30,6 +31,10 @@ export async function getCachedTaskBoard(sinceUtc: string) {
 	cacheTag(CacheTag.tasks, CacheTag.notes, CacheTag.people, CacheTag.projects);
 	cacheLife("tagged");
 
+	// Stamped inside the cache, before the reads, so the instant travels with
+	// the data: a stale entry served after a write keeps its old stamp, and the
+	// entity store's conflict rule replays the write over it (lib/store/types.ts).
+	const readAt = nowUtc();
 	const sb = createAdminClient();
 	const [openTasks, doneTasks, domains, projects, people] = await Promise.all([
 		listTasks(sb, { status: "open" }),
@@ -54,7 +59,7 @@ export async function getCachedTaskBoard(sinceUtc: string) {
 		),
 	]);
 
-	return { openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions };
+	return { readAt, openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions };
 }
 
 export const readers: CachedReader[] = [

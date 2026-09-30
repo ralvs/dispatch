@@ -1,15 +1,23 @@
 "use client";
 
-import { useCallback, useTransition } from "react";
-import { runAction, toastNotice, toastSuccess } from "@/lib/client/toast";
+import type { ActionResult } from "@/lib/action-result";
+import { toastNotice, toastSuccess } from "@/lib/client/toast";
 import { formatDueLabel } from "@/lib/dates";
 import type { TaskRow } from "@/lib/schemas/task";
+import { useRunIntent } from "@/lib/store/run";
+import type { StoreWrite } from "@/lib/store/types";
 import { nextCompleteFields, type TaskIntent } from "@/lib/task-interaction/apply-intent";
 import { useIntentLock } from "@/lib/task-interaction/intent-lock";
 
 const DEFAULT_ERROR = "Couldn't update that task. Try again.";
 
-export type TaskIntentRun = (intent: TaskIntent, action: () => Promise<unknown>) => boolean;
+/** What every task action resolves to: the rows it wrote, for the entity store. */
+export type TaskActionResult = ActionResult<StoreWrite<TaskRow>>;
+
+export type TaskIntentRun = (
+	intent: TaskIntent,
+	action: () => Promise<TaskActionResult>,
+) => boolean;
 
 /**
  * A recurring tick closes the row you clicked and creates the next occurrence
@@ -35,31 +43,15 @@ export function toastTaskToggle(
 }
 
 /**
- * Claim → optimistic dispatch → server action → release.
+ * Claim → apply to the entity store → server action → confirm or roll back →
+ * release (lib/store/run.ts).
  *
  * Owns the ADR-0037 replay lock for `complete`. Surfaces only supply the
  * intent and the action (so this module never imports server actions).
  */
-export function useTaskIntentRunner(
-	dispatchOptimistic: (intent: TaskIntent) => void,
-	errorMessage: string = DEFAULT_ERROR,
-): TaskIntentRun {
+export function useTaskIntentRunner(errorMessage: string = DEFAULT_ERROR): TaskIntentRun {
 	const lock = useIntentLock();
-	const [, startTransition] = useTransition();
-
-	return useCallback(
-		(intent: TaskIntent, action: () => Promise<unknown>) => {
-			if (!lock.claim(intent)) return false;
-			startTransition(async () => {
-				dispatchOptimistic(intent);
-				// On failure optimistic state rolls back when the transition ends.
-				await runAction(action, errorMessage);
-				lock.release(intent);
-			});
-			return true;
-		},
-		[lock, dispatchOptimistic, errorMessage],
-	);
+	return useRunIntent("task", { lock, errorMessage });
 }
 
 /** Desired-state star flag — same comparison the optimistic reducer makes. */
@@ -71,13 +63,14 @@ export function top3DesiredState(
 }
 
 export type TaskWriteActions = {
-	complete: (input: {
+	complete: (input: { id: string; observedDueDate: string | null }) => Promise<TaskActionResult>;
+	reopen: (id: string) => Promise<TaskActionResult>;
+	setTop3: (input: {
 		id: string;
-		observedDueDate: string | null;
-	}) => Promise<{ spawned: boolean; nextDue: string | null; applied: boolean }>;
-	reopen: (id: string) => Promise<void>;
-	setTop3: (input: { id: string; starred: boolean; forDateIso?: string }) => Promise<void>;
-	delete?: (id: string) => Promise<void>;
+		starred: boolean;
+		forDateIso?: string;
+	}) => Promise<TaskActionResult>;
+	delete?: (id: string) => Promise<TaskActionResult>;
 };
 
 /**

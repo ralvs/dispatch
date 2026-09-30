@@ -334,13 +334,21 @@ export async function updateTask(
  * The close keeps ADR-0037's precondition on the occurrence the caller was
  * looking at. `observed.dueDate` is what the clicked row showed; if the row has
  * moved on since, nothing is written and `applied` comes back false.
+ *
+ * `successor` is the spawned row, so the caller can hand it to the client's
+ * entity store (#26) without a second read.
  */
 export async function completeTask(
 	sb: SupabaseClient,
 	id: string,
 	todayIso: string,
 	observed: { dueDate: string | null },
-): Promise<{ spawned: boolean; nextDue: string | null; applied: boolean }> {
+): Promise<{
+	spawned: boolean;
+	nextDue: string | null;
+	applied: boolean;
+	successor: TaskRow | null;
+}> {
 	const task = await getTaskHot(sb, id);
 	if (!task) throw new Error("Task not found");
 
@@ -371,12 +379,12 @@ export async function completeTask(
 	const applied = (closed ?? []).length > 0;
 
 	if (!applied || !next.spawn) {
-		return { spawned: false, nextDue: null, applied };
+		return { spawned: false, nextDue: null, applied, successor: null };
 	}
 
 	const due = next.spawn.due_date;
-	await spawnNextOccurrence(sb, task, next.spawn);
-	return { spawned: true, nextDue: due, applied: true };
+	const successor = await spawnNextOccurrence(sb, task, next.spawn);
+	return { spawned: true, nextDue: due, applied: true, successor };
 }
 
 /**
@@ -400,9 +408,9 @@ async function spawnNextOccurrence(
 	sb: SupabaseClient,
 	source: TaskHotRow,
 	next: { due_date: string | null; recurrence_day: number | null },
-): Promise<void> {
+): Promise<TaskRow> {
 	const dueDate = next.due_date;
-	await createTask(
+	return createTask(
 		sb,
 		{
 			title: source.title,

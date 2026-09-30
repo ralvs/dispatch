@@ -3,18 +3,40 @@ import { PageHeader, SkeletonRows } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedInbox } from "@/lib/cache/inbox";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
+import { todayInTz } from "@/lib/dates";
+import { viewKey } from "@/lib/store/keys";
+import { Seed } from "@/lib/store/seed";
+import type { Snapshot } from "@/lib/store/types";
 import { InboxList } from "./inbox-list";
 
 async function InboxBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
-	const [{ tasks, taskNoteIds }, domains] = await Promise.all([
+	const [{ readAt, tasks, taskNoteIds }, domains, tz] = await Promise.all([
 		getCachedInbox(),
 		getCachedDomains(false),
+		getCachedAppTimezone(),
 	]);
+	const snapshot: Snapshot = {
+		readAt,
+		todayIso: todayInTz(tz),
+		tz,
+		views: [
+			{
+				key: viewKey.inbox(),
+				type: "taskList",
+				data: { rows: tasks, scope: { unfiled: true, status: "open" } },
+			},
+		],
+	};
 
-	return <InboxList tasks={tasks} domains={domains} taskNoteIds={taskNoteIds} />;
+	return (
+		<Seed snapshot={snapshot}>
+			<InboxList domains={domains} taskNoteIds={taskNoteIds} />
+		</Seed>
+	);
 }
 
 // Tasks captured without a domain, waiting to be given one (docs/adr/0024).
