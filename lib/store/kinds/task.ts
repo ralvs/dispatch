@@ -102,8 +102,13 @@ function taskDeltas(intent: TaskIntent, before: TaskRow | undefined, ctx: Intent
 
 /**
  * A completion the server refused (ADR-0037: the row moved on since it was
- * seen) comes back still open, so the counters it moved move back. Any other
- * answer — done, or gone — is what the intent predicted.
+ * seen) comes back still open, so the counters it moved move back. Done or
+ * gone is what the intent predicted, and its deltas stand.
+ *
+ * One gap, left on purpose: a recurring row another tab already completed
+ * comes back done with no successor in the write — nothing links a row to the
+ * occurrence it spawned — so the next occurrence shows once a seed newer than
+ * the write arrives.
  */
 function settleTaskDeltas(intent: TaskIntent, write: StoreWrite<TaskRow>, deltas: Deltas): Deltas {
 	if (intent.type !== "complete") return deltas;
