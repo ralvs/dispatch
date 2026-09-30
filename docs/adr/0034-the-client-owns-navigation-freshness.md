@@ -102,3 +102,20 @@ anything, so the caldav cron writes `calendar_events` without busting
   that, but the gap itself is open.
 - Freshness for the day bands now costs two indexed queries per uncached fetch.
   The client cache, not the server one, is what makes repeat visits free.
+
+## Amendment: the day cache is the entity store (2026-09-30)
+
+Decisions 1 and 3 are replaced (#26). Day schedules live in the client entity
+store (`lib/store`, #25), keyed `day:<dateIso>`. The page's `<Seed>` feeds the
+day it names, and `loadDayScheduleAction` returns a store snapshot for any
+other. A day the store holds still paints instantly, and one read more than
+60s ago is still re-read in the background, outside `startTransition`.
+
+The signature split is gone with `lib/day-nav/revalidation.ts`. It existed to
+tell a write from a clock tick, so a write could drop the other cached days.
+A write no longer needs that: it lands in the store as an intent, the action's
+returned rows confirm it, and every cached day that holds the row sees it.
+Which read wins is the store's conflict rule (`lib/store/types.ts`), not a
+signature.
+
+Decision 2 stands: the action still reads uncached, on the RLS client.
