@@ -48,7 +48,7 @@ type LooseView = {
 type LooseKind = {
 	idOf(row: unknown): string;
 	provisionalIds(intent: unknown): string[];
-	deltas?(intent: unknown, before: unknown): Deltas;
+	deltas?(intent: unknown, before: unknown, ctx: IntentCtx): Deltas;
 };
 type LooseRows = Record<string, Record<string, RowEntry<unknown>>>;
 
@@ -160,7 +160,7 @@ export function makeCore(adapters: Adapters) {
 		const id = i.intent.type === "create" ? i.intent.task.id : i.intent.id;
 		const entry = (s.rows as unknown as LooseRows)[i.kind]?.[id];
 		const before = entry && !("deleted" in entry) ? entry.row : undefined;
-		const deltas = kind.deltas ? kind.deltas(i.intent, before) : {};
+		const deltas = kind.deltas ? kind.deltas(i.intent, before, ctx) : {};
 		const token = s.nextToken;
 		const pending = { ...i, token, ctx, deltas } as Pending;
 		return [{ ...s, pending: [...s.pending, pending], nextToken: token + 1 }, token];

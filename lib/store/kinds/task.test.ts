@@ -1,17 +1,28 @@
 import { describe, expect, it } from "vitest";
 import { collectDayTasks } from "@/lib/day-schedule";
-import { applyIntent, applySeed, confirmWrite, initialState, selectView } from "@/lib/store/core";
+import {
+	applyIntent,
+	applySeed,
+	confirmWrite,
+	initialState,
+	rollbackWrite,
+	selectAggregate,
+	selectView,
+} from "@/lib/store/core";
 import { viewKey } from "@/lib/store/keys";
 import {
 	dayPayload,
 	deepFreeze,
 	NOW,
 	snapshot,
+	T0,
 	T1,
 	T2,
+	T3,
 	TODAY,
 	task,
 } from "@/lib/store/test-fixtures";
+import type { AggregateKey, Snapshot } from "@/lib/store/types";
 
 const YESTERDAY = "2026-07-14";
 
@@ -152,5 +163,163 @@ describe("inbox scope", () => {
 		const c1 = confirmWrite(a2, t1, { at: T2, rows: [unfiled] });
 		const c2 = confirmWrite(c1, t2, { at: T2, rows: [filed] });
 		expect(selectView(c2, viewKey.inbox())?.map((r) => r.id)).toEqual(["u"]);
+	});
+});
+
+const INBOX = {
+	key: viewKey.inbox(),
+	type: "taskList" as const,
+	data: {
+		rows: [] as ReturnType<typeof task>[],
+		scope: { unfiled: true as const, status: "open" as const },
+	},
+};
+
+describe("filing and editing", () => {
+	it("an assign leaves the inbox at once, and stays gone once confirmed", () => {
+		const u = task({ id: "u", domain_id: null });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ ...INBOX, data: { ...INBOX.data, rows: [u] } }]),
+		);
+		const [applied, token] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "assign", id: "u", domainId: "domain-2" } },
+			NOW,
+		);
+		expect(selectView(applied, viewKey.inbox())).toEqual([]);
+		const filed = task({ id: "u", domain_id: "domain-2" });
+		const confirmed = confirmWrite(applied, token, { at: T2, rows: [filed] });
+		expect(selectView(confirmed, viewKey.inbox())).toEqual([]);
+		// A stale seed read before the filing cannot bring it back.
+		const stale = applySeed(
+			confirmed,
+			snapshot(T0, [{ ...INBOX, data: { ...INBOX.data, rows: [u] } }]),
+		);
+		expect(selectView(stale, viewKey.inbox())).toEqual([]);
+	});
+
+	it("a failed assign puts the row back", () => {
+		const u = task({ id: "u", domain_id: null });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ ...INBOX, data: { ...INBOX.data, rows: [u] } }]),
+		);
+		const [applied, token] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "assign", id: "u", domainId: "domain-2" } },
+			NOW,
+		);
+		expect(selectView(rollbackWrite(applied, token), viewKey.inbox())).toEqual([u]);
+	});
+
+	it("an edit projects nothing, then takes the server's row; a row moved out of a project leaves it", () => {
+		const a = task({ id: "a", project_id: "p1", title: "Old" });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [
+				{ key: viewKey.tasks(), type: "taskLists", data: { open: [a], done: [] } },
+				{
+					key: viewKey.project("p1"),
+					type: "taskList",
+					data: { rows: [a], scope: { projectId: "p1" } },
+				},
+			]),
+		);
+		const [applied, token] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "edit", id: "a" } },
+			NOW,
+		);
+		expect(selectView(applied, viewKey.tasks())?.open).toEqual([a]);
+		const edited = task({ id: "a", project_id: "p2", title: "New" });
+		const confirmed = confirmWrite(applied, token, { at: T2, rows: [edited] });
+		expect(selectView(confirmed, viewKey.tasks())?.open).toEqual([edited]);
+		expect(selectView(confirmed, viewKey.project("p1"))).toEqual([]);
+	});
+});
+
+describe("Today's task counters", () => {
+	const counts = (open: number, overdue: number, inbox: number): Snapshot["aggregates"] => ({
+		"tasks.open": open,
+		"tasks.overdue": overdue,
+		"tasks.inbox": inbox,
+	});
+	const read = (s: ReturnType<typeof initialState>) =>
+		(["tasks.open", "tasks.overdue", "tasks.inbox"] as AggregateKey[]).map((k) =>
+			selectAggregate(s, k),
+		);
+
+	it("a tick on an overdue task moves open and overdue, and holds after confirm", () => {
+		const late = task({ id: "late", due_date: YESTERDAY });
+		const s = applySeed(
+			initialState(),
+			snapshot(
+				T1,
+				[{ key: viewKey.tasks(), type: "taskLists", data: { open: [late], done: [] } }],
+				{ aggregates: counts(4, 1, 0) },
+			),
+		);
+		const [applied, token] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "complete", id: "late", observedDueDate: YESTERDAY } },
+			NOW,
+		);
+		expect(read(applied)).toEqual([3, 0, 0]);
+		const done = task({ id: "late", due_date: YESTERDAY, status: "done", completed_at: NOW });
+		const confirmed = confirmWrite(applied, token, { at: T2, rows: [done] });
+		expect(read(confirmed)).toEqual([3, 0, 0]);
+		// A later read already counts the write: nothing is added twice.
+		expect(read(applySeed(confirmed, snapshot(T3, [], { aggregates: counts(3, 0, 0) })))).toEqual([
+			3, 0, 0,
+		]);
+		// A read that started before the write never undoes it.
+		expect(read(applySeed(confirmed, snapshot(T0, [], { aggregates: counts(4, 1, 0) })))).toEqual([
+			3, 0, 0,
+		]);
+	});
+
+	it("a recurring tick keeps the open count: the successor replaces it", () => {
+		const r = task({ id: "r", due_date: YESTERDAY, recurrence_rule: "daily" });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ key: viewKey.tasks(), type: "taskLists", data: { open: [r], done: [] } }], {
+				aggregates: counts(2, 1, 0),
+			}),
+		);
+		const [applied] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "complete", id: "r", observedDueDate: YESTERDAY } },
+			NOW,
+		);
+		expect(read(applied)).toEqual([2, 0, 0]);
+	});
+
+	it("filing moves the inbox count; creating an unfiled task raises open and inbox", () => {
+		const u = task({ id: "u", domain_id: null });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ ...INBOX, data: { ...INBOX.data, rows: [u] } }], {
+				aggregates: counts(1, 0, 1),
+			}),
+		);
+		const [filed] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "assign", id: "u", domainId: "domain-2" } },
+			NOW,
+		);
+		expect(read(filed)).toEqual([1, 0, 0]);
+		const [created] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "create", task: task({ id: "n", domain_id: null }) } },
+			NOW,
+		);
+		expect(read(created)).toEqual([2, 0, 2]);
+	});
+
+	it("a row the store never loaded moves nothing", () => {
+		const s = applySeed(initialState(), snapshot(T1, [], { aggregates: counts(1, 0, 0) }));
+		const [applied] = applyIntent(s, { kind: "task", intent: { type: "delete", id: "x" } }, NOW);
+		expect(read(applied)).toEqual([1, 0, 0]);
 	});
 });

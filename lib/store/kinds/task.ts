@@ -10,19 +10,99 @@ import {
 	placeOnDay,
 } from "@/lib/day-schedule";
 import type { TaskRow } from "@/lib/schemas/task";
-import type { Clock, KindAdapter, RowEntry, TaskScope, ViewAdapter } from "@/lib/store/types";
+import type {
+	Clock,
+	Deltas,
+	IntentCtx,
+	KindAdapter,
+	RowEntry,
+	TaskScope,
+	ViewAdapter,
+} from "@/lib/store/types";
 import {
 	applyDayTaskList,
 	applyTaskLists,
+	assignDomainFields,
+	projectComplete,
+	reopenTaskFields,
 	type TaskIntent,
 } from "@/lib/task-interaction/apply-intent";
+import { isOverdue } from "@/lib/task-predicates";
 
 /** How many finished rows /tasks keeps (mirrors applyTaskLists). */
 const DONE_CAP = 10;
 
+type TaskCounts = { open: number; overdue: number; inbox: number };
+const NONE: TaskCounts = { open: 0, overdue: 0, inbox: 0 };
+
+/** What one row adds to Today's counters (lib/services/today.ts assembleTodayView). */
+function countsOf(row: TaskRow | undefined, todayIso: string): TaskCounts {
+	if (row?.status !== "open") return NONE;
+	return {
+		open: 1,
+		overdue: isOverdue(row, todayIso) ? 1 : 0,
+		inbox: row.domain_id === null ? 1 : 0,
+	};
+}
+
+/**
+ * The row after the intent, for counting; `before` is undefined when the row
+ * was never loaded, and then nothing moves. `successor` is the next occurrence
+ * a recurring completion creates (docs/adr/0059): open, not overdue — it is
+ * dated from today — and filed where its source was.
+ */
+function afterIntent(
+	intent: TaskIntent,
+	before: TaskRow | undefined,
+	ctx: IntentCtx,
+): { after: TaskRow | undefined; successor: TaskRow | undefined } {
+	if (intent.type === "create") return { after: intent.task, successor: undefined };
+	if (!before) return { after: undefined, successor: undefined };
+	switch (intent.type) {
+		case "complete": {
+			if (before.status !== "open") return { after: before, successor: undefined };
+			const after = projectComplete(before, ctx);
+			const recurring = before.recurrence_rule !== null && after.recurrence_rule === null;
+			return { after, successor: recurring ? { ...before, due_date: null } : undefined };
+		}
+		case "reopen":
+			return { after: reopenTaskFields(before), successor: undefined };
+		case "assign":
+			return { after: assignDomainFields(before, intent.domainId), successor: undefined };
+		case "delete":
+			return { after: undefined, successor: undefined };
+		case "setTop3":
+		case "edit":
+			return { after: before, successor: undefined };
+	}
+}
+
+/**
+ * Today's counters move with the intent. An edit moves nothing here — its
+ * new due date is only known once the server answers — and the next seed
+ * heals it. So does a quiet task (lib/task-predicates.ts isQuiet): the store
+ * cannot tell one from its row, and Today does not count them.
+ */
+function taskDeltas(intent: TaskIntent, before: TaskRow | undefined, ctx: IntentCtx): Deltas {
+	if (intent.type !== "create" && !before) return {};
+	const { after, successor } = afterIntent(intent, before, ctx);
+	const was = intent.type === "create" ? NONE : countsOf(before, ctx.todayIso);
+	const now = countsOf(after, ctx.todayIso);
+	const next = countsOf(successor, ctx.todayIso);
+	const out: Deltas = {};
+	const open = now.open + next.open - was.open;
+	const overdue = now.overdue + next.overdue - was.overdue;
+	const inbox = now.inbox + next.inbox - was.inbox;
+	if (open !== 0) out["tasks.open"] = open;
+	if (overdue !== 0) out["tasks.overdue"] = overdue;
+	if (inbox !== 0) out["tasks.inbox"] = inbox;
+	return out;
+}
+
 export const taskKind: KindAdapter<"task"> = {
 	idOf: (row) => row.id,
 	provisionalIds: (intent) => (intent.type === "create" ? [intent.task.id] : []),
+	deltas: taskDeltas,
 };
 
 /** Replace rows by id from `rowOf`; drop tombstones. Same array when nothing changed. */
@@ -90,6 +170,14 @@ export function inTaskScope(row: TaskRow, scope: TaskScope | undefined): boolean
 	return row.domain_id === null && row.status === scope.status;
 }
 
+/** Rows a write moved out of the list's scope leave it: a filed inbox task, a task moved to another project. */
+function inScopeOnly(view: TaskRow[], scope: TaskScope | undefined): TaskRow[] {
+	if (!scope) return view;
+	return view.every((r) => inTaskScope(r, scope))
+		? view
+		: view.filter((r) => inTaskScope(r, scope));
+}
+
 export const taskListView: ViewAdapter<"taskList"> = {
 	kind: "task",
 	fromSeed: (data) => ({ base: data.rows, params: data.scope }),
@@ -98,7 +186,8 @@ export const taskListView: ViewAdapter<"taskList"> = {
 		// A create belongs only to the list whose scope it matches — without the
 		// guard it would show in every cached project list.
 		if (intent.type === "create" && !inTaskScope(intent.task, scope)) return view;
-		return applyDayTaskList(view, intent, { todayIso: ctx.todayIso, nowIso: ctx.nowIso });
+		const out = applyDayTaskList(view, intent, { todayIso: ctx.todayIso, nowIso: ctx.nowIso });
+		return intent.type === "assign" ? inScopeOnly(out, scope) : out;
 	},
 	upsert: (view, rows, _clock, scope) => {
 		let out = view;
@@ -106,7 +195,7 @@ export const taskListView: ViewAdapter<"taskList"> = {
 			if (out.some((r) => r.id === row.id)) out = replaceById(out, row);
 			else if (inTaskScope(row, scope)) out = [row, ...out];
 		}
-		return out;
+		return inScopeOnly(out, scope);
 	},
 	remove: (view, ids) => without(view, ids),
 	patch: (view, rowOf) => patchRows(view, rowOf),
