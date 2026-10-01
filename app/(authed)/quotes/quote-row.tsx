@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Button, ListRow, Textarea } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { QuoteAnnotationRow, QuoteRow } from "@/lib/services/quotes";
-import { useRunIntent } from "@/lib/store";
+import { useProvisionalIds, useRunIntent } from "@/lib/store";
 import { createAnnotationAction, deleteQuoteAction, listAnnotationsAction } from "./actions";
 
 export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
@@ -14,6 +14,8 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 	const [annotationBody, setAnnotationBody] = useState("");
 	// The row leaves the list at once; a failure puts it back (#30).
 	const run = useRunIntent("quote", { errorMessage: "Couldn't delete quote." });
+	// Still being saved: its id is the client's, so nothing may act on it yet.
+	const saving = useProvisionalIds("quote").has(quote.id);
 
 	function toggleExpand() {
 		if (!expanded && annotations === null) {
@@ -58,6 +60,7 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 					variant="tertiary"
 					size="sm"
 					aria-label={expanded ? "Collapse annotations" : "Expand annotations"}
+					disabled={saving}
 					aria-pressed={expanded}
 					onClick={toggleExpand}
 				>
@@ -68,6 +71,7 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 					variant="danger"
 					size="sm"
 					aria-label={`Delete quote "${quote.text.slice(0, 20)}"`}
+					disabled={saving}
 					onClick={() => run({ type: "delete", id: quote.id }, () => deleteQuoteAction(quote.id))}
 				>
 					Delete

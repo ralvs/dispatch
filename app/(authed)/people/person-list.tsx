@@ -2,7 +2,7 @@
 
 import { EmptyState, PageHeader } from "@/components/ui";
 import type { PersonRow } from "@/lib/schemas/person";
-import { useView, viewKey } from "@/lib/store";
+import { useProvisionalIds, useView, viewKey } from "@/lib/store";
 import { PersonCreateButton } from "./person-form";
 import { PersonRowItem } from "./person-row";
 
@@ -15,6 +15,7 @@ const NO_PEOPLE: PersonRow[] = [];
  */
 export function PersonList() {
 	const people = useView(viewKey.people()) ?? NO_PEOPLE;
+	const saving = useProvisionalIds("person");
 
 	return (
 		<div>
@@ -31,7 +32,7 @@ export function PersonList() {
 				// the count; a lone "People" group label would restate the title.
 				<ul>
 					{people.map((p) => (
-						<PersonRowItem key={p.id} person={p} />
+						<PersonRowItem key={p.id} person={p} saving={saving.has(p.id)} />
 					))}
 				</ul>
 			)}

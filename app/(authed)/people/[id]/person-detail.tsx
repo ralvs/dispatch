@@ -25,7 +25,14 @@ import {
 	RelationshipTypeSchema,
 } from "@/lib/schemas/person";
 import type { PersonFactRow, PersonInteractionRow, PersonRow } from "@/lib/services/people";
-import { isNavigationError, useRunIntent, useStoreWrite, useView, viewKey } from "@/lib/store";
+import {
+	isNavigationError,
+	useProvisionalIds,
+	useRunIntent,
+	useStoreWrite,
+	useView,
+	viewKey,
+} from "@/lib/store";
 import {
 	FACT_TYPES,
 	factTypeLabel,
@@ -224,6 +231,7 @@ export function PersonDetail({
 								variant="tertiary"
 								size="sm"
 								aria-label={`Edit ${person.name}`}
+								disabled={pending}
 								onClick={() => setEditing(true)}
 							>
 								Edit
@@ -312,6 +320,8 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 	const [open, setOpen] = useState(false);
 	const write = useStoreWrite("personFact");
 	const run = useRunIntent("personFact", { errorMessage: "Couldn't delete fact." });
+	// A fact still being saved has the client's id: no delete until it is real.
+	const saving = useProvisionalIds("personFact");
 
 	function submit(formData: FormData) {
 		startTransition(async () => {
@@ -345,6 +355,7 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 								variant="danger-soft"
 								size="sm"
 								aria-label={`Delete fact "${f.fact_value}"`}
+								disabled={saving.has(f.id)}
 								onClick={() =>
 									run({ type: "delete", id: f.id }, () => deleteFactAction(personId, f.id))
 								}
@@ -455,6 +466,7 @@ function InteractionsSection({
 	const [open, setOpen] = useState(false);
 	const write = useStoreWrite("personInteraction");
 	const run = useRunIntent("personInteraction", { errorMessage: "Couldn't delete interaction." });
+	const saving = useProvisionalIds("personInteraction");
 
 	function submit(formData: FormData) {
 		startTransition(async () => {
@@ -491,6 +503,7 @@ function InteractionsSection({
 								variant="danger-soft"
 								size="sm"
 								aria-label="Delete interaction"
+								disabled={saving.has(i.id)}
 								onClick={() =>
 									run({ type: "delete", id: i.id }, () => deleteInteractionAction(personId, i.id))
 								}

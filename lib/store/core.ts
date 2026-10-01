@@ -304,6 +304,12 @@ export function makeCore(adapters: Adapters) {
 		return s.pending.some((p) => p.kind === i.kind && kind.provisionalIds(p.intent).includes(id));
 	}
 
+	/** Ids of a kind's rows that an unconfirmed create introduced, in apply order. */
+	function provisionalIdsOf(s: StoreState, k: Kind): string[] {
+		const kind = kindOf(k);
+		return s.pending.flatMap((p) => (p.kind === k ? kind.provisionalIds(p.intent) : []));
+	}
+
 	/** Base plus pending deltas, clamped at zero. Undefined until seeded. */
 	function selectAggregate(s: StoreState, key: AggregateKey): number | undefined {
 		const base = s.aggregates[key];
@@ -321,6 +327,7 @@ export function makeCore(adapters: Adapters) {
 		selectView,
 		selectAggregate,
 		targetsProvisional,
+		provisionalIdsOf,
 	};
 }
 
@@ -335,4 +342,5 @@ export const {
 	selectView,
 	selectAggregate,
 	targetsProvisional,
+	provisionalIdsOf,
 } = core;

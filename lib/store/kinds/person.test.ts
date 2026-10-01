@@ -122,16 +122,16 @@ describe("mergeMentionPeople", () => {
 	];
 
 	it("is the server's list when this tab wrote no one", () => {
-		expect(mergeMentionPeople(server, {})).toBe(server);
+		expect(mergeMentionPeople(server, [])).toBe(server);
 	});
 
-	it("offers a person created here, the new name of a renamed one, and drops a deleted one", () => {
+	it("folds this tab's writes on in order: a create, a rename, a delete", () => {
 		expect(
-			mergeMentionPeople(server, {
-				ana: { row: person({ id: "ana", name: "Ana Lima" }), v: T2 },
-				caio: { deleted: true, v: T2 },
-				bia: { row: person({ id: "bia", name: "Bia" }), v: T2 },
-			}),
+			mergeMentionPeople(server, [
+				{ at: T1, rows: [person({ id: "bia", name: "Bia" })] },
+				{ at: T2, rows: [person({ id: "ana", name: "Ana Lima" })] },
+				{ at: T2, rows: [], deletedIds: ["caio"] },
+			]),
 		).toEqual([
 			{ id: "ana", name: "Ana Lima" },
 			{ id: "bia", name: "Bia" },
