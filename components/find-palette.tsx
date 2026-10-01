@@ -43,15 +43,16 @@ export function FindPalette() {
 	const [pending, startTransition] = useTransition();
 	const listId = useId();
 	const debounce = useRef<ReturnType<typeof setTimeout>>(undefined);
+	// Every search (and every close) takes a new id; a response only lands if
+	// its id is still the latest, so a slow older query never overwrites a
+	// newer one and nothing lands after close or unmount.
 	const request = useRef(0);
+	const openRef = useRef(false);
 
-	const close = useCallback(() => {
-		setOpen(false);
-		setQuery("");
-		setResult(null);
-		setSelected(0);
-	}, []);
-
+	// The list is replaced only when a newer answer lands, inside a transition,
+	// so the previous results stay on screen while a query is in flight. A
+	// useDeferredValue over them would only re-defer an update that is already
+	// non-urgent — and it let a closed palette's old list flash on reopen.
 	const runFind = useCallback((q: string) => {
 		const id = ++request.current;
 		startTransition(async () => {
@@ -62,34 +63,52 @@ export function FindPalette() {
 		});
 	}, []);
 
+	const close = useCallback(() => {
+		openRef.current = false;
+		clearTimeout(debounce.current);
+		request.current++;
+		setOpen(false);
+		setQuery("");
+		setResult(null);
+		setSelected(0);
+	}, []);
+
+	const openPalette = useCallback(() => {
+		if (openRef.current) return;
+		openRef.current = true;
+		setOpen(true);
+		runFind("");
+	}, [runFind]);
+
+	function onQueryChange(next: string) {
+		setQuery(next);
+		clearTimeout(debounce.current);
+		debounce.current = setTimeout(() => runFind(next), 150);
+	}
+
+	useEffect(
+		() => () => {
+			clearTimeout(debounce.current);
+			request.current++;
+		},
+		[],
+	);
+
 	useEffect(() => {
-		function onOpen() {
-			setOpen(true);
-		}
 		function onKey(event: KeyboardEvent) {
 			if (!isFindShortcut(event)) return;
 			event.preventDefault();
-			setOpen((was) => !was);
+			if (openRef.current) close();
+			else openPalette();
 		}
+		const onOpen = openPalette;
 		window.addEventListener(OPEN_FIND_EVENT, onOpen);
 		window.addEventListener("keydown", onKey);
 		return () => {
 			window.removeEventListener(OPEN_FIND_EVENT, onOpen);
 			window.removeEventListener("keydown", onKey);
 		};
-	}, []);
-
-	useEffect(() => {
-		if (!open) {
-			setQuery("");
-			setResult(null);
-			setSelected(0);
-			return;
-		}
-		clearTimeout(debounce.current);
-		debounce.current = setTimeout(() => runFind(query), 150);
-		return () => clearTimeout(debounce.current);
-	}, [open, query, runFind]);
+	}, [close, openPalette]);
 
 	const hits = flatten(result);
 
@@ -121,7 +140,7 @@ export function FindPalette() {
 			<DialogBody>
 				<Input
 					value={query}
-					onChange={(event) => setQuery(event.target.value)}
+					onChange={(event) => onQueryChange(event.target.value)}
 					onKeyDown={onKeyDown}
 					placeholder="A task or a note"
 					aria-label="Find"

@@ -21,37 +21,53 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 	const [results, setResults] = useState<SearchResult[]>([]);
 	const [pending, startTransition] = useTransition();
 	const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+	// Only the latest search may land: each search, toggle and close takes a
+	// new id, so a slow older query never overwrites a newer one.
+	const requestRef = useRef(0);
 
-	useEffect(() => {
-		if (!open) return;
+	useEffect(
+		() => () => {
+			clearTimeout(debounceRef.current);
+			requestRef.current++;
+		},
+		[],
+	);
+
+	function cancelSearch() {
 		clearTimeout(debounceRef.current);
-		if (query.trim() === "") {
+		requestRef.current++;
+	}
+
+	function search(next: string) {
+		setQuery(next);
+		cancelSearch();
+		if (!open || next.trim() === "") {
 			setResults([]);
 			return;
 		}
+		const targetType = open;
 		debounceRef.current = setTimeout(() => {
+			const id = ++requestRef.current;
 			startTransition(async () => {
-				const targetType = open;
 				const found = await runActionWithResult(
-					() => searchLinkTargetsAction(targetType, query),
+					() => searchLinkTargetsAction(targetType, next),
 					[],
 				);
+				if (id !== requestRef.current) return;
 				setResults(found);
 			});
 		}, 300);
-		return () => clearTimeout(debounceRef.current);
-	}, [open, query]);
+	}
 
 	function toggle(type: TargetType) {
-		setOpen((current) => {
-			const next = current === type ? null : type;
-			setQuery("");
-			setResults([]);
-			return next;
-		});
+		cancelSearch();
+		setOpen(open === type ? null : type);
+		setQuery("");
+		setResults([]);
 	}
 
 	function close() {
+		cancelSearch();
 		setOpen(null);
 		setQuery("");
 		setResults([]);
@@ -100,7 +116,7 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 					<Input
 						aria-label={open === "task" ? "Search tasks" : "Search events"}
 						value={query}
-						onChange={(e) => setQuery(e.target.value)}
+						onChange={(e) => search(e.target.value)}
 						onKeyDown={(e) => {
 							if (e.key === "Escape") close();
 						}}
