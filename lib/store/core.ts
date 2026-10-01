@@ -267,6 +267,18 @@ export function makeCore(adapters: Adapters) {
 		return out as ViewTypes[T]["out"];
 	}
 
+	/**
+	 * True when the intent acts on a row an unconfirmed create introduced. Its
+	 * id is the client's, not the server's, so the action would miss the row
+	 * the server is writing — and the create's confirm would bring it back.
+	 */
+	function targetsProvisional(s: StoreState, i: AnyIntent): boolean {
+		const kind = kindOf(i.kind);
+		const id = kind.targetId(i.intent);
+		if (id === undefined || kind.provisionalIds(i.intent).includes(id)) return false;
+		return s.pending.some((p) => p.kind === i.kind && kind.provisionalIds(p.intent).includes(id));
+	}
+
 	/** Base plus pending deltas, clamped at zero. Undefined until seeded. */
 	function selectAggregate(s: StoreState, key: AggregateKey): number | undefined {
 		const base = s.aggregates[key];
@@ -283,11 +295,19 @@ export function makeCore(adapters: Adapters) {
 		rollbackWrite,
 		selectView,
 		selectAggregate,
+		targetsProvisional,
 	};
 }
 
 export type Core = ReturnType<typeof makeCore>;
 
 export const core = makeCore(defaultAdapters);
-export const { applySeed, applyIntent, confirmWrite, rollbackWrite, selectView, selectAggregate } =
-	core;
+export const {
+	applySeed,
+	applyIntent,
+	confirmWrite,
+	rollbackWrite,
+	selectView,
+	selectAggregate,
+	targetsProvisional,
+} = core;

@@ -101,4 +101,18 @@ describe("useRunIntent", () => {
 		expect(action).not.toHaveBeenCalled();
 		expect(store.getState().pending).toEqual([]);
 	});
+
+	it("swallows an intent on a row whose create is unconfirmed, and nothing runs", async () => {
+		const draft = task({ id: "tmp" });
+		store.getState().apply({ kind: "task", intent: { type: "create", task: draft } });
+		const { result } = renderHook(() => useRunIntent("task"), { wrapper });
+		const action = vi.fn();
+		let ran = true;
+		act(() => {
+			ran = result.current({ type: "delete", id: "tmp" }, action);
+		});
+		expect(ran).toBe(false);
+		expect(action).not.toHaveBeenCalled();
+		expect(store.getState().pending).toHaveLength(1);
+	});
 });
