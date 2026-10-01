@@ -138,11 +138,15 @@ describe("notification adapter", () => {
 		expect(selectAggregate(s2, "notifications.unread")).toBe(5);
 	});
 
-	it("a confirmed mark-all wins over a stale Today digest seeded after it", () => {
+	it("a confirmed mark-all replays over a Today digest read between the page and the write", () => {
+		// /notifications seeded the exact count at T1 (the fix), so the bulk
+		// action knows how far to move it.
 		const [s1, t] = applyIntent(seeded(), intent({ type: "markAll", status: "dismissed" }), NOW);
-		const s2 = confirmWrite(s1, t, { at: T2, rows: [], deletedIds: ["a", "b", "c"] });
-		// Today's cached digest, read before the write, lands afterwards.
-		const today = applySeed(s2, snapshot(T1, [], { aggregates: { "notifications.unread": 5 } }));
+		expect(s1.pending[0].deltas).toEqual({ "notifications.unread": -5 });
+		const s2 = confirmWrite(s1, t, { at: T3, rows: [], deletedIds: ["a", "b", "c"] });
+		// Today's cached digest, read at T2 — after the page, before the write.
+		const today = applySeed(s2, snapshot(T2, [], { aggregates: { "notifications.unread": 5 } }));
+		expect(today.aggregates["notifications.unread"]?.readAt).toBe(T2);
 		expect(selectAggregate(today, "notifications.unread")).toBe(0);
 	});
 
