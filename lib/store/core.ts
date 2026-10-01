@@ -4,6 +4,7 @@
 // ./types.ts.
 
 import { notificationKind, notificationListView } from "@/lib/store/kinds/notification";
+import { routineKind, routineListView } from "@/lib/store/kinds/routine";
 import { dayView, taskKind, taskListsView, taskListView } from "@/lib/store/kinds/task";
 import type {
 	Adapters,
@@ -31,12 +32,13 @@ import type {
 export const CONFIRMED_CAP = 500;
 
 export const defaultAdapters: Adapters = {
-	kinds: { task: taskKind, notification: notificationKind },
+	kinds: { task: taskKind, notification: notificationKind, routine: routineKind },
 	views: {
 		taskLists: taskListsView,
 		taskList: taskListView,
 		day: dayView,
 		notificationList: notificationListView,
+		routineList: routineListView,
 	},
 };
 
@@ -74,7 +76,7 @@ function later(a: Instant, b: Instant): boolean {
 export function initialState(): StoreState {
 	return {
 		clock: null,
-		rows: { task: {}, notification: {} },
+		rows: { task: {}, notification: {}, routine: {} },
 		views: {},
 		aggregates: {},
 		pending: [],

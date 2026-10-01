@@ -1,6 +1,7 @@
 // Shared fixtures for the store's tests. Not imported by app code.
 import type { DaySchedulePayload } from "@/lib/day-schedule";
 import type { NotificationRow } from "@/lib/schemas/notification";
+import type { RoutineWithHistory } from "@/lib/schemas/routine";
 import type { TaskRow } from "@/lib/schemas/task";
 import type { Snapshot, ViewSeed } from "@/lib/store/types";
 
@@ -49,6 +50,27 @@ export function notification(
 		status: "unread",
 		undo_payload: null,
 		created_at: "2026-07-15T11:00:00.000Z",
+		...partial,
+	};
+}
+
+export function routine(
+	partial: Partial<RoutineWithHistory> & Pick<RoutineWithHistory, "id">,
+): RoutineWithHistory {
+	return {
+		name: partial.id,
+		description: null,
+		position: 0,
+		active: true,
+		time_of_day: "anytime",
+		specific_time: null,
+		reminder_enabled: false,
+		last_reminder_sent_date: null,
+		goal_days: null,
+		archived_at: null,
+		created_at: "2026-07-01T12:00:00.000Z",
+		updated_at: "2026-07-01T12:00:00.000Z",
+		completions: [],
 		...partial,
 	};
 }

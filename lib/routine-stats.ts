@@ -19,6 +19,30 @@
  */
 export const BACKFILL_DAYS = 30;
 
+/**
+ * How far back a routine's completion log is read — for streaks long enough
+ * to matter, and past the BACKFILL_DAYS grid. Today and /routines read the
+ * same window, so a streak reads the same on both.
+ */
+export const ROUTINE_HISTORY_DAYS = 60;
+
+/** Attach each routine's completion dates, ascending. Rows keep their order. */
+export function withHistory<R extends { id: string }>(
+	routines: R[],
+	completions: Array<{ routine_id: string; completed_date: string }>,
+): Array<R & { completions: string[] }> {
+	const byRoutine = new Map<string, string[]>();
+	for (const c of completions) {
+		const dates = byRoutine.get(c.routine_id);
+		if (dates) dates.push(c.completed_date);
+		else byRoutine.set(c.routine_id, [c.completed_date]);
+	}
+	return routines.map((r) => ({
+		...r,
+		completions: (byRoutine.get(r.id) ?? []).sort(),
+	}));
+}
+
 export interface RoutineStats {
 	// Days completed in a consecutive run ending today (or yesterday if
 	// today isn't done yet but yesterday was). 0 if no current run.

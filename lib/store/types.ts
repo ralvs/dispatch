@@ -22,7 +22,8 @@
 //   - `notifications`: status is desired state; new cron rows arrive only via
 //     seeds. A dismissal is a delete (kinds/notification.ts).
 //   - `routine_completions`: identity is the natural key
-//     `${routine_id}:${completed_date}` (unique constraint), not `id`.
+//     `${routine_id}:${completed_date}` (unique constraint), not `id` — held
+//     as a date in its routine's row (kinds/routine.ts).
 //   - `person_interactions`: insert/delete only; reconciles by presence.
 //   - `mentions`: derived server-side (ADR-0030); seeds only, no client intents.
 //
@@ -33,17 +34,27 @@
 
 import type { DaySchedulePayload } from "@/lib/day-schedule";
 import type { NotificationRow } from "@/lib/schemas/notification";
+import type { RoutineWithHistory } from "@/lib/schemas/routine";
 import type { TaskRow } from "@/lib/schemas/task";
 import type { NotificationIntent } from "@/lib/store/kinds/notification";
+import type { RoutineIntent } from "@/lib/store/kinds/routine";
 import type { TaskIntent, TaskLists } from "@/lib/task-interaction/apply-intent";
 
 /** UTC ISO instant, always server-stamped. */
 export type Instant = string;
 export type Clock = { todayIso: string; tz: string };
 
-export type EntityMap = { task: TaskRow; notification: NotificationRow };
+export type EntityMap = {
+	task: TaskRow;
+	notification: NotificationRow;
+	routine: RoutineWithHistory;
+};
 export type Kind = keyof EntityMap;
-export type IntentMap = { task: TaskIntent; notification: NotificationIntent };
+export type IntentMap = {
+	task: TaskIntent;
+	notification: NotificationIntent;
+	routine: RoutineIntent;
+};
 export type AnyIntent = { [K in Kind]: { kind: K; intent: IntentMap[K] } }[Kind];
 
 /** Which rows a flat task list admits when a write it has not seen arrives. */
@@ -69,6 +80,13 @@ export type ViewTypes = {
 		kind: "notification";
 		data: NotificationRow[];
 		out: NotificationRow[];
+		params: undefined;
+	};
+	/** /routines and Today's routines card: the listed routines, in list order. */
+	routineList: {
+		kind: "routine";
+		data: RoutineWithHistory[];
+		out: RoutineWithHistory[];
 		params: undefined;
 	};
 };

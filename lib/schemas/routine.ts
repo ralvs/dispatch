@@ -120,3 +120,11 @@ export const CompletionRowSchema = z.object({
 export type CompletionRow = z.infer<typeof CompletionRowSchema>;
 
 export const COMPLETION_SELECT = Object.keys(CompletionRowSchema.shape).join(", ");
+
+/**
+ * A routine with its completion dates (YYYY-MM-DD, ascending) since the start
+ * of the history window (ROUTINE_HISTORY_DAYS, lib/routine-stats.ts). The
+ * entity store's routine row (#29): a tick changes the row, so one version
+ * covers the routine and its log, and Today and /routines read the same one.
+ */
+export type RoutineWithHistory = RoutineRow & { completions: string[] };
