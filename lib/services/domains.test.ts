@@ -1,84 +1,8 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { describe, expect, it, vi } from "vitest";
-import {
-	archiveDomain,
-	cadenceThresholdDays,
-	createDomain,
-	markDomainShipped,
-	updateDomain,
-	withCadenceThresholdDays,
-} from "@/lib/services/domains";
+import { describe, expect, it } from "vitest";
+import { cadenceThresholdDays, withCadenceThresholdDays } from "@/lib/services/domains";
 
-// Stub covering .from().insert().select().single() and .from().update().eq().
-// These writers used to read the row back first, to refuse the system Inbox
-// domain; that domain no longer exists (docs/adr/0027) and they now write
-// straight through.
-function stubSupabase() {
-	const inserts: Array<Record<string, unknown>> = [];
-	const updates: Array<Record<string, unknown>> = [];
-
-	const sb = {
-		from: vi.fn(() => ({
-			insert: vi.fn((row: Record<string, unknown>) => {
-				inserts.push(row);
-				return {
-					select: vi.fn(() => ({
-						single: vi.fn(async () => ({ data: { id: "row-1", ...row }, error: null })),
-					})),
-				};
-			}),
-			update: vi.fn((patch: Record<string, unknown>) => {
-				updates.push(patch);
-				return {
-					eq: vi.fn(async () => ({ data: null, error: null })),
-				};
-			}),
-		})),
-	} as unknown as SupabaseClient;
-
-	return { sb, inserts, updates };
-}
-
-describe("createDomain", () => {
-	it("stores the given fields", async () => {
-		const { sb, inserts } = stubSupabase();
-
-		const domain = await createDomain(sb, { name: "Health" });
-
-		expect(domain.id).toBe("row-1");
-		expect(inserts[0]).toMatchObject({ name: "Health" });
-	});
-});
-
-describe("updateDomain", () => {
-	it("updates a domain", async () => {
-		const { sb, updates } = stubSupabase();
-
-		await updateDomain(sb, "domain-1", { name: "Health & Fitness" });
-
-		expect(updates[0]).toMatchObject({ name: "Health & Fitness" });
-	});
-});
-
-describe("archiveDomain", () => {
-	it("sets active=false", async () => {
-		const { sb, updates } = stubSupabase();
-
-		await archiveDomain(sb, "domain-1");
-
-		expect(updates[0]).toMatchObject({ active: false });
-	});
-});
-
-describe("markDomainShipped", () => {
-	it("stamps last_shipped_at with a timestamp", async () => {
-		const { sb, updates } = stubSupabase();
-
-		await markDomainShipped(sb, "domain-1");
-
-		expect(typeof updates[0].last_shipped_at).toBe("string");
-	});
-});
+// The cadence helpers are pure and stay unit tests. Every database read and
+// write runs against the local database in domains.int.test.ts (#18).
 
 describe("withCadenceThresholdDays", () => {
 	it("writes a rule onto a domain that had none", () => {
