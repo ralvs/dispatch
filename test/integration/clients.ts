@@ -22,6 +22,12 @@ export function anonClient(): SupabaseClient {
 	return createClient(stack.apiUrl, stack.publishableKey, NO_PERSIST);
 }
 
+/** Every request fails at the network — nothing listens on port 9. For the
+ * paths that must survive a database that is down. */
+export function unreachableClient(): SupabaseClient {
+	return createClient("http://127.0.0.1:9", "unreachable", NO_PERSIST);
+}
+
 let owner: Promise<SupabaseClient> | undefined;
 
 export function ownerClient(): Promise<SupabaseClient> {

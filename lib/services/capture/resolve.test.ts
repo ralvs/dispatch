@@ -1,23 +1,10 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { CreateTaskAction } from "@/lib/schemas/capture";
 import {
-	fetchRoutingLists,
-	loadCaptureContext,
 	type RoutingLists,
 	resolveTaskRouting,
 	taskInputFromAction,
 } from "@/lib/services/capture/resolve";
-
-vi.mock("@/lib/services/domains", () => ({ listDomains: vi.fn() }));
-vi.mock("@/lib/services/projects", () => ({ listProjects: vi.fn() }));
-vi.mock("@/lib/services/settings", () => ({ getAppTimezone: vi.fn() }));
-
-import { listDomains } from "@/lib/services/domains";
-import { listProjects } from "@/lib/services/projects";
-import { getAppTimezone } from "@/lib/services/settings";
-
-const sb = {} as SupabaseClient;
 
 const LISTS: RoutingLists = {
 	domains: [
@@ -30,10 +17,6 @@ const LISTS: RoutingLists = {
 function task(overrides: Partial<CreateTaskAction> = {}): CreateTaskAction {
 	return { action: "create_task", title: "water plants", ...overrides };
 }
-
-beforeEach(() => {
-	vi.clearAllMocks();
-});
 
 describe("resolveTaskRouting", () => {
 	it("matches a project case- and diacritic-insensitively and inherits its domain", () => {
@@ -197,74 +180,5 @@ describe("taskInputFromAction", () => {
 	it("makes the unresolved mentions the whole note when the action had none", () => {
 		const input = taskInputFromAction(task({ domain: "Nope" }), LISTS);
 		expect(input.notes).toBe('[capture: unresolved domain "Nope"]');
-	});
-});
-
-describe("fetchRoutingLists", () => {
-	it("maps domains down to id/name and keeps active projects", async () => {
-		(listDomains as Mock).mockResolvedValue([
-			{ id: "dom-home", name: "Home", active: true, color: null },
-			{ id: "dom-work", name: "Work", active: true, color: "#abc" },
-		]);
-		(listProjects as Mock).mockResolvedValue([
-			{ id: "proj-reviews", name: "Reviews", domain_id: "dom-work" },
-		]);
-
-		const result = await fetchRoutingLists(sb);
-
-		expect(result).toEqual({
-			domains: [
-				{ id: "dom-home", name: "Home" },
-				{ id: "dom-work", name: "Work" },
-			],
-			projects: [{ id: "proj-reviews", name: "Reviews", domain_id: "dom-work" }],
-		});
-		expect(listProjects).toHaveBeenCalledWith(sb, { status: "active" });
-	});
-
-	it("degrades to empty lists when a fetch throws", async () => {
-		(listDomains as Mock).mockRejectedValue(new Error("db down"));
-		(listProjects as Mock).mockResolvedValue([]);
-
-		const result = await fetchRoutingLists(sb);
-
-		expect(result).toEqual({ domains: [], projects: [] });
-	});
-});
-
-describe("loadCaptureContext", () => {
-	it("loads timezone and routing lists together", async () => {
-		(getAppTimezone as Mock).mockResolvedValue("America/Sao_Paulo");
-		(listDomains as Mock).mockResolvedValue([{ id: "dom-home", name: "Home" }]);
-		(listProjects as Mock).mockResolvedValue([
-			{ id: "proj-reviews", name: "Reviews", domain_id: "dom-work" },
-		]);
-
-		const result = await loadCaptureContext(sb);
-
-		expect(getAppTimezone).toHaveBeenCalledWith(sb);
-		expect(listDomains).toHaveBeenCalledWith(sb);
-		expect(listProjects).toHaveBeenCalledWith(sb, { status: "active" });
-		expect(result.tz).toBe("America/Sao_Paulo");
-		expect(result.routing).toEqual({
-			domains: [{ id: "dom-home", name: "Home" }],
-			projects: [{ id: "proj-reviews", name: "Reviews", domain_id: "dom-work" }],
-		});
-		expect(result.ctx.tz).toBe("America/Sao_Paulo");
-		expect(result.ctx.domains).toEqual(["Home"]);
-		// dom-work is not in the domain list, so the project goes unpaired.
-		expect(result.ctx.projects).toEqual([{ name: "Reviews" }]);
-	});
-
-	it("pairs each project with its domain's name", async () => {
-		(getAppTimezone as Mock).mockResolvedValue("America/Sao_Paulo");
-		(listDomains as Mock).mockResolvedValue([{ id: "dom-home", name: "Home" }]);
-		(listProjects as Mock).mockResolvedValue([
-			{ id: "proj-move", name: "Apartment move", domain_id: "dom-home" },
-		]);
-
-		const result = await loadCaptureContext(sb);
-
-		expect(result.ctx.projects).toEqual([{ name: "Apartment move", domain: "Home" }]);
 	});
 });
