@@ -1,9 +1,9 @@
 "use client";
 
 import { Check, X } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { Icon } from "@/components/ui/icon";
+import { useDomTheme } from "@/lib/client/use-dom-theme";
 
 /**
  * Sonner host. Theme follows `data-theme` on <html> (Dispatch light/dark).
@@ -14,19 +14,7 @@ import { Icon } from "@/components/ui/icon";
  * because Sonner sets padding and radius with !important.
  */
 export function AppToaster() {
-	const [theme, setTheme] = useState<"dark" | "light">("light");
-
-	useEffect(() => {
-		function read() {
-			const t = document.documentElement.getAttribute("data-theme");
-			// Match THEME_BOOT: only the string "dark" is dark; everything else is light.
-			setTheme(t === "dark" ? "dark" : "light");
-		}
-		read();
-		const mo = new MutationObserver(read);
-		mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-		return () => mo.disconnect();
-	}, []);
+	const theme = useDomTheme();
 
 	return (
 		<Toaster
