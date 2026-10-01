@@ -5,8 +5,8 @@ export const viewKey = {
 	tasks: () => "tasks" as ViewKey<"taskLists">,
 	day: (dateIso: string) => `day:${dateIso}` as ViewKey<"day">,
 	project: (id: string) => `project:${id}` as ViewKey<"taskList">,
-	/** A project's open tasks on its /projects row: open at seed, with what changed since. */
-	projectRowTasks: (id: string) => `projectRowTasks:${id}` as ViewKey<"taskList">,
+	/** The /projects board: every task tagged with a project that was open at read, and any added since. */
+	projectBoardTasks: () => "projectBoardTasks" as ViewKey<"taskList">,
 	inbox: () => "inbox" as ViewKey<"taskList">,
 	notifications: () => "notifications" as ViewKey<"notificationList">,
 	notes: () => "notes" as ViewKey<"noteLists">,

@@ -5,7 +5,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui";
 import { nowUtc } from "@/lib/dates";
 import type { DomainRow } from "@/lib/schemas/domain";
 import type { ProjectRow } from "@/lib/schemas/project";
-import { useStoreWrite } from "@/lib/store";
+import { useClock, useStoreActions, useStoreWrite } from "@/lib/store";
 import { createProjectAction } from "./actions";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -45,6 +45,23 @@ function optimisticProject(formData: FormData, domains: DomainRow[]): ProjectRow
  */
 export function ProjectCreateButton({ domains }: { domains: DomainRow[] }) {
 	const write = useStoreWrite("project");
+	const { seed } = useStoreActions();
+	const clock = useClock();
+
+	async function create(formData: FormData) {
+		const result = await write({ type: "create", row: optimisticProject(formData, domains) }, () =>
+			createProjectAction(formData),
+		);
+		// A new project has done nothing yet: its row's count starts at zero,
+		// read as of the write, so every later finish moves it.
+		if (result.ok) {
+			const [row] = result.data.rows;
+			if (row) {
+				seed({ ...clock, readAt: result.data.at, aggregates: { [`project.done:${row.id}`]: 0 } });
+			}
+		}
+		return result;
+	}
 
 	return (
 		<CreateDialogButton
@@ -52,11 +69,7 @@ export function ProjectCreateButton({ domains }: { domains: DomainRow[] }) {
 			title="New project"
 			submitLabel="Add project"
 			errorMessage="Couldn't create project. Try again."
-			action={(formData) =>
-				write({ type: "create", row: optimisticProject(formData, domains) }, () =>
-					createProjectAction(formData),
-				)
-			}
+			action={create}
 			size="lg"
 		>
 			<Field name="name">

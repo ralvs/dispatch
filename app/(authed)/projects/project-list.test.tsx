@@ -35,16 +35,20 @@ function renderList() {
 	render(
 		<StoreProvider store={store}>
 			<Seed
-				snapshot={snapshot(T1, [
-					{ key: viewKey.projects(), type: "projectList", data: { rows: [alpha] } },
-					{
-						key: viewKey.projectRowTasks("alpha"),
-						type: "taskList",
-						data: { rows: [open], scope: { projectId: "alpha" } },
-					},
-				])}
+				snapshot={snapshot(
+					T1,
+					[
+						{ key: viewKey.projects(), type: "projectList", data: { rows: [alpha] } },
+						{
+							key: viewKey.projectBoardTasks(),
+							type: "taskList",
+							data: { rows: [open], scope: { anyProject: true } },
+						},
+					],
+					{ aggregates: { "project.done:alpha": 2 } },
+				)}
 			>
-				<ProjectList domains={[home]} doneAtRead={{ alpha: 2 }} />
+				<ProjectList domains={[home]} />
 			</Seed>
 		</StoreProvider>,
 	);
@@ -73,6 +77,8 @@ describe("ProjectList on the entity store", () => {
 		const beta = project({ ...alpha, id: "beta", name: "Beta" });
 		await act(async () => resolve({ ok: true, data: { at: T2, rows: [beta] } }));
 		expect(screen.getByRole("link", { name: /Beta/ })).toHaveAttribute("href", "/projects/beta");
+		// Its done count exists from the write on, so a later finish moves it.
+		expect(store.getState().aggregates["project.done:beta"]).toEqual({ value: 0, readAt: T2 });
 	});
 
 	it("a task finished elsewhere leaves the row's list and counts as done", async () => {

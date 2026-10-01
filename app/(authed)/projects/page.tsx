@@ -6,10 +6,9 @@ import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedProjectBoard } from "@/lib/cache/projects";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { todayInTz } from "@/lib/dates";
-import type { TaskRow } from "@/lib/schemas/task";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
-import type { Snapshot, ViewSeed } from "@/lib/store/types";
+import type { Snapshot } from "@/lib/store/types";
 import { ProjectList } from "./project-list";
 
 async function ProjectsBody() {
@@ -24,39 +23,32 @@ async function ProjectsBody() {
 		getCachedAppTimezone(),
 	]);
 
-	const openByProject = new Map<string, TaskRow[]>();
-	for (const task of openTasks) {
-		if (task.project_id === null) continue;
-		const bucket = openByProject.get(task.project_id);
-		if (bucket) bucket.push(task);
-		else openByProject.set(task.project_id, [task]);
-	}
-	// The projects and each row's open tasks read the entity store (#30): a
-	// project created here, or a task added from its row, shows at once.
+	// The projects, the rows' open tasks and each row's done count read the
+	// entity store (#30): a project created here, a task added from its row,
+	// or a task finished anywhere shows at once.
 	const snapshot: Snapshot = {
 		readAt,
 		todayIso: todayInTz(tz),
 		tz,
 		views: [
 			{ key: viewKey.projects(), type: "projectList", data: { rows: projects } },
-			...projects.map(
-				(p): ViewSeed => ({
-					key: viewKey.projectRowTasks(p.id),
-					type: "taskList",
-					data: { rows: openByProject.get(p.id) ?? [], scope: { projectId: p.id } },
-				}),
-			),
+			{
+				key: viewKey.projectBoardTasks(),
+				type: "taskList",
+				data: {
+					rows: openTasks.filter((t) => t.project_id !== null),
+					scope: { anyProject: true },
+				},
+			},
 		],
+		aggregates: Object.fromEntries(
+			projects.map((p) => [`project.done:${p.id}`, taskCounts[p.id]?.done ?? 0]),
+		),
 	};
-	// Done counts at read time. A task finished since is in the row's view as
-	// done, and the row adds it (project-list.tsx).
-	const doneAtRead = Object.fromEntries(
-		Object.entries(taskCounts).map(([id, counts]) => [id, counts.done]),
-	);
 
 	return (
 		<Seed snapshot={snapshot}>
-			<ProjectList domains={domains} doneAtRead={doneAtRead} />
+			<ProjectList domains={domains} />
 		</Seed>
 	);
 }

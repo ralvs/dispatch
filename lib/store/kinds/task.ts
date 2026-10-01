@@ -78,6 +78,11 @@ function afterIntent(
 	}
 }
 
+/** The project a row counts as done in, if it is done and filed in one. */
+function doneIn(row: TaskRow | undefined): string | null {
+	return row?.status === "done" && row.project_id !== null ? row.project_id : null;
+}
+
 /**
  * Today's counters move with the intent. An edit moves nothing here — its
  * new due date is only known once the server answers — and the next seed
@@ -97,6 +102,14 @@ function taskDeltas(intent: TaskIntent, before: TaskRow | undefined, ctx: Intent
 	if (open !== 0) out["tasks.open"] = open;
 	if (overdue !== 0) out["tasks.overdue"] = overdue;
 	if (inbox !== 0) out["tasks.inbox"] = inbox;
+	// A project's done count (/projects): the row leaving done, the row (or the
+	// occurrence a recurring completion leaves behind) arriving there.
+	const doneBefore = intent.type === "create" ? undefined : doneIn(before);
+	const doneAfter = doneIn(after);
+	if (doneBefore !== doneAfter) {
+		if (doneBefore) out[`project.done:${doneBefore}`] = -1;
+		if (doneAfter) out[`project.done:${doneAfter}`] = (out[`project.done:${doneAfter}`] ?? 0) + 1;
+	}
 	return out;
 }
 
@@ -195,6 +208,7 @@ export const taskListsView: ViewAdapter<"taskLists"> = {
 export function inTaskScope(row: TaskRow, scope: TaskScope | undefined): boolean {
 	if (!scope) return false;
 	if ("projectId" in scope) return row.project_id === scope.projectId;
+	if ("anyProject" in scope) return row.project_id !== null;
 	return row.domain_id === null && row.status === scope.status;
 }
 

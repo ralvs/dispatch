@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { applyIntent, applySeed, confirmWrite, initialState, selectView } from "@/lib/store/core";
+import {
+	applyIntent,
+	applySeed,
+	confirmWrite,
+	initialState,
+	selectAggregate,
+	selectView,
+} from "@/lib/store/core";
 import { viewKey } from "@/lib/store/keys";
 import { domainItem, NOW, project, snapshot, T1, T2, task } from "@/lib/store/test-fixtures";
 
-const ids = (rows: { id: string }[] | undefined) => rows?.map((r) => r.id);
+const ids = (rows: readonly { id: string }[] | undefined) => rows?.map((r) => r.id);
 
 describe("project kind", () => {
 	const alpha = project({ id: "alpha", name: "Alpha" });
@@ -42,25 +49,54 @@ describe("project kind", () => {
 		expect(selectView(s2, viewKey.projectHead("alpha"))?.[0].status).toBe("done");
 	});
 
-	it("a row's task view admits a task added to that project, and no other", () => {
+	it("the board's task view admits a task added to any project, and no unfiled one", () => {
 		const s0 = applySeed(
 			initialState(),
 			snapshot(T1, [
 				{
-					key: viewKey.projectRowTasks("alpha"),
+					key: viewKey.projectBoardTasks(),
 					type: "taskList",
-					data: { rows: [], scope: { projectId: "alpha" } },
+					data: { rows: [], scope: { anyProject: true } },
 				},
 			]),
 		);
 		let s = s0;
 		for (const t of [
 			task({ id: "mine", project_id: "alpha" }),
-			task({ id: "theirs", project_id: "gamma" }),
+			task({ id: "loose", project_id: null }),
 		]) {
 			[s] = applyIntent(s, { kind: "task", intent: { type: "create", task: t } }, NOW);
 		}
-		expect(ids(selectView(s, viewKey.projectRowTasks("alpha")))).toEqual(["mine"]);
+		expect(ids(selectView(s, viewKey.projectBoardTasks()))).toEqual(["mine"]);
+	});
+
+	it("finishing a task moves its project's done count; reopening it moves it back", () => {
+		const open = task({ id: "t1", project_id: "alpha" });
+		const s0 = applySeed(
+			initialState(),
+			snapshot(
+				T1,
+				[
+					{
+						key: viewKey.projectBoardTasks(),
+						type: "taskList",
+						data: { rows: [open], scope: { anyProject: true } },
+					},
+				],
+				{ aggregates: { "project.done:alpha": 2 } },
+			),
+		);
+		const [s1, t] = applyIntent(
+			s0,
+			{ kind: "task", intent: { type: "complete", id: "t1", observedDueDate: null } },
+			NOW,
+		);
+		expect(selectAggregate(s1, "project.done:alpha")).toBe(3);
+		const done = { ...open, status: "done" as const, completed_at: NOW };
+		const s2 = confirmWrite(s1, t, { at: T2, rows: [done] });
+		expect(selectAggregate(s2, "project.done:alpha")).toBe(3);
+		const [s3] = applyIntent(s2, { kind: "task", intent: { type: "reopen", id: "t1" } }, NOW);
+		expect(selectAggregate(s3, "project.done:alpha")).toBe(2);
 	});
 });
 

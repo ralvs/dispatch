@@ -90,7 +90,11 @@ export type IntentMap = {
 export type AnyIntent = { [K in Kind]: { kind: K; intent: IntentMap[K] } }[Kind];
 
 /** Which rows a flat task list admits when a write it has not seen arrives. */
-export type TaskScope = { projectId: string } | { unfiled: true; status: "open" };
+export type TaskScope =
+	| { projectId: string }
+	| { unfiled: true; status: "open" }
+	/** Every task tagged with a project — the /projects board's rows. */
+	| { anyProject: true };
 
 /**
  * `params` is what a view keeps from its seed besides its rows (a list's
@@ -156,13 +160,16 @@ export type ViewSeed = {
 /**
  * Entity issues extend this union. The `tasks.*` counts are Today's counters
  * (#26): open and overdue leave out quiet tasks, inbox is unfiled open tasks.
+ * `project.done:<id>` is one per project, seeded by /projects.
  */
 export type AggregateKey =
 	| "notes.needsReview"
 	| "notifications.unread"
 	| "tasks.open"
 	| "tasks.overdue"
-	| "tasks.inbox";
+	| "tasks.inbox"
+	/** Done tasks in one project — the /projects row's `n/m done` (#30). */
+	| `project.done:${string}`;
 export type Deltas = Partial<Record<AggregateKey, number>>;
 
 export type Snapshot = Clock & {
