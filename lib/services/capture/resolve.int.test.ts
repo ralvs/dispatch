@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fetchRoutingLists, loadCaptureContext } from "@/lib/services/capture/resolve";
-import { listDomains } from "@/lib/services/domains";
+import { archiveDomain, createDomain, listDomains } from "@/lib/services/domains";
 import { createProject, updateProject } from "@/lib/services/projects";
 import { serviceClient, unreachableClient } from "@/test/integration/clients";
 
@@ -28,13 +28,26 @@ describe("loadCaptureContext", () => {
 	it("loads the app timezone and pairs each project with its domain's name", async () => {
 		const sb = serviceClient();
 		const [home] = await listDomains(sb);
-		await createProject(sb, { name: "Apartment move", domain_id: home.id });
+		const move = await createProject(sb, { name: "Apartment move", domain_id: home.id });
+		// A project whose domain is archived is still active, but has no
+		// domain in the list to pair with.
+		const gone = await createDomain(sb, { name: "Archived area" });
+		const orphan = await createProject(sb, { name: "Orphan", domain_id: gone.id });
+		await archiveDomain(sb, gone.id);
 
 		const result = await loadCaptureContext(sb);
 
 		expect(result.tz).toBe("America/Sao_Paulo");
 		expect(result.ctx.tz).toBe("America/Sao_Paulo");
 		expect(result.ctx.domains).toContain(home.name);
-		expect(result.ctx.projects).toEqual([{ name: "Apartment move", domain: home.name }]);
+		expect(result.ctx.projects).toEqual([
+			{ name: "Apartment move", domain: home.name },
+			{ name: "Orphan" },
+		]);
+		expect(result.routing.projects).toEqual([
+			{ id: move.id, name: "Apartment move", domain_id: home.id },
+			{ id: orphan.id, name: "Orphan", domain_id: gone.id },
+		]);
+		expect(result.routing.domains.map((d) => d.id)).not.toContain(gone.id);
 	});
 });

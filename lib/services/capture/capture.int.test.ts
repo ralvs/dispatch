@@ -41,9 +41,15 @@ describe("capture", () => {
 	it("executes parsed actions, routes them, and marks the capture parsed", async () => {
 		const sb = serviceClient();
 		const [domain] = await listDomains(sb);
-		(parse as Mock).mockResolvedValue({
-			ok: true,
-			actions: [{ action: "create_task", title: "ligar pro médico", domain: domain.name }],
+		// Persist first: the raw row is already durable when the parser runs.
+		let rawAtParse: unknown[] = [];
+		(parse as Mock).mockImplementation(async () => {
+			const { data } = await sb.from("captured_data").select("processed_status");
+			rawAtParse = data ?? [];
+			return {
+				ok: true,
+				actions: [{ action: "create_task", title: "ligar pro médico", domain: domain.name }],
+			};
 		});
 
 		const record = await capture(sb, RAW);
@@ -60,6 +66,7 @@ describe("capture", () => {
 			.eq("id", results[0].ok ? results[0].entity.id : "")
 			.single();
 		expect(task).toEqual({ title: "ligar pro médico", domain_id: domain.id });
+		expect(rawAtParse).toEqual([{ processed_status: "raw" }]);
 		expect(await capturedStatus(record.capturedId)).toBe("parsed");
 		// The parser saw the app's routing lists.
 		expect((parse as Mock).mock.calls[0][1].domains).toContain(domain.name);
