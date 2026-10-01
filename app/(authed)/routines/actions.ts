@@ -81,7 +81,7 @@ export async function toggleCompletionAction(
 	if (requested > todayIso || requested < shiftDay(todayIso, -(BACKFILL_DAYS - 1))) {
 		throw new Error("Completion date is outside the 30-day window.");
 	}
-	await setCompletion(sb, id, requested, !currentlyDone);
+	await setCompletion(sb, id, requested, !z.boolean().parse(currentlyDone));
 	revalidateRoutineViews();
 	return { ok: true, data: await writtenRoutine(sb, id, todayIso) };
 }
@@ -111,7 +111,7 @@ export async function archiveRoutineAction(
 ): Promise<ActionResult<RoutineWrite>> {
 	const { sb } = await requireOwnerPage();
 	const routineId = z.uuid().parse(id);
-	await archiveRoutine(sb, routineId, archived);
+	await archiveRoutine(sb, routineId, z.boolean().parse(archived));
 	revalidateRoutineViews();
 	return { ok: true, data: await writtenRoutine(sb, routineId) };
 }
