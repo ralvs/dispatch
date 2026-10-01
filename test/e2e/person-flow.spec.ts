@@ -52,4 +52,11 @@ test("add a person, open them, delete them: back on /people, never on not-found"
 	expect(
 		await page.evaluate(() => (window as unknown as { sawNotFound: boolean }).sawNotFound),
 	).toBe(false);
+
+	// Back says the person is gone — the server's not-found when the page is
+	// read again, or the kept page's own empty state when it is revealed —
+	// never a held card.
+	await page.goBack();
+	await expect(page.getByText(/This person is gone\.|Nothing here/)).toBeVisible();
+	await expect(page.getByRole("button", { name: `Delete ${name}` })).toHaveCount(0);
 });
