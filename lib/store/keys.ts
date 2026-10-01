@@ -10,4 +10,7 @@ export const viewKey = {
 	notes: () => "notes" as ViewKey<"noteLists">,
 	/** One list for Today's card and /routines: the same rows, the same order. */
 	routines: () => "routines" as ViewKey<"routineList">,
+	quotes: () => "quotes" as ViewKey<"quoteList">,
+	journal: () => "journal" as ViewKey<"journalList">,
+	links: () => "links" as ViewKey<"linkList">,
 };

@@ -57,7 +57,9 @@ export function CreateTrigger({
  * A rejected field keeps the dialog open with its message under the field and
  * the typing still in place (#23); focus moves to the first rejected field.
  * An unexpected failure is a toast. Success is silent, because the new row
- * appearing in the list is the confirmation.
+ * appearing in the list is the confirmation: a call site wraps `action` in
+ * the entity store's `useStoreWrite`, so the row shows while the server writes
+ * it and the action's `data` confirms it (#30). No page render brings it.
  */
 export function CreateDialogButton({
 	label,

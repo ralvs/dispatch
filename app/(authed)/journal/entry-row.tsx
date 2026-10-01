@@ -1,30 +1,24 @@
 "use client";
 
-import { useTransition } from "react";
 import { Button, ListRow, rowTitle } from "@/components/ui";
-import { runAction } from "@/lib/client/toast";
 import type { JournalEntryRow } from "@/lib/services/journal";
+import { useRunIntent } from "@/lib/store";
 import { deleteEntryAction } from "./actions";
 
 export function EntryRowItem({ entry }: { entry: JournalEntryRow }) {
-	const [pending, startTransition] = useTransition();
+	// The entry leaves the list at once; a failure puts it back (#30).
+	const run = useRunIntent("journal", { errorMessage: "Couldn't delete entry." });
 
 	return (
 		<ListRow
 			align="start"
-			className={pending ? "opacity-50" : ""}
 			trailing={
 				<Button
 					type="button"
 					variant="danger"
 					size="sm"
 					aria-label={`Delete journal entry from ${entry.entry_date}`}
-					disabled={pending}
-					onClick={() =>
-						startTransition(async () => {
-							await runAction(async () => deleteEntryAction(entry.id), "Couldn't delete entry.");
-						})
-					}
+					onClick={() => run({ type: "delete", id: entry.id }, () => deleteEntryAction(entry.id))}
 				>
 					Delete
 				</Button>

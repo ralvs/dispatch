@@ -18,7 +18,8 @@
 // Per-kind notes for the issues that add kinds (#27–#30):
 //   - Tables with `updated_at`: the store ignores it; same rule.
 //   - `quotes`, `journal_entries`, `person_facts`: edits are desired-state
-//     patches; same rule.
+//     patches; same rule. The create-only lists share one factory
+//     (kinds/record.ts).
 //   - `notifications`: status is desired state; new cron rows arrive only via
 //     seeds. A dismissal is a delete (kinds/notification.ts).
 //   - `routine_completions`: identity is the natural key
@@ -33,12 +34,16 @@
 // the next seed heals it.
 
 import type { DaySchedulePayload } from "@/lib/day-schedule";
+import type { JournalEntryRow } from "@/lib/schemas/journal";
+import type { LinkRow } from "@/lib/schemas/link";
 import type { NoteListRow } from "@/lib/schemas/note";
 import type { NotificationRow } from "@/lib/schemas/notification";
+import type { QuoteRow } from "@/lib/schemas/quote";
 import type { RoutineWithHistory } from "@/lib/schemas/routine";
 import type { TaskRow } from "@/lib/schemas/task";
 import type { NoteIntent, NoteLists } from "@/lib/store/kinds/note";
 import type { NotificationIntent } from "@/lib/store/kinds/notification";
+import type { RecordIntent, RecordSeed } from "@/lib/store/kinds/record";
 import type { RoutineIntent } from "@/lib/store/kinds/routine";
 import type { TaskIntent, TaskLists } from "@/lib/task-interaction/apply-intent";
 
@@ -53,6 +58,9 @@ export type EntityMap = {
 	notification: NotificationRow;
 	routine: RoutineWithHistory;
 	note: NoteListRow;
+	quote: QuoteRow;
+	journal: JournalEntryRow;
+	link: LinkRow;
 };
 export type Kind = keyof EntityMap;
 export type IntentMap = {
@@ -60,6 +68,9 @@ export type IntentMap = {
 	notification: NotificationIntent;
 	routine: RoutineIntent;
 	note: NoteIntent;
+	quote: RecordIntent<QuoteRow>;
+	journal: RecordIntent<JournalEntryRow>;
+	link: RecordIntent<LinkRow>;
 };
 export type AnyIntent = { [K in Kind]: { kind: K; intent: IntentMap[K] } }[Kind];
 
@@ -97,6 +108,19 @@ export type ViewTypes = {
 		out: RoutineWithHistory[];
 		params: undefined;
 	};
+	/** /quotes, newest first. */
+	quoteList: RecordView<"quote">;
+	/** /journal, by day, newest first. */
+	journalList: RecordView<"journal">;
+	/** /links: unread and read, newest first. Dismissed rows never show. */
+	linkList: RecordView<"link">;
+};
+/** A list built by kinds/record.ts. */
+type RecordView<K extends Kind, S = undefined> = {
+	kind: K;
+	data: RecordSeed<EntityMap[K], S>;
+	out: EntityMap[K][];
+	params: S | undefined;
 };
 export type ViewType = keyof ViewTypes;
 export type ViewKey<T extends ViewType = ViewType> = string & { readonly __view: T };

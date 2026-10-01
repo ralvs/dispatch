@@ -39,7 +39,11 @@ describe("createQuoteAction against the local database", () => {
 			form({ text: "We suffer more in imagination", source_author: "Seneca", tags: "stoic" }),
 		);
 
-		expect(result).toEqual({ ok: true, data: undefined });
+		// The written row comes back for the entity store to confirm (#30).
+		expect(result).toMatchObject({
+			ok: true,
+			data: { rows: [{ text: "We suffer more in imagination", tags: ["stoic"] }] },
+		});
 		expect(await quoteCount()).toBe(1);
 	});
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createLink, listLinks, updateLinkMetadata } from "@/lib/services/links";
-import { serviceClient } from "@/test/integration/clients";
+import { createLink, listLinks, setLinkStatus, updateLinkMetadata } from "@/lib/services/links";
+import { ownerClient, serviceClient } from "@/test/integration/clients";
 
 // The capture route's two writes, against the real table: a bare row first,
 // then the metadata patch (iron rule #4, docs/adr/0066).
@@ -26,5 +26,21 @@ describe("links against the local database", () => {
 			title: "TablePlus (@TablePlus)",
 			image_url: "https://pbs.twimg.com/media/HS4QmjdaMAABWRs.jpg?name=orig",
 		});
+	});
+
+	it("sets a status and returns the row, which the entity store confirms from (#30)", async () => {
+		const saved = await createLink(serviceClient(), {
+			url: "https://example.com/a",
+			source: "webhook",
+		});
+		const sb = await ownerClient();
+
+		expect(await setLinkStatus(sb, saved.id, "read")).toMatchObject({
+			id: saved.id,
+			status: "read",
+		});
+		// Every status is reachable from every other.
+		expect(await setLinkStatus(sb, saved.id, "unread")).toMatchObject({ status: "unread" });
+		expect(await setLinkStatus(sb, crypto.randomUUID(), "read")).toBeNull();
 	});
 });

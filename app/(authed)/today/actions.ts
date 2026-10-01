@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { ActionResult } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { parseDateIso, todayInTz } from "@/lib/dates";
@@ -12,7 +13,7 @@ import { createManualLink } from "@/lib/services/note-links";
 import { createNote } from "@/lib/services/notes";
 import { clearSkipsToday, recordQuoteSkip } from "@/lib/services/resurfacing";
 import { todayForRequest } from "@/lib/services/settings";
-import { loadDaySchedulePayload } from "@/lib/services/today";
+import { loadDaySchedulePayload, loadResurfaced, type ResurfacedState } from "@/lib/services/today";
 import { viewKey } from "@/lib/store/keys";
 import { stampRead } from "@/lib/store/server";
 import type { Snapshot } from "@/lib/store/types";
@@ -49,18 +50,27 @@ export async function loadDayScheduleAction(rawDate: string): Promise<Snapshot> 
 	};
 }
 
-/** "Next →" on the Resurfaced card: skip today's pick, advance the rotation. */
-export async function skipResurfacedQuoteAction(quoteId: string) {
+/**
+ * "Next →" on the Resurfaced card: skip today's pick, advance the rotation.
+ * Answers with the card's new state (#30).
+ */
+export async function skipResurfacedQuoteAction(
+	quoteId: string,
+): Promise<ActionResult<ResurfacedState>> {
 	const { sb } = await requireOwnerPage();
-	await recordQuoteSkip(sb, z.uuid().parse(quoteId), await todayForRequest(sb));
+	const todayIso = await todayForRequest(sb);
+	await recordQuoteSkip(sb, z.uuid().parse(quoteId), todayIso);
 	afterMutation("today.only");
+	return { ok: true, data: await loadResurfaced(sb, todayIso) };
 }
 
-/** "Reset" on the Resurfaced card: forget today's skips. */
-export async function resetResurfacedAction() {
+/** "Reset" on the Resurfaced card: forget today's skips. Answers with the card's new state. */
+export async function resetResurfacedAction(): Promise<ActionResult<ResurfacedState>> {
 	const { sb } = await requireOwnerPage();
-	await clearSkipsToday(sb, await todayForRequest(sb));
+	const todayIso = await todayForRequest(sb);
+	await clearSkipsToday(sb, todayIso);
 	afterMutation("today.only");
+	return { ok: true, data: await loadResurfaced(sb, todayIso) };
 }
 
 /** Quiet "note" glyph on an unlinked event row: creates a meeting note pre-titled

@@ -3,8 +3,11 @@
 // returns the SAME reference when it changes nothing. The conflict rule is in
 // ./types.ts.
 
+import { journalKind, journalListView } from "@/lib/store/kinds/journal";
+import { linkKind, linkListView } from "@/lib/store/kinds/link";
 import { noteKind, noteListsView } from "@/lib/store/kinds/note";
 import { notificationKind, notificationListView } from "@/lib/store/kinds/notification";
+import { quoteKind, quoteListView } from "@/lib/store/kinds/quote";
 import { routineKind, routineListView } from "@/lib/store/kinds/routine";
 import { dayView, taskKind, taskListsView, taskListView } from "@/lib/store/kinds/task";
 import type {
@@ -33,7 +36,15 @@ import type {
 export const CONFIRMED_CAP = 500;
 
 export const defaultAdapters: Adapters = {
-	kinds: { task: taskKind, notification: notificationKind, routine: routineKind, note: noteKind },
+	kinds: {
+		task: taskKind,
+		notification: notificationKind,
+		routine: routineKind,
+		note: noteKind,
+		quote: quoteKind,
+		journal: journalKind,
+		link: linkKind,
+	},
 	views: {
 		taskLists: taskListsView,
 		taskList: taskListView,
@@ -41,6 +52,9 @@ export const defaultAdapters: Adapters = {
 		notificationList: notificationListView,
 		routineList: routineListView,
 		noteLists: noteListsView,
+		quoteList: quoteListView,
+		journalList: journalListView,
+		linkList: linkListView,
 	},
 };
 
@@ -78,7 +92,7 @@ function later(a: Instant, b: Instant): boolean {
 export function initialState(): StoreState {
 	return {
 		clock: null,
-		rows: { task: {}, notification: {}, routine: {}, note: {} },
+		rows: { task: {}, notification: {}, routine: {}, note: {}, quote: {}, journal: {}, link: {} },
 		views: {},
 		aggregates: {},
 		pending: [],
