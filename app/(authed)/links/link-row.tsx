@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { setLinkStatusAction } from "@/app/(authed)/links/actions";
 import { ListRow, rowTitle } from "@/components/ui";
-import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import type { LinkRow } from "@/lib/services/links";
+import { useRunIntent } from "@/lib/store";
 
 /** "x.com", not the whole href — the raw URL is noise once the row has words. */
 function hostOf(url: string): string {
@@ -43,17 +43,18 @@ function Thumbnail({ src }: { src: string }) {
 }
 
 export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
-	const [pending, startTransition] = useTransition();
 	const unread = link.status === "unread";
+	// The row moves at once — between Unread and Read, or out of the list on a
+	// dismissal — and a failure moves it back (#30).
+	const run = useRunIntent("link", { errorMessage: "Couldn't update link." });
 	const mark = (status: "unread" | "read" | "dismissed") =>
-		startTransition(async () => {
-			await runAction(async () => setLinkStatusAction(link.id, status), "Couldn't update link.");
-		});
+		run({ type: "patch", id: link.id, patch: { status } }, () =>
+			setLinkStatusAction(link.id, status),
+		);
 
 	return (
 		<ListRow
 			align="start"
-			className={pending ? "opacity-50" : ""}
 			trailing={
 				<div className="flex shrink-0 flex-col items-end gap-2">
 					<p className="font-mono text-meta text-ink-4">{formatInstant(link.created_at, tz)}</p>
@@ -93,19 +94,13 @@ export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
 			<div className="mt-2 flex items-baseline gap-3">
 				<button
 					type="button"
-					disabled={pending}
 					onClick={() => mark(unread ? "read" : "unread")}
 					className={actionClass}
 				>
 					{unread ? "Mark read" : "Mark unread"}
 				</button>
 				{link.status !== "dismissed" && (
-					<button
-						type="button"
-						disabled={pending}
-						onClick={() => mark("dismissed")}
-						className={actionClass}
-					>
+					<button type="button" onClick={() => mark("dismissed")} className={actionClass}>
 						Dismiss
 					</button>
 				)}

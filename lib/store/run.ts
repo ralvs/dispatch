@@ -4,7 +4,9 @@ import { unstable_rethrow } from "next/navigation";
 import { useCallback } from "react";
 import type { ActionResult } from "@/lib/action-result";
 import { toastError } from "@/lib/client/toast";
+import { targetsProvisional } from "@/lib/store/core";
 import { useStoreActions } from "@/lib/store/hooks";
+import { useDispatchStore } from "@/lib/store/provider";
 import type { AnyIntent, EntityMap, IntentMap, Kind, StoreWrite } from "@/lib/store/types";
 
 const DEFAULT_ERROR = "Something went wrong. Try again.";
@@ -29,7 +31,9 @@ export type IntentLockLike<I> = { claim(intent: I): boolean; release(intent: I):
 /**
  * Claim → apply → action → confirm or rollback → release.
  *
- * Returns false when the lock refuses the claim (nothing was applied). No
+ * Returns false when the lock refuses the claim, or when the intent acts on a
+ * row whose create the server has not confirmed yet (`targetsProvisional`):
+ * nothing was applied, and the click is swallowed until the row is real. No
  * useTransition: the optimistic state lives in the store, not in React.
  */
 export function useRunIntent<K extends Kind>(
@@ -40,10 +44,12 @@ export function useRunIntent<K extends Kind>(
 	action: () => Promise<ActionResult<StoreWrite<EntityMap[K]>>>,
 ) => boolean {
 	const { apply, confirm, rollback } = useStoreActions();
+	const api = useDispatchStore();
 	const { lock, errorMessage = DEFAULT_ERROR } = opts;
 
 	return useCallback(
 		(intent, action) => {
+			if (targetsProvisional(api.getState(), { kind, intent } as AnyIntent)) return false;
 			if (lock && !lock.claim(intent)) return false;
 			let token: number;
 			try {
@@ -73,7 +79,7 @@ export function useRunIntent<K extends Kind>(
 			})();
 			return true;
 		},
-		[kind, lock, errorMessage, apply, confirm, rollback],
+		[kind, lock, errorMessage, api, apply, confirm, rollback],
 	);
 }
 

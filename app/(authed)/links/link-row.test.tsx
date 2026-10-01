@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { LinkRow } from "@/lib/services/links";
+import { StoreProvider } from "@/lib/store/provider";
 import { LinkRowItem } from "./link-row";
 
 vi.mock("@/app/(authed)/links/actions", () => ({ setLinkStatusAction: vi.fn() }));
@@ -22,9 +23,11 @@ const link = (over: Partial<LinkRow> = {}): LinkRow => ({
 
 function renderRow(row: LinkRow) {
 	const { container } = render(
-		<ul>
-			<LinkRowItem link={row} tz="America/Sao_Paulo" />
-		</ul>,
+		<StoreProvider>
+			<ul>
+				<LinkRowItem link={row} tz="America/Sao_Paulo" />
+			</ul>
+		</StoreProvider>,
 	);
 	return container;
 }

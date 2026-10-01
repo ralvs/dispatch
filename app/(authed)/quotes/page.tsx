@@ -1,36 +1,32 @@
 import { Suspense } from "react";
 import { CreateTrigger } from "@/components/create-dialog";
-import { EmptyState, MoreBackLink, PageHeader, PageSkeleton } from "@/components/ui";
+import { MoreBackLink, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedQuotes } from "@/lib/cache/quotes";
-import { QuoteCreateButton } from "./quote-form";
-import { QuoteRowItem } from "./quote-row";
+import { getCachedAppTimezone } from "@/lib/cache/settings";
+import { todayInTz } from "@/lib/dates";
+import { viewKey } from "@/lib/store/keys";
+import { Seed } from "@/lib/store/seed";
+import type { Snapshot } from "@/lib/store/types";
+import { QuoteList } from "./quote-list";
 
 async function QuotesBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
-	const quotes = await getCachedQuotes();
+	const [{ readAt, quotes }, tz] = await Promise.all([getCachedQuotes(), getCachedAppTimezone()]);
+	// The header and the list read the entity store (#30).
+	const snapshot: Snapshot = {
+		readAt,
+		todayIso: todayInTz(tz),
+		tz,
+		views: [{ key: viewKey.quotes(), type: "quoteList", data: { rows: quotes } }],
+	};
 
 	return (
-		<div>
-			<PageHeader
-				title="Quotes"
-				measure={[{ count: quotes.length, label: "saved" }]}
-				action={<QuoteCreateButton />}
-			/>
-
-			{quotes.length === 0 ? (
-				<EmptyState>Nothing saved yet. Capture something you read or heard.</EmptyState>
-			) : (
-				// Single ungrouped list — header measure is the count.
-				<ul>
-					{quotes.map((q) => (
-						<QuoteRowItem key={q.id} quote={q} />
-					))}
-				</ul>
-			)}
-		</div>
+		<Seed snapshot={snapshot}>
+			<QuoteList />
+		</Seed>
 	);
 }
 
@@ -40,7 +36,7 @@ function QuotesFallback() {
 
 // The header carries data (its measure), so the whole body streams in behind
 // the page's own boundary and the old loading.tsx is its fallback (#21). The
-// async child is where the entity store gets seeded (#26-#30).
+// async child seeds the entity store (#30).
 export default function QuotesPage() {
 	return (
 		<div>

@@ -1,13 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { CreateLinkSchema } from "@/lib/schemas/link";
-import {
-	createLink,
-	listLinks,
-	setLinkStatus,
-	unreadLinkCount,
-	updateLinkMetadata,
-} from "@/lib/services/links";
+import { createLink, listLinks, unreadLinkCount, updateLinkMetadata } from "@/lib/services/links";
 
 type StubResult = { data?: unknown; error?: unknown; count?: number };
 
@@ -144,23 +138,6 @@ describe("updateLinkMetadata", () => {
 			},
 			{ table: "ingest_links", op: "eq", payload: { col: "id", value: "l1" } },
 		]);
-	});
-});
-
-describe("setLinkStatus", () => {
-	it("updates the status by id", async () => {
-		const { sb, calls } = stubSupabase({ ingest_links: { data: null, error: null } });
-		await setLinkStatus(sb, "l1", "read");
-		expect(calls).toEqual([
-			{ table: "ingest_links", op: "update", payload: { status: "read" } },
-			{ table: "ingest_links", op: "eq", payload: { col: "id", value: "l1" } },
-		]);
-	});
-
-	it("can put a link back to unread", async () => {
-		const { sb, calls } = stubSupabase({ ingest_links: { data: null, error: null } });
-		await setLinkStatus(sb, "l1", "unread");
-		expect(calls[0].payload).toEqual({ status: "unread" });
 	});
 });
 

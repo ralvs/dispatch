@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Card } from "@/components/ui";
+import type { ActionResult } from "@/lib/action-result";
 import { runAction } from "@/lib/client/toast";
 import type { QuoteRow } from "@/lib/services/quotes";
 import { resetResurfacedAction, skipResurfacedQuoteAction } from "./actions";
+
+type Shown = { quote: QuoteRow | null; skips: number; hasQuotes: boolean };
 
 /**
  * The daily rotating pull-quote, at the foot of the left column. "Next →" skips
@@ -15,17 +18,43 @@ import { resetResurfacedAction, skipResurfacedQuoteAction } from "./actions";
  * It is the one italic on the page and the only card that is not a list — it is
  * the day's punctuation, not part of the work, which is why it sits last rather
  * than competing with the timeline for the top of the column.
+ *
+ * "Next →" and "Reset" answer with the card's new state, which the card shows
+ * at once (#30). A later server render of Today replaces it.
  */
-export function ResurfacedQuote({
-	quote,
-	skips,
-	hasQuotes,
-}: {
-	quote: QuoteRow | null;
-	skips: number;
-	hasQuotes: boolean;
-}) {
+export function ResurfacedQuote(props: Shown) {
 	const [pending, startTransition] = useTransition();
+	const [fromServer, setFromServer] = useState(props);
+	const [shown, setShown] = useState(props);
+	// A new server render wins over the last action's answer: adjusted during
+	// render, so the stale card never paints. The quote is compared by
+	// reference — a new payload is a new object even for the same id.
+	if (
+		fromServer.quote !== props.quote ||
+		fromServer.skips !== props.skips ||
+		fromServer.hasQuotes !== props.hasQuotes
+	) {
+		setFromServer(props);
+		setShown(props);
+	}
+	const { quote, skips, hasQuotes } = shown;
+	// The server render the card last adopted, so an answer to a click made
+	// before a newer render is dropped rather than painted over it.
+	const latest = useRef(fromServer);
+	useEffect(() => {
+		latest.current = fromServer;
+	}, [fromServer]);
+
+	function act(action: () => Promise<ActionResult<Shown>>, message: string) {
+		const started = fromServer;
+		startTransition(async () => {
+			await runAction(async () => {
+				const result = await action();
+				if (!result.ok) throw new Error(result.formError ?? message);
+				if (latest.current === started) setShown(result.data);
+			}, message);
+		});
+	}
 
 	if (!hasQuotes) return null;
 
@@ -59,12 +88,7 @@ export function ResurfacedQuote({
 								type="button"
 								disabled={pending}
 								onClick={() =>
-									startTransition(async () => {
-										await runAction(
-											() => skipResurfacedQuoteAction(quote.id),
-											"Couldn't skip quote.",
-										);
-									})
+									act(() => skipResurfacedQuoteAction(quote.id), "Couldn't skip quote.")
 								}
 								className="text-ink-3 hover:text-ink-2 active:opacity-70 disabled:opacity-50"
 							>
@@ -76,11 +100,7 @@ export function ResurfacedQuote({
 						<button
 							type="button"
 							disabled={pending}
-							onClick={() =>
-								startTransition(async () => {
-									await runAction(() => resetResurfacedAction(), "Couldn't reset skips.");
-								})
-							}
+							onClick={() => act(() => resetResurfacedAction(), "Couldn't reset skips.")}
 							className="text-ink-4 hover:text-ink-2 active:opacity-70 disabled:opacity-50"
 						>
 							Reset

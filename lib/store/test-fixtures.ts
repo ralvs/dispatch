@@ -1,7 +1,10 @@
 // Shared fixtures for the store's tests. Not imported by app code.
 import type { DaySchedulePayload } from "@/lib/day-schedule";
+import type { JournalEntryRow } from "@/lib/schemas/journal";
+import type { LinkRow } from "@/lib/schemas/link";
 import type { NoteListRow } from "@/lib/schemas/note";
 import type { NotificationRow } from "@/lib/schemas/notification";
+import type { QuoteRow } from "@/lib/schemas/quote";
 import type { RoutineWithHistory } from "@/lib/schemas/routine";
 import type { TaskRow } from "@/lib/schemas/task";
 import type { Snapshot, ViewSeed } from "@/lib/store/types";
@@ -122,4 +125,53 @@ export function deepFreeze<T>(value: T): T {
 		for (const v of Object.values(value)) deepFreeze(v);
 	}
 	return value;
+}
+
+export function quote(partial: Partial<QuoteRow> & Pick<QuoteRow, "id">): QuoteRow {
+	return {
+		text: partial.id,
+		page_number: null,
+		chapter: null,
+		source_type: null,
+		source_reference: null,
+		source_url: null,
+		source_author: null,
+		tags: [],
+		added_via: "manual",
+		last_surfaced_at: null,
+		created_at: "2026-07-10T12:00:00+00:00",
+		...partial,
+	};
+}
+
+export function journalEntry(
+	partial: Partial<JournalEntryRow> & Pick<JournalEntryRow, "id">,
+): JournalEntryRow {
+	return {
+		book_id: null,
+		entry_date: "2026-07-14",
+		image_path: null,
+		transcription_text: partial.id,
+		source: "typed",
+		tags: [],
+		extracted_facts: {},
+		attachments: [],
+		resurface_weight: 1,
+		created_at: "2026-07-14T12:00:00+00:00",
+		...partial,
+	};
+}
+
+export function link(partial: Partial<LinkRow> & Pick<LinkRow, "id">): LinkRow {
+	return {
+		url: `https://example.com/${partial.id}`,
+		title: partial.id,
+		description: null,
+		image_url: null,
+		status: "unread",
+		source: "webhook",
+		created_at: "2026-07-10T12:00:00+00:00",
+		updated_at: "2026-07-10T12:00:00+00:00",
+		...partial,
+	};
 }

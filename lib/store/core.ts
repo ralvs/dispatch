@@ -3,8 +3,11 @@
 // returns the SAME reference when it changes nothing. The conflict rule is in
 // ./types.ts.
 
+import { journalKind, journalListView } from "@/lib/store/kinds/journal";
+import { linkKind, linkListView } from "@/lib/store/kinds/link";
 import { noteKind, noteListsView } from "@/lib/store/kinds/note";
 import { notificationKind, notificationListView } from "@/lib/store/kinds/notification";
+import { quoteKind, quoteListView } from "@/lib/store/kinds/quote";
 import { routineKind, routineListView } from "@/lib/store/kinds/routine";
 import { dayView, taskKind, taskListsView, taskListView } from "@/lib/store/kinds/task";
 import type {
@@ -33,7 +36,15 @@ import type {
 export const CONFIRMED_CAP = 500;
 
 export const defaultAdapters: Adapters = {
-	kinds: { task: taskKind, notification: notificationKind, routine: routineKind, note: noteKind },
+	kinds: {
+		task: taskKind,
+		notification: notificationKind,
+		routine: routineKind,
+		note: noteKind,
+		quote: quoteKind,
+		journal: journalKind,
+		link: linkKind,
+	},
 	views: {
 		taskLists: taskListsView,
 		taskList: taskListView,
@@ -41,6 +52,9 @@ export const defaultAdapters: Adapters = {
 		notificationList: notificationListView,
 		routineList: routineListView,
 		noteLists: noteListsView,
+		quoteList: quoteListView,
+		journalList: journalListView,
+		linkList: linkListView,
 	},
 };
 
@@ -78,7 +92,7 @@ function later(a: Instant, b: Instant): boolean {
 export function initialState(): StoreState {
 	return {
 		clock: null,
-		rows: { task: {}, notification: {}, routine: {}, note: {} },
+		rows: { task: {}, notification: {}, routine: {}, note: {}, quote: {}, journal: {}, link: {} },
 		views: {},
 		aggregates: {},
 		pending: [],
@@ -253,6 +267,18 @@ export function makeCore(adapters: Adapters) {
 		return out as ViewTypes[T]["out"];
 	}
 
+	/**
+	 * True when the intent acts on a row an unconfirmed create introduced. Its
+	 * id is the client's, not the server's, so the action would miss the row
+	 * the server is writing — and the create's confirm would bring it back.
+	 */
+	function targetsProvisional(s: StoreState, i: AnyIntent): boolean {
+		const kind = kindOf(i.kind);
+		const id = kind.targetId(i.intent);
+		if (id === undefined || kind.provisionalIds(i.intent).includes(id)) return false;
+		return s.pending.some((p) => p.kind === i.kind && kind.provisionalIds(p.intent).includes(id));
+	}
+
 	/** Base plus pending deltas, clamped at zero. Undefined until seeded. */
 	function selectAggregate(s: StoreState, key: AggregateKey): number | undefined {
 		const base = s.aggregates[key];
@@ -269,11 +295,19 @@ export function makeCore(adapters: Adapters) {
 		rollbackWrite,
 		selectView,
 		selectAggregate,
+		targetsProvisional,
 	};
 }
 
 export type Core = ReturnType<typeof makeCore>;
 
 export const core = makeCore(defaultAdapters);
-export const { applySeed, applyIntent, confirmWrite, rollbackWrite, selectView, selectAggregate } =
-	core;
+export const {
+	applySeed,
+	applyIntent,
+	confirmWrite,
+	rollbackWrite,
+	selectView,
+	selectAggregate,
+	targetsProvisional,
+} = core;

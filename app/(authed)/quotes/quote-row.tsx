@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Button, ListRow, Textarea } from "@/components/ui";
 import { runAction } from "@/lib/client/toast";
 import type { QuoteAnnotationRow, QuoteRow } from "@/lib/services/quotes";
+import { useRunIntent } from "@/lib/store";
 import { createAnnotationAction, deleteQuoteAction, listAnnotationsAction } from "./actions";
 
 export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
@@ -11,6 +12,8 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 	const [expanded, setExpanded] = useState(false);
 	const [annotations, setAnnotations] = useState<QuoteAnnotationRow[] | null>(null);
 	const [annotationBody, setAnnotationBody] = useState("");
+	// The row leaves the list at once; a failure puts it back (#30).
+	const run = useRunIntent("quote", { errorMessage: "Couldn't delete quote." });
 
 	function toggleExpand() {
 		if (!expanded && annotations === null) {
@@ -65,12 +68,7 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 					variant="danger"
 					size="sm"
 					aria-label={`Delete quote "${quote.text.slice(0, 20)}"`}
-					disabled={pending}
-					onClick={() =>
-						startTransition(async () => {
-							await runAction(() => deleteQuoteAction(quote.id), "Couldn't delete quote.");
-						})
-					}
+					onClick={() => run({ type: "delete", id: quote.id }, () => deleteQuoteAction(quote.id))}
 				>
 					Delete
 				</Button>

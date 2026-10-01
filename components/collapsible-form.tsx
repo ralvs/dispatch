@@ -4,7 +4,9 @@
 // the journal still uses it — the object lists moved to the header `+` dialog
 // (components/create-dialog.tsx, ADR-0044) — but the contract is the same:
 // submit, then reset and collapse on success; on a rejected field, stay open
-// with the message under the field and the typing still in place (#23).
+// with the message under the field and the typing still in place (#23). The
+// caller wraps `action` in the entity store's `useStoreWrite`, so the new row
+// is in the list before the server answers (#30).
 
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import {

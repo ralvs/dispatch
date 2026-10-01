@@ -75,14 +75,17 @@ export async function updateLinkMetadata(
 
 /**
  * Set a link's read state. Every status is reachable from every other, so a
- * mis-tapped "read" can go straight back to unread.
+ * mis-tapped "read" can go straight back to unread. Null: no such link.
  */
 export async function setLinkStatus(
 	sb: SupabaseClient,
 	id: string,
 	status: LinkStatus,
-): Promise<void> {
-	unwrap(await sb.from(TABLE).update({ status }).eq("id", id));
+): Promise<LinkRow | null> {
+	const data = unwrap(
+		await sb.from(TABLE).update({ status }).eq("id", id).select(LINK_SELECT).maybeSingle(),
+	);
+	return (data as unknown as LinkRow | null) ?? null;
 }
 
 /** The Today alerts badge. */

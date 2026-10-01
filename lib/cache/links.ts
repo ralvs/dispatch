@@ -2,6 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import type { CachedReader } from "@/lib/cache/manifest";
 import { CacheTag } from "@/lib/cache/tags";
+import { nowUtc } from "@/lib/dates";
 import { listLinks } from "@/lib/services/links";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -18,7 +19,11 @@ export async function getCachedLinks() {
 	cacheTag(CacheTag.links);
 	cacheLife("tagged");
 
-	return listLinks(createAdminClient(), { limit: 200 });
+	// `readAt` is the entity store's version (lib/store/types.ts), stamped
+	// inside the cache so a stale entry keeps its old stamp.
+	const readAt = nowUtc();
+	const links = await listLinks(createAdminClient(), { limit: 200 });
+	return { readAt, links };
 }
 
 export const readers: CachedReader[] = [

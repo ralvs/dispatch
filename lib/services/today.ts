@@ -144,6 +144,26 @@ export function pickResurfaced(
 	return null;
 }
 
+/** What the Resurfaced card shows: today's pick, the skips behind it, and whether there are quotes at all. */
+export type ResurfacedState = { quote: QuoteRow | null; skips: number; hasQuotes: boolean };
+
+/**
+ * The Resurfaced card's state as it stands now — what "Next →" and "Reset"
+ * answer with (#30), so the card moves without a page render. Same pick as
+ * the digest's (`pickResurfaced`).
+ */
+export async function loadResurfaced(
+	sb: SupabaseClient,
+	todayIso: string,
+): Promise<ResurfacedState> {
+	const [quotes, skipped] = await Promise.all([listQuotes(sb), listSkippedToday(sb, todayIso)]);
+	return {
+		quote: pickResurfaced(quotes, todayIso, skipped),
+		skips: skipped.length,
+		hasQuotes: quotes.length > 0,
+	};
+}
+
 /** The one-sentence commitments anchor under the masthead. */
 export function buildAnchor(input: {
 	events: CalendarEventRow[];
