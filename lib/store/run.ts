@@ -15,7 +15,7 @@ const DEFAULT_ERROR = "Something went wrong. Try again.";
  * rolls back but must not toast a failure the user never had. unstable_rethrow
  * is the public test: it rethrows exactly these and nothing else.
  */
-function isNavigationError(error: unknown): boolean {
+export function isNavigationError(error: unknown): boolean {
 	try {
 		unstable_rethrow(error);
 		return false;

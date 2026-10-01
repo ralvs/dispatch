@@ -10,7 +10,7 @@ import {
 	TIME_OF_DAY_ORDER,
 	TimeOfDayBucketSchema,
 } from "@/lib/schemas/routine";
-import { useRunIntent, useStoreWrite } from "@/lib/store";
+import { isNavigationError, useRunIntent, useStoreWrite } from "@/lib/store";
 import { deleteRoutineAction, toggleCompletionAction, updateRoutineAction } from "./actions";
 
 const SAVE_ERROR = "Couldn't save routine.";
@@ -60,8 +60,9 @@ export function RoutineRowItem({
 				);
 				if (result.ok) setEditing(false);
 				else toastError(result.formError ?? SAVE_ERROR);
-			} catch {
-				toastError(SAVE_ERROR);
+			} catch (error) {
+				// A redirect() (an expired session) navigates on its own; it is not a failure.
+				if (!isNavigationError(error)) toastError(SAVE_ERROR);
 			}
 		});
 	}
