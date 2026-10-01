@@ -134,6 +134,9 @@ describe("PersonDetail on the entity store", () => {
 		await user.click(screen.getByRole("button", { name: "Delete Ana" }));
 		await waitFor(() => expect(router.push).toHaveBeenCalledWith("/people"));
 		expect(store.getState().views[viewKey.people()]?.base).toEqual([]);
+		// Held, not blank, until the router has left.
+		expect(screen.getByRole("heading", { name: "Ana", hidden: true })).toBeInTheDocument();
+		expect(screen.queryByText(/This person is gone/)).toBeNull();
 	});
 
 	it("a failed delete keeps the page, and says so", async () => {

@@ -95,12 +95,14 @@ export function PersonDetail({
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
+	// Set from the delete click until this page unmounts, unless it fails.
+	const [leaving, setLeaving] = useState(false);
 	const stored = useView(viewKey.person(personId))?.[0];
-	// The last person the store held: a delete in flight leaves the view at
-	// once, and the page keeps showing (dimmed) until the router leaves.
+	// The last person the store held: a delete leaves the view at once, and the
+	// page keeps showing it — dimmed and inert — until the router has left.
 	const [last, setLast] = useState(stored);
 	if (stored !== undefined && stored !== last) setLast(stored);
-	const person = stored ?? (pending ? last : undefined);
+	const person = stored ?? (leaving ? last : undefined);
 	const facts = useView(viewKey.personFacts(personId)) ?? NO_FACTS;
 	const interactions = useView(viewKey.personInteractions(personId)) ?? NO_INTERACTIONS;
 	const write = useStoreWrite("person");
@@ -131,21 +133,26 @@ export function PersonDetail({
 	}
 
 	function remove() {
+		setLeaving(true);
 		startTransition(async () => {
 			try {
 				const result = await write({ type: "delete", id: personId }, () =>
 					deletePersonAction(personId),
 				);
-				if (result.ok) router.push("/people");
-				else toastError(result.formError ?? "Couldn't delete person.");
+				if (result.ok) {
+					router.push("/people");
+					return;
+				}
+				toastError(result.formError ?? "Couldn't delete person.");
 			} catch (error) {
 				if (!isNavigationError(error)) toastError("Couldn't delete person.");
 			}
+			setLeaving(false);
 		});
 	}
 
 	return (
-		<div className={pending ? "opacity-50" : ""}>
+		<div className={pending || leaving ? "opacity-50" : ""} inert={leaving}>
 			{/* Name is the title; relationship + company are facts (plain),
 			    fact count is the measure (Pass 4.5 Gate A). */}
 			<PageHeader
