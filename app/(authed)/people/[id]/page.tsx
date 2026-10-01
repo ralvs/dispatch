@@ -6,6 +6,10 @@ import { BackLink, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedPerson } from "@/lib/cache/people";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
+import { todayInTz } from "@/lib/dates";
+import { viewKey } from "@/lib/store/keys";
+import { Seed } from "@/lib/store/seed";
+import type { Snapshot } from "@/lib/store/types";
 import { PersonDetail } from "./person-detail";
 
 export async function generateMetadata({
@@ -34,17 +38,36 @@ async function PersonBody({ params }: { params: Promise<{ id: string }> }) {
 	await requireOwnerPage();
 	const [detail, tz] = await Promise.all([getCachedPerson(id), getCachedAppTimezone()]);
 	if (!detail) notFound();
-	const { person, facts, interactions, mentions } = detail;
+	const { readAt, person, facts, interactions, mentions } = detail;
+	// The person, the facts and the interactions read the entity store (#30).
+	const snapshot: Snapshot = {
+		readAt,
+		todayIso: todayInTz(tz),
+		tz,
+		views: [
+			{ key: viewKey.person(id), type: "personList", data: { rows: [person], scope: { id } } },
+			{
+				key: viewKey.personFacts(id),
+				type: "personFactList",
+				data: { rows: facts, scope: { personId: id } },
+			},
+			{
+				key: viewKey.personInteractions(id),
+				type: "personInteractionList",
+				data: { rows: interactions, scope: { personId: id } },
+			},
+		],
+	};
 
 	return (
-		<PersonDetail
-			person={person}
-			facts={facts}
-			interactions={interactions}
-			tz={tz}
-			mentionedTasks={mentions.tasks as { id: string; title: string; status: string }[]}
-			mentionedNotes={mentions.notes as { id: string; title: string | null; body: string }[]}
-		/>
+		<Seed snapshot={snapshot}>
+			<PersonDetail
+				personId={id}
+				tz={tz}
+				mentionedTasks={mentions.tasks as { id: string; title: string; status: string }[]}
+				mentionedNotes={mentions.notes as { id: string; title: string | null; body: string }[]}
+			/>
+		</Seed>
 	);
 }
 

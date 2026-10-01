@@ -16,6 +16,7 @@ import { createDebouncedSave } from "@/lib/debounced-save";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { NoteListRow } from "@/lib/services/notes";
 import { isNavigationError, useStoreWrite } from "@/lib/store";
+import { useMentionPeople } from "@/lib/store/mention-people";
 import {
 	deleteNoteAction,
 	resolveNeedsReviewAction,
@@ -79,10 +80,12 @@ type SaveState = "idle" | "saving" | "saved";
 //
 // Visual: Pass 3 / W2. Title is Title-step (text-t30). Body is `.prose-authored`
 // on the closed ramp inside `.measure-prose`. Autosave layer untouched.
+const NO_PEOPLE: MentionCandidate[] = [];
+
 export function NoteEditor({
 	note,
 	noteTitles,
-	people = [],
+	people = NO_PEOPLE,
 	domains,
 }: {
 	note: NoteListRow;
@@ -97,6 +100,13 @@ export function NoteEditor({
 	// Every write here goes through the entity store (#27), so /notes and
 	// Today's review count show it without a page render.
 	const write = useStoreWrite("note");
+	// The editor is built once; the `@` pool is read through a ref so a person
+	// created in this tab is offered without rebuilding it (#30).
+	const livePeople = useMentionPeople(people);
+	const peopleRef = useRef(livePeople);
+	useEffect(() => {
+		peopleRef.current = livePeople;
+	}, [livePeople]);
 	// Optimistic so the meta line settles before the server answers; filing is
 	// a one-click move and a select that snaps back reads as a failure.
 	const [domainId, setDomainId] = useState(note.domain_id ?? "");
@@ -179,7 +189,7 @@ export function NoteEditor({
 			Wikilink,
 			createWikilinkSuggestionExtension(noteTitles, note.id),
 			Mention,
-			createMentionSuggestionExtension(people),
+			createMentionSuggestionExtension(() => peopleRef.current),
 			Ink,
 			// html: true so the allowlisted <span data-ink> round-trips
 			// (docs/adr/0009 amendment). The schema only accepts that span.

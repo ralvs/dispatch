@@ -38,11 +38,13 @@ import type { JournalEntryRow } from "@/lib/schemas/journal";
 import type { LinkRow } from "@/lib/schemas/link";
 import type { NoteListRow } from "@/lib/schemas/note";
 import type { NotificationRow } from "@/lib/schemas/notification";
+import type { PersonFactRow, PersonInteractionRow, PersonRow } from "@/lib/schemas/person";
 import type { QuoteRow } from "@/lib/schemas/quote";
 import type { RoutineWithHistory } from "@/lib/schemas/routine";
 import type { TaskRow } from "@/lib/schemas/task";
 import type { NoteIntent, NoteLists } from "@/lib/store/kinds/note";
 import type { NotificationIntent } from "@/lib/store/kinds/notification";
+import type { OfPerson, PersonScope } from "@/lib/store/kinds/person";
 import type { RecordIntent, RecordSeed } from "@/lib/store/kinds/record";
 import type { RoutineIntent } from "@/lib/store/kinds/routine";
 import type { TaskIntent, TaskLists } from "@/lib/task-interaction/apply-intent";
@@ -61,6 +63,9 @@ export type EntityMap = {
 	quote: QuoteRow;
 	journal: JournalEntryRow;
 	link: LinkRow;
+	person: PersonRow;
+	personFact: PersonFactRow;
+	personInteraction: PersonInteractionRow;
 };
 export type Kind = keyof EntityMap;
 export type IntentMap = {
@@ -71,6 +76,9 @@ export type IntentMap = {
 	quote: RecordIntent<QuoteRow>;
 	journal: RecordIntent<JournalEntryRow>;
 	link: RecordIntent<LinkRow>;
+	person: RecordIntent<PersonRow>;
+	personFact: RecordIntent<PersonFactRow>;
+	personInteraction: RecordIntent<PersonInteractionRow>;
 };
 export type AnyIntent = { [K in Kind]: { kind: K; intent: IntentMap[K] } }[Kind];
 
@@ -114,6 +122,12 @@ export type ViewTypes = {
 	journalList: RecordView<"journal">;
 	/** /links: unread and read, newest first. Dismissed rows never show. */
 	linkList: RecordView<"link">;
+	/** /people by name; scoped to one person, that person's page. */
+	personList: RecordView<"person", PersonScope>;
+	/** One person's facts, undated first, then by date. */
+	personFactList: RecordView<"personFact", OfPerson>;
+	/** One person's interactions, newest first. */
+	personInteractionList: RecordView<"personInteraction", OfPerson>;
 };
 /** A list built by kinds/record.ts. */
 type RecordView<K extends Kind, S = undefined> = {

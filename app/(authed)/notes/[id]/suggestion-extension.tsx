@@ -27,8 +27,12 @@ export type SuggestionConfig<T> = {
 	name: string;
 	/** The trigger, e.g. `"@"` or `"[["`. */
 	char: string;
-	/** The full candidate pool; filtered per keystroke by `matches`. */
-	items: T[];
+	/**
+	 * The full candidate pool; filtered per keystroke by `matches`. A function
+	 * is read on every keystroke, for a pool that changes after the editor is
+	 * built.
+	 */
+	items: T[] | (() => T[]);
 	/** Whether a candidate survives the current query. Empty query should generally pass. */
 	matches: (item: T, query: string) => boolean;
 	/** What the row reads as. */
@@ -127,7 +131,9 @@ export function createSuggestionExtension<T extends { id: string }>(config: Sugg
 					allowSpaces: true,
 					startOfLine: false,
 					items: ({ query }: { query: string }) =>
-						config.items.filter((c) => config.matches(c, query)).slice(0, MAX_RESULTS),
+						(typeof config.items === "function" ? config.items() : config.items)
+							.filter((c) => config.matches(c, query))
+							.slice(0, MAX_RESULTS),
 					command: ({ editor, range, props }) => {
 						const item = props as T;
 						editor

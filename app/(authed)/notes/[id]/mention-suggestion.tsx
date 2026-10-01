@@ -1,8 +1,12 @@
 import { type MentionCandidate, normalizeName } from "@/lib/mentions";
 import { createSuggestionExtension } from "./suggestion-extension";
 
-/** Builds the `@` mention autocomplete extension for a given note's editor. */
-export function createMentionSuggestionExtension(people: MentionCandidate[]) {
+/**
+ * Builds the `@` mention autocomplete extension for a given note's editor.
+ * `people` is read on every keystroke: the pool changes after the editor is
+ * built when a person is created in this tab (#30).
+ */
+export function createMentionSuggestionExtension(people: () => MentionCandidate[]) {
 	return createSuggestionExtension<MentionCandidate>({
 		name: "mentionSuggestion",
 		char: "@",

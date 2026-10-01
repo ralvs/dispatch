@@ -8,6 +8,9 @@ import { useDispatchStore, VirtualStateContext } from "@/lib/store/provider";
 import type {
 	AggregateKey,
 	Clock,
+	EntityMap,
+	Kind,
+	RowEntry,
 	Store,
 	StoreActions,
 	ViewKey,
@@ -34,6 +37,15 @@ export function useView<T extends ViewType>(key: ViewKey<T>): ViewTypes[T]["out"
 		() => selectView({ views: { [key]: entry }, rows, pending, clock } as Store, key),
 		[key, entry, rows, pending, clock],
 	);
+}
+
+/**
+ * Every row of a kind this tab has seen, newest version each, deletions as
+ * tombstones. For a consumer that is not a view — a picker that must offer a
+ * row created in this tab.
+ */
+export function useRowTable<K extends Kind>(kind: K): Record<string, RowEntry<EntityMap[K]>> {
+	return useSlice((s) => s.rows[kind]) as Record<string, RowEntry<EntityMap[K]>>;
 }
 
 export function useAggregate(key: AggregateKey): number | undefined {
