@@ -68,7 +68,6 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 					variant="danger"
 					size="sm"
 					aria-label={`Delete quote "${quote.text.slice(0, 20)}"`}
-					disabled={pending}
 					onClick={() => run({ type: "delete", id: quote.id }, () => deleteQuoteAction(quote.id))}
 				>
 					Delete

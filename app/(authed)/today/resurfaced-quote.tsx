@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Card } from "@/components/ui";
 import type { ActionResult } from "@/lib/action-result";
 import { runAction } from "@/lib/client/toast";
@@ -27,9 +27,10 @@ export function ResurfacedQuote(props: Shown) {
 	const [fromServer, setFromServer] = useState(props);
 	const [shown, setShown] = useState(props);
 	// A new server render wins over the last action's answer: adjusted during
-	// render, so the stale card never paints.
+	// render, so the stale card never paints. The quote is compared by
+	// reference — a new payload is a new object even for the same id.
 	if (
-		fromServer.quote?.id !== props.quote?.id ||
+		fromServer.quote !== props.quote ||
 		fromServer.skips !== props.skips ||
 		fromServer.hasQuotes !== props.hasQuotes
 	) {
@@ -37,13 +38,20 @@ export function ResurfacedQuote(props: Shown) {
 		setShown(props);
 	}
 	const { quote, skips, hasQuotes } = shown;
+	// The server render the card last adopted, so an answer to a click made
+	// before a newer render is dropped rather than painted over it.
+	const latest = useRef(fromServer);
+	useEffect(() => {
+		latest.current = fromServer;
+	}, [fromServer]);
 
 	function act(action: () => Promise<ActionResult<Shown>>, message: string) {
+		const started = fromServer;
 		startTransition(async () => {
 			await runAction(async () => {
 				const result = await action();
 				if (!result.ok) throw new Error(result.formError ?? message);
-				setShown(result.data);
+				if (latest.current === started) setShown(result.data);
 			}, message);
 		});
 	}
