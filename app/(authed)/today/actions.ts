@@ -52,18 +52,20 @@ export async function loadDayScheduleAction(rawDate: string): Promise<Snapshot> 
 }
 
 /**
- * The 5-minute pull (#4): everything Today shows about today, as the snapshots
- * the page itself seeds — the day's bands, the counters, the masthead badge,
- * the routines card, the project rings — and `todayIso`, so the client can
- * tell the day rolled over. This is how a cron's write (caldav, reminders,
+ * The 5-minute pull (#4): everything Today shows, as the snapshots the page
+ * itself seeds — the bands of the day on screen, the counters and the alerts
+ * beside them, the masthead badge, the routines card, the project rings — and
+ * `todayIso`, so the client can tell the day rolled over. This is how a cron's write (caldav, reminders,
  * sweep, capture) reaches an open tab: those write from outside the app, and
  * no page render follows them.
  */
-export async function pullTodayAction(): Promise<Snapshot[]> {
+export async function pullTodayAction(shownDate?: string): Promise<Snapshot[]> {
 	const { sb } = await requireOwnerPage();
 	const tz = await getCachedAppTimezone();
 	const todayIso = todayInTz(tz);
-	const { snapshot, digestSnapshot } = await readToday(sb, tz, todayIso, todayIso, Date.now());
+	// The day on screen gets its bands; everything else on Today is today's.
+	const shown = (shownDate !== undefined && parseDateIso(shownDate)) || todayIso;
+	const { snapshot, digestSnapshot } = await readToday(sb, tz, todayIso, shown, Date.now());
 	return [snapshot, digestSnapshot];
 }
 

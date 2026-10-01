@@ -58,12 +58,15 @@ matching tags and/or paths."*
    action response carries a page render.
 5. **The `updateTag` exception.** A write the store cannot confirm uses
    `updateTag` and accepts the cache wipe: the settings timezone and
-   reminders, a palette capture (the parser decides what rows it writes), and
-   a note's link rail (`note_links`, which the store does not hold). All are
-   rare. Theme is a cookie and needs neither.
+   reminders and a note's link rail (`note_links`, which the store does not
+   hold) — all rare — and a palette capture, which is not rare: the parser
+   decides which rows it writes, so the client has nothing to apply. Moving
+   capture onto the store means returning the rows the executor wrote; until
+   then, a capture costs one page render. Theme is a cookie and needs neither.
 6. **`SoftRefresh` pulls Today into the store** (`pullTodayAction`, #4) every
-   five minutes and on return to a hidden tab: the day's bands, the counters,
-   the badge, the routines card, the project rings. It is how a cron's write
+   five minutes and on return to a hidden tab: the bands of the day on screen,
+   the counters and the alerts beside them (inbox, review, unread), the badge,
+   the routines card, the project rings. It is how a cron's write
    reaches an open tab. When the server's today is past the page's, it calls
    `router.refresh()` once — the day rollover, at most once a day.
 7. **Pickers fold this tab's confirmed writes onto their server lists**

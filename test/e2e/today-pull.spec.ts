@@ -49,3 +49,40 @@ test("an event synced while Today is open shows after the pull, without a page r
 	await expect(page.getByText(title).first()).toBeVisible({ timeout: 15_000 });
 	expect(renders, "page renders during the pull").toEqual([]);
 });
+
+test("coming back to a tab hidden past five minutes pulls, without a page render", async ({
+	page,
+}) => {
+	const returned = `${title} (return)`;
+	await page.clock.install();
+	await page.goto("/today");
+	await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+	const setVisibility = (state: "hidden" | "visible") =>
+		page.evaluate((s) => {
+			Object.defineProperty(document, "visibilityState", { value: s, configurable: true });
+			document.dispatchEvent(new Event("visibilitychange"));
+		}, state);
+	await setVisibility("hidden");
+	const start = new Date(Date.now() + 60_000);
+	await sb.from("calendar_events").insert({
+		title: returned,
+		start_at: start.toISOString(),
+		end_at: new Date(start.getTime() + 30 * 60_000).toISOString(),
+		source: "caldav",
+	});
+	// Hidden, the five-minute tick skips its pull.
+	await page.clock.runFor(6 * 60_000);
+	await expect(page.getByText(returned)).toHaveCount(0);
+
+	const renders: string[] = [];
+	page.on("request", (req) => {
+		const url = new URL(req.url());
+		const rsc = req.headers().rsc === "1" || url.searchParams.has("_rsc");
+		if (req.method() === "GET" && rsc && url.pathname === "/today") renders.push(req.url());
+	});
+	await setVisibility("visible");
+	await expect(page.getByText(returned).first()).toBeVisible({ timeout: 15_000 });
+	expect(renders, "page renders during the pull").toEqual([]);
+	await sb.from("calendar_events").delete().eq("title", returned);
+});

@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { pullTodayAction } from "@/app/(authed)/today/actions";
-import { useStoreActions } from "@/lib/store";
+import { parseDateIso } from "@/lib/dates";
+import { isNavigationError, useStoreActions } from "@/lib/store";
 
 const DEFAULT_MS = 5 * 60 * 1000;
 
@@ -40,15 +41,18 @@ export function SoftRefresh({
 			inFlight.current = true;
 			lastPullAt.current = Date.now();
 			try {
-				const snapshots = await pullTodayAction();
+				// The day on screen: DayView keeps it in `?d=` (history.replaceState).
+				const shown = parseDateIso(new URLSearchParams(window.location.search).get("d"));
+				const snapshots = await pullTodayAction(shown ?? undefined);
 				if (snapshots.some((s) => s.todayIso !== todayIso)) {
 					router.refresh();
 					return;
 				}
 				for (const snapshot of snapshots) seed(snapshot);
 			} catch (error) {
-				// Invisible on purpose; a redirect (expired session) still navigates.
-				console.error("Today pull failed", error);
+				// Invisible on purpose. A redirect (an expired session) navigates
+				// on its own — it is not a failure (lib/store/run.ts).
+				if (!isNavigationError(error)) console.error("Today pull failed", error);
 			} finally {
 				inFlight.current = false;
 			}
