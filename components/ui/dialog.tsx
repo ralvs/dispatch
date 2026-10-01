@@ -1,7 +1,8 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useIsClient } from "@/lib/client/use-is-client";
 import { tv, type VariantProps } from "./tv";
 
 /**
@@ -57,8 +58,7 @@ export function Dialog({
 
 	// Portals need a DOM; this component renders inside RSC output that is also
 	// serialised on the server, so wait for mount before reaching for `document`.
-	const [mounted, setMounted] = useState(false);
-	useEffect(() => setMounted(true), []);
+	const mounted = useIsClient();
 
 	// Move focus in on open. Focus goes back to the trigger in the effect below,
 	// which owns `inert`.

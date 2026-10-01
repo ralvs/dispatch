@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { IntentLink } from "@/components/intent-link";
 import { isActive, MORE_SECTIONS } from "@/components/nav-links";
+import { useIsClient } from "@/lib/client/use-is-client";
 import { openFindPalette } from "@/lib/find/palette-bus";
 import { CLOSE_MORE_MENU_EVENT, closeMoreMenu, TOGGLE_MORE_MENU_EVENT } from "@/lib/more-menu-bus";
 
@@ -18,12 +19,18 @@ import { CLOSE_MORE_MENU_EVENT, closeMoreMenu, TOGGLE_MORE_MENU_EVENT } from "@/
  */
 export function MoreMenu() {
 	const [open, setOpen] = useState(false);
-	const [mounted, setMounted] = useState(false);
+	const mounted = useIsClient();
 	const pathname = usePathname();
 	const panelRef = useRef<HTMLDivElement>(null);
 	const titleId = useId();
 
-	useEffect(() => setMounted(true), []);
+	// Close when the route changes (menu item navigation or any other hop):
+	// adjusted during render, so the stale panel never paints on the new route.
+	const [shownPath, setShownPath] = useState(pathname);
+	if (shownPath !== pathname) {
+		setShownPath(pathname);
+		setOpen(false);
+	}
 
 	useEffect(() => {
 		function onToggle() {
@@ -39,11 +46,6 @@ export function MoreMenu() {
 			window.removeEventListener(CLOSE_MORE_MENU_EVENT, onClose);
 		};
 	}, []);
-
-	// Close when the route changes (menu item navigation or any other hop).
-	useEffect(() => {
-		if (pathname) setOpen(false);
-	}, [pathname]);
 
 	useEffect(() => {
 		if (!open) return;
