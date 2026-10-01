@@ -24,14 +24,23 @@ function domainPatch(formData: FormData): Partial<DomainItem> {
 		return value === "" ? null : value;
 	};
 	const name = text("name");
-	const days = Number(String(formData.get("cadence_days") ?? "").trim());
+	const raw = String(formData.get("cadence_days") ?? "").trim();
+	const days = Number(raw);
+	// Only what the server will keep: blank clears the rule, 1–365 sets it.
+	const cadence = !formData.has("cadence_days")
+		? {}
+		: raw === ""
+			? { cadenceDays: null }
+			: Number.isInteger(days) && days > 0 && days <= 365
+				? { cadenceDays: days }
+				: {};
 	return {
 		...(name ? { name } : {}),
 		description: text("description"),
 		fruit_definition: text("fruit_definition"),
 		expected_cadence: text("expected_cadence"),
 		...(formData.has("color") ? { color: text("color") } : {}),
-		cadenceDays: Number.isInteger(days) && days > 0 ? days : null,
+		...cadence,
 	};
 }
 
