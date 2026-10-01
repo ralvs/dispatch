@@ -93,7 +93,10 @@ export async function TodayBody({
 				data: withHistory(digest.routines, digest.completionHistory),
 			},
 		],
-		aggregates: { "notifications.unread": view.masthead.unreadNotifications },
+		aggregates: {
+			"notifications.unread": view.masthead.unreadNotifications,
+			"notes.needsReview": view.needsReviewCount,
+		},
 	};
 
 	return (

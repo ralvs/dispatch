@@ -3,6 +3,7 @@
 // returns the SAME reference when it changes nothing. The conflict rule is in
 // ./types.ts.
 
+import { noteKind, noteListsView } from "@/lib/store/kinds/note";
 import { notificationKind, notificationListView } from "@/lib/store/kinds/notification";
 import { routineKind, routineListView } from "@/lib/store/kinds/routine";
 import { dayView, taskKind, taskListsView, taskListView } from "@/lib/store/kinds/task";
@@ -32,13 +33,14 @@ import type {
 export const CONFIRMED_CAP = 500;
 
 export const defaultAdapters: Adapters = {
-	kinds: { task: taskKind, notification: notificationKind, routine: routineKind },
+	kinds: { task: taskKind, notification: notificationKind, routine: routineKind, note: noteKind },
 	views: {
 		taskLists: taskListsView,
 		taskList: taskListView,
 		day: dayView,
 		notificationList: notificationListView,
 		routineList: routineListView,
+		noteLists: noteListsView,
 	},
 };
 
@@ -76,7 +78,7 @@ function later(a: Instant, b: Instant): boolean {
 export function initialState(): StoreState {
 	return {
 		clock: null,
-		rows: { task: {}, notification: {}, routine: {} },
+		rows: { task: {}, notification: {}, routine: {}, note: {} },
 		views: {},
 		aggregates: {},
 		pending: [],

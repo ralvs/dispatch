@@ -33,9 +33,11 @@
 // the next seed heals it.
 
 import type { DaySchedulePayload } from "@/lib/day-schedule";
+import type { NoteListRow } from "@/lib/schemas/note";
 import type { NotificationRow } from "@/lib/schemas/notification";
 import type { RoutineWithHistory } from "@/lib/schemas/routine";
 import type { TaskRow } from "@/lib/schemas/task";
+import type { NoteIntent, NoteLists } from "@/lib/store/kinds/note";
 import type { NotificationIntent } from "@/lib/store/kinds/notification";
 import type { RoutineIntent } from "@/lib/store/kinds/routine";
 import type { TaskIntent, TaskLists } from "@/lib/task-interaction/apply-intent";
@@ -44,16 +46,20 @@ import type { TaskIntent, TaskLists } from "@/lib/task-interaction/apply-intent"
 export type Instant = string;
 export type Clock = { todayIso: string; tz: string };
 
+export type { NoteLists };
+
 export type EntityMap = {
 	task: TaskRow;
 	notification: NotificationRow;
 	routine: RoutineWithHistory;
+	note: NoteListRow;
 };
 export type Kind = keyof EntityMap;
 export type IntentMap = {
 	task: TaskIntent;
 	notification: NotificationIntent;
 	routine: RoutineIntent;
+	note: NoteIntent;
 };
 export type AnyIntent = { [K in Kind]: { kind: K; intent: IntentMap[K] } }[Kind];
 
@@ -82,6 +88,8 @@ export type ViewTypes = {
 		out: NotificationRow[];
 		params: undefined;
 	};
+	/** /notes: the needs-review band and every other note, each in list order. */
+	noteLists: { kind: "note"; data: NoteLists; out: NoteLists; params: undefined };
 	/** /routines and Today's routines card: the listed routines, in list order. */
 	routineList: {
 		kind: "routine";

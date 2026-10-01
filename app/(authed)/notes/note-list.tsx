@@ -2,22 +2,26 @@
 
 import { Star } from "lucide-react";
 import Link from "next/link";
-import { useOptimistic, useState, useTransition } from "react";
-import { setPinAction } from "@/app/(authed)/notes/actions";
+import { useState } from "react";
+import { createBlankNoteAction, setPinAction } from "@/app/(authed)/notes/actions";
 import { ColorDot } from "@/components/color-dot";
 import {
+	HeaderCreateButton,
 	ListRow,
 	ListSection,
+	PageHeader,
 	rowTitle,
 	type ScopeOption,
 	ScopeSelect,
 	UNFILED,
 } from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
-import { runAction } from "@/lib/client/toast";
 import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
 import type { NoteListRow } from "@/lib/services/notes";
+import { type NoteLists, useRunIntent, useView, viewKey } from "@/lib/store";
+
+const NO_LISTS: NoteLists = { needsReview: [], all: [] };
 
 function NoteLinkRow({
 	note,
@@ -101,29 +105,21 @@ function Section({
 	);
 }
 
-function flipPin(note: NoteListRow): NoteListRow {
-	return {
-		...note,
-		pinned_at: note.pinned_at === null ? new Date().toISOString() : null,
-	};
-}
-
 /**
- * Owns useOptimistic for pin so the star and section membership flip before
- * the notes list RSC revalidation.
+ * /notes from the entity store (#27): the header's counts and both lists. A
+ * pin is an intent — the star and the section flip at once, the server's row
+ * confirms it, a failure puts it back. Filing a flagged note in the editor
+ * moves it out of the band here, and Today's count with it.
  */
 export function NoteList({
-	needsReview,
-	allNotes,
 	tz,
 	domains,
 }: {
-	needsReview: NoteListRow[];
-	allNotes: NoteListRow[];
 	tz: string;
 	domains: Array<ScopeOption & { color: string | null }>;
 }) {
-	const [, startTransition] = useTransition();
+	const { needsReview: review, all: notes } = useView(viewKey.notes()) ?? NO_LISTS;
+	const run = useRunIntent("note", { errorMessage: "Couldn't update pin." });
 	// "" = every note, UNFILED = the notes with no domain. Client-side over the
 	// already-loaded list, the same shape /tasks uses.
 	const [domainFilter, setDomainFilter] = useState("");
@@ -135,30 +131,18 @@ export function NoteList({
 		return note.domain_id === domainFilter;
 	}
 
-	const [review, dispatchReview] = useOptimistic(needsReview, (current, id: string) =>
-		current.map((n) => (n.id === id ? flipPin(n) : n)),
-	);
-	const [notes, dispatchNotes] = useOptimistic(allNotes, (current, id: string) =>
-		current.map((n) => (n.id === id ? flipPin(n) : n)),
-	);
-
 	const scoped = notes.filter(inScope);
 	const pinned = scoped.filter((n) => n.pinned_at !== null);
 	const unpinned = scoped.filter((n) => n.pinned_at === null);
 
-	// The desired state comes from the row on screen — the same comparison the
-	// optimistic reducer makes — so the write is a setter, not a flip, and a
-	// stale second surface can't undo this one (docs/adr/0037).
-	function toggle(note: NoteListRow, inReview: boolean) {
+	// The desired state comes from the row on screen, so the write is a
+	// setter, not a flip, and a stale second surface can't undo this one
+	// (docs/adr/0037).
+	function toggle(note: NoteListRow) {
 		const nextPinned = note.pinned_at === null;
-		startTransition(async () => {
-			if (inReview) dispatchReview(note.id);
-			else dispatchNotes(note.id);
-			await runAction(
-				() => setPinAction({ id: note.id, pinned: nextPinned }),
-				"Couldn't update pin.",
-			);
-		});
+		run({ type: "pin", id: note.id, pinned: nextPinned }, () =>
+			setPinAction({ id: note.id, pinned: nextPinned }),
+		);
 	}
 
 	return (
@@ -167,6 +151,22 @@ export function NoteList({
 		// so the first group kept its 36px and sat lower than every other page's
 		// (ADR-0046).
 		<div>
+			<PageHeader
+				title="Notes"
+				measure={[
+					{ count: notes.length, label: notes.length === 1 ? "note" : "notes" },
+					// Only when there is something to review — a `0 need review`
+					// in the accent would spend the one orange on nothing.
+					...(review.length > 0
+						? [{ count: review.length, label: "need review", attention: true }]
+						: []),
+				]}
+				action={
+					<form action={createBlankNoteAction}>
+						<HeaderCreateButton label="New note" type="submit" />
+					</form>
+				}
+			/>
 			<div className="mb-4 flex items-center">
 				<ScopeSelect
 					value={domainFilter}
@@ -182,21 +182,21 @@ export function NoteList({
 				notes={review.filter(inScope)}
 				tz={tz}
 				domainColors={domainColors}
-				onTogglePin={(n) => toggle(n, true)}
+				onTogglePin={toggle}
 			/>
 			<Section
 				label="Pinned"
 				notes={pinned}
 				tz={tz}
 				domainColors={domainColors}
-				onTogglePin={(n) => toggle(n, false)}
+				onTogglePin={toggle}
 			/>
 			<Section
 				label="All notes"
 				notes={unpinned}
 				tz={tz}
 				domainColors={domainColors}
-				onTogglePin={(n) => toggle(n, false)}
+				onTogglePin={toggle}
 				empty={
 					domainFilter === "" ? "Nothing here yet. Capture something." : "No notes in this domain."
 				}

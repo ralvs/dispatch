@@ -1,25 +1,45 @@
 "use server";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { ActionResult } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatInstant } from "@/lib/dates";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import type { NoteListRow } from "@/lib/schemas/note";
 import { searchEventsByTitle } from "@/lib/services/calendar";
 import { removeAttachment } from "@/lib/services/note-attachments";
 import { createManualLink, deleteLink } from "@/lib/services/note-links";
 import {
 	createNote,
 	deleteNote,
+	getNote,
 	resolveNeedsReview,
 	setPin,
 	updateNote,
 } from "@/lib/services/notes";
 import { getAppTimezone } from "@/lib/services/settings";
 import { searchTasksByTitle } from "@/lib/services/tasks";
+import { stampWrite } from "@/lib/store/server";
+import type { StoreWrite } from "@/lib/store/types";
+
+// The actions that change a note return it as it now stands (#27), so the
+// client's entity store confirms its optimistic intent from it instead of
+// waiting on a page render. Failures still throw; the store runner rolls back
+// on a throw. The link actions change the link rail, not a note row, and stay
+// as they are.
+
+type NoteWrite = StoreWrite<NoteListRow>;
 
 function revalidateNoteViews(id?: string) {
 	afterMutation("notes.write", id ? { id } : undefined);
+}
+
+/** The note read back after the write. A note that is gone comes back as a deleted id. */
+async function writtenNote(sb: SupabaseClient, id: string): Promise<ActionResult<NoteWrite>> {
+	const row = await getNote(sb, id);
+	return { ok: true, data: row ? stampWrite([row]) : stampWrite([], [id]) };
 }
 
 /**
@@ -41,7 +61,10 @@ const SaveNoteSchema = z.object({
 });
 
 /** Autosave from the editor page. Empty body is allowed — a cleared note stays a note. */
-export async function saveNoteAction(id: string, input: { title: string | null; body: string }) {
+export async function saveNoteAction(
+	id: string,
+	input: { title: string | null; body: string },
+): Promise<ActionResult<NoteWrite>> {
 	const { sb } = await requireOwnerPage();
 	const parsed = SaveNoteSchema.parse(input);
 	const noteId = z.uuid().parse(id);
@@ -50,6 +73,7 @@ export async function saveNoteAction(id: string, input: { title: string | null; 
 		body: parsed.body,
 	});
 	revalidateNoteViews(id);
+	return writtenNote(sb, noteId);
 }
 
 /**
@@ -57,31 +81,49 @@ export async function saveNoteAction(id: string, input: { title: string | null; 
  * Inbox fallback and a loose thought stays loose (shape plan D1) — so "" from
  * the select means null, not "leave it alone".
  */
-export async function setNoteDomainAction(id: string, domainId: string) {
+export async function setNoteDomainAction(
+	id: string,
+	domainId: string,
+): Promise<ActionResult<NoteWrite>> {
 	const { sb } = await requireOwnerPage();
 	const noteId = z.uuid().parse(id);
 	const domain = domainId === "" ? null : z.uuid().parse(domainId);
 	await updateNote(sb, noteId, { domain_id: domain });
 	revalidateNoteViews(id);
+	return writtenNote(sb, noteId);
 }
 
-export async function resolveNeedsReviewAction(id: string) {
+export async function resolveNeedsReviewAction(id: string): Promise<ActionResult<NoteWrite>> {
 	const { sb } = await requireOwnerPage();
-	await resolveNeedsReview(sb, z.uuid().parse(id));
+	const noteId = z.uuid().parse(id);
+	await resolveNeedsReview(sb, noteId);
 	revalidateNoteViews(id);
+	return writtenNote(sb, noteId);
 }
 
-export async function setPinAction(input: { id: string; pinned: boolean }) {
+/** A pin the precondition refused (docs/adr/0037) still answers with the row as it stands. */
+export async function setPinAction(input: {
+	id: string;
+	pinned: boolean;
+}): Promise<ActionResult<NoteWrite>> {
 	const { sb } = await requireOwnerPage();
-	await setPin(sb, z.uuid().parse(input.id), input.pinned);
+	const noteId = z.uuid().parse(input.id);
+	await setPin(sb, noteId, z.boolean().parse(input.pinned));
 	revalidateNoteViews(input.id);
+	return writtenNote(sb, noteId);
 }
 
-export async function deleteNoteAction(id: string) {
+/**
+ * Delete a note. The editor navigates to /notes once the store has confirmed
+ * it, so the list it lands on no longer holds the row (#27) — a redirect()
+ * here would roll the intent back instead.
+ */
+export async function deleteNoteAction(id: string): Promise<ActionResult<NoteWrite>> {
 	const { sb } = await requireOwnerPage();
-	await deleteNote(sb, z.uuid().parse(id));
+	const noteId = z.uuid().parse(id);
+	await deleteNote(sb, noteId);
 	revalidateNoteViews();
-	redirect("/notes");
+	return { ok: true, data: stampWrite([], [noteId]) };
 }
 
 const LinkTargetTypeSchema = z.enum(["task", "event"]);
@@ -106,12 +148,16 @@ export async function attachLinkAction(
  * it from the attachment row, and it is validated against the note by the
  * RPC's `where id = p_note_id`.
  */
-export async function removeAttachmentAction(noteId: string, storagePath: string) {
+export async function removeAttachmentAction(
+	noteId: string,
+	storagePath: string,
+): Promise<ActionResult<NoteWrite>> {
 	const { sb } = await requireOwnerPage();
 	const id = z.uuid().parse(noteId);
 	const path = z.string().min(1).parse(storagePath);
 	await removeAttachment(sb, id, path);
 	revalidateNoteViews(id);
+	return writtenNote(sb, id);
 }
 
 export async function detachLinkAction(noteId: string, linkId: string) {

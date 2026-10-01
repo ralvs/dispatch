@@ -10,9 +10,11 @@ import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedNoteEditorContext, getCachedNoteLinks } from "@/lib/cache/notes";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { formatInstant } from "@/lib/dates";
+import { formatInstant, nowUtc, todayInTz } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
 import { getNote } from "@/lib/services/notes";
+import { Seed } from "@/lib/store/seed";
+import type { Snapshot } from "@/lib/store/types";
 import { detachLinkAction } from "../actions";
 import { AttachmentStrip } from "./attachment-strip";
 import { LinkPicker } from "./link-picker";
@@ -208,28 +210,34 @@ async function NoteBody({ params }: { params: Promise<{ id: string }> }) {
 
 	// One uncached query, and the one that decides between this note and the
 	// 404, so it is awaited before either section below starts.
-	const note = await loadNote(parsedId.data);
+	const [note, tz] = await Promise.all([loadNote(parsedId.data), getCachedAppTimezone()]);
 	if (!note) notFound();
+	// No view to seed: the editor's writes confirm into the entity store (#27)
+	// so /notes shows them, and a write needs the store's clock — this page
+	// can be the first one a tab opens.
+	const snapshot: Snapshot = { readAt: nowUtc(), todayIso: todayInTz(tz), tz };
 
 	return (
-		// Column + rail (W2): prose left on the measure, panels right on desk,
-		// stack below on phone. One tree.
-		<div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_16.25rem] lg:items-start lg:gap-10">
-			{/* The strip wraps the editor rather than following it: the drop
+		<Seed snapshot={snapshot}>
+			{/* Column + rail (W2): prose left on the measure, panels right on desk,
+		    stack below on phone. One tree. */}
+			<div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_16.25rem] lg:items-start lg:gap-10">
+				{/* The strip wraps the editor rather than following it: the drop
 			    target is the whole note, not a landing pad below it. */}
-			<div className="min-w-0">
-				<AttachmentStrip noteId={note.id} attachments={note.attachments}>
-					<Suspense fallback={<EditorFallback />}>
-						<EditorSection note={note} />
+				<div className="min-w-0">
+					<AttachmentStrip noteId={note.id} attachments={note.attachments}>
+						<Suspense fallback={<EditorFallback />}>
+							<EditorSection note={note} />
+						</Suspense>
+					</AttachmentStrip>
+				</div>
+				<aside className="min-w-0 lg:sticky lg:top-0">
+					<Suspense fallback={<LinkSectionsFallback />}>
+						<LinkSections noteId={note.id} />
 					</Suspense>
-				</AttachmentStrip>
+				</aside>
 			</div>
-			<aside className="min-w-0 lg:sticky lg:top-0">
-				<Suspense fallback={<LinkSectionsFallback />}>
-					<LinkSections noteId={note.id} />
-				</Suspense>
-			</aside>
-		</div>
+		</Seed>
 	);
 }
 

@@ -17,8 +17,8 @@ import { useAggregate } from "@/lib/store";
  * On a phone they run as one wrapped line rather than a grid of stat tiles —
  * four numbers are a sentence about the day, not a dashboard.
  *
- * The task and notification counts read the entity store (#26, #28), so a
- * tick or a mark-read anywhere moves them without a page render. The props are
+ * Every count but events reads the entity store (#26, #27, #28), so a tick, a
+ * filed note or a mark-read anywhere moves it without a page render. The props are
  * the server's numbers, used until the store holds its own.
  */
 function Counter({
@@ -65,6 +65,7 @@ export function Counters({
 	const storeOverdue = useAggregate("tasks.overdue") ?? overdue;
 	const storeInbox = useAggregate("tasks.inbox") ?? inbox;
 	const storeUnread = useAggregate("notifications.unread") ?? notifications;
+	const storeReview = useAggregate("notes.needsReview") ?? needsReview;
 	// The comps show four. The last two are here because the sections this
 	// composition cut were the only places they appeared, and both are things
 	// waiting on a decision — which is what this block is. They are rare, and
@@ -74,7 +75,7 @@ export function Counters({
 		{ key: "open", count: storeOpen, label: "open", href: "/tasks" },
 		{ key: "overdue", count: storeOverdue, label: "overdue", href: "/tasks", late: true },
 		{ key: "inbox", count: storeInbox, label: "in the inbox", href: "/inbox" },
-		{ key: "review", count: needsReview, label: "need review", href: "/notes" },
+		{ key: "review", count: storeReview, label: "need review", href: "/notes" },
 		{ key: "unread", count: storeUnread, label: "notifications", href: "/notifications" },
 	].filter((row) => row.count > 0);
 
