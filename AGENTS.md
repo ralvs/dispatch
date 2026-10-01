@@ -96,6 +96,10 @@ Every change reaches `main` through a PR that Renan merges (docs/adr/0064).
   deviates from the reference implementation or this file
 - `app/api/` is for external HTTP surfaces only — everything else is a server
   action behind `requireOwner()`
+- Writes update rows, not pages (docs/adr/0069). A server action that changes
+  rows returns `ActionResult<StoreWrite<Row>>` (`stampWrite`), the client
+  applies it through the entity store (`lib/store`), and `afterMutation` busts
+  tags only. Never call `revalidatePath`.
 - Conventional Commits; incremental commits per logical group; author
   `Renan Alves <renan@alves.id>`
 - Reference implementation (feature semantics, prompts, schema shape):
