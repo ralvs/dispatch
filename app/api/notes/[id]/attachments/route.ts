@@ -13,6 +13,8 @@ import { downscaleImage } from "@/lib/images";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import type { Attachment } from "@/lib/schemas/note";
 import { uploadAttachment } from "@/lib/services/note-attachments";
+import { getNote } from "@/lib/services/notes";
+import { stampWrite } from "@/lib/store/server";
 
 /*
  * The write side of note attachments (docs/adr/0052).
@@ -21,6 +23,10 @@ import { uploadAttachment } from "@/lib/services/note-attachments";
  * answer with the created rows; removal is a server action, matching the link
  * rail next to it. Owner-checked first line (iron rule #2), and the note id is
  * validated before anything touches storage.
+ *
+ * When something landed, the answer also carries `write`: the note row read
+ * back, for the client's entity store (#27). A route handler cannot call
+ * updateTag, so the client confirms from this instead.
  *
  * Partial success is a real outcome here: dropping five files where one is a
  * .zip should attach four and say which one it refused, not fail the batch.
@@ -59,10 +65,15 @@ export const POST = ownerRoute(
 		}
 
 		// Only bust caches if something actually landed.
-		if (attached.length > 0) afterMutation("notes.write", { id: parsedId.data });
+		let write = null;
+		if (attached.length > 0) {
+			afterMutation("notes.write", { id: parsedId.data });
+			const note = await getNote(sb, parsedId.data);
+			write = note ? stampWrite([note]) : null;
+		}
 
 		return NextResponse.json(
-			{ attached, rejected },
+			{ attached, rejected, write },
 			// 207 would be more honest for a mixed batch, but every caller here
 			// reads the two arrays anyway, and a non-2xx makes fetch callers
 			// treat a partial success as total failure.

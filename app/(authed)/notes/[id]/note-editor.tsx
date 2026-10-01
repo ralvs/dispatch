@@ -10,10 +10,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Markdown, type MarkdownStorage } from "tiptap-markdown";
 import { Button, type ScopeOption, ScopeSelect } from "@/components/ui";
-import { runAction } from "@/lib/client/toast";
+import type { ActionResult } from "@/lib/action-result";
+import { toastError } from "@/lib/client/toast";
 import { createDebouncedSave } from "@/lib/debounced-save";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { NoteListRow } from "@/lib/services/notes";
+import { useStoreWrite } from "@/lib/store";
 import {
 	deleteNoteAction,
 	resolveNeedsReviewAction,
@@ -92,9 +94,28 @@ export function NoteEditor({
 }) {
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
-	// Optimistic so the meta line settles before the RSC round-trip; filing is
+	// Every write here goes through the entity store (#27), so /notes and
+	// Today's review count show it without a page render.
+	const write = useStoreWrite("note");
+	// Optimistic so the meta line settles before the server answers; filing is
 	// a one-click move and a select that snaps back reads as a failure.
 	const [domainId, setDomainId] = useState(note.domain_id ?? "");
+	const [needsReview, setNeedsReview] = useState(note.needs_review);
+
+	/** Run a store write; a failure (a result or a throw) toasts and reports false. */
+	async function attempt(
+		run: () => Promise<ActionResult<unknown>>,
+		errorMessage: string,
+	): Promise<boolean> {
+		try {
+			const result = await run();
+			if (!result.ok) toastError(result.formError ?? errorMessage);
+			return result.ok;
+		} catch {
+			toastError(errorMessage);
+			return false;
+		}
+	}
 	const [saveState, setSaveState] = useState<SaveState>("idle");
 	const titleRef = useRef(note.title ?? "");
 	const titleInputRef = useRef<HTMLInputElement>(null);
@@ -111,9 +132,13 @@ export function NoteEditor({
 		if (key === lastSavedRef.current) return;
 		lastSavedRef.current = key;
 		if (mountedRef.current) setSaveState("saving");
+		const savedTitle = title.trim() === "" ? null : title;
 		startTransition(async () => {
-			const ok = await runAction(
-				() => saveNoteAction(note.id, { title: title.trim() === "" ? null : title, body }),
+			const ok = await attempt(
+				() =>
+					write({ type: "save", id: note.id, title: savedTitle, body }, () =>
+						saveNoteAction(note.id, { title: savedTitle, body }),
+					),
 				"Couldn't save note.",
 			);
 			if (!mountedRef.current) return;
@@ -212,9 +237,17 @@ export function NoteEditor({
 				<ScopeSelect
 					value={domainId}
 					onChange={(next) => {
+						const previous = domainId;
 						setDomainId(next);
 						startTransition(async () => {
-							await runAction(() => setNoteDomainAction(note.id, next), "Couldn't file this note.");
+							const ok = await attempt(
+								() =>
+									write({ type: "file", id: note.id, domainId: next === "" ? null : next }, () =>
+										setNoteDomainAction(note.id, next),
+									),
+								"Couldn't file this note.",
+							);
+							if (!ok) setDomainId(previous);
 						});
 					}}
 					label="Domain"
@@ -230,7 +263,7 @@ export function NoteEditor({
 				</span>
 			</p>
 			<div className="mt-4 flex gap-2">
-				{note.needs_review && (
+				{needsReview && (
 					<Button
 						type="button"
 						variant="tertiary"
@@ -240,10 +273,15 @@ export function NoteEditor({
 						isPending={pending}
 						onClick={() =>
 							startTransition(async () => {
-								await runAction(
-									() => resolveNeedsReviewAction(note.id),
+								setNeedsReview(false);
+								const ok = await attempt(
+									() =>
+										write({ type: "resolve", id: note.id }, () =>
+											resolveNeedsReviewAction(note.id),
+										),
 									"Couldn't resolve review flag.",
 								);
+								if (!ok) setNeedsReview(true);
 							})
 						}
 					>
@@ -259,7 +297,13 @@ export function NoteEditor({
 					isPending={pending}
 					onClick={() =>
 						startTransition(async () => {
-							await runAction(() => deleteNoteAction(note.id), "Couldn't delete note.");
+							// Nothing left to save once the note is gone.
+							debouncedRef.current.cancel();
+							const ok = await attempt(
+								() => write({ type: "delete", id: note.id }, () => deleteNoteAction(note.id)),
+								"Couldn't delete note.",
+							);
+							if (ok) router.push("/notes");
 						})
 					}
 				>

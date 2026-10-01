@@ -2,6 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import type { CachedReader } from "@/lib/cache/manifest";
 import { CacheTag } from "@/lib/cache/tags";
+import { nowUtc } from "@/lib/dates";
 import { listBacklinks, listLinksForNote, listLinkTargetLabels } from "@/lib/services/note-links";
 import { listNotes, listNoteTitles } from "@/lib/services/notes";
 import { listMentionCandidates } from "@/lib/services/people";
@@ -13,18 +14,22 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *
  * The needs_review band is written by the sweep cron as well as by the app, so
  * this entry depends on app/api/cron/sweep busting `notes` — it does.
+ *
+ * `readAt` is the entity store's version (lib/store/types.ts), stamped inside
+ * the cache so a stale entry keeps its old stamp.
  */
 export async function getCachedNoteLists() {
 	"use cache";
 	cacheTag(CacheTag.notes);
 	cacheLife("tagged");
 
+	const readAt = nowUtc();
 	const sb = createAdminClient();
 	const [needsReview, allNotes] = await Promise.all([
 		listNotes(sb, { needsReview: true }),
 		listNotes(sb, { needsReview: false }),
 	]);
-	return { needsReview, allNotes };
+	return { readAt, needsReview, allNotes };
 }
 
 /*

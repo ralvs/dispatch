@@ -23,6 +23,10 @@ vi.mock("@/lib/services/note-attachments", () => ({
 		size_bytes: input.bytes.byteLength,
 	})),
 }));
+// The row read back for the entity store (#27).
+vi.mock("@/lib/services/notes", () => ({
+	getNote: vi.fn(async (_sb, id: string) => ({ id, title: "A note", attachments: [] })),
+}));
 // Identity downscale — lib/images.test.ts already covers the real thing, and
 // this keeps the route tests off libvips.
 vi.mock("@/lib/images", () => ({
@@ -100,6 +104,9 @@ describe("POST /api/notes/[id]/attachments", () => {
 		]);
 		// The .md arrived with no content type at all and still resolved.
 		expect(vi.mocked(uploadAttachment).mock.calls[2][2].contentType).toBe("text/markdown");
+		// The note as it now stands, stamped for the entity store.
+		expect(body.write.rows).toEqual([expect.objectContaining({ id: NOTE_ID })]);
+		expect(typeof body.write.at).toBe("string");
 	});
 
 	it("busts the notes caches once, only when something landed", async () => {

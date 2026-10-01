@@ -15,8 +15,10 @@ import {
 import { Button, ListRow, rowTitle, SectionHead } from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
 import { attachmentKind, formatBytes, isAllowedContentType } from "@/lib/attachments";
-import { runAction, toastError } from "@/lib/client/toast";
-import type { Attachment } from "@/lib/schemas/note";
+import { toastError } from "@/lib/client/toast";
+import type { Attachment, NoteListRow } from "@/lib/schemas/note";
+import { useStoreWrite } from "@/lib/store";
+import type { StoreWrite } from "@/lib/store/types";
 import { removeAttachmentAction } from "../actions";
 
 /*
@@ -57,6 +59,9 @@ export function AttachmentStrip({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [uploading, setUploading] = useState(false);
 	const [pending, startTransition] = useTransition();
+	// The note row in the entity store carries its attachments (#27): a change
+	// here confirms the row the server read back, so /notes shows it too.
+	const confirm = useStoreWrite("note");
 
 	// dragenter/dragleave fire once per child element the pointer crosses, so a
 	// boolean flickers as you move over the editor. Counting depth doesn't.
@@ -89,14 +94,19 @@ export function AttachmentStrip({
 						.join(", ");
 					toastError(`Couldn't attach ${names}`);
 				}
-				if (body?.attached?.length) router.refresh();
+				if (body?.attached?.length) {
+					const write = body.write as StoreWrite<NoteListRow> | null;
+					if (write)
+						await confirm({ type: "touch", id: noteId }, async () => ({ ok: true, data: write }));
+					router.refresh();
+				}
 			} catch {
 				toastError("Couldn't attach the file.");
 			} finally {
 				setUploading(false);
 			}
 		},
-		[noteId, router],
+		[noteId, router, confirm],
 	);
 
 	function onDragEnter(event: ReactDragEvent) {
@@ -207,10 +217,14 @@ export function AttachmentStrip({
 								disabled={busy}
 								onRemove={() =>
 									startTransition(async () => {
-										await runAction(
-											() => removeAttachmentAction(noteId, attachment.storage_path),
-											"Couldn't remove the file.",
-										);
+										try {
+											const result = await confirm({ type: "touch", id: noteId }, () =>
+												removeAttachmentAction(noteId, attachment.storage_path),
+											);
+											if (!result.ok) toastError(result.formError ?? "Couldn't remove the file.");
+										} catch {
+											toastError("Couldn't remove the file.");
+										}
 									})
 								}
 							/>

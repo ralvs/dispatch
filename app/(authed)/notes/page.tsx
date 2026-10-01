@@ -1,48 +1,41 @@
 import { Suspense } from "react";
-import { HeaderCreateButton, PageHeader, PageSkeleton } from "@/components/ui";
+import { HeaderCreateButton, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedNoteLists } from "@/lib/cache/notes";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { createBlankNoteAction } from "./actions";
+import { todayInTz } from "@/lib/dates";
+import { viewKey } from "@/lib/store/keys";
+import { Seed } from "@/lib/store/seed";
+import type { Snapshot } from "@/lib/store/types";
 import { NoteList } from "./note-list";
 
 async function NotesBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
-	const [{ needsReview, allNotes }, tz, domains] = await Promise.all([
+	const [{ readAt, needsReview, allNotes }, tz, domains] = await Promise.all([
 		getCachedNoteLists(),
 		getCachedAppTimezone(),
 		getCachedDomains(false),
 	]);
+	// The lists and the review count go to the entity store (#27). The band
+	// holds every flagged note, so its length is the count Today shows too.
+	const snapshot: Snapshot = {
+		readAt,
+		todayIso: todayInTz(tz),
+		tz,
+		views: [{ key: viewKey.notes(), type: "noteLists", data: { needsReview, all: allNotes } }],
+		aggregates: { "notes.needsReview": needsReview.length },
+	};
 
 	return (
-		<div>
-			<PageHeader
-				title="Notes"
-				measure={[
-					{ count: allNotes.length, label: allNotes.length === 1 ? "note" : "notes" },
-					// Only when there is something to review — a `0 need review`
-					// in the accent would spend the one orange on nothing.
-					...(needsReview.length > 0
-						? [{ count: needsReview.length, label: "need review", attention: true }]
-						: []),
-				]}
-				action={
-					<form action={createBlankNoteAction}>
-						<HeaderCreateButton label="New note" type="submit" />
-					</form>
-				}
-			/>
-
+		<Seed snapshot={snapshot}>
 			<NoteList
-				needsReview={needsReview}
-				allNotes={allNotes}
 				tz={tz}
 				domains={domains.map((d) => ({ id: d.id, name: d.name, color: d.color }))}
 			/>
-		</div>
+		</Seed>
 	);
 }
 
@@ -58,7 +51,7 @@ function NotesFallback() {
 
 // The header carries data (its measure), so the whole body streams in behind
 // the page's own boundary and the old loading.tsx is its fallback (#21). The
-// async child is where the entity store gets seeded (#26-#30).
+// header and the lists read the entity store (#27).
 export default function NotesPage() {
 	return (
 		<Suspense fallback={<NotesFallback />}>
