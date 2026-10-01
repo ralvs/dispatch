@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { persistRaw } from "@/lib/services/capture/store";
 import {
 	countNeedsReview,
 	createNeedsReviewNote,
@@ -115,6 +116,15 @@ describe("createNeedsReviewNote", () => {
 
 	it("omits reason and unhandled tags when neither is given", async () => {
 		expect((await tagsOf({ body: "raw text" }))?.tags).toEqual(["capture:needs_review"]);
+	});
+
+	it("links the note back to the capture it came from", async () => {
+		const sb = await ownerClient();
+		const captureId = await persistRaw(sb, { kind: "transcript", text: "raw text", via: "text" });
+		const n = await createNeedsReviewNote(sb, { body: "raw text", origin_capture_id: captureId });
+
+		const { data } = await sb.from("notes").select("origin_capture_id").eq("id", n.id).single();
+		expect(data).toEqual({ origin_capture_id: captureId });
 	});
 });
 
