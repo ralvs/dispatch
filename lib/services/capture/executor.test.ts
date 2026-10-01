@@ -1,3 +1,5 @@
+// Stubbed on purpose: runActions is pure orchestration with no query of its own;
+// what each service writes is covered by its own integration test.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import type { CaptureAction } from "@/lib/schemas/capture";
