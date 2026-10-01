@@ -91,8 +91,14 @@ describe("links against the local database", () => {
 			[middle.id, "2026-01-02T00:00:00Z"],
 			[newest.id, "2026-01-03T00:00:00Z"],
 		]) {
-			const { error } = await service.from("ingest_links").update({ created_at: at }).eq("id", id);
+			const { data, error } = await service
+				.from("ingest_links")
+				.update({ created_at: at })
+				.eq("id", id)
+				.select("created_at")
+				.single();
 			expect(error).toBeNull();
+			expect(new Date(data?.created_at).toISOString()).toBe(new Date(at).toISOString());
 		}
 		await setLinkStatus(sb, middle.id, "read");
 

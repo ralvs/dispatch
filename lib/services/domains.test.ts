@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { cadenceThresholdDays, withCadenceThresholdDays } from "@/lib/services/domains";
 
+// The cadence helpers are pure and stay unit tests. Every database read and
+// write runs against the local database in domains.int.test.ts (#18).
+
 describe("withCadenceThresholdDays", () => {
 	it("writes a rule onto a domain that had none", () => {
 		expect(withCadenceThresholdDays([], 7)).toEqual([{ rule: "no_activity_days", value: 7 }]);

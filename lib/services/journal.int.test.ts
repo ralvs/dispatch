@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createEntry, deleteEntry, getEntry, listBooks } from "@/lib/services/journal";
-import { ownerClient } from "@/test/integration/clients";
+import { ownerClient, serviceClient } from "@/test/integration/clients";
 
 describe("journal against the local database", () => {
 	it("defaults source to typed and stores text verbatim", async () => {
@@ -30,12 +30,15 @@ describe("journal against the local database", () => {
 		expect(await getEntry(sb, entry.id)).toBeNull();
 	});
 
-	it("lists the books the database holds", async () => {
+	it("lists the books newest number first", async () => {
 		const sb = await ownerClient();
-		const { data } = await sb.from("journal_books").select("id");
+		expect(await listBooks(sb)).toEqual([]);
 
-		expect((await listBooks(sb)).map((b) => b.id).sort()).toEqual(
-			(data ?? []).map((b) => b.id).sort(),
-		);
+		const { error } = await serviceClient()
+			.from("journal_books")
+			.insert([{ book_number: 1 }, { book_number: 3 }, { book_number: 2 }]);
+		expect(error).toBeNull();
+
+		expect((await listBooks(sb)).map((b) => b.book_number)).toEqual([3, 2, 1]);
 	});
 });

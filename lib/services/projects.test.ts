@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { taskProgress } from "@/lib/services/projects";
 
+// taskProgress is pure and stays a unit test. Every database read and write
+// runs against the local database in projects.int.test.ts (#18).
+
 describe("taskProgress", () => {
 	it("is 0 for a project with no tasks", () => {
 		expect(taskProgress({ done: 0, open: 0 })).toBe(0);
