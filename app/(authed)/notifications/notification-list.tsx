@@ -1,57 +1,35 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
 import {
 	markAllNotificationsAction,
 	markNotificationAction,
 } from "@/app/(authed)/notifications/actions";
 import { EmptyState } from "@/components/ui";
-import { runAction } from "@/lib/client/toast";
-import type { NotificationRow as Row } from "@/lib/services/notifications";
+import type { NotificationRow as Row } from "@/lib/schemas/notification";
+import { useRunIntent, useView, viewKey } from "@/lib/store";
 import { BulkActions } from "./bulk-actions";
 import { NotificationRow } from "./notification-row";
 
-type Intent =
-	| { type: "one"; id: string; status: "read" | "dismissed" }
-	| { type: "all"; status: "read" | "dismissed" };
-
-function applyIntent(list: Row[], intent: Intent): Row[] {
-	if (intent.type === "one") {
-		if (intent.status === "dismissed") return list.filter((n) => n.id !== intent.id);
-		return list.map((n) => (n.id === intent.id ? { ...n, status: "read" as const } : n));
-	}
-	if (intent.status === "dismissed") return [];
-	return list.map((n) => (n.status === "unread" ? { ...n, status: "read" as const } : n));
-}
+const NO_ROWS: Row[] = [];
 
 /**
- * Owns useOptimistic for mark-read / dismiss / bulk so the ledger updates
- * before the RSC revalidation lands.
+ * Reads the ledger from the entity store (#28). Mark read, dismiss and the
+ * bulk actions are intents: the list moves at once, the server's answer
+ * confirms it, and a failure puts it back. Today's unread counter moves with
+ * them (lib/store/kinds/notification.ts).
  */
-export function NotificationList({
-	notifications,
-	tz,
-}: {
-	/** Visible rows only (already filtered past dismissed). */
-	notifications: Row[];
-	tz: string;
-}) {
-	const [, startTransition] = useTransition();
-	const [rows, dispatch] = useOptimistic(notifications, applyIntent);
+export function NotificationList({ tz }: { tz: string }) {
+	const rows = useView(viewKey.notifications()) ?? NO_ROWS;
+	const runOne = useRunIntent("notification", { errorMessage: "Couldn't update notification." });
+	const runAll = useRunIntent("notification", { errorMessage: "Couldn't update notifications." });
 	const unread = rows.filter((n) => n.status === "unread").length;
 
 	function markOne(id: string, status: "read" | "dismissed") {
-		startTransition(async () => {
-			dispatch({ type: "one", id, status });
-			await runAction(() => markNotificationAction(id, status), "Couldn't update notification.");
-		});
+		runOne({ type: "mark", id, status }, () => markNotificationAction(id, status));
 	}
 
 	function markAll(status: "read" | "dismissed") {
-		startTransition(async () => {
-			dispatch({ type: "all", status });
-			await runAction(() => markAllNotificationsAction(status), "Couldn't update notifications.");
-		});
+		runAll({ type: "markAll", status }, () => markAllNotificationsAction(status));
 	}
 
 	return (

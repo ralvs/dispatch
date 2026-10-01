@@ -63,9 +63,10 @@ export async function TodayBody({
 		schedule: isToday ? view.daySchedule : undefined,
 	});
 
-	// The day's rows and today's task counts go to the entity store (#26), so
-	// a tick anywhere moves both without a page render. The counts are the
-	// digest's own numbers — Today is locked to the real today (ADR-0036).
+	// The day's rows and today's counts go to the entity store (#26, #28), so
+	// a tick or a mark-read anywhere moves them without a page render. The
+	// counts are the digest's own numbers — Today is locked to the real today
+	// (ADR-0036).
 	const snapshot: Snapshot = {
 		readAt,
 		todayIso,
@@ -75,6 +76,7 @@ export async function TodayBody({
 			"tasks.open": view.anchor.openCount,
 			"tasks.overdue": view.anchor.overdueCount,
 			"tasks.inbox": view.inboxCount,
+			"notifications.unread": view.masthead.unreadNotifications,
 		},
 	};
 

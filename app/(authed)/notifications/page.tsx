@@ -3,18 +3,35 @@ import { PageHeader, SkeletonRows } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedNotifications } from "@/lib/cache/notifications";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
+import { todayInTz } from "@/lib/dates";
+import { viewKey } from "@/lib/store/keys";
+import { Seed } from "@/lib/store/seed";
+import type { Snapshot } from "@/lib/store/types";
 import { NotificationList } from "./notification-list";
 
 async function NotificationsBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
-	const [notifications, tz] = await Promise.all([getCachedNotifications(), getCachedAppTimezone()]);
-	const visible = notifications.filter((n) => n.status !== "dismissed");
+	const [{ readAt, notifications }, tz] = await Promise.all([
+		getCachedNotifications(),
+		getCachedAppTimezone(),
+	]);
+	// The list reads the entity store (#28); the view drops dismissed rows.
+	const snapshot: Snapshot = {
+		readAt,
+		todayIso: todayInTz(tz),
+		tz,
+		views: [{ key: viewKey.notifications(), type: "notificationList", data: notifications }],
+	};
 
 	// Subtitle, bulk actions, and rows live in the client list so unread
-	// counts and dismissals flip before revalidation.
-	return <NotificationList notifications={visible} tz={tz} />;
+	// counts and dismissals flip at once.
+	return (
+		<Seed snapshot={snapshot}>
+			<NotificationList tz={tz} />
+		</Seed>
+	);
 }
 
 export default function NotificationsPage() {

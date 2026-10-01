@@ -2,6 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import type { CachedReader } from "@/lib/cache/manifest";
 import { CacheTag } from "@/lib/cache/tags";
+import { nowUtc } from "@/lib/dates";
 import { listNotifications } from "@/lib/services/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -11,13 +12,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * as the external writers below — the test in
  * lib/mutation-feedback/invalidate.test.ts holds every route that records a
  * notification to busting this tag.
+ *
+ * `readAt` is the entity store's version (lib/store/types.ts), stamped inside
+ * the cache so a stale entry keeps its old stamp and a confirmed write
+ * replays over it.
  */
 export async function getCachedNotifications() {
 	"use cache";
 	cacheTag(CacheTag.notifications);
 	cacheLife("tagged");
 
-	return listNotifications(createAdminClient(), { limit: 100 });
+	const readAt = nowUtc();
+	const notifications = await listNotifications(createAdminClient(), { limit: 100 });
+	return { readAt, notifications };
 }
 
 export const readers: CachedReader[] = [
