@@ -2,12 +2,14 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { nowUtc } from "@/lib/dates";
+import { ROUTINE_HISTORY_DAYS, withHistory } from "@/lib/routine-stats";
 import {
 	COMPLETION_SELECT,
 	type CompletionRow,
 	type CreateRoutineSchema,
 	ROUTINE_SELECT,
 	type RoutineRow,
+	type RoutineWithHistory,
 	type UpdateRoutineSchema,
 } from "@/lib/schemas/routine";
 import { unwrap } from "@/lib/services/errors";
@@ -36,6 +38,22 @@ export async function listRoutines(
 export async function getRoutine(sb: SupabaseClient, id: string): Promise<RoutineRow | null> {
 	const data = unwrap(await sb.from("routines").select(ROUTINE_SELECT).eq("id", id).maybeSingle());
 	return (data as unknown as RoutineRow | null) ?? null;
+}
+
+/**
+ * One routine with its completion log since `sinceIso` — the row a routine
+ * write returns to the entity store (#29). Null when the routine is gone.
+ */
+export async function getRoutineWithHistory(
+	sb: SupabaseClient,
+	id: string,
+	sinceIso: string,
+): Promise<RoutineWithHistory | null> {
+	const [routine, byRoutine] = await Promise.all([
+		getRoutine(sb, id),
+		listCompletionsForRoutines(sb, [id], sinceIso),
+	]);
+	return routine ? withHistory([routine], byRoutine[id] ?? [])[0] : null;
 }
 
 export async function createRoutine(
@@ -100,12 +118,12 @@ export async function listCompletionsForRoutines(
 	sinceIso?: string,
 ): Promise<Record<string, CompletionRow[]>> {
 	if (routineIds.length === 0) return {};
-	// PostgREST caps unbounded selects at 1000 rows. The only caller
-	// (routines/page.tsx) asks for a 35-day window; sized generously above
-	// that (40 days) so a fully-completed set of routines can't silently lose
-	// rows to the implicit cap — with enough routines the cap is still
-	// reachable, but only deliberately, via this explicit number.
-	const windowDays = 40;
+	// PostgREST caps unbounded selects at 1000 rows. Callers ask for the
+	// ROUTINE_HISTORY_DAYS window; sized one day above it so a fully-completed
+	// set of routines can't silently lose rows to the implicit cap — with
+	// enough routines the cap is still reachable, but only deliberately, via
+	// this explicit number.
+	const windowDays = ROUTINE_HISTORY_DAYS + 1;
 	let q = sb
 		.from("routine_completions")
 		.select(COMPLETION_SELECT)

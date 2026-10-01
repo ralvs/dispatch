@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useOptimistic, useTransition } from "react";
 import { Card, Checkbox, Progress } from "@/components/ui";
-import { runAction } from "@/lib/client/toast";
-import type { RoutineBucket, RoutineBucketRow } from "@/lib/services/today";
+import { bucketRoutines, type RoutineBucket, type RoutineBucketRow } from "@/lib/routine-buckets";
+import type { RoutineWithHistory } from "@/lib/schemas/routine";
+import { useClock, useRunIntent, useView, viewKey } from "@/lib/store";
 import { PROGRESS_RENDER } from "@/lib/ui/variant";
 import { toggleCompletionAction } from "../routines/actions";
+
+const NO_ROUTINES: RoutineWithHistory[] = [];
 
 const BUCKET_LABELS: Record<RoutineBucket["bucket"], string> = {
 	morning: "Morning",
@@ -38,53 +40,51 @@ function Trail({ trail }: { trail: boolean[] }) {
 const HOT_STREAK = 7;
 
 /**
- * Owns useOptimistic for routine checkboxes so they flip before the Today RSC
- * round-trip — same pattern as the day bands' task toggles.
+ * Reads the routines from the entity store (#29) — the same view /routines
+ * reads — and groups them here, so a tick on either page moves both. A tick is
+ * an intent: the box flips at once, the server's row confirms it, and a
+ * failure puts it back.
+ *
+ * `nowMs` is the server's render instant: "missed" compares a routine's time
+ * with it, so the server and the first client render agree.
  *
  * The completion figure at the top is the shared `Progress` primitive, so
  * switching the whole page back to A1's bars is one line in lib/ui/variant.ts.
  */
-export function RoutinesCard({
-	buckets,
-	done,
-	total,
-}: {
-	buckets: RoutineBucket[];
-	done: number;
-	total: number;
-}) {
-	const [, startTransition] = useTransition();
-	const [optBuckets, dispatchOptimistic] = useOptimistic(
-		buckets,
-		(current, intent: { id: string; done: boolean }) =>
-			current.map((bucket) => ({
-				...bucket,
-				rows: bucket.rows.map((row) =>
-					row.id === intent.id ? { ...row, done: intent.done } : row,
-				),
-			})),
-	);
+export function RoutinesCard({ nowMs }: { nowMs: number }) {
+	const routines = useView(viewKey.routines()) ?? NO_ROUTINES;
+	const { todayIso, tz } = useClock();
+	const run = useRunIntent("routine", { errorMessage: "Couldn't update routine." });
 
+	const buckets: RoutineBucket[] = bucketRoutines({
+		routines,
+		completions: routines.flatMap((r) =>
+			r.completions.map((completed_date) => ({ routine_id: r.id, completed_date })),
+		),
+		todayIso,
+		tz,
+		nowMs,
+	});
+	const total = routines.length;
 	if (total === 0) return null;
 
-	const optDone = optBuckets.reduce((n, bucket) => n + bucket.rows.filter((r) => r.done).length, 0);
-	// Prefer live optimistic count; fall back to server seed if buckets empty mid-flight.
-	const displayDone = optBuckets.length > 0 ? optDone : done;
+	const displayDone = buckets.reduce(
+		(n, bucket) => n + bucket.rows.filter((r) => r.done).length,
+		0,
+	);
 	// Which blocks still have something in them — the useful summary, because
 	// "3 left" does not tell you when you have to do them.
-	const blocksLeft = optBuckets
+	const blocksLeft = buckets
 		.filter((b) => b.rows.some((r) => !r.done))
 		.map((b) => BUCKET_LABELS[b.bucket]);
 
 	function toggle(row: RoutineBucketRow) {
 		const currentlyDone = row.done;
-		startTransition(async () => {
-			dispatchOptimistic({ id: row.id, done: !currentlyDone });
-			await runAction(
-				() => toggleCompletionAction(row.id, currentlyDone),
-				"Couldn't update routine.",
-			);
-		});
+		// Today's square. The server ticks its own today (no date sent), the
+		// same day this card shows unless the tab has slept past midnight.
+		run({ type: "toggle", id: row.id, date: todayIso, done: !currentlyDone }, () =>
+			toggleCompletionAction(row.id, currentlyDone),
+		);
 	}
 
 	return (
@@ -110,7 +110,7 @@ export function RoutinesCard({
 					</Progress>
 				</div>
 
-				{optBuckets.map((bucket) => (
+				{buckets.map((bucket) => (
 					<div key={bucket.bucket}>
 						<h3 className="mt-3.5 font-mono text-eyebrow uppercase tracking-widest text-ink-3">
 							{BUCKET_LABELS[bucket.bucket]}
