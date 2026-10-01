@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { PushToggle } from "@/components/push-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { PageHeader, SectionHead } from "@/components/ui";
+import { MoreBackLink, PageHeader, SectionHead } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone, getCachedReminderSettings } from "@/lib/cache/settings";
 import { ReminderForm } from "./reminder-form";
@@ -66,6 +66,7 @@ async function AccountEmail() {
 export default function SettingsPage() {
 	return (
 		<div>
+			<MoreBackLink />
 			<PageHeader title="Settings" />
 
 			<section aria-label="Notifications">

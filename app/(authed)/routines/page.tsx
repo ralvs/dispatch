@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { CreateTrigger } from "@/components/create-dialog";
-import { PageSkeleton } from "@/components/ui";
+import { MoreBackLink, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedRoutines } from "@/lib/cache/routines";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -52,8 +52,11 @@ function RoutinesFallback() {
 // header, the band and the rows read the entity store (#29).
 export default function RoutinesPage() {
 	return (
-		<Suspense fallback={<RoutinesFallback />}>
-			<RoutinesBody />
-		</Suspense>
+		<div>
+			<MoreBackLink />
+			<Suspense fallback={<RoutinesFallback />}>
+				<RoutinesBody />
+			</Suspense>
+		</div>
 	);
 }

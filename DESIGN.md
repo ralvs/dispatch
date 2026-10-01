@@ -577,8 +577,12 @@ beneath where one is earned (ADR-0042; Pass 4.5 Gate A for facts).
 - **Subtitle:** only where it carries an instruction. Not a tagline.
 - **No divider, no eyebrow, no second title.** The 64px the shell puts above the
   header is the separation.
+- **Way back:** a mono breadcrumb above the header, `pb-4`, on every page that
+  is not a top tab. A detail page links to its list (`← Projects`, `BackLink`).
+  A page the More menu hosts opens the menu (`← More`, `MoreBackLink`) — More
+  is a menu, not a route. Every width (ADR-0068).
 
-Three deliberate exceptions decline it:
+Three deliberate exceptions decline the page header:
 
 - **Today:** its `h1` is a sentence about the day and its dateline is the day
   nav.
