@@ -67,7 +67,7 @@ export const POST = ownerRoute(
 		// Only bust caches if something actually landed.
 		let write = null;
 		if (attached.length > 0) {
-			afterMutation("notes.write", { id: parsedId.data });
+			afterMutation("notes.write");
 			const note = await getNote(sb, parsedId.data);
 			write = note ? stampWrite([note]) : null;
 		}

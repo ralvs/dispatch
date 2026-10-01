@@ -29,6 +29,7 @@ const ALL_KINDS: MutationKind[] = [
 	"theme",
 	"today.only",
 	"notes.write",
+	"notes.links",
 	"quotes.write",
 	"journal.write",
 	"people.write",
@@ -63,28 +64,40 @@ describe("invalidationFor", () => {
 	});
 
 	it("theme touches nothing — it is a cookie, not a cache entry", () => {
-		expect(invalidationFor("theme")).toEqual({ tags: [], paths: [] });
+		expect(invalidationFor("theme")).toEqual({ tags: [], readYourWrites: false });
 	});
 
-	it("every kind except theme returns at least one path", () => {
-		for (const kind of ALL_KINDS.filter((k) => k !== "theme")) {
-			expect(invalidationFor(kind).paths.length, kind).toBeGreaterThan(0);
-		}
-	});
-
-	// The trap documented in the invalidate.ts header: dropping the last path
-	// off an action means no fresh RSC payload, and every useOptimistic site
-	// reverts the user's own write on screen.
-	it("keeps a path on the kinds that feed useOptimistic consumers", () => {
+	// #31 inverted the old guard: store-backed kinds re-render nothing. Their
+	// lists read the entity store, which the action's returned rows confirm, so
+	// a page render would only wipe the client router cache.
+	it("store-backed kinds bust tags only, with no page render", () => {
 		for (const kind of [
 			"task.write",
 			"task.assign",
 			"notes.write",
 			"notification.write",
 			"routine.write",
+			"links.write",
+			"quotes.write",
+			"journal.write",
+			"people.write",
+			"projects.write",
+			"projects.detail",
+			"settings.domain",
+			"today.only",
 		] as MutationKind[]) {
-			expect(invalidationFor(kind).paths.length, kind).toBeGreaterThan(0);
+			expect(invalidationFor(kind).readYourWrites, kind).toBe(false);
 		}
+	});
+
+	it("only the rare writes the store cannot confirm read their own writes", () => {
+		const rare = ALL_KINDS.filter((k) => invalidationFor(k).readYourWrites).sort();
+		expect(rare).toEqual([
+			"capture.settled",
+			"notes.links",
+			"settings.reminders",
+			"settings.timezone",
+		]);
 	});
 
 	describe("live tags are named by the writes that move their data", () => {
@@ -130,31 +143,6 @@ describe("invalidationFor", () => {
 				expect(tags, live).toContain(live);
 			}
 		});
-	});
-
-	describe("detail?.id", () => {
-		it("adds the detail path for notes when given an id", () => {
-			expect(invalidationFor("notes.write", { id: "abc" }).paths).toContainEqual({
-				path: "/notes/abc",
-			});
-		});
-
-		it("omits it when there is no id", () => {
-			const paths = invalidationFor("notes.write").paths.map((p) => p.path);
-			expect(paths).toEqual(["/notes"]);
-		});
-
-		it("keeps /today on projects.detail with an id", () => {
-			const paths = invalidationFor("projects.detail", { id: "p1" }).paths.map((p) => p.path);
-			expect(paths).toEqual(["/projects", "/projects/p1", "/today"]);
-		});
-	});
-
-	it("only settings.timezone revalidates a layout", () => {
-		for (const kind of ALL_KINDS) {
-			const layouts = invalidationFor(kind).paths.filter((p) => p.type === "layout");
-			expect(layouts.length, kind).toBe(kind === "settings.timezone" ? 1 : 0);
-		}
 	});
 });
 

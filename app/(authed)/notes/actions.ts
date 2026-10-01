@@ -32,8 +32,8 @@ import type { StoreWrite } from "@/lib/store/types";
 
 type NoteWrite = StoreWrite<NoteListRow>;
 
-function revalidateNoteViews(id?: string) {
-	afterMutation("notes.write", id ? { id } : undefined);
+function revalidateNoteViews() {
+	afterMutation("notes.write");
 }
 
 /** The note read back after the write. A note that is gone comes back as a deleted id. */
@@ -72,7 +72,7 @@ export async function saveNoteAction(
 		title: parsed.title !== null && parsed.title.trim() !== "" ? parsed.title : null,
 		body: parsed.body,
 	});
-	revalidateNoteViews(id);
+	revalidateNoteViews();
 	return writtenNote(sb, noteId);
 }
 
@@ -89,7 +89,7 @@ export async function setNoteDomainAction(
 	const noteId = z.uuid().parse(id);
 	const domain = domainId === "" ? null : z.uuid().parse(domainId);
 	await updateNote(sb, noteId, { domain_id: domain });
-	revalidateNoteViews(id);
+	revalidateNoteViews();
 	return writtenNote(sb, noteId);
 }
 
@@ -97,7 +97,7 @@ export async function resolveNeedsReviewAction(id: string): Promise<ActionResult
 	const { sb } = await requireOwnerPage();
 	const noteId = z.uuid().parse(id);
 	await resolveNeedsReview(sb, noteId);
-	revalidateNoteViews(id);
+	revalidateNoteViews();
 	return writtenNote(sb, noteId);
 }
 
@@ -109,7 +109,7 @@ export async function setPinAction(input: {
 	const { sb } = await requireOwnerPage();
 	const noteId = z.uuid().parse(input.id);
 	await setPin(sb, noteId, z.boolean().parse(input.pinned));
-	revalidateNoteViews(input.id);
+	revalidateNoteViews();
 	return writtenNote(sb, noteId);
 }
 
@@ -138,7 +138,9 @@ export async function attachLinkAction(
 	const type = LinkTargetTypeSchema.parse(targetType);
 	const target = z.uuid().parse(targetId);
 	await createManualLink(sb, { note_id: id, target_type: type, target_id: target });
-	revalidateNoteViews(id);
+	// The link rail is server-rendered from note_links, which the entity
+	// store does not hold: re-render it (lib/mutation-feedback/invalidate.ts).
+	afterMutation("notes.links");
 }
 
 /**
@@ -156,15 +158,17 @@ export async function removeAttachmentAction(
 	const id = z.uuid().parse(noteId);
 	const path = z.string().min(1).parse(storagePath);
 	await removeAttachment(sb, id, path);
-	revalidateNoteViews(id);
+	revalidateNoteViews();
 	return writtenNote(sb, id);
 }
 
 export async function detachLinkAction(noteId: string, linkId: string) {
 	const { sb } = await requireOwnerPage();
-	const id = z.uuid().parse(noteId);
+	z.uuid().parse(noteId);
 	await deleteLink(sb, z.uuid().parse(linkId));
-	revalidateNoteViews(id);
+	// The link rail is server-rendered from note_links, which the entity
+	// store does not hold: re-render it (lib/mutation-feedback/invalidate.ts).
+	afterMutation("notes.links");
 }
 
 /** Read-only: powers the link-picker's search dropdown. No afterMutation. */

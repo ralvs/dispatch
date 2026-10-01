@@ -32,8 +32,8 @@ import type { StoreWrite } from "@/lib/store/types";
 // intent from it instead of waiting on a page render. Failures throw; the
 // store runner rolls back on a throw.
 
-function revalidatePersonViews(id: string) {
-	afterMutation("people.write", { id });
+function revalidatePersonViews() {
+	afterMutation("people.write");
 }
 
 export async function updatePersonAction(
@@ -44,7 +44,7 @@ export async function updatePersonAction(
 	const personId = z.uuid().parse(id);
 	const parsed = decodeForm(UpdatePersonSchema, formData);
 	await updatePerson(sb, personId, parsed);
-	revalidatePersonViews(personId);
+	revalidatePersonViews();
 	const row = await getPerson(sb, personId);
 	return { ok: true, data: row ? stampWrite([row]) : stampWrite([], [personId]) };
 }
@@ -66,7 +66,7 @@ export async function createFactAction(
 	const id = z.uuid().parse(personId);
 	const parsed = decodeForm(CreatePersonFactSchema, formData);
 	const fact = await createFact(sb, id, parsed);
-	revalidatePersonViews(id);
+	revalidatePersonViews();
 	return { ok: true, data: stampWrite([fact]) };
 }
 
@@ -75,9 +75,10 @@ export async function deleteFactAction(
 	factId: string,
 ): Promise<ActionResult<StoreWrite<PersonFactRow>>> {
 	const { sb } = await requireOwnerPage();
+	z.uuid().parse(personId);
 	const id = z.uuid().parse(factId);
 	await deleteFact(sb, id);
-	revalidatePersonViews(z.uuid().parse(personId));
+	revalidatePersonViews();
 	return { ok: true, data: stampWrite([], [id]) };
 }
 
@@ -98,7 +99,7 @@ export async function createInteractionAction(
 		overrides: { occurred_at: occurredAt },
 	});
 	const interaction = await createInteraction(sb, id, parsed);
-	revalidatePersonViews(id);
+	revalidatePersonViews();
 	return { ok: true, data: stampWrite([interaction]) };
 }
 
@@ -107,8 +108,9 @@ export async function deleteInteractionAction(
 	interactionId: string,
 ): Promise<ActionResult<StoreWrite<PersonInteractionRow>>> {
 	const { sb } = await requireOwnerPage();
+	z.uuid().parse(personId);
 	const id = z.uuid().parse(interactionId);
 	await deleteInteraction(sb, id);
-	revalidatePersonViews(z.uuid().parse(personId));
+	revalidatePersonViews();
 	return { ok: true, data: stampWrite([], [id]) };
 }

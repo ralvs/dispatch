@@ -35,6 +35,10 @@ const nextConfig: NextConfig = {
 	// be re-read blocking — reachable only if no write touched its tag for a
 	// week. `stale: 5m` matches staleTimes.dynamic, which SoftRefresh already
 	// treats as the tolerable staleness for a screen.
+	//
+	// afterMutation never expires these entries (#31): a write's own tab holds
+	// the rows it wrote, so the one stale read after a write is covered by the
+	// entity store. The rare writes the store cannot confirm call updateTag.
 	cacheLife: {
 		tagged: { stale: 300, revalidate: 3600, expire: 604800 },
 	},
@@ -58,10 +62,12 @@ const nextConfig: NextConfig = {
 		// into, so the only lever is how long the instant window lasts.
 		//
 		// 5 minutes matches SoftRefresh's own interval — the app already treats
-		// that as the tolerable staleness for a screen. It's safe to go this
-		// long because any revalidatePath evicts the whole client cache, so you
-		// can never see your OWN writes go stale; only the calendar/reminder
-		// crons can drift, and /today self-refreshes on the same cadence.
+		// that as the tolerable staleness for a screen. Re-decided in #31
+		// (docs/adr/0069), when writes stopped wiping the client cache: a
+		// cached page can no longer show your OWN write stale, because its seed
+		// replays every confirmed write newer than it (lib/store/types.ts). Only
+		// the calendar/reminder crons and the capture webhook can drift, up to
+		// this window — and /today pulls their writes on the same cadence.
 		staleTimes: {
 			dynamic: 300,
 			static: 300,

@@ -160,7 +160,8 @@ export type ViewSeed = {
 /**
  * Entity issues extend this union. The `tasks.*` counts are Today's counters
  * (#26): open and overdue leave out quiet tasks, inbox is unfiled open tasks.
- * `project.done:<id>` is one per project, seeded by /projects.
+ * `project.done:<id>` and `project.open:<id>` are one per project, seeded by
+ * /projects and by Today's projects card.
  */
 export type AggregateKey =
 	| "notes.needsReview"
@@ -168,8 +169,12 @@ export type AggregateKey =
 	| "tasks.open"
 	| "tasks.overdue"
 	| "tasks.inbox"
+	/** Today's calendar events — the counters' first row. Seeds only: a crons' write (#4). */
+	| "events.today"
 	/** Done tasks in one project — the /projects row's `n/m done` (#30). */
-	| `project.done:${string}`;
+	| `project.done:${string}`
+	/** Open tasks in one project — with `project.done`, Today's project rings (#31). */
+	| `project.open:${string}`;
 export type Deltas = Partial<Record<AggregateKey, number>>;
 
 export type Snapshot = Clock & {

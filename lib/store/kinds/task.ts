@@ -78,11 +78,6 @@ function afterIntent(
 	}
 }
 
-/** The project a row counts as done in, if it is done and filed in one. */
-function doneIn(row: TaskRow | undefined): string | null {
-	return row?.status === "done" && row.project_id !== null ? row.project_id : null;
-}
-
 /**
  * Today's counters move with the intent. An edit moves nothing here — its
  * new due date is only known once the server answers — and the next seed
@@ -102,13 +97,23 @@ function taskDeltas(intent: TaskIntent, before: TaskRow | undefined, ctx: Intent
 	if (open !== 0) out["tasks.open"] = open;
 	if (overdue !== 0) out["tasks.overdue"] = overdue;
 	if (inbox !== 0) out["tasks.inbox"] = inbox;
-	// A project's done count (/projects): the row leaving done, the row (or the
-	// occurrence a recurring completion leaves behind) arriving there.
-	const doneBefore = intent.type === "create" ? undefined : doneIn(before);
-	const doneAfter = doneIn(after);
-	if (doneBefore !== doneAfter) {
-		if (doneBefore) out[`project.done:${doneBefore}`] = -1;
-		if (doneAfter) out[`project.done:${doneAfter}`] = (out[`project.done:${doneAfter}`] ?? 0) + 1;
+	// A project's done and open counts (/projects, Today's rings): the row
+	// leaving one, the row arriving in another, and the open occurrence a
+	// recurring completion leaves behind.
+	const move = (key: `project.${"done" | "open"}:${string}`, by: number) => {
+		const next = (out[key] ?? 0) + by;
+		if (next === 0) delete out[key];
+		else out[key] = next;
+	};
+	const prior = intent.type === "create" ? undefined : before;
+	for (const [row, by] of [
+		[prior, -1],
+		[after, 1],
+		[successor, 1],
+	] as const) {
+		if (row?.project_id == null) continue;
+		if (row.status === "done") move(`project.done:${row.project_id}`, by);
+		else if (row.status === "open") move(`project.open:${row.project_id}`, by);
 	}
 	return out;
 }
