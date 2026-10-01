@@ -5,6 +5,8 @@ export const viewKey = {
 	tasks: () => "tasks" as ViewKey<"taskLists">,
 	day: (dateIso: string) => `day:${dateIso}` as ViewKey<"day">,
 	project: (id: string) => `project:${id}` as ViewKey<"taskList">,
+	/** The /projects board: every task tagged with a project that was open at read, and any added since. */
+	projectBoardTasks: () => "projectBoardTasks" as ViewKey<"taskList">,
 	inbox: () => "inbox" as ViewKey<"taskList">,
 	notifications: () => "notifications" as ViewKey<"notificationList">,
 	notes: () => "notes" as ViewKey<"noteLists">,
@@ -17,6 +19,10 @@ export const viewKey = {
 	/** The person page's header: a list of one. */
 	person: (id: string) => `person:${id}` as ViewKey<"personList">,
 	personFacts: (id: string) => `personFacts:${id}` as ViewKey<"personFactList">,
+	projects: () => "projects" as ViewKey<"projectList">,
+	/** The project page's header: a list of one. */
+	projectHead: (id: string) => `projectHead:${id}` as ViewKey<"projectList">,
+	domains: () => "domains" as ViewKey<"domainList">,
 	personInteractions: (id: string) =>
 		`personInteractions:${id}` as ViewKey<"personInteractionList">,
 };

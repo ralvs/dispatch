@@ -22,13 +22,16 @@ export async function getCachedProjectBoard() {
 	cacheTag(CacheTag.projects, CacheTag.tasks);
 	cacheLife("tagged");
 
+	// `readAt` is the entity store's version (lib/store/types.ts), stamped
+	// inside the cache so a stale entry keeps its old stamp.
+	const readAt = nowUtc();
 	const sb = createAdminClient();
 	const [projects, openTasks, taskCounts] = await Promise.all([
 		listProjects(sb),
 		listTasks(sb, { status: "open" }),
 		countTasksByProject(sb),
 	]);
-	return { projects, openTasks, taskCounts };
+	return { readAt, projects, openTasks, taskCounts };
 }
 
 /** One project, for /projects/[id]; null when there is none. */

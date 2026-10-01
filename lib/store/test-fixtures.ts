@@ -1,10 +1,12 @@
 // Shared fixtures for the store's tests. Not imported by app code.
 import type { DaySchedulePayload } from "@/lib/day-schedule";
+import type { DomainItem } from "@/lib/schemas/domain";
 import type { JournalEntryRow } from "@/lib/schemas/journal";
 import type { LinkRow } from "@/lib/schemas/link";
 import type { NoteListRow } from "@/lib/schemas/note";
 import type { NotificationRow } from "@/lib/schemas/notification";
 import type { PersonFactRow, PersonInteractionRow, PersonRow } from "@/lib/schemas/person";
+import type { ProjectRow } from "@/lib/schemas/project";
 import type { QuoteRow } from "@/lib/schemas/quote";
 import type { RoutineWithHistory } from "@/lib/schemas/routine";
 import type { TaskRow } from "@/lib/schemas/task";
@@ -212,6 +214,41 @@ export function personInteraction(
 		interaction_type: "call",
 		notes: partial.id,
 		occurred_at: "2026-07-10T12:00:00+00:00",
+		...partial,
+	};
+}
+
+export function project(partial: Partial<ProjectRow> & Pick<ProjectRow, "id">): ProjectRow {
+	return {
+		name: partial.id,
+		description: null,
+		domain_id: "domain-1",
+		status: "active",
+		start_date: null,
+		target_date: null,
+		completed_at: null,
+		color: null,
+		created_at: "2026-07-01T12:00:00+00:00",
+		updated_at: "2026-07-01T12:00:00+00:00",
+		domain: { id: "domain-1", name: "Home", color: null },
+		...partial,
+	};
+}
+
+export function domainItem(partial: Partial<DomainItem> & Pick<DomainItem, "id">): DomainItem {
+	return {
+		name: partial.id,
+		description: null,
+		fruit_definition: null,
+		failure_patterns: [],
+		expected_cadence: null,
+		active: true,
+		last_shipped_at: null,
+		color: null,
+		created_at: "2026-07-01T12:00:00+00:00",
+		updated_at: "2026-07-01T12:00:00+00:00",
+		cadenceDays: null,
+		touch: null,
 		...partial,
 	};
 }

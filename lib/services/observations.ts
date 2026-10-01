@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { dateOfInstant, todayInTz } from "@/lib/dates";
+import type { DomainItem, DomainRow, DomainTouch } from "@/lib/schemas/domain";
 import { cadenceThresholdDays, listDomains } from "@/lib/services/domains";
 import { unwrap } from "@/lib/services/errors";
 import { listQuietProjectIds } from "@/lib/services/quiet";
@@ -45,19 +46,7 @@ import { isQuiet } from "@/lib/task-predicates";
 /** The neglect observation's `type`, and the dedupe key alongside domain_id. */
 export const NEGLECT_OBSERVATION_TYPE = "domain.neglect";
 
-export type DomainTouch = {
-	domainId: string;
-	name: string;
-	/** UTC ISO of the most recent touch, or null when nothing has ever touched it. */
-	lastTouchUtc: string | null;
-	/** Whole days since the last touch; null when there has never been one. */
-	daysSinceTouch: number | null;
-	/** The domain's own "flag after N days" rule; null means never flag. */
-	thresholdDays: number | null;
-	openTasks: number;
-	/** Has a threshold, and is past it (or has never been touched at all). */
-	quiet: boolean;
-};
+export type { DomainTouch };
 
 /**
  * Whole app-timezone calendar days between an instant and today.
@@ -294,4 +283,13 @@ export async function sweepNeglect(
 	}
 
 	return { flagged: toFlag, resolved: toResolve.length };
+}
+
+/** A domain as /domains shows it: the row, its cadence rule, and its touch from `touches`. */
+export function toDomainItem(row: DomainRow, touches: readonly DomainTouch[]): DomainItem {
+	return {
+		...row,
+		cadenceDays: cadenceThresholdDays(row.failure_patterns),
+		touch: touches.find((t) => t.domainId === row.id) ?? null,
+	};
 }
