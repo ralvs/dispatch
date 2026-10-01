@@ -4,6 +4,9 @@ import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { getCachedTaskBoard } from "@/lib/cache/tasks";
 import { recentDoneSinceUtc, todayInTz } from "@/lib/dates";
+import { viewKey } from "@/lib/store/keys";
+import { Seed } from "@/lib/store/seed";
+import type { Snapshot } from "@/lib/store/types";
 import { NewTaskButton } from "./new-task-button";
 import { TaskList } from "./task-list";
 
@@ -29,9 +32,16 @@ async function TasksBody({
 	const tz = await getCachedAppTimezone();
 	const todayIso = todayInTz(tz);
 	const board = await getCachedTaskBoard(recentDoneSinceUtc(todayIso, tz));
-	const { openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions } = board;
-
-	const inboxCount = openTasks.filter((t) => t.domain_id === null).length;
+	const { readAt, openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions } =
+		board;
+	const snapshot: Snapshot = {
+		readAt,
+		todayIso,
+		tz,
+		views: [
+			{ key: viewKey.tasks(), type: "taskLists", data: { open: openTasks, done: doneTasks } },
+		],
+	};
 	// The quiet rule lives on the project's status, and the board already
 	// carries every project — so the client can derive it without a second read
 	// (lib/services/quiet.ts holds the server-side definition).
@@ -39,24 +49,24 @@ async function TasksBody({
 
 	return (
 		// Header included: the count strip is the status filter, so it lives in
-		// the client component that owns the filter state.
-		<TaskList
-			openTasks={openTasks}
-			doneTasks={doneTasks}
-			todayIso={todayIso}
-			domains={domains}
-			projects={projects}
-			editTaskId={editTaskId ?? null}
-			initialStatus={initialStatus}
-			initialProjectId={initialProjectId}
-			initialDomainId={initialDomainId}
-			taskNoteIds={taskNoteIds}
-			tz={tz}
-			people={people}
-			taskMentions={taskMentions}
-			inboxCount={inboxCount}
-			quietProjectIds={quietProjectIds}
-		/>
+		// the client component that owns the filter state. The rows go to the
+		// entity store, not to TaskList (#26).
+		<Seed snapshot={snapshot}>
+			<TaskList
+				todayIso={todayIso}
+				domains={domains}
+				projects={projects}
+				editTaskId={editTaskId ?? null}
+				initialStatus={initialStatus}
+				initialProjectId={initialProjectId}
+				initialDomainId={initialDomainId}
+				taskNoteIds={taskNoteIds}
+				tz={tz}
+				people={people}
+				taskMentions={taskMentions}
+				quietProjectIds={quietProjectIds}
+			/>
+		</Seed>
 	);
 }
 
@@ -75,7 +85,7 @@ function TasksFallback() {
 
 // The header carries data (its measure), so the whole body streams in behind
 // the page's own boundary and the old loading.tsx is its fallback (#21). The
-// async child is where the entity store gets seeded (#26-#30).
+// async child is where the entity store gets seeded (#26).
 export default function TasksPage({
 	searchParams,
 }: {

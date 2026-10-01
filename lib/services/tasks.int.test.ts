@@ -14,7 +14,7 @@ describe("tasks against the local database", () => {
 		expect(task.status).toBe("open");
 
 		const first = await completeTask(sb, task.id, TODAY, { dueDate: TODAY });
-		expect(first).toEqual({ applied: true, spawned: false, nextDue: null });
+		expect(first).toEqual({ applied: true, spawned: false, nextDue: null, successor: null });
 
 		const done = await getTask(sb, task.id);
 		expect(done?.status).toBe("done");
@@ -33,6 +33,15 @@ describe("tasks against the local database", () => {
 		const stale = await completeTask(sb, task.id, TODAY, { dueDate: "2026-09-21" });
 		expect(stale.applied).toBe(false);
 		expect((await getTask(sb, task.id))?.status).toBe("open");
+	});
+
+	it("reports a deleted task as not applied instead of throwing", async () => {
+		const sb = await ownerClient();
+		const task = await createTask(sb, { title: "Gone before the tick" });
+		await sb.from("tasks").delete().eq("id", task.id);
+
+		const result = await completeTask(sb, task.id, TODAY, { dueDate: null });
+		expect(result).toEqual({ applied: false, spawned: false, nextDue: null, successor: null });
 	});
 
 	it("matches a null due date with `is`, not `eq`", async () => {

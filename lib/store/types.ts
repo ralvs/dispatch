@@ -69,8 +69,16 @@ export type ViewSeed = {
 	[T in ViewType]: { key: ViewKey<T>; type: T; data: ViewTypes[T]["data"] };
 }[ViewType];
 
-/** Entity issues extend this union. */
-export type AggregateKey = "notes.needsReview" | "notifications.unread";
+/**
+ * Entity issues extend this union. The `tasks.*` counts are Today's counters
+ * (#26): open and overdue leave out quiet tasks, inbox is unfiled open tasks.
+ */
+export type AggregateKey =
+	| "notes.needsReview"
+	| "notifications.unread"
+	| "tasks.open"
+	| "tasks.overdue"
+	| "tasks.inbox";
 export type Deltas = Partial<Record<AggregateKey, number>>;
 
 export type Snapshot = Clock & {
@@ -146,7 +154,12 @@ export type KindAdapter<K extends Kind> = {
 	/** Temporary ids an optimistic create introduced; dropped on commit. */
 	provisionalIds(intent: IntentMap[K]): string[];
 	/** Aggregate deltas, computed at apply from the row before the intent. */
-	deltas?(intent: IntentMap[K], before: EntityMap[K] | undefined): Deltas;
+	deltas?(intent: IntentMap[K], before: EntityMap[K] | undefined, ctx: IntentCtx): Deltas;
+	/**
+	 * The deltas to keep once the server answered. Called at confirm; the
+	 * result is what later seeds replay. Omitted: the applied deltas stand.
+	 */
+	settle?(intent: IntentMap[K], write: StoreWrite<EntityMap[K]>, deltas: Deltas): Deltas;
 };
 
 export type Adapters = {

@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useAggregate } from "@/lib/store";
 
 /**
  * The day's weight in four numbers, riding off the headline's baseline.
@@ -13,6 +16,10 @@ import Link from "next/link";
  *
  * On a phone they run as one wrapped line rather than a grid of stat tiles —
  * four numbers are a sentence about the day, not a dashboard.
+ *
+ * The task counts read the entity store (#26), so a tick anywhere moves them
+ * without a page render. The props are the server's numbers, used until the
+ * store holds its own.
  */
 function Counter({
 	count,
@@ -54,15 +61,18 @@ export function Counters({
 	needsReview: number;
 	notifications: number;
 }) {
+	const storeOpen = useAggregate("tasks.open") ?? open;
+	const storeOverdue = useAggregate("tasks.overdue") ?? overdue;
+	const storeInbox = useAggregate("tasks.inbox") ?? inbox;
 	// The comps show four. The last two are here because the sections this
 	// composition cut were the only places they appeared, and both are things
 	// waiting on a decision — which is what this block is. They are rare, and
 	// every row is conditional, so an ordinary day still reads as four.
 	const rows = [
 		{ key: "events", count: events, label: events === 1 ? "event" : "events", href: "/today" },
-		{ key: "open", count: open, label: "open", href: "/tasks" },
-		{ key: "overdue", count: overdue, label: "overdue", href: "/tasks", late: true },
-		{ key: "inbox", count: inbox, label: "in the inbox", href: "/inbox" },
+		{ key: "open", count: storeOpen, label: "open", href: "/tasks" },
+		{ key: "overdue", count: storeOverdue, label: "overdue", href: "/tasks", late: true },
+		{ key: "inbox", count: storeInbox, label: "in the inbox", href: "/inbox" },
 		{ key: "review", count: needsReview, label: "need review", href: "/notes" },
 		{ key: "unread", count: notifications, label: "notifications", href: "/notifications" },
 	].filter((row) => row.count > 0);

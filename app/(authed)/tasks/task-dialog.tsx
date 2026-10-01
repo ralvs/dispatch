@@ -72,6 +72,11 @@ export function TaskDialog({
 	onQuickAdd,
 	/** Edit only — the id the update is written against. */
 	taskId,
+	/**
+	 * Edit only, and optional: the tasks list passes its store-backed save so
+	 * the returned row lands in the entity store. Left out, the action runs bare.
+	 */
+	onUpdate,
 	/** Edit only: parent owns the confirm + optimistic removal. */
 	onDelete,
 	/** Runs after a successful write, before the dialog closes. */
@@ -96,6 +101,7 @@ export function TaskDialog({
 	/** `domainId` is the form's own pick — mandatory there, so always present. */
 	onQuickAdd?: (text: string, domainId: string) => Promise<void>;
 	taskId?: string;
+	onUpdate?: (formData: FormData) => Promise<ActionResult<unknown>>;
 	onDelete?: () => void;
 	onSaved?: () => void;
 }) {
@@ -115,6 +121,7 @@ export function TaskDialog({
 				onCreate={onCreate}
 				onQuickAdd={onQuickAdd}
 				taskId={taskId}
+				onUpdate={onUpdate}
 				onDelete={onDelete}
 				onDone={() => {
 					onSaved?.();
@@ -138,6 +145,7 @@ function TaskDialogForm({
 	onCreate,
 	onQuickAdd,
 	taskId,
+	onUpdate,
 	onDelete,
 	onDone,
 	onCancel,
@@ -153,6 +161,7 @@ function TaskDialogForm({
 	onCreate?: (formData: FormData) => Promise<ActionResult<unknown>>;
 	onQuickAdd?: (text: string, domainId: string) => Promise<void>;
 	taskId?: string;
+	onUpdate?: (formData: FormData) => Promise<ActionResult<unknown>>;
 	onDelete?: () => void;
 	onDone: () => void;
 	onCancel: () => void;
@@ -181,7 +190,7 @@ function TaskDialogForm({
 	async function write(formData: FormData): Promise<ActionResult<unknown>> {
 		if (mode === "edit") {
 			if (!taskId) throw new Error("TaskDialog: edit mode needs a taskId");
-			return updateTaskAction(taskId, formData);
+			return onUpdate ? onUpdate(formData) : updateTaskAction(taskId, formData);
 		}
 		const title = String(formData.get("title") ?? "").trim();
 		if (onQuickAdd && title && titleOnlyCreate(formData)) {

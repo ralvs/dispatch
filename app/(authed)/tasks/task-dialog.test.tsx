@@ -69,7 +69,10 @@ describe("TaskDialog", () => {
 	});
 
 	it("closes on success", async () => {
-		vi.mocked(createTaskAction).mockResolvedValue({ ok: true, data: undefined });
+		vi.mocked(createTaskAction).mockResolvedValue({
+			ok: true,
+			data: { at: "2026-09-30T12:00:00.000Z", rows: [] },
+		});
 		const onClose = vi.fn();
 		const user = userEvent.setup();
 		render(<Harness onClose={onClose} />);

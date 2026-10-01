@@ -1,10 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCachedTodayDigest } from "@/lib/cache/today";
+import { nowUtc } from "@/lib/dates";
 import {
 	assembleTodayView,
 	loadDayScheduleInputs,
 	loadDaySchedulePayload,
 } from "@/lib/services/today";
+import { viewKey } from "@/lib/store/keys";
+import { Seed } from "@/lib/store/seed";
+import type { Snapshot } from "@/lib/store/types";
 import { Counters } from "./counters";
 import { DayView } from "./day-view";
 import { ProjectsCard } from "./projects-card";
@@ -40,6 +44,9 @@ export async function TodayBody({
 	selectedIso: string;
 }) {
 	const nowMs = Date.now();
+	// The entity store's version for everything read below (lib/store/types.ts),
+	// stamped before the first read starts.
+	const readAt = nowUtc(nowMs);
 	const [{ open, completed, events: todayEvents }, digest] = await Promise.all([
 		loadDayScheduleInputs(sb, tz, todayIso),
 		getCachedTodayDigest(todayIso),
@@ -50,25 +57,33 @@ export async function TodayBody({
 	// The default view already has today's bands from assemble; only a day
 	// navigated away pays for the second read. Note-id maps share one helper
 	// with loadDayScheduleAction so SSR and day-nav cannot drift.
-	const { schedule, nowUtcIso, nowLabel, eventNoteIds, taskNoteIds } = await loadDaySchedulePayload(
-		sb,
+	const day = await loadDaySchedulePayload(sb, tz, selectedIso, {
+		todayIso,
+		nowMs,
+		schedule: isToday ? view.daySchedule : undefined,
+	});
+
+	// The day's rows and today's task counts go to the entity store (#26), so
+	// a tick anywhere moves both without a page render. The counts are the
+	// digest's own numbers — Today is locked to the real today (ADR-0036).
+	const snapshot: Snapshot = {
+		readAt,
+		todayIso,
 		tz,
-		selectedIso,
-		{ todayIso, nowMs, schedule: isToday ? view.daySchedule : undefined },
-	);
+		views: [{ key: viewKey.day(selectedIso), type: "day", data: day }],
+		aggregates: {
+			"tasks.open": view.anchor.openCount,
+			"tasks.overdue": view.anchor.overdueCount,
+			"tasks.inbox": view.inboxCount,
+		},
+	};
 
 	return (
-		<>
+		<Seed snapshot={snapshot}>
 			<TodayStyles />
 			<DayView
-				schedule={schedule}
 				dateIso={selectedIso}
 				todayIso={todayIso}
-				tz={tz}
-				nowUtcIso={nowUtcIso}
-				nowLabel={nowLabel}
-				eventNoteIds={eventNoteIds}
-				taskNoteIds={taskNoteIds}
 				domains={digest.domains.map((d) => ({ name: d.name, color: d.color }))}
 				counters={
 					<Counters
@@ -98,6 +113,6 @@ export async function TodayBody({
 					/>
 				}
 			/>
-		</>
+		</Seed>
 	);
 }

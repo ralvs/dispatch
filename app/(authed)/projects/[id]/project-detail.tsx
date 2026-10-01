@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { type ReactNode, useOptimistic, useState, useTransition } from "react";
-import { completeTaskAction, reopenTaskAction, setTop3Action } from "@/app/(authed)/tasks/actions";
+import { useState, useTransition } from "react";
+import {
+	completeTaskAction,
+	createTaskAction,
+	reopenTaskAction,
+	setTop3Action,
+} from "@/app/(authed)/tasks/actions";
 import { ColorDot } from "@/components/color-dot";
 import {
 	Button,
@@ -23,59 +28,44 @@ import type { DomainRow } from "@/lib/services/domains";
 import type { ProjectRow } from "@/lib/services/projects";
 import { taskProgress } from "@/lib/services/projects-shared";
 import type { TaskRow } from "@/lib/services/tasks";
-import {
-	type ApplyContext,
-	completeTaskFields,
-	reopenTaskFields,
-	type TaskIntent,
-} from "@/lib/task-interaction/apply-intent";
+import { useStoreWrite, useView, viewKey } from "@/lib/store";
+import { optimisticTaskFromForm } from "@/lib/task-interaction/optimistic-task";
 import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
+import { AddTaskButton } from "../add-task-button";
 import { statusLabel } from "../constants";
 import { archiveProjectAction, completeProjectAction, updateProjectAction } from "./actions";
 
-/** Flat-list projector — `applyTaskLists` caps done at 10 for the Tasks page. */
-function applyProjectTasks(tasks: TaskRow[], intent: TaskIntent, ctx: ApplyContext): TaskRow[] {
-	if (intent.type === "complete") {
-		const task = tasks.find((t) => t.id === intent.id);
-		if (!task) return tasks;
-		const next = completeTaskFields(task, ctx, { clearTop3: false });
-		return tasks.map((t) => (t.id === intent.id ? next : t));
-	}
-	if (intent.type === "reopen") {
-		const task = tasks.find((t) => t.id === intent.id);
-		if (!task) return tasks;
-		return tasks.map((t) => (t.id === intent.id ? reopenTaskFields(t) : t));
-	}
-	return tasks;
-}
+const NO_TASKS: TaskRow[] = [];
 
+/**
+ * The project's tasks come from the entity store view the page's <Seed> fed
+ * (#26): every task tagged with this project, open and done (shape plan §02).
+ */
 export function ProjectDetail({
 	project,
-	tasks,
+	projects,
 	domains,
 	todayIso,
-	addTask,
 }: {
 	project: ProjectRow;
-	/** Every task tagged with this project, open and done (shape plan §02). */
-	tasks: TaskRow[];
+	/** Every project, for the add-task form's project picker. */
+	projects: Pick<ProjectRow, "id" | "name" | "domain_id">[];
 	domains: DomainRow[];
 	/** App-timezone today (docs/adr/0002) — recurrence rolls from this. */
 	todayIso: string;
-	/**
-	 * "Add task", pre-filled and locked to this project. Lives on the header
-	 * so the list rows can rest (ADR-0044).
-	 */
-	addTask?: ReactNode;
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
 	const domain = domains.find((d) => d.id === project.domain_id);
-	const ctx: ApplyContext = { todayIso };
-	const [optTasks, dispatchOptimistic] = useOptimistic(tasks, (current, intent: TaskIntent) =>
-		applyProjectTasks(current, intent, ctx),
-	);
-	const run = useTaskIntentRunner(dispatchOptimistic);
+	const optTasks = useView(viewKey.project(project.id)) ?? NO_TASKS;
+	const run = useTaskIntentRunner();
+	const write = useStoreWrite("task");
+	const domainOptions = domains.map((d) => ({ id: d.id, name: d.name, color: d.color }));
+
+	function createTask(formData: FormData) {
+		const optimistic = optimisticTaskFromForm(formData, domainOptions, projects);
+		return write({ type: "create", task: optimistic }, () => createTaskAction(formData));
+	}
 	const openTasks = optTasks.filter((t) => t.status !== "done");
 	const doneTasks = optTasks.filter((t) => t.status === "done");
 
@@ -124,7 +114,18 @@ export function ProjectDetail({
 						</span>
 					) : undefined
 				}
-				action={addTask}
+				action={
+					// "Add task", pre-filled and locked to this project. Lives on the
+					// header so the list rows can rest (ADR-0044).
+					<AddTaskButton
+						project={{ id: project.id, name: project.name, domain_id: project.domain_id }}
+						domainId={project.domain_id}
+						projects={projects}
+						domains={domainOptions}
+						todayIso={todayIso}
+						onCreate={createTask}
+					/>
+				}
 			/>
 
 			<section aria-label="Details">

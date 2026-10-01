@@ -8,6 +8,7 @@ import { MentionChip } from "@/components/mention-chip";
 import { Checkbox, rowTitle } from "@/components/ui";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
+import type { ActionResult } from "@/lib/action-result";
 import { formatDay, formatDueLabel, formatInstant, formatLateLabel } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_GLYPH, recurrenceLabel } from "@/lib/recurrence";
@@ -19,11 +20,13 @@ import { TaskNotePopover } from "./task-note-popover";
 
 export type { TaskDomainOption };
 
-/** Parent-owned intents (optimistic list applies, then server action). */
+/** Parent-owned intents (the entity store applies, then the server action). */
 export type TaskRowHandlers = {
 	onToggleDone: () => void;
 	onToggleTop3: () => void;
 	onDelete?: () => void;
+	/** The edit form's save, routed through the store. Left out, the action runs bare. */
+	onUpdate?: (formData: FormData) => Promise<ActionResult<unknown>>;
 };
 
 /**
@@ -161,6 +164,7 @@ export function TaskRowItem({
 					todayIso={todayIso}
 					people={people}
 					onDelete={handlers.onDelete ? remove : undefined}
+					onUpdate={handlers.onUpdate}
 					defaults={{
 						title: task.title,
 						notes: task.notes,

@@ -76,3 +76,33 @@ export function useRunIntent<K extends Kind>(
 		[kind, lock, errorMessage, apply, confirm, rollback],
 	);
 }
+
+/**
+ * The awaited sibling of useRunIntent, for forms: apply → action → confirm or
+ * rollback, and the result goes back to the caller, whose form shows its
+ * field errors. No toast here — the form owns failure copy. A throw rolls
+ * back and is rethrown to the form's own handler.
+ */
+export function useStoreWrite<K extends Kind>(
+	kind: K,
+): <R extends ActionResult<StoreWrite<EntityMap[K]>>>(
+	intent: IntentMap[K],
+	action: () => Promise<R>,
+) => Promise<R> {
+	const { apply, confirm, rollback } = useStoreActions();
+	return useCallback(
+		async (intent, action) => {
+			const token = apply({ kind, intent } as AnyIntent);
+			try {
+				const result = await action();
+				if (result.ok) confirm(token, result.data as StoreWrite);
+				else rollback(token);
+				return result;
+			} catch (error) {
+				rollback(token);
+				throw error;
+			}
+		},
+		[kind, apply, confirm, rollback],
+	);
+}

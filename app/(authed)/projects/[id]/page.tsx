@@ -9,7 +9,9 @@ import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedProject } from "@/lib/cache/projects";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { todayInTz } from "@/lib/dates";
-import { AddTaskButton } from "../add-task-button";
+import { viewKey } from "@/lib/store/keys";
+import { Seed } from "@/lib/store/seed";
+import type { Snapshot } from "@/lib/store/types";
 import { ProjectDetail } from "./project-detail";
 
 export async function generateMetadata({
@@ -42,26 +44,31 @@ async function ProjectBody({ params }: { params: Promise<{ id: string }> }) {
 		getCachedAppTimezone(),
 	]);
 	if (!detail) notFound();
-	const { project, tasks, projects } = detail;
+	const { readAt, project, tasks, projects } = detail;
 
 	const todayIso = todayInTz(tz);
+	const snapshot: Snapshot = {
+		readAt,
+		todayIso,
+		tz,
+		views: [
+			{
+				key: viewKey.project(project.id),
+				type: "taskList",
+				data: { rows: tasks, scope: { projectId: project.id } },
+			},
+		],
+	};
 
 	return (
-		<ProjectDetail
-			project={project}
-			tasks={tasks}
-			domains={domains}
-			todayIso={todayIso}
-			addTask={
-				<AddTaskButton
-					project={{ id: project.id, name: project.name, domain_id: project.domain_id }}
-					domainId={project.domain_id}
-					projects={projects.map((p) => ({ id: p.id, name: p.name, domain_id: p.domain_id }))}
-					domains={domains.map((d) => ({ id: d.id, name: d.name, color: d.color }))}
-					todayIso={todayIso}
-				/>
-			}
-		/>
+		<Seed snapshot={snapshot}>
+			<ProjectDetail
+				project={project}
+				projects={projects.map((p) => ({ id: p.id, name: p.name, domain_id: p.domain_id }))}
+				domains={domains}
+				todayIso={todayIso}
+			/>
+		</Seed>
 	);
 }
 

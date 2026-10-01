@@ -4,6 +4,7 @@ import { useState } from "react";
 import { TaskDialog } from "@/app/(authed)/tasks/task-dialog";
 import type { TaskDomainOption, TaskProjectOption } from "@/app/(authed)/tasks/task-fields";
 import { Button, HeaderCreateButton } from "@/components/ui";
+import type { ActionResult } from "@/lib/action-result";
 
 /**
  * "Add task" from a project surface — the same dialog, with Project and Domain
@@ -26,6 +27,7 @@ export function AddTaskButton({
 	domains,
 	todayIso,
 	variant = "header",
+	onCreate,
 }: {
 	project: TaskProjectOption;
 	/** The project's domain — locked on the form, same as the project. */
@@ -35,6 +37,8 @@ export function AddTaskButton({
 	domains: TaskDomainOption[];
 	todayIso: string;
 	variant?: "header" | "row";
+	/** The project page's store-backed create (#26). Left out, the action runs bare. */
+	onCreate?: (formData: FormData) => Promise<ActionResult<unknown>>;
 }) {
 	const [open, setOpen] = useState(false);
 	const label = `Add a task to ${project.name}`;
@@ -64,6 +68,7 @@ export function AddTaskButton({
 				lockDomain
 				todayIso={todayIso}
 				defaults={{ project_id: project.id, domain_id: domainId }}
+				onCreate={onCreate}
 			/>
 		</>
 	);

@@ -2,18 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useOptimistic, useState, useTransition } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { EmptyState, PageHeader, SectionHead, StatBand } from "@/components/ui";
 import type { ActionResult } from "@/lib/action-result";
 import { dateOfInstant, recentDoneSinceDate } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { TaskRow } from "@/lib/services/tasks";
+import { useStoreWrite, useView, viewKey } from "@/lib/store";
+import type { TaskLists } from "@/lib/task-interaction/apply-intent";
 import {
-	type ApplyContext,
-	applyTaskLists,
-	type TaskIntent,
-	type TaskLists,
-} from "@/lib/task-interaction/apply-intent";
+	optimisticTaskFromForm,
+	optimisticTaskFromText,
+} from "@/lib/task-interaction/optimistic-task";
 import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
 import { isDueToday, isOverdue, isQuiet, isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
 import {
@@ -23,19 +23,16 @@ import {
 	quickAddTaskAction,
 	reopenTaskAction,
 	setTop3Action,
+	updateTaskAction,
 } from "./actions";
 import { NewTaskButton } from "./new-task-button";
 import { TaskDialog } from "./task-dialog";
 import type { TaskDomainOption, TaskProjectOption } from "./task-fields";
-import {
-	type TaskFilterOption,
-	TaskScopeFilters,
-	type TaskStatusFilter,
-	TaskStatusStrip,
-	UNFILED,
-} from "./task-filters";
+import { TaskScopeFilters, type TaskStatusFilter, TaskStatusStrip, UNFILED } from "./task-filters";
 import { TaskRowItem } from "./task-row";
 import { taskStats } from "./task-stats-band";
+
+const NO_LISTS: TaskLists = { open: [], done: [] };
 
 function isTaskStatusFilter(value: string | undefined): value is TaskStatusFilter {
 	return value === "open" || value === "overdue" || value === "today" || value === "quiet";
@@ -51,80 +48,8 @@ function filterQuery(status: TaskStatusFilter, projectId: string, domainId: stri
 	return qs ? `?${qs}` : "";
 }
 
-/** A new task as the client can know it: unfiled, no server round-trip. */
-function optimisticTask(overrides: Partial<TaskRow> = {}): TaskRow {
-	return {
-		id: crypto.randomUUID(),
-		title: "Untitled",
-		notes: null,
-		status: "open",
-		due_date: null,
-		due_time: null,
-		priority: 3,
-		project_id: null,
-		domain_id: null,
-		recurrence_rule: null,
-		recurrence_day: null,
-		top3_for_date: null,
-		source: "manual",
-		created_at: new Date().toISOString(),
-		completed_at: null,
-		domain: null,
-		project: null,
-		...overrides,
-	};
-}
-
-/**
- * Raw text plus the domain the form stated; everything else defaults and the
- * parsed row swaps in on revalidation. The domain is carried rather than left
- * null because the list is filtered BY domain — a fake row filed nowhere would
- * vanish from the view that created it and reappear a moment later.
- */
-function optimisticTaskFromText(
-	text: string,
-	domainId: string,
-	domains: TaskDomainOption[],
-): TaskRow {
-	const domain = domains.find((d) => d.id === domainId);
-	return optimisticTask({
-		title: text,
-		domain_id: domainId || null,
-		domain: domain ? { id: domain.id, name: domain.name, color: domain.color ?? null } : null,
-	});
-}
-
-function optimisticTaskFromForm(
-	formData: FormData,
-	domains: TaskDomainOption[],
-	projects: TaskFilterOption[],
-): TaskRow {
-	const domainId = String(formData.get("domain_id") ?? "") || null;
-	const domain = domains.find((d) => d.id === domainId);
-	const projectId = String(formData.get("project_id") ?? "") || null;
-	const project = projects.find((p) => p.id === projectId);
-	const priorityRaw = Number(formData.get("priority"));
-
-	return optimisticTask({
-		title: String(formData.get("title") ?? "").trim() || "Untitled",
-		notes: String(formData.get("notes") ?? "") || null,
-		due_date: String(formData.get("due_date") ?? "") || null,
-		due_time: String(formData.get("due_time") ?? "") || null,
-		priority: Number.isFinite(priorityRaw) ? priorityRaw : 3,
-		domain_id: domainId,
-		// The optimistic builder hard-coded `project_id: null` while the form
-		// could not set one. It can now (shape plan §06), so the fake row has
-		// to carry the real answer or the project filter drops it on sight.
-		project_id: projectId,
-		recurrence_rule: String(formData.get("recurrence_rule") ?? "") || null,
-		domain: domain ? { id: domain.id, name: domain.name, color: domain.color ?? null } : null,
-		project: project ? { id: project.id, name: project.name } : null,
-	});
-}
-
+/** Reads its rows from the entity store view the page's <Seed> fed (#26). */
 export function TaskList({
-	openTasks,
-	doneTasks,
 	todayIso,
 	domains,
 	projects,
@@ -136,11 +61,8 @@ export function TaskList({
 	tz,
 	people = [],
 	taskMentions,
-	inboxCount = 0,
 	quietProjectIds = [],
 }: {
-	openTasks: TaskRow[];
-	doneTasks: TaskRow[];
 	todayIso: string;
 	domains: TaskDomainOption[];
 	/**
@@ -165,21 +87,17 @@ export function TaskList({
 	people?: MentionCandidate[];
 	/** task id -> people already mentioned in it, for the mention chips on rows. */
 	taskMentions?: Record<string, { id: string; name: string }[]>;
-	/** Unfiled open tasks — surfaced as the header's link to /inbox. */
-	inboxCount?: number;
 	/** Ids of projects that are not active — what makes an undated task quiet. */
 	quietProjectIds?: string[];
 }) {
 	const quietProjects = useMemo(() => new Set(quietProjectIds), [quietProjectIds]);
 	const router = useRouter();
-	const [, startTransition] = useTransition();
-	const seed: TaskLists = { open: openTasks, done: doneTasks };
-	const ctx: ApplyContext = { todayIso };
-
-	const [lists, dispatchOptimistic] = useOptimistic(seed, (current, intent: TaskIntent) =>
-		applyTaskLists(current, intent, ctx),
-	);
-	const run = useTaskIntentRunner(dispatchOptimistic);
+	const lists = useView(viewKey.tasks()) ?? NO_LISTS;
+	const run = useTaskIntentRunner();
+	const write = useStoreWrite("task");
+	// Unfiled open tasks — the header's link to /inbox. From the store, so
+	// filing one elsewhere moves it here too.
+	const inboxCount = lists.open.filter((t) => t.domain_id === null).length;
 
 	// The header's `+`. One standing action, right-aligned on the title's
 	// baseline, rather than the standing capture line it replaced (docs/adr/0043).
@@ -188,8 +106,8 @@ export function TaskList({
 	// Ids of tasks created optimistically in this session — always shown
 	// regardless of the active filter, so a capture typed while "Domain: Work"
 	// is active doesn't vanish just because it optimistically has no domain
-	// yet. Once the server round-trip revalidates the real lists, the fake id
-	// simply no longer matches any row, so nothing needs to prune this set.
+	// yet. Once the store confirms the write, the fake id is swapped for the
+	// server's row and simply no longer matches, so nothing prunes this set.
 	const [sessionCreatedIds] = useState(() => new Set<string>());
 
 	const [status, setStatus] = useState<TaskStatusFilter>(
@@ -233,17 +151,22 @@ export function TaskList({
 	}, [editTaskId, router]);
 
 	function handlersFor(task: TaskRow) {
-		return bindTaskHandlers(
-			task,
-			run,
-			{
-				complete: completeTaskAction,
-				reopen: reopenTaskAction,
-				setTop3: setTop3Action,
-				delete: deleteTaskAction,
-			},
-			{ top3DateIso: todayIso, todayIso },
-		);
+		return {
+			...bindTaskHandlers(
+				task,
+				run,
+				{
+					complete: completeTaskAction,
+					reopen: reopenTaskAction,
+					setTop3: setTop3Action,
+					delete: deleteTaskAction,
+				},
+				{ top3DateIso: todayIso, todayIso },
+			),
+			// The edit form waits for the server; the store takes the saved row.
+			onUpdate: (formData: FormData) =>
+				write({ type: "edit", id: task.id }, () => updateTaskAction(task.id, formData)),
+		};
 	}
 
 	// Project/Domain AND together and apply across whichever status is showing.
@@ -289,34 +212,21 @@ export function TaskList({
 		(t) => t.completed_at !== null && dateOfInstant(t.completed_at, tz) >= sinceDate,
 	);
 
-	function onCreate(formData: FormData): Promise<ActionResult> {
+	function onCreate(formData: FormData): Promise<ActionResult<unknown>> {
 		const optimistic = optimisticTaskFromForm(formData, domains, projects ?? []);
 		sessionCreatedIds.add(optimistic.id);
-		// useOptimistic must run inside a transition owned here (not only the form's).
-		return new Promise((resolve, reject) => {
-			startTransition(() => {
-				dispatchOptimistic({ type: "create", task: optimistic });
-				// A rejected field resolves as a failed result, and the optimistic
-				// row falls away when the transition settles with nothing to keep it.
-				createTaskAction(formData).then(resolve).catch(reject);
-			});
-		});
+		// A rejected field resolves as a failed result and the store drops the
+		// optimistic row; a confirmed one swaps it for the server's.
+		return write({ type: "create", task: optimistic }, () => createTaskAction(formData));
 	}
 
-	function onQuickAdd(text: string, domainId: string): Promise<void> {
+	async function onQuickAdd(text: string, domainId: string): Promise<void> {
 		const optimistic = optimisticTaskFromText(text, domainId, domains);
 		sessionCreatedIds.add(optimistic.id);
-		// Mirrors onCreate — same shared transition, same rollback-on-reject.
-		return new Promise((resolve, reject) => {
-			startTransition(() => {
-				dispatchOptimistic({ type: "create", task: optimistic });
-				quickAddTaskAction({ text, domainId })
-					.then(resolve)
-					.catch((err) => {
-						reject(err);
-					});
-			});
-		});
+		const result = await write({ type: "create", task: optimistic }, () =>
+			quickAddTaskAction({ text, domainId }),
+		);
+		if (!result.ok) throw new Error(result.formError ?? "Couldn't add that task.");
 	}
 
 	return (

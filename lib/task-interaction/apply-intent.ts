@@ -3,14 +3,21 @@
 import { isRecurrenceRule, nextOccurrence } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/schemas/task";
 
-/** Intents the optimistic layer understands (v1). Edit waits for the server. */
-/** Optimistic + write payload — one contract for projector, lock, and action. */
+/**
+ * Optimistic + write payload — one contract for projector, lock, and action.
+ *
+ * `edit` projects nothing: a form edit waits for the server, and the intent
+ * exists so the entity store has a pending write to confirm the returned row
+ * into. `assign` files an inbox task under a domain (docs/adr/0027).
+ */
 export type TaskIntent =
 	| { type: "complete"; id: string; observedDueDate: string | null }
 	| { type: "reopen"; id: string }
 	| { type: "setTop3"; id: string; starred: boolean; forDateIso: string }
 	| { type: "delete"; id: string }
-	| { type: "create"; task: TaskRow };
+	| { type: "create"; task: TaskRow }
+	| { type: "edit"; id: string }
+	| { type: "assign"; id: string; domainId: string };
 
 export type ApplyContext = {
 	todayIso: string;
@@ -128,6 +135,11 @@ export function completeTaskFields(
 	return next;
 }
 
+/** The domain join is left for the server's row to fill in. */
+export function assignDomainFields(task: TaskRow, domainId: string): TaskRow {
+	return task.domain_id === domainId ? task : { ...task, domain_id: domainId };
+}
+
 export function reopenTaskFields(task: TaskRow): TaskRow {
 	return { ...task, status: "open", completed_at: null };
 }
@@ -145,6 +157,13 @@ export function setTop3Fields(task: TaskRow, starred: boolean, forDateIso: strin
  */
 export function applyTaskLists(lists: TaskLists, intent: TaskIntent, ctx: ApplyContext): TaskLists {
 	switch (intent.type) {
+		case "edit":
+			return lists;
+		case "assign":
+			return {
+				open: mapId(lists.open, intent.id, (t) => assignDomainFields(t, intent.domainId)),
+				done: lists.done,
+			};
 		case "create": {
 			return { open: [intent.task, ...lists.open], done: lists.done };
 		}
@@ -199,6 +218,10 @@ export function applyDayTaskList(
 	ctx: ApplyContext,
 ): TaskRow[] {
 	switch (intent.type) {
+		case "edit":
+			return tasks;
+		case "assign":
+			return mapId(tasks, intent.id, (t) => assignDomainFields(t, intent.domainId));
 		case "create":
 			return [intent.task, ...tasks];
 		case "delete":

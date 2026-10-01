@@ -5,7 +5,6 @@ import { z } from "zod";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { parseDateIso, todayInTz } from "@/lib/dates";
-import type { DaySchedulePayload } from "@/lib/day-schedule";
 import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import { getEvent } from "@/lib/services/calendar";
 import { ServiceError } from "@/lib/services/errors";
@@ -14,12 +13,16 @@ import { createNote } from "@/lib/services/notes";
 import { clearSkipsToday, recordQuoteSkip } from "@/lib/services/resurfacing";
 import { todayForRequest } from "@/lib/services/settings";
 import { loadDaySchedulePayload } from "@/lib/services/today";
+import { viewKey } from "@/lib/store/keys";
+import { stampRead } from "@/lib/store/server";
+import type { Snapshot } from "@/lib/store/types";
 
 /**
- * Load one day's tape + bands without re-running the ~13-query Today digest.
- * Used by Today day-nav so chevrons stay on the client and never trip loading.tsx.
+ * Load one day's tape + bands without re-running the ~13-query Today digest,
+ * as a snapshot for the entity store (#26). Used by Today day-nav so chevrons
+ * stay on the client and never trip loading.tsx.
  */
-export async function loadDayScheduleAction(rawDate: string): Promise<DaySchedulePayload> {
+export async function loadDayScheduleAction(rawDate: string): Promise<Snapshot> {
 	const { sb } = await requireOwnerPage();
 	const tz = await getCachedAppTimezone();
 	const todayIso = todayInTz(tz);
@@ -33,9 +36,17 @@ export async function loadDayScheduleAction(rawDate: string): Promise<DaySchedul
 	// read can be older than what SSR/SoftRefresh already painted. Now that
 	// day-nav revalidates the day on screen in the background, serving that
 	// older copy would silently erase a freshly-synced event. Two indexed
-	// queries (lib/services/today.ts loadDayScheduleInputs) — the client-side
-	// day cache is what makes repeat visits free, not this.
-	return loadDaySchedulePayload(sb, tz, dateIso, { todayIso });
+	// queries (lib/services/today.ts loadDayScheduleInputs) — the entity store
+	// holding each day is what makes repeat visits free, not this.
+	const { data, readAt } = await stampRead(() =>
+		loadDaySchedulePayload(sb, tz, dateIso, { todayIso }),
+	);
+	return {
+		readAt,
+		todayIso,
+		tz,
+		views: [{ key: viewKey.day(dateIso), type: "day", data }],
+	};
 }
 
 /** "Next →" on the Resurfaced card: skip today's pick, advance the rotation. */
