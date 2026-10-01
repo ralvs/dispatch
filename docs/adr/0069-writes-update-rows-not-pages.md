@@ -84,7 +84,20 @@ Production build, local database. Navigation from Today to `/tasks` and
 `/notes`, warm (immediately after visiting them) and after six minutes on
 Today. Before: `router.refresh()` and `revalidatePath`. After: this ADR.
 
-MEASUREMENTS_TABLE
+| Navigation from Today | First visit | After six minutes on Today |
+|---|---|---|
+| `/tasks`, before | 389 ms | 41 ms |
+| `/tasks`, after | 373 ms | 46 ms |
+| `/notes`, before | 825 ms | 38 ms |
+| `/notes`, after | 823 ms | 46 ms |
+
+One run each, `test/e2e`-style Playwright script, timed from the click to the
+page's heading with no skeleton left. The numbers are the same within noise.
+The first visit pays the route's first read; after six minutes the route has
+been prefetched again either way, so `SoftRefresh`'s old wipe cost nothing
+measurable on navigation — what #4 expected. The gain of this decision is not
+navigation speed: it is that a write no longer re-renders the page it was made
+from, and that a cron's write reaches Today without a render.
 
 ## Consequences
 
