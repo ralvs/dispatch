@@ -52,7 +52,9 @@ jobs:
 
       # Only what the app and the tests reach: Postgres, GoTrue (sign-in),
       # PostgREST and Kong in front of them. Applies supabase/migrations/ and
-      # supabase/seed.sql, which adds the owner the tests sign in as.
+      # supabase/seed.sql, which adds the owner the tests sign in as. The
+      # Docker images are not cached: a docker save/load cache is usually
+      # slower than the pull, and the whole job runs in about three minutes.
       - name: Start the local stack
         run: >-
           supabase start
