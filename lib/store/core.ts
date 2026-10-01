@@ -55,6 +55,7 @@ type LooseKind = {
 	idOf(row: unknown): string;
 	targetId(intent: unknown): string | undefined;
 	provisionalIds(intent: unknown): string[];
+	project?(row: unknown, intent: unknown): unknown;
 	deltas?(
 		intent: unknown,
 		before: unknown,
@@ -172,7 +173,10 @@ export function makeCore(adapters: Adapters) {
 		const kind = kindOf(i.kind);
 		const id = kind.targetId(i.intent);
 		const entry = id === undefined ? undefined : (s.rows as unknown as LooseRows)[i.kind]?.[id];
-		const before = entry && !("deleted" in entry) ? entry.row : undefined;
+		let before = entry && !("deleted" in entry) ? entry.row : undefined;
+		if (kind.project && before !== undefined) {
+			for (const p of s.pending) if (p.kind === i.kind) before = kind.project(before, p.intent);
+		}
 		const deltas = kind.deltas
 			? kind.deltas(i.intent, before, ctx, (key) => selectAggregate(s, key))
 			: {};

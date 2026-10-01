@@ -49,6 +49,20 @@ describe("notification adapter", () => {
 		expect(selectAggregate(s, "notifications.unread")).toBe(5);
 	});
 
+	it("a dismiss right after a mark-read on the same row moves the count once", () => {
+		const [s1] = applyIntent(seeded(), intent({ type: "mark", id: "a", status: "read" }), NOW);
+		const [s2] = applyIntent(s1, intent({ type: "mark", id: "a", status: "dismissed" }), NOW);
+		expect(selectAggregate(s2, "notifications.unread")).toBe(4);
+		expect(ids(s2)).toEqual(["b:read", "c:unread"]);
+	});
+
+	it("a mark-one after a pending mark-all moves nothing more", () => {
+		const [s1] = applyIntent(seeded(), intent({ type: "markAll", status: "read" }), NOW);
+		const [s2] = applyIntent(s1, intent({ type: "mark", id: "c", status: "dismissed" }), NOW);
+		expect(s2.pending[1].deltas).toEqual({});
+		expect(selectAggregate(s2, "notifications.unread")).toBe(0);
+	});
+
 	it("a confirmed dismissal stays gone when a stale seed still has the row", () => {
 		const [s1, t] = applyIntent(
 			seeded(),

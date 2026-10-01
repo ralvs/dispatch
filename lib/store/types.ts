@@ -165,6 +165,13 @@ export type KindAdapter<K extends Kind> = {
 	/** Temporary ids an optimistic create introduced; dropped on commit. */
 	provisionalIds(intent: IntentMap[K]): string[];
 	/**
+	 * One row after a pending intent; the row unchanged when the intent does
+	 * not touch it. When given, `deltas` sees the row as the user sees it —
+	 * with every intent still in flight folded on — so two quick changes to
+	 * one row move a count once. Omitted: `deltas` sees the stored row.
+	 */
+	project?(row: EntityMap[K], intent: IntentMap[K]): EntityMap[K];
+	/**
 	 * Aggregate deltas, computed at apply from the row before the intent.
 	 * `current` reads an aggregate as the user sees it then (pending included),
 	 * for an intent that sets a count rather than moving it by one.

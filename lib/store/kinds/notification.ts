@@ -39,9 +39,17 @@ export function applyNotificationIntent(
 		: list;
 }
 
+/** One row after an intent: the status it asks for, if the intent reaches the row. */
+function projectNotification(row: NotificationRow, intent: NotificationIntent): NotificationRow {
+	if (intent.type === "mark" && intent.id !== row.id) return row;
+	if (intent.type === "markAll" && intent.status === "read" && row.status !== "unread") return row;
+	return row.status === intent.status ? row : { ...row, status: intent.status };
+}
+
 /**
  * The unread count (Today's counter) moves with the intent. One row moves it
- * by one, and only if the row was unread. Either bulk action leaves nothing
+ * by one, and only if the row was unread — as the user sees it, so a dismiss
+ * right after a mark-read on the same row moves nothing more (`project`). Either bulk action leaves nothing
  * unread, so it takes the count to zero — the count includes rows this tab
  * never loaded, which only the aggregate knows about.
  */
@@ -62,6 +70,7 @@ export const notificationKind: KindAdapter<"notification"> = {
 	idOf: (row) => row.id,
 	targetId: (intent) => (intent.type === "mark" ? intent.id : undefined),
 	provisionalIds: () => [],
+	project: projectNotification,
 	deltas: notificationDeltas,
 };
 
