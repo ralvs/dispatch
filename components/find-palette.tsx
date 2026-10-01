@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import {
 	type KeyboardEvent as ReactKeyboardEvent,
 	useCallback,
-	useDeferredValue,
 	useEffect,
 	useId,
 	useRef,
@@ -39,7 +38,7 @@ export function FindPalette() {
 	const router = useRouter();
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
-	const [latest, setResult] = useState<FindResult | null>(null);
+	const [result, setResult] = useState<FindResult | null>(null);
 	const [selected, setSelected] = useState(0);
 	const [pending, startTransition] = useTransition();
 	const listId = useId();
@@ -49,9 +48,11 @@ export function FindPalette() {
 	// newer one and nothing lands after close or unmount.
 	const request = useRef(0);
 	const openRef = useRef(false);
-	// The previous results stay on screen while the next query is in flight.
-	const result = useDeferredValue(latest);
 
+	// The list is replaced only when a newer answer lands, inside a transition,
+	// so the previous results stay on screen while a query is in flight. A
+	// useDeferredValue over them would only re-defer an update that is already
+	// non-urgent — and it let a closed palette's old list flash on reopen.
 	const runFind = useCallback((q: string) => {
 		const id = ++request.current;
 		startTransition(async () => {
