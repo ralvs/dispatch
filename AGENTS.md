@@ -76,8 +76,9 @@ Every change reaches `main` through a PR that Renan merges (docs/adr/0064).
 - Squash is the only merge method. The PR title becomes the commit on `main`,
   so it is a Conventional Commit.
 - `main` requires five checks: `Check`, `PR title`, `Vercel`, `Region`,
-  `Migrations`. Watch them with `gh pr checks --watch` before you hand the PR
-  over.
+  `Migrations`. `E2E` (integration + end-to-end, docs/adr/0063) also runs on
+  every PR; it is not required yet, but a red `E2E` blocks the hand-over.
+  Watch them with `gh pr checks --watch` before you hand the PR over.
 - Migrations apply themselves after the merge (docs/adr/0065). Never apply
   one by hand, with the CLI or the MCP tool's `apply_migration`. Never edit an
   applied migration; add a new one. A migration must still work with the code
