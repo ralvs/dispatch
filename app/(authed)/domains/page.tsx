@@ -1,79 +1,43 @@
 import { Suspense } from "react";
 import { CreateTrigger } from "@/components/create-dialog";
-import { ListSection, MoreBackLink, PageHeader, PageSkeleton, StatBand } from "@/components/ui";
+import { MoreBackLink, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
-import { getCachedDomains, getCachedDomainTouches } from "@/lib/cache/domains";
+import { getCachedDomainBoard } from "@/lib/cache/domains";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { todayInTz } from "@/lib/dates";
-import { cadenceThresholdDays } from "@/lib/services/domains";
-import { DomainCreateButton } from "./domain-form";
-import { DomainRowItem } from "./domain-row";
-import { domainStats } from "./domain-stats";
+import { toDomainItem } from "@/lib/services/observations";
+import { viewKey } from "@/lib/store/keys";
+import { Seed } from "@/lib/store/seed";
+import type { Snapshot } from "@/lib/store/types";
+import { DomainList } from "./domain-list";
 
 async function DomainsBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
 	const tz = await getCachedAppTimezone();
-	const [domains, touches] = await Promise.all([
-		getCachedDomains(true),
-		getCachedDomainTouches(todayInTz(tz), tz),
-	]);
-	const active = domains.filter((d) => d.active);
-	const archived = domains.filter((d) => !d.active);
-	const touchById = new Map(touches.map((t) => [t.domainId, t]));
+	const todayIso = todayInTz(tz);
+	const { readAt, domains, touches } = await getCachedDomainBoard(todayIso, tz);
+	// The header, the band and both sections read the entity store (#30). A
+	// row carries its cadence rule and last touch, so the band is computed
+	// from the same rows the list shows.
+	const snapshot: Snapshot = {
+		readAt,
+		todayIso,
+		tz,
+		views: [
+			{
+				key: viewKey.domains(),
+				type: "domainList",
+				data: { rows: domains.map((d) => toDomainItem(d, touches)) },
+			},
+		],
+	};
 
 	return (
-		<div>
-			<PageHeader
-				title="Domains"
-				measure={[
-					{ count: active.length, label: "active" },
-					{ count: archived.length, label: "archived" },
-				]}
-				action={<DomainCreateButton />}
-			/>
-
-			<StatBand stats={domainStats(touches)} />
-
-			<div>
-				<ListSection
-					title="Active"
-					count={active.length}
-					empty={active.length === 0 ? "No active domains." : undefined}
-				>
-					{active.length > 0 ? (
-						<ul>
-							{active.map((d) => (
-								<DomainRowItem
-									key={d.id}
-									domain={d}
-									tz={tz}
-									cadenceDays={cadenceThresholdDays(d.failure_patterns)}
-									touch={touchById.get(d.id) ?? null}
-								/>
-							))}
-						</ul>
-					) : undefined}
-				</ListSection>
-
-				{archived.length > 0 && (
-					<ListSection title="Archived" count={archived.length}>
-						<ul>
-							{archived.map((d) => (
-								<DomainRowItem
-									key={d.id}
-									domain={d}
-									tz={tz}
-									cadenceDays={cadenceThresholdDays(d.failure_patterns)}
-									touch={touchById.get(d.id) ?? null}
-								/>
-							))}
-						</ul>
-					</ListSection>
-				)}
-			</div>
-		</div>
+		<Seed snapshot={snapshot}>
+			<DomainList />
+		</Seed>
 	);
 }
 
@@ -83,7 +47,7 @@ function DomainsFallback() {
 
 // The header carries data (its measure), so the whole body streams in behind
 // the page's own boundary and the old loading.tsx is its fallback (#21). The
-// async child is where the entity store gets seeded (#26-#30).
+// async child seeds the entity store (#30).
 export default function DomainsPage() {
 	return (
 		<div>

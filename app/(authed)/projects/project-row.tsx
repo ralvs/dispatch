@@ -19,11 +19,14 @@ const INLINE_TASK_LIMIT = 5;
  */
 export function ProjectRowItem({
 	project,
+	saving = false,
 	openTasks = [],
 	doneCount = 0,
 	addTask,
 }: {
 	project: ProjectRow;
+	/** Still being created: its id is the client's, so there is no page to open yet. */
+	saving?: boolean;
 	/** The project's open tasks, in list order. Only the first five are drawn. */
 	openTasks?: TaskRow[];
 	doneCount?: number;
@@ -49,10 +52,17 @@ export function ProjectRowItem({
 				addTask ? <div className="flex shrink-0 items-center gap-2">{addTask}</div> : undefined
 			}
 		>
-			<Link href={`/projects/${project.id}`} className="block min-w-0 hover:text-accent-ink">
-				<span className={rowTitle()}>{project.name}</span>
-				<p className="mt-0.5 font-mono text-meta text-ink-4">{parts.join(" · ")}</p>
-			</Link>
+			{saving ? (
+				<div className="min-w-0 opacity-60">
+					<span className={rowTitle()}>{project.name}</span>
+					<p className="mt-0.5 font-mono text-meta text-ink-4">{parts.join(" · ")}</p>
+				</div>
+			) : (
+				<Link href={`/projects/${project.id}`} className="block min-w-0 hover:text-accent-ink">
+					<span className={rowTitle()}>{project.name}</span>
+					<p className="mt-0.5 font-mono text-meta text-ink-4">{parts.join(" · ")}</p>
+				</Link>
+			)}
 			{shown.length > 0 && (
 				<ul className="mt-1.5 space-y-0.5">
 					{shown.map((t) => (

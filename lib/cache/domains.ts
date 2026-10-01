@@ -2,6 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import type { CachedReader } from "@/lib/cache/manifest";
 import { CacheTag } from "@/lib/cache/tags";
+import { nowUtc } from "@/lib/dates";
 import { listDomains } from "@/lib/services/domains";
 import { listDomainTouchesOn } from "@/lib/services/observations";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -20,17 +21,26 @@ export async function getCachedDomains(includeArchived: boolean) {
 }
 
 /**
- * Last touch and open-task count per domain, for /domains. The touch is the
- * latest of a done task, a project update and a note update, so all three
- * tags. `todayIso` and `tz` are the cache key — the day is computed per
- * request, never in here.
+ * Everything /domains shows: every domain, archived included, and the last
+ * touch and open-task count per active domain. The touch is the latest of a
+ * done task, a project update and a note update, so all four tags. `todayIso`
+ * and `tz` are the cache key — the day is computed per request, never in here.
+ *
+ * `readAt` is the entity store's version (lib/store/types.ts), stamped inside
+ * the cache so a stale entry keeps its old stamp.
  */
-export async function getCachedDomainTouches(todayIso: string, tz: string) {
+export async function getCachedDomainBoard(todayIso: string, tz: string) {
 	"use cache";
 	cacheTag(CacheTag.domains, CacheTag.tasks, CacheTag.projects, CacheTag.notes);
 	cacheLife("tagged");
 
-	return listDomainTouchesOn(createAdminClient(), todayIso, tz);
+	const readAt = nowUtc();
+	const sb = createAdminClient();
+	const [domains, touches] = await Promise.all([
+		listDomains(sb, { includeArchived: true }),
+		listDomainTouchesOn(sb, todayIso, tz),
+	]);
+	return { readAt, domains, touches };
 }
 
 export const readers: CachedReader[] = [
@@ -39,7 +49,7 @@ export const readers: CachedReader[] = [
 		reads: [{ tag: CacheTag.domains, writes: ["settings.domain"] }],
 	},
 	{
-		reader: "getCachedDomainTouches",
+		reader: "getCachedDomainBoard",
 		reads: [
 			{ tag: CacheTag.domains, writes: ["settings.domain"] },
 			{

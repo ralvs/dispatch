@@ -4,10 +4,10 @@ import { useState, useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
 import { ColorSwatchPicker } from "@/components/color-swatch-picker";
 import { Button, Card, Field, Input, ListRow, rowTitle, Textarea } from "@/components/ui";
-import { runAction } from "@/lib/client/toast";
-import { formatInstant } from "@/lib/dates";
-import type { DomainRow as DomainRowType } from "@/lib/services/domains";
-import type { DomainTouch } from "@/lib/services/observations";
+import { toastError } from "@/lib/client/toast";
+import { formatInstant, nowUtc } from "@/lib/dates";
+import type { DomainItem } from "@/lib/schemas/domain";
+import { isNavigationError, useProvisionalIds, useRunIntent, useStoreWrite } from "@/lib/store";
 import {
 	archiveDomainAction,
 	markDomainShippedAction,
@@ -15,37 +15,58 @@ import {
 	updateDomainAction,
 } from "./actions";
 
+const SAVE_ERROR = "Couldn't save domain.";
+
+/** What an edit asks for, so the row shows it while the server writes it. */
+function domainPatch(formData: FormData): Partial<DomainItem> {
+	const text = (key: string) => {
+		const value = String(formData.get(key) ?? "").trim();
+		return value === "" ? null : value;
+	};
+	const name = text("name");
+	const days = Number(String(formData.get("cadence_days") ?? "").trim());
+	return {
+		...(name ? { name } : {}),
+		description: text("description"),
+		fruit_definition: text("fruit_definition"),
+		expected_cadence: text("expected_cadence"),
+		...(formData.has("color") ? { color: text("color") } : {}),
+		cadenceDays: Number.isInteger(days) && days > 0 ? days : null,
+	};
+}
+
 /**
- * `cadenceDays` is read out of failure_patterns by the page — the parser for
- * that shape is server-only, so it arrives already resolved. `touch` arrives
- * the same way: the last-touch fold is server-only and shared with the neglect
- * cron, so the row and the bell can never disagree (shape plan §05).
+ * A row of the entity store's domain view (#30). `cadenceDays` and `touch`
+ * ride on the row, resolved on the server — the parser for failure_patterns
+ * and the last-touch fold are server-only and shared with the neglect cron, so
+ * the row and the bell can never disagree (shape plan §05). Every write
+ * answers with both, recomputed.
  *
  * Rest name at 400 via `rowTitle()` (ADR-0044). Domain colour leads left
  * through ColorDot → `var(--domain-<slug>)`, never a hex.
  */
-export function DomainRowItem({
-	domain,
-	tz,
-	cadenceDays,
-	touch,
-}: {
-	domain: DomainRowType;
-	tz: string;
-	cadenceDays: number | null;
-	/** Null for an archived domain — the sweep only measures active ones. */
-	touch: DomainTouch | null;
-}) {
+export function DomainRowItem({ domain, tz }: { domain: DomainItem; tz: string }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
+	const run = useRunIntent("domain", { errorMessage: "Couldn't update domain." });
+	const edit = useStoreWrite("domain");
+	// Still being saved: its id is the client's, so nothing may act on it yet.
+	const saving = useProvisionalIds("domain").has(domain.id);
+	const { cadenceDays, touch } = domain;
 
 	function saveDetails(formData: FormData) {
 		startTransition(async () => {
-			const ok = await runAction(
-				() => updateDomainAction(domain.id, formData),
-				"Couldn't save domain.",
-			);
-			if (ok) setEditing(false);
+			try {
+				const result = await edit(
+					{ type: "patch", id: domain.id, patch: domainPatch(formData) },
+					() => updateDomainAction(domain.id, formData),
+				);
+				if (result.ok) setEditing(false);
+				else toastError(result.formError ?? SAVE_ERROR);
+			} catch (error) {
+				// A redirect() (an expired session) navigates on its own; it is not a failure.
+				if (!isNavigationError(error)) toastError(SAVE_ERROR);
+			}
 		});
 	}
 
@@ -139,7 +160,7 @@ export function DomainRowItem({
 			id={`domain-${domain.id}`}
 			leading={<ColorDot color={domain.color} />}
 			align="start"
-			className={`scroll-mt-24 ${pending ? "opacity-50" : ""}`}
+			className="scroll-mt-24"
 		>
 			<span className={rowTitle()}>{domain.name}</span>
 			{lastTouch !== null && (
@@ -173,6 +194,7 @@ export function DomainRowItem({
 					variant="tertiary"
 					size="sm"
 					aria-label={`Edit ${domain.name}`}
+					disabled={saving}
 					onClick={() => setEditing(true)}
 				>
 					Edit
@@ -182,14 +204,11 @@ export function DomainRowItem({
 					variant="tertiary"
 					size="sm"
 					aria-label={`Mark ${domain.name} shipped`}
-					disabled={pending}
+					disabled={saving}
 					onClick={() =>
-						startTransition(async () => {
-							await runAction(
-								() => markDomainShippedAction(domain.id),
-								"Couldn't mark domain shipped.",
-							);
-						})
+						run({ type: "patch", id: domain.id, patch: { last_shipped_at: nowUtc() } }, () =>
+							markDomainShippedAction(domain.id),
+						)
 					}
 				>
 					Mark shipped
@@ -200,11 +219,11 @@ export function DomainRowItem({
 						variant="danger"
 						size="sm"
 						aria-label={`Archive ${domain.name}`}
-						disabled={pending}
+						disabled={saving}
 						onClick={() =>
-							startTransition(async () => {
-								await runAction(() => archiveDomainAction(domain.id), "Couldn't archive domain.");
-							})
+							run({ type: "patch", id: domain.id, patch: { active: false, touch: null } }, () =>
+								archiveDomainAction(domain.id),
+							)
 						}
 					>
 						Archive
@@ -215,14 +234,11 @@ export function DomainRowItem({
 						variant="tertiary"
 						size="sm"
 						aria-label={`Reactivate ${domain.name}`}
-						disabled={pending}
+						disabled={saving}
 						onClick={() =>
-							startTransition(async () => {
-								await runAction(
-									() => reactivateDomainAction(domain.id),
-									"Couldn't reactivate domain.",
-								);
-							})
+							run({ type: "patch", id: domain.id, patch: { active: true } }, () =>
+								reactivateDomainAction(domain.id),
+							)
 						}
 					>
 						Reactivate

@@ -3,6 +3,7 @@
 // returns the SAME reference when it changes nothing. The conflict rule is in
 // ./types.ts.
 
+import { domainKind, domainListView } from "@/lib/store/kinds/domain";
 import { journalKind, journalListView } from "@/lib/store/kinds/journal";
 import { linkKind, linkListView } from "@/lib/store/kinds/link";
 import { noteKind, noteListsView } from "@/lib/store/kinds/note";
@@ -15,6 +16,7 @@ import {
 	personKind,
 	personListView,
 } from "@/lib/store/kinds/person";
+import { projectKind, projectListView } from "@/lib/store/kinds/project";
 import { quoteKind, quoteListView } from "@/lib/store/kinds/quote";
 import { routineKind, routineListView } from "@/lib/store/kinds/routine";
 import { dayView, taskKind, taskListsView, taskListView } from "@/lib/store/kinds/task";
@@ -55,6 +57,8 @@ export const defaultAdapters: Adapters = {
 		person: personKind,
 		personFact: personFactKind,
 		personInteraction: personInteractionKind,
+		project: projectKind,
+		domain: domainKind,
 	},
 	views: {
 		taskLists: taskListsView,
@@ -69,6 +73,8 @@ export const defaultAdapters: Adapters = {
 		personList: personListView,
 		personFactList: personFactListView,
 		personInteractionList: personInteractionListView,
+		projectList: projectListView,
+		domainList: domainListView,
 	},
 };
 
@@ -117,6 +123,8 @@ export function initialState(): StoreState {
 			person: {},
 			personFact: {},
 			personInteraction: {},
+			project: {},
+			domain: {},
 		},
 		views: {},
 		aggregates: {},

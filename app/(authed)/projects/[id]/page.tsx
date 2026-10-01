@@ -52,6 +52,11 @@ async function ProjectBody({ params }: { params: Promise<{ id: string }> }) {
 		tz,
 		views: [
 			{
+				key: viewKey.projectHead(project.id),
+				type: "projectList",
+				data: { rows: [project], scope: { id: project.id } },
+			},
+			{
 				key: viewKey.project(project.id),
 				type: "taskList",
 				data: { rows: tasks, scope: { projectId: project.id } },
@@ -62,7 +67,7 @@ async function ProjectBody({ params }: { params: Promise<{ id: string }> }) {
 	return (
 		<Seed snapshot={snapshot}>
 			<ProjectDetail
-				project={project}
+				projectId={project.id}
 				projects={projects.map((p) => ({ id: p.id, name: p.name, domain_id: p.domain_id }))}
 				domains={domains}
 				todayIso={todayIso}

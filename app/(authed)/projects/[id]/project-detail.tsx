@@ -23,12 +23,14 @@ import {
 	Select,
 	Textarea,
 } from "@/components/ui";
-import { runAction } from "@/lib/client/toast";
+import { toastError } from "@/lib/client/toast";
+import { nowUtc } from "@/lib/dates";
+import { ProjectStatusSchema } from "@/lib/schemas/project";
 import type { DomainRow } from "@/lib/services/domains";
 import type { ProjectRow } from "@/lib/services/projects";
 import { taskProgress } from "@/lib/services/projects-shared";
 import type { TaskRow } from "@/lib/services/tasks";
-import { useStoreWrite, useView, viewKey } from "@/lib/store";
+import { isNavigationError, useRunIntent, useStoreWrite, useView, viewKey } from "@/lib/store";
 import { optimisticTaskFromForm } from "@/lib/task-interaction/optimistic-task";
 import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
 import { AddTaskButton } from "../add-task-button";
@@ -36,18 +38,49 @@ import { statusLabel } from "../constants";
 import { archiveProjectAction, completeProjectAction, updateProjectAction } from "./actions";
 
 const NO_TASKS: TaskRow[] = [];
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const SAVE_ERROR = "Couldn't save project.";
+
+/** What an edit asks for, so the page shows it while the server writes it. */
+function projectPatch(formData: FormData, domains: DomainRow[]): Partial<ProjectRow> {
+	const text = (key: string) => {
+		const value = String(formData.get(key) ?? "").trim();
+		return value === "" ? null : value;
+	};
+	const date = (key: string) => {
+		const value = text(key);
+		return value && DATE.test(value) ? value : null;
+	};
+	const name = text("name");
+	const domain = domains.find((d) => d.id === text("domain_id"));
+	const status = ProjectStatusSchema.safeParse(formData.get("status"));
+	return {
+		...(name ? { name } : {}),
+		description: text("description"),
+		start_date: date("start_date"),
+		target_date: date("target_date"),
+		...(domain
+			? {
+					domain_id: domain.id,
+					domain: { id: domain.id, name: domain.name, color: domain.color },
+				}
+			: {}),
+		...(status.success ? { status: status.data } : {}),
+	};
+}
 
 /**
- * The project's tasks come from the entity store view the page's <Seed> fed
- * (#26): every task tagged with this project, open and done (shape plan §02).
+ * The project and its tasks come from the entity store views the page's
+ * <Seed> fed: the project (#30), and every task tagged with it, open and done
+ * (#26, shape plan §02). An edit here shows on /projects too.
  */
 export function ProjectDetail({
-	project,
+	projectId,
 	projects,
 	domains,
 	todayIso,
 }: {
-	project: ProjectRow;
+	projectId: string;
 	/** Every project, for the add-task form's project picker. */
 	projects: Pick<ProjectRow, "id" | "name" | "domain_id">[];
 	domains: DomainRow[];
@@ -56,10 +89,12 @@ export function ProjectDetail({
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
-	const domain = domains.find((d) => d.id === project.domain_id);
-	const optTasks = useView(viewKey.project(project.id)) ?? NO_TASKS;
+	const project = useView(viewKey.projectHead(projectId))?.[0];
+	const optTasks = useView(viewKey.project(projectId)) ?? NO_TASKS;
 	const run = useTaskIntentRunner();
 	const write = useStoreWrite("task");
+	const edit = useStoreWrite("project");
+	const runProject = useRunIntent("project", { errorMessage: "Couldn't update project." });
 	const domainOptions = domains.map((d) => ({ id: d.id, name: d.name, color: d.color }));
 
 	function createTask(formData: FormData) {
@@ -82,13 +117,29 @@ export function ProjectDetail({
 		);
 	}
 
+	// Projects are never deleted from here; gone means deleted elsewhere.
+	if (!project) {
+		return (
+			<EmptyState>
+				This project is gone. <Link href="/projects">Back to Projects</Link>
+			</EmptyState>
+		);
+	}
+	const domain = domains.find((d) => d.id === project.domain_id);
+
 	function saveDetails(formData: FormData) {
 		startTransition(async () => {
-			const ok = await runAction(
-				() => updateProjectAction(project.id, formData),
-				"Couldn't save project.",
-			);
-			if (ok) setEditing(false);
+			try {
+				const result = await edit(
+					{ type: "patch", id: projectId, patch: projectPatch(formData, domains) },
+					() => updateProjectAction(projectId, formData),
+				);
+				if (result.ok) setEditing(false);
+				else toastError(result.formError ?? SAVE_ERROR);
+			} catch (error) {
+				// A redirect() (an expired session) navigates on its own; it is not a failure.
+				if (!isNavigationError(error)) toastError(SAVE_ERROR);
+			}
 		});
 	}
 
@@ -204,14 +255,15 @@ export function ProjectDetail({
 									variant="tertiary"
 									size="sm"
 									aria-label={`Mark ${project.name} done`}
-									disabled={pending}
 									onClick={() =>
-										startTransition(async () => {
-											await runAction(
-												() => completeProjectAction(project.id),
-												"Couldn't complete project.",
-											);
-										})
+										runProject(
+											{
+												type: "patch",
+												id: projectId,
+												patch: { status: "done", completed_at: nowUtc() },
+											},
+											() => completeProjectAction(projectId),
+										)
 									}
 								>
 									Mark done
@@ -223,14 +275,11 @@ export function ProjectDetail({
 									variant="danger"
 									size="sm"
 									aria-label={`Archive ${project.name}`}
-									disabled={pending}
 									onClick={() =>
-										startTransition(async () => {
-											await runAction(
-												() => archiveProjectAction(project.id),
-												"Couldn't archive project.",
-											);
-										})
+										runProject(
+											{ type: "patch", id: projectId, patch: { status: "archived" } },
+											() => archiveProjectAction(projectId),
+										)
 									}
 								>
 									Archive

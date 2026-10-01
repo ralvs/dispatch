@@ -1,5 +1,5 @@
 import type { Stat } from "@/components/ui";
-import type { DomainTouch } from "@/lib/services/observations";
+import type { DomainTouch } from "@/lib/schemas/domain";
 
 /**
  * The band the shape plan §05 asked for: within cadence, gone quiet, and the

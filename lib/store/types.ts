@@ -34,17 +34,20 @@
 // the next seed heals it.
 
 import type { DaySchedulePayload } from "@/lib/day-schedule";
+import type { DomainItem } from "@/lib/schemas/domain";
 import type { JournalEntryRow } from "@/lib/schemas/journal";
 import type { LinkRow } from "@/lib/schemas/link";
 import type { NoteListRow } from "@/lib/schemas/note";
 import type { NotificationRow } from "@/lib/schemas/notification";
 import type { PersonFactRow, PersonInteractionRow, PersonRow } from "@/lib/schemas/person";
+import type { ProjectRow } from "@/lib/schemas/project";
 import type { QuoteRow } from "@/lib/schemas/quote";
 import type { RoutineWithHistory } from "@/lib/schemas/routine";
 import type { TaskRow } from "@/lib/schemas/task";
 import type { NoteIntent, NoteLists } from "@/lib/store/kinds/note";
 import type { NotificationIntent } from "@/lib/store/kinds/notification";
 import type { OfPerson, PersonScope } from "@/lib/store/kinds/person";
+import type { ProjectScope } from "@/lib/store/kinds/project";
 import type { RecordIntent, RecordSeed } from "@/lib/store/kinds/record";
 import type { RoutineIntent } from "@/lib/store/kinds/routine";
 import type { TaskIntent, TaskLists } from "@/lib/task-interaction/apply-intent";
@@ -66,6 +69,8 @@ export type EntityMap = {
 	person: PersonRow;
 	personFact: PersonFactRow;
 	personInteraction: PersonInteractionRow;
+	project: ProjectRow;
+	domain: DomainItem;
 };
 export type Kind = keyof EntityMap;
 export type IntentMap = {
@@ -79,6 +84,8 @@ export type IntentMap = {
 	person: RecordIntent<PersonRow>;
 	personFact: RecordIntent<PersonFactRow>;
 	personInteraction: RecordIntent<PersonInteractionRow>;
+	project: RecordIntent<ProjectRow>;
+	domain: RecordIntent<DomainItem>;
 };
 export type AnyIntent = { [K in Kind]: { kind: K; intent: IntentMap[K] } }[Kind];
 
@@ -128,6 +135,10 @@ export type ViewTypes = {
 	personFactList: RecordView<"personFact", OfPerson>;
 	/** One person's interactions, newest first. */
 	personInteractionList: RecordView<"personInteraction", OfPerson>;
+	/** /projects by name; scoped to one project, that project's page. */
+	projectList: RecordView<"project", ProjectScope>;
+	/** /domains: active first, then by name. */
+	domainList: RecordView<"domain">;
 };
 /** A list built by kinds/record.ts. */
 type RecordView<K extends Kind, S = undefined> = {
