@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { EmptyState, ListSection, PageHeader, PageSkeleton } from "@/components/ui";
+import { EmptyState, ListSection, MoreBackLink, PageHeader, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedJournal } from "@/lib/cache/journal";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -66,8 +66,11 @@ function JournalFallback() {
 // async child is where the entity store gets seeded (#26-#30).
 export default function JournalPage() {
 	return (
-		<Suspense fallback={<JournalFallback />}>
-			<JournalBody />
-		</Suspense>
+		<div>
+			<MoreBackLink />
+			<Suspense fallback={<JournalFallback />}>
+				<JournalBody />
+			</Suspense>
+		</div>
 	);
 }

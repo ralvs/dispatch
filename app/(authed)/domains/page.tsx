@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { CreateTrigger } from "@/components/create-dialog";
-import { ListSection, PageHeader, PageSkeleton, StatBand } from "@/components/ui";
+import { ListSection, MoreBackLink, PageHeader, PageSkeleton, StatBand } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains, getCachedDomainTouches } from "@/lib/cache/domains";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -86,8 +86,11 @@ function DomainsFallback() {
 // async child is where the entity store gets seeded (#26-#30).
 export default function DomainsPage() {
 	return (
-		<Suspense fallback={<DomainsFallback />}>
-			<DomainsBody />
-		</Suspense>
+		<div>
+			<MoreBackLink />
+			<Suspense fallback={<DomainsFallback />}>
+				<DomainsBody />
+			</Suspense>
+		</div>
 	);
 }

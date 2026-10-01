@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { CreateTrigger } from "@/components/create-dialog";
-import { EmptyState, PageHeader, PageSkeleton } from "@/components/ui";
+import { EmptyState, MoreBackLink, PageHeader, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedPeople } from "@/lib/cache/people";
 import { PersonCreateButton } from "./person-form";
@@ -44,8 +44,11 @@ function PeopleFallback() {
 // async child is where the entity store gets seeded (#26-#30).
 export default function PeoplePage() {
 	return (
-		<Suspense fallback={<PeopleFallback />}>
-			<PeopleBody />
-		</Suspense>
+		<div>
+			<MoreBackLink />
+			<Suspense fallback={<PeopleFallback />}>
+				<PeopleBody />
+			</Suspense>
+		</div>
 	);
 }

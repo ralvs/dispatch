@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { CreateTrigger } from "@/components/create-dialog";
-import { EmptyState, ListSection, PageHeader, PageSkeleton } from "@/components/ui";
+import { EmptyState, ListSection, MoreBackLink, PageHeader, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedProjectBoard } from "@/lib/cache/projects";
@@ -108,8 +108,11 @@ function ProjectsFallback() {
 // async child is where the entity store gets seeded (#26-#30).
 export default function ProjectsPage() {
 	return (
-		<Suspense fallback={<ProjectsFallback />}>
-			<ProjectsBody />
-		</Suspense>
+		<div>
+			<MoreBackLink />
+			<Suspense fallback={<ProjectsFallback />}>
+				<ProjectsBody />
+			</Suspense>
+		</div>
 	);
 }

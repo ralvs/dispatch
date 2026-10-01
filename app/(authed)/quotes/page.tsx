@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { CreateTrigger } from "@/components/create-dialog";
-import { EmptyState, PageHeader, PageSkeleton } from "@/components/ui";
+import { EmptyState, MoreBackLink, PageHeader, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedQuotes } from "@/lib/cache/quotes";
 import { QuoteCreateButton } from "./quote-form";
@@ -43,8 +43,11 @@ function QuotesFallback() {
 // async child is where the entity store gets seeded (#26-#30).
 export default function QuotesPage() {
 	return (
-		<Suspense fallback={<QuotesFallback />}>
-			<QuotesBody />
-		</Suspense>
+		<div>
+			<MoreBackLink />
+			<Suspense fallback={<QuotesFallback />}>
+				<QuotesBody />
+			</Suspense>
+		</div>
 	);
 }

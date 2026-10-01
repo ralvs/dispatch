@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
-import { HeaderCreateButton, PageSkeleton } from "@/components/ui";
+import { BackLink, HeaderCreateButton, PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedProject } from "@/lib/cache/projects";
@@ -87,14 +86,7 @@ function ProjectFallback() {
 export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
 	return (
 		<div>
-			<nav aria-label="Breadcrumb" className="pb-4">
-				<Link
-					href="/projects"
-					className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
-				>
-					← Projects
-				</Link>
-			</nav>
+			<BackLink href="/projects" label="Projects" />
 			<Suspense fallback={<ProjectFallback />}>
 				<ProjectBody params={params} />
 			</Suspense>

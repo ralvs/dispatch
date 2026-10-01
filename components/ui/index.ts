@@ -15,6 +15,7 @@
  * outside its own module today, so moving them now would be speculative. If
  * you give either one a server caller, move it first.
  */
+export { BackLink } from "./back-link";
 export { Badge, badge, MENTION_CHIP_CLASS, NOTE_CHIP_CLASS } from "./badge";
 export { Button } from "./button";
 export { type ButtonVariants, button } from "./button-variants";
@@ -30,6 +31,7 @@ export { HeaderCreateButton } from "./header-create-button";
 export { ICON_SIZES, Icon, type IconSize } from "./icon";
 export { ListRow, rowTitle } from "./list-row";
 export { ListSection } from "./list-section";
+export { MoreBackLink } from "./more-back-link";
 export { type Measure, PageHeader } from "./page-header";
 export { PageSkeleton, SkeletonRows } from "./page-skeleton";
 export { Progress } from "./progress";

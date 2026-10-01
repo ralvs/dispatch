@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 import { z } from "zod";
-import { Button, ListRow, rowTitle, SectionHead } from "@/components/ui";
+import { BackLink, Button, ListRow, rowTitle, SectionHead } from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
@@ -261,14 +261,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
 		<div>
 			{/* Breadcrumb is the editor's header — the note title is content
 			    (Pass 3; DESIGN.md Page Header exceptions). */}
-			<nav aria-label="Breadcrumb" className="pb-4">
-				<Link
-					href="/notes"
-					className="font-mono text-eyebrow uppercase tracking-widest text-ink-3 hover:text-ink"
-				>
-					← Notes
-				</Link>
-			</nav>
+			<BackLink href="/notes" label="Notes" />
 
 			<Suspense fallback={<NoteFallback />}>
 				<NoteBody params={params} />
