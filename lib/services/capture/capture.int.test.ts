@@ -109,9 +109,11 @@ describe("capture", () => {
 		const record = await capture(serviceClient(), RAW);
 
 		const notes = await notesFor(record.capturedId);
+		expect(notes).toHaveLength(1);
+		expect(notes[0].needs_review).toBe(true);
 		expect(record.outcome).toEqual({
 			kind: "needs_review",
-			noteId: notes[0]?.id,
+			noteId: notes[0].id,
 			reason: "capture_error",
 		});
 		expect(await capturedStatus(record.capturedId)).toBe("parsed");

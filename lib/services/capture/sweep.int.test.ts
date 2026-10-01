@@ -4,9 +4,9 @@ import { sweepRawCaptures } from "@/lib/services/capture/sweep";
 import { serviceClient } from "@/test/integration/clients";
 
 // The sweep runs from cron under the service-role client. Rows are made
-// orphans by sweeping from eleven minutes in the future, past the 10-minute
-// threshold, rather than by backdating created_at.
-const LATER = () => Date.now() + 11 * 60_000;
+// orphans by sweeping from an hour in the future — far past the 10-minute
+// threshold, so clock skew between the test and the database cannot matter.
+const LATER = () => Date.now() + 60 * 60_000;
 
 async function rawCapture(text: string): Promise<string> {
 	return persistRaw(serviceClient(), { kind: "transcript", text, via: "voice" });
