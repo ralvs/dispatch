@@ -61,6 +61,7 @@ export function Counters({
 	needsReview: number;
 	notifications: number;
 }) {
+	const storeEvents = useAggregate("events.today") ?? events;
 	const storeOpen = useAggregate("tasks.open") ?? open;
 	const storeOverdue = useAggregate("tasks.overdue") ?? overdue;
 	const storeInbox = useAggregate("tasks.inbox") ?? inbox;
@@ -71,7 +72,12 @@ export function Counters({
 	// waiting on a decision — which is what this block is. They are rare, and
 	// every row is conditional, so an ordinary day still reads as four.
 	const rows = [
-		{ key: "events", count: events, label: events === 1 ? "event" : "events", href: "/today" },
+		{
+			key: "events",
+			count: storeEvents,
+			label: storeEvents === 1 ? "event" : "events",
+			href: "/today",
+		},
 		{ key: "open", count: storeOpen, label: "open", href: "/tasks" },
 		{ key: "overdue", count: storeOverdue, label: "overdue", href: "/tasks", late: true },
 		{ key: "inbox", count: storeInbox, label: "in the inbox", href: "/inbox" },

@@ -13,7 +13,10 @@ import {
 } from "@/components/ui";
 import type { ActionResult } from "@/lib/action-result";
 import type { MentionCandidate } from "@/lib/mentions";
+import type { DomainItem } from "@/lib/schemas/domain";
+import type { ProjectRow } from "@/lib/schemas/project";
 import { titleOnlyCreate } from "@/lib/services/capture/title-only";
+import { useLiveOptions } from "@/lib/store/live-options";
 import { createTaskAction, updateTaskAction } from "./actions";
 import {
 	type TaskDomainOption,
@@ -48,12 +51,23 @@ const COPY: Record<TaskDialogMode, { title: string; submit: string; pending: str
 	edit: { title: "Edit task", submit: "Save", pending: "Saving…" },
 };
 
+/** An archived domain is no task's domain. */
+const toDomainOption = (row: DomainItem): TaskDomainOption | null =>
+	row.active ? { id: row.id, name: row.name, color: row.color } : null;
+const toProjectOption = (row: ProjectRow): TaskProjectOption => ({
+	id: row.id,
+	name: row.name,
+	domain_id: row.domain_id,
+});
+
+const NO_PROJECTS: TaskProjectOption[] = [];
+
 export function TaskDialog({
 	open,
 	onClose,
 	mode,
 	domains,
-	projects = [],
+	projects = NO_PROJECTS,
 	lockProject = false,
 	lockDomain = false,
 	todayIso,
@@ -105,14 +119,17 @@ export function TaskDialog({
 	onDelete?: () => void;
 	onSaved?: () => void;
 }) {
+	// A domain or project created in this tab is offered at once (#31).
+	const liveDomains = useLiveOptions("domain", domains, toDomainOption);
+	const liveProjects = useLiveOptions("project", projects, toProjectOption);
 	return (
 		<Dialog open={open} onClose={onClose} title={COPY[mode].title} size="lg">
 			{/* Mounted only while open (Dialog), so every open reseeds from
 			    `defaults` and starts with no errors. */}
 			<TaskDialogForm
 				mode={mode}
-				domains={domains}
-				projects={projects}
+				domains={liveDomains}
+				projects={liveProjects}
 				lockProject={lockProject}
 				lockDomain={lockDomain}
 				todayIso={todayIso}

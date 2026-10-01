@@ -111,7 +111,7 @@ describe("POST /api/notes/[id]/attachments", () => {
 
 	it("busts the notes caches once, only when something landed", async () => {
 		await post([file("a.png", "image/png", pngBytes())]);
-		expect(afterMutation).toHaveBeenCalledWith("notes.write", { id: NOTE_ID });
+		expect(afterMutation).toHaveBeenCalledWith("notes.write");
 		expect(afterMutation).toHaveBeenCalledTimes(1);
 	});
 

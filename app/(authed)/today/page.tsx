@@ -44,11 +44,11 @@ export default async function TodayPage({
 
 	return (
 		<div>
-			{/* Keep the day tape "now", past events, and counts honest without a full reload. */}
-			<SoftRefresh />
+			{/* Pulls Today into the entity store every five minutes (#4). */}
+			<SoftRefresh todayIso={todayIso} />
 			{/* No key on selectedIso: day flips are client-owned (schedule Server
 			 * Action) so chrome is not remounted. selectedIso only seeds the first
-			 * paint / SoftRefresh from `?d=`. */}
+			 * paint from `?d=`. */}
 			<Suspense fallback={<TodayFallback todayIso={todayIso} />}>
 				<TodayBody sb={sb} tz={tz} todayIso={todayIso} selectedIso={selectedIso} />
 			</Suspense>
