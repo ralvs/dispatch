@@ -186,6 +186,7 @@ describe("aggregates", () => {
 	const withDeltas = makeCore({
 		...defaultAdapters,
 		kinds: {
+			...defaultAdapters.kinds,
 			task: {
 				...defaultAdapters.kinds.task,
 				deltas: (intent, before) =>

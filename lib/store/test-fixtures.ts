@@ -1,5 +1,6 @@
 // Shared fixtures for the store's tests. Not imported by app code.
 import type { DaySchedulePayload } from "@/lib/day-schedule";
+import type { NotificationRow } from "@/lib/schemas/notification";
 import type { TaskRow } from "@/lib/schemas/task";
 import type { Snapshot, ViewSeed } from "@/lib/store/types";
 
@@ -32,6 +33,22 @@ export function task(partial: Partial<TaskRow> & Pick<TaskRow, "id">): TaskRow {
 		completed_at: null,
 		domain: null,
 		project: null,
+		...partial,
+	};
+}
+
+export function notification(
+	partial: Partial<NotificationRow> & Pick<NotificationRow, "id">,
+): NotificationRow {
+	return {
+		type: "reminder.fired",
+		title: partial.id,
+		body: null,
+		source_ref: null,
+		source_url: null,
+		status: "unread",
+		undo_payload: null,
+		created_at: "2026-07-15T11:00:00.000Z",
 		...partial,
 	};
 }
