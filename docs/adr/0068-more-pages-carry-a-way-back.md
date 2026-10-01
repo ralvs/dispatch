@@ -33,5 +33,6 @@ More is a menu, not a route (Pass 4 / C4). There is no `/more` page to link to.
 - `← More` is a button, not a link: it has no URL, so it cannot open in a new
   tab. Accepted — the menu has no URL either.
 - A page added to `MORE_SECTIONS` must render `MoreBackLink`.
-  `test/e2e/more-back-link.spec.ts` reads the list from the menu, so a miss
-  fails the suite.
+  `test/e2e/more-back-link.spec.ts` walks `MORE_HOSTED_HREFS`, which
+  `components/nav-links.ts` derives from `MORE_SECTIONS`, so a miss fails the
+  suite.

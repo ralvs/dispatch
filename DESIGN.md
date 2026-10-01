@@ -582,7 +582,7 @@ beneath where one is earned (ADR-0042; Pass 4.5 Gate A for facts).
   A page the More menu hosts opens the menu (`← More`, `MoreBackLink`) — More
   is a menu, not a route. Every width (ADR-0068).
 
-Three deliberate exceptions decline it:
+Three deliberate exceptions decline the page header:
 
 - **Today:** its `h1` is a sentence about the day and its dateline is the day
   nav.
