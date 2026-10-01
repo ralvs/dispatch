@@ -118,6 +118,7 @@ function settleTaskDeltas(intent: TaskIntent, write: StoreWrite<TaskRow>, deltas
 
 export const taskKind: KindAdapter<"task"> = {
 	idOf: (row) => row.id,
+	targetId: (intent) => (intent.type === "create" ? intent.task.id : intent.id),
 	provisionalIds: (intent) => (intent.type === "create" ? [intent.task.id] : []),
 	deltas: taskDeltas,
 	settle: settleTaskDeltas,

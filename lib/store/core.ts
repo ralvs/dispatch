@@ -3,6 +3,7 @@
 // returns the SAME reference when it changes nothing. The conflict rule is in
 // ./types.ts.
 
+import { notificationKind, notificationListView } from "@/lib/store/kinds/notification";
 import { dayView, taskKind, taskListsView, taskListView } from "@/lib/store/kinds/task";
 import type {
 	Adapters,
@@ -30,8 +31,13 @@ import type {
 export const CONFIRMED_CAP = 500;
 
 export const defaultAdapters: Adapters = {
-	kinds: { task: taskKind },
-	views: { taskLists: taskListsView, taskList: taskListView, day: dayView },
+	kinds: { task: taskKind, notification: notificationKind },
+	views: {
+		taskLists: taskListsView,
+		taskList: taskListView,
+		day: dayView,
+		notificationList: notificationListView,
+	},
 };
 
 // The adapters are typed per view; inside the core every view is handled
@@ -47,8 +53,15 @@ type LooseView = {
 };
 type LooseKind = {
 	idOf(row: unknown): string;
+	targetId(intent: unknown): string | undefined;
 	provisionalIds(intent: unknown): string[];
-	deltas?(intent: unknown, before: unknown, ctx: IntentCtx): Deltas;
+	project?(row: unknown, intent: unknown): unknown;
+	deltas?(
+		intent: unknown,
+		before: unknown,
+		ctx: IntentCtx,
+		current: (key: AggregateKey) => number | undefined,
+	): Deltas;
 	settle?(intent: unknown, write: StoreWrite, deltas: Deltas): Deltas;
 };
 type LooseRows = Record<string, Record<string, RowEntry<unknown>>>;
@@ -61,7 +74,7 @@ function later(a: Instant, b: Instant): boolean {
 export function initialState(): StoreState {
 	return {
 		clock: null,
-		rows: { task: {} },
+		rows: { task: {}, notification: {} },
 		views: {},
 		aggregates: {},
 		pending: [],
@@ -158,10 +171,15 @@ export function makeCore(adapters: Adapters) {
 		}
 		const ctx: IntentCtx = { todayIso: s.clock.todayIso, tz: s.clock.tz, nowIso };
 		const kind = kindOf(i.kind);
-		const id = i.intent.type === "create" ? i.intent.task.id : i.intent.id;
-		const entry = (s.rows as unknown as LooseRows)[i.kind]?.[id];
-		const before = entry && !("deleted" in entry) ? entry.row : undefined;
-		const deltas = kind.deltas ? kind.deltas(i.intent, before, ctx) : {};
+		const id = kind.targetId(i.intent);
+		const entry = id === undefined ? undefined : (s.rows as unknown as LooseRows)[i.kind]?.[id];
+		let before = entry && !("deleted" in entry) ? entry.row : undefined;
+		if (kind.project && before !== undefined) {
+			for (const p of s.pending) if (p.kind === i.kind) before = kind.project(before, p.intent);
+		}
+		const deltas = kind.deltas
+			? kind.deltas(i.intent, before, ctx, (key) => selectAggregate(s, key))
+			: {};
 		const token = s.nextToken;
 		const pending = { ...i, token, ctx, deltas } as Pending;
 		return [{ ...s, pending: [...s.pending, pending], nextToken: token + 1 }, token];

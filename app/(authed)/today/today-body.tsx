@@ -64,8 +64,8 @@ export async function TodayBody({
 	});
 
 	// The day's rows and today's task counts go to the entity store (#26), so
-	// a tick anywhere moves both without a page render. The counts are the
-	// digest's own numbers — Today is locked to the real today (ADR-0036).
+	// a tick anywhere moves them without a page render. Today is locked to the
+	// real today (ADR-0036).
 	const snapshot: Snapshot = {
 		readAt,
 		todayIso,
@@ -77,42 +77,53 @@ export async function TodayBody({
 			"tasks.inbox": view.inboxCount,
 		},
 	};
+	// What comes from the cached digest carries the digest's own stamp, not
+	// `readAt` above: a stale entry must stay older than the write it missed
+	// (#28). Its own Seed, inside the first, so both reach every consumer.
+	const digestSnapshot: Snapshot = {
+		readAt: digest.readAt,
+		todayIso,
+		tz,
+		aggregates: { "notifications.unread": view.masthead.unreadNotifications },
+	};
 
 	return (
 		<Seed snapshot={snapshot}>
-			<TodayStyles />
-			<DayView
-				dateIso={selectedIso}
-				todayIso={todayIso}
-				domains={digest.domains.map((d) => ({ name: d.name, color: d.color }))}
-				counters={
-					<Counters
-						events={view.anchor.eventCount}
-						open={view.anchor.openCount}
-						overdue={view.anchor.overdueCount}
-						inbox={view.inboxCount}
-						needsReview={view.needsReviewCount}
-						notifications={view.masthead.unreadNotifications}
-					/>
-				}
-				aside={
-					<>
-						<RoutinesCard
-							buckets={view.routineBuckets}
-							done={view.routines.done}
-							total={view.routines.total}
+			<Seed snapshot={digestSnapshot}>
+				<TodayStyles />
+				<DayView
+					dateIso={selectedIso}
+					todayIso={todayIso}
+					domains={digest.domains.map((d) => ({ name: d.name, color: d.color }))}
+					counters={
+						<Counters
+							events={view.anchor.eventCount}
+							open={view.anchor.openCount}
+							overdue={view.anchor.overdueCount}
+							inbox={view.inboxCount}
+							needsReview={view.needsReviewCount}
+							notifications={view.masthead.unreadNotifications}
 						/>
-						<ProjectsCard projects={view.projects} />
-					</>
-				}
-				quote={
-					<ResurfacedQuote
-						quote={view.resurfaced}
-						skips={view.resurfacedSkips}
-						hasQuotes={view.latestQuote !== null}
-					/>
-				}
-			/>
+					}
+					aside={
+						<>
+							<RoutinesCard
+								buckets={view.routineBuckets}
+								done={view.routines.done}
+								total={view.routines.total}
+							/>
+							<ProjectsCard projects={view.projects} />
+						</>
+					}
+					quote={
+						<ResurfacedQuote
+							quote={view.resurfaced}
+							skips={view.resurfacedSkips}
+							hasQuotes={view.latestQuote !== null}
+						/>
+					}
+				/>
+			</Seed>
 		</Seed>
 	);
 }

@@ -20,7 +20,7 @@
 //   - `quotes`, `journal_entries`, `person_facts`: edits are desired-state
 //     patches; same rule.
 //   - `notifications`: status is desired state; new cron rows arrive only via
-//     seeds.
+//     seeds. A dismissal is a delete (kinds/notification.ts).
 //   - `routine_completions`: identity is the natural key
 //     `${routine_id}:${completed_date}` (unique constraint), not `id`.
 //   - `person_interactions`: insert/delete only; reconciles by presence.
@@ -32,16 +32,18 @@
 // the next seed heals it.
 
 import type { DaySchedulePayload } from "@/lib/day-schedule";
+import type { NotificationRow } from "@/lib/schemas/notification";
 import type { TaskRow } from "@/lib/schemas/task";
+import type { NotificationIntent } from "@/lib/store/kinds/notification";
 import type { TaskIntent, TaskLists } from "@/lib/task-interaction/apply-intent";
 
 /** UTC ISO instant, always server-stamped. */
 export type Instant = string;
 export type Clock = { todayIso: string; tz: string };
 
-export type EntityMap = { task: TaskRow };
+export type EntityMap = { task: TaskRow; notification: NotificationRow };
 export type Kind = keyof EntityMap;
-export type IntentMap = { task: TaskIntent };
+export type IntentMap = { task: TaskIntent; notification: NotificationIntent };
 export type AnyIntent = { [K in Kind]: { kind: K; intent: IntentMap[K] } }[Kind];
 
 /** Which rows a flat task list admits when a write it has not seen arrives. */
@@ -62,6 +64,13 @@ export type ViewTypes = {
 		params: TaskScope | undefined;
 	};
 	day: { kind: "task"; data: DaySchedulePayload; out: DaySchedulePayload; params: undefined };
+	/** /notifications: the visible ledger, newest first. Dismissed rows never show. */
+	notificationList: {
+		kind: "notification";
+		data: NotificationRow[];
+		out: NotificationRow[];
+		params: undefined;
+	};
 };
 export type ViewType = keyof ViewTypes;
 export type ViewKey<T extends ViewType = ViewType> = string & { readonly __view: T };
@@ -151,10 +160,28 @@ export type ViewAdapter<T extends ViewType> = {
 
 export type KindAdapter<K extends Kind> = {
 	idOf(row: EntityMap[K]): string;
+	/** The row an intent acts on, whose state before it `deltas` reads. Undefined: no one row. */
+	targetId(intent: IntentMap[K]): string | undefined;
 	/** Temporary ids an optimistic create introduced; dropped on commit. */
 	provisionalIds(intent: IntentMap[K]): string[];
-	/** Aggregate deltas, computed at apply from the row before the intent. */
-	deltas?(intent: IntentMap[K], before: EntityMap[K] | undefined, ctx: IntentCtx): Deltas;
+	/**
+	 * One row after a pending intent; the row unchanged when the intent does
+	 * not touch it. When given, `deltas` sees the row as the user sees it —
+	 * with every intent still in flight folded on — so two quick changes to
+	 * one row move a count once. Omitted: `deltas` sees the stored row.
+	 */
+	project?(row: EntityMap[K], intent: IntentMap[K]): EntityMap[K];
+	/**
+	 * Aggregate deltas, computed at apply from the row before the intent.
+	 * `current` reads an aggregate as the user sees it then (pending included),
+	 * for an intent that sets a count rather than moving it by one.
+	 */
+	deltas?(
+		intent: IntentMap[K],
+		before: EntityMap[K] | undefined,
+		ctx: IntentCtx,
+		current: (key: AggregateKey) => number | undefined,
+	): Deltas;
 	/**
 	 * The deltas to keep once the server answered. Called at confirm; the
 	 * result is what later seeds replay. Omitted: the applied deltas stand.

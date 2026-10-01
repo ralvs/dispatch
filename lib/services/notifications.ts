@@ -149,8 +149,16 @@ export async function markNotification(
 	sb: SupabaseClient,
 	id: string,
 	status: "read" | "dismissed",
-): Promise<void> {
-	unwrap(await sb.from("notifications").update({ status }).eq("id", id));
+): Promise<NotificationRow | null> {
+	const data = unwrap(
+		await sb
+			.from("notifications")
+			.update({ status })
+			.eq("id", id)
+			.select(NOTIFICATION_SELECT)
+			.maybeSingle(),
+	);
+	return (data ?? null) as unknown as NotificationRow | null;
 }
 
 /**
@@ -160,11 +168,29 @@ export async function markNotification(
  * Scoped to rows that aren't already past the target state: marking all read
  * touches only `unread` (a dismissed row is never resurrected into `read`),
  * while dismissing takes everything still visible.
+ *
+ * Returns what changed, for the entity store: the rows marked read, or only
+ * the ids dismissed — a dismissed row leaves every view, and a long ledger's
+ * rows would be a heavy answer for no use.
  */
-export async function markAllNotifications(
-	sb: SupabaseClient,
-	status: "read" | "dismissed",
-): Promise<void> {
-	const q = sb.from("notifications").update({ status });
-	unwrap(await (status === "read" ? q.eq("status", "unread") : q.neq("status", "dismissed")));
+export async function markAllNotificationsRead(sb: SupabaseClient): Promise<NotificationRow[]> {
+	const data = unwrap(
+		await sb
+			.from("notifications")
+			.update({ status: "read" })
+			.eq("status", "unread")
+			.select(NOTIFICATION_SELECT),
+	);
+	return (data ?? []) as unknown as NotificationRow[];
+}
+
+export async function dismissAllNotifications(sb: SupabaseClient): Promise<string[]> {
+	const data = unwrap(
+		await sb
+			.from("notifications")
+			.update({ status: "dismissed" })
+			.neq("status", "dismissed")
+			.select("id"),
+	);
+	return ((data ?? []) as { id: string }[]).map((r) => r.id);
 }
