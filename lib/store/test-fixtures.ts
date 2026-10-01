@@ -1,5 +1,6 @@
 // Shared fixtures for the store's tests. Not imported by app code.
 import type { DaySchedulePayload } from "@/lib/day-schedule";
+import type { NoteListRow } from "@/lib/schemas/note";
 import type { NotificationRow } from "@/lib/schemas/notification";
 import type { RoutineWithHistory } from "@/lib/schemas/routine";
 import type { TaskRow } from "@/lib/schemas/task";
@@ -50,6 +51,26 @@ export function notification(
 		status: "unread",
 		undo_payload: null,
 		created_at: "2026-07-15T11:00:00.000Z",
+		...partial,
+	};
+}
+
+export function note(partial: Partial<NoteListRow> & Pick<NoteListRow, "id">): NoteListRow {
+	return {
+		title: partial.id,
+		body: "",
+		source_type: "own_thought",
+		needs_review: false,
+		tags: [],
+		origin_capture_id: null,
+		created_at: "2026-07-10T12:00:00.000Z",
+		source_reference: null,
+		domain_id: null,
+		related_project_id: null,
+		related_person_id: null,
+		related_quote_id: null,
+		pinned_at: null,
+		attachments: [],
 		...partial,
 	};
 }
