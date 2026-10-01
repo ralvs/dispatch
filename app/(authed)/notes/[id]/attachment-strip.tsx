@@ -17,7 +17,7 @@ import { Icon } from "@/components/ui/icon";
 import { attachmentKind, formatBytes, isAllowedContentType } from "@/lib/attachments";
 import { toastError } from "@/lib/client/toast";
 import type { Attachment, NoteListRow } from "@/lib/schemas/note";
-import { useStoreWrite } from "@/lib/store";
+import { isNavigationError, useStoreWrite } from "@/lib/store";
 import type { StoreWrite } from "@/lib/store/types";
 import { removeAttachmentAction } from "../actions";
 
@@ -222,8 +222,9 @@ export function AttachmentStrip({
 												removeAttachmentAction(noteId, attachment.storage_path),
 											);
 											if (!result.ok) toastError(result.formError ?? "Couldn't remove the file.");
-										} catch {
-											toastError("Couldn't remove the file.");
+										} catch (error) {
+											// A redirect() (an expired session) navigates on its own.
+											if (!isNavigationError(error)) toastError("Couldn't remove the file.");
 										}
 									})
 								}

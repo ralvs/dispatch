@@ -11,10 +11,11 @@ import type { Deltas, IntentCtx, KindAdapter, RowEntry, ViewAdapter } from "@/li
 
 export type NoteIntent =
 	| { type: "pin"; id: string; pinned: boolean }
-	| { type: "resolve"; id: string }
+	/** `flagged`: what the user saw, for when the store never loaded the row (opened from Today). */
+	| { type: "resolve"; id: string; flagged?: boolean }
 	| { type: "file"; id: string; domainId: string | null }
 	| { type: "save"; id: string; title: string | null; body: string }
-	| { type: "delete"; id: string }
+	| { type: "delete"; id: string; flagged?: boolean }
 	/** No optimistic change: a write made elsewhere (the attachments route) confirms its row. */
 	| { type: "touch"; id: string };
 
@@ -54,7 +55,8 @@ export function applyNoteIntent(
  */
 function noteDeltas(intent: NoteIntent, before: NoteListRow | undefined, _ctx: IntentCtx): Deltas {
 	if (intent.type !== "resolve" && intent.type !== "delete") return {};
-	return before?.needs_review ? { "notes.needsReview": -1 } : {};
+	const flagged = before ? before.needs_review : intent.flagged === true;
+	return flagged ? { "notes.needsReview": -1 } : {};
 }
 
 export const noteKind: KindAdapter<"note"> = {

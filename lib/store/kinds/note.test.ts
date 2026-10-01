@@ -65,6 +65,16 @@ describe("note adapter", () => {
 		expect(selectAggregate(s2, "notes.needsReview")).toBe(3);
 	});
 
+	it("filing a note the store never loaded still moves the count, from what the user saw", () => {
+		const s0 = deepFreeze(
+			applySeed(initialState(), snapshot(T1, [], { aggregates: { "notes.needsReview": 2 } })),
+		);
+		const [s1] = applyIntent(s0, intent({ type: "resolve", id: "elsewhere", flagged: true }), NOW);
+		expect(selectAggregate(s1, "notes.needsReview")).toBe(1);
+		const [s2] = applyIntent(s0, intent({ type: "delete", id: "elsewhere", flagged: false }), NOW);
+		expect(selectAggregate(s2, "notes.needsReview")).toBe(2);
+	});
+
 	it("a pin puts the note first in the list, newest pin first", () => {
 		const [s1] = applyIntent(seeded(), intent({ type: "pin", id: "older", pinned: true }), NOW);
 		expect(lists(s1).all).toEqual(["older", "newer"]);

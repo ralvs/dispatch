@@ -15,7 +15,7 @@ import { toastError } from "@/lib/client/toast";
 import { createDebouncedSave } from "@/lib/debounced-save";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { NoteListRow } from "@/lib/services/notes";
-import { useStoreWrite } from "@/lib/store";
+import { isNavigationError, useStoreWrite } from "@/lib/store";
 import {
 	deleteNoteAction,
 	resolveNeedsReviewAction,
@@ -111,8 +111,9 @@ export function NoteEditor({
 			const result = await run();
 			if (!result.ok) toastError(result.formError ?? errorMessage);
 			return result.ok;
-		} catch {
-			toastError(errorMessage);
+		} catch (error) {
+			// A redirect() (an expired session) navigates on its own; it is not a failure.
+			if (!isNavigationError(error)) toastError(errorMessage);
 			return false;
 		}
 	}
@@ -276,7 +277,7 @@ export function NoteEditor({
 								setNeedsReview(false);
 								const ok = await attempt(
 									() =>
-										write({ type: "resolve", id: note.id }, () =>
+										write({ type: "resolve", id: note.id, flagged: true }, () =>
 											resolveNeedsReviewAction(note.id),
 										),
 									"Couldn't resolve review flag.",
@@ -300,7 +301,10 @@ export function NoteEditor({
 							// Nothing left to save once the note is gone.
 							debouncedRef.current.cancel();
 							const ok = await attempt(
-								() => write({ type: "delete", id: note.id }, () => deleteNoteAction(note.id)),
+								() =>
+									write({ type: "delete", id: note.id, flagged: needsReview }, () =>
+										deleteNoteAction(note.id),
+									),
 								"Couldn't delete note.",
 							);
 							if (ok) router.push("/notes");
