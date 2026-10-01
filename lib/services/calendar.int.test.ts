@@ -218,6 +218,14 @@ describe("listEventsOn against the local database", () => {
 			start_at: "2026-07-17T02:30:00Z",
 			end_at: "2026-07-17T02:45:00Z",
 		});
+		// An all-day event for the 16th with no length, at UTC midnight: it ends
+		// before the 16th starts in São Paulo, so only the widened query finds it.
+		await insertEvent({
+			caldav_uid: "all-day-16th",
+			start_at: "2026-07-16T00:00:00Z",
+			end_at: "2026-07-16T00:00:00Z",
+			all_day: true,
+		});
 		// An all-day event for the 17th: its UTC midnight sits inside the 16th's
 		// local window, but it belongs to the 17th.
 		await insertEvent({
@@ -229,7 +237,7 @@ describe("listEventsOn against the local database", () => {
 
 		const events = await listEventsOn(await ownerClient(), "2026-07-16", "America/Sao_Paulo");
 
-		expect(events.map((e) => e.title)).toEqual(["dentist", "late-16th"]);
+		expect(events.map((e) => e.title)).toEqual(["all-day-16th", "dentist", "late-16th"]);
 	});
 });
 

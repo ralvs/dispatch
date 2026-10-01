@@ -12,6 +12,13 @@ const TZ = "America/Sao_Paulo";
 const TODAY = "2026-07-14";
 const NOW_MS = Date.parse("2026-07-14T18:00:00.000Z"); // 15:00 SP
 
+/** A timestamptz as whole microseconds — Date.parse would drop the last three digits. */
+function micros(ts: string): bigint {
+	const fraction = ts.match(/\.(\d+)/)?.[1] ?? "";
+	const seconds = Date.parse(ts.replace(/\.\d+/, "")) / 1000;
+	return BigInt(seconds) * BigInt(1_000_000) + BigInt(fraction.padEnd(6, "0").slice(0, 6));
+}
+
 /** The two columns the cron writes, which TASK_SELECT does not carry. */
 async function sentState(id: string) {
 	const { data, error } = await serviceClient()
@@ -37,15 +44,16 @@ describe("runTaskReminders against the local database", () => {
 		const [row] = await listNotifications(sb);
 		expect(row).toMatchObject({
 			type: "reminder.fired",
+			title: "Pay rent",
+			body: "Due now, at 15:00.",
 			source_ref: task.id,
 			source_url: `/tasks?edit=${task.id}`,
 			status: "unread",
 		});
 		const marked = await sentState(task.id);
 		expect(marked.reminders_sent).toEqual({ due: TODAY });
-		// Notify, then mark (ADR-0015): the mark is not the earlier write. `>=`
-		// because Date.parse drops the microseconds that would tell them apart.
-		expect(Date.parse(marked.updated_at)).toBeGreaterThanOrEqual(Date.parse(row.created_at));
+		// Notify, then mark (ADR-0015): the mark is the later write.
+		expect(micros(marked.updated_at)).toBeGreaterThan(micros(row.created_at));
 	});
 
 	it("does not fire twice for the same due date", async () => {
@@ -96,6 +104,16 @@ describe("runTaskReminders against the local database", () => {
 		await createTask(serviceClient(), { title: "Anchor test", due_date: TODAY });
 
 		// 08:59 SP is before the anchor; 09:00 SP is on it.
+		expect((await run(Date.parse("2026-07-14T11:59:00.000Z"))).fired).toBe(0);
+		expect((await run(Date.parse("2026-07-14T12:00:00.000Z"))).fired).toBe(1);
+	});
+
+	it("falls back to a zero offset and a 09:00 anchor with no settings row", async () => {
+		const sb = serviceClient();
+		const { error } = await sb.from("app_settings").delete().eq("id", true);
+		if (error) throw error;
+		await createTask(sb, { title: "Anchor test", due_date: TODAY });
+
 		expect((await run(Date.parse("2026-07-14T11:59:00.000Z"))).fired).toBe(0);
 		expect((await run(Date.parse("2026-07-14T12:00:00.000Z"))).fired).toBe(1);
 	});
