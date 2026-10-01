@@ -1,65 +1,69 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Button, Card, Field, Input, ListRow, rowTitle, Select } from "@/components/ui";
-import { runAction } from "@/lib/client/toast";
+import { toastError } from "@/lib/client/toast";
 import type { RoutineStats } from "@/lib/routine-stats";
-import { TIME_OF_DAY_LABELS, TIME_OF_DAY_ORDER } from "@/lib/schemas/routine";
-import type { RoutineRow } from "@/lib/services/routines";
+import {
+	type RoutineWithHistory,
+	TIME_OF_DAY_LABELS,
+	TIME_OF_DAY_ORDER,
+	TimeOfDayBucketSchema,
+} from "@/lib/schemas/routine";
+import { isNavigationError, useRunIntent, useStoreWrite } from "@/lib/store";
 import { deleteRoutineAction, toggleCompletionAction, updateRoutineAction } from "./actions";
+
+const SAVE_ERROR = "Couldn't save routine.";
 
 export function RoutineRowItem({
 	routine,
 	stats,
 	recentDays,
 }: {
-	routine: RoutineRow;
+	routine: RoutineWithHistory;
 	stats: RoutineStats;
 	recentDays: Array<{ date: string; done: boolean; isToday: boolean }>;
 }) {
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
-	// One optimistic map over the whole grid: today is just the last square,
-	// so backfill and "Mark done" share a single reducer rather than two that
-	// could disagree about the same day (docs/adr/0054).
-	const [overrides, setOverride] = useOptimistic(
-		{} as Record<string, boolean>,
-		(current, next: { date: string; done: boolean }) => ({ ...current, [next.date]: next.done }),
-	);
+	const run = useRunIntent("routine", { errorMessage: "Couldn't update routine." });
+	const edit = useStoreWrite("routine");
 
+	// The grid is the routine's row in the entity store (#29): today is just
+	// the last square, so backfill and "Mark done" are the same intent and
+	// cannot disagree about the same day (docs/adr/0054).
 	const todayCell = recentDays.find((d) => d.isToday);
-	const doneOn = (date: string, stored: boolean) => overrides[date] ?? stored;
-	const doneToday = todayCell ? doneOn(todayCell.date, todayCell.done) : stats.done_today;
-	const completedCount = recentDays.filter((d) => doneOn(d.date, d.done)).length;
+	const doneToday = todayCell ? todayCell.done : stats.done_today;
+	const completedCount = recentDays.filter((d) => d.done).length;
 
 	function toggleDay(date: string, currentlyDone: boolean) {
-		startTransition(async () => {
-			setOverride({ date, done: !currentlyDone });
-			await runAction(
-				async () => toggleCompletionAction(routine.id, currentlyDone, date),
-				"Couldn't update routine.",
-			);
-		});
+		run({ type: "toggle", id: routine.id, date, done: !currentlyDone }, () =>
+			toggleCompletionAction(routine.id, currentlyDone, date),
+		);
 	}
 
 	function toggle() {
-		if (todayCell) return toggleDay(todayCell.date, doneToday);
-		// No grid (a zero-day window) — fall back to the server's own today.
-		startTransition(async () => {
-			await runAction(
-				async () => toggleCompletionAction(routine.id, doneToday),
-				"Couldn't update routine.",
-			);
-		});
+		if (todayCell) toggleDay(todayCell.date, doneToday);
 	}
 
 	function saveDetails(formData: FormData) {
+		const name = String(formData.get("name") ?? "").trim();
+		const timeOfDay = TimeOfDayBucketSchema.safeParse(formData.get("time_of_day"));
+		const patch = {
+			...(name ? { name } : {}),
+			...(timeOfDay.success ? { time_of_day: timeOfDay.data } : {}),
+		};
 		startTransition(async () => {
-			const ok = await runAction(
-				() => updateRoutineAction(routine.id, formData),
-				"Couldn't save routine.",
-			);
-			if (ok) setEditing(false);
+			try {
+				const result = await edit({ type: "edit", id: routine.id, patch }, () =>
+					updateRoutineAction(routine.id, formData),
+				);
+				if (result.ok) setEditing(false);
+				else toastError(result.formError ?? SAVE_ERROR);
+			} catch (error) {
+				// A redirect() (an expired session) navigates on its own; it is not a failure.
+				if (!isNavigationError(error)) toastError(SAVE_ERROR);
+			}
 		});
 	}
 
@@ -67,9 +71,7 @@ export function RoutineRowItem({
 		if (!window.confirm(`Delete "${routine.name}"? Its completion history will be lost too.`)) {
 			return;
 		}
-		startTransition(async () => {
-			await runAction(async () => deleteRoutineAction(routine.id), "Couldn't update routine.");
-		});
+		run({ type: "delete", id: routine.id }, () => deleteRoutineAction(routine.id));
 	}
 
 	if (editing) {
@@ -163,7 +165,7 @@ export function RoutineRowItem({
 					{`${completedCount} of last ${recentDays.length} days completed`}
 				</legend>
 				{recentDays.map((d) => {
-					const done = doneOn(d.date, d.done);
+					const done = d.done;
 					return (
 						<button
 							key={d.date}

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCachedTodayDigest } from "@/lib/cache/today";
 import { nowUtc } from "@/lib/dates";
+import { withHistory } from "@/lib/routine-stats";
 import {
 	assembleTodayView,
 	loadDayScheduleInputs,
@@ -84,6 +85,14 @@ export async function TodayBody({
 		readAt: digest.readAt,
 		todayIso,
 		tz,
+		// The routines card's rows (#29): the same view /routines reads.
+		views: [
+			{
+				key: viewKey.routines(),
+				type: "routineList",
+				data: withHistory(digest.routines, digest.completionHistory),
+			},
+		],
 		aggregates: { "notifications.unread": view.masthead.unreadNotifications },
 	};
 
@@ -107,11 +116,7 @@ export async function TodayBody({
 					}
 					aside={
 						<>
-							<RoutinesCard
-								buckets={view.routineBuckets}
-								done={view.routines.done}
-								total={view.routines.total}
-							/>
+							<RoutinesCard nowMs={nowMs} />
 							<ProjectsCard projects={view.projects} />
 						</>
 					}

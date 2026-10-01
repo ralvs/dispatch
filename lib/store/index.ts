@@ -3,6 +3,6 @@ export { createDispatchStore, type DispatchStore } from "@/lib/store/create-stor
 export { useAggregate, useClock, useStoreActions, useView } from "@/lib/store/hooks";
 export { viewKey } from "@/lib/store/keys";
 export { StoreProvider, useDispatchStore } from "@/lib/store/provider";
-export { useRunIntent, useStoreWrite } from "@/lib/store/run";
+export { isNavigationError, useRunIntent, useStoreWrite } from "@/lib/store/run";
 export { Seed } from "@/lib/store/seed";
 export type * from "@/lib/store/types";

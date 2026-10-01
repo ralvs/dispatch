@@ -2,12 +2,14 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { nowUtc } from "@/lib/dates";
+import { ROUTINE_HISTORY_DAYS, withHistory } from "@/lib/routine-stats";
 import {
 	COMPLETION_SELECT,
 	type CompletionRow,
 	type CreateRoutineSchema,
 	ROUTINE_SELECT,
 	type RoutineRow,
+	type RoutineWithHistory,
 	type UpdateRoutineSchema,
 } from "@/lib/schemas/routine";
 import { unwrap } from "@/lib/services/errors";
@@ -36,6 +38,22 @@ export async function listRoutines(
 export async function getRoutine(sb: SupabaseClient, id: string): Promise<RoutineRow | null> {
 	const data = unwrap(await sb.from("routines").select(ROUTINE_SELECT).eq("id", id).maybeSingle());
 	return (data as unknown as RoutineRow | null) ?? null;
+}
+
+/**
+ * One routine with its completion log since `sinceIso` — the row a routine
+ * write returns to the entity store (#29). Null when the routine is gone.
+ */
+export async function getRoutineWithHistory(
+	sb: SupabaseClient,
+	id: string,
+	sinceIso: string,
+): Promise<RoutineWithHistory | null> {
+	const [routine, byRoutine] = await Promise.all([
+		getRoutine(sb, id),
+		listCompletionsForRoutines(sb, [id], sinceIso),
+	]);
+	return routine ? withHistory([routine], byRoutine[id] ?? [])[0] : null;
 }
 
 export async function createRoutine(
@@ -100,29 +118,33 @@ export async function listCompletionsForRoutines(
 	sinceIso?: string,
 ): Promise<Record<string, CompletionRow[]>> {
 	if (routineIds.length === 0) return {};
-	// PostgREST caps unbounded selects at 1000 rows. The only caller
-	// (routines/page.tsx) asks for a 35-day window; sized generously above
-	// that (40 days) so a fully-completed set of routines can't silently lose
-	// rows to the implicit cap — with enough routines the cap is still
-	// reachable, but only deliberately, via this explicit number.
-	const windowDays = 40;
+	// PostgREST caps a response at 1000 rows (supabase/config.toml max_rows),
+	// whatever .limit() asks. Callers ask for the ROUTINE_HISTORY_DAYS window,
+	// which a large, fully-kept set of routines can pass. Read newest first, so
+	// whatever a cap drops is the oldest days — long streaks — never today or
+	// the 30-day grid. Returned oldest first, as before.
+	const windowDays = ROUTINE_HISTORY_DAYS + 1;
 	let q = sb
 		.from("routine_completions")
 		.select(COMPLETION_SELECT)
 		.in("routine_id", routineIds)
 		.limit(routineIds.length * windowDays);
 	if (sinceIso) q = q.gte("completed_date", sinceIso);
-	q = q.order("completed_date", { ascending: true });
+	q = q.order("completed_date", { ascending: false });
 	const data = unwrap(await q);
 	const byRoutine: Record<string, CompletionRow[]> = {};
-	for (const row of (data ?? []) as unknown as CompletionRow[]) {
+	for (const row of ((data ?? []) as unknown as CompletionRow[]).reverse()) {
 		if (!byRoutine[row.routine_id]) byRoutine[row.routine_id] = [];
 		byRoutine[row.routine_id].push(row);
 	}
 	return byRoutine;
 }
 
-/** All completions since a calendar date, across routines — streak math input. */
+/**
+ * All completions since a calendar date, across routines — streak math input.
+ * Read newest first so the 1000-row response cap can only drop the oldest
+ * days (see listCompletionsForRoutines); returned oldest first.
+ */
 export async function listCompletionsSince(
 	sb: SupabaseClient,
 	sinceIso: string,
@@ -132,9 +154,9 @@ export async function listCompletionsSince(
 			.from("routine_completions")
 			.select(COMPLETION_SELECT)
 			.gte("completed_date", sinceIso)
-			.order("completed_date", { ascending: true }),
+			.order("completed_date", { ascending: false }),
 	);
-	return (data ?? []) as unknown as CompletionRow[];
+	return ((data ?? []) as unknown as CompletionRow[]).reverse();
 }
 
 /** All completions recorded for a single calendar date, across routines. */

@@ -7,4 +7,6 @@ export const viewKey = {
 	project: (id: string) => `project:${id}` as ViewKey<"taskList">,
 	inbox: () => "inbox" as ViewKey<"taskList">,
 	notifications: () => "notifications" as ViewKey<"notificationList">,
+	/** One list for Today's card and /routines: the same rows, the same order. */
+	routines: () => "routines" as ViewKey<"routineList">,
 };

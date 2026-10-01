@@ -1,14 +1,15 @@
 import { Suspense } from "react";
 import { CreateTrigger } from "@/components/create-dialog";
-import { EmptyState, PageHeader, PageSkeleton, StatBand } from "@/components/ui";
+import { PageSkeleton } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedRoutines } from "@/lib/cache/routines";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { shiftDay, todayInTz } from "@/lib/dates";
-import { BACKFILL_DAYS, computeRoutineStats, recentDaysGrid } from "@/lib/routine-stats";
-import { RoutineCreateButton } from "./routine-form";
-import { RoutineRowItem } from "./routine-row";
-import { routineStats } from "./routine-stats-band";
+import { ROUTINE_HISTORY_DAYS, withHistory } from "@/lib/routine-stats";
+import { viewKey } from "@/lib/store/keys";
+import { Seed } from "@/lib/store/seed";
+import type { Snapshot } from "@/lib/store/types";
+import { RoutineList } from "./routine-list";
 
 async function RoutinesBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
@@ -17,47 +18,28 @@ async function RoutinesBody() {
 	// The window start is the cache key, so the day is settled before the read.
 	const tz = await getCachedAppTimezone();
 	const todayIso = todayInTz(tz);
-	const { routines, completionsByRoutine } = await getCachedRoutines(shiftDay(todayIso, -35));
-
-	// Computed once here and handed to both the band and the rows — two
-	// passes over the same completion log could drift.
-	const perRoutine = routines.map((routine) => {
-		const dates = (completionsByRoutine[routine.id] ?? []).map((c) => c.completed_date);
-		return {
-			routine,
-			stats: computeRoutineStats(dates, todayIso),
-			recentDays: recentDaysGrid(dates, todayIso, BACKFILL_DAYS),
-		};
-	});
+	const { readAt, routines, completionsByRoutine } = await getCachedRoutines(
+		shiftDay(todayIso, -ROUTINE_HISTORY_DAYS),
+	);
+	// The same view Today's routines card reads (#29), so a tick on either
+	// page moves both.
+	const snapshot: Snapshot = {
+		readAt,
+		todayIso,
+		tz,
+		views: [
+			{
+				key: viewKey.routines(),
+				type: "routineList",
+				data: withHistory(routines, Object.values(completionsByRoutine).flat()),
+			},
+		],
+	};
 
 	return (
-		<div>
-			<PageHeader
-				title="Routines"
-				measure={[
-					{ count: routines.length, label: routines.length === 1 ? "routine" : "routines" },
-				]}
-				action={<RoutineCreateButton />}
-			/>
-
-			{routines.length > 0 && <StatBand stats={routineStats(perRoutine.map((r) => r.stats))} />}
-
-			{routines.length === 0 ? (
-				<EmptyState>No routines yet. Add something you want to do daily.</EmptyState>
-			) : (
-				// Single ungrouped list — header measure is the count.
-				<ul>
-					{perRoutine.map(({ routine, stats, recentDays }) => (
-						<RoutineRowItem
-							key={routine.id}
-							routine={routine}
-							stats={stats}
-							recentDays={recentDays}
-						/>
-					))}
-				</ul>
-			)}
-		</div>
+		<Seed snapshot={snapshot}>
+			<RoutineList />
+		</Seed>
 	);
 }
 
@@ -67,7 +49,7 @@ function RoutinesFallback() {
 
 // The header carries data (its measure), so the whole body streams in behind
 // the page's own boundary and the old loading.tsx is its fallback (#21). The
-// async child is where the entity store gets seeded (#26-#30).
+// header, the band and the rows read the entity store (#29).
 export default function RoutinesPage() {
 	return (
 		<Suspense fallback={<RoutinesFallback />}>
