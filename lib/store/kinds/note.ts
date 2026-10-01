@@ -61,9 +61,10 @@ export const noteKind: KindAdapter<"note"> = {
 	idOf: (row) => row.id,
 	targetId: (intent) => intent.id,
 	provisionalIds: () => [],
-	// For counting only: the pin instant does not matter, and a deleted row is
-	// left as it was — nothing after a delete can reach it.
-	project: (row, intent) => applyNoteIntent(row, intent, row.created_at) ?? row,
+	// For counting only: the pin instant does not matter, and a deleted row
+	// counts as filed, so a resolve clicked after a delete moves nothing more.
+	project: (row, intent) =>
+		applyNoteIntent(row, intent, row.created_at) ?? { ...row, needs_review: false },
 	deltas: noteDeltas,
 };
 
@@ -75,6 +76,21 @@ function byListOrder(a: NoteListRow, b: NoteListRow): number {
 		return a.pinned_at < b.pinned_at ? 1 : -1;
 	}
 	return a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0;
+}
+
+/** The list in the server's order; the same array when it already is. */
+function inOrder(list: NoteListRow[]): NoteListRow[] {
+	for (let i = 1; i < list.length; i++) {
+		if (byListOrder(list[i - 1], list[i]) > 0) return [...list].sort(byListOrder);
+	}
+	return list;
+}
+
+/** Both lists in the server's order: a pin moves its note to the top of Pinned. */
+function ordered(view: NoteLists): NoteLists {
+	const needsReview = inOrder(view.needsReview);
+	const all = inOrder(view.all);
+	return needsReview === view.needsReview && all === view.all ? view : { needsReview, all };
 }
 
 /** Put each row in the list its flag names; keep rows that did not move where they are. */
@@ -130,10 +146,10 @@ export const noteListsView: ViewAdapter<"noteLists"> = {
 	rowsOf: (view) => [...view.needsReview, ...view.all],
 	reduce: (view, intent, ctx) => {
 		const { lists, moved } = mapLists(view, (row) => applyNoteIntent(row, intent, ctx.nowIso));
-		return moved.length > 0 ? place(lists, moved) : lists;
+		return ordered(moved.length > 0 ? place(lists, moved) : lists);
 	},
 	// A row the lists have not seen is admitted: every note belongs on /notes.
-	upsert: (view, rows) => place(view, rows),
+	upsert: (view, rows) => ordered(place(view, rows)),
 	remove: (view, ids) => mapLists(view, (row) => (ids.has(row.id) ? undefined : row)).lists,
 	patch: (view, rowOf) => {
 		const { lists, moved } = mapLists(view, (row) => {
@@ -141,6 +157,6 @@ export const noteListsView: ViewAdapter<"noteLists"> = {
 			if (entry === undefined) return row;
 			return "deleted" in entry ? undefined : entry.row;
 		});
-		return moved.length > 0 ? place(lists, moved) : lists;
+		return ordered(moved.length > 0 ? place(lists, moved) : lists);
 	},
 };

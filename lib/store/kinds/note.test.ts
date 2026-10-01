@@ -59,6 +59,19 @@ describe("note adapter", () => {
 		expect(lists(s2)).toEqual({ review: [], all: ["newer", "older"] });
 	});
 
+	it("deleting then filing the same note moves the count once", () => {
+		const [s1] = applyIntent(seeded(), intent({ type: "delete", id: "flagged" }), NOW);
+		const [s2] = applyIntent(s1, intent({ type: "resolve", id: "flagged" }), NOW);
+		expect(selectAggregate(s2, "notes.needsReview")).toBe(3);
+	});
+
+	it("a pin puts the note first in the list, newest pin first", () => {
+		const [s1] = applyIntent(seeded(), intent({ type: "pin", id: "older", pinned: true }), NOW);
+		expect(lists(s1).all).toEqual(["older", "newer"]);
+		const [s2] = applyIntent(s1, intent({ type: "pin", id: "older", pinned: false }), NOW);
+		expect(lists(s2).all).toEqual(["newer", "older"]);
+	});
+
 	it("a confirmed filing survives a stale seed; a fresher seed wins", () => {
 		const [s1, t] = applyIntent(seeded(), intent({ type: "resolve", id: "flagged" }), NOW);
 		const s2 = deepFreeze(
