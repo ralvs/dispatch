@@ -152,7 +152,10 @@ describe("completeTask · recurring series (docs/adr/0059)", () => {
 		const result = await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
 		expect(result).toMatchObject({ applied: true, spawned: true, nextDue: "2026-07-17" });
 
-		const [closed, next] = await rowsTitled(sb, "Weekly review");
+		const rows = await rowsTitled(sb, "Weekly review");
+		expect(rows).toHaveLength(2);
+		const closed = rows.find((r) => r.id === task.id);
+		const next = rows.find((r) => r.id !== task.id);
 		// The closed row keeps its own due date and drops the rule, so re-ticking
 		// it can never fork the series.
 		expect(closed).toMatchObject({
@@ -161,7 +164,7 @@ describe("completeTask · recurring series (docs/adr/0059)", () => {
 			due_date: "2026-07-10",
 			recurrence_rule: null,
 		});
-		expect(closed.completed_at).not.toBeNull();
+		expect(closed?.completed_at).not.toBeNull();
 		expect(next).toMatchObject({
 			status: "open",
 			due_date: "2026-07-17",
@@ -175,7 +178,10 @@ describe("completeTask · recurring series (docs/adr/0059)", () => {
 
 		const result = await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
 		expect(result).toMatchObject({ applied: true, spawned: false });
-		expect(await rowsTitled(sb, "One-off")).toHaveLength(1);
+		const rows = await rowsTitled(sb, "One-off");
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({ status: "done", recurrence_rule: null });
+		expect(rows[0].completed_at).not.toBeNull();
 	});
 
 	it("carries due_time onto the spawned occurrence", async () => {
@@ -256,6 +262,13 @@ describe("completeTask · recurring series (docs/adr/0059)", () => {
 
 		const result = await completeTask(sb, task.id, TODAY, { dueDate: null });
 		expect(result).toMatchObject({ applied: true, spawned: true });
+		const rows = await rowsTitled(sb, "Undated weekly");
+		expect(rows.find((r) => r.id === task.id)).toMatchObject({
+			status: "done",
+			due_date: null,
+			recurrence_rule: null,
+		});
+		expect(rows.filter((r) => r.status === "open")).toMatchObject([{ recurrence_rule: "weekly" }]);
 	});
 });
 
@@ -400,6 +413,8 @@ describe("listTasks · excludeQuiet", () => {
 		expect(all).toContain(quiet.id);
 	});
 
+	// With no quiet project the filter must be skipped: PostgREST rejects an
+	// empty `not.in.()`, so building it anyway would make this call throw.
 	it("returns every open task when every project is active", async () => {
 		const sb = await ownerClient();
 		const domain_id = await aDomain(sb);
