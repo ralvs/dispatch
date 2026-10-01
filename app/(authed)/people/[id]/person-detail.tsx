@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import {
 	Button,
 	Card,
@@ -97,6 +97,10 @@ export function PersonDetail({
 	const [editing, setEditing] = useState(false);
 	// Set from the delete click until this page unmounts, unless it fails.
 	const [leaving, setLeaving] = useState(false);
+	// Next keeps a left page mounted but hidden, and hiding runs effect
+	// cleanups: reset here, so going Back to a deleted person shows them gone
+	// rather than held.
+	useEffect(() => () => setLeaving(false), []);
 	const stored = useView(viewKey.person(personId))?.[0];
 	// The last person the store held: a delete leaves the view at once, and the
 	// page keeps showing it — dimmed and inert — until the router has left.
