@@ -39,10 +39,17 @@ test("an event synced while Today is open shows after the pull, without a page r
 
 	const renders: string[] = [];
 	page.on("request", (req) => {
-		// A render of Today itself; prefetches of other routes do not count.
+		// A render of Today itself.
 		const url = new URL(req.url());
-		const rsc = req.headers().rsc === "1" || url.searchParams.has("_rsc");
-		if (req.method() === "GET" && rsc && url.pathname === "/today") renders.push(req.url());
+		const headers = req.headers();
+		const rsc = headers.rsc === "1" || url.searchParams.has("_rsc");
+		// A prefetch of the Today tab is not a render; router.refresh() sends none.
+		const prefetch = Object.keys(headers).some(
+			(h) => h.startsWith("next-router-prefetch") || h.startsWith("next-router-segment-prefetch"),
+		);
+		if (req.method() === "GET" && rsc && !prefetch && url.pathname === "/today") {
+			renders.push(req.url());
+		}
 	});
 	await page.clock.runFor(5 * 60_000 + 1_000);
 
@@ -78,8 +85,15 @@ test("coming back to a tab hidden past five minutes pulls, without a page render
 	const renders: string[] = [];
 	page.on("request", (req) => {
 		const url = new URL(req.url());
-		const rsc = req.headers().rsc === "1" || url.searchParams.has("_rsc");
-		if (req.method() === "GET" && rsc && url.pathname === "/today") renders.push(req.url());
+		const headers = req.headers();
+		const rsc = headers.rsc === "1" || url.searchParams.has("_rsc");
+		// A prefetch of the Today tab is not a render; router.refresh() sends none.
+		const prefetch = Object.keys(headers).some(
+			(h) => h.startsWith("next-router-prefetch") || h.startsWith("next-router-segment-prefetch"),
+		);
+		if (req.method() === "GET" && rsc && !prefetch && url.pathname === "/today") {
+			renders.push(req.url());
+		}
 	});
 	await setVisibility("visible");
 	await expect(page.getByText(returned).first()).toBeVisible({ timeout: 15_000 });
