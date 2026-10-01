@@ -47,7 +47,6 @@ export function BottomTabBar() {
 export function BottomTabBarView({ pathname }: { pathname: string | null }) {
 	return (
 		<nav aria-label="Primary" className="pointer-events-auto min-w-0">
-			<span hidden>{typeof window === "undefined" ? "server" : "client"}</span>
 			<ul className={`flex items-center gap-0.5 p-[5px] ${DOCK_HEIGHT} ${DOCK_SURFACE}`}>
 				{TABS.map((tab) => {
 					const active = isActive(tab, pathname);
