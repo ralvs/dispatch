@@ -135,4 +135,15 @@ describe("PersonDetail on the entity store", () => {
 		await waitFor(() => expect(router.push).toHaveBeenCalledWith("/people"));
 		expect(store.getState().views[viewKey.people()]?.base).toEqual([]);
 	});
+
+	it("a failed delete keeps the page, and says so", async () => {
+		vi.mocked(deletePersonAction).mockRejectedValue(new Error("down"));
+		const user = userEvent.setup();
+		renderDetail();
+
+		await user.click(screen.getByRole("button", { name: "Delete Ana" }));
+		await waitFor(() => expect(toastError).toHaveBeenCalledWith("Couldn't delete person."));
+		expect(screen.getByRole("heading", { name: "Ana" })).toBeInTheDocument();
+		expect(router.push).not.toHaveBeenCalled();
+	});
 });

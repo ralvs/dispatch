@@ -6,6 +6,7 @@ import { useRef, useState, useTransition } from "react";
 import {
 	Button,
 	Card,
+	EmptyState,
 	Field,
 	Input,
 	ListRow,
@@ -87,13 +88,24 @@ export function PersonDetail({
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
-	const person = useView(viewKey.person(personId))?.[0];
+	const stored = useView(viewKey.person(personId))?.[0];
+	// The last person the store held: a delete in flight leaves the view at
+	// once, and the page keeps showing (dimmed) until the router leaves.
+	const [last, setLast] = useState(stored);
+	if (stored !== undefined && stored !== last) setLast(stored);
+	const person = stored ?? (pending ? last : undefined);
 	const facts = useView(viewKey.personFacts(personId)) ?? NO_FACTS;
 	const interactions = useView(viewKey.personInteractions(personId)) ?? NO_INTERACTIONS;
 	const write = useStoreWrite("person");
 
-	// Gone — deleted here (the router is on its way to /people) or elsewhere.
-	if (!person) return null;
+	// Gone, and not by a delete in flight here — deleted in another tab.
+	if (!person) {
+		return (
+			<EmptyState>
+				This person is gone. <Link href="/people">Back to People</Link>
+			</EmptyState>
+		);
+	}
 
 	function saveDetails(formData: FormData) {
 		startTransition(async () => {
