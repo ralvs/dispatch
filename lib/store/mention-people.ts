@@ -12,6 +12,10 @@ import type { StoreWrite } from "@/lib/store/types";
  * under the new name, a delete here drops them (#30). Only writes, never
  * seeds — a seed is no newer than the server's list, and a pending create has
  * the client's id, which a mention must never store.
+ *
+ * Left on purpose: the server's list carries no read time, so a rename made
+ * here keeps winning over a later rename of the same person made elsewhere,
+ * for the life of this tab. The confirmed list is capped (CONFIRMED_CAP).
  */
 export function mergeMentionPeople(
 	server: MentionCandidate[],

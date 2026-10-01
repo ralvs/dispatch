@@ -248,7 +248,7 @@ export function PersonDetail({
 								variant="danger"
 								size="sm"
 								aria-label={`Delete ${person.name}`}
-								disabled={pending}
+								disabled={pending || leaving}
 								onClick={remove}
 							>
 								Delete
