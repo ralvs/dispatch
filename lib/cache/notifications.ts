@@ -3,7 +3,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import type { CachedReader } from "@/lib/cache/manifest";
 import { CacheTag } from "@/lib/cache/tags";
 import { nowUtc } from "@/lib/dates";
-import { listNotifications } from "@/lib/services/notifications";
+import { listNotifications, unreadCount } from "@/lib/services/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -23,8 +23,13 @@ export async function getCachedNotifications() {
 	cacheLife("tagged");
 
 	const readAt = nowUtc();
-	const notifications = await listNotifications(createAdminClient(), { limit: 100 });
-	return { readAt, notifications };
+	const sb = createAdminClient();
+	// The exact unread count, not the list's: the list stops at 100 rows.
+	const [notifications, unread] = await Promise.all([
+		listNotifications(sb, { limit: 100 }),
+		unreadCount(sb),
+	]);
+	return { readAt, notifications, unread };
 }
 
 export const readers: CachedReader[] = [

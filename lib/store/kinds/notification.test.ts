@@ -138,6 +138,14 @@ describe("notification adapter", () => {
 		expect(selectAggregate(s2, "notifications.unread")).toBe(5);
 	});
 
+	it("a confirmed mark-all wins over a stale Today digest seeded after it", () => {
+		const [s1, t] = applyIntent(seeded(), intent({ type: "markAll", status: "dismissed" }), NOW);
+		const s2 = confirmWrite(s1, t, { at: T2, rows: [], deletedIds: ["a", "b", "c"] });
+		// Today's cached digest, read before the write, lands afterwards.
+		const today = applySeed(s2, snapshot(T1, [], { aggregates: { "notifications.unread": 5 } }));
+		expect(selectAggregate(today, "notifications.unread")).toBe(0);
+	});
+
 	it("with no unread count seeded, a bulk action moves no count", () => {
 		const s0 = deepFreeze(
 			applySeed(initialState(), snapshot(T1, [{ key, type: "notificationList", data: [a] }])),
