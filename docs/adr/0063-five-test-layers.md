@@ -99,3 +99,18 @@ it.
   The focus return now happens in the effect that removes `inert`.
 - Contributors need Docker and the Supabase CLI for the integration layer
   only.
+
+## Amendment 2026-10-01 — both layers run in CI (#50)
+
+The `E2E` job (`.github/workflows/e2e.yml`) runs on every PR and on `main`.
+It starts the local stack on the runner with only the services the tests
+reach (Postgres, GoTrue, PostgREST, Kong), then runs
+`bun run test:integration` and `bun run test:e2e`. It needs no repository
+secret, by design: decision 5 still holds on the runner, and
+`playwright.config.ts` sets every integration key to `""`. The Supabase
+Docker images are pulled on every run, not cached: a `docker save`/`load`
+cache is usually slower than the pull, and the job takes about three
+minutes.
+
+`E2E` is not a required check yet. It joins the ruleset on `main` once it
+has run green for a week without a flake.

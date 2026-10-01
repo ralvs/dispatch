@@ -1,0 +1,98 @@
+name: E2E
+
+# The integration layer and the end-to-end smoke (docs/adr/0063), against a
+# local Supabase stack on the runner. Needs no secret: every key comes from
+# `supabase status`, `readLocalStack()` refuses any non-local host, and
+# playwright.config.ts sets every integration key — the AI gateway included —
+# to "". A secret in this workflow is a bug.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+# A new push to a PR cancels its older run; runs on main always finish.
+concurrency:
+  group: e2e-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  e2e:
+    # Not a required check yet (#50): it becomes one after a week green
+    # without flakes. Renaming it then means updating the ruleset too.
+    name: E2E
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Cache Bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.115.0
+
+      # Only what the app and the tests reach: Postgres, GoTrue (sign-in),
+      # PostgREST and Kong in front of them. Applies supabase/migrations/ and
+      # supabase/seed.sql, which adds the owner the tests sign in as. The
+      # Docker images are not cached: a docker save/load cache is usually
+      # slower than the pull, and the whole job runs in about three minutes.
+      - name: Start the local stack
+        run: >-
+          supabase start
+          -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Playwright version
+        id: playwright
+        run: echo "version=$(bunx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the Playwright browser
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install the Playwright browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bunx playwright install --with-deps chromium
+
+      - name: Install the Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: bunx playwright install-deps chromium
+
+      - name: Integration
+        run: bun run test:integration
+
+      # Builds the app with `next build` and serves it on :3300.
+      - name: End to end
+        run: bun run test:e2e
+
+      - name: Upload the Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
