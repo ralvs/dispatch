@@ -1,7 +1,7 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { ActionResult } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { instantFromLocal } from "@/lib/dates";
 import { decodeForm } from "@/lib/form-decode";
@@ -9,6 +9,9 @@ import { afterMutation } from "@/lib/mutation-feedback/invalidate";
 import {
 	CreatePersonFactSchema,
 	CreatePersonInteractionSchema,
+	type PersonFactRow,
+	type PersonInteractionRow,
+	type PersonRow,
 	UpdatePersonSchema,
 } from "@/lib/schemas/person";
 import {
@@ -17,44 +20,71 @@ import {
 	deleteFact,
 	deleteInteraction,
 	deletePerson,
+	getPerson,
 	updatePerson,
 } from "@/lib/services/people";
 import { getAppTimezone } from "@/lib/services/settings";
+import { stampWrite } from "@/lib/store/server";
+import type { StoreWrite } from "@/lib/store/types";
+
+// Every action returns what it wrote (#30), so the person page's entity-store
+// views — the person, the facts, the interactions — confirm their optimistic
+// intent from it instead of waiting on a page render. Failures throw; the
+// store runner rolls back on a throw.
 
 function revalidatePersonViews(id: string) {
 	afterMutation("people.write", { id });
 }
 
-export async function updatePersonAction(id: string, formData: FormData) {
+export async function updatePersonAction(
+	id: string,
+	formData: FormData,
+): Promise<ActionResult<StoreWrite<PersonRow>>> {
 	const { sb } = await requireOwnerPage();
 	const personId = z.uuid().parse(id);
 	const parsed = decodeForm(UpdatePersonSchema, formData);
 	await updatePerson(sb, personId, parsed);
 	revalidatePersonViews(personId);
+	const row = await getPerson(sb, personId);
+	return { ok: true, data: row ? stampWrite([row]) : stampWrite([], [personId]) };
 }
 
-export async function deletePersonAction(id: string) {
+/** No redirect: that would roll the intent back. The page navigates once the store has it. */
+export async function deletePersonAction(id: string): Promise<ActionResult<StoreWrite<PersonRow>>> {
 	const { sb } = await requireOwnerPage();
-	await deletePerson(sb, z.uuid().parse(id));
+	const personId = z.uuid().parse(id);
+	await deletePerson(sb, personId);
 	afterMutation("people.write");
-	redirect("/people");
+	return { ok: true, data: stampWrite([], [personId]) };
 }
 
-export async function createFactAction(personId: string, formData: FormData) {
+export async function createFactAction(
+	personId: string,
+	formData: FormData,
+): Promise<ActionResult<StoreWrite<PersonFactRow>>> {
 	const { sb } = await requireOwnerPage();
 	const id = z.uuid().parse(personId);
 	const parsed = decodeForm(CreatePersonFactSchema, formData);
-	await createFact(sb, id, parsed);
+	const fact = await createFact(sb, id, parsed);
 	revalidatePersonViews(id);
+	return { ok: true, data: stampWrite([fact]) };
 }
 
-export async function deleteFactAction(personId: string, factId: string) {
+export async function deleteFactAction(
+	personId: string,
+	factId: string,
+): Promise<ActionResult<StoreWrite<PersonFactRow>>> {
 	const { sb } = await requireOwnerPage();
-	await deleteFact(sb, z.uuid().parse(factId));
+	const id = z.uuid().parse(factId);
+	await deleteFact(sb, id);
 	revalidatePersonViews(z.uuid().parse(personId));
+	return { ok: true, data: stampWrite([], [id]) };
 }
 
-export async function createInteractionAction(personId: string, formData: FormData) {
+export async function createInteractionAction(
+	personId: string,
+	formData: FormData,
+): Promise<ActionResult<StoreWrite<PersonInteractionRow>>> {
 	const { sb } = await requireOwnerPage();
 	const id = z.uuid().parse(personId);
 	const dateIso = formData.get("occurred_date");
@@ -67,12 +97,18 @@ export async function createInteractionAction(personId: string, formData: FormDa
 	const parsed = decodeForm(CreatePersonInteractionSchema, formData, {
 		overrides: { occurred_at: occurredAt },
 	});
-	await createInteraction(sb, id, parsed);
+	const interaction = await createInteraction(sb, id, parsed);
 	revalidatePersonViews(id);
+	return { ok: true, data: stampWrite([interaction]) };
 }
 
-export async function deleteInteractionAction(personId: string, interactionId: string) {
+export async function deleteInteractionAction(
+	personId: string,
+	interactionId: string,
+): Promise<ActionResult<StoreWrite<PersonInteractionRow>>> {
 	const { sb } = await requireOwnerPage();
-	await deleteInteraction(sb, z.uuid().parse(interactionId));
+	const id = z.uuid().parse(interactionId);
+	await deleteInteraction(sb, id);
 	revalidatePersonViews(z.uuid().parse(personId));
+	return { ok: true, data: stampWrite([], [id]) };
 }

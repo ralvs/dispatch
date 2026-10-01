@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { StoreProvider } from "@/lib/store/provider";
 import { createTaskAction } from "./actions";
 import { TaskDialog } from "./task-dialog";
 
@@ -15,17 +16,21 @@ const DOMAINS = [{ id: "7f1c0a4e-1111-4000-8000-000000000001", name: "Home", col
 
 function Harness({ onClose = () => {} }: { onClose?: () => void }) {
 	const [open, setOpen] = useState(true);
+	// The mention fields read the entity store's people (#30); the app shell
+	// always provides it.
 	return (
-		<TaskDialog
-			open={open}
-			onClose={() => {
-				setOpen(false);
-				onClose();
-			}}
-			mode="create"
-			domains={DOMAINS}
-			todayIso="2026-09-22"
-		/>
+		<StoreProvider>
+			<TaskDialog
+				open={open}
+				onClose={() => {
+					setOpen(false);
+					onClose();
+				}}
+				mode="create"
+				domains={DOMAINS}
+				todayIso="2026-09-22"
+			/>
+		</StoreProvider>
 	);
 }
 

@@ -18,6 +18,7 @@ import {
 	normalizeName,
 	spliceMention,
 } from "@/lib/mentions";
+import { useMentionPeople } from "@/lib/store/mention-people";
 
 const MAX_SUGGESTIONS = 8;
 
@@ -48,10 +49,12 @@ const CLOSED: MentionState = { open: false, start: 0, items: [], selected: 0 };
  * The DOM element is the only source that is current in every handler.
  */
 function useMentionAutocomplete(
-	people: MentionCandidate[],
+	serverPeople: MentionCandidate[],
 	onValueChange: (value: string) => void,
 ) {
 	const [state, setState] = useState<MentionState>(CLOSED);
+	// A person created in this tab is offered before any page render (#30).
+	const people = useMentionPeople(serverPeople);
 
 	function recompute(el: FieldEl | null) {
 		if (!el) return;

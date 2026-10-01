@@ -4,6 +4,7 @@ import type { JournalEntryRow } from "@/lib/schemas/journal";
 import type { LinkRow } from "@/lib/schemas/link";
 import type { NoteListRow } from "@/lib/schemas/note";
 import type { NotificationRow } from "@/lib/schemas/notification";
+import type { PersonFactRow, PersonInteractionRow, PersonRow } from "@/lib/schemas/person";
 import type { QuoteRow } from "@/lib/schemas/quote";
 import type { RoutineWithHistory } from "@/lib/schemas/routine";
 import type { TaskRow } from "@/lib/schemas/task";
@@ -172,6 +173,45 @@ export function link(partial: Partial<LinkRow> & Pick<LinkRow, "id">): LinkRow {
 		source: "webhook",
 		created_at: "2026-07-10T12:00:00+00:00",
 		updated_at: "2026-07-10T12:00:00+00:00",
+		...partial,
+	};
+}
+
+export function person(partial: Partial<PersonRow> & Pick<PersonRow, "id">): PersonRow {
+	return {
+		name: partial.id,
+		relationship_type: null,
+		email: null,
+		phone: null,
+		company: null,
+		notes: null,
+		created_at: "2026-07-01T12:00:00+00:00",
+		updated_at: "2026-07-01T12:00:00+00:00",
+		...partial,
+	};
+}
+
+export function personFact(
+	partial: Partial<PersonFactRow> & Pick<PersonFactRow, "id" | "person_id">,
+): PersonFactRow {
+	return {
+		fact_type: "other",
+		fact_value: partial.id,
+		source_ref: null,
+		date_relevant: null,
+		recurring: false,
+		created_at: "2026-07-01T12:00:00+00:00",
+		...partial,
+	};
+}
+
+export function personInteraction(
+	partial: Partial<PersonInteractionRow> & Pick<PersonInteractionRow, "id" | "person_id">,
+): PersonInteractionRow {
+	return {
+		interaction_type: "call",
+		notes: partial.id,
+		occurred_at: "2026-07-10T12:00:00+00:00",
 		...partial,
 	};
 }

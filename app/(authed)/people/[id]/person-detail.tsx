@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import {
 	Button,
 	Card,
+	EmptyState,
 	Field,
 	Input,
 	ListRow,
@@ -14,10 +16,23 @@ import {
 	Select,
 	Textarea,
 } from "@/components/ui";
-import { runAction } from "@/lib/client/toast";
-import { formatInstant } from "@/lib/dates";
+import { toastError } from "@/lib/client/toast";
+import { formatInstant, instantFromLocal, nowUtc } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
+import {
+	PersonFactTypeSchema,
+	PersonInteractionTypeSchema,
+	RelationshipTypeSchema,
+} from "@/lib/schemas/person";
 import type { PersonFactRow, PersonInteractionRow, PersonRow } from "@/lib/services/people";
+import {
+	isNavigationError,
+	useProvisionalIds,
+	useRunIntent,
+	useStoreWrite,
+	useView,
+	viewKey,
+} from "@/lib/store";
 import {
 	FACT_TYPES,
 	factTypeLabel,
@@ -35,38 +50,113 @@ import {
 	updatePersonAction,
 } from "./actions";
 
+/** A text field as the server will store it: blank clears it (lib/form-decode.ts). */
+function textField(formData: FormData, key: string): string | null {
+	const value = String(formData.get(key) ?? "").trim();
+	return value === "" ? null : value;
+}
+
+/** What an edit asks for, so the page shows it while the server writes it. */
+function personPatch(formData: FormData): Partial<PersonRow> {
+	const relationship = RelationshipTypeSchema.safeParse(formData.get("relationship_type"));
+	const name = textField(formData, "name");
+	return {
+		...(name ? { name } : {}),
+		relationship_type: relationship.success ? relationship.data : null,
+		company: textField(formData, "company"),
+		email: textField(formData, "email"),
+		phone: textField(formData, "phone"),
+		notes: textField(formData, "notes"),
+	};
+}
+
+const NO_FACTS: PersonFactRow[] = [];
+const NO_INTERACTIONS: PersonInteractionRow[] = [];
+
+/**
+ * The person, their facts and their interactions come from the entity store
+ * views the page's <Seed> fed (#30), so every edit shows at once and a rename
+ * reaches /people too. Mentions are derived on the server (ADR-0030) and stay
+ * props.
+ */
 export function PersonDetail({
-	person,
-	facts,
-	interactions,
+	personId,
 	tz,
 	mentionedTasks,
 	mentionedNotes,
 }: {
-	person: PersonRow;
-	facts: PersonFactRow[];
-	interactions: PersonInteractionRow[];
+	personId: string;
 	tz: string;
 	/** Tasks whose title/notes mention this person (docs/adr/0030 §5). */
 	mentionedTasks: { id: string; title: string; status: string }[];
 	/** Notes whose body mentions this person. */
 	mentionedNotes: { id: string; title: string | null; body: string }[];
 }) {
+	const router = useRouter();
 	const [pending, startTransition] = useTransition();
 	const [editing, setEditing] = useState(false);
+	// Set from the delete click until this page unmounts, unless it fails.
+	const [leaving, setLeaving] = useState(false);
+	// Next keeps a left page mounted but hidden, and hiding runs effect
+	// cleanups: reset here, so going Back to a deleted person shows them gone
+	// rather than held.
+	useEffect(() => () => setLeaving(false), []);
+	const stored = useView(viewKey.person(personId))?.[0];
+	// The last person the store held: a delete leaves the view at once, and the
+	// page keeps showing it — dimmed and inert — until the router has left.
+	const [last, setLast] = useState(stored);
+	if (stored !== undefined && stored !== last) setLast(stored);
+	const person = stored ?? (leaving ? last : undefined);
+	const facts = useView(viewKey.personFacts(personId)) ?? NO_FACTS;
+	const interactions = useView(viewKey.personInteractions(personId)) ?? NO_INTERACTIONS;
+	const write = useStoreWrite("person");
+
+	// Gone, and not by a delete in flight here — deleted in another tab.
+	if (!person) {
+		return (
+			<EmptyState>
+				This person is gone. <Link href="/people">Back to People</Link>
+			</EmptyState>
+		);
+	}
 
 	function saveDetails(formData: FormData) {
 		startTransition(async () => {
-			const ok = await runAction(
-				() => updatePersonAction(person.id, formData),
-				"Couldn't save person.",
-			);
-			if (ok) setEditing(false);
+			try {
+				const result = await write(
+					{ type: "patch", id: personId, patch: personPatch(formData) },
+					() => updatePersonAction(personId, formData),
+				);
+				if (result.ok) setEditing(false);
+				else toastError(result.formError ?? "Couldn't save person.");
+			} catch (error) {
+				// A redirect() (an expired session) navigates on its own; it is not a failure.
+				if (!isNavigationError(error)) toastError("Couldn't save person.");
+			}
+		});
+	}
+
+	function remove() {
+		setLeaving(true);
+		startTransition(async () => {
+			try {
+				const result = await write({ type: "delete", id: personId }, () =>
+					deletePersonAction(personId),
+				);
+				if (result.ok) {
+					router.push("/people");
+					return;
+				}
+				toastError(result.formError ?? "Couldn't delete person.");
+			} catch (error) {
+				if (!isNavigationError(error)) toastError("Couldn't delete person.");
+			}
+			setLeaving(false);
 		});
 	}
 
 	return (
-		<div className={pending ? "opacity-50" : ""}>
+		<div className={pending || leaving ? "opacity-50" : ""} inert={leaving}>
 			{/* Name is the title; relationship + company are facts (plain),
 			    fact count is the measure (Pass 4.5 Gate A). */}
 			<PageHeader
@@ -152,6 +242,7 @@ export function PersonDetail({
 								variant="tertiary"
 								size="sm"
 								aria-label={`Edit ${person.name}`}
+								disabled={pending}
 								onClick={() => setEditing(true)}
 							>
 								Edit
@@ -161,12 +252,8 @@ export function PersonDetail({
 								variant="danger"
 								size="sm"
 								aria-label={`Delete ${person.name}`}
-								disabled={pending}
-								onClick={() =>
-									startTransition(async () => {
-										await runAction(() => deletePersonAction(person.id), "Couldn't delete person.");
-									})
-								}
+								disabled={pending || leaving}
+								onClick={remove}
 							>
 								Delete
 							</Button>
@@ -176,8 +263,8 @@ export function PersonDetail({
 			</section>
 
 			<MentionedInSection tasks={mentionedTasks} notes={mentionedNotes} />
-			<FactsSection personId={person.id} facts={facts} />
-			<InteractionsSection personId={person.id} interactions={interactions} tz={tz} />
+			<FactsSection personId={personId} facts={facts} />
+			<InteractionsSection personId={personId} interactions={interactions} tz={tz} />
 		</div>
 	);
 }
@@ -222,17 +309,47 @@ function MentionedInSection({
 	);
 }
 
+/** The fact the list shows while the server writes it; the server's row replaces it. */
+function optimisticFact(personId: string, formData: FormData): PersonFactRow {
+	const type = PersonFactTypeSchema.safeParse(formData.get("fact_type"));
+	const date = textField(formData, "date_relevant");
+	return {
+		id: crypto.randomUUID(),
+		person_id: personId,
+		fact_type: type.success ? type.data : "other",
+		fact_value: textField(formData, "fact_value") ?? "",
+		source_ref: null,
+		date_relevant: date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
+		recurring: false,
+		created_at: nowUtc(),
+	};
+}
+
 function FactsSection({ personId, facts }: { personId: string; facts: PersonFactRow[] }) {
 	const formRef = useRef<HTMLFormElement>(null);
 	const [pending, startTransition] = useTransition();
 	const [open, setOpen] = useState(false);
+	const write = useStoreWrite("personFact");
+	const run = useRunIntent("personFact", { errorMessage: "Couldn't delete fact." });
+	// A fact still being saved has the client's id: no delete until it is real.
+	const saving = useProvisionalIds("personFact");
 
 	function submit(formData: FormData) {
 		startTransition(async () => {
-			const ok = await runAction(() => createFactAction(personId, formData), "Couldn't add fact.");
-			if (!ok) return;
-			formRef.current?.reset();
-			setOpen(false);
+			try {
+				const result = await write(
+					{ type: "create", row: optimisticFact(personId, formData) },
+					() => createFactAction(personId, formData),
+				);
+				if (!result.ok) {
+					toastError(result.formError ?? "Couldn't add fact.");
+					return;
+				}
+				formRef.current?.reset();
+				setOpen(false);
+			} catch (error) {
+				if (!isNavigationError(error)) toastError("Couldn't add fact.");
+			}
 		});
 	}
 
@@ -249,14 +366,9 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 								variant="danger-soft"
 								size="sm"
 								aria-label={`Delete fact "${f.fact_value}"`}
-								disabled={pending}
+								disabled={saving.has(f.id)}
 								onClick={() =>
-									startTransition(async () => {
-										await runAction(
-											() => deleteFactAction(personId, f.id),
-											"Couldn't delete fact.",
-										);
-									})
+									run({ type: "delete", id: f.id }, () => deleteFactAction(personId, f.id))
 								}
 							>
 								Delete
@@ -322,6 +434,35 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 	);
 }
 
+/**
+ * The interaction the list shows while the server writes it. Its time follows
+ * the server's rule: the entered day and time in the app timezone, else now.
+ */
+function optimisticInteraction(
+	personId: string,
+	formData: FormData,
+	tz: string,
+): PersonInteractionRow {
+	const type = PersonInteractionTypeSchema.safeParse(formData.get("interaction_type"));
+	const date = textField(formData, "occurred_date");
+	const time = textField(formData, "occurred_time") ?? "00:00";
+	let occurredAt = nowUtc();
+	if (date) {
+		try {
+			occurredAt = instantFromLocal(date, time, tz);
+		} catch {
+			// An unparseable entry: the server rejects it and the row rolls back.
+		}
+	}
+	return {
+		id: crypto.randomUUID(),
+		person_id: personId,
+		interaction_type: type.success ? type.data : "other",
+		notes: textField(formData, "notes"),
+		occurred_at: occurredAt,
+	};
+}
+
 function InteractionsSection({
 	personId,
 	interactions,
@@ -334,16 +475,26 @@ function InteractionsSection({
 	const formRef = useRef<HTMLFormElement>(null);
 	const [pending, startTransition] = useTransition();
 	const [open, setOpen] = useState(false);
+	const write = useStoreWrite("personInteraction");
+	const run = useRunIntent("personInteraction", { errorMessage: "Couldn't delete interaction." });
+	const saving = useProvisionalIds("personInteraction");
 
 	function submit(formData: FormData) {
 		startTransition(async () => {
-			const ok = await runAction(
-				() => createInteractionAction(personId, formData),
-				"Couldn't add interaction.",
-			);
-			if (!ok) return;
-			formRef.current?.reset();
-			setOpen(false);
+			try {
+				const result = await write(
+					{ type: "create", row: optimisticInteraction(personId, formData, tz) },
+					() => createInteractionAction(personId, formData),
+				);
+				if (!result.ok) {
+					toastError(result.formError ?? "Couldn't add interaction.");
+					return;
+				}
+				formRef.current?.reset();
+				setOpen(false);
+			} catch (error) {
+				if (!isNavigationError(error)) toastError("Couldn't add interaction.");
+			}
 		});
 	}
 
@@ -363,14 +514,9 @@ function InteractionsSection({
 								variant="danger-soft"
 								size="sm"
 								aria-label="Delete interaction"
-								disabled={pending}
+								disabled={saving.has(i.id)}
 								onClick={() =>
-									startTransition(async () => {
-										await runAction(
-											() => deleteInteractionAction(personId, i.id),
-											"Couldn't delete interaction.",
-										);
-									})
+									run({ type: "delete", id: i.id }, () => deleteInteractionAction(personId, i.id))
 								}
 							>
 								Delete

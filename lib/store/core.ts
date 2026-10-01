@@ -7,6 +7,14 @@ import { journalKind, journalListView } from "@/lib/store/kinds/journal";
 import { linkKind, linkListView } from "@/lib/store/kinds/link";
 import { noteKind, noteListsView } from "@/lib/store/kinds/note";
 import { notificationKind, notificationListView } from "@/lib/store/kinds/notification";
+import {
+	personFactKind,
+	personFactListView,
+	personInteractionKind,
+	personInteractionListView,
+	personKind,
+	personListView,
+} from "@/lib/store/kinds/person";
 import { quoteKind, quoteListView } from "@/lib/store/kinds/quote";
 import { routineKind, routineListView } from "@/lib/store/kinds/routine";
 import { dayView, taskKind, taskListsView, taskListView } from "@/lib/store/kinds/task";
@@ -44,6 +52,9 @@ export const defaultAdapters: Adapters = {
 		quote: quoteKind,
 		journal: journalKind,
 		link: linkKind,
+		person: personKind,
+		personFact: personFactKind,
+		personInteraction: personInteractionKind,
 	},
 	views: {
 		taskLists: taskListsView,
@@ -55,6 +66,9 @@ export const defaultAdapters: Adapters = {
 		quoteList: quoteListView,
 		journalList: journalListView,
 		linkList: linkListView,
+		personList: personListView,
+		personFactList: personFactListView,
+		personInteractionList: personInteractionListView,
 	},
 };
 
@@ -92,7 +106,18 @@ function later(a: Instant, b: Instant): boolean {
 export function initialState(): StoreState {
 	return {
 		clock: null,
-		rows: { task: {}, notification: {}, routine: {}, note: {}, quote: {}, journal: {}, link: {} },
+		rows: {
+			task: {},
+			notification: {},
+			routine: {},
+			note: {},
+			quote: {},
+			journal: {},
+			link: {},
+			person: {},
+			personFact: {},
+			personInteraction: {},
+		},
 		views: {},
 		aggregates: {},
 		pending: [],
@@ -279,6 +304,12 @@ export function makeCore(adapters: Adapters) {
 		return s.pending.some((p) => p.kind === i.kind && kind.provisionalIds(p.intent).includes(id));
 	}
 
+	/** Ids of a kind's rows that an unconfirmed create introduced, in apply order. */
+	function provisionalIdsOf(s: StoreState, k: Kind): string[] {
+		const kind = kindOf(k);
+		return s.pending.flatMap((p) => (p.kind === k ? kind.provisionalIds(p.intent) : []));
+	}
+
 	/** Base plus pending deltas, clamped at zero. Undefined until seeded. */
 	function selectAggregate(s: StoreState, key: AggregateKey): number | undefined {
 		const base = s.aggregates[key];
@@ -296,6 +327,7 @@ export function makeCore(adapters: Adapters) {
 		selectView,
 		selectAggregate,
 		targetsProvisional,
+		provisionalIdsOf,
 	};
 }
 
@@ -310,4 +342,5 @@ export const {
 	selectView,
 	selectAggregate,
 	targetsProvisional,
+	provisionalIdsOf,
 } = core;

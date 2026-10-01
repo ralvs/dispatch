@@ -13,4 +13,10 @@ export const viewKey = {
 	quotes: () => "quotes" as ViewKey<"quoteList">,
 	journal: () => "journal" as ViewKey<"journalList">,
 	links: () => "links" as ViewKey<"linkList">,
+	people: () => "people" as ViewKey<"personList">,
+	/** The person page's header: a list of one. */
+	person: (id: string) => `person:${id}` as ViewKey<"personList">,
+	personFacts: (id: string) => `personFacts:${id}` as ViewKey<"personFactList">,
+	personInteractions: (id: string) =>
+		`personInteractions:${id}` as ViewKey<"personInteractionList">,
 };
