@@ -81,7 +81,10 @@ function put<R extends Identified>(
 export function recordListView<R extends Identified, S = undefined>(opts: RecordListOptions<R, S>) {
 	const listed = opts.listed ?? (() => true);
 	return {
-		fromSeed: (data: RecordSeed<R, S>) => ({ base: data.rows, params: data.scope }),
+		fromSeed: (data: RecordSeed<R, S>) => ({
+			base: data.rows.some((r) => !listed(r)) ? data.rows.filter(listed) : data.rows,
+			params: data.scope,
+		}),
 		rowsOf: (view: R[]) => view,
 		reduce: (view: R[], intent: RecordIntent<R>, _ctx: unknown, scope: S | undefined) =>
 			applyRecordIntent(view, intent, scope, opts),
