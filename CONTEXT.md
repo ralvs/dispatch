@@ -75,7 +75,7 @@ resolved by hand later.
 
 How a recurring task advances instead of closing. Completing a task with a
 `recurrence_rule` does not set it done — its `due_date` rolls forward to the
-next occurrence (`completeTask` → `nextDueDate` in `lib/recurrence.ts`). The
+next occurrence (`completeTask` → `nextOccurrence` in `lib/recurrence.ts`). The
 roll is anchored so an overdue repeat moves to the next future date, never into
 the past. Non-recurring tasks complete normally (`status = done`,
 `completed_at` set).

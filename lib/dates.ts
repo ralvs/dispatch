@@ -73,13 +73,6 @@ export function calendarDaysBetween(fromIso: string, toIso: string): number {
 	return Math.max(0, days);
 }
 
-/** Monday of the week containing the given calendar date. */
-export function startOfWeek(dateIso: string): string {
-	const iso = DateTime.fromISO(dateIso, { zone: "utc" }).startOf("week").toISODate();
-	if (!iso) throw new Error(`Invalid date: ${dateIso}`);
-	return iso;
-}
-
 /** Current instant as a UTC ISO string — the only sanctioned "now" for storage. */
 export function nowUtc(nowMs: number = Date.now()): string {
 	return new Date(nowMs).toISOString();
@@ -124,13 +117,6 @@ export function isoWeek(dateIso: string): number {
 	return dt.weekNumber;
 }
 
-/** Masthead dateline: `THU · JUL 17 · WEEK 29`. */
-export function formatDateline(dateIso: string): string {
-	const dt = DateTime.fromISO(dateIso, { zone: "utc" });
-	if (!dt.isValid) throw new Error(`Invalid date: ${dateIso}`);
-	return `${dt.toFormat("ccc · LLL d").toUpperCase()} · WEEK ${dt.weekNumber}`;
-}
-
 /**
  * A `YYYY-MM-DD` calendar date from untrusted input (a query string), or null.
  * Rejects anything that isn't a real day — `2026-02-30` parses as a Luxon
@@ -141,20 +127,6 @@ export function parseDateIso(value: unknown): string | null {
 	const dt = DateTime.fromISO(value, { zone: "utc" });
 	if (!dt.isValid || dt.toISODate() !== value) return null;
 	return value;
-}
-
-/** Day-navigation label: `TODAY`, `YESTERDAY`, `TOMORROW`, else `WED · JUL 29`. */
-export function formatDayNavLabel(dateIso: string, todayIso: string): string {
-	const days = Math.round(
-		DateTime.fromISO(dateIso, { zone: "utc" }).diff(
-			DateTime.fromISO(todayIso, { zone: "utc" }),
-			"days",
-		).days,
-	);
-	if (days === 0) return "TODAY";
-	if (days === -1) return "YESTERDAY";
-	if (days === 1) return "TOMORROW";
-	return DateTime.fromISO(dateIso, { zone: "utc" }).toFormat("ccc · LLL d").toUpperCase();
 }
 
 /**
