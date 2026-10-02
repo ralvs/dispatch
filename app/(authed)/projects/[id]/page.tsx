@@ -96,7 +96,7 @@ function ProjectFallback() {
 	return (
 		<PageSkeleton
 			measure={["w-12", "w-20"]}
-			subtitle={<TextBone className="inline-flex" width="w-24" />}
+			subtitle={<TextBone width="w-24" />}
 			action={<HeaderCreateButton label="Add task" disabled />}
 		>
 			<div aria-hidden="true">

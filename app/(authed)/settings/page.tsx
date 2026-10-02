@@ -110,7 +110,14 @@ export default function SettingsPage() {
 				<SectionHead title="Account" />
 				<div className="space-y-3 pt-1">
 					<ThemeToggle />
-					<Suspense fallback={<TextBone className="text-meta" width="w-40" />}>
+					<Suspense
+						fallback={
+							<>
+								<SkeletonStatus />
+								<TextBone className="text-meta" width="w-40" />
+							</>
+						}
+					>
 						<AccountEmail />
 					</Suspense>
 					<SignOutButton />

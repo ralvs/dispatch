@@ -68,13 +68,18 @@ export function TodaySkeleton({ dateline }: { dateline?: string }) {
 				<Bone className="size-7 rounded-pill" />
 			</div>
 
-			<div aria-hidden="true">
+			<div>
 				<div className="lg:flex lg:items-end lg:justify-between lg:gap-12">
-					<div className="max-w-[16ch] text-t36 lg:text-hero">
+					{/* The page keeps its h1 while DayHeadline is in flight. */}
+					<h1 className="m-0 max-w-[16ch] text-t36 lg:text-hero">
+						<span className="sr-only">Today</span>
 						<TextBone width="w-[7ch]" />
-					</div>
+					</h1>
 					{/* Counters: a wrapped row on a phone, a right-aligned stack on desk. */}
-					<div className="mt-5 flex flex-wrap gap-x-[18px] gap-y-1.5 lg:mt-0 lg:grid lg:shrink-0 lg:justify-items-end lg:gap-[7px] lg:pb-1.5">
+					<div
+						aria-hidden="true"
+						className="mt-5 flex flex-wrap gap-x-[18px] gap-y-1.5 lg:mt-0 lg:grid lg:shrink-0 lg:justify-items-end lg:gap-[7px] lg:pb-1.5"
+					>
 						{["w-16", "w-14", "w-24", "w-24", "w-24"].map((w, i) => (
 							// biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder.
 							<TextBone key={i} className="text-base" width={w} />
@@ -83,20 +88,24 @@ export function TodaySkeleton({ dateline }: { dateline?: string }) {
 				</div>
 
 				{/* DayTape: the start-time row (desk only), the track, the ruler. */}
-				<div className="mt-10">
+				<div aria-hidden="true" className="mt-10">
 					<div className="mb-[5px] hidden h-4 lg:block" />
 					<Bone className="h-10 rounded-[11px] lg:h-[46px] lg:rounded-[12px]" />
 					<div className="mt-2 flex h-[15px] justify-between lg:mt-[9px] lg:h-4">
 						{repeat(7, (i) => (
-							<Bone
-								key={i}
-								className={`h-2.5 w-9 rounded-sm ${i % 3 === 0 ? "" : "hidden lg:block"}`}
-							/>
+							// The wrapper owns display: Bone is always `block`, and two
+							// display utilities on one element resolve by stylesheet order.
+							<span key={i} className={i % 3 === 0 ? "block" : "hidden lg:block"}>
+								<Bone className="h-2.5 w-9 rounded-sm" />
+							</span>
 						))}
 					</div>
 				</div>
 
-				<div className="mt-9 flex flex-col gap-[34px] lg:mt-13 lg:grid lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-10">
+				<div
+					aria-hidden="true"
+					className="mt-9 flex flex-col gap-[34px] lg:mt-13 lg:grid lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-10"
+				>
 					<div className="contents lg:block lg:min-w-0 lg:space-y-10">
 						<section className="order-2 lg:order-none">
 							<SectionHeadBone width="w-20" />

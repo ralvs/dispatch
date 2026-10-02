@@ -164,6 +164,25 @@ export function TitleMetaBone({ i, meta = true }: { i: number; meta?: boolean })
 }
 
 /**
+ * The h1's stand-in on a detail route, whose name is data. It stays inline so
+ * the h1's line box keeps the height it will have once the name arrives, and
+ * the h1 keeps an accessible name meanwhile.
+ */
+function TitleBone() {
+	return (
+		<>
+			<span className="sr-only">Loading</span>
+			<span
+				aria-hidden="true"
+				className="inline-flex h-[1lh] w-[min(60vw,18rem)] items-center align-top"
+			>
+				<span className="block h-[0.62em] w-full animate-pulse rounded-sm bg-surface-2" />
+			</span>
+		</>
+	);
+}
+
+/**
  * The route frame: the real header, then the route's own body bones.
  *
  * `title` is optional for a detail route, whose name *is* data; the bone then
@@ -190,7 +209,7 @@ export function PageSkeleton({
 		<div>
 			<SkeletonStatus />
 			<PageHeader
-				title={title ?? <TextBone className="inline-flex align-top" width="w-[min(60vw,18rem)]" />}
+				title={title ?? <TitleBone />}
 				subtitle={subtitle}
 				action={
 					measure || action ? (
