@@ -23,7 +23,12 @@ declare
   project_domain uuid;
 begin
   if new.project_id is not null then
-    select p.domain_id into project_domain from public.projects p where p.id = new.project_id;
+    -- `for share` waits for a project move in flight, so a task written beside
+    -- it lands in the domain the move commits, not the one it replaces.
+    select p.domain_id into project_domain
+      from public.projects p
+      where p.id = new.project_id
+      for share;
     if found then
       new.domain_id := project_domain;
     end if;

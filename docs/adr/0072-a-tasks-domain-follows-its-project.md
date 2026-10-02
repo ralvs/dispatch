@@ -37,8 +37,11 @@ project under another domain.
 
 ## Consequences
 
-- Every write path is covered by one rule and one integration test suite
-  (`lib/services/tasks.int.test.ts`).
+- Every write path is covered by one rule. `lib/services/tasks.int.test.ts`
+  tests the rule itself; `lib/services/capture/quick-add.int.test.ts` tests
+  that a stated domain still drops a project that contradicts it.
+- The task trigger reads the project `for share`, so a task written while its
+  project moves domain lands in the domain the move commits.
 - A project's domain change moves its tasks on the server, but the entity
   store does not hear of it: the moved tasks show their old domain in an open
   tab until the next seed.
