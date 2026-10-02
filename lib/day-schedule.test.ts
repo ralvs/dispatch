@@ -204,20 +204,14 @@ describe("buildDaySchedule", () => {
 			expect(day.open).toEqual([]);
 		});
 
-		it("keeps an untimed task due today in the open band", () => {
-			const day = withDone([], [done({ id: "t1", due_date: TODAY })]);
-			expect(day.open.map((t) => t.id)).toEqual(["t1"]);
+		it.each([
+			["keeps an untimed task due today in the open band", { due_date: TODAY }, "open"],
+			["keeps an overdue task closed today in the open band", { due_date: "2026-07-10" }, "open"],
+			["keeps a starred task closed today in Top 3", { top3_for_date: TODAY }, "top3"],
+		] as const)("%s", (_name, overrides, band) => {
+			const day = withDone([], [done({ id: "t1", ...overrides })]);
+			expect(day[band].map((t) => t.id)).toEqual(["t1"]);
 			expect(day.allDay).toEqual([]);
-		});
-
-		it("keeps an overdue task closed today in the open band", () => {
-			const day = withDone([], [done({ id: "t1", due_date: "2026-07-10" })]);
-			expect(day.open.map((t) => t.id)).toEqual(["t1"]);
-		});
-
-		it("keeps a starred task closed today in Top 3", () => {
-			const day = withDone([], [done({ id: "t1", top3_for_date: TODAY })]);
-			expect(day.top3.map((t) => t.id)).toEqual(["t1"]);
 		});
 
 		it("adds nothing that was never on the day — no due date, not starred", () => {
@@ -256,11 +250,19 @@ describe("eventFallsOnDay", () => {
 			});
 		}
 
-		it("stands on its own date only", () => {
-			const e = allDayEvent(AUG_18, "2026-08-19");
-			expect(eventFallsOnDay(e, AUG_18, SP)).toBe(true);
-			expect(eventFallsOnDay(e, AUG_17, SP)).toBe(false);
-			expect(eventFallsOnDay(e, "2026-08-19", SP)).toBe(false);
+		it.each([
+			["stands on its own date only", "2026-08-19", SP, ["2026-08-17", "2026-08-19"]],
+			["treats a missing DTEND (end === start) as one day", AUG_18, SP, [AUG_17]],
+			[
+				"holds east of Greenwich, where the anchor lands on the day before",
+				"2026-08-19",
+				"Asia/Tokyo",
+				[AUG_17],
+			],
+		])("%s", (_name, endExclusive, tz, offDays) => {
+			const e = allDayEvent(AUG_18, endExclusive);
+			expect(eventFallsOnDay(e, AUG_18, tz)).toBe(true);
+			for (const d of offDays) expect(eventFallsOnDay(e, d, tz)).toBe(false);
 		});
 
 		it("reads DTEND as exclusive across a multi-day span", () => {
@@ -269,18 +271,6 @@ describe("eventFallsOnDay", () => {
 				["2026-08-18", "2026-08-19", "2026-08-20"].map((d) => eventFallsOnDay(e, d, SP)),
 			).toEqual([true, true, true]);
 			expect(eventFallsOnDay(e, "2026-08-21", SP)).toBe(false);
-		});
-
-		it("treats a missing DTEND (end === start) as one day", () => {
-			const e = allDayEvent(AUG_18, AUG_18);
-			expect(eventFallsOnDay(e, AUG_18, SP)).toBe(true);
-			expect(eventFallsOnDay(e, AUG_17, SP)).toBe(false);
-		});
-
-		it("holds east of Greenwich, where the anchor lands on the day before", () => {
-			const e = allDayEvent(AUG_18, "2026-08-19");
-			expect(eventFallsOnDay(e, AUG_18, "Asia/Tokyo")).toBe(true);
-			expect(eventFallsOnDay(e, AUG_17, "Asia/Tokyo")).toBe(false);
 		});
 	});
 

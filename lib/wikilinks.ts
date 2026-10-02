@@ -30,8 +30,3 @@ export function sanitizeLabel(label: string): string {
 		.trim();
 	return cleaned || "Untitled";
 }
-
-/** Serializes a wikilink node to its markdown source, sanitizing the label. */
-export function serializeWikilink(id: string, label: string): string {
-	return `[[${id}|${sanitizeLabel(label)}]]`;
-}

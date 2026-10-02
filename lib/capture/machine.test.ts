@@ -208,13 +208,6 @@ describe("captureMachine", () => {
 			expect(effects).toEqual([{ type: "SUBMIT", text: "buy milk", id: 2 }]);
 		});
 
-		it("RETRY on a slip that is not failed is a no-op", () => {
-			const before = run([{ type: "OPEN" }, type("one"), { type: "SUBMIT" }]).state;
-			const { state, effects } = run([{ type: "RETRY", id: 1 }], before);
-			expect(state).toEqual(before);
-			expect(effects).toEqual([]);
-		});
-
 		it("ONLINE retries every offline failure and leaves other failures alone", () => {
 			const { state, effects } = run([
 				{ type: "OPEN" },
@@ -241,9 +234,12 @@ describe("captureMachine", () => {
 			]);
 		});
 
-		it("ONLINE with nothing stranded is a no-op", () => {
+		it.each<[string, CaptureEvent]>([
+			["RETRY on a slip that is not failed is a no-op", { type: "RETRY", id: 1 }],
+			["ONLINE with nothing stranded is a no-op", { type: "ONLINE" }],
+		])("%s", (_name, event) => {
 			const before = run([{ type: "OPEN" }, type("one"), { type: "SUBMIT" }]).state;
-			const { state, effects } = run([{ type: "ONLINE" }], before);
+			const { state, effects } = run([event], before);
 			expect(state).toEqual(before);
 			expect(effects).toEqual([]);
 		});
@@ -303,29 +299,34 @@ describe("captureMachine", () => {
 	});
 
 	describe("OPEN prefill (Today's capture chips)", () => {
-		it("seeds an empty composer with the chip's hint", () => {
-			const { state } = run([{ type: "OPEN", prefill: "Journal: " }]);
-			expect(state.text).toBe("Journal: ");
-		});
-
-		it("never overwrites an unsubmitted draft", () => {
-			const { state } = run([
-				{ type: "OPEN" },
-				type("half a thought"),
-				{ type: "CLOSE" },
-				{ type: "OPEN", prefill: "Journal: " },
-			]);
-			expect(state.text).toBe("half a thought");
-		});
-
-		it("treats a whitespace-only draft as empty", () => {
-			const { state } = run([{ type: "OPEN" }, type("   "), { type: "OPEN", prefill: "Quote: " }]);
-			expect(state.text).toBe("Quote: ");
-		});
-
-		it("leaves text alone when no prefill is sent", () => {
-			const { state } = run([{ type: "OPEN" }, type("draft"), { type: "OPEN" }]);
-			expect(state.text).toBe("draft");
+		it.each<[string, CaptureEvent[], string]>([
+			[
+				"seeds an empty composer with the chip's hint",
+				[{ type: "OPEN", prefill: "Journal: " }],
+				"Journal: ",
+			],
+			[
+				"never overwrites an unsubmitted draft",
+				[
+					{ type: "OPEN" },
+					type("half a thought"),
+					{ type: "CLOSE" },
+					{ type: "OPEN", prefill: "Journal: " },
+				],
+				"half a thought",
+			],
+			[
+				"treats a whitespace-only draft as empty",
+				[{ type: "OPEN" }, type("   "), { type: "OPEN", prefill: "Quote: " }],
+				"Quote: ",
+			],
+			[
+				"leaves text alone when no prefill is sent",
+				[{ type: "OPEN" }, type("draft"), { type: "OPEN" }],
+				"draft",
+			],
+		])("%s", (_name, events, text) => {
+			expect(run(events).state.text).toBe(text);
 		});
 	});
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractWikilinkIds, sanitizeLabel, serializeWikilink, WIKILINK_RE } from "@/lib/wikilinks";
+import { extractWikilinkIds, sanitizeLabel, WIKILINK_RE } from "@/lib/wikilinks";
 
 const ID_A = "11111111-1111-4111-8111-111111111111";
 const ID_B = "22222222-2222-4222-8222-222222222222";
@@ -62,27 +62,6 @@ describe("sanitizeLabel", () => {
 		expect(sanitizeLabel("")).toBe("Untitled");
 		expect(sanitizeLabel("   ")).toBe("Untitled");
 		expect(sanitizeLabel("|[]")).toBe("Untitled");
-	});
-});
-
-describe("serializeWikilink", () => {
-	it("produces [[id|label]]", () => {
-		expect(serializeWikilink(ID_A, "My Note")).toBe(`[[${ID_A}|My Note]]`);
-	});
-
-	it("sanitizes the label so it can't break out with ]]", () => {
-		expect(serializeWikilink(ID_A, "a]]b")).toBe(`[[${ID_A}|ab]]`);
-	});
-
-	it("round-trips through extractWikilinkIds", () => {
-		const md = serializeWikilink(ID_A, "Round Trip");
-		expect(extractWikilinkIds(md)).toEqual([ID_A]);
-	});
-
-	it("round-trips a label containing a pipe by sanitizing first", () => {
-		const md = serializeWikilink(ID_B, "a|b");
-		expect(md).toBe(`[[${ID_B}|ab]]`);
-		expect(extractWikilinkIds(md)).toEqual([ID_B]);
 	});
 });
 

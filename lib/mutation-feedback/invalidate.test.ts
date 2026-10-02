@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { CachedReader } from "@/lib/cache/manifest";
-import { CacheTag } from "@/lib/cache/tags";
+import { CacheTag, type CacheTagName } from "@/lib/cache/tags";
 import {
 	EXTERNAL_WRITES,
 	type ExternalWriter,
@@ -101,39 +101,37 @@ describe("invalidationFor", () => {
 	});
 
 	describe("live tags are named by the writes that move their data", () => {
-		it("a task write busts tasks and the Today chrome", () => {
-			const { tags } = invalidationFor("task.write");
-			expect(tags).toContain(CacheTag.tasks);
-			expect(tags).toContain(CacheTag.todayDigest);
-		});
-
-		it("a note write busts notes and the Today chrome", () => {
+		it.each<[string, MutationKind, CacheTagName[]]>([
+			[
+				"a task write busts tasks and the Today chrome",
+				"task.write",
+				[CacheTag.tasks, CacheTag.todayDigest],
+			],
 			// The chrome carries the needs-review count (countNeedsReview), so a
 			// note resolved in the app has to name todayDigest too.
-			const { tags } = invalidationFor("notes.write");
-			expect(tags).toContain(CacheTag.notes);
-			expect(tags).toContain(CacheTag.todayDigest);
-		});
-
-		it("a link write busts links and the Today chrome", () => {
+			[
+				"a note write busts notes and the Today chrome",
+				"notes.write",
+				[CacheTag.notes, CacheTag.todayDigest],
+			],
 			// The chrome carries the unread-link count (unreadLinkCount).
-			const { tags } = invalidationFor("links.write");
-			expect(tags).toContain(CacheTag.links);
-			expect(tags).toContain(CacheTag.todayDigest);
-		});
-
-		it("a notification write busts the Today chrome", () => {
+			[
+				"a link write busts links and the Today chrome",
+				"links.write",
+				[CacheTag.links, CacheTag.todayDigest],
+			],
 			// The masthead badge reads unreadCount out of the cached chrome.
-			expect(invalidationFor("notification.write").tags).toContain(CacheTag.todayDigest);
-		});
-
-		it("a capture busts tasks, notes, and the Today chrome", () => {
-			// needsReview feeds the alerts row from the same cached chrome;
-			// notes is live under "use cache", so capture must name it too.
-			const { tags } = invalidationFor("capture.settled");
-			expect(tags).toContain(CacheTag.tasks);
-			expect(tags).toContain(CacheTag.notes);
-			expect(tags).toContain(CacheTag.todayDigest);
+			["a notification write busts the Today chrome", "notification.write", [CacheTag.todayDigest]],
+			// needsReview feeds the alerts row from the same cached chrome; notes
+			// is live under "use cache", so capture must name it too.
+			[
+				"a capture busts tasks, notes, and the Today chrome",
+				"capture.settled",
+				[CacheTag.tasks, CacheTag.notes, CacheTag.todayDigest],
+			],
+		])("%s", (_name, kind, expected) => {
+			const { tags } = invalidationFor(kind);
+			for (const tag of expected) expect(tags).toContain(tag);
 		});
 
 		it("a timezone change busts every live tag", () => {

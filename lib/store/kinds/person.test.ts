@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyIntent, applySeed, confirmWrite, initialState, selectView } from "@/lib/store/core";
 import { viewKey } from "@/lib/store/keys";
-import { mergeMentionPeople } from "@/lib/store/mention-people";
+import { foldConfirmed } from "@/lib/store/live-options";
 import {
 	NOW,
 	person,
@@ -115,23 +115,30 @@ describe("people kinds", () => {
 	});
 });
 
-describe("mergeMentionPeople", () => {
+// The @-mention candidates fold this tab's confirmed people writes on top of the
+// server's list (useMentionPeople).
+describe("foldConfirmed", () => {
+	const toCandidate = (row: { id: string; name: string }) => ({ id: row.id, name: row.name });
 	const server = [
 		{ id: "ana", name: "Ana" },
 		{ id: "caio", name: "Caio" },
 	];
 
 	it("is the server's list when this tab wrote no one", () => {
-		expect(mergeMentionPeople(server, [])).toBe(server);
+		expect(foldConfirmed(server, [], toCandidate)).toBe(server);
 	});
 
 	it("folds this tab's writes on in order: a create, a rename, a delete", () => {
 		expect(
-			mergeMentionPeople(server, [
-				{ at: T1, rows: [person({ id: "bia", name: "Bia" })] },
-				{ at: T2, rows: [person({ id: "ana", name: "Ana Lima" })] },
-				{ at: T2, rows: [], deletedIds: ["caio"] },
-			]),
+			foldConfirmed(
+				server,
+				[
+					{ at: T1, rows: [person({ id: "bia", name: "Bia" })] },
+					{ at: T2, rows: [person({ id: "ana", name: "Ana Lima" })] },
+					{ at: T2, rows: [], deletedIds: ["caio"] },
+				],
+				toCandidate,
+			),
 		).toEqual([
 			{ id: "ana", name: "Ana Lima" },
 			{ id: "bia", name: "Bia" },

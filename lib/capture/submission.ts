@@ -1,16 +1,5 @@
-// Pure helpers for the palette's submit lifecycle, split out so the guard and
-// the emptiness check are unit-testable without a DOM.
-
-/**
- * Guards an async completion against a superseded palette session. Each submit
- * takes a sequence number; if the current sequence has advanced by the time the
- * request resolves — a newer submit, or the palette was closed and reopened —
- * the result is stale and must not touch the UI (it would clobber a fresh
- * unsaved draft). The capture itself is already durable server-side.
- */
-export function isStaleSubmission(submittedSeq: number, currentSeq: number): boolean {
-	return submittedSeq !== currentSeq;
-}
+// Pure helper for the palette's submit lifecycle, split out so the emptiness
+// check is unit-testable without a DOM.
 
 /**
  * Whether a draft is effectively empty. Trimming is used ONLY to decide
