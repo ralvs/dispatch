@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { titleOnlyCreate } from "@/lib/services/capture/title-only";
+import { titleOnlyCreate } from "./title-only";
 
 function form(fields: Record<string, string>): FormData {
 	const data = new FormData();
