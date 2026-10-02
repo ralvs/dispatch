@@ -36,8 +36,16 @@ describe("extractMentions", () => {
 			5,
 			11,
 		],
-		["strips a trailing comma before lookup", [ANA], "cc @Ana, please review", ANA.id, "Ana", 3, 7],
-		["strips a closing paren before lookup", [ANA], "(cc @Ana)", ANA.id, "Ana", 4, 8],
+		[
+			"strips trailing punctuation before lookup · comma",
+			[ANA],
+			"cc @Ana, please review",
+			ANA.id,
+			"Ana",
+			3,
+			7,
+		],
+		["strips trailing punctuation before lookup · paren", [ANA], "(cc @Ana)", ANA.id, "Ana", 4, 8],
 		[
 			"matches case- and diacritic-insensitively",
 			[RENAN_ALVES],

@@ -35,7 +35,7 @@ describe("nextOccurrence · due date", () => {
 		],
 		// Monday 06-01, ticked Tuesday 07-14 → the next Monday. Never re-spawns in the past.
 		[
-			"skips missed weekly occurrences but stays on the cadence",
+			"skips missed occurrences but stays on the cadence (never re-spawns in the past) · weekly",
 			"2026-06-01",
 			"weekly",
 			"2026-07-14",
@@ -43,14 +43,26 @@ describe("nextOccurrence · due date", () => {
 		],
 		// 06-01 + 14k lands on 07-27, not 07-20.
 		[
-			"keeps biweekly parity across missed occurrences",
+			"skips missed occurrences but stays on the cadence (never re-spawns in the past) · biweekly keeps its parity",
 			"2026-06-01",
 			"biweekly",
 			"2026-07-14",
 			"2026-07-27",
 		],
-		["skips missed monthly occurrences", "2026-03-10", "monthly", "2026-05-20", "2026-06-10"],
-		["skips missed daily occurrences", "2026-06-01", "daily", "2026-07-14", "2026-07-15"],
+		[
+			"skips missed occurrences but stays on the cadence (never re-spawns in the past) · monthly",
+			"2026-03-10",
+			"monthly",
+			"2026-05-20",
+			"2026-06-10",
+		],
+		[
+			"skips missed occurrences but stays on the cadence (never re-spawns in the past) · daily",
+			"2026-06-01",
+			"daily",
+			"2026-07-14",
+			"2026-07-15",
+		],
 		[
 			"moves a full interval when ticked on the due day",
 			"2026-09-26",
@@ -67,7 +79,7 @@ describe("nextOccurrence · due date", () => {
 			"2026-10-15",
 		],
 		[
-			"keeps the day of the month when ticked late",
+			"keeps the day of the month: the 15th stays on the 15th · ticked late",
 			"2026-09-15",
 			"monthly",
 			"2026-09-20",
@@ -82,14 +94,14 @@ describe("nextOccurrence · due date", () => {
 			"2026-03-31",
 		],
 		[
-			"clamps month-end: Jan 31 + 1 month lands on Feb 28",
+			"clamps month-end: Jan 31 + 1 month lands on the last day of February",
 			"2026-01-31",
 			"monthly",
 			"2026-01-01",
 			"2026-02-28",
 		],
 		[
-			"clamps month-end to Feb 29 in a leap year",
+			"clamps month-end: Jan 31 + 1 month lands on the last day of February · leap year",
 			"2024-01-31",
 			"monthly",
 			"2024-01-01",
@@ -100,27 +112,27 @@ describe("nextOccurrence · due date", () => {
 		["handles year rollover", "2026-12-31", "daily", "2026-12-31", "2027-01-01"],
 		// Custom weekly. 2026-09-06 is a Sunday.
 		[
-			"custom weekly advances to the next listed weekday",
+			"custom weekly · advances to the next listed weekday",
 			null,
 			"weekly:tu,sa",
 			"2026-09-06",
 			"2026-09-08",
 		],
 		[
-			"custom weekly wraps to the next week after the last listed day",
+			"custom weekly · wraps to the following week when the last listed day has passed",
 			"2026-09-12",
 			"weekly:tu,sa",
 			"2026-09-06",
 			"2026-09-15",
 		],
 		[
-			"custom weekly rolls from today when the task is overdue",
+			"custom weekly · rolls from today when the task is overdue",
 			"2026-08-01",
 			"weekly:tu,sa",
 			"2026-09-06",
 			"2026-09-08",
 		],
-		["custom weekly handles a single listed day", null, "weekly:su", "2026-09-06", "2026-09-13"],
+		["custom weekly · handles a single listed day", null, "weekly:su", "2026-09-06", "2026-09-13"],
 	] as const)("%s", (_name, currentDue, rule, todayIso, expected) => {
 		expect(nextDue(currentDue, rule, todayIso)).toBe(expected);
 	});
