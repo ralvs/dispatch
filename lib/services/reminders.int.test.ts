@@ -116,6 +116,9 @@ describe("runTaskReminders against the local database", () => {
 
 		expect((await run(Date.parse("2026-07-14T11:59:00.000Z"))).fired).toBe(0);
 		expect((await run(Date.parse("2026-07-14T12:00:00.000Z"))).fired).toBe(1);
+		// A non-zero offset would add "— N before" to the body. Offset 0, so the
+		// fire time above is the anchor itself: 09:00 in São Paulo.
+		expect((await listNotifications(sb))[0]?.body).toBe("Due today.");
 	});
 
 	it("reads the offset and anchor from app_settings", async () => {
