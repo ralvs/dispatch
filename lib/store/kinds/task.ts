@@ -304,6 +304,11 @@ function wentQuiet(row: TaskRow, clock: Clock): boolean {
 	return row.status === "open" && isQuiet(row, quietOf(clock));
 }
 
+/** The pool without the open rows that went quiet: an untick on a finished quiet task. */
+function withoutQuiet(tasks: TaskRow[], clock: Clock): TaskRow[] {
+	return tasks.some((t) => wentQuiet(t, clock)) ? tasks.filter((t) => !wentQuiet(t, clock)) : tasks;
+}
+
 /** Re-place a day's task pool; events, now and note-id maps pass through. */
 function replace(view: DaySchedulePayload, tasks: TaskRow[], clock: Clock): DaySchedulePayload {
 	const schedule = placeOnDay({
@@ -328,7 +333,7 @@ export const dayView: ViewAdapter<"day"> = {
 				? onDay(intent.task, view, ctx)
 					? [intent.task, ...pool]
 					: pool
-				: projectRows(pool, intent, ctx);
+				: withoutQuiet(projectRows(pool, intent, ctx), ctx);
 		// ADR-0038 rule 2: a finished task stays struck on today's view only; a
 		// cached other day drops it (its completion does not fall on that day).
 		if (intent.type === "complete" && view.dateIso !== ctx.todayIso) {
@@ -362,7 +367,7 @@ export const dayView: ViewAdapter<"day"> = {
 	},
 	patch: (view, rowOf, clock) => {
 		const pool = collectDayTasks(view.schedule);
-		const tasks = patchRows(pool, rowOf);
+		const tasks = withoutQuiet(patchRows(pool, rowOf), clock);
 		return tasks === pool ? view : replace(view, tasks, clock);
 	},
 };

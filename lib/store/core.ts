@@ -182,7 +182,8 @@ export function makeCore(adapters: Adapters) {
 		let clock = s.clock;
 		// The quiet projects ride on the clock, versioned by the read they came
 		// from: a seed that carries none keeps them, and only a later read
-		// replaces them.
+		// replaces them. When none are known, an older seed's are taken: the
+		// freshest quiet projects known beat counting every quiet task.
 		let quiet = clock && { ids: clock.quietProjectIds, readAt: clock.quietReadAt };
 		if (
 			snap.quietProjectIds !== undefined &&

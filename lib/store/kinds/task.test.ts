@@ -580,6 +580,15 @@ describe("quiet tasks (docs/adr/0058)", () => {
 			),
 		);
 		expect(selectView(replayed, viewKey.day(TODAY))?.schedule.top3).toEqual([done]);
+
+		// Unticked, it is open and quiet again: the day no longer reads it.
+		const [unticked] = applyIntent(
+			replayed,
+			{ kind: "task", intent: { type: "reopen", id: "a" } },
+			NOW,
+		);
+		const day2 = selectView(unticked, viewKey.day(TODAY));
+		expect(day2 && collectDayTasks(day2.schedule)).toEqual([]);
 	});
 
 	it("an older seed's quiet projects never replace a later read's", () => {
