@@ -12,12 +12,17 @@ import {
 	useResultAction,
 } from "@/components/ui";
 import type { ActionResult } from "@/lib/action-result";
-import { createTaskAction, updateTaskAction } from "@/lib/actions/tasks";
+import { createTaskAction, quickAddTaskAction, updateTaskAction } from "@/lib/actions/tasks";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { DomainItem } from "@/lib/schemas/domain";
 import type { ProjectRow } from "@/lib/schemas/project";
 import { titleOnlyCreate } from "@/lib/services/capture/title-only";
 import { useLiveOptions } from "@/lib/store/live-options";
+import { useStoreWrite } from "@/lib/store/run";
+import {
+	optimisticTaskFromForm,
+	optimisticTaskFromText,
+} from "@/lib/task-interaction/optimistic-task";
 import {
 	type TaskDomainOption,
 	type TaskFieldDefaults,
@@ -42,6 +47,10 @@ import {
  *
  * "Taken literally" is the conservative half on purpose. If a due date has been
  * set by hand, parsing the title could only overrule it.
+ *
+ * Every write goes through the entity store (docs/adr/0069): a create shows
+ * its row at once and swaps in the server's on confirm, an edit lands the
+ * saved row. Callers say only whether the parser may read a bare title.
  */
 
 export type TaskDialogMode = "create" | "edit";
@@ -74,23 +83,16 @@ export function TaskDialog({
 	defaults,
 	people = [],
 	/**
-	 * Create only, and optional: the tasks list passes its optimistic wrapper so
-	 * a new row appears before the round-trip. Left out, the action runs bare.
-	 */
-	onCreate,
-	/**
 	 * Create only: raw text → the natural-language parser (ADR-0043). Taken
-	 * when the form carries nothing but a title. Omitted, every create is
-	 * literal, which is what the `?edit=` and row entry points want anyway.
+	 * when the form carries nothing but a title. Off, every create is literal,
+	 * which is what a project's `Add task` wants: its answers must not be
+	 * overruled.
 	 */
-	onQuickAdd,
+	quickAdd = false,
+	/** Create only: the new row's provisional id, as it appears. */
+	onCreating,
 	/** Edit only — the id the update is written against. */
 	taskId,
-	/**
-	 * Edit only, and optional: the tasks list passes its store-backed save so
-	 * the returned row lands in the entity store. Left out, the action runs bare.
-	 */
-	onUpdate,
 	/** Edit only: parent owns the confirm + optimistic removal. */
 	onDelete,
 	/** Runs after a successful write, before the dialog closes. */
@@ -111,11 +113,9 @@ export function TaskDialog({
 	defaults?: TaskFieldDefaults;
 	/** @mention candidates (docs/adr/0030) for title and notes. */
 	people?: MentionCandidate[];
-	onCreate?: (formData: FormData) => Promise<ActionResult<unknown>>;
-	/** `domainId` is the form's own pick — mandatory there, so always present. */
-	onQuickAdd?: (text: string, domainId: string) => Promise<void>;
+	quickAdd?: boolean;
+	onCreating?: (id: string) => void;
 	taskId?: string;
-	onUpdate?: (formData: FormData) => Promise<ActionResult<unknown>>;
 	onDelete?: () => void;
 	onSaved?: () => void;
 }) {
@@ -135,10 +135,9 @@ export function TaskDialog({
 				todayIso={todayIso}
 				defaults={defaults}
 				people={people}
-				onCreate={onCreate}
-				onQuickAdd={onQuickAdd}
+				quickAdd={quickAdd}
+				onCreating={onCreating}
 				taskId={taskId}
-				onUpdate={onUpdate}
 				onDelete={onDelete}
 				onDone={() => {
 					onSaved?.();
@@ -159,10 +158,9 @@ function TaskDialogForm({
 	todayIso,
 	defaults,
 	people,
-	onCreate,
-	onQuickAdd,
+	quickAdd,
+	onCreating,
 	taskId,
-	onUpdate,
 	onDelete,
 	onDone,
 	onCancel,
@@ -175,10 +173,9 @@ function TaskDialogForm({
 	todayIso: string;
 	defaults?: TaskFieldDefaults;
 	people: MentionCandidate[];
-	onCreate?: (formData: FormData) => Promise<ActionResult<unknown>>;
-	onQuickAdd?: (text: string, domainId: string) => Promise<void>;
+	quickAdd: boolean;
+	onCreating?: (id: string) => void;
 	taskId?: string;
-	onUpdate?: (formData: FormData) => Promise<ActionResult<unknown>>;
 	onDelete?: () => void;
 	onDone: () => void;
 	onCancel: () => void;
@@ -188,6 +185,7 @@ function TaskDialogForm({
 	// whole form controlled — the server still carries the real enforcement.
 	const [hasTitle, setHasTitle] = useState(Boolean(defaults?.title?.trim()));
 	const copy = COPY[mode];
+	const store = useStoreWrite("task");
 
 	/**
 	 * Whether the form carries anything beyond its title. Every value here is
@@ -207,18 +205,29 @@ function TaskDialogForm({
 	async function write(formData: FormData): Promise<ActionResult<unknown>> {
 		if (mode === "edit") {
 			if (!taskId) throw new Error("TaskDialog: edit mode needs a taskId");
-			return onUpdate ? onUpdate(formData) : updateTaskAction(taskId, formData);
+			// The edit waits for the server; the store takes the saved row.
+			return store({ type: "edit", id: taskId }, () => updateTaskAction(taskId, formData));
 		}
 		const title = String(formData.get("title") ?? "").trim();
-		if (onQuickAdd && title && titleOnlyCreate(formData)) {
+		if (quickAdd && title && titleOnlyCreate(formData)) {
 			// The sentence goes to the parser, the domain goes as stated — the
 			// field is mandatory now, so it is never "untouched" and cannot be
 			// read as the operator declining to file. Not a form-fed action
 			// (#22 scope), so it still throws on failure.
-			await onQuickAdd(title, String(formData.get("domain_id") ?? ""));
+			const domainId = String(formData.get("domain_id") ?? "");
+			const optimistic = optimisticTaskFromText(title, domainId, domains);
+			onCreating?.(optimistic.id);
+			const result = await store({ type: "create", task: optimistic }, () =>
+				quickAddTaskAction({ text: title, domainId }),
+			);
+			if (!result.ok) throw new Error(result.formError ?? "Couldn't add that task.");
 			return { ok: true, data: undefined };
 		}
-		return onCreate ? onCreate(formData) : createTaskAction(formData);
+		// A rejected field resolves as a failed result and the store drops the
+		// optimistic row; a confirmed one swaps it for the server's.
+		const optimistic = optimisticTaskFromForm(formData, domains, projects);
+		onCreating?.(optimistic.id);
+		return store({ type: "create", task: optimistic }, () => createTaskAction(formData));
 	}
 
 	const [state, formAction, pending] = useResultAction(write, {
@@ -282,14 +291,12 @@ function TaskDialogForm({
 						people={people}
 						autoFocusTitle
 						titlePlaceholder={
-							onQuickAdd ? 'What needs doing? — "pay rent every monday 9am"' : undefined
+							quickAdd ? 'What needs doing? — "pay rent every monday 9am"' : undefined
 						}
 						/* The rule is invisible from the field alone, and a rule nobody
 						   can see is a rule that surprises. One quiet line, only where
 						   the parser is actually wired up. */
-						titleHint={
-							onQuickAdd ? "A title on its own gets read for dates and repeats." : undefined
-						}
+						titleHint={quickAdd ? "A title on its own gets read for dates and repeats." : undefined}
 					/>
 				</DialogBody>
 			</FormStateProvider>

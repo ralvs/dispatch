@@ -17,12 +17,7 @@ import {
 	Select,
 	Textarea,
 } from "@/components/ui";
-import {
-	completeTaskAction,
-	createTaskAction,
-	reopenTaskAction,
-	setTop3Action,
-} from "@/lib/actions/tasks";
+import { completeTaskAction, reopenTaskAction, setTop3Action } from "@/lib/actions/tasks";
 import { toastError } from "@/lib/client/toast";
 import { nowUtc } from "@/lib/dates";
 import { ProjectStatusSchema } from "@/lib/schemas/project";
@@ -31,7 +26,6 @@ import type { ProjectRow } from "@/lib/services/projects";
 import { taskProgress } from "@/lib/services/projects-shared";
 import type { TaskRow } from "@/lib/services/tasks";
 import { isNavigationError, useRunIntent, useStoreWrite, useView, viewKey } from "@/lib/store";
-import { optimisticTaskFromForm } from "@/lib/task-interaction/optimistic-task";
 import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
 import { AddTaskButton } from "../add-task-button";
 import { statusLabel } from "../constants";
@@ -92,15 +86,10 @@ export function ProjectDetail({
 	const project = useView(viewKey.projectHead(projectId))?.[0];
 	const optTasks = useView(viewKey.project(projectId)) ?? NO_TASKS;
 	const run = useTaskIntentRunner();
-	const write = useStoreWrite("task");
 	const edit = useStoreWrite("project");
 	const runProject = useRunIntent("project", { errorMessage: "Couldn't update project." });
 	const domainOptions = domains.map((d) => ({ id: d.id, name: d.name, color: d.color }));
 
-	function createTask(formData: FormData) {
-		const optimistic = optimisticTaskFromForm(formData, domainOptions, projects);
-		return write({ type: "create", task: optimistic }, () => createTaskAction(formData));
-	}
 	const openTasks = optTasks.filter((t) => t.status !== "done");
 	const doneTasks = optTasks.filter((t) => t.status === "done");
 
@@ -174,7 +163,6 @@ export function ProjectDetail({
 						projects={projects}
 						domains={domainOptions}
 						todayIso={todayIso}
-						onCreate={createTask}
 					/>
 				}
 			/>
