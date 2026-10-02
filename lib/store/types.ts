@@ -55,7 +55,12 @@ import type { TaskIntent } from "@/lib/task-interaction/apply-intent";
 
 /** UTC ISO instant, always server-stamped. */
 export type Instant = string;
-export type Clock = { todayIso: string; tz: string };
+/**
+ * What the adapters need from the server besides rows: its today, the app
+ * timezone, and the quiet projects (lib/quiet.ts) — absent until a page that
+ * shows task counts seeds them, and then kept until a newer seed replaces them.
+ */
+export type Clock = { todayIso: string; tz: string; quietProjectIds?: readonly string[] };
 
 export type { NoteLists };
 
@@ -160,7 +165,8 @@ export type ViewSeed = {
 
 /**
  * Entity issues extend this union. The `tasks.*` counts are Today's counters
- * (#26): open and overdue leave out quiet tasks, inbox is unfiled open tasks.
+ * (#26): open, overdue and inbox leave out quiet tasks; inbox is unfiled open
+ * tasks.
  * `project.done:<id>` and `project.open:<id>` are one per project, seeded by
  * /projects and by Today's projects card.
  */

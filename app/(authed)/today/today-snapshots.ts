@@ -27,7 +27,7 @@ export async function readToday(
 	// The entity store's version for everything read below (lib/store/types.ts),
 	// stamped before the first read starts.
 	const readAt = nowUtc(nowMs);
-	const [{ open, completed, events: todayEvents }, digest] = await Promise.all([
+	const [{ open, completed, events: todayEvents, quietProjectIds }, digest] = await Promise.all([
 		loadDayScheduleInputs(sb, tz, todayIso),
 		getCachedTodayDigest(todayIso),
 	]);
@@ -50,6 +50,9 @@ export async function readToday(
 		readAt,
 		todayIso,
 		tz,
+		// So a quiet task ticked or starred elsewhere moves none of the counts
+		// below and never lands on the day (lib/store/kinds/task.ts).
+		quietProjectIds,
 		views: [{ key: viewKey.day(selectedIso), type: "day", data: day }],
 		aggregates: {
 			"tasks.open": view.anchor.openCount,

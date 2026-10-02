@@ -15,6 +15,7 @@ import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { getCachedTaskBoard } from "@/lib/cache/tasks";
 import { recentDoneSinceUtc, todayInTz } from "@/lib/dates";
+import { quietProjectIdsOf } from "@/lib/quiet";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
 import type { Snapshot } from "@/lib/store/types";
@@ -45,18 +46,18 @@ async function TasksBody({
 	const board = await getCachedTaskBoard(recentDoneSinceUtc(todayIso, tz));
 	const { readAt, openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions } =
 		board;
+	// The board already carries every project, so the quiet ones need no
+	// second read (lib/quiet.ts).
+	const quietProjectIds = quietProjectIdsOf(projects);
 	const snapshot: Snapshot = {
 		readAt,
 		todayIso,
 		tz,
+		quietProjectIds,
 		views: [
 			{ key: viewKey.tasks(), type: "taskLists", data: { open: openTasks, done: doneTasks } },
 		],
 	};
-	// The quiet rule lives on the project's status, and the board already
-	// carries every project — so the client can derive it without a second read
-	// (lib/services/quiet.ts holds the server-side definition).
-	const quietProjectIds = projects.filter((p) => p.status !== "active").map((p) => p.id);
 
 	return (
 		// Header included: the count strip is the status filter, so it lives in

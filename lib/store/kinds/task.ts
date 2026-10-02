@@ -10,6 +10,7 @@ import {
 	type DaySchedulePayload,
 	placeOnDay,
 } from "@/lib/day-schedule";
+import { isQuiet } from "@/lib/quiet";
 import type { TaskRow } from "@/lib/schemas/task";
 import type {
 	Clock,
@@ -36,12 +37,21 @@ const DONE_CAP = 10;
 type TaskCounts = { open: number; overdue: number; inbox: number };
 const NONE: TaskCounts = { open: 0, overdue: 0, inbox: 0 };
 
-/** What one row adds to Today's counters (lib/services/today.ts assembleTodayView). */
-function countsOf(row: TaskRow | undefined, todayIso: string): TaskCounts {
-	if (row?.status !== "open") return NONE;
+/** The quiet projects the server last told the store about (lib/quiet.ts). */
+function quietOf(clock: Clock): ReadonlySet<string> {
+	return new Set(clock.quietProjectIds);
+}
+
+/**
+ * What one row adds to Today's counters (lib/services/today.ts
+ * assembleTodayView). Today reads its tasks without the quiet ones, so a quiet
+ * row adds nothing.
+ */
+function countsOf(row: TaskRow | undefined, clock: Clock): TaskCounts {
+	if (row?.status !== "open" || isQuiet(row, quietOf(clock))) return NONE;
 	return {
 		open: 1,
-		overdue: isOverdue(row, todayIso) ? 1 : 0,
+		overdue: isOverdue(row, clock.todayIso) ? 1 : 0,
 		inbox: row.domain_id === null ? 1 : 0,
 	};
 }
@@ -70,8 +80,7 @@ function afterIntent(
 /**
  * Today's counters move with the intent. An edit moves nothing here — its
  * new due date is only known once the server answers — and the next seed
- * heals it. So does a quiet task (lib/task-predicates.ts isQuiet): the store
- * cannot tell one from its row, and Today does not count them.
+ * heals it.
  *
  * `before` is the row as the user sees it, every pending intent folded on
  * (`project` below): a tick then an untick before either answers moves the
@@ -80,9 +89,9 @@ function afterIntent(
 function taskDeltas(intent: TaskIntent, before: TaskRow | undefined, ctx: IntentCtx): Deltas {
 	if (intent.type !== "create" && !before) return {};
 	const { after, successor } = afterIntent(intent, before, ctx);
-	const was = intent.type === "create" ? NONE : countsOf(before, ctx.todayIso);
-	const now = countsOf(after, ctx.todayIso);
-	const next = countsOf(successor, ctx.todayIso);
+	const was = intent.type === "create" ? NONE : countsOf(before, ctx);
+	const now = countsOf(after, ctx);
+	const next = countsOf(successor, ctx);
 	const out: Deltas = {};
 	const open = now.open + next.open - was.open;
 	const overdue = now.overdue + next.overdue - was.overdue;
@@ -280,6 +289,19 @@ export const taskListView: ViewAdapter<"taskList"> = {
 	patch: (view, rowOf) => patchRows(view, rowOf),
 };
 
+/**
+ * Whether a day's pool holds this row. The server reads a day's tasks without
+ * the quiet ones (lib/services/today.ts), so a row that is quiet now leaves.
+ * A done row stays only when it was finished that day.
+ */
+function onDay(row: TaskRow, view: DaySchedulePayload, clock: Clock): boolean {
+	if (isQuiet(row, quietOf(clock))) return false;
+	return (
+		row.status === "open" ||
+		(row.completed_at != null && dateOfInstant(row.completed_at, clock.tz) === view.dateIso)
+	);
+}
+
 /** Re-place a day's task pool; events, now and note-id maps pass through. */
 function replace(view: DaySchedulePayload, tasks: TaskRow[], clock: Clock): DaySchedulePayload {
 	const schedule = placeOnDay({
@@ -297,8 +319,14 @@ export const dayView: ViewAdapter<"day"> = {
 	rowsOf: (view) => collectDayTasks(view.schedule),
 	reduce: (view, intent: TaskIntent, ctx) => {
 		const pool = collectDayTasks(view.schedule);
-		// A create is offered to every day; placement decides where it sits.
-		let tasks = intent.type === "create" ? [intent.task, ...pool] : projectRows(pool, intent, ctx);
+		// A create is offered to every day it belongs on; placement decides
+		// where it sits.
+		let tasks =
+			intent.type === "create"
+				? onDay(intent.task, view, ctx)
+					? [intent.task, ...pool]
+					: pool
+				: projectRows(pool, intent, ctx);
 		// ADR-0038 rule 2: a finished task stays struck on today's view only; a
 		// cached other day drops it (its completion does not fall on that day).
 		if (intent.type === "complete" && view.dateIso !== ctx.todayIso) {
@@ -310,16 +338,17 @@ export const dayView: ViewAdapter<"day"> = {
 		const pool = collectDayTasks(view.schedule);
 		let tasks = pool;
 		for (const row of rows) {
-			if (tasks.some((t) => t.id === row.id)) {
+			const held = tasks.some((t) => t.id === row.id);
+			// A row that went quiet leaves; one the day already holds is patched
+			// in place, done or not (ADR-0038). Any other row the day would read
+			// is offered, and placement decides (the ADR-0059 successor lands here).
+			if (isQuiet(row, quietOf(clock))) {
+				if (held) tasks = without(tasks, new Set([row.id]));
+			} else if (held) {
 				tasks = replaceById(tasks, row);
-				continue;
+			} else if (onDay(row, view, clock)) {
+				tasks = [...tasks, row];
 			}
-			// Open rows are always offered; placement decides (the ADR-0059
-			// successor lands here). A done row only when it was finished that day.
-			const admit =
-				row.status === "open" ||
-				(row.completed_at != null && dateOfInstant(row.completed_at, clock.tz) === view.dateIso);
-			if (admit) tasks = [...tasks, row];
 		}
 		return tasks === pool ? view : replace(view, tasks, clock);
 	},

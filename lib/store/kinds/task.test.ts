@@ -491,6 +491,76 @@ describe("Today's task counters", () => {
 	});
 });
 
+describe("quiet tasks (docs/adr/0058)", () => {
+	// p-quiet is paused: an undated task in it is quiet, and Today neither
+	// counts it nor shows it.
+	const quiet = task({ id: "q", project_id: "p-quiet" });
+	const seed = (extra: Partial<Snapshot> = {}) =>
+		applySeed(
+			initialState(),
+			snapshot(
+				T1,
+				[
+					{ key: viewKey.tasks(), type: "taskLists", data: { open: [quiet], done: [] } },
+					{ key: viewKey.day(TODAY), type: "day", data: dayPayload(TODAY) },
+				],
+				{
+					quietProjectIds: ["p-quiet"],
+					aggregates: { "tasks.open": 3, "tasks.overdue": 0, "tasks.inbox": 0 },
+					...extra,
+				},
+			),
+		);
+
+	it("a tick on a quiet task moves none of Today's counters", () => {
+		const [applied] = applyIntent(
+			seed(),
+			{ kind: "task", intent: { type: "complete", id: "q", observedDueDate: null } },
+			NOW,
+		);
+		expect(selectAggregate(applied, "tasks.open")).toBe(3);
+	});
+
+	it("a quiet task starred on /tasks never lands on Today", () => {
+		const star = { type: "setTop3", id: "q", starred: true, forDateIso: TODAY } as const;
+		const [applied, token] = applyIntent(seed(), { kind: "task", intent: star }, NOW);
+		const starred = { ...quiet, top3_for_date: TODAY };
+		const confirmed = confirmWrite(applied, token, { at: T2, rows: [starred] });
+		const day = selectView(confirmed, viewKey.day(TODAY));
+		expect(day && collectDayTasks(day.schedule)).toEqual([]);
+	});
+
+	it("a task that goes quiet leaves the day it was on", () => {
+		const a = task({ id: "a", project_id: "p-quiet", due_date: TODAY });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ key: viewKey.day(TODAY), type: "day", data: dayPayload(TODAY, [a]) }], {
+				quietProjectIds: ["p-quiet"],
+			}),
+		);
+		const [applied, token] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "edit", id: "a" } },
+			NOW,
+		);
+		const undated = { ...a, due_date: null };
+		const confirmed = confirmWrite(applied, token, { at: T2, rows: [undated] });
+		const day = selectView(confirmed, viewKey.day(TODAY));
+		expect(day && collectDayTasks(day.schedule)).toEqual([]);
+	});
+
+	it("a seed that carries no quiet projects keeps the ones already known", () => {
+		const later = applySeed(seed(), snapshot(T3, []));
+		const [applied] = applyIntent(
+			later,
+			{ kind: "task", intent: { type: "complete", id: "q", observedDueDate: null } },
+			NOW,
+		);
+		expect(later.clock?.quietProjectIds).toEqual(["p-quiet"]);
+		expect(selectAggregate(applied, "tasks.open")).toBe(3);
+	});
+});
+
 describe("a completion the server refused (ADR-0037)", () => {
 	const late = task({ id: "late", due_date: YESTERDAY });
 	const seedAt = (readAt: string) =>

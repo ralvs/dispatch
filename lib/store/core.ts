@@ -104,6 +104,11 @@ type LooseKind = {
 };
 type LooseRows = Record<string, Record<string, RowEntry<unknown>>>;
 
+/** The clock's quiet projects when known; no key at all when not. */
+function withQuiet(ids: readonly string[] | undefined): Pick<Clock, "quietProjectIds"> {
+	return ids === undefined ? {} : { quietProjectIds: ids };
+}
+
 /** Strictly later, compared as instants ("Z" and "+00:00" sort alike). */
 function later(a: Instant, b: Instant): boolean {
 	return Date.parse(a) > Date.parse(b);
@@ -175,9 +180,20 @@ export function makeCore(adapters: Adapters) {
 	function applySeed<S extends StoreState>(s: S, snap: Snapshot): S {
 		const { readAt } = snap;
 		let clock = s.clock;
+		// The quiet projects ride on the clock: a seed that carries none keeps
+		// the ones already known, and an older seed may still supply the first.
+		const quietProjectIds = snap.quietProjectIds ?? clock?.quietProjectIds;
 		if (clock === null || later(readAt, clock.readAt)) {
-			clock = { todayIso: snap.todayIso, tz: snap.tz, readAt };
+			clock = { todayIso: snap.todayIso, tz: snap.tz, readAt, ...withQuiet(quietProjectIds) };
+		} else if (clock.quietProjectIds === undefined && quietProjectIds !== undefined) {
+			clock = { ...clock, quietProjectIds };
 		}
+		// Replays run on the seed's own day, with the freshest quiet projects.
+		const replayClock: Clock = {
+			todayIso: snap.todayIso,
+			tz: snap.tz,
+			...withQuiet(clock.quietProjectIds),
+		};
 		const newer = s.confirmed.filter((c) => later(c.write.at, readAt));
 		let rows = s.rows as unknown as LooseRows;
 		let views = s.views;
@@ -191,7 +207,7 @@ export function makeCore(adapters: Adapters) {
 			let entry = { type: seed.type, base, params, readAt } as ViewEntry;
 			for (const c of newer) {
 				if (c.kind !== view.kind) continue;
-				entry = { ...entry, base: commit(entry, c, snap) } as ViewEntry;
+				entry = { ...entry, base: commit(entry, c, replayClock) } as ViewEntry;
 			}
 			views = { ...views, [seed.key]: entry };
 		}
@@ -220,7 +236,12 @@ export function makeCore(adapters: Adapters) {
 		if (s.clock === null) {
 			throw new Error("Store has no clock: apply() ran outside any <Seed>.");
 		}
-		const ctx: IntentCtx = { todayIso: s.clock.todayIso, tz: s.clock.tz, nowIso };
+		const ctx: IntentCtx = {
+			todayIso: s.clock.todayIso,
+			tz: s.clock.tz,
+			...withQuiet(s.clock.quietProjectIds),
+			nowIso,
+		};
 		const kind = kindOf(i.kind);
 		const id = kind.targetId(i.intent);
 		const entry = id === undefined ? undefined : (s.rows as unknown as LooseRows)[i.kind]?.[id];
