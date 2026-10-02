@@ -56,7 +56,10 @@ export function applyNoteIntent(
  * moves it once — and when a flagged note arrives.
  */
 function noteDeltas(intent: NoteIntent, before: NoteListRow | undefined, _ctx: IntentCtx): Deltas {
-	if (intent.type === "create") return intent.row.needs_review ? { "notes.needsReview": 1 } : {};
+	// A create the store already holds (a seed read it) is already counted.
+	if (intent.type === "create") {
+		return !before && intent.row.needs_review ? { "notes.needsReview": 1 } : {};
+	}
 	if (intent.type !== "resolve" && intent.type !== "delete") return {};
 	const flagged = before ? before.needs_review : intent.flagged === true;
 	return flagged ? { "notes.needsReview": -1 } : {};

@@ -29,7 +29,7 @@ import { deriveReceipt } from "@/lib/capture/receipt";
 import { isOpenShortcut, isSubmitShortcut } from "@/lib/capture/shortcuts";
 import { isBlank } from "@/lib/capture/submission";
 import { toastError, toastSuccess } from "@/lib/client/toast";
-import { useStoreActions } from "@/lib/store/hooks";
+import { useDispatchStore } from "@/lib/store/provider";
 import { receiveRows } from "@/lib/store/receive";
 import { DOCK_ACTION, DOCK_ACTION_SLOT_ID, DOCK_HEIGHT } from "@/lib/ui/dock";
 
@@ -78,7 +78,7 @@ export function CapturePalette() {
 		}
 	}, []);
 
-	const store = useStoreActions();
+	const store = useDispatchStore();
 	const router = useRouter();
 	const runSubmitEffect = useCallback(
 		(text: string, id: number) => {
@@ -97,7 +97,7 @@ export function CapturePalette() {
 				// The capture already landed: a failure here must not offer a
 				// retry that would capture it twice, so the page renders instead.
 				try {
-					receiveRows(store, answer.received);
+					receiveRows(store.getState(), answer.received);
 				} catch (error) {
 					console.error("capture: could not confirm rows into the store", error);
 					router.refresh();

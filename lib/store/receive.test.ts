@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createDispatchStore } from "@/lib/store/create-store";
 import { viewKey } from "@/lib/store/keys";
 import { receiveRows } from "@/lib/store/receive";
-import { NOW, note, snapshot, T0, T1, T2, TODAY, TZ, task } from "@/lib/store/test-fixtures";
+import { NOW, note, snapshot, T0, T1, T2, T4, TODAY, TZ, task } from "@/lib/store/test-fixtures";
 import type { Snapshot } from "@/lib/store/types";
 
 const NONE = { task: [], note: [], quote: [], journal: [] };
@@ -66,6 +66,27 @@ describe("receiveRows (a palette capture)", () => {
 			aggregates: { "tasks.open": 3 },
 		});
 		expect(store.getState().aggregates["tasks.open"]?.value).toBe(3);
+	});
+
+	it("counts a row a seed already read only once", () => {
+		const store = createDispatchStore({ now: () => NOW });
+		store.getState().seed({
+			...seedAt(T1),
+			views: [
+				{ key: viewKey.notes(), type: "noteLists", data: { needsReview: [flagged], all: [] } },
+			],
+			aggregates: { "notes.needsReview": 1 },
+		});
+		receiveRows(store.getState(), { ...received, rows: { ...NONE, note: [flagged] } });
+		expect(store.getState().aggregates["notes.needsReview"]?.value).toBe(1);
+	});
+
+	it("leaves a seeded clock and its lists alone", () => {
+		const store = seeded(T2);
+		const clock = store.getState().clock;
+		receiveRows(store.getState(), { ...received, readAt: "2026-07-15T12:05:00.000Z", at: T4 });
+		expect(store.getState().clock).toBe(clock);
+		expect(store.getState().views[viewKey.tasks()]?.base).toEqual({ open: [captured], done: [] });
 	});
 
 	it("gives a store no page seeded a clock instead of throwing", () => {

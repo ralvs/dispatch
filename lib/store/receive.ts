@@ -1,12 +1,12 @@
 // Rows the server wrote that no intent in this tab predicted — a palette
 // capture's: the parser decides what a capture writes, so the client has
-// nothing to apply before the answer (docs/adr/0069 §5). Client-safe.
+// nothing to apply before the answer (docs/adr/0073). Client-safe.
 
 import type { JournalEntryRow } from "@/lib/schemas/journal";
 import type { NoteListRow } from "@/lib/schemas/note";
 import type { QuoteRow } from "@/lib/schemas/quote";
 import type { TaskRow } from "@/lib/schemas/task";
-import type { AnyIntent, Clock, EntityMap, Instant, Kind, StoreActions } from "@/lib/store/types";
+import type { AnyIntent, Clock, EntityMap, Instant, Kind, Store } from "@/lib/store/types";
 
 export type ReceivedRows = {
 	task: TaskRow[];
@@ -28,10 +28,10 @@ export type Received = Clock & { readAt: Instant; at: Instant; rows: ReceivedRow
  * flagged note's review count), and a seed read before `at` replays it, as
  * for any confirmed write.
  */
-export function receiveRows(store: StoreActions, received: Received): void {
+export function receiveRows(store: Store, received: Received): void {
 	const { readAt, todayIso, tz, at, rows } = received;
-	// No views: this only gives the store a clock when no page seeded one.
-	store.seed({ readAt, todayIso, tz });
+	// A store no page seeded still needs a clock to apply anything.
+	if (store.clock === null) store.seed({ readAt, todayIso, tz });
 	type Create = [AnyIntent, EntityMap[Kind]];
 	const creates: Create[] = [
 		...rows.task.map((task): Create => [{ kind: "task", intent: { type: "create", task } }, task]),
