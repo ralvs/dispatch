@@ -458,6 +458,32 @@ describe("Today's task counters", () => {
 		expect(read(c2)).toEqual([3, 0, 0]);
 	});
 
+	it("a delete then another intent on the same row, before either answers, moves the counts once", () => {
+		const late = task({ id: "late", due_date: YESTERDAY });
+		const s = applySeed(
+			initialState(),
+			snapshot(
+				T1,
+				[{ key: viewKey.tasks(), type: "taskLists", data: { open: [late], done: [] } }],
+				{ aggregates: counts(4, 1, 0) },
+			),
+		);
+		const del = { kind: "task", intent: { type: "delete", id: "late" } } as const;
+		const [once, t1] = applyIntent(s, del, NOW);
+		const [twice, t2] = applyIntent(once, del, NOW);
+		expect(read(twice)).toEqual([3, 0, 0]);
+		const c1 = confirmWrite(twice, t1, { at: T2, rows: [], deletedIds: ["late"] });
+		const c2 = confirmWrite(c1, t2, { at: T3, rows: [], deletedIds: ["late"] });
+		expect(read(c2)).toEqual([3, 0, 0]);
+
+		const [ticked] = applyIntent(
+			once,
+			{ kind: "task", intent: { type: "complete", id: "late", observedDueDate: YESTERDAY } },
+			NOW,
+		);
+		expect(read(ticked)).toEqual([3, 0, 0]);
+	});
+
 	it("a row the store never loaded moves nothing", () => {
 		const s = applySeed(initialState(), snapshot(T1, [], { aggregates: counts(1, 0, 0) }));
 		const [applied] = applyIntent(s, { kind: "task", intent: { type: "delete", id: "x" } }, NOW);

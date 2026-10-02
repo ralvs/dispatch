@@ -24,8 +24,10 @@ answered left Today's open count one low until the next seed.
 2. **The task adapter owns placement** (`lib/store/kinds/task.ts`): the /tasks
    lists, a scoped list, and a day's bands. `lib/day-schedule.ts` only places.
    The adapter's `project` hook is `projectTask`, so every count is taken from
-   the row as the user sees it, pending intents folded on.
-   `KindAdapter.project` now receives the pending intent's own `ctx`.
+   the row as the user sees it, pending intents folded on. A pending delete
+   leaves no row, so a second delete or a tick after it counts nothing.
+   `KindAdapter.project` now receives the pending intent's own `ctx`, and may
+   return `undefined`.
 3. **The day keeps its overflow.** `placeOnDay` returns the open tasks past the
    band's cap in `overflow`. They are never shown; a re-placement in the browser
    uses them to backfill the band when one of the ten leaves it.

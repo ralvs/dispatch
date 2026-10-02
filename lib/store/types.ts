@@ -257,9 +257,10 @@ export type KindAdapter<K extends Kind> = {
 	 * not touch it. When given, `deltas` sees the row as the user sees it —
 	 * with every intent still in flight folded on — so two quick changes to
 	 * one row move a count once. Omitted: `deltas` sees the stored row. `ctx`
-	 * is the pending intent's own, taken when it was applied.
+	 * is the pending intent's own, taken when it was applied. Undefined: a
+	 * pending intent removed the row, and `deltas` sees no row at all.
 	 */
-	project?(row: EntityMap[K], intent: IntentMap[K], ctx: IntentCtx): EntityMap[K];
+	project?(row: EntityMap[K], intent: IntentMap[K], ctx: IntentCtx): EntityMap[K] | undefined;
 	/**
 	 * Aggregate deltas, computed at apply from the row before the intent.
 	 * `current` reads an aggregate as the user sees it then (pending included),

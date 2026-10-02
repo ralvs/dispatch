@@ -131,9 +131,10 @@ export const taskKind: KindAdapter<"task"> = {
 	idOf: (row) => row.id,
 	targetId: (intent) => (intent.type === "create" ? intent.task.id : intent.id),
 	provisionalIds: (intent) => (intent.type === "create" ? [intent.task.id] : []),
-	// For counting only. A deleted row stays as it was: nothing counts a later
-	// intent on it, because the delete already took its counts away.
-	project: (row, intent, ctx) => projectTask(row, intent, ctx) ?? row,
+	// For counting only. A pending delete leaves no row, so a later intent on
+	// it — a second delete, a tick — counts nothing: the delete already took
+	// its counts away.
+	project: projectTask,
 	deltas: taskDeltas,
 	settle: settleTaskDeltas,
 };
