@@ -18,6 +18,7 @@ import {
 } from "@/lib/actions/tasks";
 import { dateOfInstant, recentDoneSinceDate } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
+import { isQuiet } from "@/lib/quiet";
 import type { TaskRow } from "@/lib/services/tasks";
 import { useStoreWrite, useView, viewKey } from "@/lib/store";
 import type { TaskLists } from "@/lib/store/kinds/task";
@@ -26,7 +27,7 @@ import {
 	optimisticTaskFromText,
 } from "@/lib/task-interaction/optimistic-task";
 import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
-import { isDueToday, isOverdue, isQuiet, isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
+import { isDueToday, isOverdue, isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
 import { NewTaskButton } from "./new-task-button";
 import { TaskScopeFilters, type TaskStatusFilter, TaskStatusStrip, UNFILED } from "./task-filters";
 import { TaskRowItem } from "./task-row";
@@ -87,7 +88,7 @@ export function TaskList({
 	people?: MentionCandidate[];
 	/** task id -> people already mentioned in it, for the mention chips on rows. */
 	taskMentions?: Record<string, { id: string; name: string }[]>;
-	/** Ids of projects that are not active — what makes an undated task quiet. */
+	/** The quiet projects (lib/quiet.ts) — what makes an undated task quiet. */
 	quietProjectIds?: string[];
 }) {
 	const quietProjects = useMemo(() => new Set(quietProjectIds), [quietProjectIds]);

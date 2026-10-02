@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { isQuiet } from "@/lib/quiet";
 import { listDomains } from "@/lib/services/domains";
 import { createPerson } from "@/lib/services/people";
 import { createProject, updateProject } from "@/lib/services/projects";
+import { listQuietProjectIds } from "@/lib/services/quiet";
 import {
 	assignDomain,
 	completeTask,
@@ -387,30 +389,34 @@ describe("createTask · mentions", () => {
 	});
 });
 
-// Quiet tasks: undated work in a project that is not active (lib/task-predicates.ts).
+// Quiet tasks: undated work in a project that is not active (lib/quiet.ts).
 describe("listTasks · excludeQuiet", () => {
-	it("drops undated tasks in a quiet project and keeps everything else", async () => {
+	// The SQL filter and isQuiet are two encodings of one rule; this pins them
+	// together over every project status and every escape.
+	it("keeps exactly the open tasks isQuiet keeps", async () => {
 		const sb = await ownerClient();
 		const domain_id = await aDomain(sb);
-		const paused = await createProject(sb, { name: "Paused", domain_id });
-		await updateProject(sb, paused.id, { status: "paused" });
-		const active = await createProject(sb, { name: "Active", domain_id });
+		const tasks = [await createTask(sb, { title: "loose" })];
+		for (const status of ["active", "paused", "done", "archived"] as const) {
+			const project = await createProject(sb, { name: status, domain_id });
+			if (status !== "active") await updateProject(sb, project.id, { status });
+			tasks.push(
+				await createTask(sb, { title: `${status} undated`, project_id: project.id, domain_id }),
+				await createTask(sb, {
+					title: `${status} dated`,
+					project_id: project.id,
+					domain_id,
+					due_date: TODAY,
+				}),
+			);
+		}
 
-		const quiet = await createTask(sb, { title: "quiet", project_id: paused.id, domain_id });
-		const dated = await createTask(sb, {
-			title: "dated",
-			project_id: paused.id,
-			domain_id,
-			due_date: TODAY,
-		});
-		const loose = await createTask(sb, { title: "loose" });
-		const busy = await createTask(sb, { title: "busy", project_id: active.id, domain_id });
-
+		const quiet = await listQuietProjectIds(sb);
+		expect(quiet.size).toBe(3);
 		const kept = (await listTasks(sb, { status: "open", excludeQuiet: true })).map((t) => t.id);
-		expect(kept.sort()).toEqual([dated.id, loose.id, busy.id].sort());
-
-		const all = (await listTasks(sb, { status: "open" })).map((t) => t.id);
-		expect(all).toContain(quiet.id);
+		const expected = tasks.filter((t) => !isQuiet(t, quiet)).map((t) => t.id);
+		expect(kept.sort()).toEqual(expected.sort());
+		expect(kept).toHaveLength(tasks.length - 3);
 	});
 
 	// With no quiet project the filter must be skipped: PostgREST rejects an
