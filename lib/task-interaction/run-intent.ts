@@ -7,7 +7,6 @@ import type { TaskRow } from "@/lib/schemas/task";
 import { useRunIntent } from "@/lib/store/run";
 import type { StoreWrite } from "@/lib/store/types";
 import { nextCompleteFields, type TaskIntent } from "@/lib/task-interaction/apply-intent";
-import { useIntentLock } from "@/lib/task-interaction/intent-lock";
 
 const DEFAULT_ERROR = "Couldn't update that task. Try again.";
 
@@ -55,18 +54,15 @@ export function toastTaskToggle(
 }
 
 /**
- * Claim → apply to the entity store → server action → confirm or roll back →
- * release (lib/store/run.ts).
- *
- * Owns the ADR-0037 replay lock for `complete`. Surfaces only supply the
- * intent and the action (so this module never imports server actions).
+ * Apply to the entity store → server action → confirm or roll back
+ * (lib/store/run.ts). Surfaces only supply the intent and the action (so this
+ * module never imports server actions).
  */
 export function useTaskIntentRunner(errorMessage: string = DEFAULT_ERROR): TaskIntentRun {
-	const lock = useIntentLock();
-	return useRunIntent("task", { lock, errorMessage });
+	return useRunIntent("task", { errorMessage });
 }
 
-/** Desired-state star flag — same comparison the optimistic reducer makes. */
+/** Desired-state star flag — the same comparison projectTask makes. */
 export function top3DesiredState(
 	task: Pick<TaskRow, "top3_for_date">,
 	forDateIso: string,
