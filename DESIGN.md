@@ -603,8 +603,10 @@ Three edge registers, settled in Pass 5 (ADR-0048; gate `edges-lab.html` B):
   not a crash.
 - **Absent:** `EmptyState` — left-aligned italic, upright hint. A slot inside
   a page, never a page itself.
-- **Waiting:** `PageSkeleton` on routes; content-shaped pulses on the note
-  editor (no header to hold). Waiting is geometry, not copy and not fault.
+- **Waiting:** each route's fallback is its own silhouette, built from the
+  bones in `components/ui/page-skeleton.tsx` — the real header, then the same
+  sections and row shapes the page will draw (ADR-0074). Waiting is geometry,
+  not copy and not fault.
 
 The toaster is a surface card (medium title, error border) and defaults to
 light, matching `THEME_BOOT`.
