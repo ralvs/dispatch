@@ -223,10 +223,11 @@ export async function createTask(
 	opts: TaskWriteOpts = {},
 ): Promise<TaskRow> {
 	// due_time may only be set alongside a due_date (DB check constraint).
-	// This is the one chokepoint every write path (form, capture) funnels
-	// through, so it can enforce the invariant defensively — mirrors the
-	// coercion in updateTask below rather than rejecting: a time with no
-	// date to sit on is silently dropped instead of degrading the capture.
+	// Every create (form, capture) funnels through here, so it can enforce the
+	// invariant defensively — mirrors the coercion in updateTask below rather
+	// than rejecting: a time with no date to sit on is silently dropped instead
+	// of degrading the capture. A task in a project takes the project's domain
+	// whatever `domain_id` says; the database holds that rule (docs/adr/0072).
 	const due_time = input.due_date ? input.due_time : null;
 	const data = unwrap(
 		await sb
