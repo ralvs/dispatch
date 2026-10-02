@@ -4,27 +4,16 @@ import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { formatDay, parseDateIso, todayInTz } from "@/lib/dates";
 import { SoftRefresh } from "./soft-refresh";
 import { TodayBody } from "./today-body";
+import { TodaySkeleton } from "./today-skeleton";
 
 /*
  * The ~13-query Today fan-out (lib/services/today.ts) streams in behind
  * Suspense so the route doesn't block first paint on it. The dateline is the
  * one thing this side of the boundary already knows, so the fallback prints it
- * for real rather than as a grey bar — and it carries the page's h1, since
- * DayHeadline (the real one) only mounts once the read resolves.
+ * for real rather than as a bone.
  */
 function TodayFallback({ todayIso }: { todayIso: string }) {
-	return (
-		<div>
-			<p className="mb-4 font-mono text-eyebrow uppercase tracking-widest text-ink-3">
-				{formatDay(todayIso, "utc", "cccc, d LLLL yyyy")}
-			</p>
-			<h1 className="max-w-[16ch] text-t36 text-ink-4 lg:text-hero">Reading the day…</h1>
-			<span role="status" className="sr-only">
-				Loading
-			</span>
-			<div className="mt-10 h-[46px] rounded-[12px] bg-surface-2" aria-hidden="true" />
-		</div>
-	);
+	return <TodaySkeleton dateline={formatDay(todayIso, "utc", "cccc, d LLLL yyyy")} />;
 }
 
 export default async function TodayPage({
