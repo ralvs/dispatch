@@ -3,8 +3,6 @@ import {
 	calendarDaysBetween,
 	dateOfInstant,
 	dayWindowUtc,
-	formatDateline,
-	formatDayNavLabel,
 	instantFromLocal,
 	isoWeek,
 	isValidTimezone,
@@ -14,7 +12,6 @@ import {
 	recentDoneSinceUtc,
 	shiftDay,
 	shiftMinutes,
-	startOfWeek,
 	todayInTz,
 } from "./dates";
 
@@ -55,16 +52,10 @@ describe("calendarDaysBetween", () => {
 	});
 });
 
-describe("shiftDay / startOfWeek", () => {
+describe("shiftDay", () => {
 	it("shifts across month boundaries", () => {
 		expect(shiftDay("2026-01-31", 1)).toBe("2026-02-01");
 		expect(shiftDay("2026-03-01", -1)).toBe("2026-02-28");
-	});
-
-	it("anchors weeks on Monday", () => {
-		// 2026-07-14 is a Tuesday.
-		expect(startOfWeek("2026-07-14")).toBe("2026-07-13");
-		expect(startOfWeek("2026-07-13")).toBe("2026-07-13");
 	});
 });
 
@@ -74,7 +65,7 @@ describe("instantFromLocal", () => {
 	});
 });
 
-describe("isoWeek / formatDateline", () => {
+describe("isoWeek", () => {
 	it("computes ISO week numbers, including year-boundary weeks", () => {
 		// 2026-07-17 is a Friday in ISO week 29.
 		expect(isoWeek("2026-07-17")).toBe(29);
@@ -84,27 +75,18 @@ describe("isoWeek / formatDateline", () => {
 		expect(isoWeek("2027-01-01")).toBe(53);
 	});
 
-	it("renders the masthead dateline in uppercase mono style", () => {
-		expect(formatDateline("2026-07-17")).toBe("FRI · JUL 17 · WEEK 29");
-	});
-
 	it("throws on an invalid date", () => {
 		expect(() => isoWeek("not-a-date")).toThrow();
-		expect(() => formatDateline("not-a-date")).toThrow();
 	});
 });
 
 describe("shiftMinutes", () => {
-	it("shifts forward", () => {
-		expect(shiftMinutes("2026-07-14T12:00:00.000Z", 30)).toBe("2026-07-14T12:30:00.000Z");
-	});
-
-	it("shifts backward", () => {
-		expect(shiftMinutes("2026-07-14T12:00:00.000Z", -30)).toBe("2026-07-14T11:30:00.000Z");
-	});
-
-	it("crosses a UTC day boundary", () => {
-		expect(shiftMinutes("2026-07-14T00:10:00.000Z", -20)).toBe("2026-07-13T23:50:00.000Z");
+	it.each([
+		["shifts forward", "2026-07-14T12:00:00.000Z", 30, "2026-07-14T12:30:00.000Z"],
+		["shifts backward", "2026-07-14T12:00:00.000Z", -30, "2026-07-14T11:30:00.000Z"],
+		["crosses a UTC day boundary", "2026-07-14T00:10:00.000Z", -20, "2026-07-13T23:50:00.000Z"],
+	])("%s", (_name, from, minutes, expected) => {
+		expect(shiftMinutes(from, minutes)).toBe(expected);
 	});
 });
 
@@ -163,33 +145,12 @@ describe("parseDateIso", () => {
 	});
 });
 
-describe("formatDayNavLabel", () => {
-	const today = "2026-07-29";
-
-	it("names the three days around today in words", () => {
-		expect(formatDayNavLabel(today, today)).toBe("TODAY");
-		expect(formatDayNavLabel("2026-07-28", today)).toBe("YESTERDAY");
-		expect(formatDayNavLabel("2026-07-30", today)).toBe("TOMORROW");
-	});
-
-	it("falls back to a dateline further out", () => {
-		expect(formatDayNavLabel("2026-08-03", today)).toBe("MON · AUG 3");
-		expect(formatDayNavLabel("2026-07-26", today)).toBe("SUN · JUL 26");
-	});
-
-	it("crosses a month boundary without drifting", () => {
-		expect(formatDayNavLabel("2026-08-01", "2026-07-31")).toBe("TOMORROW");
-		expect(formatDayNavLabel("2026-07-31", "2026-08-01")).toBe("YESTERDAY");
-	});
-});
-
 describe("recentDoneSinceDate / recentDoneSinceUtc", () => {
-	it("includes today and the two calendar days before it", () => {
-		expect(recentDoneSinceDate("2026-08-18")).toBe("2026-08-16");
-	});
-
-	it("crosses a month boundary", () => {
-		expect(recentDoneSinceDate("2026-08-01")).toBe("2026-07-30");
+	it.each([
+		["includes today and the two calendar days before it", "2026-08-18", "2026-08-16"],
+		["crosses a month boundary", "2026-08-01", "2026-07-30"],
+	])("%s", (_name, todayIso, expected) => {
+		expect(recentDoneSinceDate(todayIso)).toBe(expected);
 	});
 
 	it("floors the query at local midnight of that oldest day", () => {
