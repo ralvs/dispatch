@@ -21,9 +21,9 @@
 // tasks, then by title, so the same input always yields the same order.
 //
 // This module is deliberately client-safe — no `server-only`, no Supabase, no
-// env. SSR reads it through lib/services/today.ts and the optimistic day bands
-// import it directly from a client component; a server-only home would drag
-// `env` into the browser graph and fail the build.
+// env. SSR reads it through lib/services/today.ts and the entity store's day
+// view re-places with it in the browser (lib/store/kinds/task.ts); a
+// server-only home would drag `env` into the browser graph and fail the build.
 
 import {
 	dateOfInstant,
@@ -34,7 +34,6 @@ import {
 } from "@/lib/dates";
 import type { CalendarEventRow } from "@/lib/schemas/calendar";
 import type { TaskRow } from "@/lib/schemas/task";
-import { applyDayTaskList, type TaskIntent } from "@/lib/task-interaction/apply-intent";
 import { isTop3Today } from "@/lib/task-predicates";
 
 // `sortAt` is the UTC instant an item occupies on the timeline, and `time` its
@@ -58,6 +57,12 @@ export type DaySchedule = {
 	 */
 	top3: TaskRow[];
 	open: TaskRow[];
+	/**
+	 * Arrived open tasks past the open band's cap: never shown, but carried so
+	 * a client re-placement can backfill the band when one of the ten leaves it
+	 * (a star, a tick on another day) without waiting for the next read.
+	 */
+	overflow: TaskRow[];
 };
 
 /** Payload for client day-nav: schedule bands only, not the full Today digest. */
@@ -156,8 +161,8 @@ function compareItems(a: DayScheduleItem, b: DayScheduleItem): number {
 
 /**
  * Day membership: which events/tasks sit in which band for one date.
- * One pure module used by SSR (`buildDaySchedule`) and the optimistic tick
- * (`applyDayIntent`) so placement cannot drift.
+ * One pure module used by SSR (`buildDaySchedule`) and the entity store's day
+ * view (lib/store/kinds/task.ts) so placement cannot drift.
  *
  * `dateIso` is the day being shown. Placement never asks whether a task is
  * done (docs/adr/0038) — only where it belongs. A completed task still has to
@@ -219,6 +224,7 @@ export function placeOnDay(input: {
 		timeline: timeline.sort(compareItems),
 		top3,
 		open: [...arrivedOpen.slice(0, OPEN_CAP), ...arrivedDone],
+		overflow: arrivedOpen.slice(OPEN_CAP),
 	};
 }
 
@@ -264,7 +270,7 @@ export function doingTodayFromSchedule(schedule: DaySchedule): TaskRow[] {
 	return out;
 }
 
-/** Flatten every task the day currently shows, deduped by id. */
+/** Flatten every task the day holds — shown or overflowed — deduped by id. */
 export function collectDayTasks(schedule: DaySchedule): TaskRow[] {
 	const byId = new Map<string, TaskRow>();
 	for (const item of schedule.timeline) {
@@ -274,6 +280,9 @@ export function collectDayTasks(schedule: DaySchedule): TaskRow[] {
 		byId.set(task.id, task);
 	}
 	for (const task of schedule.open) {
+		byId.set(task.id, task);
+	}
+	for (const task of schedule.overflow) {
 		byId.set(task.id, task);
 	}
 	return [...byId.values()];
@@ -289,34 +298,4 @@ export function collectDayEvents(schedule: DaySchedule): CalendarEventRow[] {
 		if (item.kind === "event") out.push(item.event);
 	}
 	return out;
-}
-
-/** Membership date is first-class — not smuggled as the star's target. */
-export type DayIntentContext = {
-	dateIso: string;
-	todayIso: string;
-	tz: string;
-	nowIso?: string;
-};
-
-/**
- * Intent + base schedule → next schedule. Field patch via applyDayTaskList;
- * band membership via placeOnDay so SSR and optimistic share one rule set.
- */
-export function applyDayIntent(
-	schedule: DaySchedule,
-	intent: TaskIntent,
-	ctx: DayIntentContext,
-): DaySchedule {
-	const tasks = applyDayTaskList(collectDayTasks(schedule), intent, {
-		todayIso: ctx.todayIso,
-		top3DateIso: ctx.dateIso,
-		nowIso: ctx.nowIso,
-	});
-	return placeOnDay({
-		events: collectDayEvents(schedule),
-		tasks,
-		dateIso: ctx.dateIso,
-		tz: ctx.tz,
-	});
 }

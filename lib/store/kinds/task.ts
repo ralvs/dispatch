@@ -1,9 +1,10 @@
-// The task kind: three view types built on the existing reducers, so the store
-// and the pre-store optimistic layer cannot drift on what an intent means.
+// The task kind. What an intent does to one row is projectTask
+// (lib/task-interaction/apply-intent.ts); everything here is where that row
+// then sits — /tasks' open and done lists, a scoped list, a day's bands — and
+// what it does to Today's counters.
 
 import { dateOfInstant } from "@/lib/dates";
 import {
-	applyDayIntent,
 	collectDayEvents,
 	collectDayTasks,
 	type DaySchedulePayload,
@@ -20,17 +21,16 @@ import type {
 	TaskScope,
 	ViewAdapter,
 } from "@/lib/store/types";
-import {
-	applyDayTaskList,
-	applyTaskLists,
-	assignDomainFields,
-	projectComplete,
-	reopenTaskFields,
-	type TaskIntent,
-} from "@/lib/task-interaction/apply-intent";
+import { projectTask, type TaskIntent } from "@/lib/task-interaction/apply-intent";
 import { isOverdue } from "@/lib/task-predicates";
 
-/** How many finished rows /tasks keeps (mirrors applyTaskLists). */
+/** /tasks: the open list and the recently done strip. */
+export type TaskLists = {
+	open: TaskRow[];
+	done: TaskRow[];
+};
+
+/** How many finished rows /tasks keeps. */
 const DONE_CAP = 10;
 
 type TaskCounts = { open: number; overdue: number; inbox: number };
@@ -59,23 +59,12 @@ function afterIntent(
 ): { after: TaskRow | undefined; successor: TaskRow | undefined } {
 	if (intent.type === "create") return { after: intent.task, successor: undefined };
 	if (!before) return { after: undefined, successor: undefined };
-	switch (intent.type) {
-		case "complete": {
-			if (before.status !== "open") return { after: before, successor: undefined };
-			const after = projectComplete(before, ctx);
-			const recurring = before.recurrence_rule !== null && after.recurrence_rule === null;
-			return { after, successor: recurring ? { ...before, due_date: null } : undefined };
-		}
-		case "reopen":
-			return { after: reopenTaskFields(before), successor: undefined };
-		case "assign":
-			return { after: assignDomainFields(before, intent.domainId), successor: undefined };
-		case "delete":
-			return { after: undefined, successor: undefined };
-		case "setTop3":
-		case "edit":
-			return { after: before, successor: undefined };
-	}
+	const after = projectTask(before, intent, ctx);
+	const recurring =
+		intent.type === "complete" &&
+		before.recurrence_rule !== null &&
+		after?.recurrence_rule === null;
+	return { after, successor: recurring ? { ...before, due_date: null } : undefined };
 }
 
 /**
@@ -83,6 +72,10 @@ function afterIntent(
  * new due date is only known once the server answers — and the next seed
  * heals it. So does a quiet task (lib/task-predicates.ts isQuiet): the store
  * cannot tell one from its row, and Today does not count them.
+ *
+ * `before` is the row as the user sees it, every pending intent folded on
+ * (`project` below): a tick then an untick before either answers moves the
+ * count down and back up, not down twice.
  */
 function taskDeltas(intent: TaskIntent, before: TaskRow | undefined, ctx: IntentCtx): Deltas {
 	if (intent.type !== "create" && !before) return {};
@@ -138,9 +131,24 @@ export const taskKind: KindAdapter<"task"> = {
 	idOf: (row) => row.id,
 	targetId: (intent) => (intent.type === "create" ? intent.task.id : intent.id),
 	provisionalIds: (intent) => (intent.type === "create" ? [intent.task.id] : []),
+	// For counting only. A deleted row stays as it was: nothing counts a later
+	// intent on it, because the delete already took its counts away.
+	project: (row, intent, ctx) => projectTask(row, intent, ctx) ?? row,
 	deltas: taskDeltas,
 	settle: settleTaskDeltas,
 };
+
+/** Every row through the intent; a deleted one drops. Same array when nothing changed. */
+function projectRows(rows: TaskRow[], intent: TaskIntent, ctx: IntentCtx): TaskRow[] {
+	let changed = false;
+	const out: TaskRow[] = [];
+	for (const row of rows) {
+		const next = projectTask(row, intent, ctx);
+		if (next !== row) changed = true;
+		if (next) out.push(next);
+	}
+	return changed ? out : rows;
+}
 
 /** Replace rows by id from `rowOf`; drop tombstones. Same array when nothing changed. */
 function patchRows(
@@ -175,8 +183,29 @@ export const taskListsView: ViewAdapter<"taskLists"> = {
 	kind: "task",
 	fromSeed: (data) => ({ base: data, params: undefined }),
 	rowsOf: (view) => [...view.open, ...view.done],
-	reduce: (view, intent, ctx) =>
-		applyTaskLists(view, intent, { todayIso: ctx.todayIso, nowIso: ctx.nowIso }),
+	reduce: (view, intent, ctx) => {
+		if (intent.type === "create") return { open: [intent.task, ...view.open], done: view.done };
+		if (intent.type === "complete" || intent.type === "reopen") {
+			// A tick or an untick moves the row between the lists, to the top.
+			const row = [...view.open, ...view.done].find((r) => r.id === intent.id);
+			const next = row && projectTask(row, intent, ctx);
+			if (!row || !next || next === row) return view;
+			const gone = new Set([row.id]);
+			if (next.status === "open") {
+				return { open: [next, ...without(view.open, gone)], done: without(view.done, gone) };
+			}
+			// The star is a shortlist cosmetic here, and the server never clears
+			// it: the confirmed row brings it back. Today keeps it (docs/adr/0038).
+			const closed = { ...next, top3_for_date: null };
+			return {
+				open: without(view.open, gone),
+				done: [closed, ...without(view.done, gone)].slice(0, DONE_CAP),
+			};
+		}
+		const open = projectRows(view.open, intent, ctx);
+		const done = projectRows(view.done, intent, ctx);
+		return open === view.open && done === view.done ? view : { open, done };
+	},
 	upsert: (view, rows) => {
 		let { open, done } = view;
 		for (const row of rows) {
@@ -232,8 +261,10 @@ export const taskListView: ViewAdapter<"taskList"> = {
 	reduce: (view, intent, ctx, scope) => {
 		// A create belongs only to the list whose scope it matches — without the
 		// guard it would show in every cached project list.
-		if (intent.type === "create" && !inTaskScope(intent.task, scope)) return view;
-		const out = applyDayTaskList(view, intent, { todayIso: ctx.todayIso, nowIso: ctx.nowIso });
+		if (intent.type === "create") {
+			return inTaskScope(intent.task, scope) ? [intent.task, ...view] : view;
+		}
+		const out = projectRows(view, intent, ctx);
 		return intent.type === "assign" ? inScopeOnly(out, scope) : out;
 	},
 	upsert: (view, rows, _clock, scope) => {
@@ -264,14 +295,15 @@ export const dayView: ViewAdapter<"day"> = {
 	fromSeed: (data) => ({ base: data, params: undefined }),
 	rowsOf: (view) => collectDayTasks(view.schedule),
 	reduce: (view, intent: TaskIntent, ctx) => {
-		const schedule = applyDayIntent(view.schedule, intent, { ...ctx, dateIso: view.dateIso });
-		const next = { ...view, schedule };
+		const pool = collectDayTasks(view.schedule);
+		// A create is offered to every day; placement decides where it sits.
+		let tasks = intent.type === "create" ? [intent.task, ...pool] : projectRows(pool, intent, ctx);
 		// ADR-0038 rule 2: a finished task stays struck on today's view only; a
 		// cached other day drops it (its completion does not fall on that day).
-		if (intent.type !== "complete" || view.dateIso === ctx.todayIso) return next;
-		const pool = collectDayTasks(schedule);
-		const tasks = without(pool, new Set([intent.id]));
-		return tasks === pool ? next : replace(next, tasks, ctx);
+		if (intent.type === "complete" && view.dateIso !== ctx.todayIso) {
+			tasks = without(tasks, new Set([intent.id]));
+		}
+		return tasks === pool ? view : replace(view, tasks, ctx);
 	},
 	upsert: (view, rows, clock) => {
 		const pool = collectDayTasks(view.schedule);

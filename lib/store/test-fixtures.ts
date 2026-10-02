@@ -104,7 +104,7 @@ export function routine(
 
 export function dayPayload(dateIso: string, tasks: TaskRow[] = []): DaySchedulePayload {
 	return {
-		schedule: { allDay: [], timeline: [], top3: [], open: tasks },
+		schedule: { allDay: [], timeline: [], top3: [], open: tasks, overflow: [] },
 		dateIso,
 		nowUtcIso: T0,
 		nowLabel: null,

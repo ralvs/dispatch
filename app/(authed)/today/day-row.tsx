@@ -19,10 +19,11 @@ import { createMeetingNoteForEventAction } from "./actions";
 /*
  * Today's row. Deliberately not the Tasks page's TaskRowItem: this composition
  * dropped the meta line, and what it dropped is exactly what that row is built
- * around. What the two share is behaviour — bindTaskHandlers, applyDayIntent,
- * the same server actions — which is the seam that actually matters. The
- * presentation is allowed to differ because it is answering a different
- * question: Tasks asks "what is this task", Today asks "what is my day".
+ * around. What the two share is behaviour — bindTaskHandlers, the entity
+ * store's task adapter, the same server actions — which is the seam that
+ * actually matters. The presentation is allowed to differ because it is
+ * answering a different question: Tasks asks "what is this task", Today asks
+ * "what is my day".
  *
  * One shape across all three bands, so the eye reads one column down the page:
  *

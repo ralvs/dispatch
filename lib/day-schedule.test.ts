@@ -156,11 +156,13 @@ describe("buildDaySchedule", () => {
 		expect(day.open).toEqual([]);
 	});
 
-	it("caps the open band at 10", () => {
+	it("caps the open band at 10 and holds the rest in overflow, in order", () => {
 		const tasks = Array.from({ length: 15 }, (_, i) =>
 			task({ id: `t${i}`, due_date: "2026-07-01" }),
 		);
-		expect(schedule([], tasks).open).toHaveLength(10);
+		const day = schedule([], tasks);
+		expect(day.open).toHaveLength(10);
+		expect(day.overflow.map((t) => t.id)).toEqual(["t10", "t11", "t12", "t13", "t14"]);
 	});
 
 	it("never caps Top 3 — a fourth star is surfaced, not hidden", () => {
@@ -337,6 +339,7 @@ describe("doingTodayFromSchedule", () => {
 				timeline: [],
 				top3: [starred],
 				open: [open],
+				overflow: [],
 			}).map((t) => t.id),
 		).toEqual(["a", "b"]);
 	});
@@ -349,12 +352,15 @@ describe("doingTodayFromSchedule", () => {
 				timeline: [],
 				top3: [starred],
 				open: [starred],
+				overflow: [],
 			}).map((t) => t.id),
 		).toEqual(["a"]);
 	});
 
 	it("is empty when both bands are empty", () => {
-		expect(doingTodayFromSchedule({ allDay: [], timeline: [], top3: [], open: [] })).toEqual([]);
+		expect(
+			doingTodayFromSchedule({ allDay: [], timeline: [], top3: [], open: [], overflow: [] }),
+		).toEqual([]);
 	});
 
 	it("omits a timeline-only task", () => {
@@ -375,6 +381,7 @@ describe("doingTodayFromSchedule", () => {
 				],
 				top3: [starred],
 				open: [open],
+				overflow: [],
 			}).map((t) => t.id),
 		).toEqual(["a", "b"]);
 	});
