@@ -1,5 +1,16 @@
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/ui";
+import {
+	Bone,
+	CheckboxBone,
+	DotBone,
+	ListRow,
+	PageSkeleton,
+	repeat,
+	SectionBone,
+	StatBandBone,
+	TextBone,
+	TitleMetaBone,
+} from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { getCachedTaskBoard } from "@/lib/cache/tasks";
@@ -70,16 +81,53 @@ async function TasksBody({
 	);
 }
 
+// TaskRowItem's silhouette: checkbox, the held domain dot, title over meta,
+// the star on the right.
+function TaskRowBone({ i }: { i: number }) {
+	return (
+		<ListRow
+			leading={
+				<>
+					<CheckboxBone />
+					<DotBone />
+				</>
+			}
+			trailing={<Bone className="size-4 rounded-sm" />}
+		>
+			<TitleMetaBone i={i} />
+		</ListRow>
+	);
+}
+
 function TasksFallback() {
 	return (
 		<PageSkeleton
 			title="Tasks"
-			rows={8}
 			// Disabled rather than absent: the page has exactly one standing
 			// action and it is not data, so the slot is held. The dialog it opens
 			// needs the domain list, which is what is still in flight.
 			action={<NewTaskButton disabled />}
-		/>
+		>
+			<StatBandBone count={3} />
+			{/* The status strip on the left, the two scope selects on the right. */}
+			<div
+				aria-hidden="true"
+				className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2"
+			>
+				<TextBone className="font-mono text-meta" width="w-64" />
+				<TextBone className="font-mono text-meta" width="w-48" />
+			</div>
+			<SectionBone titleWidth="w-24">
+				{repeat(3, (i) => (
+					<TaskRowBone key={i} i={i} />
+				))}
+			</SectionBone>
+			<SectionBone titleWidth="w-12">
+				{repeat(6, (i) => (
+					<TaskRowBone key={i} i={i + 3} />
+				))}
+			</SectionBone>
+		</PageSkeleton>
 	);
 }
 
