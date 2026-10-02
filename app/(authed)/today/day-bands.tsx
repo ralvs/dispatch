@@ -3,10 +3,10 @@
 import { Card, EmptyState, SectionHead } from "@/components/ui";
 import type { DaySchedule } from "@/lib/day-schedule";
 import type { TaskRow } from "@/lib/services/tasks";
+import type { TaskRowHandlers } from "@/lib/task-interaction/run-intent";
 import { TOP3_SLOTS } from "@/lib/task-predicates";
 import type { DomainColorSource } from "@/lib/ui/event-color";
 import { TODAY_VARIANT } from "@/lib/ui/variant";
-import type { TaskRowHandlers } from "../tasks/task-row";
 import { EventDayRow, TaskDayRow } from "./day-row";
 
 /**

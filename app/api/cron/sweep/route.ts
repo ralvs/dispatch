@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { env, isSupabaseConfigured } from "@/lib/env";
-import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/mutation-feedback/invalidate";
+import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { isAuthorized } from "@/lib/secret-auth";
 import { sweepRawCaptures } from "@/lib/services/capture/sweep";
 import { recordNotification } from "@/lib/services/notifications";

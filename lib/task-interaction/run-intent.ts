@@ -14,6 +14,18 @@ const DEFAULT_ERROR = "Couldn't update that task. Try again.";
 /** What every task action resolves to: the rows it wrote, for the entity store. */
 export type TaskActionResult = ActionResult<StoreWrite<TaskRow>>;
 
+/**
+ * Parent-owned intents (the entity store applies, then the server action).
+ * Both task rows take this shape: the Tasks page's and Today's.
+ */
+export type TaskRowHandlers = {
+	onToggleDone: () => void;
+	onToggleTop3: () => void;
+	onDelete?: () => void;
+	/** The edit form's save, routed through the store. Left out, the action runs bare. */
+	onUpdate?: (formData: FormData) => Promise<ActionResult<unknown>>;
+};
+
 export type TaskIntentRun = (
 	intent: TaskIntent,
 	action: () => Promise<TaskActionResult>,

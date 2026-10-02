@@ -1,5 +1,5 @@
 import type { CacheTagName } from "@/lib/cache/tags";
-import type { ExternalWriter, MutationKind } from "@/lib/mutation-feedback/invalidate";
+import type { ExternalWriter, MutationKind } from "@/lib/invalidate";
 
 /**
  * What a cached reader promises, next to its `cacheTag(...)` call (docs/adr/0062
@@ -15,7 +15,7 @@ import type { ExternalWriter, MutationKind } from "@/lib/mutation-feedback/inval
  *   `cacheTag(...)` call exactly.
  * - `writes` lists every in-app mutation kind that changes the data behind
  *   that tag. `external` lists every cron or `/api/*` writer that does
- *   (EXTERNAL_WRITES in lib/mutation-feedback/invalidate.ts).
+ *   (EXTERNAL_WRITES in lib/invalidate.ts).
  *
  * `lib/mutation-feedback/invalidate.test.ts` fails when a declared write does
  * not bust the tag, and when a file in lib/cache/ caches without declaring.

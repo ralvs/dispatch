@@ -2,6 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActionResult } from "@/lib/action-result";
+import { completeTaskAction } from "@/lib/actions/tasks";
 import { toastError } from "@/lib/client/toast";
 import type { TaskRow } from "@/lib/schemas/task";
 import { createDispatchStore, type DispatchStore } from "@/lib/store/create-store";
@@ -10,11 +11,10 @@ import { StoreProvider } from "@/lib/store/provider";
 import { Seed } from "@/lib/store/seed";
 import { NOW, snapshot, T1, T2, TODAY, TZ, task } from "@/lib/store/test-fixtures";
 import type { StoreWrite } from "@/lib/store/types";
-import { completeTaskAction } from "./actions";
 import { TaskList } from "./task-list";
 
 // A "use server" module is plain async functions in a test; replace it.
-vi.mock("./actions", () => ({
+vi.mock("@/lib/actions/tasks", () => ({
 	completeTaskAction: vi.fn(),
 	createTaskAction: vi.fn(),
 	deleteTaskAction: vi.fn(),

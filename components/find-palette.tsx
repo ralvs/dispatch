@@ -10,8 +10,8 @@ import {
 	useState,
 	useTransition,
 } from "react";
-import { findAction } from "@/app/(authed)/find/actions";
 import { Dialog, DialogBody, Input, ListRow, rowTitle } from "@/components/ui";
+import { findAction } from "@/lib/actions/find";
 import { OPEN_FIND_EVENT } from "@/lib/find/palette-bus";
 import { isFindShortcut } from "@/lib/find/shortcuts";
 import type { FindNoteHit, FindResult, FindTaskHit } from "@/lib/services/find";

@@ -16,7 +16,7 @@ const findAction = vi.fn(
 			pending.set(query, resolve);
 		}),
 );
-vi.mock("@/app/(authed)/find/actions", () => ({
+vi.mock("@/lib/actions/find", () => ({
 	findAction: (query: string) => findAction(query),
 }));
 

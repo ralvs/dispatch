@@ -12,7 +12,7 @@ import type { EntityMap, Kind, StoreWrite } from "@/lib/store/types";
  * newer than the server's list, and a pending create has the client's id.
  *
  * Why: a picker reads a cached list that trails a write by one request
- * (revalidateTag "max", lib/mutation-feedback/invalidate.ts), and no page
+ * (revalidateTag "max", lib/invalidate.ts), and no page
  * render follows a write (#31). Left on purpose: the server's list carries no
  * read time, so an edit made here keeps winning over a later edit of the same
  * row made elsewhere, for the life of this tab.

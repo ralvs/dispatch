@@ -4,7 +4,7 @@ import { z } from "zod";
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 import { CreateQuoteAnnotationSchema, CreateQuoteSchema } from "@/lib/schemas/quote";
 import {
 	createAnnotation,

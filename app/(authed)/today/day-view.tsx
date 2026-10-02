@@ -2,12 +2,12 @@
 
 import { unstable_rethrow } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { completeTaskAction, reopenTaskAction, setTop3Action } from "@/lib/actions/tasks";
 import { parseDateIso } from "@/lib/dates";
 import type { TaskRow } from "@/lib/services/tasks";
 import { useDispatchStore, useStoreActions, useView, viewKey } from "@/lib/store";
 import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
 import type { DomainColorSource } from "@/lib/ui/event-color";
-import { completeTaskAction, reopenTaskAction, setTop3Action } from "../tasks/actions";
 import { loadDayScheduleAction } from "./actions";
 import { OpenSection, TimelineSection, Top3Section } from "./day-bands";
 import { DayHeadline } from "./day-headline";
@@ -96,7 +96,7 @@ export function DayView({
 		(nextIso: string) => {
 			if (inFlight.current.has(nextIso)) return;
 			// Don't burn a phone's radio re-reading a day nobody's looking at
-			// (matches components/soft-refresh.tsx's visibility check).
+			// (matches app/(authed)/today/soft-refresh.tsx's visibility check).
 			if (document.visibilityState !== "visible") return;
 			inFlight.current.add(nextIso);
 			loadDayScheduleAction(nextIso)

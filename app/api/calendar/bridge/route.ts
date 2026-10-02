@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { env, isCalendarBridgeConfigured, isSupabaseConfigured } from "@/lib/env";
-import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/mutation-feedback/invalidate";
+import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { BridgeSyncBodySchema } from "@/lib/schemas/calendar";
 import { isAuthorized } from "@/lib/secret-auth";
 import { syncBridgeEvents } from "@/lib/services/calendar-bridge";

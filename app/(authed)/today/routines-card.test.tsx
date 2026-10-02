@@ -1,8 +1,8 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { toggleCompletionAction } from "@/app/(authed)/routines/actions";
 import type { ActionResult } from "@/lib/action-result";
+import { toggleCompletionAction } from "@/lib/actions/routines";
 import { toastError } from "@/lib/client/toast";
 import type { RoutineWithHistory } from "@/lib/schemas/routine";
 import { createDispatchStore, type DispatchStore } from "@/lib/store/create-store";
@@ -13,7 +13,7 @@ import { NOW, routine, snapshot, T1, T2, TODAY } from "@/lib/store/test-fixtures
 import type { StoreWrite } from "@/lib/store/types";
 import { RoutinesCard } from "./routines-card";
 
-vi.mock("@/app/(authed)/routines/actions", () => ({ toggleCompletionAction: vi.fn() }));
+vi.mock("@/lib/actions/routines", () => ({ toggleCompletionAction: vi.fn() }));
 vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn() }));
 
 type Result = ActionResult<StoreWrite<RoutineWithHistory>>;

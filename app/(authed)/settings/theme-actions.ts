@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 
 // Theme preference is UX state, not auth state — a cookie write here doesn't
 // violate the proxy-is-sole-cookie-writer rule (that rule covers session

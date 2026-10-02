@@ -2,6 +2,7 @@
 
 import { CreateDialogButton } from "@/components/create-dialog";
 import { Field, Input, Select } from "@/components/ui";
+import { createRoutineAction } from "@/lib/actions/routines";
 import { nowUtc } from "@/lib/dates";
 import {
 	type RoutineWithHistory,
@@ -10,7 +11,6 @@ import {
 	TimeOfDayBucketSchema,
 } from "@/lib/schemas/routine";
 import { useStoreWrite } from "@/lib/store";
-import { createRoutineAction } from "./actions";
 
 /**
  * The row the list shows while the server writes it. A rejected field drops

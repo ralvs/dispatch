@@ -3,8 +3,19 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { TaskDialog } from "@/components/task-dialog";
+import type { TaskDomainOption, TaskProjectOption } from "@/components/task-fields";
 import { EmptyState, PageHeader, SectionHead, StatBand } from "@/components/ui";
 import type { ActionResult } from "@/lib/action-result";
+import {
+	completeTaskAction,
+	createTaskAction,
+	deleteTaskAction,
+	quickAddTaskAction,
+	reopenTaskAction,
+	setTop3Action,
+	updateTaskAction,
+} from "@/lib/actions/tasks";
 import { dateOfInstant, recentDoneSinceDate } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { TaskRow } from "@/lib/services/tasks";
@@ -16,18 +27,7 @@ import {
 } from "@/lib/task-interaction/optimistic-task";
 import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
 import { isDueToday, isOverdue, isQuiet, isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
-import {
-	completeTaskAction,
-	createTaskAction,
-	deleteTaskAction,
-	quickAddTaskAction,
-	reopenTaskAction,
-	setTop3Action,
-	updateTaskAction,
-} from "./actions";
 import { NewTaskButton } from "./new-task-button";
-import { TaskDialog } from "./task-dialog";
-import type { TaskDomainOption, TaskProjectOption } from "./task-fields";
 import { TaskScopeFilters, type TaskStatusFilter, TaskStatusStrip, UNFILED } from "./task-filters";
 import { TaskRowItem } from "./task-row";
 import { taskStats } from "./task-stats-band";
@@ -67,7 +67,7 @@ export function TaskList({
 	domains: TaskDomainOption[];
 	/**
 	 * Carries `domain_id` because the task form needs it: choosing a project
-	 * there settles the domain (app/(authed)/tasks/task-fields.tsx), so the
+	 * there settles the domain (components/task-fields.tsx), so the
 	 * narrow's filter options are no longer a wide enough shape to pass on.
 	 */
 	projects?: TaskProjectOption[];

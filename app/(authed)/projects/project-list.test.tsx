@@ -14,7 +14,7 @@ import { getMeasure } from "@/test/component/measure";
 import { ProjectList } from "./project-list";
 
 vi.mock("@/app/(authed)/projects/actions", () => ({ createProjectAction: vi.fn() }));
-vi.mock("@/app/(authed)/tasks/actions", () => ({ createTaskAction: vi.fn() }));
+vi.mock("@/lib/actions/tasks", () => ({ createTaskAction: vi.fn() }));
 
 const DOMAIN_ID = "7f1c0a4e-1111-4000-8000-000000000001";
 const home = domainItem({ id: DOMAIN_ID, name: "Home" });

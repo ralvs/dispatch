@@ -2,12 +2,6 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import {
-	completeTaskAction,
-	createTaskAction,
-	reopenTaskAction,
-	setTop3Action,
-} from "@/app/(authed)/tasks/actions";
 import { ColorDot } from "@/components/color-dot";
 import {
 	Button,
@@ -23,6 +17,12 @@ import {
 	Select,
 	Textarea,
 } from "@/components/ui";
+import {
+	completeTaskAction,
+	createTaskAction,
+	reopenTaskAction,
+	setTop3Action,
+} from "@/lib/actions/tasks";
 import { toastError } from "@/lib/client/toast";
 import { nowUtc } from "@/lib/dates";
 import { ProjectStatusSchema } from "@/lib/schemas/project";

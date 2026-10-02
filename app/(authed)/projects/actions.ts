@@ -3,7 +3,7 @@
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 import { CreateProjectSchema, type ProjectRow } from "@/lib/schemas/project";
 import { createProject } from "@/lib/services/projects";
 import { stampWrite } from "@/lib/store/server";

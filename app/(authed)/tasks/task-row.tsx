@@ -5,29 +5,20 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ColorDot } from "@/components/color-dot";
 import { MentionChip } from "@/components/mention-chip";
+import { TaskDialog } from "@/components/task-dialog";
+import type { TaskDomainOption, TaskProjectOption } from "@/components/task-fields";
 import { Checkbox, rowTitle } from "@/components/ui";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
-import type { ActionResult } from "@/lib/action-result";
 import { formatDay, formatDueLabel, formatInstant, formatLateLabel } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_GLYPH, recurrenceLabel } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/services/tasks";
+import type { TaskRowHandlers } from "@/lib/task-interaction/run-intent";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
-import { TaskDialog } from "./task-dialog";
-import type { TaskDomainOption, TaskProjectOption } from "./task-fields";
 import { TaskNotePopover } from "./task-note-popover";
 
 export type { TaskDomainOption };
-
-/** Parent-owned intents (the entity store applies, then the server action). */
-export type TaskRowHandlers = {
-	onToggleDone: () => void;
-	onToggleTop3: () => void;
-	onDelete?: () => void;
-	/** The edit form's save, routed through the store. Left out, the action runs bare. */
-	onUpdate?: (formData: FormData) => Promise<ActionResult<unknown>>;
-};
 
 /**
  * The Tasks page's row, and deliberately not Today's.
@@ -35,8 +26,9 @@ export type TaskRowHandlers = {
  * The two forked on presentation and converge on behaviour — `bindTaskHandlers`,
  * the intent runner, the same server actions — because they answer different
  * questions: Today asks "what is my day" and dropped the meta line, and the
- * meta line is what this row is built around. `TaskDayRow` imports exactly one
- * thing from this file, the handlers type, and that seam is the point.
+ * meta line is what this row is built around. `TaskDayRow` shares exactly one
+ * thing with this file, the `TaskRowHandlers` type in
+ * lib/task-interaction/run-intent.ts, and that seam is the point.
  *
  * What must not fork is the *encoding*, since a visual language cannot mean two
  * things in one app. Three things converged in Pass 1:

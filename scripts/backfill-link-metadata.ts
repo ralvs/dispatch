@@ -16,7 +16,7 @@
  * down today does not erase a title it gave last month. Makes no AI calls.
  */
 
-import { fetchLinkMetadata } from "@/lib/links/metadata";
+import { fetchLinkMetadata } from "@/lib/link-metadata";
 import { listLinks, updateLinkMetadata } from "@/lib/services/links";
 import { createAdminClient } from "@/lib/supabase/admin";
 

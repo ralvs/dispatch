@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 // The AI gateway is faked: the parser reports a failure, never a paid call.
 vi.mock("@/lib/ai/parser", () => ({ parse: vi.fn() }));
 // Cache invalidation needs a Next request scope; there is none in a test.
-vi.mock("@/lib/mutation-feedback/invalidate", async (original) => ({
-	...(await original<typeof import("@/lib/mutation-feedback/invalidate")>()),
+vi.mock("@/lib/invalidate", async (original) => ({
+	...(await original<typeof import("@/lib/invalidate")>()),
 	afterExternalMutation: vi.fn(),
 }));
 

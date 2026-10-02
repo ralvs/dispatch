@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readCaptureIntent } from "@/lib/pwa/capture-intent";
+import { readCaptureIntent } from "@/lib/capture/pwa-intent";
 
 describe("readCaptureIntent", () => {
 	it("recognises the capture shortcut", () => {

@@ -10,7 +10,7 @@ import {
 import { ownerRoute } from "@/lib/auth";
 import { isR2Configured } from "@/lib/env";
 import { downscaleImage } from "@/lib/images";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 import type { Attachment } from "@/lib/schemas/note";
 import { uploadAttachment } from "@/lib/services/note-attachments";
 import { getNote } from "@/lib/services/notes";

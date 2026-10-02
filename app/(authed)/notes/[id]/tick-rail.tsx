@@ -16,7 +16,7 @@ import {
 	tickThickness,
 	tickWidth,
 	tickWindow,
-} from "@/lib/note-ticks/layout";
+} from "@/lib/note-ticks";
 
 type LiveTick = TickSpec & { el: HTMLElement };
 

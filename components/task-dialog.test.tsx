@@ -2,12 +2,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createTaskAction } from "@/lib/actions/tasks";
 import { StoreProvider } from "@/lib/store/provider";
-import { createTaskAction } from "./actions";
 import { TaskDialog } from "./task-dialog";
 
 // A "use server" module is plain async functions in a test; replace it.
-vi.mock("./actions", () => ({
+vi.mock("@/lib/actions/tasks", () => ({
 	createTaskAction: vi.fn(),
 	updateTaskAction: vi.fn(),
 }));

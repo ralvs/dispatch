@@ -1,8 +1,8 @@
 "use client";
 
-import { assignDomainAction, deleteTaskAction } from "@/app/(authed)/tasks/actions";
 import { ColorDot } from "@/components/color-dot";
 import { EmptyState } from "@/components/ui";
+import { assignDomainAction, deleteTaskAction } from "@/lib/actions/tasks";
 import type { TaskRow } from "@/lib/services/tasks";
 import { useView, viewKey } from "@/lib/store";
 import { useTaskIntentRunner } from "@/lib/task-interaction/run-intent";

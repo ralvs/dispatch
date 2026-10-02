@@ -1,11 +1,11 @@
 "use client";
 
-import { CollapsibleForm } from "@/components/collapsible-form";
 import { Field, Input, Textarea } from "@/components/ui";
 import { nowUtc } from "@/lib/dates";
 import type { JournalEntryRow } from "@/lib/schemas/journal";
 import { useStoreWrite } from "@/lib/store";
 import { createEntryAction } from "./actions";
+import { CollapsibleForm } from "./collapsible-form";
 
 /** The entry the list shows while the server writes it; the server's row replaces it (#30). */
 function optimisticEntry(formData: FormData, todayIso: string): JournalEntryRow {

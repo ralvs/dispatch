@@ -6,7 +6,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { parseDateIso, todayInTz } from "@/lib/dates";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 import { getEvent } from "@/lib/services/calendar";
 import { ServiceError } from "@/lib/services/errors";
 import { createManualLink } from "@/lib/services/note-links";

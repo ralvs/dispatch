@@ -6,7 +6,7 @@ import { z } from "zod";
 import type { ActionResult } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatInstant } from "@/lib/dates";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 import type { NoteListRow } from "@/lib/schemas/note";
 import { searchEventsByTitle } from "@/lib/services/calendar";
 import { removeAttachment } from "@/lib/services/note-attachments";
@@ -139,7 +139,7 @@ export async function attachLinkAction(
 	const target = z.uuid().parse(targetId);
 	await createManualLink(sb, { note_id: id, target_type: type, target_id: target });
 	// The link rail is server-rendered from note_links, which the entity
-	// store does not hold: re-render it (lib/mutation-feedback/invalidate.ts).
+	// store does not hold: re-render it (lib/invalidate.ts).
 	afterMutation("notes.links");
 }
 
@@ -167,7 +167,7 @@ export async function detachLinkAction(noteId: string, linkId: string) {
 	z.uuid().parse(noteId);
 	await deleteLink(sb, z.uuid().parse(linkId));
 	// The link rail is server-rendered from note_links, which the entity
-	// store does not hold: re-render it (lib/mutation-feedback/invalidate.ts).
+	// store does not hold: re-render it (lib/invalidate.ts).
 	afterMutation("notes.links");
 }
 

@@ -11,9 +11,9 @@ import { runAction } from "@/lib/client/toast";
 import { formatDueLabel, formatLateLabel } from "@/lib/dates";
 import type { DayScheduleItem } from "@/lib/day-schedule";
 import type { TaskRow } from "@/lib/services/tasks";
+import type { TaskRowHandlers } from "@/lib/task-interaction/run-intent";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
 import { type DomainColorSource, eventColorSlug } from "@/lib/ui/event-color";
-import type { TaskRowHandlers } from "../tasks/task-row";
 import { createMeetingNoteForEventAction } from "./actions";
 
 /*

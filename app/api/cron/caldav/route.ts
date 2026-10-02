@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createCaldavClient } from "@/lib/caldav/client";
 import { nowUtc } from "@/lib/dates";
 import { env, isCaldavConfigured, isSupabaseConfigured } from "@/lib/env";
-import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/mutation-feedback/invalidate";
+import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { isAuthorized } from "@/lib/secret-auth";
 import { syncCalendar } from "@/lib/services/calendar";
 import { createAdminClient } from "@/lib/supabase/admin";

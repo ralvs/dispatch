@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseFxTwitter, parseMetadata, tidyXHead, xStatusEndpoint } from "@/lib/links/metadata";
+import { parseFxTwitter, parseMetadata, tidyXHead, xStatusEndpoint } from "@/lib/link-metadata";
 
 // parseMetadata is the pure half of the fetcher — fetchLinkMetadata itself is
 // the network edge and is left to manual verification, like lib/caldav/client.
