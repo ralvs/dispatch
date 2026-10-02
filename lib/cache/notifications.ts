@@ -10,7 +10,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * Cross-request cache for /notifications (docs/adr/0035). Almost every row is
  * written from outside the app (iron rule #6), so this entry is only as fresh
  * as the external writers below — the test in
- * lib/mutation-feedback/invalidate.test.ts holds every route that records a
+ * lib/invalidate.test.ts holds every route that records a
  * notification to busting this tag.
  *
  * `readAt` is the entity store's version (lib/store/types.ts), stamped inside

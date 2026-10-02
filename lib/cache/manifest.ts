@@ -17,7 +17,7 @@ import type { ExternalWriter, MutationKind } from "@/lib/invalidate";
  *   that tag. `external` lists every cron or `/api/*` writer that does
  *   (EXTERNAL_WRITES in lib/invalidate.ts).
  *
- * `lib/mutation-feedback/invalidate.test.ts` fails when a declared write does
+ * `lib/invalidate.test.ts` fails when a declared write does
  * not bust the tag, and when a file in lib/cache/ caches without declaring.
  */
 export type CachedReader = {

@@ -3,8 +3,9 @@
 Date: 2026-10-02
 
 `/today` imported from `../tasks/` and `../routines/`, so the Tasks route had
-become a shared module by accident. Seven components in `components/` had one
-consumer each. The palettes in `components/` imported server actions from
+become a shared module by accident. Six components in `components/` had one
+consumer route each. (`mention-input` stays: its consumer, `task-fields`, is
+now shared and lives in `components/` too.) The palettes in `components/` imported server actions from
 `app/(authed)/capture/` and `app/(authed)/find/`, two folders with no page. And
 `lib/` mixed flat modules with folders that held one module each (#35).
 
@@ -27,6 +28,10 @@ consumer each. The palettes in `components/` imported server actions from
    The PWA capture intent joined `lib/capture/` as `pwa-intent.ts`.
 5. **`components/ui/` does not move.** It is an `optimizePackageImports`
    entry in `next.config.ts`.
+
+There is one `displayTitle()`, in `lib/note-display.ts`, for notes. The link
+row's local helper had the same name and a different job (a link's title, or
+its host). It is now `linkTitle`; both bodies are unchanged.
 
 Tests are exempt from rule 2: an integration test may call another route's
 action to set up its rows.
