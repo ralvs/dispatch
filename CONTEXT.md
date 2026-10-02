@@ -71,14 +71,16 @@ When parsing fails, input degrades to a note with `needs_review = true`
 (indexed for quick retrieval) so nothing is dropped and the item can be
 resolved by hand later.
 
-## recurrence roll
+## next occurrence
 
-How a recurring task advances instead of closing. Completing a task with a
-`recurrence_rule` does not set it done — its `due_date` rolls forward to the
-next occurrence (`completeTask` → `nextOccurrence` in `lib/recurrence.ts`). The
-roll is anchored so an overdue repeat moves to the next future date, never into
-the past. Non-recurring tasks complete normally (`status = done`,
-`completed_at` set).
+How a recurring task carries on. Completing a task with a `recurrence_rule`
+closes that row like any other (`status = done`, `completed_at` set) and
+creates a new open row for the next occurrence, which takes the rule with it
+(`completeTask` → `nextCompleteFields`, docs/adr/0059). So the day you ticked
+it keeps a done row, and the series lives on exactly one open row. The next
+date is anchored so an overdue repeat moves to the next future date, never
+into the past. The older **recurrence roll** — one row whose `due_date` moved
+forward — is retired.
 
 ## notification ledger
 
@@ -115,14 +117,15 @@ editor form (docs/adr/0030). The graph is never allowed to fail a capture.
 ## day schedule
 
 “When is my day” for **one date** — not necessarily today. Four bands:
-**all-day** (all-day events + due tasks without time), **timeline** (timed
-events interleaved with timed tasks, ordered by UTC instant so a spillover
-event keeps its true place), **top 3**, and **open/unscheduled** tasks
-(starred first, then already-due, capped at 10). **Day membership** — which
-task or event sits in which band for that date — is one rule set, used both
-when the day is first assembled and when the client projects an optimistic
-tick (docs/adr/0038 keeps finished work on the day; a recurrence roll is the
-one removal). See ADR-0014.
+**all-day** (all-day events only), **timeline** (timed events interleaved
+with timed tasks, ordered by UTC instant so a spillover event keeps its true
+place), **top 3** (everything starred for the date), and **open** (the other
+tasks due by the date and not on its timeline, capped at 10; finished ones
+sink below). **Day
+membership** — which task or event sits in which band for that date — is one
+rule set, used both when the day is first assembled and when the client
+re-places it after an intent (docs/adr/0038 keeps finished work on the day it
+was finished). See ADR-0014.
 
 `DaySchedule` is the data only. Its UI is `DayView` — the region owning day
 navigation and `?d=`, Today's page composition, and the one optimistic store
