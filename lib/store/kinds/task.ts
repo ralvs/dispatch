@@ -154,6 +154,14 @@ export const taskKind: KindAdapter<"task"> = {
 	settle: settleTaskDeltas,
 };
 
+/**
+ * Whether a list already holds a create's row: a seed read while the create
+ * committed can, since its `readAt` is stamped before the read.
+ */
+function holds(rows: TaskRow[], id: string): boolean {
+	return rows.some((r) => r.id === id);
+}
+
 /** Every row through the intent; a deleted one drops. Same array when nothing changed. */
 function projectRows(rows: TaskRow[], intent: TaskIntent, ctx: IntentCtx): TaskRow[] {
 	let changed = false;
@@ -200,7 +208,10 @@ export const taskListsView: ViewAdapter<"taskLists"> = {
 	fromSeed: (data) => ({ base: data, params: undefined }),
 	rowsOf: (view) => [...view.open, ...view.done],
 	reduce: (view, intent, ctx) => {
-		if (intent.type === "create") return { open: [intent.task, ...view.open], done: view.done };
+		if (intent.type === "create") {
+			if (holds([...view.open, ...view.done], intent.task.id)) return view;
+			return { open: [intent.task, ...view.open], done: view.done };
+		}
 		if (intent.type === "complete" || intent.type === "reopen") {
 			// A tick or an untick moves the row between the lists, to the top.
 			const row = [...view.open, ...view.done].find((r) => r.id === intent.id);
@@ -278,7 +289,9 @@ export const taskListView: ViewAdapter<"taskList"> = {
 		// A create belongs only to the list whose scope it matches — without the
 		// guard it would show in every cached project list.
 		if (intent.type === "create") {
-			return inTaskScope(intent.task, scope) ? [intent.task, ...view] : view;
+			return inTaskScope(intent.task, scope) && !holds(view, intent.task.id)
+				? [intent.task, ...view]
+				: view;
 		}
 		const out = projectRows(view, intent, ctx);
 		return intent.type === "assign" ? inScopeOnly(out, scope) : out;
@@ -336,7 +349,7 @@ export const dayView: ViewAdapter<"day"> = {
 		// where it sits.
 		let tasks =
 			intent.type === "create"
-				? onDay(intent.task, view, ctx)
+				? onDay(intent.task, view, ctx) && !holds(pool, intent.task.id)
 					? [intent.task, ...pool]
 					: pool
 				: withoutQuiet(projectRows(pool, intent, ctx), ctx);

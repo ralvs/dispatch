@@ -111,6 +111,27 @@ describe("task adapter", () => {
 		expect(selectView(next, viewKey.day(TODAY))?.schedule.top3.map((t) => t.id)).toEqual(["a"]);
 	});
 
+	it("a create a seed already read is listed once", () => {
+		const a = task({ id: "a", due_date: TODAY, project_id: "p1" });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [
+				{ key: viewKey.day(TODAY), type: "day", data: dayPayload(TODAY, [a]) },
+				{ key: viewKey.tasks(), type: "taskLists", data: { open: [a], done: [] } },
+				{
+					key: viewKey.project("p1"),
+					type: "taskList",
+					data: { rows: [a], scope: { projectId: "p1" } },
+				},
+			]),
+		);
+		const [next] = applyIntent(s, { kind: "task", intent: { type: "create", task: a } }, NOW);
+		const day = selectView(next, viewKey.day(TODAY));
+		expect(day && collectDayTasks(day.schedule)).toEqual([a]);
+		expect(selectView(next, viewKey.tasks())?.open).toEqual([a]);
+		expect(selectView(next, viewKey.project("p1"))).toEqual([a]);
+	});
+
 	it("a flat list admits only rows in its scope", () => {
 		const s = deepFreeze(
 			applySeed(

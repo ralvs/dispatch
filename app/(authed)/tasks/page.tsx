@@ -47,13 +47,13 @@ async function TasksBody({
 	const { readAt, openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions } =
 		board;
 	// The board already carries every project, so the quiet ones need no
-	// second read (lib/quiet.ts).
+	// second read (lib/quiet.ts). They stay off the store's clock: only Today
+	// seeds those, beside the counts they were read with.
 	const quietProjectIds = quietProjectIdsOf(projects);
 	const snapshot: Snapshot = {
 		readAt,
 		todayIso,
 		tz,
-		quietProjectIds,
 		views: [
 			{ key: viewKey.tasks(), type: "taskLists", data: { open: openTasks, done: doneTasks } },
 		],

@@ -57,9 +57,10 @@ import type { TaskIntent } from "@/lib/task-interaction/apply-intent";
 export type Instant = string;
 /**
  * What the adapters need from the server besides rows: its today, the app
- * timezone, and the quiet projects (lib/quiet.ts) — absent until a page that
- * shows task counts seeds them, kept by a seed that carries none, and replaced
- * only by a seed no older than the clock.
+ * timezone, and the quiet projects (lib/quiet.ts). Only Today seeds those,
+ * in the snapshot that carries Today's counts and the day's tasks, so the set
+ * always matches the counts it is used to move. A seed without them keeps
+ * them; only a seed no older than the clock replaces them.
  */
 export type Clock = { todayIso: string; tz: string; quietProjectIds?: readonly string[] };
 
