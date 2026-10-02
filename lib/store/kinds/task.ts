@@ -22,7 +22,11 @@ import type {
 	TaskScope,
 	ViewAdapter,
 } from "@/lib/store/types";
-import { projectTask, type TaskIntent } from "@/lib/task-interaction/apply-intent";
+import {
+	nextCompleteFields,
+	projectTask,
+	type TaskIntent,
+} from "@/lib/task-interaction/apply-intent";
 import { isOverdue } from "@/lib/task-predicates";
 
 /** /tasks: the open list and the recently done strip. */
@@ -59,8 +63,9 @@ function countsOf(row: TaskRow | undefined, clock: Clock): TaskCounts {
 /**
  * The row after the intent, for counting; `before` is undefined when the row
  * was never loaded, and then nothing moves. `successor` is the next occurrence
- * a recurring completion creates (docs/adr/0059): open, not overdue — it is
- * dated from today — and filed where its source was.
+ * a recurring completion creates (docs/adr/0059): open, filed where its
+ * source was, and dated as the server will date it — so it is not overdue,
+ * and it is quiet only when the server's would be.
  */
 function afterIntent(
 	intent: TaskIntent,
@@ -74,7 +79,8 @@ function afterIntent(
 		intent.type === "complete" &&
 		before.recurrence_rule !== null &&
 		after?.recurrence_rule === null;
-	return { after, successor: recurring ? { ...before, due_date: null } : undefined };
+	const spawn = recurring ? nextCompleteFields(before, ctx).spawn : null;
+	return { after, successor: spawn ? { ...before, ...spawn } : undefined };
 }
 
 /**

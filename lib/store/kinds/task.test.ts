@@ -591,12 +591,35 @@ describe("quiet tasks (docs/adr/0058)", () => {
 		expect(day2 && collectDayTasks(day2.schedule)).toEqual([]);
 	});
 
-	it("an older seed's quiet projects never replace a later read's", () => {
+	it("an older seed's quiet projects never land on a newer clock", () => {
 		const s = applySeed(initialState(), snapshot(T3, [], { quietProjectIds: [] }));
 		const stale = applySeed(s, snapshot(T1, [], { quietProjectIds: ["p-quiet"] }));
 		expect(stale.clock?.quietProjectIds).toEqual([]);
+		// Nor on a newer clock that holds none: the status may have changed since.
+		const bare = applySeed(initialState(), snapshot(T3, []));
+		expect(applySeed(bare, snapshot(T1, [], { quietProjectIds: ["p-quiet"] })).clock).toEqual(
+			bare.clock,
+		);
 		const fresher = applySeed(stale, snapshot(T4, [], { quietProjectIds: ["p-quiet"] }));
 		expect(fresher.clock?.quietProjectIds).toEqual(["p-quiet"]);
+	});
+
+	// The server counts the next occurrence: it is dated, so never quiet.
+	it("a dated repeating task in a quiet project keeps the open count when ticked", () => {
+		const r = task({ id: "r", project_id: "p-quiet", due_date: TODAY, recurrence_rule: "daily" });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ key: viewKey.tasks(), type: "taskLists", data: { open: [r], done: [] } }], {
+				quietProjectIds: ["p-quiet"],
+				aggregates: { "tasks.open": 3 },
+			}),
+		);
+		const [ticked] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "complete", id: "r", observedDueDate: TODAY } },
+			NOW,
+		);
+		expect(selectAggregate(ticked, "tasks.open")).toBe(3);
 	});
 
 	it("a seed that carries no quiet projects keeps the ones already known", () => {
