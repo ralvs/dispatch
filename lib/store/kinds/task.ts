@@ -290,16 +290,18 @@ export const taskListView: ViewAdapter<"taskList"> = {
 };
 
 /**
- * Whether a day's pool holds this row. The server reads a day's tasks without
- * the quiet ones (lib/services/today.ts), so a row that is quiet now leaves.
- * A done row stays only when it was finished that day.
+ * Whether a day reads this row, as lib/services/today.ts does: the open tasks
+ * that are not quiet, and every task finished that day — quiet or not, since
+ * the day keeps what was finished on it (ADR-0038).
  */
 function onDay(row: TaskRow, view: DaySchedulePayload, clock: Clock): boolean {
-	if (isQuiet(row, quietOf(clock))) return false;
-	return (
-		row.status === "open" ||
-		(row.completed_at != null && dateOfInstant(row.completed_at, clock.tz) === view.dateIso)
-	);
+	if (row.status === "open") return !isQuiet(row, quietOf(clock));
+	return row.completed_at != null && dateOfInstant(row.completed_at, clock.tz) === view.dateIso;
+}
+
+/** An open row the day no longer reads, because it went quiet. */
+function wentQuiet(row: TaskRow, clock: Clock): boolean {
+	return row.status === "open" && isQuiet(row, quietOf(clock));
 }
 
 /** Re-place a day's task pool; events, now and note-id maps pass through. */
@@ -339,11 +341,12 @@ export const dayView: ViewAdapter<"day"> = {
 		let tasks = pool;
 		for (const row of rows) {
 			const held = tasks.some((t) => t.id === row.id);
-			// A row that went quiet leaves; one the day already holds is patched
-			// in place, done or not (ADR-0038). Any other row the day would read
-			// is offered, and placement decides (the ADR-0059 successor lands here).
-			if (isQuiet(row, quietOf(clock))) {
-				if (held) tasks = without(tasks, new Set([row.id]));
+			// An open row that went quiet leaves; any other row the day already
+			// holds is patched in place, done or not (ADR-0038). A row the day
+			// would read is offered, and placement decides (the ADR-0059
+			// successor lands here).
+			if (held && wentQuiet(row, clock)) {
+				tasks = without(tasks, new Set([row.id]));
 			} else if (held) {
 				tasks = replaceById(tasks, row);
 			} else if (onDay(row, view, clock)) {

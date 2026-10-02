@@ -180,13 +180,24 @@ export function makeCore(adapters: Adapters) {
 	function applySeed<S extends StoreState>(s: S, snap: Snapshot): S {
 		const { readAt } = snap;
 		let clock = s.clock;
-		// The quiet projects ride on the clock: a seed that carries none keeps
-		// the ones already known, and an older seed may still supply the first.
-		const quietProjectIds = snap.quietProjectIds ?? clock?.quietProjectIds;
+		// The quiet projects ride on the clock, versioned by the read they came
+		// from: a seed that carries none keeps them, and only a later read
+		// replaces them.
+		let quiet = clock && { ids: clock.quietProjectIds, readAt: clock.quietReadAt };
+		if (
+			snap.quietProjectIds !== undefined &&
+			(quiet?.readAt === undefined || later(readAt, quiet.readAt))
+		) {
+			quiet = { ids: snap.quietProjectIds, readAt };
+		}
+		const quietFields =
+			quiet?.ids === undefined || quiet.readAt === undefined
+				? {}
+				: { quietProjectIds: quiet.ids, quietReadAt: quiet.readAt };
 		if (clock === null || later(readAt, clock.readAt)) {
-			clock = { todayIso: snap.todayIso, tz: snap.tz, readAt, ...withQuiet(quietProjectIds) };
-		} else if (clock.quietProjectIds === undefined && quietProjectIds !== undefined) {
-			clock = { ...clock, quietProjectIds };
+			clock = { todayIso: snap.todayIso, tz: snap.tz, readAt, ...quietFields };
+		} else if (quiet?.readAt !== clock.quietReadAt) {
+			clock = { ...clock, ...quietFields };
 		}
 		// Replays run on the seed's own day, with the freshest quiet projects.
 		const replayClock: Clock = {

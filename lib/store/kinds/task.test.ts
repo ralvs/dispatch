@@ -19,6 +19,7 @@ import {
 	T1,
 	T2,
 	T3,
+	T4,
 	TODAY,
 	TZ,
 	task,
@@ -547,6 +548,46 @@ describe("quiet tasks (docs/adr/0058)", () => {
 		const confirmed = confirmWrite(applied, token, { at: T2, rows: [undated] });
 		const day = selectView(confirmed, viewKey.day(TODAY));
 		expect(day && collectDayTasks(day.schedule)).toEqual([]);
+	});
+
+	// The server's day reads every task finished on it, quiet or not
+	// (listCompletedOn), so the store keeps it there too — on confirm and on
+	// a replay onto a seed that already holds it.
+	it("a quiet task finished today stays on Today, struck", () => {
+		const a = task({ id: "a", project_id: "p-quiet", top3_for_date: TODAY });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ key: viewKey.day(TODAY), type: "day", data: dayPayload(TODAY, [a]) }], {
+				quietProjectIds: ["p-quiet"],
+			}),
+		);
+		const [applied, token] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "complete", id: "a", observedDueDate: null } },
+			NOW,
+		);
+		const done = { ...a, status: "done" as const, completed_at: NOW };
+		const confirmed = confirmWrite(applied, token, { at: T2, rows: [done] });
+		const day = selectView(confirmed, viewKey.day(TODAY));
+		expect(day?.schedule.top3).toEqual([done]);
+
+		const replayed = applySeed(
+			confirmed,
+			snapshot(
+				"2026-07-15T12:01:30.000Z",
+				[{ key: viewKey.day(TODAY), type: "day", data: dayPayload(TODAY, [done]) }],
+				{ quietProjectIds: ["p-quiet"] },
+			),
+		);
+		expect(selectView(replayed, viewKey.day(TODAY))?.schedule.top3).toEqual([done]);
+	});
+
+	it("an older seed's quiet projects never replace a later read's", () => {
+		const s = applySeed(initialState(), snapshot(T3, [], { quietProjectIds: [] }));
+		const stale = applySeed(s, snapshot(T1, [], { quietProjectIds: ["p-quiet"] }));
+		expect(stale.clock?.quietProjectIds).toEqual([]);
+		const fresher = applySeed(stale, snapshot(T4, [], { quietProjectIds: ["p-quiet"] }));
+		expect(fresher.clock?.quietProjectIds).toEqual(["p-quiet"]);
 	});
 
 	it("a seed that carries no quiet projects keeps the ones already known", () => {

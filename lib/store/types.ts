@@ -58,7 +58,8 @@ export type Instant = string;
 /**
  * What the adapters need from the server besides rows: its today, the app
  * timezone, and the quiet projects (lib/quiet.ts) — absent until a page that
- * shows task counts seeds them, and then kept until a newer seed replaces them.
+ * shows task counts seeds them, and then replaced only by a seed read later
+ * than the one they came from.
  */
 export type Clock = { todayIso: string; tz: string; quietProjectIds?: readonly string[] };
 
@@ -207,7 +208,8 @@ export type ViewEntry = {
 }[ViewType];
 
 export type StoreState = {
-	clock: (Clock & { readAt: Instant }) | null;
+	/** `quietReadAt`: the read the quiet projects came from, versioned on their own. */
+	clock: (Clock & { readAt: Instant; quietReadAt?: Instant }) | null;
 	/** Normalized by kind + id. */
 	rows: { [K in Kind]: Record<string, RowEntry<EntityMap[K]>> };
 	views: Record<string, ViewEntry>;
