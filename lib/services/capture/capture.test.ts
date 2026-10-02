@@ -20,7 +20,7 @@ vi.mock("@/lib/services/settings", () => ({
 
 import { parse } from "@/lib/ai/parser";
 import { runActions } from "@/lib/services/capture/executor";
-import { markParsed, persistRaw } from "@/lib/services/capture/store";
+import { markParsed } from "@/lib/services/capture/store";
 import { createNeedsReviewNote } from "@/lib/services/notes";
 import { getAppTimezone } from "@/lib/services/settings";
 
