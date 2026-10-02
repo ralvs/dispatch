@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -13,7 +14,7 @@ import {
 	Textarea,
 } from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
-import { captureText } from "@/lib/actions/capture";
+import { type CaptureAnswer, captureText } from "@/lib/actions/capture";
 import {
 	type CaptureEffect,
 	type CaptureEvent,
@@ -28,7 +29,8 @@ import { deriveReceipt } from "@/lib/capture/receipt";
 import { isOpenShortcut, isSubmitShortcut } from "@/lib/capture/shortcuts";
 import { isBlank } from "@/lib/capture/submission";
 import { toastError, toastSuccess } from "@/lib/client/toast";
-import type { CapturedRecord } from "@/lib/services/capture";
+import { useStoreActions } from "@/lib/store/hooks";
+import { receiveRows } from "@/lib/store/receive";
 import { DOCK_ACTION, DOCK_ACTION_SLOT_ID, DOCK_HEIGHT } from "@/lib/ui/dock";
 
 /**
@@ -76,18 +78,33 @@ export function CapturePalette() {
 		}
 	}, []);
 
+	const store = useStoreActions();
+	const router = useRouter();
 	const runSubmitEffect = useCallback(
 		(text: string, id: number) => {
 			startTransition(async () => {
+				let answer: CaptureAnswer;
 				try {
-					const record: CapturedRecord = await captureText({ text, via: "text" });
-					dispatch({ type: "SUBMIT_OK", id, receipt: deriveReceipt(record) });
+					answer = await captureText({ text, via: "text" });
 				} catch {
 					dispatch({ type: "SUBMIT_ERR", id, offline: !navigator.onLine });
+					return;
+				}
+				dispatch({ type: "SUBMIT_OK", id, receipt: deriveReceipt(answer.record) });
+				if (!answer.received) return;
+				// What the capture wrote goes straight into the entity store, so
+				// every list and count that holds it moves without a page render.
+				// The capture already landed: a failure here must not offer a
+				// retry that would capture it twice, so the page renders instead.
+				try {
+					receiveRows(store, answer.received);
+				} catch (error) {
+					console.error("capture: could not confirm rows into the store", error);
+					router.refresh();
 				}
 			});
 		},
-		[dispatch],
+		[dispatch, store, router],
 	);
 
 	useEffect(() => {

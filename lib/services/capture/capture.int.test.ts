@@ -57,8 +57,21 @@ describe("capture", () => {
 		expect(record.status).toBe("parsed");
 		expect(record.outcome.kind).toBe("executed");
 		const results = record.outcome.kind === "executed" ? record.outcome.results : [];
+		// The row comes back whole, as the entity store will hold it.
 		expect(results).toEqual([
-			{ action: "create_task", ok: true, entity: { table: "tasks", id: expect.any(String) } },
+			{
+				action: "create_task",
+				ok: true,
+				entity: {
+					table: "tasks",
+					id: expect.any(String),
+					row: expect.objectContaining({
+						title: "ligar pro médico",
+						domain_id: domain.id,
+						domain: expect.objectContaining({ id: domain.id }),
+					}),
+				},
+			},
 		]);
 		const { data: task } = await sb
 			.from("tasks")
@@ -85,6 +98,7 @@ describe("capture", () => {
 		expect(record.outcome).toEqual({
 			kind: "needs_review",
 			noteId: notes[0].id,
+			note: expect.objectContaining({ id: notes[0].id, needs_review: true, attachments: [] }),
 			reason: "parser_failed",
 		});
 		expect(await capturedStatus(record.capturedId)).toBe("parsed");
@@ -114,6 +128,7 @@ describe("capture", () => {
 		expect(record.outcome).toEqual({
 			kind: "needs_review",
 			noteId: notes[0].id,
+			note: expect.objectContaining({ id: notes[0].id, needs_review: true, attachments: [] }),
 			reason: "capture_error",
 		});
 		expect(await capturedStatus(record.capturedId)).toBe("parsed");

@@ -98,15 +98,10 @@ export const UpdateNoteSchema = CreateNoteSchema.partial().extend({
 
 // ─── Row shapes actually returned by the notes service ──────────────────
 //
-// Two selects: a narrow one for the write paths (capture pipeline only
-// needs the id back) and a wider one for list/detail views. NoteRowSchema
-// is the narrow shape; NoteListRowSchema extends it with the columns only
-// the UI reads. NOTE_SELECT/NOTE_LIST_SELECT are derived from their keys
-// (lib/services/notes.ts). No joins for this entity.
-//
-// `attachments` is on the list shape, not the narrow one: the capture
-// pipeline is text-only (iron rule #4) and has no use for it, while both the
-// note page and the list read it.
+// NoteRowSchema is the core shape; NoteListRowSchema extends it with the
+// columns the UI reads. Every read and every create selects the list shape
+// (NOTE_LIST_SELECT, derived from its keys): a create hands its row to the
+// entity store, which holds list rows. No joins for this entity.
 export const NoteRowSchema = z.object({
 	id: z.string().uuid(),
 	title: z.string().nullable(),
@@ -118,8 +113,6 @@ export const NoteRowSchema = z.object({
 	created_at: z.string(),
 });
 export type NoteRow = z.infer<typeof NoteRowSchema>;
-
-export const NOTE_SELECT = Object.keys(NoteRowSchema.shape).join(", ");
 
 export const NoteListRowSchema = NoteRowSchema.extend({
 	source_reference: z.string().nullable(),

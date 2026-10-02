@@ -73,6 +73,7 @@ export const readers: CachedReader[] = [
 					"task.write",
 					"task.assign",
 					"capture.settled",
+					"capture.event",
 					"settings.domain",
 					"settings.timezone",
 				],
@@ -81,7 +82,7 @@ export const readers: CachedReader[] = [
 			// Which tasks have notes linked to them.
 			{
 				tag: CacheTag.notes,
-				writes: ["notes.write", "capture.settled"],
+				writes: ["notes.write", "capture.settled", "capture.event"],
 				external: ["capture", "sweep"],
 			},
 			// Mention candidates for the task form.

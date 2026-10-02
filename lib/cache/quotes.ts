@@ -25,7 +25,7 @@ export const readers: CachedReader[] = [
 		reads: [
 			{
 				tag: CacheTag.quotes,
-				writes: ["quotes.write", "capture.settled"],
+				writes: ["quotes.write", "capture.settled", "capture.event"],
 				external: ["capture", "sweep"],
 			},
 		],

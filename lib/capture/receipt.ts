@@ -1,4 +1,4 @@
-import type { ActionResult, CapturedRecord } from "@/lib/services/capture";
+import type { CaptureActionResult, CapturedRecord } from "@/lib/services/capture";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Receipt derivation — the pure view-model shown after a capture lands. Maps
@@ -24,7 +24,7 @@ export type CaptureReceipt = {
 	lines: string[];
 };
 
-type EntityTable = Extract<ActionResult, { ok: true }>["entity"]["table"];
+type EntityTable = Extract<CaptureActionResult, { ok: true }>["entity"]["table"];
 
 // Every table the executor can write, in the order they are reported. Each
 // kind names itself: this used to be "tasks, and everything else is a note",

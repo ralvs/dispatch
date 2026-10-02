@@ -5,7 +5,7 @@ import { instantFromLocal, todayInTz } from "@/lib/dates";
 import { isCaldavConfigured } from "@/lib/env";
 import type { CaptureAction, CreateEventAction } from "@/lib/schemas/capture";
 import { createEventHere } from "@/lib/services/calendar";
-import type { ActionResult } from "@/lib/services/capture";
+import type { CaptureActionResult } from "@/lib/services/capture";
 import { recordNeedsReview } from "@/lib/services/capture/degrade";
 import { type RoutingLists, taskInputFromAction } from "@/lib/services/capture/resolve";
 import { createEntry } from "@/lib/services/journal";
@@ -41,21 +41,20 @@ async function degrade(
 	action: string,
 	reason: string,
 	proposedKind?: string,
-): Promise<ActionResult> {
-	let noteId = "";
+): Promise<CaptureActionResult> {
 	try {
-		const recorded = await recordNeedsReview(sb, {
+		const { noteId, note } = await recordNeedsReview(sb, {
 			transcript: prov.transcript,
 			capturedId: prov.capturedId,
 			reason,
 			proposedKind,
 		});
-		noteId = recorded.noteId;
+		return { action, ok: false, reason, noteId, note };
 	} catch {
 		// Even the safety-net note failed. The raw capture is still in
 		// captured_data, so nothing is lost — surface an empty noteId.
+		return { action, ok: false, reason, noteId: "", note: null };
 	}
-	return { action, ok: false, reason, noteId };
 }
 
 /**
@@ -72,7 +71,7 @@ async function runCreateEvent(
 	sb: SupabaseClient,
 	action: CreateEventAction,
 	prov: Provenance,
-): Promise<ActionResult> {
+): Promise<CaptureActionResult> {
 	if (!isCaldavConfigured()) {
 		throw new Error("iCloud CalDAV is not configured; event not created");
 	}
@@ -114,7 +113,7 @@ async function runOne(
 	sb: SupabaseClient,
 	action: CaptureAction,
 	prov: Provenance,
-): Promise<ActionResult> {
+): Promise<CaptureActionResult> {
 	try {
 		switch (action.action) {
 			case "create_task": {
@@ -126,7 +125,11 @@ async function runOne(
 					taskInputFromAction(action, prov.routing, prov.transcript),
 					{ graphFail: "swallow" },
 				);
-				return { action: "create_task", ok: true, entity: { table: "tasks", id: task.id } };
+				return {
+					action: "create_task",
+					ok: true,
+					entity: { table: "tasks", id: task.id, row: task },
+				};
 			}
 			case "create_event":
 				return await runCreateEvent(sb, action, prov);
@@ -141,7 +144,11 @@ async function runOne(
 					},
 					{ graphFail: "swallow" },
 				);
-				return { action: "create_note", ok: true, entity: { table: "notes", id: note.id } };
+				return {
+					action: "create_note",
+					ok: true,
+					entity: { table: "notes", id: note.id, row: note },
+				};
 			}
 			case "create_quote": {
 				const q = await createQuote(sb, {
@@ -151,7 +158,7 @@ async function runOne(
 					tags: action.tags,
 					added_via: "manual",
 				});
-				return { action: "create_quote", ok: true, entity: { table: "quotes", id: q.id } };
+				return { action: "create_quote", ok: true, entity: { table: "quotes", id: q.id, row: q } };
 			}
 			case "create_journal_entry": {
 				const e = await createEntry(sb, {
@@ -163,7 +170,7 @@ async function runOne(
 				return {
 					action: "create_journal_entry",
 					ok: true,
-					entity: { table: "journal_entries", id: e.id },
+					entity: { table: "journal_entries", id: e.id, row: e },
 				};
 			}
 			case "needs_review":
@@ -179,8 +186,8 @@ export async function runActions(
 	sb: SupabaseClient,
 	actions: CaptureAction[],
 	prov: Provenance,
-): Promise<ActionResult[]> {
-	const results: ActionResult[] = [];
+): Promise<CaptureActionResult[]> {
+	const results: CaptureActionResult[] = [];
 	for (const action of actions) {
 		results.push(await runOne(sb, action, prov));
 	}

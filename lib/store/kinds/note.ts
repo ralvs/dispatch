@@ -17,7 +17,9 @@ export type NoteIntent =
 	| { type: "save"; id: string; title: string | null; body: string }
 	| { type: "delete"; id: string; flagged?: boolean }
 	/** No optimistic change: a write made elsewhere (the attachments route) confirms its row. */
-	| { type: "touch"; id: string };
+	| { type: "touch"; id: string }
+	/** A note the server already wrote — a capture's (lib/store/receive.ts). */
+	| { type: "create"; row: NoteListRow };
 
 export type NoteLists = { needsReview: NoteListRow[]; all: NoteListRow[] };
 
@@ -27,7 +29,7 @@ export function applyNoteIntent(
 	intent: NoteIntent,
 	nowIso: string,
 ): NoteListRow | undefined {
-	if (intent.id !== row.id) return row;
+	if (intent.type === "create" || intent.id !== row.id) return row;
 	switch (intent.type) {
 		case "pin": {
 			if ((row.pinned_at !== null) === intent.pinned) return row;
@@ -51,9 +53,10 @@ export function applyNoteIntent(
 /**
  * Today's and /notes' needs-review count moves when a flagged note is filed
  * or deleted — as the user sees the row (`project`), so filing then deleting
- * moves it once.
+ * moves it once — and when a flagged note arrives.
  */
 function noteDeltas(intent: NoteIntent, before: NoteListRow | undefined, _ctx: IntentCtx): Deltas {
+	if (intent.type === "create") return intent.row.needs_review ? { "notes.needsReview": 1 } : {};
 	if (intent.type !== "resolve" && intent.type !== "delete") return {};
 	const flagged = before ? before.needs_review : intent.flagged === true;
 	return flagged ? { "notes.needsReview": -1 } : {};
@@ -61,7 +64,7 @@ function noteDeltas(intent: NoteIntent, before: NoteListRow | undefined, _ctx: I
 
 export const noteKind: KindAdapter<"note"> = {
 	idOf: (row) => row.id,
-	targetId: (intent) => intent.id,
+	targetId: (intent) => (intent.type === "create" ? intent.row.id : intent.id),
 	provisionalIds: () => [],
 	// For counting only: the pin instant does not matter, and a deleted row
 	// counts as filed, so a resolve clicked after a delete moves nothing more.
@@ -147,6 +150,7 @@ export const noteListsView: ViewAdapter<"noteLists"> = {
 	fromSeed: (data) => ({ base: data, params: undefined }),
 	rowsOf: (view) => [...view.needsReview, ...view.all],
 	reduce: (view, intent, ctx) => {
+		if (intent.type === "create") return ordered(place(view, [intent.row]));
 		const { lists, moved } = mapLists(view, (row) => applyNoteIntent(row, intent, ctx.nowIso));
 		return ordered(moved.length > 0 ? place(lists, moved) : lists);
 	},

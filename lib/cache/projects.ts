@@ -56,7 +56,7 @@ const reads: CachedReader["reads"] = [
 	{ tag: CacheTag.projects, writes: ["projects.write", "projects.detail"] },
 	{
 		tag: CacheTag.tasks,
-		writes: ["task.write", "task.assign", "capture.settled", "settings.domain"],
+		writes: ["task.write", "task.assign", "capture.settled", "capture.event", "settings.domain"],
 		external: ["capture", "sweep"],
 	},
 ];
