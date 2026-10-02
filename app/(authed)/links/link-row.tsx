@@ -13,7 +13,7 @@ function hostOf(url: string): string {
 }
 
 /** The link's own words when it has them, otherwise the host it points at. */
-function displayTitle(link: LinkRow): string {
+function linkTitle(link: LinkRow): string {
 	return link.title ?? hostOf(link.url);
 }
 
@@ -75,7 +75,7 @@ export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
 						className: "line-clamp-2",
 					})}
 				>
-					{displayTitle(link)}
+					{linkTitle(link)}
 					<span aria-hidden className="ml-1.5 font-mono text-meta text-ink-4">
 						↗
 					</span>

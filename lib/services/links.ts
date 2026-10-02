@@ -14,7 +14,7 @@ import { unwrap, unwrapCount } from "@/lib/services/errors";
 // Two clients, one service, per iron rule #3: pages and server actions pass
 // an RLS-scoped `sb`, the secret-authed capture API passes a service-role one.
 // Nothing here runs the capture parser; a URL is stored as it arrived. Title
-// and description are fetched by the caller (lib/links/metadata.ts), not here.
+// and description are fetched by the caller (lib/link-metadata.ts), not here.
 //
 // `ingest_links` is the legacy table name and is deliberately not renamed
 // (docs/adr/0022) — the word "ingest" survives in Postgres and nowhere else.

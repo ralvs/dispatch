@@ -8,7 +8,7 @@ import { tv, type VariantProps } from "./tv";
  * function, so it lives here where either side can compose it.
  *
  * This one is the sharper case of the two. Its caller invokes it at module
- * scope (`app/(authed)/tasks/task-fields.tsx`, `export const CONTROL =
+ * scope (`components/task-fields.tsx`, `export const CONTROL =
  * fieldControl({ size: "md" })`), which runs at import time rather than at
  * render — so the throw would not wait for a component to be rendered, it
  * would fire the moment a server module pulled that file into its graph.

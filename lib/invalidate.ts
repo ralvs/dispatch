@@ -181,7 +181,7 @@ export type ExternalWriter = keyof typeof EXTERNAL_WRITES;
  * by a browser running the app: there is no page on the other end to
  * re-render. `revalidateTag` discards the `"use cache"` entries the next real
  * page load would read; an open tab learns of the write through its own
- * refresh pull (components/soft-refresh.tsx).
+ * refresh pull (app/(authed)/today/soft-refresh.tsx).
  *
  * Variadic because one external write often spans domains: a capture writes a
  * task or note AND a notification row (iron rule #6), and the ledger row is

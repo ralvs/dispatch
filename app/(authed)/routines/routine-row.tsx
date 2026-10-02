@@ -2,6 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { Button, Card, Field, Input, ListRow, rowTitle, Select } from "@/components/ui";
+import {
+	deleteRoutineAction,
+	toggleCompletionAction,
+	updateRoutineAction,
+} from "@/lib/actions/routines";
 import { toastError } from "@/lib/client/toast";
 import type { RoutineStats } from "@/lib/routine-stats";
 import {
@@ -11,7 +16,6 @@ import {
 	TimeOfDayBucketSchema,
 } from "@/lib/schemas/routine";
 import { isNavigationError, useRunIntent, useStoreWrite } from "@/lib/store";
-import { deleteRoutineAction, toggleCompletionAction, updateRoutineAction } from "./actions";
 
 const SAVE_ERROR = "Couldn't save routine.";
 

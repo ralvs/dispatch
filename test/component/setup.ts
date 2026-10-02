@@ -11,7 +11,7 @@ import { afterEach, vi } from "vitest";
  *
  * Server actions are not mocked here: in a test, a `"use server"` module is
  * just a module of async functions. A test that renders a component calling
- * one mocks that module itself — `vi.mock("@/app/(authed)/tasks/actions")`.
+ * one mocks that module itself — `vi.mock("@/lib/actions/tasks")`.
  */
 vi.mock("next/navigation", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("next/navigation")>();

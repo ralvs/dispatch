@@ -12,7 +12,7 @@ import {
 	tickThickness,
 	tickWidth,
 	tickWindow,
-} from "./layout";
+} from "./note-ticks";
 
 describe("tick rail geometry", () => {
 	it("never emits a scrollbar thumb", () => {

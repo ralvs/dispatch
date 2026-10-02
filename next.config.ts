@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
 	//
 	// These entries are kept honest by tags, not by the clock: every in-app
 	// write goes through afterMutation and every cron / external write through
-	// afterExternalMutation (lib/mutation-feedback/invalidate.ts), and both call
+	// afterExternalMutation (lib/invalidate.ts), and both call
 	// revalidateTag(tag, "max"). A short `expire` therefore bought no freshness
 	// at all — it only guaranteed that coming back to the app after ten minutes
 	// away paid the full Supabase fan-out again, behind a skeleton.

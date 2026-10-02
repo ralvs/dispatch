@@ -147,13 +147,13 @@ describe("invalidationFor", () => {
 // Plain fs rather than import.meta.glob: Next and Vite both declare that, and
 // their overloads collide under tsc.
 const read = (file: string) => readFileSync(file, "utf8");
-const cacheDir = path.resolve(import.meta.dirname, "../cache");
+const cacheDir = path.resolve(import.meta.dirname, "cache");
 const sources = Object.fromEntries(
 	readdirSync(cacheDir)
 		.filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
 		.map((f) => [f, read(path.join(cacheDir, f))]),
 );
-const apiDir = path.resolve(import.meta.dirname, "../../app/api");
+const apiDir = path.resolve(import.meta.dirname, "../app/api");
 const routeSources = Object.fromEntries(
 	readdirSync(apiDir, { recursive: true, encoding: "utf8" })
 		.filter((f) => f.endsWith("route.ts"))
@@ -161,7 +161,7 @@ const routeSources = Object.fromEntries(
 );
 const modules: Record<string, { readers?: CachedReader[] }> = Object.fromEntries(
 	await Promise.all(
-		Object.keys(sources).map(async (f) => [f, await import(`../cache/${f.slice(0, -3)}.ts`)]),
+		Object.keys(sources).map(async (f) => [f, await import(`./cache/${f.slice(0, -3)}.ts`)]),
 	),
 );
 
@@ -244,7 +244,7 @@ describe("cached readers name the writes that move their data", () => {
 		// - capture/executor.ts: reached by /api/capture and cron/sweep (both
 		//   declare notification.write) and by the palette's captureText (below).
 		// - reminders.ts: reached by cron/reminders only.
-		const root = path.resolve(import.meta.dirname, "../..");
+		const root = path.resolve(import.meta.dirname, "..");
 		const callers = ["app", "lib"]
 			.flatMap((dir) =>
 				readdirSync(path.join(root, dir), { recursive: true, encoding: "utf8" }).map((f) =>
@@ -259,10 +259,16 @@ describe("cached readers name the writes that move their data", () => {
 	});
 
 	it("a server action that runs capture busts notification.write", () => {
-		const authed = path.resolve(import.meta.dirname, "../../app/(authed)");
-		const callers = readdirSync(authed, { recursive: true, encoding: "utf8" })
+		// Route-owned actions live with their route; shared ones in lib/actions.
+		const callers = [
+			path.resolve(import.meta.dirname, "../app/(authed)"),
+			path.resolve(import.meta.dirname, "actions"),
+		]
+			.flatMap((dir) =>
+				readdirSync(dir, { recursive: true, encoding: "utf8" }).map((f) => path.join(dir, f)),
+			)
 			.filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f))
-			.map((f) => [f, read(path.join(authed, f))] as const)
+			.map((f) => [f, read(f)] as const)
 			.filter(([, src]) => src.includes("await capture("));
 		expect(callers.length).toBeGreaterThan(0);
 		for (const [file, src] of callers) {

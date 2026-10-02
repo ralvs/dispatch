@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
-import { ColorSwatchPicker } from "@/components/color-swatch-picker";
 import { Button, Card, Field, Input, ListRow, rowTitle, Textarea } from "@/components/ui";
 import { toastError } from "@/lib/client/toast";
 import { formatInstant, nowUtc } from "@/lib/dates";
@@ -14,6 +13,7 @@ import {
 	reactivateDomainAction,
 	updateDomainAction,
 } from "./actions";
+import { ColorSwatchPicker } from "./color-swatch-picker";
 
 const SAVE_ERROR = "Couldn't save domain.";
 

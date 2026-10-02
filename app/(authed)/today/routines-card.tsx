@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { Card, Checkbox, Progress } from "@/components/ui";
+import { toggleCompletionAction } from "@/lib/actions/routines";
 import { bucketRoutines, type RoutineBucket, type RoutineBucketRow } from "@/lib/routine-buckets";
 import type { RoutineWithHistory } from "@/lib/schemas/routine";
 import { useClock, useRunIntent, useView, viewKey } from "@/lib/store";
 import { PROGRESS_RENDER } from "@/lib/ui/variant";
-import { toggleCompletionAction } from "../routines/actions";
 
 const NO_ROUTINES: RoutineWithHistory[] = [];
 

@@ -97,7 +97,7 @@ Shared or API-posted **URLs** stored with title, description, and link, then
 marked read. Primary nav label **Links** at **`/links`**; rows live in
 `ingest_links` — the legacy table name, deliberately not migrated — with an
 `unread`/`read`/`dismissed` status, written through `lib/services/links.ts`.
-Title and description are fetched from the page by `lib/links/metadata.ts`,
+Title and description are fetched from the page by `lib/link-metadata.ts`,
 best-effort. External senders POST to **`/api/capture`**, which routes a bare
 URL here and everything else to the parser (`capture.link` ledger row).
 A reading list of links, not the unfiled-task **inbox** at `/inbox`. See

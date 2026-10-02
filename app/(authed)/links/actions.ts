@@ -3,7 +3,7 @@
 import { z } from "zod";
 import type { ActionResult } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 import { type LinkRow, LinkStatusSchema } from "@/lib/schemas/link";
 import { setLinkStatus } from "@/lib/services/links";
 import { stampWrite } from "@/lib/store/server";

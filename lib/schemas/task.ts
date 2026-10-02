@@ -60,7 +60,7 @@ export const TaskSchema = z.object({
 		.optional(),
 });
 
-// ─── FormData-facing schema (app/(authed)/tasks/actions.ts) ────────────
+// ─── FormData-facing schema (lib/actions/tasks.ts) ────────────
 //
 // FormData only ever produces strings, so empty/unset fields arrive as ""
 // rather than being omitted — every optional field needs `.or(z.literal(""))`

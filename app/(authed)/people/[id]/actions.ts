@@ -5,7 +5,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { instantFromLocal } from "@/lib/dates";
 import { decodeForm } from "@/lib/form-decode";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 import {
 	CreatePersonFactSchema,
 	CreatePersonInteractionSchema,

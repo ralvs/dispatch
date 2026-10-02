@@ -1,7 +1,7 @@
 "use server";
 
 import { requireOwnerPage } from "@/lib/auth";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 import { CaptureRequestSchema } from "@/lib/schemas/capture";
 import { type CapturedRecord, capture } from "@/lib/services/capture";
 

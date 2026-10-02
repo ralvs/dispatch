@@ -1,12 +1,12 @@
 "use client";
 
-import { ColorSwatchPicker } from "@/components/color-swatch-picker";
 import { CreateDialogButton } from "@/components/create-dialog";
 import { Field, Input, Textarea } from "@/components/ui";
 import { nowUtc } from "@/lib/dates";
 import type { DomainItem } from "@/lib/schemas/domain";
 import { useStoreWrite } from "@/lib/store";
 import { createDomainAction } from "./actions";
+import { ColorSwatchPicker } from "./color-swatch-picker";
 
 /**
  * The domain the list shows while the server writes it. It has no touch yet;

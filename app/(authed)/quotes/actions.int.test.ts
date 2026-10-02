@@ -7,7 +7,7 @@ import { createQuoteAction } from "./actions";
 vi.mock("@/lib/auth", () => ({
 	requireOwnerPage: async () => ({ sb: await ownerClient() }),
 }));
-vi.mock("@/lib/mutation-feedback/invalidate", () => ({ afterMutation: vi.fn() }));
+vi.mock("@/lib/invalidate", () => ({ afterMutation: vi.fn() }));
 
 function form(entries: Record<string, string>): FormData {
 	const fd = new FormData();

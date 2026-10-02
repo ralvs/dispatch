@@ -1,8 +1,8 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { assignDomainAction } from "@/app/(authed)/tasks/actions";
 import type { ActionResult } from "@/lib/action-result";
+import { assignDomainAction } from "@/lib/actions/tasks";
 import { toastError } from "@/lib/client/toast";
 import type { TaskRow } from "@/lib/schemas/task";
 import { createDispatchStore, type DispatchStore } from "@/lib/store/create-store";
@@ -13,7 +13,7 @@ import { NOW, snapshot, T1, T2, task } from "@/lib/store/test-fixtures";
 import type { StoreWrite } from "@/lib/store/types";
 import { InboxList } from "./inbox-list";
 
-vi.mock("@/app/(authed)/tasks/actions", () => ({
+vi.mock("@/lib/actions/tasks", () => ({
 	assignDomainAction: vi.fn(),
 	deleteTaskAction: vi.fn(),
 }));

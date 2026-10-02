@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import { SoftRefresh } from "@/components/soft-refresh";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
 import { formatDay, parseDateIso, todayInTz } from "@/lib/dates";
+import { SoftRefresh } from "./soft-refresh";
 import { TodayBody } from "./today-body";
 
 /*

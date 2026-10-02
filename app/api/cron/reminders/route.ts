@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { todayInTz } from "@/lib/dates";
 import { env, isSupabaseConfigured } from "@/lib/env";
-import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/mutation-feedback/invalidate";
+import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { isAuthorized } from "@/lib/secret-auth";
 import { runTaskReminders } from "@/lib/services/reminders";
 import { getAppTimezone } from "@/lib/services/settings";

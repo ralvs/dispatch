@@ -13,7 +13,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 vi.mock("@/lib/env", () => ({ isR2Configured: () => true }));
-vi.mock("@/lib/mutation-feedback/invalidate", () => ({ afterMutation: vi.fn() }));
+vi.mock("@/lib/invalidate", () => ({ afterMutation: vi.fn() }));
 vi.mock("@/lib/services/note-attachments", () => ({
 	uploadAttachment: vi.fn(async (_sb, noteId, input) => ({
 		url: `/api/media/notes/${noteId}/generated.${input.contentType.split("/")[1]}`,
@@ -37,7 +37,7 @@ vi.mock("@/lib/images", () => ({
 }));
 
 import { POST } from "@/app/api/notes/[id]/attachments/route";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 import { uploadAttachment } from "@/lib/services/note-attachments";
 
 const NOTE_ID = "11111111-2222-4333-8444-555555555555";

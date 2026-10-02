@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { TaskDialog } from "@/app/(authed)/tasks/task-dialog";
-import type { TaskDomainOption, TaskProjectOption } from "@/app/(authed)/tasks/task-fields";
+import { TaskDialog } from "@/components/task-dialog";
+import type { TaskDomainOption, TaskProjectOption } from "@/components/task-fields";
 import { Button, HeaderCreateButton } from "@/components/ui";
 import type { ActionResult } from "@/lib/action-result";
 

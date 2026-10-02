@@ -12,12 +12,12 @@ import {
 	useResultAction,
 } from "@/components/ui";
 import type { ActionResult } from "@/lib/action-result";
+import { createTaskAction, updateTaskAction } from "@/lib/actions/tasks";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { DomainItem } from "@/lib/schemas/domain";
 import type { ProjectRow } from "@/lib/schemas/project";
 import { titleOnlyCreate } from "@/lib/services/capture/title-only";
 import { useLiveOptions } from "@/lib/store/live-options";
-import { createTaskAction, updateTaskAction } from "./actions";
 import {
 	type TaskDomainOption,
 	type TaskFieldDefaults,

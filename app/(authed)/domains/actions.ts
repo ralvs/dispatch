@@ -6,7 +6,7 @@ import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { todayInTz } from "@/lib/dates";
 import { decodeForm } from "@/lib/form-decode";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 import { CreateDomainSchema, type DomainItem, UpdateDomainSchema } from "@/lib/schemas/domain";
 import {
 	archiveDomain,

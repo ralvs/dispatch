@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { ActionResult } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 import { type ProjectRow, UpdateProjectSchema } from "@/lib/schemas/project";
 import {
 	archiveProject,

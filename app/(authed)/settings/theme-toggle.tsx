@@ -1,9 +1,9 @@
 "use client";
 
 import { useTransition } from "react";
-import { setTheme } from "@/app/theme-actions";
 import { runAction } from "@/lib/client/toast";
 import { useDomTheme } from "@/lib/client/use-dom-theme";
+import { setTheme } from "./theme-actions";
 
 /**
  * Theme control. Reads the live `data-theme` on <html> (boot script or prior

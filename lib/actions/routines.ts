@@ -6,7 +6,7 @@ import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { shiftDay } from "@/lib/dates";
 import { decodeForm } from "@/lib/form-decode";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 import { BACKFILL_DAYS, ROUTINE_HISTORY_DAYS } from "@/lib/routine-stats";
 import {
 	CreateRoutineSchema,

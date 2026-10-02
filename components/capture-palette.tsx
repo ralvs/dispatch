@@ -3,7 +3,6 @@
 import { Check, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { captureText } from "@/app/(authed)/capture/actions";
 import {
 	Button,
 	Dialog,
@@ -14,6 +13,7 @@ import {
 	Textarea,
 } from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
+import { captureText } from "@/lib/actions/capture";
 import {
 	type CaptureEffect,
 	type CaptureEvent,
@@ -23,11 +23,11 @@ import {
 	initialCaptureState,
 } from "@/lib/capture/machine";
 import { OPEN_CAPTURE_EVENT, openCapturePalette } from "@/lib/capture/palette-bus";
+import { readCaptureIntent } from "@/lib/capture/pwa-intent";
 import { deriveReceipt } from "@/lib/capture/receipt";
 import { isOpenShortcut, isSubmitShortcut } from "@/lib/capture/shortcuts";
 import { isBlank } from "@/lib/capture/submission";
 import { toastError, toastSuccess } from "@/lib/client/toast";
-import { readCaptureIntent } from "@/lib/pwa/capture-intent";
 import type { CapturedRecord } from "@/lib/services/capture";
 import { DOCK_ACTION, DOCK_ACTION_SLOT_ID, DOCK_HEIGHT } from "@/lib/ui/dock";
 

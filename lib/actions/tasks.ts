@@ -6,7 +6,7 @@ import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { parseDateIso } from "@/lib/dates";
 import { decodeForm } from "@/lib/form-decode";
-import { afterMutation } from "@/lib/mutation-feedback/invalidate";
+import { afterMutation } from "@/lib/invalidate";
 import { CreateTaskFormSchema, type TaskRow } from "@/lib/schemas/task";
 import { quickAddTask } from "@/lib/services/capture/quick-add";
 import { todayForRequest } from "@/lib/services/settings";

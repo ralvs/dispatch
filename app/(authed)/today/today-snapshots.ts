@@ -14,7 +14,7 @@ import type { Snapshot } from "@/lib/store/types";
 /**
  * Everything Today reads, as the two entity-store snapshots it seeds. One
  * function for the page render and for the 5-minute pull
- * (components/soft-refresh.tsx, #4), so the two cannot disagree about what
+ * (app/(authed)/today/soft-refresh.tsx, #4), so the two cannot disagree about what
  * Today shows.
  */
 export async function readToday(

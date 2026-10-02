@@ -1,7 +1,7 @@
 "use client";
 
-import { createTaskAction } from "@/app/(authed)/tasks/actions";
 import { EmptyState, ListSection, PageHeader } from "@/components/ui";
+import { createTaskAction } from "@/lib/actions/tasks";
 import type { DomainRow } from "@/lib/schemas/domain";
 import type { ProjectRow } from "@/lib/schemas/project";
 import type { TaskRow } from "@/lib/schemas/task";
