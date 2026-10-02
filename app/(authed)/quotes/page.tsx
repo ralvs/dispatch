@@ -1,6 +1,14 @@
 import { Suspense } from "react";
 import { CreateTrigger } from "@/components/create-dialog";
-import { MoreBackLink, PageSkeleton } from "@/components/ui";
+import {
+	ListRow,
+	MoreBackLink,
+	PageSkeleton,
+	PillBone,
+	ragged,
+	repeat,
+	TextBone,
+} from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedQuotes } from "@/lib/cache/quotes";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -30,8 +38,32 @@ async function QuotesBody() {
 	);
 }
 
+// QuoteList's silhouette: the italic quote (sometimes two lines), the author
+// beneath, then the ANNOTATIONS and DELETE pills.
 function QuotesFallback() {
-	return <PageSkeleton title="Quotes" action={<CreateTrigger label="New quote" disabled />} />;
+	return (
+		<PageSkeleton
+			title="Quotes"
+			measure={["w-16"]}
+			action={<CreateTrigger label="New quote" disabled />}
+		>
+			<ul aria-hidden="true">
+				{repeat(5, (i) => (
+					<ListRow key={i} align="start">
+						<div className="max-w-prose text-base leading-[1.45]">
+							<TextBone width={i % 2 === 0 ? "w-full" : ragged(i)} />
+							{i % 2 === 0 && <TextBone width={ragged(i + 1)} />}
+						</div>
+						<TextBone className="mt-1 font-mono text-meta" width="w-28" />
+						<div className="mt-2 flex gap-2">
+							<PillBone width="w-[114px]" />
+							<PillBone width="w-[72px]" />
+						</div>
+					</ListRow>
+				))}
+			</ul>
+		</PageSkeleton>
+	);
 }
 
 // The header carries data (its measure), so the whole body streams in behind

@@ -2,7 +2,18 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
-import { BackLink, HeaderCreateButton, PageSkeleton } from "@/components/ui";
+import {
+	BackLink,
+	Bone,
+	CheckboxBone,
+	HeaderCreateButton,
+	ListRow,
+	PageSkeleton,
+	PillBone,
+	ragged,
+	repeat,
+	TextBone,
+} from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedProject } from "@/lib/cache/projects";
@@ -76,11 +87,47 @@ async function ProjectBody({ params }: { params: Promise<{ id: string }> }) {
 	);
 }
 
+// ProjectDetail's silhouette: the name with its status and domain, the
+// start/target dates, the EDIT / MARK DONE / ARCHIVE pills, then the Tasks
+// section — progress bar and checkbox rows. No title: this route's h1 is the
+// project's name, which is the data still in flight. The + is not data —
+// hold its slot disabled.
 function ProjectFallback() {
 	return (
-		// No title: this route's h1 is the project's name, which is the data
-		// still in flight. The + is not data — hold its slot disabled.
-		<PageSkeleton rows={5} action={<HeaderCreateButton label="Add task" disabled />} />
+		<PageSkeleton
+			measure={["w-12", "w-20"]}
+			subtitle={<TextBone className="inline-flex" width="w-24" />}
+			action={<HeaderCreateButton label="Add task" disabled />}
+		>
+			<div aria-hidden="true">
+				<div className="grid grid-cols-2 gap-2 text-sm">
+					{repeat(2, (i) => (
+						<div key={i}>
+							<TextBone className="font-mono text-eyebrow" width="w-20" />
+							<TextBone width="w-24" />
+						</div>
+					))}
+				</div>
+				<div className="mt-3 flex flex-wrap gap-2">
+					<PillBone width="w-14" />
+					<PillBone width="w-[98px]" />
+					<PillBone width="w-20" />
+				</div>
+				<section className="mt-9">
+					<div className="mb-1.5 flex items-baseline gap-2">
+						<TextBone className="type-section" width="w-14" />
+					</div>
+					<Bone className="mt-2 h-1.5 w-full" />
+					<ul className="mt-3">
+						{repeat(5, (i) => (
+							<ListRow key={i} leading={<CheckboxBone />}>
+								<TextBone className="text-base leading-[1.35]" width={ragged(i)} />
+							</ListRow>
+						))}
+					</ul>
+				</section>
+			</div>
+		</PageSkeleton>
 	);
 }
 

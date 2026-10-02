@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { CreateTrigger } from "@/components/create-dialog";
-import { MoreBackLink, PageSkeleton } from "@/components/ui";
+import { Bone, ListRow, MoreBackLink, PageSkeleton, repeat, TitleMetaBone } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedPeople } from "@/lib/cache/people";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -30,8 +30,28 @@ async function PeopleBody() {
 	);
 }
 
+// PersonList's silhouette: one ungrouped list — the held dot slot, name
+// over company, the relationship badge on the right.
 function PeopleFallback() {
-	return <PageSkeleton title="People" action={<CreateTrigger label="New person" disabled />} />;
+	return (
+		<PageSkeleton
+			title="People"
+			measure={["w-16"]}
+			action={<CreateTrigger label="New person" disabled />}
+		>
+			<ul aria-hidden="true">
+				{repeat(7, (i) => (
+					<ListRow
+						key={i}
+						leading={<span className="size-[9px] shrink-0" />}
+						trailing={<Bone className="h-3.5 w-12 rounded-pill" />}
+					>
+						<TitleMetaBone i={i} meta={i % 3 !== 2} />
+					</ListRow>
+				))}
+			</ul>
+		</PageSkeleton>
+	);
 }
 
 // The header carries data (its measure), so the whole body streams in behind

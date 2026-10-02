@@ -1,5 +1,13 @@
 import { Suspense } from "react";
-import { MoreBackLink, PageHeader, SectionHead } from "@/components/ui";
+import {
+	Bone,
+	MoreBackLink,
+	PageHeader,
+	PillBone,
+	SectionHead,
+	SkeletonStatus,
+	TextBone,
+} from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedAppTimezone, getCachedReminderSettings } from "@/lib/cache/settings";
 import { PushToggle } from "./push-toggle";
@@ -29,19 +37,34 @@ async function AppSettings() {
 }
 
 /* Two SettingsForm blocks: a labelled field with Save, and the note under it. */
+// SettingsForm's frame: label over control for each field, the SAVE pill on
+// the same line, the explanatory note beneath. Timezone has one field; the
+// reminder form has two and a two-line note.
+function SettingsFormBone({ fields, note }: { fields: string[]; note: string[] }) {
+	return (
+		<div className="mt-2 flex flex-wrap items-end gap-3" aria-hidden="true">
+			{fields.map((w) => (
+				<div key={w} className={`min-w-0 ${w}`}>
+					<TextBone className="text-meta" width="w-16" />
+					<Bone className="mt-1.5 h-8 w-full rounded-sm" />
+				</div>
+			))}
+			<PillBone width="w-14" />
+			<div className="w-full">
+				{note.map((w) => (
+					<TextBone key={w} className="font-mono text-meta" width={w} />
+				))}
+			</div>
+		</div>
+	);
+}
+
 function AppSettingsFallback() {
 	return (
 		<>
-			<span role="status" className="sr-only">
-				Loading
-			</span>
-			{[0, 1].map((i) => (
-				<div key={i} className="mt-2 space-y-2" aria-hidden="true">
-					<div className="h-3 w-20 animate-pulse rounded bg-surface" />
-					<div className="h-9 w-full animate-pulse rounded bg-surface sm:w-56" />
-					<div className="h-3 w-3/4 animate-pulse rounded bg-surface" />
-				</div>
-			))}
+			<SkeletonStatus />
+			<SettingsFormBone fields={["w-full sm:w-56"]} note={["w-96 max-w-full"]} />
+			<SettingsFormBone fields={["w-28", "w-24"]} note={["w-full", "w-72"]} />
 		</>
 	);
 }
@@ -87,11 +110,7 @@ export default function SettingsPage() {
 				<SectionHead title="Account" />
 				<div className="space-y-3 pt-1">
 					<ThemeToggle />
-					<Suspense
-						fallback={
-							<div className="h-4 w-48 animate-pulse rounded bg-surface" aria-hidden="true" />
-						}
-					>
+					<Suspense fallback={<TextBone className="text-meta" width="w-40" />}>
 						<AccountEmail />
 					</Suspense>
 					<SignOutButton />

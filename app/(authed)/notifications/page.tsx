@@ -1,5 +1,14 @@
 import { Suspense } from "react";
-import { MoreBackLink, PageHeader, SkeletonRows } from "@/components/ui";
+import {
+	ListRow,
+	MoreBackLink,
+	PageHeader,
+	PillBone,
+	ragged,
+	repeat,
+	SkeletonStatus,
+	TextBone,
+} from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedNotifications } from "@/lib/cache/notifications";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -37,6 +46,40 @@ async function NotificationsBody() {
 	);
 }
 
+// NotificationList's silhouette: the summary line and bulk pills, then rows
+// of type eyebrow, title, body, action pills, and the time on the right.
+function NotificationsFallback() {
+	return (
+		<>
+			<SkeletonStatus />
+			<div aria-hidden="true">
+				<TextBone className="mt-1 text-meta" width="w-72" />
+				<div className="mt-3 flex flex-wrap items-center gap-3">
+					<PillBone width="w-[130px]" />
+					<PillBone width="w-[114px]" />
+				</div>
+				<ul className="mt-4">
+					{repeat(5, (i) => (
+						<ListRow
+							key={i}
+							align="start"
+							trailing={<TextBone className="font-mono text-meta" width="w-20" />}
+						>
+							<TextBone className="font-mono text-eyebrow" width="w-20" />
+							<TextBone className="mt-1 text-base leading-[1.35]" width={ragged(i + 1)} />
+							{i % 3 !== 1 && <TextBone className="mt-1 text-meta" width={ragged(i + 4)} />}
+							<div className="mt-2 flex items-center gap-2">
+								<PillBone width="w-[98px]" />
+								<PillBone width="w-20" />
+							</div>
+						</ListRow>
+					))}
+				</ul>
+			</div>
+		</>
+	);
+}
+
 export default function NotificationsPage() {
 	return (
 		<div>
@@ -46,7 +89,7 @@ export default function NotificationsPage() {
 			    keeps its own reading. */}
 			<PageHeader title="Notifications" />
 
-			<Suspense fallback={<SkeletonRows />}>
+			<Suspense fallback={<NotificationsFallback />}>
 				<NotificationsBody />
 			</Suspense>
 		</div>

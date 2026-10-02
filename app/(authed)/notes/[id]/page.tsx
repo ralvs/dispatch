@@ -4,7 +4,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 import { z } from "zod";
-import { BackLink, Button, ListRow, rowTitle, SectionHead } from "@/components/ui";
+import {
+	BackLink,
+	Button,
+	ListRow,
+	PillBone,
+	rowTitle,
+	SectionHead,
+	TextBone,
+} from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
@@ -42,10 +50,11 @@ async function EditorSection({ note }: { note: NonNullable<Awaited<ReturnType<ty
 }
 
 /*
- * Content-shaped pulse, deliberately not PageSkeleton. The note page declined
+ * Content-shaped bones, deliberately not PageSkeleton. The note page declined
  * PageHeader in Pass 3 (title is content, breadcrumb is the locator), so a
- * skeleton that invents a header would lie. Waiting is not failure and not
- * absence — Pass 5 / B asked this pair and kept the shape.
+ * skeleton that invents a header would lie. This is NoteEditor's own frame:
+ * the title field on its rule, the prose, the min-h-64 body, the meta line and
+ * the DELETE pill.
  */
 function EditorFallback() {
 	return (
@@ -53,12 +62,20 @@ function EditorFallback() {
 			<span role="status" className="sr-only">
 				Loading note
 			</span>
-			<div className="space-y-3" aria-hidden="true">
-				<div className="h-8 w-2/3 rounded bg-surface animate-pulse" />
-				<div className="h-4 w-full rounded bg-surface animate-pulse" />
-				<div className="h-4 w-11/12 rounded bg-surface animate-pulse" />
-				<div className="h-4 w-4/5 rounded bg-surface animate-pulse" />
-				<div className="h-4 w-5/6 rounded bg-surface animate-pulse" />
+			<div aria-hidden="true">
+				<div className="border-b border-line py-1">
+					<TextBone className="text-t30" width="w-2/3" />
+				</div>
+				<div className="mt-7 min-h-64 border-b border-line pb-2 text-base leading-[1.6]">
+					<TextBone width="w-full" />
+					<TextBone width="w-11/12" />
+					<TextBone width="w-4/5" />
+					<TextBone width="w-5/6" />
+				</div>
+				<TextBone className="mt-3 font-mono text-meta" width="w-40" />
+				<div className="mt-4 flex gap-2">
+					<PillBone width="w-[72px]" />
+				</div>
 			</div>
 		</div>
 	);
@@ -159,20 +176,18 @@ async function LinkSections({ noteId }: { noteId: string }) {
 	);
 }
 
-/** Rail twin of EditorFallback — section heads + rows, not a page skeleton. */
+/** Rail twin of EditorFallback: the Linked head over its two link pills. */
 function LinkSectionsFallback() {
 	return (
-		<div className="space-y-6" aria-hidden="true">
-			<div className="space-y-2">
-				<div className="h-4 w-24 rounded bg-surface animate-pulse" />
-				<div className="h-10 w-full rounded bg-surface animate-pulse" />
-				<div className="h-10 w-full rounded bg-surface animate-pulse" />
+		<section aria-hidden="true">
+			<div className="mb-1.5 flex items-baseline gap-2">
+				<TextBone className="type-section" width="w-16" />
 			</div>
-			<div className="space-y-2">
-				<div className="h-4 w-16 rounded bg-surface animate-pulse" />
-				<div className="h-10 w-full rounded bg-surface animate-pulse" />
+			<div className="flex flex-wrap gap-2">
+				<PillBone width="w-[114px]" />
+				<PillBone width="w-[122px]" />
 			</div>
-		</div>
+		</section>
 	);
 }
 
@@ -248,7 +263,18 @@ async function NoteBody({ params }: { params: Promise<{ id: string }> }) {
 function NoteFallback() {
 	return (
 		<div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_16.25rem] lg:items-start lg:gap-10">
-			<EditorFallback />
+			<div className="min-w-0">
+				<EditorFallback />
+				{/* AttachmentStrip's Files section, which wraps the editor. */}
+				<section aria-hidden="true" className="mt-7">
+					<div className="mb-1.5 flex items-baseline gap-2">
+						<TextBone className="type-section" width="w-12" />
+					</div>
+					<div className="mt-2">
+						<PillBone width="w-[110px]" />
+					</div>
+				</section>
+			</div>
 			<LinkSectionsFallback />
 		</div>
 	);
