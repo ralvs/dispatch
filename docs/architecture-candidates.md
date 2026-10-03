@@ -21,6 +21,9 @@ adapter, leverage, locality (the `codebase-design` skill); domain terms from
    `open → in progress → done`, or to `rejected` or `merged into AC-nn`. A done
    candidate moves its result into **Settled shapes**.
 5. **Log the run** in the coverage table and the run log.
+6. **Stop when two runs in a row find nothing new.** Vary the lens between
+   runs (by area, by user flow, by test surface), so a quiet run means the
+   code is covered, not that the same path was walked twice.
 
 A candidate's **direction** says what the deepened module owns, in plain words.
 It is not an interface: the interface is designed when the work starts.
@@ -100,6 +103,11 @@ Do not undo these. Each names where the rule lives.
   caller sends an intent and nothing else. The edit → error → close handling
   and the read-back of the written row sit behind the same interface. It also
   decides whether a form write's server half takes FormData or the intent.
+- **Tests:** the server halves are mocked in five component tests and run in
+  none, so nothing checks the two halves agree; `routines-card.test.tsx:61`
+  asserts the dateless call (`toHaveBeenCalledWith("stretch", false)`), so
+  fixing the bug changes that test. Twelve tests mock the toast to check each
+  component's own error string.
 - **Relations:** absorbs AC-01. Builds on the ADR-0069 shape. Constrains
   AC-06.
 
@@ -135,6 +143,9 @@ Do not undo these. Each names where the rule lives.
   default, and a caller can require it: a fired reminder's row *is* its
   delivery, so it must land before `markRemindersSent`
   (`lib/services/reminders.ts:60`, "duplicate over loss").
+- **Tests:** `notifications.int.test.ts` never checks whether a push goes
+  out; the bare-call crons have no test; the routes are held only by the
+  source-grep in `invalidate.test.ts`.
 - **Relations:** touches AC-09 (who writes a failed sync's ledger row).
   Builds on `EXTERNAL_WRITES`.
   Touches iron rule #3 (push would stop depending on the caller's `sb`) and
@@ -212,7 +223,7 @@ Do not undo these. Each names where the rule lives.
   storage port) · **Found:** run 3
 - **Files:** `app/api/notes/[id]/attachments/route.ts:87-131` (`ingest`),
   `app/(authed)/notes/[id]/attachment-strip.tsx:37,98`, `lib/attachments.ts`,
-  `lib/services/note-attachments.ts`, the route's test (eight `vi.mock`s).
+  `lib/services/note-attachments.ts`, the route's test (six `vi.mock`s).
 - **Problem:** the intake rule — size, type, byte sniffing, downscale,
   partial batches — sits in the route; the strip restates the allow-list
   (`const ACCEPT = "image/*,application/pdf,.md,.txt,.markdown"`) and re-types
@@ -221,6 +232,10 @@ Do not undo these. Each names where the rule lives.
 - **Direction:** the note-files module owns accepting a file and the result
   shape; the route only translates HTTP. Tests use the storage port with a
   fake adapter.
+- **Tests:** the same four-function `@/lib/storage` mock is copied in
+  `note-attachments.test.ts:7`, `note-attachments.int.test.ts:5` and the
+  media route test; `note-attachments.test.ts:5-6` argues for module-mocking
+  the port over a fake. Settle fake versus mock when the work starts.
 - **Relations:** extends the settled note-files shape. After AC-13, which
   settles how the strip receives its write.
 
@@ -262,6 +277,10 @@ Do not undo these. Each names where the rule lives.
 - **Direction:** the mirror owns the reconcile for one source and window,
   including success and failure state; CalDAV and the bridge are adapters that
   hand it a snapshot and say whether an empty one can be trusted.
+- **Tests:** `calendar.ts` already takes a `CaldavConnection` and its int test
+  passes a fake, but the executor (`executor.ts:75,87`) and the cron route
+  (`cron/caldav/route.ts:21,31`) pick the real client by import, so their
+  tests module-mock `caldav/client` and `env`. Run 5.
 - **Relations:** touches AC-08: the mirror's failure state and the failed
   sync's ledger row are decided together.
 
@@ -300,6 +319,10 @@ Do not undo these. Each names where the rule lives.
 - **Direction:** the parser owns both prompt shapes and the call skeleton; the
   model call sits behind a seam with a gateway adapter and a fake adapter. The
   eval needs token usage, so the interface reports it.
+- **Tests:** besides the three listed, `capture.test.ts`,
+  `capture.int.test.ts` and `app/api/capture/route.int.test.ts` mock `parse`
+  wholesale; with a fake model adapter they could run real parse output
+  through the executor. Run 5.
 - **Relations:** none. Prompt text is unchanged (ADR-0061); `bun run
   eval:parser` costs money and runs only with Renan's yes.
 
@@ -365,6 +388,18 @@ Bugs a review saw that are not architecture. Fix and delete the line.
   `lib/routine-stats.ts:61-86,164`, and `observations.ts:59-66` copies
   `calendarDaysBetween`. Correct today; move it. Run 4.
 
+## Test gaps
+
+Logic with no test at any layer that no candidate covers. Add tests when the
+area is next touched.
+
+- `lib/services/note-links.ts`: the `syncWikilinks` reconcile and
+  `createManualLink`. Run 5.
+- `app/(authed)/notes/actions.ts`: ten actions, including
+  `removeAttachmentAction` (the side-finding bug); tests only mock them. Run 5.
+- The note editor's extensions: `notes/[id]/wikilink-extension.ts`,
+  `mention-extension.ts`, `suggestion-extension.tsx`. Run 5.
+
 ## Coverage
 
 Which areas each run read closely. A review reads the empty rows first.
@@ -390,7 +425,7 @@ Which areas each run read closely. A review reads the empty rows first.
 | Shell, `components/`, `components/ui/` | 3, 4 |
 | Schemas (`lib/schemas/`) | 3 |
 | Dates and flat `lib/*.ts` | 4 |
-| Test harness, `scripts/` | 3 |
+| Test harness, `scripts/` | 3, 5 (every `vi.mock`) |
 | Migrations, RLS, triggers (`supabase/`) | 3 |
 | Other external routes (`app/api/media`, `notes`, `push`, `widget`, `chat`) | 3 |
 | `proxy.ts`, `next.config.ts` | 3 |
@@ -404,3 +439,4 @@ Which areas each run read closely. A review reads the empty rows first.
 | 2 | 2026-10-03 | `6267b57` | every area run 1 did not read | AC-08, AC-09; parked AC-10, AC-11 | AC-02, AC-04, AC-06 widened; AC-07 promoted |
 | 3 | 2026-10-03 | `6267b57` | glanced areas, tests, migrations, other routes; notes end to end; file consistency | AC-12, AC-13, AC-14 | AC-11 merged into AC-07; AC-02, AC-04, AC-05, AC-06, AC-08 widened; work order re-cut |
 | 4 | 2026-10-03 | `6267b57` | convergence: a tick end to end, flat `lib/`, `components/ui/`; adversarial pass on every open item | none | AC-02, AC-04, AC-06, AC-08 widened; AC-07 narrowed; AC-09 relation added; AC-10 kept parked |
+| 5 | 2026-10-03 | `6267b57` | convergence: the test surface — every `vi.mock`, untested logic | none | test evidence on AC-02, AC-05, AC-08, AC-09, AC-14; test gaps listed. **Converged:** two runs in a row with nothing new |
