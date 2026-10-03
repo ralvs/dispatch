@@ -43,8 +43,9 @@ It is not an interface: the interface is designed when the work starts.
 
 ## Work order
 
-Three tracks. Tracks touch different code, so they can run side by side;
-inside a track, follow the arrows.
+Three tracks. Tracks touch different code, so they can run side by side —
+except `lib/invalidate.ts`, which AC-07 and AC-08 share (see AC-07). Inside a
+track, follow the arrows.
 
 - **Track A — the store's writes and reads.**
   1. **AC-02** and **AC-07**, in either order: they share nothing.
@@ -122,7 +123,7 @@ Do not undo these. Each names where the rule lives.
   fixing the bug changes that test. Twelve tests mock the toast to check each
   component's own error string.
 - **Relations:** extends the ADR-0069 shape. Needed by AC-06, AC-13,
-  AC-14. Absorbs AC-01.
+  AC-14.
 
 ### AC-08 · An external action owns its ledger row, its delivery and its tags
 
@@ -160,7 +161,8 @@ Do not undo these. Each names where the rule lives.
   out; the bare-call crons have no test; the routes are held only by the
   source-grep in `invalidate.test.ts`.
 - **Relations:** extends the `invalidationFor` / `EXTERNAL_WRITES` shape.
-  Shares with AC-09 who writes a failed sync's ledger row, and is needed by
+  Shares `lib/invalidate.ts` and its test with AC-07 (see AC-07). Shares with
+  AC-09 who writes a failed sync's ledger row, and is needed by
   AC-09 for that decision. Shares with AC-12
   what the caller's `sb` decides (iron rule #3: push would stop depending on
   it). Also decide ADR-0001 (a service calling `next/cache`) before the work.
@@ -215,7 +217,8 @@ Do not undo these. Each names where the rule lives.
   mechanically; a page only seeds it.
 - **Relations:** extends the ADR-0069 shape (its conflict rule) and the
   `invalidationFor` shape (declared reads in the write side's terms). Needed by
-  AC-13, AC-04. Absorbs AC-11.
+  AC-13, AC-04. Shares `lib/invalidate.ts` and its test with AC-08: neither
+  changes the table's shape, and the second to land rebases on the first.
 
 ### AC-13 · The open note reads its row from the store
 
@@ -356,10 +359,12 @@ Kept so a later review does not rediscover them as new. Promote with evidence.
   (`lib/mentions.ts:34`, `capture/resolve.ts:44`, `capture/match.ts:51`,
   `lib/ai/verbatim.ts:27`). Two callers only. Run 2. Run 4: keep parked —
   each fold does something different after it, so a shared helper is one
-  line, and the reconcile still has two callers.
+  line, and the reconcile still has two callers. Relations: none.
 - **AC-15 · Day state stored as placed bands.** Every reduce re-runs
   `collectDayTasks` → `placeOnDay`; `overflow` exists so the pool can be
   rebuilt (`lib/store/kinds/task.ts`, `lib/day-schedule.ts`). Run 1.
+  Relations: extends the ADR-0071 shape — the task adapter still owns
+  placement; only what it stores changes.
 
 ## Done
 
