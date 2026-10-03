@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { collectDayTasks } from "@/lib/day-schedule";
+import { buildDaySchedule, collectDayTasks } from "@/lib/day-schedule";
 import {
 	applyIntent,
 	applySeed,
@@ -20,6 +20,7 @@ import {
 	T2,
 	T3,
 	TODAY,
+	TZ,
 	task,
 } from "@/lib/store/test-fixtures";
 import type { AggregateKey, Snapshot } from "@/lib/store/types";
@@ -130,6 +131,90 @@ describe("task adapter", () => {
 		);
 		expect(selectView(next, viewKey.project("p1"))?.map((t) => t.id)).toEqual(["t"]);
 		expect(selectView(next, viewKey.inbox())).toEqual([]);
+	});
+});
+
+describe("/tasks lists", () => {
+	const seed = (open: ReturnType<typeof task>[], done: ReturnType<typeof task>[] = []) =>
+		deepFreeze(
+			applySeed(
+				initialState(),
+				snapshot(T1, [{ key: viewKey.tasks(), type: "taskLists", data: { open, done } }]),
+			),
+		);
+
+	it("a tick moves the row to the top of done and drops its star; an untick brings it back", () => {
+		const s = seed(
+			[task({ id: "a", top3_for_date: TODAY }), task({ id: "b" })],
+			[task({ id: "old", status: "done" })],
+		);
+		const [ticked] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "complete", id: "a", observedDueDate: null } },
+			NOW,
+		);
+		const lists = selectView(ticked, viewKey.tasks());
+		expect(lists?.open.map((t) => t.id)).toEqual(["b"]);
+		expect(lists?.done.map((t) => t.id)).toEqual(["a", "old"]);
+		expect(lists?.done[0]).toMatchObject({
+			status: "done",
+			completed_at: NOW,
+			top3_for_date: null,
+		});
+
+		const [unticked] = applyIntent(
+			ticked,
+			{ kind: "task", intent: { type: "reopen", id: "a" } },
+			NOW,
+		);
+		const back = selectView(unticked, viewKey.tasks());
+		expect(back?.open.map((t) => t.id)).toEqual(["a", "b"]);
+		expect(back?.done.map((t) => t.id)).toEqual(["old"]);
+	});
+
+	it("a second tick on a ticked row changes nothing", () => {
+		const s = seed([task({ id: "a" })]);
+		const complete = { type: "complete", id: "a", observedDueDate: null } as const;
+		const [once] = applyIntent(s, { kind: "task", intent: complete }, NOW);
+		const [twice] = applyIntent(once, { kind: "task", intent: complete }, T3);
+		expect(selectView(twice, viewKey.tasks())).toEqual(selectView(once, viewKey.tasks()));
+	});
+});
+
+describe("Today's bands", () => {
+	it("a tick keeps a starred row in Top 3, struck (ADR-0038)", () => {
+		const a = task({ id: "a", top3_for_date: TODAY });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ key: viewKey.day(TODAY), type: "day", data: dayPayload(TODAY, [a]) }]),
+		);
+		const [next] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "complete", id: "a", observedDueDate: null } },
+			NOW,
+		);
+		expect(selectView(next, viewKey.day(TODAY))?.schedule.top3).toEqual([
+			expect.objectContaining({ id: "a", status: "done", top3_for_date: TODAY }),
+		]);
+	});
+
+	it("starring one of the open band's ten backfills it from the overflow", () => {
+		const late = Array.from({ length: 12 }, (_, i) => task({ id: `t${i}`, due_date: YESTERDAY }));
+		const schedule = buildDaySchedule({ events: [], openTasks: late, dateIso: TODAY, tz: TZ });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [
+				{ key: viewKey.day(TODAY), type: "day", data: { ...dayPayload(TODAY), schedule } },
+			]),
+		);
+		const [next] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "setTop3", id: "t0", starred: true, forDateIso: TODAY } },
+			NOW,
+		);
+		const day = selectView(next, viewKey.day(TODAY));
+		expect(day?.schedule.top3.map((t) => t.id)).toEqual(["t0"]);
+		expect(day?.schedule.open.map((t) => t.id)).toEqual(late.slice(1, 11).map((t) => t.id));
 	});
 });
 
@@ -315,6 +400,88 @@ describe("Today's task counters", () => {
 			NOW,
 		);
 		expect(read(created)).toEqual([2, 0, 2]);
+	});
+
+	// Each intent counts from the row as the user sees it — pending intents
+	// folded on — so a quick tick and untick, or a double tick, move a count
+	// once, before and after the server answers.
+	it("a tick then an untick before either answers leaves the counts as they were", () => {
+		const late = task({ id: "late", due_date: YESTERDAY, project_id: "p1" });
+		const s = applySeed(
+			initialState(),
+			snapshot(
+				T1,
+				[{ key: viewKey.tasks(), type: "taskLists", data: { open: [late], done: [] } }],
+				{ aggregates: { ...counts(4, 1, 0), "project.open:p1": 1, "project.done:p1": 0 } },
+			),
+		);
+		const [ticked, t1] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "complete", id: "late", observedDueDate: YESTERDAY } },
+			NOW,
+		);
+		const [unticked, t2] = applyIntent(
+			ticked,
+			{ kind: "task", intent: { type: "reopen", id: "late" } },
+			NOW,
+		);
+		const project = (st: typeof s) =>
+			(["project.open:p1", "project.done:p1"] as AggregateKey[]).map((k) => selectAggregate(st, k));
+		expect(read(unticked)).toEqual([4, 1, 0]);
+		expect(project(unticked)).toEqual([1, 0]);
+
+		const done = task({ ...late, status: "done", completed_at: NOW });
+		const c1 = confirmWrite(unticked, t1, { at: T2, rows: [done] });
+		const c2 = confirmWrite(c1, t2, { at: T3, rows: [late] });
+		expect(read(c2)).toEqual([4, 1, 0]);
+		expect(project(c2)).toEqual([1, 0]);
+	});
+
+	it("a double tick moves the counts once", () => {
+		const late = task({ id: "late", due_date: YESTERDAY });
+		const s = applySeed(
+			initialState(),
+			snapshot(
+				T1,
+				[{ key: viewKey.tasks(), type: "taskLists", data: { open: [late], done: [] } }],
+				{ aggregates: counts(4, 1, 0) },
+			),
+		);
+		const complete = { type: "complete", id: "late", observedDueDate: YESTERDAY } as const;
+		const [once, t1] = applyIntent(s, { kind: "task", intent: complete }, NOW);
+		const [twice, t2] = applyIntent(once, { kind: "task", intent: complete }, NOW);
+		expect(read(twice)).toEqual([3, 0, 0]);
+		// The replay finds the row closed and writes nothing; the server answers done both times.
+		const done = task({ id: "late", due_date: YESTERDAY, status: "done", completed_at: NOW });
+		const c1 = confirmWrite(twice, t1, { at: T2, rows: [done] });
+		const c2 = confirmWrite(c1, t2, { at: T3, rows: [done] });
+		expect(read(c2)).toEqual([3, 0, 0]);
+	});
+
+	it("a delete then another intent on the same row, before either answers, moves the counts once", () => {
+		const late = task({ id: "late", due_date: YESTERDAY });
+		const s = applySeed(
+			initialState(),
+			snapshot(
+				T1,
+				[{ key: viewKey.tasks(), type: "taskLists", data: { open: [late], done: [] } }],
+				{ aggregates: counts(4, 1, 0) },
+			),
+		);
+		const del = { kind: "task", intent: { type: "delete", id: "late" } } as const;
+		const [once, t1] = applyIntent(s, del, NOW);
+		const [twice, t2] = applyIntent(once, del, NOW);
+		expect(read(twice)).toEqual([3, 0, 0]);
+		const c1 = confirmWrite(twice, t1, { at: T2, rows: [], deletedIds: ["late"] });
+		const c2 = confirmWrite(c1, t2, { at: T3, rows: [], deletedIds: ["late"] });
+		expect(read(c2)).toEqual([3, 0, 0]);
+
+		const [ticked] = applyIntent(
+			once,
+			{ kind: "task", intent: { type: "complete", id: "late", observedDueDate: YESTERDAY } },
+			NOW,
+		);
+		expect(read(ticked)).toEqual([3, 0, 0]);
 	});
 
 	it("a row the store never loaded moves nothing", () => {

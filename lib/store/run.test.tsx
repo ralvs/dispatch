@@ -33,9 +33,8 @@ function wrapper({ children }: { children: ReactNode }) {
 const flush = () => act(async () => {});
 
 describe("useRunIntent", () => {
-	it("ok → confirm, then release", async () => {
-		const lock = { claim: vi.fn(() => true), release: vi.fn() };
-		const { result } = renderHook(() => useRunIntent("task", { lock }), { wrapper });
+	it("ok → confirm", async () => {
+		const { result } = renderHook(() => useRunIntent("task"), { wrapper });
 		let ran = false;
 		act(() => {
 			ran = result.current(intent, async () => ({ ok: true, data: { at: T2, rows: [done] } }));
@@ -45,7 +44,6 @@ describe("useRunIntent", () => {
 		await flush();
 		expect(store.getState().pending).toEqual([]);
 		expect(store.getState().confirmed).toHaveLength(1);
-		expect(lock.release).toHaveBeenCalledWith(intent);
 	});
 
 	it("ok:false → rollback + toast", async () => {
@@ -70,11 +68,10 @@ describe("useRunIntent", () => {
 				Object.assign(new Error("NEXT_REDIRECT"), { digest: "NEXT_REDIRECT;replace;/x;307;" }),
 			toasts: false,
 		},
-	])("throw ($name) → rollback + release, no unhandled rejection", async ({ error, toasts }) => {
+	])("throw ($name) → rollback, no unhandled rejection", async ({ error, toasts }) => {
 		const unhandled = vi.fn();
 		process.on("unhandledRejection", unhandled);
-		const lock = { claim: vi.fn(() => true), release: vi.fn() };
-		const { result } = renderHook(() => useRunIntent("task", { lock, errorMessage: "Nope" }), {
+		const { result } = renderHook(() => useRunIntent("task", { errorMessage: "Nope" }), {
 			wrapper,
 		});
 		act(() => {
@@ -89,17 +86,7 @@ describe("useRunIntent", () => {
 		expect(store.getState().confirmed).toEqual([]);
 		if (toasts) expect(toastError).toHaveBeenCalledWith("Nope");
 		else expect(toastError).not.toHaveBeenCalled();
-		expect(lock.release).toHaveBeenCalledWith(intent);
 		expect(unhandled).not.toHaveBeenCalled();
-	});
-
-	it("a refused claim applies nothing", () => {
-		const lock = { claim: vi.fn(() => false), release: vi.fn() };
-		const action = vi.fn();
-		const { result } = renderHook(() => useRunIntent("task", { lock }), { wrapper });
-		expect(result.current(intent, action)).toBe(false);
-		expect(action).not.toHaveBeenCalled();
-		expect(store.getState().pending).toEqual([]);
 	});
 
 	it("swallows an intent on a row whose create is unconfirmed, and nothing runs", async () => {

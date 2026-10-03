@@ -20,7 +20,7 @@ import { dateOfInstant, recentDoneSinceDate } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { TaskRow } from "@/lib/services/tasks";
 import { useStoreWrite, useView, viewKey } from "@/lib/store";
-import type { TaskLists } from "@/lib/task-interaction/apply-intent";
+import type { TaskLists } from "@/lib/store/kinds/task";
 import {
 	optimisticTaskFromForm,
 	optimisticTaskFromText,

@@ -50,7 +50,8 @@ import type { OfPerson, PersonScope } from "@/lib/store/kinds/person";
 import type { ProjectScope } from "@/lib/store/kinds/project";
 import type { RecordIntent, RecordSeed } from "@/lib/store/kinds/record";
 import type { RoutineIntent } from "@/lib/store/kinds/routine";
-import type { TaskIntent, TaskLists } from "@/lib/task-interaction/apply-intent";
+import type { TaskLists } from "@/lib/store/kinds/task";
+import type { TaskIntent } from "@/lib/task-interaction/apply-intent";
 
 /** UTC ISO instant, always server-stamped. */
 export type Instant = string;
@@ -255,9 +256,11 @@ export type KindAdapter<K extends Kind> = {
 	 * One row after a pending intent; the row unchanged when the intent does
 	 * not touch it. When given, `deltas` sees the row as the user sees it —
 	 * with every intent still in flight folded on — so two quick changes to
-	 * one row move a count once. Omitted: `deltas` sees the stored row.
+	 * one row move a count once. Omitted: `deltas` sees the stored row. `ctx`
+	 * is the pending intent's own, taken when it was applied. Undefined: a
+	 * pending intent removed the row, and `deltas` sees no row at all.
 	 */
-	project?(row: EntityMap[K], intent: IntentMap[K]): EntityMap[K];
+	project?(row: EntityMap[K], intent: IntentMap[K], ctx: IntentCtx): EntityMap[K] | undefined;
 	/**
 	 * Aggregate deltas, computed at apply from the row before the intent.
 	 * `current` reads an aggregate as the user sees it then (pending included),

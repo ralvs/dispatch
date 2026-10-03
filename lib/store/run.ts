@@ -26,38 +26,32 @@ export function isNavigationError(error: unknown): boolean {
 	}
 }
 
-export type IntentLockLike<I> = { claim(intent: I): boolean; release(intent: I): void };
-
 /**
- * Claim → apply → action → confirm or rollback → release.
+ * Apply → action → confirm or rollback.
  *
- * Returns false when the lock refuses the claim, or when the intent acts on a
- * row whose create the server has not confirmed yet (`targetsProvisional`):
- * nothing was applied, and the click is swallowed until the row is real. No
- * useTransition: the optimistic state lives in the store, not in React.
+ * Returns false when the intent acts on a row whose create the server has not
+ * confirmed yet (`targetsProvisional`): nothing was applied, and the click is
+ * swallowed until the row is real. A repeated click is not swallowed: Next
+ * runs server actions one at a time, a replay finds the row already moved
+ * (docs/adr/0037, completeTask's `status = open` guard), and the adapter's
+ * `project` counts it once. No useTransition: the optimistic state lives in
+ * the store, not in React.
  */
 export function useRunIntent<K extends Kind>(
 	kind: K,
-	opts: { lock?: IntentLockLike<IntentMap[K]>; errorMessage?: string } = {},
+	opts: { errorMessage?: string } = {},
 ): (
 	intent: IntentMap[K],
 	action: () => Promise<ActionResult<StoreWrite<EntityMap[K]>>>,
 ) => boolean {
 	const { apply, confirm, rollback } = useStoreActions();
 	const api = useDispatchStore();
-	const { lock, errorMessage = DEFAULT_ERROR } = opts;
+	const { errorMessage = DEFAULT_ERROR } = opts;
 
 	return useCallback(
 		(intent, action) => {
 			if (targetsProvisional(api.getState(), { kind, intent } as AnyIntent)) return false;
-			if (lock && !lock.claim(intent)) return false;
-			let token: number;
-			try {
-				token = apply({ kind, intent } as AnyIntent);
-			} catch (error) {
-				lock?.release(intent);
-				throw error;
-			}
+			const token = apply({ kind, intent } as AnyIntent);
 			void (async () => {
 				try {
 					const result = await action();
@@ -73,13 +67,11 @@ export function useRunIntent<K extends Kind>(
 					// happens: the router navigates on its own (isNavigationError).
 					rollback(token);
 					if (!isNavigationError(error)) toastError(errorMessage);
-				} finally {
-					lock?.release(intent);
 				}
 			})();
 			return true;
 		},
-		[kind, lock, errorMessage, api, apply, confirm, rollback],
+		[kind, errorMessage, api, apply, confirm, rollback],
 	);
 }
 
