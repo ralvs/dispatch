@@ -61,7 +61,8 @@ unfiled task is one with `domain_id is null` (see **inbox**, and ADR-0027).
 Each carries a `fruit_definition`
 (what "tended well" looks like) and `failure_patterns` (e.g. "no activity for N
 days") that the observations cron reads to flag neglect. A task belongs to at
-most one domain; a task with none is in the **inbox**.
+most one domain; a task with none is in the **inbox**. A task in a project is
+always in that project's domain (docs/adr/0072).
 
 ## needs_review
 

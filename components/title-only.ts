@@ -1,4 +1,4 @@
-// Title-only create → sentence parser. Client-safe: TaskDialog reads FormData
+// Title-only create → sentence parser. TaskDialog reads FormData
 // at submit; the same predicate is unit-tested here (docs/adr/0043).
 
 /**

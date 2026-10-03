@@ -431,3 +431,63 @@ describe("listTasks · excludeQuiet", () => {
 		expect(await listTasks(sb, { status: "open", excludeQuiet: true })).toHaveLength(2);
 	});
 });
+
+// A task in a project is filed in that project's domain, whatever the write
+// said (docs/adr/0072). The database holds the rule, so every path is covered.
+describe("a task's domain follows its project", () => {
+	async function twoDomains(sb: Sb): Promise<[string, string]> {
+		const [a, b] = await listDomains(sb);
+		if (!a || !b) throw new Error("the migrations seed at least two domains");
+		return [a.id, b.id];
+	}
+
+	it("a create naming another domain is filed in the project's", async () => {
+		const sb = await ownerClient();
+		const [home, work] = await twoDomains(sb);
+		const project = await createProject(sb, { name: "Kitchen", domain_id: home });
+		const task = await createTask(sb, { title: "tiles", project_id: project.id, domain_id: work });
+		expect(task.domain_id).toBe(home);
+	});
+
+	it("moving a task into a project moves it into the project's domain", async () => {
+		const sb = await ownerClient();
+		const [home, work] = await twoDomains(sb);
+		const project = await createProject(sb, { name: "Kitchen", domain_id: home });
+		const task = await createTask(sb, { title: "tiles", domain_id: work });
+		await updateTask(sb, task.id, { project_id: project.id, domain_id: work });
+		expect((await getTask(sb, task.id))?.domain_id).toBe(home);
+	});
+
+	it("a domain alone cannot pull a task away from its project's", async () => {
+		const sb = await ownerClient();
+		const [home, work] = await twoDomains(sb);
+		const project = await createProject(sb, { name: "Kitchen", domain_id: home });
+		const task = await createTask(sb, { title: "tiles", project_id: project.id, domain_id: home });
+		await assignDomain(sb, task.id, work);
+		expect((await getTask(sb, task.id))?.domain_id).toBe(home);
+	});
+
+	it("leaving a project keeps the domain the write gave", async () => {
+		const sb = await ownerClient();
+		const [home, work] = await twoDomains(sb);
+		const project = await createProject(sb, { name: "Kitchen", domain_id: home });
+		const task = await createTask(sb, { title: "tiles", project_id: project.id, domain_id: home });
+		await updateTask(sb, task.id, { project_id: null, domain_id: work });
+		expect((await getTask(sb, task.id))?.domain_id).toBe(work);
+	});
+
+	it("a project that moves domain takes its tasks with it", async () => {
+		const sb = await ownerClient();
+		const [home, work] = await twoDomains(sb);
+		const project = await createProject(sb, { name: "Kitchen", domain_id: home });
+		const inside = await createTask(sb, {
+			title: "tiles",
+			project_id: project.id,
+			domain_id: home,
+		});
+		const outside = await createTask(sb, { title: "loose", domain_id: home });
+		await updateProject(sb, project.id, { domain_id: work });
+		expect((await getTask(sb, inside.id))?.domain_id).toBe(work);
+		expect((await getTask(sb, outside.id))?.domain_id).toBe(home);
+	});
+});

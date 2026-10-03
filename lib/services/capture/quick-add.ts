@@ -141,7 +141,8 @@ export async function quickAddTask(
  *
  * Neither field is silently wrong afterwards: the operator's domain is what
  * they said, and the project falls away rather than dragging the domain with
- * it.
+ * it. Dropping it is not optional: the database files a task in its project's
+ * domain (docs/adr/0072), so a kept project would overrule the stated domain.
  */
 function withStatedDomain(
 	input: Parameters<typeof createTask>[1],

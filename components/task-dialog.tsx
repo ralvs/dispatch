@@ -16,7 +16,6 @@ import { createTaskAction, quickAddTaskAction, updateTaskAction } from "@/lib/ac
 import type { MentionCandidate } from "@/lib/mentions";
 import type { DomainItem } from "@/lib/schemas/domain";
 import type { ProjectRow } from "@/lib/schemas/project";
-import { titleOnlyCreate } from "@/lib/services/capture/title-only";
 import { useLiveOptions } from "@/lib/store/live-options";
 import { useStoreWrite } from "@/lib/store/run";
 import {
@@ -29,6 +28,7 @@ import {
 	TaskFormFields,
 	type TaskProjectOption,
 } from "./task-fields";
+import { titleOnlyCreate } from "./title-only";
 
 /**
  * The one surface a task is written on (docs/adr/0040, docs/adr/0043) — create
