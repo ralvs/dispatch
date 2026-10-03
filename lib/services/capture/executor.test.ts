@@ -57,13 +57,13 @@ describe("runActions", () => {
 		expect(results[0]).toEqual({
 			action: "create_task",
 			ok: true,
-			entity: { table: "tasks", id: "task-1" },
+			entity: { table: "tasks", id: "task-1", row: expect.objectContaining({ id: "task-1" }) },
 		});
 		expect(results[1]).toMatchObject({ action: "create_task", ok: false, noteId: "review-1" });
 		expect(results[2]).toEqual({
 			action: "create_note",
 			ok: true,
-			entity: { table: "notes", id: "note-1" },
+			entity: { table: "notes", id: "note-1", row: expect.objectContaining({ id: "note-1" }) },
 		});
 		// The failing action degraded to a needs_review note linked to the capture.
 		expect(createNeedsReviewNote).toHaveBeenCalledWith(
@@ -184,7 +184,7 @@ describe("runActions", () => {
 		expect(results[0]).toEqual({
 			action: "create_task",
 			ok: true,
-			entity: { table: "tasks", id: "task-9" },
+			entity: { table: "tasks", id: "task-9", row: expect.objectContaining({ id: "task-9" }) },
 		});
 		expect(createTask).toHaveBeenCalledWith(sb, expect.objectContaining({ title: "call @Ana" }), {
 			graphFail: "swallow",
@@ -204,7 +204,7 @@ describe("runActions", () => {
 		expect(results[0]).toEqual({
 			action: "create_note",
 			ok: true,
-			entity: { table: "notes", id: "note-9" },
+			entity: { table: "notes", id: "note-9", row: expect.objectContaining({ id: "note-9" }) },
 		});
 		expect(createNote).toHaveBeenCalledWith(
 			sb,
@@ -223,7 +223,7 @@ describe("runActions", () => {
 		expect(results[0]).toEqual({
 			action: "create_quote",
 			ok: true,
-			entity: { table: "quotes", id: "quote-1" },
+			entity: { table: "quotes", id: "quote-1", row: expect.objectContaining({ id: "quote-1" }) },
 		});
 	});
 
@@ -254,7 +254,11 @@ describe("runActions", () => {
 		expect(results[0]).toEqual({
 			action: "create_journal_entry",
 			ok: true,
-			entity: { table: "journal_entries", id: "entry-1" },
+			entity: {
+				table: "journal_entries",
+				id: "entry-1",
+				row: expect.objectContaining({ id: "entry-1" }),
+			},
 		});
 		expect(createEntry).toHaveBeenCalledWith(
 			sb,

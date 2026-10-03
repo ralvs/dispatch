@@ -93,7 +93,9 @@ function afterIntent(
  * count down and back up, not down twice.
  */
 function taskDeltas(intent: TaskIntent, before: TaskRow | undefined, ctx: IntentCtx): Deltas {
-	if (intent.type !== "create" && !before) return {};
+	// No row, nothing to move; a create the store already holds (a seed read
+	// a received row first) is already counted.
+	if (intent.type === "create" ? before !== undefined : !before) return {};
 	const { after, successor } = afterIntent(intent, before, ctx);
 	const was = intent.type === "create" ? NONE : countsOf(before, ctx);
 	const now = countsOf(after, ctx);

@@ -3,7 +3,8 @@
 // Everything else about capture() runs for real in capture.int.test.ts.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
-import { capture } from "@/lib/services/capture";
+import { type CapturedRecord, capture, capturedRows } from "@/lib/services/capture";
+import { note, quote, task } from "@/lib/store/test-fixtures";
 
 vi.mock("@/lib/services/capture/store", () => ({
 	persistRaw: vi.fn(async () => "cap-1"),
@@ -66,5 +67,74 @@ describe("capture containment (single no-throw boundary)", () => {
 
 		// Even a rejecting terminal marker cannot make capture() throw.
 		await expect(capture(sb, RAW)).resolves.toBeDefined();
+	});
+});
+
+// What the palette confirms into the entity store (docs/adr/0069).
+describe("capturedRows", () => {
+	const record = (outcome: CapturedRecord["outcome"]): CapturedRecord => ({
+		capturedId: "cap-1",
+		status: "parsed",
+		outcome,
+	});
+	const flagged = note({ id: "review-1", needs_review: true });
+
+	it("hands back every row it wrote, and the note a failed action left", () => {
+		const t = task({ id: "t1" });
+		const q = quote({ id: "q1" });
+		const rows = capturedRows(
+			record({
+				kind: "executed",
+				results: [
+					{ action: "create_task", ok: true, entity: { table: "tasks", id: "t1", row: t } },
+					{ action: "create_quote", ok: true, entity: { table: "quotes", id: "q1", row: q } },
+					{
+						action: "create_task",
+						ok: false,
+						reason: "db down",
+						noteId: "review-1",
+						note: flagged,
+					},
+					{ action: "create_note", ok: false, reason: "db down", noteId: "", note: null },
+				],
+			}),
+		);
+		expect(rows).toEqual({ task: [t], note: [flagged], quote: [q], journal: [] });
+	});
+
+	it("is null when the capture booked a calendar event, which the store does not hold", () => {
+		const rows = capturedRows(
+			record({
+				kind: "executed",
+				results: [
+					{
+						action: "create_task",
+						ok: true,
+						entity: { table: "tasks", id: "t1", row: task({ id: "t1" }) },
+					},
+					{ action: "create_event", ok: true, entity: { table: "calendar_events", id: "e1" } },
+				],
+			}),
+		);
+		expect(rows).toBeNull();
+	});
+
+	it("hands back the review note a degraded capture wrote, and nothing for a raw-only one", () => {
+		expect(
+			capturedRows(
+				record({
+					kind: "needs_review",
+					noteId: "review-1",
+					note: flagged,
+					reason: "parser_failed",
+				}),
+			)?.note,
+		).toEqual([flagged]);
+		expect(capturedRows(record({ kind: "recorded_only" }))).toEqual({
+			task: [],
+			note: [],
+			quote: [],
+			journal: [],
+		});
 	});
 });

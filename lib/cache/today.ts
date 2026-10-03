@@ -43,6 +43,7 @@ export const readers: CachedReader[] = [
 					"task.write",
 					"task.assign",
 					"capture.settled",
+					"capture.event",
 					"routine.write",
 					"links.write",
 					"notification.write",

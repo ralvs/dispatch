@@ -52,12 +52,12 @@ export const readers: CachedReader[] = [
 			{ tag: CacheTag.people, writes: ["people.write"] },
 			{
 				tag: CacheTag.tasks,
-				writes: ["task.write", "task.assign", "capture.settled"],
+				writes: ["task.write", "task.assign", "capture.settled", "capture.event"],
 				external: ["capture", "sweep"],
 			},
 			{
 				tag: CacheTag.notes,
-				writes: ["notes.write", "capture.settled"],
+				writes: ["notes.write", "capture.settled", "capture.event"],
 				external: ["capture", "sweep"],
 			},
 		],

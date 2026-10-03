@@ -31,9 +31,9 @@ import { CacheTag, type CacheTagName } from "@/lib/cache/tags";
  *   (lib/store/types.ts): a seed read before a confirmed write never
  *   overwrites it.
  * - `readYourWrites` kinds use `updateTag`: the settings knobs, a palette
- *   capture (it writes rows the client never applied), and a note's link rail
- *   (`note_links`, which the store does not hold). They are rare, so the cache
- *   wipe is acceptable there.
+ *   capture that booked a calendar event (the store holds no events), and a
+ *   note's link rail (`note_links`, which the store does not hold). They are
+ *   rare, so the cache wipe is acceptable there.
  */
 
 /** What a mutation invalidates, as data. Pure — see invalidate.test.ts. */
@@ -43,6 +43,7 @@ export type MutationKind =
 	| "task.write"
 	| "task.assign"
 	| "capture.settled"
+	| "capture.event"
 	| "routine.write"
 	| "links.write"
 	| "notification.write"
@@ -61,7 +62,7 @@ export type MutationKind =
 
 /** Kinds whose writer needs its own write on the next render (see the header). */
 const READ_YOUR_WRITES: ReadonlySet<MutationKind> = new Set([
-	"capture.settled",
+	"capture.event",
 	"settings.timezone",
 	"settings.reminders",
 	"notes.links",
@@ -81,7 +82,12 @@ function tagsFor(kind: MutationKind): CacheTagName[] {
 		case "task.write":
 		case "task.assign":
 			return [CacheTag.daySchedule, CacheTag.tasks, CacheTag.todayDigest];
+		// A capture writes rows the client never applied; the palette confirms
+		// them into the store from the action's answer (lib/store/receive.ts).
+		// One that booked a calendar event cannot: the store holds no events, so
+		// it reads its own write with a page render.
 		case "capture.settled":
+		case "capture.event":
 			return [
 				CacheTag.daySchedule,
 				CacheTag.tasks,

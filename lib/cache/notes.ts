@@ -77,7 +77,7 @@ export async function getCachedNoteLinks(noteId: string) {
 
 const noteWrites = {
 	tag: CacheTag.notes,
-	writes: ["notes.write", "capture.settled"],
+	writes: ["notes.write", "capture.settled", "capture.event"],
 	external: ["capture", "sweep"],
 } satisfies CachedReader["reads"][number];
 
@@ -87,7 +87,7 @@ export const readers: CachedReader[] = [
 		reads: [
 			{
 				tag: CacheTag.notes,
-				writes: ["notes.write", "capture.settled", "settings.timezone"],
+				writes: ["notes.write", "capture.settled", "capture.event", "settings.timezone"],
 				external: ["capture", "sweep"],
 			},
 		],
@@ -102,12 +102,12 @@ export const readers: CachedReader[] = [
 			noteWrites,
 			{
 				tag: CacheTag.tasks,
-				writes: ["task.write", "task.assign", "capture.settled"],
+				writes: ["task.write", "task.assign", "capture.settled", "capture.event"],
 				external: ["capture", "sweep"],
 			},
 			{
 				tag: CacheTag.daySchedule,
-				writes: ["capture.settled", "today.only"],
+				writes: ["capture.settled", "capture.event", "today.only"],
 				external: ["capture", "sweep", "cronCaldav", "calendarBridge"],
 			},
 		],

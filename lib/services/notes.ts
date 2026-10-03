@@ -5,7 +5,6 @@ import { nowUtc } from "@/lib/dates";
 import {
 	type CreateNoteSchema,
 	NOTE_LIST_SELECT,
-	NOTE_SELECT,
 	type NoteListRow,
 	type NoteRow,
 	type UpdateNoteSchema,
@@ -66,11 +65,12 @@ export type CreateNoteInput = {
 };
 
 /** Create a note. Body is stored verbatim in whatever language it arrived in. */
+/** Returns the list row, so a write can hand it to the entity store as it is. */
 export async function createNote(
 	sb: SupabaseClient,
 	input: CreateNoteInput,
 	opts: NoteWriteOpts = {},
-): Promise<NoteRow> {
+): Promise<NoteListRow> {
 	const data = unwrap(
 		await sb
 			.from("notes")
@@ -78,10 +78,10 @@ export async function createNote(
 				...input,
 				source_type: input.source_type ?? "own_thought",
 			})
-			.select(NOTE_SELECT)
+			.select(NOTE_LIST_SELECT)
 			.single(),
 	);
-	const note = data as unknown as NoteRow;
+	const note = data as unknown as NoteListRow;
 	// Text write owns wikilinks + person graph — callers must not post-sync.
 	await syncNoteGraph(sb, note.id, input.body, opts.graphFail ?? "throw");
 	return note;
@@ -114,7 +114,7 @@ export async function createNeedsReviewNote(
 		proposed_kind?: string;
 		tags?: string[];
 	},
-): Promise<NoteRow> {
+): Promise<NoteListRow> {
 	const tags = [
 		"capture:needs_review",
 		...(input.reason ? [needsReviewReasonTag(input.reason)] : []),

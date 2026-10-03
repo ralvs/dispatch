@@ -6,6 +6,10 @@ import { recordNeedsReview } from "@/lib/services/capture/degrade";
 import { runActions } from "@/lib/services/capture/executor";
 import { loadCaptureContext } from "@/lib/services/capture/resolve";
 import { markParsed, persistRaw } from "@/lib/services/capture/store";
+import type { JournalEntryRow } from "@/lib/services/journal";
+import type { NoteListRow } from "@/lib/services/notes";
+import type { QuoteRow } from "@/lib/services/quotes";
+import type { TaskRow } from "@/lib/services/tasks";
 
 // ─────────────────────────────────────────────────────────────────────────
 // The capture module (docs/adr/0008). One deep function, capture(sb, raw),
@@ -37,16 +41,22 @@ export type CaptureInput = {
 	source?: "manual" | "webhook" | "watch";
 };
 
-export type ActionResult =
-	| {
-			action: string;
-			ok: true;
-			entity: {
-				table: "tasks" | "calendar_events" | "notes" | "quotes" | "journal_entries";
-				id: string;
-			};
-	  }
-	| { action: string; ok: false; reason: string; noteId: string };
+/**
+ * What one parsed action wrote. A row the entity store holds comes back whole
+ * (`row`), so the palette can confirm it without a page render
+ * (docs/adr/0069); a calendar event is not one of them.
+ */
+export type CaptureEntity =
+	| { table: "tasks"; id: string; row: TaskRow }
+	| { table: "notes"; id: string; row: NoteListRow }
+	| { table: "quotes"; id: string; row: QuoteRow }
+	| { table: "journal_entries"; id: string; row: JournalEntryRow }
+	| { table: "calendar_events"; id: string };
+
+/** One action's outcome. A failed action degraded to `note`; null when even that write failed. */
+export type CaptureActionResult =
+	| { action: string; ok: true; entity: CaptureEntity }
+	| { action: string; ok: false; reason: string; noteId: string; note: NoteListRow | null };
 
 export type DegradeReason = "parser_unavailable" | "parser_failed" | "capture_error";
 
@@ -56,8 +66,8 @@ export type CapturedRecord = {
 	// last-resort case where even the fallback note could not be written.
 	status: "raw" | "parsed";
 	outcome:
-		| { kind: "executed"; results: ActionResult[] }
-		| { kind: "needs_review"; noteId: string; reason: DegradeReason }
+		| { kind: "executed"; results: CaptureActionResult[] }
+		| { kind: "needs_review"; noteId: string; note: NoteListRow; reason: DegradeReason }
 		// Raw is durable but processing failed AND the fallback note write failed.
 		// The row stays 'raw' for the sweep; nothing is lost.
 		| { kind: "recorded_only" };
@@ -104,7 +114,7 @@ async function process(
 	if (!parsed.ok && parsed.reason !== "empty") {
 		const reason: DegradeReason =
 			parsed.reason === "unavailable" ? "parser_unavailable" : "parser_failed";
-		const { noteId } = await recordNeedsReview(sb, {
+		const { noteId, note } = await recordNeedsReview(sb, {
 			transcript: raw.text,
 			capturedId,
 			reason,
@@ -120,7 +130,7 @@ async function process(
 		return {
 			capturedId,
 			status: "parsed",
-			outcome: { kind: "needs_review", noteId, reason },
+			outcome: { kind: "needs_review", noteId, note, reason },
 		};
 	}
 
@@ -156,7 +166,7 @@ async function lastResort(
 	raw: CaptureInput,
 ): Promise<CapturedRecord> {
 	try {
-		const { noteId } = await recordNeedsReview(sb, {
+		const { noteId, note } = await recordNeedsReview(sb, {
 			transcript: raw.text,
 			capturedId,
 			reason: "capture_error",
@@ -165,9 +175,53 @@ async function lastResort(
 		return {
 			capturedId,
 			status: "parsed",
-			outcome: { kind: "needs_review", noteId, reason: "capture_error" },
+			outcome: { kind: "needs_review", noteId, note, reason: "capture_error" },
 		};
 	} catch {
 		return { capturedId, status: "raw", outcome: { kind: "recorded_only" } };
 	}
+}
+
+/**
+ * The rows a capture wrote that the entity store holds, by kind — what the
+ * palette confirms into the store. Null when the capture also wrote something
+ * the store does not hold (a calendar event): then the page has to render
+ * again to show it, and confirming half the capture buys nothing.
+ */
+export type CaptureRows = {
+	task: TaskRow[];
+	note: NoteListRow[];
+	quote: QuoteRow[];
+	journal: JournalEntryRow[];
+};
+
+export function capturedRows(record: CapturedRecord): CaptureRows | null {
+	const rows: CaptureRows = { task: [], note: [], quote: [], journal: [] };
+	const { outcome } = record;
+	if (outcome.kind === "needs_review") rows.note.push(outcome.note);
+	if (outcome.kind !== "executed") return rows;
+	for (const result of outcome.results) {
+		if (!result.ok) {
+			if (result.note) rows.note.push(result.note);
+			continue;
+		}
+		const { entity } = result;
+		switch (entity.table) {
+			case "tasks":
+				rows.task.push(entity.row);
+				break;
+			case "notes":
+				rows.note.push(entity.row);
+				break;
+			case "quotes":
+				rows.quote.push(entity.row);
+				break;
+			case "journal_entries":
+				rows.journal.push(entity.row);
+				break;
+			case "calendar_events":
+				return null;
+		}
+	}
+	return rows;
 }

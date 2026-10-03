@@ -20,6 +20,7 @@ const ALL_KINDS: MutationKind[] = [
 	"task.write",
 	"task.assign",
 	"capture.settled",
+	"capture.event",
 	"routine.write",
 	"links.write",
 	"notification.write",
@@ -93,7 +94,7 @@ describe("invalidationFor", () => {
 	it("only the rare writes the store cannot confirm read their own writes", () => {
 		const rare = ALL_KINDS.filter((k) => invalidationFor(k).readYourWrites).sort();
 		expect(rare).toEqual([
-			"capture.settled",
+			"capture.event",
 			"notes.links",
 			"settings.reminders",
 			"settings.timezone",
