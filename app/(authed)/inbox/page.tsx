@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { PageHeader, SkeletonRows } from "@/components/ui";
+import { ListRow, PageHeader, PillBone, repeat, SkeletonStatus, TextBone } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedInbox } from "@/lib/cache/inbox";
@@ -39,6 +39,36 @@ async function InboxBody() {
 	);
 }
 
+// InboxRow's silhouette: the title, then the domain chips it is filed with
+// and the delete pill on the right.
+function InboxFallback() {
+	const chips = ["w-16", "w-20", "w-14", "w-24", "w-16", "w-20"];
+	return (
+		<>
+			<SkeletonStatus />
+			<ul aria-hidden="true" className="mt-4">
+				{repeat(4, (i) => (
+					<ListRow key={i} align="start">
+						<TextBone
+							className="text-base leading-[1.35]"
+							width={["w-48", "w-64", "w-40", "w-56"][i]}
+						/>
+						<div className="mt-2 flex flex-wrap items-center gap-1.5">
+							{chips.map((w, j) => (
+								// biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder.
+								<PillBone key={j} width={w} />
+							))}
+							<span className="ml-auto">
+								<PillBone width="w-[72px]" />
+							</span>
+						</div>
+					</ListRow>
+				))}
+			</ul>
+		</>
+	);
+}
+
 // Tasks captured without a domain, waiting to be given one (docs/adr/0024).
 // Filing is one-way: a task leaves here and never comes back.
 export default function InboxPage() {
@@ -48,7 +78,7 @@ export default function InboxPage() {
 			    tagline: filing is the whole job of the page. */}
 			<PageHeader title="Inbox" subtitle="Captured tasks without a home. Give each one a domain." />
 
-			<Suspense fallback={<SkeletonRows />}>
+			<Suspense fallback={<InboxFallback />}>
 				<InboxBody />
 			</Suspense>
 		</div>

@@ -1,6 +1,17 @@
 import { Suspense } from "react";
 import { CreateTrigger } from "@/components/create-dialog";
-import { MoreBackLink, PageSkeleton } from "@/components/ui";
+import {
+	DotBone,
+	ListRow,
+	MoreBackLink,
+	PageSkeleton,
+	PillBone,
+	ragged,
+	repeat,
+	SectionBone,
+	TextBone,
+	TitleMetaBone,
+} from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedProjectBoard } from "@/lib/cache/projects";
@@ -53,13 +64,36 @@ async function ProjectsBody() {
 	);
 }
 
+// ProjectList's silhouette: the Active group of board rows — dot, name over
+// meta, the first open tasks beneath, the ADD TASK pill on the right.
 function ProjectsFallback() {
 	return (
 		<PageSkeleton
 			title="Projects"
+			measure={["w-16", "w-16"]}
 			// Disabled rather than absent — create is not data (PageSkeleton).
 			action={<CreateTrigger label="New project" disabled />}
-		/>
+		>
+			<div>
+				<SectionBone titleWidth="w-14">
+					{repeat(5, (i) => (
+						<ListRow
+							key={i}
+							align="start"
+							leading={<DotBone />}
+							trailing={<PillBone width="w-[88px]" />}
+						>
+							<TitleMetaBone i={i} />
+							<div className="mt-1.5 space-y-0.5">
+								{repeat(i % 3 === 1 ? 1 : 2, (j) => (
+									<TextBone key={j} className="text-sm" width={ragged(i + j + 2)} />
+								))}
+							</div>
+						</ListRow>
+					))}
+				</SectionBone>
+			</div>
+		</PageSkeleton>
 	);
 }
 

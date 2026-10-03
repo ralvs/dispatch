@@ -1,6 +1,15 @@
 import { Suspense } from "react";
 import { CreateTrigger } from "@/components/create-dialog";
-import { MoreBackLink, PageSkeleton } from "@/components/ui";
+import {
+	Bone,
+	ListRow,
+	MoreBackLink,
+	PageSkeleton,
+	PillBone,
+	repeat,
+	StatBandBone,
+	TitleMetaBone,
+} from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedRoutines } from "@/lib/cache/routines";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -43,8 +52,40 @@ async function RoutinesBody() {
 	);
 }
 
+// RoutineList's silhouette: the kept-rate band, then one row per routine —
+// name over streak line, the 30-day strip, and the three pills on the right.
 function RoutinesFallback() {
-	return <PageSkeleton title="Routines" action={<CreateTrigger label="New routine" disabled />} />;
+	return (
+		<PageSkeleton
+			title="Routines"
+			measure={["w-20"]}
+			action={<CreateTrigger label="New routine" disabled />}
+		>
+			<StatBandBone count={3} />
+			<ul aria-hidden="true">
+				{repeat(5, (i) => (
+					<ListRow
+						key={i}
+						align="start"
+						trailing={
+							<div className="flex shrink-0 gap-2">
+								<PillBone width="w-[98px]" />
+								<PillBone width="w-14" />
+								<PillBone width="w-[72px]" />
+							</div>
+						}
+					>
+						<TitleMetaBone i={i} />
+						<div className="mt-2 flex gap-0.5">
+							{repeat(30, (j) => (
+								<Bone key={j} className="size-3" />
+							))}
+						</div>
+					</ListRow>
+				))}
+			</ul>
+		</PageSkeleton>
+	);
 }
 
 // The header carries data (its measure), so the whole body streams in behind

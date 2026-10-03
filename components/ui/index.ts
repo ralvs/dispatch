@@ -33,7 +33,22 @@ export { ListRow, rowTitle } from "./list-row";
 export { ListSection } from "./list-section";
 export { MoreBackLink } from "./more-back-link";
 export { type Measure, PageHeader } from "./page-header";
-export { PageSkeleton, SkeletonRows } from "./page-skeleton";
+export {
+	Bone,
+	CheckboxBone,
+	DotBone,
+	MeasureBone,
+	PageSkeleton,
+	PillBone,
+	ragged,
+	repeat,
+	SectionBone,
+	SkeletonStatus,
+	StatBandBone,
+	TextBone,
+	TitleMetaBone,
+	TriggerBone,
+} from "./page-skeleton";
 export { Progress } from "./progress";
 export { Radio, radio } from "./radio";
 export { type ScopeOption, ScopeSelect, UNFILED } from "./scope-select";

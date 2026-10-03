@@ -1,5 +1,15 @@
 import { Suspense } from "react";
-import { MoreBackLink, PageSkeleton } from "@/components/ui";
+import {
+	ListRow,
+	MoreBackLink,
+	PageSkeleton,
+	PillBone,
+	ragged,
+	repeat,
+	SectionBone,
+	TextBone,
+	TriggerBone,
+} from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedJournal } from "@/lib/cache/journal";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -29,8 +39,27 @@ async function JournalBody() {
 	);
 }
 
+// JournalList's silhouette: the collapsed "+ New entry" trigger, then a few
+// date groups of one entry each with its DELETE pill.
 function JournalFallback() {
-	return <PageSkeleton title="Journal" />;
+	return (
+		<PageSkeleton title="Journal" measure={["w-16"]}>
+			<div aria-hidden="true" className="measure-prose">
+				<TriggerBone labelWidth="w-20" />
+			</div>
+			<div className="mt-9">
+				<div>
+					{repeat(3, (i) => (
+						<SectionBone key={i} titleWidth="w-56">
+							<ListRow trailing={<PillBone width="w-[72px]" />}>
+								<TextBone className="text-base leading-[1.35]" width={ragged(i + 2)} />
+							</ListRow>
+						</SectionBone>
+					))}
+				</div>
+			</div>
+		</PageSkeleton>
+	);
 }
 
 // The header carries data (its measure), so the whole body streams in behind

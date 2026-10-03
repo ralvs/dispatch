@@ -2,7 +2,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
-import { BackLink, PageSkeleton } from "@/components/ui";
+import {
+	BackLink,
+	ListRow,
+	PageSkeleton,
+	PillBone,
+	repeat,
+	TextBone,
+	TitleMetaBone,
+	TriggerBone,
+} from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedPerson } from "@/lib/cache/people";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -71,10 +80,46 @@ async function PersonBody({ params }: { params: Promise<{ id: string }> }) {
 	);
 }
 
-// No title: this route's h1 is the person's name, which is the data still in
-// flight. PageSkeleton holds the h1's geometry with a placeholder instead.
+// PersonDetail's silhouette: relationship, company, email and phone, the
+// EDIT / DELETE pills, then Facts and Interactions — a couple of rows over the
+// "+ Add …" trigger each. No title: this route's h1 is the person's name,
+// which is the data still in flight; PageSkeleton holds its geometry.
 function PersonFallback() {
-	return <PageSkeleton rows={5} />;
+	return (
+		<PageSkeleton measure={["w-14"]}>
+			<div aria-hidden="true">
+				<div className="grid grid-cols-2 gap-2 text-sm">
+					{repeat(4, (i) => (
+						<div key={i}>
+							<TextBone className="font-mono text-eyebrow" width="w-24" />
+							<TextBone width={i % 2 === 0 ? "w-20" : "w-28"} />
+						</div>
+					))}
+				</div>
+				<div className="mt-3 flex gap-2">
+					<PillBone width="w-14" />
+					<PillBone width="w-[72px]" />
+				</div>
+				{["w-12", "w-24"].map((title, s) => (
+					<section key={title} className="mt-9">
+						<div className="mb-1.5 flex items-baseline gap-2">
+							<TextBone className="type-section" width={title} />
+						</div>
+						<ul>
+							{repeat(2, (i) => (
+								<ListRow key={i}>
+									<TitleMetaBone i={i + s * 2} />
+								</ListRow>
+							))}
+						</ul>
+						<div className="mt-3">
+							<TriggerBone />
+						</div>
+					</section>
+				))}
+			</div>
+		</PageSkeleton>
+	);
 }
 
 // The data streams in behind the page's own boundary, so the route keeps no

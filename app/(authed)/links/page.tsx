@@ -1,5 +1,13 @@
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/ui";
+import {
+	ListRow,
+	PageSkeleton,
+	PillBone,
+	ragged,
+	repeat,
+	SectionBone,
+	TextBone,
+} from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedLinks } from "@/lib/cache/links";
 import { getCachedAppTimezone } from "@/lib/cache/settings";
@@ -31,8 +39,34 @@ async function LinksBody() {
 	);
 }
 
+// LinkList's silhouette: the Unread group — title, a line of description,
+// the host, the two action pills, and the date on the right.
 function LinksFallback() {
-	return <PageSkeleton title="Links" />;
+	return (
+		<PageSkeleton title="Links" measure={["w-16", "w-12"]}>
+			<div>
+				<SectionBone titleWidth="w-16">
+					{repeat(5, (i) => (
+						<ListRow
+							key={i}
+							align="start"
+							trailing={<TextBone className="font-mono text-meta" width="w-20" />}
+						>
+							<TextBone className="text-base leading-[1.35]" width={ragged(i)} />
+							{i % 2 === 0 && (
+								<TextBone className="mt-1 text-sm leading-relaxed" width={ragged(i + 2)} />
+							)}
+							<TextBone className="mt-1 font-mono text-meta" width="w-24" />
+							<div className="mt-2 flex gap-3">
+								<PillBone width="w-[94px]" />
+								<PillBone width="w-[76px]" />
+							</div>
+						</ListRow>
+					))}
+				</SectionBone>
+			</div>
+		</PageSkeleton>
+	);
 }
 
 // The header carries data (its measure), so the whole body streams in behind

@@ -1,5 +1,15 @@
 import { Suspense } from "react";
-import { HeaderCreateButton, PageSkeleton } from "@/components/ui";
+import {
+	Bone,
+	DotBone,
+	HeaderCreateButton,
+	ListRow,
+	PageSkeleton,
+	repeat,
+	SectionBone,
+	TextBone,
+	TitleMetaBone,
+} from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedNoteLists } from "@/lib/cache/notes";
@@ -39,13 +49,28 @@ async function NotesBody() {
 	);
 }
 
+// NoteList's silhouette: the domain filter, then one group of rows — dot,
+// title over date, the pin star on the right. The review and pinned groups
+// are left out: most of the time they are empty and do not render at all.
 function NotesFallback() {
 	return (
 		<PageSkeleton
 			title="Notes"
+			measure={["w-16", "w-24"]}
 			// Disabled rather than absent — create is not data (PageSkeleton).
 			action={<HeaderCreateButton label="New note" disabled />}
-		/>
+		>
+			<div aria-hidden="true" className="mb-4 flex items-center">
+				<TextBone className="font-mono text-meta" width="w-24" />
+			</div>
+			<SectionBone titleWidth="w-20">
+				{repeat(8, (i) => (
+					<ListRow key={i} leading={<DotBone />} trailing={<Bone className="size-4 rounded-sm" />}>
+						<TitleMetaBone i={i} />
+					</ListRow>
+				))}
+			</SectionBone>
+		</PageSkeleton>
 	);
 }
 
