@@ -156,7 +156,6 @@ export function TaskRowItem({
 					todayIso={todayIso}
 					people={people}
 					onDelete={handlers.onDelete ? remove : undefined}
-					onUpdate={handlers.onUpdate}
 					defaults={{
 						title: task.title,
 						notes: task.notes,

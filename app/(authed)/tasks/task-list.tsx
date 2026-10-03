@@ -6,26 +6,18 @@ import { useEffect, useMemo, useState } from "react";
 import { TaskDialog } from "@/components/task-dialog";
 import type { TaskDomainOption, TaskProjectOption } from "@/components/task-fields";
 import { EmptyState, PageHeader, SectionHead, StatBand } from "@/components/ui";
-import type { ActionResult } from "@/lib/action-result";
 import {
 	completeTaskAction,
-	createTaskAction,
 	deleteTaskAction,
-	quickAddTaskAction,
 	reopenTaskAction,
 	setTop3Action,
-	updateTaskAction,
 } from "@/lib/actions/tasks";
 import { dateOfInstant, recentDoneSinceDate } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { isQuiet } from "@/lib/quiet";
 import type { TaskRow } from "@/lib/services/tasks";
-import { useStoreWrite, useView, viewKey } from "@/lib/store";
+import { useView, viewKey } from "@/lib/store";
 import type { TaskLists } from "@/lib/store/kinds/task";
-import {
-	optimisticTaskFromForm,
-	optimisticTaskFromText,
-} from "@/lib/task-interaction/optimistic-task";
 import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
 import { isDueToday, isOverdue, isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
 import { NewTaskButton } from "./new-task-button";
@@ -95,7 +87,6 @@ export function TaskList({
 	const router = useRouter();
 	const lists = useView(viewKey.tasks()) ?? NO_LISTS;
 	const run = useTaskIntentRunner();
-	const write = useStoreWrite("task");
 	// Unfiled open tasks — the header's link to /inbox. From the store, so
 	// filing one elsewhere moves it here too.
 	const inboxCount = lists.open.filter((t) => t.domain_id === null).length;
@@ -152,22 +143,17 @@ export function TaskList({
 	}, [editTaskId, router]);
 
 	function handlersFor(task: TaskRow) {
-		return {
-			...bindTaskHandlers(
-				task,
-				run,
-				{
-					complete: completeTaskAction,
-					reopen: reopenTaskAction,
-					setTop3: setTop3Action,
-					delete: deleteTaskAction,
-				},
-				{ top3DateIso: todayIso, todayIso },
-			),
-			// The edit form waits for the server; the store takes the saved row.
-			onUpdate: (formData: FormData) =>
-				write({ type: "edit", id: task.id }, () => updateTaskAction(task.id, formData)),
-		};
+		return bindTaskHandlers(
+			task,
+			run,
+			{
+				complete: completeTaskAction,
+				reopen: reopenTaskAction,
+				setTop3: setTop3Action,
+				delete: deleteTaskAction,
+			},
+			{ top3DateIso: todayIso, todayIso },
+		);
 	}
 
 	// Project/Domain AND together and apply across whichever status is showing.
@@ -213,23 +199,6 @@ export function TaskList({
 		(t) => t.completed_at !== null && dateOfInstant(t.completed_at, tz) >= sinceDate,
 	);
 
-	function onCreate(formData: FormData): Promise<ActionResult<unknown>> {
-		const optimistic = optimisticTaskFromForm(formData, domains, projects ?? []);
-		sessionCreatedIds.add(optimistic.id);
-		// A rejected field resolves as a failed result and the store drops the
-		// optimistic row; a confirmed one swaps it for the server's.
-		return write({ type: "create", task: optimistic }, () => createTaskAction(formData));
-	}
-
-	async function onQuickAdd(text: string, domainId: string): Promise<void> {
-		const optimistic = optimisticTaskFromText(text, domainId, domains);
-		sessionCreatedIds.add(optimistic.id);
-		const result = await write({ type: "create", task: optimistic }, () =>
-			quickAddTaskAction({ text, domainId }),
-		);
-		if (!result.ok) throw new Error(result.formError ?? "Couldn't add that task.");
-	}
-
 	return (
 		// The whole page lives in here, header included: the count strip is the
 		// status filter now, so it has to read the same client state the list does.
@@ -248,7 +217,7 @@ export function TaskList({
 				below; repeating them here was the same count twice. */}
 			<StatBand stats={taskStats(lists.open, lists.done, todayIso, tz, quietProjects)} />
 
-			{/* `onQuickAdd` is what makes this dialog the fast path too: a create
+			{/* `quickAdd` is what makes this dialog the fast path too: a create
 			    carrying nothing but a title goes through the parser, anything
 			    else is taken literally (docs/adr/0043). The row-level dialogs
 			    are edit-mode and never see it. */}
@@ -260,8 +229,8 @@ export function TaskList({
 				projects={projects ?? []}
 				todayIso={todayIso}
 				people={people}
-				onCreate={onCreate}
-				onQuickAdd={onQuickAdd}
+				quickAdd
+				onCreating={(id) => sessionCreatedIds.add(id)}
 			/>
 
 			{/* Status left, the two scope narrows right — one bar, because they

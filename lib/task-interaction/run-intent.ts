@@ -21,8 +21,6 @@ export type TaskRowHandlers = {
 	onToggleDone: () => void;
 	onToggleTop3: () => void;
 	onDelete?: () => void;
-	/** The edit form's save, routed through the store. Left out, the action runs bare. */
-	onUpdate?: (formData: FormData) => Promise<ActionResult<unknown>>;
 };
 
 export type TaskIntentRun = (

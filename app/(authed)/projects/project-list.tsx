@@ -1,19 +1,10 @@
 "use client";
 
 import { EmptyState, ListSection, PageHeader } from "@/components/ui";
-import { createTaskAction } from "@/lib/actions/tasks";
 import type { DomainRow } from "@/lib/schemas/domain";
 import type { ProjectRow } from "@/lib/schemas/project";
 import type { TaskRow } from "@/lib/schemas/task";
-import {
-	useAggregate,
-	useClock,
-	useProvisionalIds,
-	useStoreWrite,
-	useView,
-	viewKey,
-} from "@/lib/store";
-import { optimisticTaskFromForm } from "@/lib/task-interaction/optimistic-task";
+import { useAggregate, useClock, useProvisionalIds, useView, viewKey } from "@/lib/store";
 import { AddTaskButton } from "./add-task-button";
 import { STATUS_GROUPS } from "./constants";
 import { ProjectCreateButton } from "./project-form";
@@ -110,12 +101,6 @@ function BoardRow({
 }) {
 	const doneCount = useAggregate(`project.done:${project.id}`) ?? 0;
 	const { todayIso } = useClock();
-	const write = useStoreWrite("task");
-
-	function createTask(formData: FormData) {
-		const optimistic = optimisticTaskFromForm(formData, domainOptions, projectOptions);
-		return write({ type: "create", task: optimistic }, () => createTaskAction(formData));
-	}
 
 	return (
 		<ProjectRowItem
@@ -132,7 +117,6 @@ function BoardRow({
 						domains={domainOptions}
 						todayIso={todayIso}
 						variant="row"
-						onCreate={createTask}
 					/>
 				)
 			}
