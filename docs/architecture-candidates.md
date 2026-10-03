@@ -8,45 +8,58 @@ adapter, leverage, locality (the `codebase-design` skill); domain terms from
 
 ## How a review uses this file
 
-1. **Read it first.** Settled shapes, open candidates, rejections and the
-   coverage table are the starting point.
+1. **Read all of it first**: work order, settled shapes, open, parked, done,
+   merged, side findings, test gaps, coverage, run log.
 2. **Build on settled shapes.** A settled shape is the structure a finished
-   refactor left behind, or a module a review judged already deep. A new
-   candidate extends it. To change one, reopen it with the reason and the
+   refactor left behind, or a module a review judged already deep. Undoing
+   one means changing the structure its row names; a bug fix inside it is
+   not undoing. To change a structure, reopen it with the reason and the
    evidence, as a new ADR supersedes an old one.
-3. **Every new candidate names its relations** to the open ones: _extends_,
-   _depends on_, _conflicts with_, or _none_. A candidate that conflicts with a
-   settled shape or an open direction says so in its first line.
-4. **Update in place.** Candidate IDs are stable and never reused. Status moves
-   `open → in progress → done`, or to `rejected` or `merged into AC-nn`. A done
-   candidate moves its result into **Settled shapes**.
-5. **Log the run** in the coverage table and the run log.
-6. **Stop when two runs in a row find nothing new.** Vary the lens between
-   runs (by area, by user flow, by test surface), so a quiet run means the
-   code is covered, not that the same path was walked twice.
+3. **Every candidate states its relations**, using only these words, and
+   every edge is written on both candidates:
+   - _depends on AC-x_ — AC-x lands first. AC-x says _needed by_.
+   - _shares <what> with AC-x_ — both change the same code or decision: do
+     them in one PR, or decide the shared part first. Both say _shares_.
+   - _extends <settled shape>_, or _conflicts with <settled shape>_ — a
+     conflict goes in the candidate's first line, with the reason.
+   - _none_.
+4. **Update in place.** Candidate IDs (open and parked) are stable and never
+   reused. Status moves `open → in progress → done`, or to `rejected` or
+   `merged into AC-nn`. A candidate is done only when the PR that finishes it
+   adds its result as a **Settled shapes** row; the work order is re-cut in
+   the same PR.
+5. **Side findings are bugs, fixed on their own** — they do not wait for a
+   candidate. The fix deletes the line and updates any candidate that cites
+   the same code.
+6. **Log the run** in the coverage table and the run log.
+7. **Stop when two runs in a row are quiet.** A quiet run adds no candidate
+   ID, open or parked. Extra evidence, narrowing, relation fixes, side
+   findings and test gaps refine the plan; they do not count. Vary the lens
+   between runs (by area, by user flow, by test surface), so a quiet run means
+   the code is covered, not that the same path was walked twice.
 
 A candidate's **direction** says what the deepened module owns, in plain words.
 It is not an interface: the interface is designed when the work starts.
 
 ## Work order
 
-The order that keeps each refactor on top of the last one.
+Three tracks. Tracks touch different code, so they can run side by side;
+inside a track, follow the arrows.
 
-1. **AC-02** — owns the intent → server-call pairing, and decides whether a
-   form write's server half takes FormData or the intent. AC-06, AC-13 and
-   AC-04 build on it.
-2. **AC-08** — independent of AC-02; two live bugs (below). Can run beside it.
-3. **AC-06** — the optimistic half of a create or edit is the form decode; it
-   follows AC-02's choice of input.
-4. **AC-07** — the read side of the store: stamp, snapshot, declared reads.
-   After AC-02 settles what a write returns.
-5. **AC-13** — the open note seeds its row; uses AC-02's note calls and
-   AC-07's seeding.
-6. **AC-14** — note file intake; after AC-13, which settles how the strip
-   receives its write.
-7. **AC-04** — counters travel in AC-07's snapshot aggregates; small by then.
-8. **AC-09**, **AC-12**, **AC-05** — independent; any time. AC-05's prompt
-   text must not change.
+- **Track A — the store's writes and reads.**
+  1. **AC-02** and **AC-07**, in either order: they share nothing.
+  2. **AC-06** after AC-02 (it follows AC-02's choice of what a form write's
+     server half takes).
+  3. **AC-13** after AC-02 and AC-07, then **AC-14** after AC-13.
+  4. **AC-04** after AC-07 (counters travel in the snapshot's aggregates).
+- **Track B — external writes.**
+  1. **AC-08** first: two live bugs. Decide with AC-09 who writes a failed
+     sync's ledger row, and with AC-12 what the caller's `sb` decides.
+  2. **AC-09** after AC-08.
+  3. **AC-12** last of all tracks: it retypes every service, so run it when
+     no other candidate is in progress.
+- **Track C — capture parser.** **AC-05** any time. Prompt text must not
+  change.
 
 ## Settled shapes
 
@@ -61,7 +74,7 @@ Do not undo these. Each names where the rule lives.
 | A palette capture returns the rows it wrote and confirms them into the store | `lib/services/capture/executor.ts`, `lib/store/receive.ts` | ADR-0073 (AC-03) |
 | One owner for the quiet-project rule, client and server | `lib/quiet.ts` | #82 |
 | The task dialog writes every create and edit through the store itself | `components/task-dialog.tsx` | #83 |
-| Mutation → tags is one pure table | `lib/invalidate.ts` (`invalidationFor`) | run 2 |
+| Mutation → tags is one pure table, and each external writer's tags are named in it | `lib/invalidate.ts` (`invalidationFor`, `EXTERNAL_WRITES`) | run 2 |
 | The absent-versus-blank form rule lives in one place | `lib/form-decode.ts` | run 2 |
 | Owner checks: one small interface over session rotation; external routes fail closed | `lib/auth.ts`, `lib/secret-auth.ts` | run 2 |
 | Note files: a four-function storage port over R2, and one module keeping bytes and row in step | `lib/storage/`, `lib/services/note-attachments.ts`, `lib/attachments.ts` | run 2 |
@@ -108,8 +121,8 @@ Do not undo these. Each names where the rule lives.
   asserts the dateless call (`toHaveBeenCalledWith("stretch", false)`), so
   fixing the bug changes that test. Twelve tests mock the toast to check each
   component's own error string.
-- **Relations:** absorbs AC-01. Builds on the ADR-0069 shape. Constrains
-  AC-06.
+- **Relations:** extends the ADR-0069 shape. Needed by AC-06, AC-13,
+  AC-14. Absorbs AC-01.
 
 ### AC-08 · An external action owns its ledger row, its delivery and its tags
 
@@ -146,10 +159,11 @@ Do not undo these. Each names where the rule lives.
 - **Tests:** `notifications.int.test.ts` never checks whether a push goes
   out; the bare-call crons have no test; the routes are held only by the
   source-grep in `invalidate.test.ts`.
-- **Relations:** touches AC-09 (who writes a failed sync's ledger row).
-  Builds on `EXTERNAL_WRITES`.
-  Touches iron rule #3 (push would stop depending on the caller's `sb`) and
-  ADR-0001 (a service calling `next/cache`): decide both before the work.
+- **Relations:** extends the `invalidationFor` / `EXTERNAL_WRITES` shape.
+  Shares with AC-09 who writes a failed sync's ledger row, and is needed by
+  AC-09 for that decision. Shares with AC-12
+  what the caller's `sb` decides (iron rule #3: push would stop depending on
+  it). Also decide ADR-0001 (a service calling `next/cache`) before the work.
 
 ### AC-06 · One form decode per entity, shared by the optimistic and the server half
 
@@ -174,13 +188,15 @@ Do not undo these. Each names where the rule lives.
   a generic failure (`createPersonAction` is right).
 - **Direction:** the schema the action already parses with, through
   `lib/form-decode.ts`, also builds the optimistic row or patch.
-- **Relations:** extends the `lib/form-decode.ts` shape. Constrained by
-  AC-02: it follows AC-02's choice of what a form write's server half takes.
+- **Relations:** extends the `lib/form-decode.ts` shape; the task dialog
+  still writes through the store (#83), only how it builds the optimistic row
+  changes. Depends on AC-02 (what a form write's server half takes).
 
 ### AC-07 · A cached reader owns its stamp, its snapshot and its declared reads
 
 - **Strength:** Worth exploring · **Category:** in-process · **Found:** run 1
-  · **Promoted:** run 2 · **Widened:** run 3 (absorbs AC-11)
+  · **Promoted:** run 2 · **Widened:** run 3 (absorbs AC-11) · **Narrowed:**
+  run 4
 - **Files:** 14 `const readAt = nowUtc()` in 12 files under `lib/cache/`;
   15 pages with `const snapshot: Snapshot`; `lib/store/server.ts:9`
   (`stampRead`, one caller: `today/actions.ts:43`);
@@ -197,8 +213,9 @@ Do not undo these. Each names where the rule lives.
 - **Direction:** a cached reader returns a stamped snapshot and states what it
   reads in the terms the write side uses, so completeness is checked
   mechanically; a page only seeds it.
-- **Relations:** builds on the ADR-0069 conflict rule. AC-04 and AC-13 depend
-  on it.
+- **Relations:** extends the ADR-0069 shape (its conflict rule) and the
+  `invalidationFor` shape (declared reads in the write side's terms). Needed by
+  AC-13, AC-04. Absorbs AC-11.
 
 ### AC-13 · The open note reads its row from the store
 
@@ -214,8 +231,8 @@ Do not undo these. Each names where the rule lives.
   for their one row (`viewKey.projectHead(id)`, `viewKey.person(id)`).
 - **Direction:** the note page seeds its row the way the project and person
   pages do; the editor, the attachment strip and the list read that one row.
-- **Relations:** depends on AC-02 (the note kind's calls, including `touch`)
-  and AC-07 (seeding). Builds on ADR-0069.
+- **Relations:** extends the ADR-0069 shape. Depends on AC-02 (the note
+  kind's calls, including `touch`) and AC-07 (seeding). Needed by AC-14.
 
 ### AC-14 · Taking in a note file is one module
 
@@ -236,8 +253,9 @@ Do not undo these. Each names where the rule lives.
   `note-attachments.test.ts:7`, `note-attachments.int.test.ts:5` and the
   media route test; `note-attachments.test.ts:5-6` argues for module-mocking
   the port over a fake. Settle fake versus mock when the work starts.
-- **Relations:** extends the settled note-files shape. After AC-13, which
-  settles how the strip receives its write.
+- **Relations:** extends the note-files shape. Depends on AC-02 (the strip's
+  fake action goes) and AC-13 (how the strip receives its write). Fix the two
+  note-file side findings first.
 
 ### AC-04 · Today's counters in one place, server and client
 
@@ -260,7 +278,8 @@ Do not undo these. Each names where the rule lives.
 - **Direction:** one pure module says what a row adds to each counter; the
   server readers and the store adapters both use it.
 - **Relations:** extends the `lib/quiet.ts` shape. Depends on AC-07 (counters
-  travel in the snapshot's aggregates) and AC-02.
+  travel in the snapshot's aggregates). The `listCompletionsOn` side finding
+  removes one of the routines-done sources; fix it first.
 
 ### AC-09 · One calendar mirror, two source adapters
 
@@ -281,8 +300,8 @@ Do not undo these. Each names where the rule lives.
   passes a fake, but the executor (`executor.ts:75,87`) and the cron route
   (`cron/caldav/route.ts:21,31`) pick the real client by import, so their
   tests module-mock `caldav/client` and `env`. Run 5.
-- **Relations:** touches AC-08: the mirror's failure state and the failed
-  sync's ledger row are decided together.
+- **Relations:** shares with AC-08 who writes a failed sync's ledger row;
+  depends on AC-08 for that decision.
 
 ### AC-12 · A row's columns are stated once and checked against the database
 
@@ -301,8 +320,8 @@ Do not undo these. Each names where the rule lives.
 - **Direction:** the generated types are what row shapes are checked against,
   through a typed client; select strings and row types still come from one
   place per entity, and the casts go.
-- **Relations:** none with open candidates. Touches iron rule #3 (how `sb` is
-  typed).
+- **Relations:** shares with AC-08 what `sb` is and decides (iron rule #3).
+  Retypes every service: run it when no other candidate is in progress.
 
 ### AC-05 · The parser's interface shrinks to its entry points
 
@@ -338,7 +357,7 @@ Kept so a later review does not rediscover them as new. Promote with evidence.
   `lib/ai/verbatim.ts:27`). Two callers only. Run 2. Run 4: keep parked —
   each fold does something different after it, so a shared helper is one
   line, and the reconcile still has two callers.
-- **Day state stored as placed bands.** Every reduce re-runs
+- **AC-15 · Day state stored as placed bands.** Every reduce re-runs
   `collectDayTasks` → `placeOnDay`; `overflow` exists so the pool can be
   rebuilt (`lib/store/kinds/task.ts`, `lib/day-schedule.ts`). Run 1.
 
@@ -356,18 +375,18 @@ Kept so a later review does not rediscover them as new. Promote with evidence.
 
 ## Side findings
 
-Bugs a review saw that are not architecture. Fix and delete the line.
+Bugs a review saw that are not architecture. Rule 5 applies.
 
 - `lib/ai/chat-context.ts:58` tells the model "Timezone is America/Sao_Paulo"
   although the function receives `tz` (iron rule #1). Run 2.
-- **Removing a note file can delete another note's file.**
+- (Before AC-14.) **Removing a note file can delete another note's file.**
   `removeAttachment` (`lib/services/note-attachments.ts:74-86`) calls
   `note_attachment_remove`, which returns `void` and updates only the named
   note, then deletes `storagePath` from R2 regardless. A path that belongs to
   another note deletes that note's file and leaves it a dead thumbnail. The
   action's comment says the RPC "validates" the path; nothing reads a result.
   Run 3.
-- An upload to a note id that does not exist stores the file, reports it
+- (Before AC-14.) An upload to a note id that does not exist stores the file, reports it
   attached, and returns `write: null`
   (`app/api/notes/[id]/attachments/route.ts`). Run 3.
 - **Check the hosted project's sign-ups.** `supabase/config.toml:176` has
@@ -381,7 +400,7 @@ Bugs a review saw that are not architecture. Fix and delete the line.
   read by nothing; the card reads the store. The re-export at `today.ts:186`
   has no importers, and `lib/routine-buckets.ts:1-3` still says it is
   re-exported for the widget and chat. Run 4.
-- `listCompletionsOn(sb, todayIso)` (`today.ts:280`) re-reads what
+- (Cited by AC-04.) `listCompletionsOn(sb, todayIso)` (`today.ts:280`) re-reads what
   `listCompletionsSince(...)` (`today.ts:286`) already returns: one extra query
   on Today, `/api/widget` and `/api/chat`. Run 4.
 - Calendar math outside `lib/dates.ts` (iron rule #1): `Date.UTC` in
@@ -440,3 +459,4 @@ Which areas each run read closely. A review reads the empty rows first.
 | 3 | 2026-10-03 | `6267b57` | glanced areas, tests, migrations, other routes; notes end to end; file consistency | AC-12, AC-13, AC-14 | AC-11 merged into AC-07; AC-02, AC-04, AC-05, AC-06, AC-08 widened; work order re-cut |
 | 4 | 2026-10-03 | `6267b57` | convergence: a tick end to end, flat `lib/`, `components/ui/`; adversarial pass on every open item | none | AC-02, AC-04, AC-06, AC-08 widened; AC-07 narrowed; AC-09 relation added; AC-10 kept parked |
 | 5 | 2026-10-03 | `6267b57` | convergence: the test surface — every `vi.mock`, untested logic | none | test evidence on AC-02, AC-05, AC-08, AC-09, AC-14; test gaps listed. **Converged:** two runs in a row with nothing new |
+| — | 2026-10-03 | `6267b57` | checker pass on the file | — | relation words fixed and mirrored; work order re-cut into tracks; parked day bands is AC-15; quiet run defined |

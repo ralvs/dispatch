@@ -95,8 +95,9 @@ Every change reaches `main` through a PR that Renan merges (docs/adr/0064).
 - Read `docs/adr/` before changing direction; new ADR whenever a decision
   deviates from the reference implementation or this file
 - Architecture reviews and refactors start from
-  `docs/architecture-candidates.md`: build on its settled shapes, and a
-  refactor that finishes a candidate moves it there
+  `docs/architecture-candidates.md`: build on its settled shapes, and the PR
+  that finishes a candidate marks it done and adds its result as a settled
+  shape
 - `app/api/` is for external HTTP surfaces only — everything else is a server
   action behind `requireOwner()`
 - Code lives with its only consumer (docs/adr/0070). A route never imports
