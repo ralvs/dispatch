@@ -19,6 +19,7 @@ import {
 	T1,
 	T2,
 	T3,
+	T4,
 	TODAY,
 	TZ,
 	task,
@@ -108,6 +109,27 @@ describe("task adapter", () => {
 		);
 		expect(selectView(next, viewKey.tasks())?.open[0].top3_for_date).toBe(TODAY);
 		expect(selectView(next, viewKey.day(TODAY))?.schedule.top3.map((t) => t.id)).toEqual(["a"]);
+	});
+
+	it("a create a seed already read is listed once", () => {
+		const a = task({ id: "a", due_date: TODAY, project_id: "p1" });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [
+				{ key: viewKey.day(TODAY), type: "day", data: dayPayload(TODAY, [a]) },
+				{ key: viewKey.tasks(), type: "taskLists", data: { open: [a], done: [] } },
+				{
+					key: viewKey.project("p1"),
+					type: "taskList",
+					data: { rows: [a], scope: { projectId: "p1" } },
+				},
+			]),
+		);
+		const [next] = applyIntent(s, { kind: "task", intent: { type: "create", task: a } }, NOW);
+		const day = selectView(next, viewKey.day(TODAY));
+		expect(day && collectDayTasks(day.schedule)).toEqual([a]);
+		expect(selectView(next, viewKey.tasks())?.open).toEqual([a]);
+		expect(selectView(next, viewKey.project("p1"))).toEqual([a]);
 	});
 
 	it("a flat list admits only rows in its scope", () => {
@@ -488,6 +510,148 @@ describe("Today's task counters", () => {
 		const s = applySeed(initialState(), snapshot(T1, [], { aggregates: counts(1, 0, 0) }));
 		const [applied] = applyIntent(s, { kind: "task", intent: { type: "delete", id: "x" } }, NOW);
 		expect(read(applied)).toEqual([1, 0, 0]);
+	});
+});
+
+describe("quiet tasks (docs/adr/0058)", () => {
+	// p-quiet is paused: an undated task in it is quiet, and Today neither
+	// counts it nor shows it.
+	const quiet = task({ id: "q", project_id: "p-quiet" });
+	const seed = (extra: Partial<Snapshot> = {}) =>
+		applySeed(
+			initialState(),
+			snapshot(
+				T1,
+				[
+					{ key: viewKey.tasks(), type: "taskLists", data: { open: [quiet], done: [] } },
+					{ key: viewKey.day(TODAY), type: "day", data: dayPayload(TODAY) },
+				],
+				{
+					quietProjectIds: ["p-quiet"],
+					aggregates: { "tasks.open": 3, "tasks.overdue": 0, "tasks.inbox": 0 },
+					...extra,
+				},
+			),
+		);
+
+	it("a tick on a quiet task moves none of Today's counters", () => {
+		const [applied] = applyIntent(
+			seed(),
+			{ kind: "task", intent: { type: "complete", id: "q", observedDueDate: null } },
+			NOW,
+		);
+		expect(selectAggregate(applied, "tasks.open")).toBe(3);
+	});
+
+	it("a quiet task starred on /tasks never lands on Today", () => {
+		const star = { type: "setTop3", id: "q", starred: true, forDateIso: TODAY } as const;
+		const [applied, token] = applyIntent(seed(), { kind: "task", intent: star }, NOW);
+		const starred = { ...quiet, top3_for_date: TODAY };
+		const confirmed = confirmWrite(applied, token, { at: T2, rows: [starred] });
+		const day = selectView(confirmed, viewKey.day(TODAY));
+		expect(day && collectDayTasks(day.schedule)).toEqual([]);
+	});
+
+	it("a task that goes quiet leaves the day it was on", () => {
+		const a = task({ id: "a", project_id: "p-quiet", due_date: TODAY });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ key: viewKey.day(TODAY), type: "day", data: dayPayload(TODAY, [a]) }], {
+				quietProjectIds: ["p-quiet"],
+			}),
+		);
+		const [applied, token] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "edit", id: "a" } },
+			NOW,
+		);
+		const undated = { ...a, due_date: null };
+		const confirmed = confirmWrite(applied, token, { at: T2, rows: [undated] });
+		const day = selectView(confirmed, viewKey.day(TODAY));
+		expect(day && collectDayTasks(day.schedule)).toEqual([]);
+	});
+
+	// The server's day reads every task finished on it, quiet or not
+	// (listCompletedOn), so the store keeps it there too — on confirm and on
+	// a replay onto a seed that already holds it.
+	it("a quiet task finished today stays on Today, struck", () => {
+		const a = task({ id: "a", project_id: "p-quiet", top3_for_date: TODAY });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ key: viewKey.day(TODAY), type: "day", data: dayPayload(TODAY, [a]) }], {
+				quietProjectIds: ["p-quiet"],
+			}),
+		);
+		const [applied, token] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "complete", id: "a", observedDueDate: null } },
+			NOW,
+		);
+		const done = { ...a, status: "done" as const, completed_at: NOW };
+		const confirmed = confirmWrite(applied, token, { at: T2, rows: [done] });
+		const day = selectView(confirmed, viewKey.day(TODAY));
+		expect(day?.schedule.top3).toEqual([done]);
+
+		const replayed = applySeed(
+			confirmed,
+			snapshot(
+				"2026-07-15T12:01:30.000Z",
+				[{ key: viewKey.day(TODAY), type: "day", data: dayPayload(TODAY, [done]) }],
+				{ quietProjectIds: ["p-quiet"] },
+			),
+		);
+		expect(selectView(replayed, viewKey.day(TODAY))?.schedule.top3).toEqual([done]);
+
+		// Unticked, it is open and quiet again: the day no longer reads it.
+		const [unticked] = applyIntent(
+			replayed,
+			{ kind: "task", intent: { type: "reopen", id: "a" } },
+			NOW,
+		);
+		const day2 = selectView(unticked, viewKey.day(TODAY));
+		expect(day2 && collectDayTasks(day2.schedule)).toEqual([]);
+	});
+
+	it("an older seed's quiet projects never land on a newer clock", () => {
+		const s = applySeed(initialState(), snapshot(T3, [], { quietProjectIds: [] }));
+		const stale = applySeed(s, snapshot(T1, [], { quietProjectIds: ["p-quiet"] }));
+		expect(stale.clock?.quietProjectIds).toEqual([]);
+		// Nor on a newer clock that holds none: the status may have changed since.
+		const bare = applySeed(initialState(), snapshot(T3, []));
+		expect(applySeed(bare, snapshot(T1, [], { quietProjectIds: ["p-quiet"] })).clock).toEqual(
+			bare.clock,
+		);
+		const fresher = applySeed(stale, snapshot(T4, [], { quietProjectIds: ["p-quiet"] }));
+		expect(fresher.clock?.quietProjectIds).toEqual(["p-quiet"]);
+	});
+
+	// The server counts the next occurrence: it is dated, so never quiet.
+	it("a dated repeating task in a quiet project keeps the open count when ticked", () => {
+		const r = task({ id: "r", project_id: "p-quiet", due_date: TODAY, recurrence_rule: "daily" });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ key: viewKey.tasks(), type: "taskLists", data: { open: [r], done: [] } }], {
+				quietProjectIds: ["p-quiet"],
+				aggregates: { "tasks.open": 3 },
+			}),
+		);
+		const [ticked] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "complete", id: "r", observedDueDate: TODAY } },
+			NOW,
+		);
+		expect(selectAggregate(ticked, "tasks.open")).toBe(3);
+	});
+
+	it("a seed that carries no quiet projects keeps the ones already known", () => {
+		const later = applySeed(seed(), snapshot(T3, []));
+		const [applied] = applyIntent(
+			later,
+			{ kind: "task", intent: { type: "complete", id: "q", observedDueDate: null } },
+			NOW,
+		);
+		expect(later.clock?.quietProjectIds).toEqual(["p-quiet"]);
+		expect(selectAggregate(applied, "tasks.open")).toBe(3);
 	});
 });
 

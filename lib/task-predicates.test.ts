@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isDueToday, isOverdue, isQuiet, isTop3Today } from "@/lib/task-predicates";
+import { isDueToday, isOverdue, isTop3Today } from "@/lib/task-predicates";
 
 describe("isOverdue", () => {
 	it("is false when due today", () => {
@@ -56,29 +56,5 @@ describe("isTop3Today", () => {
 
 	it("is false when not pinned", () => {
 		expect(isTop3Today({ top3_for_date: null }, "2026-07-15")).toBe(false);
-	});
-});
-
-describe("isQuiet", () => {
-	const quiet = new Set(["paused-project"]);
-
-	it("is true for an undated task in a project that is not active", () => {
-		expect(isQuiet({ due_date: null, project_id: "paused-project" }, quiet)).toBe(true);
-	});
-
-	it("is false for a dated task, even in a quiet project — a due date always wins", () => {
-		expect(isQuiet({ due_date: "2026-07-15", project_id: "paused-project" }, quiet)).toBe(false);
-	});
-
-	it("is false for a task with no project at all", () => {
-		expect(isQuiet({ due_date: null, project_id: null }, quiet)).toBe(false);
-	});
-
-	it("is false for an undated task in an active project", () => {
-		expect(isQuiet({ due_date: null, project_id: "active-project" }, quiet)).toBe(false);
-	});
-
-	it("is false for everything when no project is quiet", () => {
-		expect(isQuiet({ due_date: null, project_id: "paused-project" }, new Set())).toBe(false);
 	});
 });

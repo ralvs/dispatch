@@ -18,6 +18,7 @@ import {
 	type ProjectTaskCounts,
 	taskProgress,
 } from "@/lib/services/projects";
+import { listQuietProjectIds } from "@/lib/services/quiet";
 import { listQuotes, type QuoteRow } from "@/lib/services/quotes";
 import { listSkippedToday } from "@/lib/services/resurfacing";
 import {
@@ -217,16 +218,25 @@ export async function loadDayScheduleInputs(
 	sb: SupabaseClient,
 	tz: string,
 	dateIso: string,
-): Promise<{ open: TaskRow[]; completed: TaskRow[]; events: CalendarEventRow[] }> {
-	const [open, completed, events] = await Promise.all([
+): Promise<{
+	open: TaskRow[];
+	completed: TaskRow[];
+	events: CalendarEventRow[];
+	/** The quiet projects the open read left out, for the entity store's clock. */
+	quietProjectIds: string[];
+}> {
+	const [{ open, quiet }, completed, events] = await Promise.all([
 		// Quiet tasks never reach a day: an undated task in a project that is not
 		// active is not today's work. A dated one still arrives, whatever its
-		// project's status.
-		listTasks(sb, { status: "open", excludeQuiet: true }),
+		// project's status (lib/quiet.ts).
+		listQuietProjectIds(sb).then(async (quiet) => ({
+			quiet,
+			open: await listTasks(sb, { status: "open", excludeQuiet: quiet }),
+		})),
 		listCompletedOn(sb, dateIso, tz),
 		listEventsOn(sb, dateIso, tz),
 	]);
-	return { open, completed, events };
+	return { open, completed, events, quietProjectIds: [...quiet] };
 }
 
 /**

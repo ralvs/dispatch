@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { dayWindowUtc, nowUtc } from "@/lib/dates";
+import { notQuietFilter } from "@/lib/quiet";
 import { TASK_SELECT, type TaskRow } from "@/lib/schemas/task";
 import { unwrap } from "@/lib/services/errors";
 import { type GraphFail, syncTaskMentionsFromText } from "@/lib/services/mentions";
@@ -28,12 +29,11 @@ export async function listTasks(
 		unfiled?: boolean;
 		projectId?: string;
 		/**
-		 * Drop quiet tasks — undated tasks in a project that is not active. Today
-		 * asks for this; /tasks loads them and files them into their own view.
-		 * A dated task always surfaces, and a task with no project never goes
-		 * quiet (lib/task-predicates.ts, `isQuiet`).
+		 * Drop quiet tasks (lib/quiet.ts). Today asks for this; /tasks loads them
+		 * and files them into their own view. `true` reads the quiet projects;
+		 * a caller that already holds them passes the set.
 		 */
-		excludeQuiet?: boolean;
+		excludeQuiet?: boolean | ReadonlySet<string>;
 	} = {},
 ): Promise<TaskRow[]> {
 	let q = sb
@@ -47,16 +47,10 @@ export async function listTasks(
 	if (filters.unfiled) q = q.is("domain_id", null);
 	if (filters.projectId) q = q.eq("project_id", filters.projectId);
 	if (filters.excludeQuiet) {
-		const quiet = await listQuietProjectIds(sb);
-		// Nothing is quiet when every project is active — skip the filter rather
-		// than build an empty `in.()`, which PostgREST rejects.
-		if (quiet.size > 0) {
-			// Read it as the negation of "undated AND in a quiet project": keep the
-			// row if it has a date, or has no project, or its project is active.
-			q = q.or(
-				`due_date.not.is.null,project_id.is.null,project_id.not.in.(${[...quiet].join(",")})`,
-			);
-		}
+		const quiet =
+			filters.excludeQuiet === true ? await listQuietProjectIds(sb) : filters.excludeQuiet;
+		const keep = notQuietFilter(quiet);
+		if (keep) q = q.or(keep);
 	}
 	const data = unwrap(await q);
 	return (data ?? []).map(flatten);

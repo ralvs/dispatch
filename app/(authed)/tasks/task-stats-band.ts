@@ -6,8 +6,8 @@ import {
 	recentDoneSinceDate,
 	shiftDay,
 } from "@/lib/dates";
+import { isQuiet } from "@/lib/quiet";
 import type { TaskRow } from "@/lib/services/tasks";
-import { isQuiet } from "@/lib/task-predicates";
 
 /**
  * The band /tasks carries below its header (ADR-0053).
@@ -25,7 +25,7 @@ export function taskStats(
 	done: Pick<TaskRow, "completed_at">[],
 	todayIso: string,
 	tz: string,
-	/** Ids of projects that are not active — see lib/services/quiet.ts. */
+	/** The quiet projects (lib/quiet.ts). */
 	quietProjectIds: ReadonlySet<string>,
 ): Stat[] {
 	const sinceDate = recentDoneSinceDate(todayIso);

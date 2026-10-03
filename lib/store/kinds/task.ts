@@ -10,6 +10,7 @@ import {
 	type DaySchedulePayload,
 	placeOnDay,
 } from "@/lib/day-schedule";
+import { isQuiet } from "@/lib/quiet";
 import type { TaskRow } from "@/lib/schemas/task";
 import type {
 	Clock,
@@ -21,7 +22,11 @@ import type {
 	TaskScope,
 	ViewAdapter,
 } from "@/lib/store/types";
-import { projectTask, type TaskIntent } from "@/lib/task-interaction/apply-intent";
+import {
+	nextCompleteFields,
+	projectTask,
+	type TaskIntent,
+} from "@/lib/task-interaction/apply-intent";
 import { isOverdue } from "@/lib/task-predicates";
 
 /** /tasks: the open list and the recently done strip. */
@@ -36,12 +41,21 @@ const DONE_CAP = 10;
 type TaskCounts = { open: number; overdue: number; inbox: number };
 const NONE: TaskCounts = { open: 0, overdue: 0, inbox: 0 };
 
-/** What one row adds to Today's counters (lib/services/today.ts assembleTodayView). */
-function countsOf(row: TaskRow | undefined, todayIso: string): TaskCounts {
-	if (row?.status !== "open") return NONE;
+/** The quiet projects the server last told the store about (lib/quiet.ts). */
+function quietOf(clock: Clock): ReadonlySet<string> {
+	return new Set(clock.quietProjectIds);
+}
+
+/**
+ * What one row adds to Today's counters (lib/services/today.ts
+ * assembleTodayView). Today reads its tasks without the quiet ones, so a quiet
+ * row adds nothing.
+ */
+function countsOf(row: TaskRow | undefined, clock: Clock): TaskCounts {
+	if (row?.status !== "open" || isQuiet(row, quietOf(clock))) return NONE;
 	return {
 		open: 1,
-		overdue: isOverdue(row, todayIso) ? 1 : 0,
+		overdue: isOverdue(row, clock.todayIso) ? 1 : 0,
 		inbox: row.domain_id === null ? 1 : 0,
 	};
 }
@@ -49,8 +63,9 @@ function countsOf(row: TaskRow | undefined, todayIso: string): TaskCounts {
 /**
  * The row after the intent, for counting; `before` is undefined when the row
  * was never loaded, and then nothing moves. `successor` is the next occurrence
- * a recurring completion creates (docs/adr/0059): open, not overdue — it is
- * dated from today — and filed where its source was.
+ * a recurring completion creates (docs/adr/0059): open, filed where its
+ * source was, and dated as the server will date it — so it is not overdue,
+ * and it is quiet only when the server's would be.
  */
 function afterIntent(
 	intent: TaskIntent,
@@ -64,14 +79,14 @@ function afterIntent(
 		intent.type === "complete" &&
 		before.recurrence_rule !== null &&
 		after?.recurrence_rule === null;
-	return { after, successor: recurring ? { ...before, due_date: null } : undefined };
+	const spawn = recurring ? nextCompleteFields(before, ctx).spawn : null;
+	return { after, successor: spawn ? { ...before, ...spawn } : undefined };
 }
 
 /**
  * Today's counters move with the intent. An edit moves nothing here — its
  * new due date is only known once the server answers — and the next seed
- * heals it. So does a quiet task (lib/task-predicates.ts isQuiet): the store
- * cannot tell one from its row, and Today does not count them.
+ * heals it.
  *
  * `before` is the row as the user sees it, every pending intent folded on
  * (`project` below): a tick then an untick before either answers moves the
@@ -80,9 +95,9 @@ function afterIntent(
 function taskDeltas(intent: TaskIntent, before: TaskRow | undefined, ctx: IntentCtx): Deltas {
 	if (intent.type !== "create" && !before) return {};
 	const { after, successor } = afterIntent(intent, before, ctx);
-	const was = intent.type === "create" ? NONE : countsOf(before, ctx.todayIso);
-	const now = countsOf(after, ctx.todayIso);
-	const next = countsOf(successor, ctx.todayIso);
+	const was = intent.type === "create" ? NONE : countsOf(before, ctx);
+	const now = countsOf(after, ctx);
+	const next = countsOf(successor, ctx);
 	const out: Deltas = {};
 	const open = now.open + next.open - was.open;
 	const overdue = now.overdue + next.overdue - was.overdue;
@@ -139,6 +154,14 @@ export const taskKind: KindAdapter<"task"> = {
 	settle: settleTaskDeltas,
 };
 
+/**
+ * Whether a list already holds a create's row: a seed read while the create
+ * committed can, since its `readAt` is stamped before the read.
+ */
+function holds(rows: TaskRow[], id: string): boolean {
+	return rows.some((r) => r.id === id);
+}
+
 /** Every row through the intent; a deleted one drops. Same array when nothing changed. */
 function projectRows(rows: TaskRow[], intent: TaskIntent, ctx: IntentCtx): TaskRow[] {
 	let changed = false;
@@ -185,7 +208,10 @@ export const taskListsView: ViewAdapter<"taskLists"> = {
 	fromSeed: (data) => ({ base: data, params: undefined }),
 	rowsOf: (view) => [...view.open, ...view.done],
 	reduce: (view, intent, ctx) => {
-		if (intent.type === "create") return { open: [intent.task, ...view.open], done: view.done };
+		if (intent.type === "create") {
+			if (holds([...view.open, ...view.done], intent.task.id)) return view;
+			return { open: [intent.task, ...view.open], done: view.done };
+		}
 		if (intent.type === "complete" || intent.type === "reopen") {
 			// A tick or an untick moves the row between the lists, to the top.
 			const row = [...view.open, ...view.done].find((r) => r.id === intent.id);
@@ -263,7 +289,9 @@ export const taskListView: ViewAdapter<"taskList"> = {
 		// A create belongs only to the list whose scope it matches — without the
 		// guard it would show in every cached project list.
 		if (intent.type === "create") {
-			return inTaskScope(intent.task, scope) ? [intent.task, ...view] : view;
+			return inTaskScope(intent.task, scope) && !holds(view, intent.task.id)
+				? [intent.task, ...view]
+				: view;
 		}
 		const out = projectRows(view, intent, ctx);
 		return intent.type === "assign" ? inScopeOnly(out, scope) : out;
@@ -279,6 +307,26 @@ export const taskListView: ViewAdapter<"taskList"> = {
 	remove: (view, ids) => without(view, ids),
 	patch: (view, rowOf) => patchRows(view, rowOf),
 };
+
+/**
+ * Whether a day reads this row, as lib/services/today.ts does: the open tasks
+ * that are not quiet, and every task finished that day — quiet or not, since
+ * the day keeps what was finished on it (ADR-0038).
+ */
+function onDay(row: TaskRow, view: DaySchedulePayload, clock: Clock): boolean {
+	if (row.status === "open") return !isQuiet(row, quietOf(clock));
+	return row.completed_at != null && dateOfInstant(row.completed_at, clock.tz) === view.dateIso;
+}
+
+/** An open row the day no longer reads, because it went quiet. */
+function wentQuiet(row: TaskRow, clock: Clock): boolean {
+	return row.status === "open" && isQuiet(row, quietOf(clock));
+}
+
+/** The pool without the open rows that went quiet: an untick on a finished quiet task. */
+function withoutQuiet(tasks: TaskRow[], clock: Clock): TaskRow[] {
+	return tasks.some((t) => wentQuiet(t, clock)) ? tasks.filter((t) => !wentQuiet(t, clock)) : tasks;
+}
 
 /** Re-place a day's task pool; events, now and note-id maps pass through. */
 function replace(view: DaySchedulePayload, tasks: TaskRow[], clock: Clock): DaySchedulePayload {
@@ -297,8 +345,14 @@ export const dayView: ViewAdapter<"day"> = {
 	rowsOf: (view) => collectDayTasks(view.schedule),
 	reduce: (view, intent: TaskIntent, ctx) => {
 		const pool = collectDayTasks(view.schedule);
-		// A create is offered to every day; placement decides where it sits.
-		let tasks = intent.type === "create" ? [intent.task, ...pool] : projectRows(pool, intent, ctx);
+		// A create is offered to every day it belongs on; placement decides
+		// where it sits.
+		let tasks =
+			intent.type === "create"
+				? onDay(intent.task, view, ctx) && !holds(pool, intent.task.id)
+					? [intent.task, ...pool]
+					: pool
+				: withoutQuiet(projectRows(pool, intent, ctx), ctx);
 		// ADR-0038 rule 2: a finished task stays struck on today's view only; a
 		// cached other day drops it (its completion does not fall on that day).
 		if (intent.type === "complete" && view.dateIso !== ctx.todayIso) {
@@ -310,16 +364,18 @@ export const dayView: ViewAdapter<"day"> = {
 		const pool = collectDayTasks(view.schedule);
 		let tasks = pool;
 		for (const row of rows) {
-			if (tasks.some((t) => t.id === row.id)) {
+			const held = tasks.some((t) => t.id === row.id);
+			// An open row that went quiet leaves; any other row the day already
+			// holds is patched in place, done or not (ADR-0038). A row the day
+			// would read is offered, and placement decides (the ADR-0059
+			// successor lands here).
+			if (held && wentQuiet(row, clock)) {
+				tasks = without(tasks, new Set([row.id]));
+			} else if (held) {
 				tasks = replaceById(tasks, row);
-				continue;
+			} else if (onDay(row, view, clock)) {
+				tasks = [...tasks, row];
 			}
-			// Open rows are always offered; placement decides (the ADR-0059
-			// successor lands here). A done row only when it was finished that day.
-			const admit =
-				row.status === "open" ||
-				(row.completed_at != null && dateOfInstant(row.completed_at, clock.tz) === view.dateIso);
-			if (admit) tasks = [...tasks, row];
 		}
 		return tasks === pool ? view : replace(view, tasks, clock);
 	},
@@ -330,7 +386,7 @@ export const dayView: ViewAdapter<"day"> = {
 	},
 	patch: (view, rowOf, clock) => {
 		const pool = collectDayTasks(view.schedule);
-		const tasks = patchRows(pool, rowOf);
+		const tasks = withoutQuiet(patchRows(pool, rowOf), clock);
 		return tasks === pool ? view : replace(view, tasks, clock);
 	},
 };

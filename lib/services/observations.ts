@@ -1,12 +1,12 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { dateOfInstant, todayInTz } from "@/lib/dates";
+import { isQuiet } from "@/lib/quiet";
 import type { DomainItem, DomainRow, DomainTouch } from "@/lib/schemas/domain";
 import { cadenceThresholdDays, listDomains } from "@/lib/services/domains";
 import { unwrap } from "@/lib/services/errors";
 import { listQuietProjectIds } from "@/lib/services/quiet";
 import { getAppTimezone } from "@/lib/services/settings";
-import { isQuiet } from "@/lib/task-predicates";
 
 // ─── The neglect sweep ─────────────────────────────────────────────────
 //
