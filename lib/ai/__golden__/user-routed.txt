@@ -1,0 +1,20 @@
+<context>
+{
+  "now": "2026-07-15T12:00:00Z",
+  "today": "2026-07-15",
+  "timezone": "America/Sao_Paulo",
+  "domains": [
+    "Home"
+  ],
+  "projects": [
+    {
+      "name": "Reviews",
+      "domain": "Work"
+    }
+  ]
+}
+</context>
+
+<utterance>
+comprar pão amanhã
+</utterance>

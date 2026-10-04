@@ -1,16 +1,29 @@
 import "server-only";
-import { generateObject, type SystemModelMessage } from "ai";
+import {
+	generateObject,
+	type LanguageModel,
+	type LanguageModelUsage,
+	type SystemModelMessage,
+} from "ai";
 import { z } from "zod";
 import { isAiConfigured, MODEL_PROVIDER_OPTIONS, parserModel } from "@/lib/ai/gateway";
 import { guardTitle } from "@/lib/ai/verbatim";
-import { type CaptureAction, CaptureActionsSchema } from "@/lib/schemas/capture";
+import {
+	type CaptureAction,
+	CaptureActionsSchema,
+	type CreateTaskAction,
+	CreateTaskActionSchema,
+} from "@/lib/schemas/capture";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Text -> actions seam. Turns one capture text into v1 capture actions via the
 // gateway (generateObject, schema-validated). Never throws into the capture
 // path: every failure mode returns a typed fallback the orchestrator degrades.
 //
-//   unavailable  AI_GATEWAY_API_KEY unset (isAiConfigured() false)
+// The model is a parameter (docs/adr/0076): the app leaves it out and gets the
+// gateway's, tests pass test/fakes/parser-model.ts, the eval passes its own.
+//
+//   unavailable  no model: AI_GATEWAY_API_KEY unset, or `model: null` passed
 //   failed       the model call threw, or its output failed CaptureActionsSchema
 //                (including any unknown/unsupported verb) — degrade, never crash
 //   empty        parser ran cleanly but found nothing actionable — the raw text
@@ -29,30 +42,41 @@ export type ParseContext = {
 	projects?: { name: string; domain?: string }[];
 };
 
-export type ParseResult =
-	| { ok: true; actions: CaptureAction[] }
-	| { ok: false; reason: "unavailable" | "failed" | "empty"; raw: string };
+/** The model a parse runs on. The SDK's own port: the gateway's, or a fake. */
+export type ParserModel = Exclude<LanguageModel, string>;
+
+/**
+ * `model` left out → the gateway's parser model when AI is configured, else
+ * unavailable. `model: null` → unavailable, always — never a gateway call.
+ */
+export type ParseOptions = { model?: ParserModel | null };
+
+type ParseFallback = { ok: false; reason: "unavailable" | "failed" | "empty"; raw: string };
+
+export type ParseResult = { ok: true; actions: CaptureAction[] } | ParseFallback;
+
+export type ParseTaskResult = { ok: true; task: CreateTaskAction } | ParseFallback;
 
 // ── Shared prompt fragments ────────────────────────────────────────────
 //
-// Shared with the sentence → task module (lib/services/capture/quick-add.ts).
-// The two prompts are NOT variants of one another — captureSystemPrompt asks for an
-// array of mixed actions, the task prompt for a single task or null — so only
-// the copy they genuinely share lives here.
+// Shared by the two prompts below: the palette's (captureSystemPrompt) and
+// the sentence → task one (taskCaptureSystemPrompt, used by quick-add). They
+// are NOT variants of one another — the first asks for an array of mixed
+// actions, the second for a single task or null — so only the copy they
+// genuinely share is factored out.
 
 // The task field formats. Indentation is the caller's, since captureSystemPrompt
 // nests this under its create_task bullet and the task prompt does not.
-export const TASK_FIELD_FORMATS =
+const TASK_FIELD_FORMATS =
 	"priority is 1 (high), 2 (medium) or 3 (low). due_date is YYYY-MM-DD, due_time is HH:mm.";
 
 /** Who the prompt is for. Jerad's prompt opens this way; it costs one line. */
-export const PERSONA =
-	"You are the capture parser for Dispatch, Renan's personal operations dashboard.";
+const PERSONA = "You are the capture parser for Dispatch, Renan's personal operations dashboard.";
 
 // Priority is set only on a spoken signal. With no signal the key stays out
 // and the database default (3, low) applies — so a plain "buy milk" is never
 // promoted, which is the reference's rule mapped onto three levels.
-export function priorityRules(): string[] {
+function priorityRules(): string[] {
 	return [
 		"  priority is set ONLY when the user signals it: urgent, asap, important,",
 		"  high priority, urgente, importante, prioridade alta → 1. medium",
@@ -64,7 +88,7 @@ export function priorityRules(): string[] {
 // The reference strips filler from titles. Dispatch keeps the verbatim guard
 // (lib/ai/verbatim.ts), which rejects a title with any word the user did not
 // say — so dropping words is safe here, and rewording is not.
-export function titleRules(): string[] {
+function titleRules(): string[] {
 	return [
 		"  title is the task in the user's own words, under 100 characters. Leave",
 		"  out hesitations and lead-ins that are not the task: uh, um, like, so, I",
@@ -77,7 +101,7 @@ export function titleRules(): string[] {
 // "now" (iron rule #1) — both prompts state it identically. The values
 // themselves arrive per call in <context> (captureUserMessage); only the rule
 // lives here, so the system prompt never changes between calls.
-export function dateResolution(): string[] {
+function dateResolution(): string[] {
 	return [
 		"Resolve relative dates against now, today and timezone in <context>.",
 		"Output due_date as YYYY-MM-DD and due_time as HH:mm.",
@@ -98,7 +122,7 @@ export function dateResolution(): string[] {
 	];
 }
 
-export function recurrenceRules(): string[] {
+function recurrenceRules(): string[] {
 	return [
 		"  recurrence_rule is set ONLY when the user states repetition (e.g.",
 		'  "every Monday", "toda segunda", "daily", "todo dia"). Pick the closest',
@@ -118,7 +142,7 @@ export function recurrenceRules(): string[] {
 // The rules only. The lists they apply to arrive per call in <context>, so the
 // system prompt is byte-identical from call to call — which is what lets it be
 // cached (docs/adr/0061). An empty list is simply absent from <context>.
-export function routingBlock(): string[] {
+function routingBlock(): string[] {
 	return [
 		"",
 		"Routing a task to a domain or project:",
@@ -173,7 +197,7 @@ export function routingBlock(): string[] {
  * together, and it cuts latency on a hit. Whether a call hit shows as
  * usage.inputTokenDetails.cacheReadTokens (the eval prints it).
  */
-export function cachedSystem(content: string): SystemModelMessage {
+function cachedSystem(content: string): SystemModelMessage {
 	return {
 		role: "system",
 		content,
@@ -191,7 +215,7 @@ export function cachedSystem(content: string): SystemModelMessage {
  * The tags also separate the two halves for the model: <context> is data about
  * the app, and only <utterance> is something the user said.
  */
-export function captureUserMessage(text: string, ctx: ParseContext): string {
+function captureUserMessage(text: string, ctx: ParseContext): string {
 	const context: Record<string, unknown> = {
 		// Whole seconds: the model gains nothing from milliseconds.
 		now: ctx.nowUtc.replace(/\.\d+Z$/, "Z"),
@@ -231,12 +255,12 @@ const PARSE_TIMEOUT_MS = 30_000;
  * needs_review note is undiagnosable after the fact. Logs the shape of the
  * error, never the user's text.
  */
-export function logParseFailure(where: string, error: unknown): void {
+function logParseFailure(where: string, error: unknown): void {
 	const e = error as { name?: string; message?: string };
 	console.warn("parse failed", { where, name: e?.name, message: e?.message });
 }
 
-export function parseCallOptions() {
+function parseCallOptions() {
 	return {
 		maxRetries: PARSE_MAX_RETRIES,
 		maxOutputTokens: PARSE_MAX_OUTPUT_TOKENS,
@@ -249,10 +273,10 @@ export function parseCallOptions() {
 // where abstract rules do not. They use a made-up world (domain Casa, project
 // Kitchen reno, a Thursday) that shares no names with the eval's, so the eval
 // still measures the rules rather than recall of an example.
-export const EXAMPLE_WORLD =
+const EXAMPLE_WORLD =
 	'Examples, for a <context> with today 2026-01-15 (a Thursday), domains ["Casa", "Work"] and projects [{"name": "Kitchen reno", "domain": "Casa"}]:';
 
-export function taskExamples(): string[] {
+function taskExamples(): string[] {
 	return [
 		'- "casa: fix the faucet tomorrow" → {"title": "fix the faucet", "due_date": "2026-01-16", "domain": "Casa"}',
 		'- "order tiles for the kitchen" → {"title": "order tiles", "project": "Kitchen reno"}',
@@ -262,7 +286,7 @@ export function taskExamples(): string[] {
 	];
 }
 
-export function paletteExamples(): string[] {
+function paletteExamples(): string[] {
 	return [
 		EXAMPLE_WORLD,
 		'- "casa: fix the faucet tomorrow" → [{"action": "create_task", "title": "fix the faucet", "due_date": "2026-01-16", "domain": "Casa"}]',
@@ -276,7 +300,7 @@ export function paletteExamples(): string[] {
 	];
 }
 
-export function captureSystemPrompt(): string {
+function captureSystemPrompt(): string {
 	return [
 		PERSONA,
 		"You convert ONE spoken or typed utterance into a JSON array of actions.",
@@ -338,6 +362,33 @@ export function captureSystemPrompt(): string {
 	].join("\n");
 }
 
+function taskCaptureSystemPrompt(): string {
+	return [
+		PERSONA,
+		"You convert ONE spoken or typed utterance into a single task, or null if",
+		"the utterance describes nothing actionable.",
+		"The user message holds <context> (app data: the date, the known domains",
+		"and projects) and then <utterance>, the only thing the user said.",
+		"Output shape: { title, notes?, due_date?, due_time?, priority?,",
+		"  recurrence_rule?, domain?, project? }.",
+		"title is required — the task itself, verbatim in the language spoken",
+		"(pt-BR or English). NEVER translate.",
+		TASK_FIELD_FORMATS,
+		...titleRules(),
+		...priorityRules(),
+		...recurrenceRules(),
+		"",
+		...dateResolution(),
+		...routingBlock(),
+		"",
+		EXAMPLE_WORLD,
+		...taskExamples(),
+		'- "that was a nice movie" → null',
+		"",
+		'Return a JSON object of the form {"task": { ... }} or {"task": null}.',
+	].join("\n");
+}
+
 /**
  * Applies the verbatim guard to the one field it can protect on each action:
  * the line the user will actually read in a list. `create_note`,
@@ -352,25 +403,93 @@ function guardActionTitle(action: CaptureAction, text: string): CaptureAction {
 	return { ...action, title };
 }
 
-export async function parse(text: string, ctx: ParseContext): Promise<ParseResult> {
+/**
+ * The call skeleton both entry points share. The model is resolved INSIDE the
+ * try: env() is lazily validated and can throw, and parserModel() reads it
+ * too, so a config failure degrades like any other, never escapes.
+ */
+async function guarded<T>(
+	where: "parse" | "quick-add",
+	text: string,
+	options: ParseOptions,
+	run: (model: ParserModel) => Promise<T | ParseFallback>,
+): Promise<T | ParseFallback> {
 	try {
-		// Config lookup is INSIDE the try: env() is lazily validated and can throw,
-		// and parserModel() reads it too. A config failure degrades, never escapes.
-		if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
-
-		const { object } = await generateObject({
-			model: parserModel(),
-			schema: z.object({ actions: CaptureActionsSchema }),
-			system: cachedSystem(captureSystemPrompt()),
-			prompt: captureUserMessage(text, ctx),
-			...parseCallOptions(),
-		});
-		if (object.actions.length === 0) return { ok: false, reason: "empty", raw: text };
-		return { ok: true, actions: object.actions.map((a) => guardActionTitle(a, text)) };
+		const model =
+			options.model !== undefined ? options.model : isAiConfigured() ? parserModel() : null;
+		if (!model) return { ok: false, reason: "unavailable", raw: text };
+		return await run(model);
 	} catch (error) {
-		// Model error OR output that failed CaptureActionsSchema (unknown verb,
-		// malformed action). Degrade — the raw text is never lost.
-		logParseFailure("parse", error);
+		// Model error OR output that failed the schema (unknown verb, malformed
+		// action). Degrade — the raw text is never lost.
+		logParseFailure(where, error);
 		return { ok: false, reason: "failed", raw: text };
 	}
+}
+
+/**
+ * The palette request, raw: no title guard, and it throws. The eval scores
+ * this; the app calls parse.
+ */
+export async function requestActions(
+	text: string,
+	ctx: ParseContext,
+	model: ParserModel,
+): Promise<{ actions: CaptureAction[]; usage: LanguageModelUsage }> {
+	const { object, usage } = await generateObject({
+		model,
+		schema: z.object({ actions: CaptureActionsSchema }),
+		system: cachedSystem(captureSystemPrompt()),
+		prompt: captureUserMessage(text, ctx),
+		...parseCallOptions(),
+	});
+	return { actions: object.actions, usage };
+}
+
+export async function parse(
+	text: string,
+	ctx: ParseContext,
+	options: ParseOptions = {},
+): Promise<ParseResult> {
+	return guarded("parse", text, options, async (model) => {
+		const { actions } = await requestActions(text, ctx, model);
+		if (actions.length === 0) return { ok: false, reason: "empty", raw: text };
+		return { ok: true, actions: actions.map((a) => guardActionTitle(a, text)) };
+	});
+}
+
+/**
+ * The sentence → task request, raw: no title guard, and it throws. The eval
+ * scores this; the app calls parseTask.
+ */
+export async function requestTask(
+	text: string,
+	ctx: ParseContext,
+	model: ParserModel,
+): Promise<{ task: CreateTaskAction | null; usage: LanguageModelUsage }> {
+	const { object, usage } = await generateObject({
+		model,
+		schema: z.object({ task: CreateTaskActionSchema.nullable() }),
+		system: cachedSystem(taskCaptureSystemPrompt()),
+		prompt: captureUserMessage(text, ctx),
+		...parseCallOptions(),
+	});
+	return { task: object.task, usage };
+}
+
+/** One sentence → one task, for quick-add (docs/adr/0019 D3, 0043). */
+export async function parseTask(
+	text: string,
+	ctx: ParseContext,
+	options: ParseOptions = {},
+): Promise<ParseTaskResult> {
+	return guarded("quick-add", text, options, async (model) => {
+		const { task } = await requestTask(text, ctx, model);
+		if (!task) return { ok: false, reason: "empty", raw: text };
+		// Same guard as the palette: a title made of words the user never typed
+		// is worse than the raw sentence (lib/ai/verbatim.ts).
+		const { title, substituted } = guardTitle(task.title, text);
+		if (substituted) console.warn("quick-add title not verbatim");
+		return { ok: true, task: { ...task, title } };
+	});
 }

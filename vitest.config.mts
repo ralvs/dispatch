@@ -24,6 +24,7 @@ export default defineConfig({
 					environment: "node",
 					include: ["**/*.test.ts"],
 					exclude: [...exclude, "**/*.int.test.ts"],
+					setupFiles: ["test/unit/setup.ts"],
 				},
 			},
 			{

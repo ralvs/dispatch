@@ -10,9 +10,11 @@
  *   quick-add  one sentence → one task (lib/services/capture/quick-add.ts)
  *   palette    one utterance → any mix of actions (lib/ai/parser.ts)
  *
- * It imports the SAME prompt builders the app uses, so a prompt change is
- * scored the moment it is made — nothing here restates a prompt, which is what
- * would let the eval drift away from production.
+ * It calls the same request the app sends (requestTask / requestActions in
+ * lib/ai/parser.ts — the prompt, schema and call options, before the title
+ * guard), so a prompt change is scored the moment it is made — nothing here
+ * restates a prompt, which is what would let the eval drift away from
+ * production.
  *
  *   bun run eval:parser
  *   bun run eval:parser --runs 5
@@ -33,18 +35,10 @@
  * visible as the absence of something.
  */
 
-import { generateObject } from "ai";
-import { z } from "zod";
+import { wrapLanguageModel } from "ai";
 import { parserModel } from "@/lib/ai/gateway";
-import {
-	cachedSystem,
-	captureSystemPrompt,
-	captureUserMessage,
-	parseCallOptions,
-} from "@/lib/ai/parser";
+import { requestActions, requestTask } from "@/lib/ai/parser";
 import { guardTitle } from "@/lib/ai/verbatim";
-import { CaptureActionsSchema, CreateTaskActionSchema } from "@/lib/schemas/capture";
-import { taskCaptureSystemPrompt } from "@/lib/services/capture/quick-add";
 import { type RoutingLists, resolveTaskRouting } from "@/lib/services/capture/resolve";
 
 // A fixed world, so a case's expected date never depends on the day the eval
@@ -411,10 +405,23 @@ if (!["all", "quick-add", "palette"].includes(suite)) {
 }
 if (flag("model")) process.env.PARSER_MODEL = flag("model");
 // Anthropic effort, forwarded through the gateway. Unset = the app's own
-// setting (MODEL_PROVIDER_OPTIONS, via parseCallOptions), so a bare run scores
-// exactly what production sends.
+// setting (MODEL_PROVIDER_OPTIONS, in the parser's call options), so a bare run
+// scores exactly what production sends. Set, it wraps the model and replaces
+// the call's provider options — effort is not part of the parser's interface.
 const effort = flag("effort");
-const effortOverride = effort ? { providerOptions: { anthropic: { effort } } } : {};
+// Built after the flags: --model sets PARSER_MODEL, which parserModel() reads.
+const model = effort
+	? wrapLanguageModel({
+			model: parserModel(),
+			middleware: {
+				specificationVersion: "v4",
+				transformParams: async ({ params }) => ({
+					...params,
+					providerOptions: { anthropic: { effort } },
+				}),
+			},
+		})
+	: parserModel();
 
 let attempts = 0;
 let clean = 0;
@@ -525,25 +532,11 @@ const suiteTotals: string[] = [];
 
 if (suite !== "palette") {
 	console.log("── quick-add ──");
-	const system = cachedSystem(taskCaptureSystemPrompt());
 	let suiteClean = 0;
 	for (const testCase of QUICK_ADD) {
 		suiteClean += await runCase(testCase.text, async () => {
-			const { object } = await timed(() =>
-				generateObject({
-					model: parserModel(),
-					schema: z.object({ task: CreateTaskActionSchema.nullable() }),
-					system,
-					prompt: captureUserMessage(testCase.text, CTX),
-					...parseCallOptions(),
-					...effortOverride,
-				}),
-			);
-			return scoreQuickAdd(
-				object.task as Record<string, unknown> | null,
-				testCase.expect,
-				testCase.text,
-			);
+			const { task } = await timed(() => requestTask(testCase.text, CTX, model));
+			return scoreQuickAdd(task as Record<string, unknown> | null, testCase.expect, testCase.text);
 		});
 	}
 	suiteTotals.push(`quick-add ${suiteClean}/${QUICK_ADD.length * runs}`);
@@ -551,22 +544,12 @@ if (suite !== "palette") {
 
 if (suite !== "quick-add") {
 	console.log("── palette ──");
-	const system = cachedSystem(captureSystemPrompt());
 	let suiteClean = 0;
 	for (const testCase of PALETTE) {
 		suiteClean += await runCase(testCase.text, async () => {
-			const { object } = await timed(() =>
-				generateObject({
-					model: parserModel(),
-					schema: z.object({ actions: CaptureActionsSchema }),
-					system,
-					prompt: captureUserMessage(testCase.text, CTX),
-					...parseCallOptions(),
-					...effortOverride,
-				}),
-			);
+			const { actions } = await timed(() => requestActions(testCase.text, CTX, model));
 			return scorePalette(
-				object.actions as Array<Record<string, unknown>>,
+				actions as Array<Record<string, unknown>>,
 				testCase.expect,
 				testCase.text,
 			);
