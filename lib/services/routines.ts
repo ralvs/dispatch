@@ -159,17 +159,6 @@ export async function listCompletionsSince(
 	return ((data ?? []) as unknown as CompletionRow[]).reverse();
 }
 
-/** All completions recorded for a single calendar date, across routines. */
-export async function listCompletionsOn(
-	sb: SupabaseClient,
-	dateIso: string,
-): Promise<CompletionRow[]> {
-	const data = unwrap(
-		await sb.from("routine_completions").select(COMPLETION_SELECT).eq("completed_date", dateIso),
-	);
-	return (data ?? []) as unknown as CompletionRow[];
-}
-
 /**
  * Toggle a single day's completion. done=true upserts (double-tap is a
  * no-op via ignoreDuplicates); done=false deletes the pair (missing row is

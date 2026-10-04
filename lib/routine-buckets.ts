@@ -1,6 +1,5 @@
 // Today's routines card, grouped by time of day. Pure and client-safe: the
-// card derives it from the entity store (#29), and lib/services/today.ts
-// re-exports it for the widget and the chat context.
+// card derives it from the entity store (#29).
 
 import { instantFromLocal, isWallClockTime } from "@/lib/dates";
 import { computeRoutineStats, type RoutineStats, recentDaysGrid } from "@/lib/routine-stats";
