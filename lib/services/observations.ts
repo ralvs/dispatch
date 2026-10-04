@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { dateOfInstant, todayInTz } from "@/lib/dates";
+import { calendarDaysBetween, dateOfInstant, todayInTz } from "@/lib/dates";
 import { isQuiet } from "@/lib/quiet";
 import type { DomainItem, DomainRow, DomainTouch } from "@/lib/schemas/domain";
 import { cadenceThresholdDays, listDomains } from "@/lib/services/domains";
@@ -59,11 +59,7 @@ export type { DomainTouch };
  */
 export function daysBetween(fromUtcIso: string, todayIso: string, tz: string): number {
 	if (Number.isNaN(Date.parse(fromUtcIso))) return 0;
-	const fromIso = dateOfInstant(fromUtcIso, tz);
-	const days = Math.round(
-		(Date.parse(`${todayIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`)) / 86_400_000,
-	);
-	return Math.max(0, days);
+	return calendarDaysBetween(dateOfInstant(fromUtcIso, tz), todayIso);
 }
 
 /** The later of two nullable UTC ISO instants. */

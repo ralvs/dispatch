@@ -1,3 +1,5 @@
+import { calendarDaysBetween, shiftDay } from "@/lib/dates";
+
 // Streak + completion-rate math for routines.
 //
 // Pure function over a set of YYYY-MM-DD completion dates. No DB access,
@@ -58,33 +60,6 @@ export interface RoutineStats {
 	done_today: boolean;
 }
 
-function daysBetween(fromIso: string, toIso: string): number {
-	const from = Date.UTC(
-		parseInt(fromIso.slice(0, 4), 10),
-		parseInt(fromIso.slice(5, 7), 10) - 1,
-		parseInt(fromIso.slice(8, 10), 10),
-	);
-	const to = Date.UTC(
-		parseInt(toIso.slice(0, 4), 10),
-		parseInt(toIso.slice(5, 7), 10) - 1,
-		parseInt(toIso.slice(8, 10), 10),
-	);
-	return Math.round((to - from) / 86_400_000);
-}
-
-function isoOf(year: number, month0: number, day: number): string {
-	const d = new Date(Date.UTC(year, month0, day));
-	return d.toISOString().slice(0, 10);
-}
-
-function yesterday(iso: string): string {
-	const y = parseInt(iso.slice(0, 4), 10);
-	const m = parseInt(iso.slice(5, 7), 10) - 1;
-	const d = parseInt(iso.slice(8, 10), 10);
-	const date = new Date(Date.UTC(y, m, d - 1));
-	return date.toISOString().slice(0, 10);
-}
-
 // Given a set of completion dates and "today", compute the stats above.
 // completionDates can be any order; we materialize a Set for O(1) hits.
 export function computeRoutineStats(
@@ -100,7 +75,7 @@ export function computeRoutineStats(
 	let current = 0;
 	let cursor = todayIso;
 	if (!set.has(cursor)) {
-		const prev = yesterday(cursor);
+		const prev = shiftDay(cursor, -1);
 		if (!set.has(prev)) {
 			current = 0;
 		} else {
@@ -109,7 +84,7 @@ export function computeRoutineStats(
 	}
 	while (set.has(cursor)) {
 		current += 1;
-		cursor = yesterday(cursor);
+		cursor = shiftDay(cursor, -1);
 	}
 
 	// ── Longest streak ─────────────────────────────────────────────────
@@ -119,7 +94,7 @@ export function computeRoutineStats(
 	let run = 0;
 	let prev: string | null = null;
 	for (const d of sorted) {
-		if (prev !== null && daysBetween(prev, d) === 1) {
+		if (prev !== null && calendarDaysBetween(prev, d) === 1) {
 			run += 1;
 		} else {
 			run = 1;
@@ -133,9 +108,11 @@ export function computeRoutineStats(
 	let completions_7d = 0;
 	let completions_30d = 0;
 	for (const d of completionDates) {
-		const gap = daysBetween(d, todayIso);
-		if (gap >= 0 && gap < 7) completions_7d += 1;
-		if (gap >= 0 && gap < 30) completions_30d += 1;
+		// A future date is outside both windows (YYYY-MM-DD sorts as text).
+		if (d > todayIso) continue;
+		const gap = calendarDaysBetween(d, todayIso);
+		if (gap < 7) completions_7d += 1;
+		if (gap < 30) completions_30d += 1;
 	}
 
 	return {
@@ -156,17 +133,10 @@ export function recentDaysGrid(
 	days: number = 30,
 ): Array<{ date: string; done: boolean; isToday: boolean }> {
 	const set = new Set(completionDates);
-	const y = parseInt(todayIso.slice(0, 4), 10);
-	const m = parseInt(todayIso.slice(5, 7), 10) - 1;
-	const d = parseInt(todayIso.slice(8, 10), 10);
 	const out: Array<{ date: string; done: boolean; isToday: boolean }> = [];
 	for (let i = days - 1; i >= 0; i--) {
-		const cell = new Date(Date.UTC(y, m, d - i));
-		out.push({
-			date: isoOf(cell.getUTCFullYear(), cell.getUTCMonth(), cell.getUTCDate()),
-			done: set.has(isoOf(cell.getUTCFullYear(), cell.getUTCMonth(), cell.getUTCDate())),
-			isToday: isoOf(cell.getUTCFullYear(), cell.getUTCMonth(), cell.getUTCDate()) === todayIso,
-		});
+		const date = shiftDay(todayIso, -i);
+		out.push({ date, done: set.has(date), isToday: i === 0 });
 	}
 	return out;
 }

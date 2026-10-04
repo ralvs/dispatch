@@ -39,6 +39,18 @@ describe("computeRoutineStats", () => {
 		expect(stats.completions_30d).toBe(4); // + 7th and Jun 15
 		expect(stats.total).toBe(5);
 	});
+
+	it("keeps a future date out of both windows", () => {
+		const stats = computeRoutineStats(["2026-07-15", TODAY], TODAY);
+		expect(stats.completions_7d).toBe(1);
+		expect(stats.completions_30d).toBe(1);
+	});
+
+	it("runs a streak across a month boundary", () => {
+		const stats = computeRoutineStats(["2026-02-27", "2026-02-28", "2026-03-01"], "2026-03-01");
+		expect(stats.current_streak).toBe(3);
+		expect(stats.longest_streak).toBe(3);
+	});
 });
 
 describe("recentDaysGrid", () => {
@@ -47,5 +59,10 @@ describe("recentDaysGrid", () => {
 		expect(grid.map((c) => c.date)).toEqual(["2026-07-12", "2026-07-13", "2026-07-14"]);
 		expect(grid[1]?.done).toBe(true);
 		expect(grid[2]?.isToday).toBe(true);
+	});
+
+	it("crosses a month boundary", () => {
+		const grid = recentDaysGrid([], "2026-03-01", 3);
+		expect(grid.map((c) => c.date)).toEqual(["2026-02-27", "2026-02-28", "2026-03-01"]);
 	});
 });
