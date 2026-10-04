@@ -77,8 +77,8 @@ async function announce(entry: NotificationEntry): Promise<void> {
 		// Next throws without a request scope (tests, scripts).
 		console.error("[notifications] ledger tag bust failed", err);
 	}
-	if (!isPushConfigured()) return;
 	try {
+		if (!isPushConfigured()) return;
 		await sendPushToAll(createAdminClient(), {
 			title: entry.title,
 			body: entry.body ?? undefined,
