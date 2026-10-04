@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import type { CachedReader } from "@/lib/cache/manifest";
+import type { Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
 import { nowUtc } from "@/lib/dates";
 import { listNotifications, unreadCount } from "@/lib/services/notifications";
@@ -32,22 +32,6 @@ export async function getCachedNotifications() {
 	return { readAt, notifications, unread };
 }
 
-export const readers: CachedReader[] = [
-	{
-		reader: "getCachedNotifications",
-		reads: [
-			{
-				tag: CacheTag.notifications,
-				writes: ["notification.write"],
-				external: [
-					"capture",
-					"captureLink",
-					"sweep",
-					"cronObservations",
-					"cronReminders",
-					"calendarBridgeFailure",
-				],
-			},
-		],
-	},
-];
+export const readers = {
+	getCachedNotifications: { tags: [CacheTag.notifications], tables: ["notifications"] },
+} satisfies Readers;

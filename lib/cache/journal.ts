@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import type { CachedReader } from "@/lib/cache/manifest";
+import type { Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
 import { nowUtc } from "@/lib/dates";
 import { listEntries } from "@/lib/services/journal";
@@ -19,15 +19,6 @@ export async function getCachedJournal() {
 	return { readAt, entries };
 }
 
-export const readers: CachedReader[] = [
-	{
-		reader: "getCachedJournal",
-		reads: [
-			{
-				tag: CacheTag.journal,
-				writes: ["journal.write", "capture.settled", "capture.event"],
-				external: ["capture", "sweep"],
-			},
-		],
-	},
-];
+export const readers = {
+	getCachedJournal: { tags: [CacheTag.journal], tables: ["journal_entries"] },
+} satisfies Readers;

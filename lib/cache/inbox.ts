@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import type { CachedReader } from "@/lib/cache/manifest";
+import type { Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
 import { nowUtc } from "@/lib/dates";
 import { listNoteIdsForTargets } from "@/lib/services/note-links";
@@ -33,21 +33,9 @@ export async function getCachedInbox() {
 	return { readAt, tasks, taskNoteIds };
 }
 
-export const readers: CachedReader[] = [
-	{
-		reader: "getCachedInbox",
-		reads: [
-			{
-				tag: CacheTag.tasks,
-				writes: ["task.write", "task.assign", "capture.settled", "capture.event"],
-				external: ["capture", "sweep"],
-			},
-			{
-				tag: CacheTag.notes,
-				writes: ["notes.write", "capture.settled", "capture.event"],
-				external: ["capture", "sweep"],
-			},
-			{ tag: CacheTag.projects, writes: ["projects.write", "projects.detail"] },
-		],
+export const readers = {
+	getCachedInbox: {
+		tags: [CacheTag.tasks, CacheTag.notes, CacheTag.projects],
+		tables: ["tasks", "projects", "stewardship_domains", "note_links"],
 	},
-];
+} satisfies Readers;

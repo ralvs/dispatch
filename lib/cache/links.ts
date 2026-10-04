@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import type { CachedReader } from "@/lib/cache/manifest";
+import type { Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
 import { nowUtc } from "@/lib/dates";
 import { listLinks } from "@/lib/services/links";
@@ -26,9 +26,6 @@ export async function getCachedLinks() {
 	return { readAt, links };
 }
 
-export const readers: CachedReader[] = [
-	{
-		reader: "getCachedLinks",
-		reads: [{ tag: CacheTag.links, writes: ["links.write"], external: ["captureLink"] }],
-	},
-];
+export const readers = {
+	getCachedLinks: { tags: [CacheTag.links], tables: ["ingest_links"] },
+} satisfies Readers;

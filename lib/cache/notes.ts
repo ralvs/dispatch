@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import type { CachedReader } from "@/lib/cache/manifest";
+import type { Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
 import { nowUtc } from "@/lib/dates";
 import { listBacklinks, listLinksForNote, listLinkTargetLabels } from "@/lib/services/note-links";
@@ -75,41 +75,14 @@ export async function getCachedNoteLinks(noteId: string) {
 	return { backlinks, links, targets };
 }
 
-const noteWrites = {
-	tag: CacheTag.notes,
-	writes: ["notes.write", "capture.settled", "capture.event"],
-	external: ["capture", "sweep"],
-} satisfies CachedReader["reads"][number];
-
-export const readers: CachedReader[] = [
-	{
-		reader: "getCachedNoteLists",
-		reads: [
-			{
-				tag: CacheTag.notes,
-				writes: ["notes.write", "capture.settled", "capture.event", "settings.timezone"],
-				external: ["capture", "sweep"],
-			},
-		],
+export const readers = {
+	getCachedNoteLists: { tags: [CacheTag.notes], tables: ["notes"] },
+	getCachedNoteEditorContext: {
+		tags: [CacheTag.notes, CacheTag.people],
+		tables: ["notes", "people"],
 	},
-	{
-		reader: "getCachedNoteEditorContext",
-		reads: [noteWrites, { tag: CacheTag.people, writes: ["people.write"] }],
+	getCachedNoteLinks: {
+		tags: [CacheTag.notes, CacheTag.tasks, CacheTag.daySchedule],
+		tables: ["note_links", "notes", "tasks", "calendar_events"],
 	},
-	{
-		reader: "getCachedNoteLinks",
-		reads: [
-			noteWrites,
-			{
-				tag: CacheTag.tasks,
-				writes: ["task.write", "task.assign", "capture.settled", "capture.event"],
-				external: ["capture", "sweep"],
-			},
-			{
-				tag: CacheTag.daySchedule,
-				writes: ["capture.settled", "capture.event", "today.only"],
-				external: ["capture", "sweep", "cronCaldav", "calendarBridge"],
-			},
-		],
-	},
-];
+} satisfies Readers;

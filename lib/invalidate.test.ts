@@ -1,7 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { CachedReader } from "@/lib/cache/manifest";
 import { CacheTag, type CacheTagName } from "@/lib/cache/tags";
 import {
 	EXTERNAL_WRITES,
@@ -148,88 +147,18 @@ describe("invalidationFor", () => {
 // Plain fs rather than import.meta.glob: Next and Vite both declare that, and
 // their overloads collide under tsc.
 const read = (file: string) => readFileSync(file, "utf8");
-const cacheDir = path.resolve(import.meta.dirname, "cache");
-const sources = Object.fromEntries(
-	readdirSync(cacheDir)
-		.filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
-		.map((f) => [f, read(path.join(cacheDir, f))]),
-);
 const apiDir = path.resolve(import.meta.dirname, "../app/api");
 const routeSources = Object.fromEntries(
 	readdirSync(apiDir, { recursive: true, encoding: "utf8" })
 		.filter((f) => f.endsWith("route.ts"))
 		.map((f) => [f, read(path.join(apiDir, f))]),
 );
-const modules: Record<string, { readers?: CachedReader[] }> = Object.fromEntries(
-	await Promise.all(
-		Object.keys(sources).map(async (f) => [f, await import(`./cache/${f.slice(0, -3)}.ts`)]),
-	),
-);
-
 /**
- * The guard from #9: a cached reader cannot ship without naming the writes that
- * move its data, and every named write must bust its tag. Kept apart from the
- * useOptimistic path guard above — #31 inverts that one and must not touch this.
+ * External writers: every route that writes declares itself in EXTERNAL_WRITES,
+ * and every notification it records busts the notification tags. The cached
+ * readers' own guard lives in lib/cache/readers.test.ts.
  */
-describe("cached readers name the writes that move their data", () => {
-	const tagKey = new Map<string, string>(Object.entries(CacheTag).map(([k, v]) => [v, k]));
-	// A file caches when a function body opens with the directive — not when a
-	// comment mentions it (manifest.ts, tags.ts).
-	const cacheFiles = Object.entries(sources).filter(([, src]) => /^\s*"use cache";$/m.test(src));
-
-	/** The exported `"use cache"` functions of a file, with the tags each one caches under. */
-	function cachedFunctions(src: string): Map<string, Set<string>> {
-		const found = new Map<string, Set<string>>();
-		for (const chunk of src.split(/^export async function /m).slice(1)) {
-			if (!/^\s*"use cache";$/m.test(chunk)) continue;
-			const name = chunk.slice(0, chunk.indexOf("("));
-			const tags = new Set<string>();
-			for (const call of chunk.matchAll(/cacheTag\(([^)]*)\)/g)) {
-				for (const m of call[1].matchAll(/CacheTag\.(\w+)/g)) tags.add(m[1]);
-			}
-			found.set(name, tags);
-		}
-		return found;
-	}
-
-	it("finds the cached readers", () => {
-		expect(cacheFiles.length).toBeGreaterThan(0);
-	});
-
-	it.each(cacheFiles)(
-		"%s declares every cached function and every tag it caches under",
-		(path, src) => {
-			const readers = modules[path]?.readers;
-			expect(readers, `${path} caches without \`export const readers\``).toBeDefined();
-			const declared = new Map(
-				(readers ?? []).map((r) => [
-					r.reader,
-					new Set(r.reads.map((read) => tagKey.get(read.tag))),
-				]),
-			);
-			const actual = cachedFunctions(src);
-			expect([...declared.keys()].sort(), path).toEqual([...actual.keys()].sort());
-			for (const [name, tags] of actual) {
-				expect([...(declared.get(name) ?? [])].sort(), `${path} ${name}`).toEqual([...tags].sort());
-			}
-		},
-	);
-
-	const reads = Object.values(modules).flatMap((m) =>
-		(m.readers ?? []).flatMap((r) => r.reads.map((read) => ({ reader: r.reader, ...read }))),
-	);
-
-	it.each(reads)("$reader: every declared write busts $tag", ({ tag, writes, external }) => {
-		expect(writes.length).toBeGreaterThan(0);
-		for (const kind of writes) {
-			expect(invalidationFor(kind).tags, kind).toContain(tag);
-		}
-		for (const writer of external ?? []) {
-			const tags = EXTERNAL_WRITES[writer].flatMap((kind) => invalidationFor(kind).tags);
-			expect(tags, writer).toContain(tag);
-		}
-	});
-
+describe("external writers name the writes that move their data", () => {
 	it("routes spread a declared external writer into afterExternalMutation", () => {
 		for (const [path, src] of Object.entries(routeSources)) {
 			for (const call of src.matchAll(/afterExternalMutation\(([^)]*)\)/g)) {

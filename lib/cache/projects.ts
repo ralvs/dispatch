@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import type { CachedReader } from "@/lib/cache/manifest";
+import type { ReaderDecl, Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
 import { nowUtc } from "@/lib/dates";
 import {
@@ -52,16 +52,10 @@ export async function getCachedProject(id: string) {
 	return { readAt, project, tasks, projects };
 }
 
-const reads: CachedReader["reads"] = [
-	{ tag: CacheTag.projects, writes: ["projects.write", "projects.detail"] },
-	{
-		tag: CacheTag.tasks,
-		writes: ["task.write", "task.assign", "capture.settled", "capture.event", "settings.domain"],
-		external: ["capture", "sweep"],
-	},
-];
+// `tasks` covers the domains embedded in project and task rows: settings.domain names it.
+const decl = {
+	tags: [CacheTag.projects, CacheTag.tasks],
+	tables: ["projects", "tasks", "stewardship_domains"],
+} satisfies ReaderDecl;
 
-export const readers: CachedReader[] = [
-	{ reader: "getCachedProjectBoard", reads },
-	{ reader: "getCachedProject", reads },
-];
+export const readers = { getCachedProjectBoard: decl, getCachedProject: decl } satisfies Readers;

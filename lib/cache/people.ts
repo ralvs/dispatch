@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import type { CachedReader } from "@/lib/cache/manifest";
+import type { Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
 import { nowUtc } from "@/lib/dates";
 import { listMentionsForPerson } from "@/lib/services/mentions";
@@ -41,25 +41,10 @@ export async function getCachedPerson(id: string) {
 	return { readAt, person, facts, interactions, mentions };
 }
 
-export const readers: CachedReader[] = [
-	{
-		reader: "getCachedPeople",
-		reads: [{ tag: CacheTag.people, writes: ["people.write"] }],
+export const readers = {
+	getCachedPeople: { tags: [CacheTag.people], tables: ["people"] },
+	getCachedPerson: {
+		tags: [CacheTag.people, CacheTag.tasks, CacheTag.notes],
+		tables: ["people", "person_facts", "person_interactions", "mentions", "tasks", "notes"],
 	},
-	{
-		reader: "getCachedPerson",
-		reads: [
-			{ tag: CacheTag.people, writes: ["people.write"] },
-			{
-				tag: CacheTag.tasks,
-				writes: ["task.write", "task.assign", "capture.settled", "capture.event"],
-				external: ["capture", "sweep"],
-			},
-			{
-				tag: CacheTag.notes,
-				writes: ["notes.write", "capture.settled", "capture.event"],
-				external: ["capture", "sweep"],
-			},
-		],
-	},
-];
+} satisfies Readers;
