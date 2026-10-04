@@ -27,9 +27,9 @@ async function runSweep(request: Request) {
 
 	if (result.swept.length > 0 || result.reconciled.length > 0) {
 		// A sweep degrades captured_data into needs_review notes: that moves the
-		// notes list, the needs-review alert count, and the ledger badge — all
-		// three read through a cached entry.
-		// capture.settled owns the notes tag; ledger is separate.
+		// notes list and the needs-review alert count, both read through a
+		// cached entry. The ledger row below busts its own tags (ADR-0075) and
+		// never rejects.
 		afterExternalMutation(...EXTERNAL_WRITES.sweep);
 
 		await recordNotification(sb, {

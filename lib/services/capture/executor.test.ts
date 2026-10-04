@@ -333,16 +333,6 @@ describe("create_event", () => {
 		);
 	});
 
-	it("still resolves when only the ledger row fails", async () => {
-		(createEventHere as Mock).mockResolvedValue({ id: "evt-3", title: "Call" });
-		(recordNotification as Mock).mockRejectedValue(new Error("ledger down"));
-
-		const results = await runActions(sb, [LUNCH], PROV);
-
-		expect(results[0]).toMatchObject({ ok: true, entity: { id: "evt-3" } });
-		expect(createNeedsReviewNote).not.toHaveBeenCalled();
-	});
-
 	it("degrades to a needs_review note when CalDAV is not configured", async () => {
 		(isCaldavConfigured as Mock).mockReturnValueOnce(false);
 		(createNeedsReviewNote as Mock).mockResolvedValue({ id: "review-5" });

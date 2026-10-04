@@ -7,9 +7,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 /**
  * Cross-request cache for /notifications (docs/adr/0035). Almost every row is
  * written from outside the app (iron rule #6), so this entry is only as fresh
- * as the external writers below — the test in
- * lib/invalidate.test.ts holds every route that records a
- * notification to busting this tag.
+ * as the ledger's own bust: lib/services/notifications.ts busts
+ * EXTERNAL_WRITES.ledger for every row it records, from any caller
+ * (docs/adr/0075).
  */
 export async function getCachedNotifications() {
 	"use cache";

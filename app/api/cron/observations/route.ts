@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { env, isSupabaseConfigured } from "@/lib/env";
-import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { isAuthorized } from "@/lib/secret-auth";
 import { recordNotification } from "@/lib/services/notifications";
 import { sweepNeglect } from "@/lib/services/observations";
@@ -31,9 +30,8 @@ async function runObservations(request: Request) {
 	const result = await sweepNeglect(sb);
 
 	if (result.flagged.length > 0) {
-		// The bell gains a row and /domains gains quiet dots.
-		afterExternalMutation(...EXTERNAL_WRITES.cronObservations);
-
+		// The bell gains a row; the ledger busts its own tags (ADR-0075). The
+		// observations table has no cached reader.
 		const names = result.flagged.map((d) => d.name).join(", ");
 		await recordNotification(sb, {
 			type: "cron.observations",

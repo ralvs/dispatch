@@ -167,58 +167,21 @@ describe("external writers name the writes that move their data", () => {
 		}
 	});
 
-	it("every module that records a notification is one whose write paths were checked", () => {
-		// recordNotification is also reached from inside services, where no route
-		// scan can see it. The callers are pinned; a new one fails here until its
-		// write paths are shown to bust notification.write:
-		// - capture/executor.ts: reached by /api/capture and cron/sweep (both
-		//   declare notification.write) and by the palette's captureText (below).
-		// - reminders.ts: reached by cron/reminders only.
-		const root = path.resolve(import.meta.dirname, "..");
-		const callers = ["app", "lib"]
-			.flatMap((dir) =>
-				readdirSync(path.join(root, dir), { recursive: true, encoding: "utf8" }).map((f) =>
-					path.join(dir, f),
-				),
-			)
-			.filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f) && !f.startsWith("app/api/"))
-			.filter((f) => read(path.join(root, f)).includes("recordNotification("))
-			.filter((f) => f !== "lib/services/notifications.ts")
-			.sort();
-		expect(callers).toEqual(["lib/services/capture/executor.ts", "lib/services/reminders.ts"]);
-	});
-
-	it("a server action that runs capture busts notification.write", () => {
-		// Route-owned actions live with their route; shared ones in lib/actions.
-		const callers = [
-			path.resolve(import.meta.dirname, "../app/(authed)"),
-			path.resolve(import.meta.dirname, "actions"),
-		]
-			.flatMap((dir) =>
-				readdirSync(dir, { recursive: true, encoding: "utf8" }).map((f) => path.join(dir, f)),
-			)
-			.filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f))
-			.map((f) => [f, read(f)] as const)
-			.filter(([, src]) => src.includes("await capture("));
-		expect(callers.length).toBeGreaterThan(0);
-		for (const [file, src] of callers) {
-			expect(src, file).toContain('afterMutation("notification.write")');
-		}
-	});
-
-	it("a route that records a notification busts the notification tags (iron rule #6)", () => {
-		const writesNotifications = new Set<string>(
-			(Object.keys(EXTERNAL_WRITES) as ExternalWriter[]).filter((w) =>
-				(EXTERNAL_WRITES[w] as readonly MutationKind[]).includes("notification.write"),
-			),
+	it("only the ledger writer carries notification.write", () => {
+		const carriers = (Object.keys(EXTERNAL_WRITES) as ExternalWriter[]).filter((w) =>
+			(EXTERNAL_WRITES[w] as readonly MutationKind[]).includes("notification.write"),
 		);
-		for (const [path, src] of Object.entries(routeSources)) {
-			if (!src.includes("recordNotification(")) continue;
-			const used = [...src.matchAll(/EXTERNAL_WRITES\.(\w+)/g)].map((m) => m[1]);
-			expect(
-				used.some((w) => writesNotifications.has(w)),
-				`${path} records a notification but busts no notification tag`,
-			).toBe(true);
-		}
+		expect(carriers).toEqual(["ledger"]);
+	});
+
+	it("no service but the ledger reaches next/cache (ADR-0075)", () => {
+		// ADR-0001 keeps services free of Next; the ledger busts its own tags.
+		const root = path.resolve(import.meta.dirname, "services");
+		const offenders = readdirSync(root, { recursive: true, encoding: "utf8" })
+			.filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f))
+			.filter((f) => f !== "notifications.ts")
+			.filter((f) => /from "(next\/cache|@\/lib\/invalidate)"/.test(read(path.join(root, f))))
+			.sort();
+		expect(offenders).toEqual([]);
 	});
 });

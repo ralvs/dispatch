@@ -8,7 +8,7 @@ import {
 	reminderMessage,
 } from "@/lib/reminders";
 import { unwrap } from "@/lib/services/errors";
-import { recordNotification } from "@/lib/services/notifications";
+import { recordNotificationOrThrow } from "@/lib/services/notifications";
 import { getReminderSettings } from "@/lib/services/settings";
 
 /**
@@ -60,8 +60,9 @@ async function deliver(
 	// Notify THEN mark sent (ADR-0015 ordering: duplicate over loss). One
 	// ledger row per DELIVERED reminder — no summary row, since these rows
 	// already are the ledger under iron rule #6 and a summary would double
-	// count.
-	await recordNotification(sb, {
+	// count. Required, not best-effort (ADR-0075): the row must land before
+	// the reminder is marked sent.
+	await recordNotificationOrThrow(sb, {
 		type: "reminder.fired",
 		title: message.title,
 		body: message.body,

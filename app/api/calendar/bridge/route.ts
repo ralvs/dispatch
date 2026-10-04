@@ -44,18 +44,12 @@ export async function POST(request: Request) {
 		return NextResponse.json(result);
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
-		try {
-			await recordNotification(sb, {
-				type: "gcal.sync_failed",
-				title: "Calendar bridge failed",
-				body: message.slice(0, 500),
-			});
-			// The Today badge counts unread rows from a cached entry; without this
-			// the failure sits unannounced until some other write busts it.
-			afterExternalMutation(...EXTERNAL_WRITES.calendarBridgeFailure);
-		} catch {
-			// Best-effort ledger (ADR-0015).
-		}
+		// Best-effort ledger (ADR-0015, ADR-0075); it busts its own tags.
+		await recordNotification(sb, {
+			type: "gcal.sync_failed",
+			title: "Calendar bridge failed",
+			body: message.slice(0, 500),
+		});
 		return NextResponse.json({ error: "sync_failed" }, { status: 502 });
 	}
 }

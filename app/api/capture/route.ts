@@ -101,17 +101,14 @@ export async function POST(request: Request) {
 		// invalidated anything (ADR-0035).
 		afterExternalMutation(...EXTERNAL_WRITES.captureLink);
 
-		try {
-			await recordNotification(sb, {
-				type: "capture.link",
-				title: "Link saved",
-				body: label,
-				source_ref: link.id,
-				source_url: link.url,
-			});
-		} catch {
-			// Stored and already on /links; the ledger row is the lesser loss.
-		}
+		// Best-effort (ADR-0075): stored and already on /links.
+		await recordNotification(sb, {
+			type: "capture.link",
+			title: "Link saved",
+			body: label,
+			source_ref: link.id,
+			source_url: link.url,
+		});
 
 		return NextResponse.json(
 			{ kind: "link", id: link.id, status: link.status, summary: `Link saved: ${label}` },
@@ -129,19 +126,16 @@ export async function POST(request: Request) {
 
 	// Whatever the parser decided — task, note, or a needs_review degradation —
 	// it lands in one of these three. Cheap enough to name all of them.
-	// capture.settled owns notes/quotes/journal tags; ledger is separate.
+	// capture.settled owns notes/quotes/journal tags; the ledger busts its own.
 	afterExternalMutation(...EXTERNAL_WRITES.capture);
 
-	try {
-		await recordNotification(sb, {
-			type: "capture.text",
-			title: `Captured via ${source}`,
-			body: text.length > 200 ? `${text.slice(0, 200)}…` : text,
-			source_ref: record.capturedId,
-		});
-	} catch {
-		// Capture is durable and already surfaced in-app.
-	}
+	// Best-effort (ADR-0075): the capture is durable and already surfaced in-app.
+	await recordNotification(sb, {
+		type: "capture.text",
+		title: `Captured via ${source}`,
+		body: text.length > 200 ? `${text.slice(0, 200)}…` : text,
+		source_ref: record.capturedId,
+	});
 
 	return NextResponse.json(
 		{

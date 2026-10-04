@@ -21,8 +21,8 @@ export type CaptureAnswer = { record: CapturedRecord; received: Received | null 
  * Palette (Cmd+J) capture entry point. User-initiated, so it runs under the
  * RLS client returned by requireOwnerPage(). It writes no ledger row of its
  * own, but one parsed action does: create_event puts an event on the external
- * calendar, and the executor records that (iron rule #6). So this busts
- * notification.write as well as the capture's own tags.
+ * calendar, and the executor records that (iron rule #6). The ledger busts its
+ * own tags (ADR-0075), so this busts only the capture's.
  *
  * The raw text is validated then handed to capture(), which persists it before
  * doing anything else, so a parse/execute failure never loses the input.
@@ -51,7 +51,6 @@ export async function captureText(input: {
 
 	const rows = capturedRows(record);
 	afterMutation(rows ? "capture.settled" : "capture.event");
-	afterMutation("notification.write");
 	// `at` after every write committed, like any write's stamp.
 	return {
 		record,
