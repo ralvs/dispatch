@@ -93,18 +93,14 @@ async function runCreateEvent(
 	});
 
 	// An external write, so it owes a ledger row (iron rule #6) — best-effort,
-	// per ADR-0015: the event is already on the calendar and losing the row
-	// must not undo it.
-	try {
-		await recordNotification(sb, {
-			type: "capture.event",
-			title: "Event added to calendar",
-			body: `${event.title} — ${action.start_date} ${action.start_time}`,
-			source_ref: event.id,
-		});
-	} catch {
-		// Ledger only. The VEVENT and its mirror row both exist.
-	}
+	// per ADR-0015 and ADR-0075: the event is already on the calendar and
+	// losing the row must not undo it. recordNotification never rejects.
+	await recordNotification(sb, {
+		type: "capture.event",
+		title: "Event added to calendar",
+		body: `${event.title} — ${action.start_date} ${action.start_time}`,
+		source_ref: event.id,
+	});
 
 	return { action: "create_event", ok: true, entity: { table: "calendar_events", id: event.id } };
 }

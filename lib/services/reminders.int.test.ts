@@ -1,5 +1,17 @@
-import { describe, expect, it } from "vitest";
-import { listNotifications } from "@/lib/services/notifications";
+import { describe, expect, it, type Mock, vi } from "vitest";
+
+// Cache invalidation needs a Next request scope; there is none in a test.
+vi.mock("@/lib/invalidate", async (original) => ({
+	...(await original<typeof import("@/lib/invalidate")>()),
+	afterExternalMutation: vi.fn(),
+}));
+// The real required ledger write, wrapped so one test can make it fail.
+vi.mock("@/lib/services/notifications", async (original) => {
+	const actual = await original<typeof import("@/lib/services/notifications")>();
+	return { ...actual, recordNotificationOrThrow: vi.fn(actual.recordNotificationOrThrow) };
+});
+
+import { listNotifications, recordNotificationOrThrow } from "@/lib/services/notifications";
 import { runTaskReminders } from "@/lib/services/reminders";
 import { updateReminderSettings } from "@/lib/services/settings";
 import { completeTask, createTask } from "@/lib/services/tasks";
@@ -35,6 +47,18 @@ async function run(nowMs = NOW_MS) {
 }
 
 describe("runTaskReminders against the local database", () => {
+	it("leaves reminders_sent alone when the ledger row does not land", async () => {
+		const sb = serviceClient();
+		const task = await createTask(sb, { title: "Pay rent", due_date: TODAY, due_time: "15:00" });
+		const before = (await sentState(task.id)).reminders_sent;
+		(recordNotificationOrThrow as Mock).mockRejectedValueOnce(new Error("ledger down"));
+
+		await expect(run()).rejects.toThrow("ledger down");
+
+		expect((await sentState(task.id)).reminders_sent).toEqual(before);
+		expect(await listNotifications(sb)).toEqual([]);
+	});
+
 	it("fires a due reminder: one ledger row, then reminders_sent", async () => {
 		const sb = serviceClient();
 		const task = await createTask(sb, { title: "Pay rent", due_date: TODAY, due_time: "15:00" });

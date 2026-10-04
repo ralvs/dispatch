@@ -6,7 +6,8 @@ let cached: SupabaseClient | undefined;
 
 /**
  * Service-role client — bypasses RLS. Reserved for the external surfaces
- * (cron, capture, widget) and CalDAV/push machinery. Never import
+ * (cron, capture, widget), CalDAV/push machinery, and the ledger's push
+ * delivery (lib/services/notifications.ts). Never import
  * from page or action code; those use requireOwner()/requireOwnerPage()
  * (lib/auth.ts), which return the RLS-scoped client.
  */

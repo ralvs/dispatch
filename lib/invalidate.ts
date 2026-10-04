@@ -156,31 +156,31 @@ export function afterMutation(kind: MutationKind): void {
  * listing kinds inline, so a cached reader can name the external writers of
  * its data (lib/cache/manifest.ts) and a test can check both sides agree.
  *
- * Iron rule #6: an autonomous action writes a notifications row, so a writer
- * that can record one carries "notification.write".
+ * Iron rule #6: an autonomous action writes a notifications row. Writers do
+ * not carry "notification.write" themselves: the ledger module busts `ledger`
+ * for every row it records, from any caller (ADR-0075).
  */
 export const EXTERNAL_WRITES = {
-	/** /api/capture with a bare URL: a link, plus its ledger row. */
-	captureLink: ["links.write", "notification.write"],
-	/** /api/capture: a task, note, event, quote or journal entry, plus its ledger row. */
-	capture: ["capture.settled", "notification.write"],
+	/** /api/capture with a bare URL: a link. */
+	captureLink: ["links.write"],
+	/** /api/capture: a task, note, event, quote or journal entry. */
+	capture: ["capture.settled"],
 	/** cron/sweep: re-parses needs_review notes. */
-	sweep: ["capture.settled", "notification.write"],
-	cronObservations: ["notification.write"],
-	/** cron/reminders: each delivered reminder is a ledger row. */
-	cronReminders: ["notification.write"],
+	sweep: ["capture.settled"],
+	/** Every ledger row, from any caller; the ledger module busts it (ADR-0075). */
+	ledger: ["notification.write"],
 	/** cron/caldav: calendar events only; silent by design. */
 	cronCaldav: ["today.only"],
 	/** /api/calendar/bridge on success: calendar events only; quiet by design. */
 	calendarBridge: ["today.only"],
-	/** /api/calendar/bridge on failure: the ledger row that reports it. */
-	calendarBridgeFailure: ["notification.write"],
 } as const satisfies Record<string, readonly MutationKind[]>;
 
 export type ExternalWriter = keyof typeof EXTERNAL_WRITES;
 
 /**
- * From a Route Handler — the crons and the external capture surface.
+ * From a Route Handler — the crons and the external capture surface — and
+ * from the ledger module (lib/services/notifications.ts), which also runs
+ * inside server actions (ADR-0075).
  *
  * Tags only, and never `updateTag`, which Next allows only in a Server
  * Action. These routes are invoked by cron-job.org and the iOS Shortcut, not
