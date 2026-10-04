@@ -130,6 +130,17 @@ export function parseDateIso(value: unknown): string | null {
 }
 
 /**
+ * A client-named day: a real ISO date, not after serverToday, at most `back`
+ * days before it. Else null. The server checks the day the client applied a
+ * write with against its own today (docs/adr/0077).
+ */
+export function acceptedDay(requested: unknown, serverToday: string, back: number): string | null {
+	const day = parseDateIso(requested);
+	if (day === null || day > serverToday || day < shiftDay(serverToday, -back)) return null;
+	return day;
+}
+
+/**
  * The Tasks page "Recently done" band: today and the two calendar days before
  * it, in the app timezone. Today counts as day 1.
  */
