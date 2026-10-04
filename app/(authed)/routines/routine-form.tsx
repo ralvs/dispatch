@@ -2,44 +2,13 @@
 
 import { CreateDialogButton } from "@/components/create-dialog";
 import { Field, Input, Select } from "@/components/ui";
-import { createRoutineAction } from "@/lib/actions/routines";
-import { nowUtc } from "@/lib/dates";
-import {
-	type RoutineWithHistory,
-	TIME_OF_DAY_LABELS,
-	TIME_OF_DAY_ORDER,
-	TimeOfDayBucketSchema,
-} from "@/lib/schemas/routine";
-import { useStoreWrite } from "@/lib/store";
-
-/**
- * The row the list shows while the server writes it. A rejected field drops
- * it again; a confirmed one swaps it for the server's row (#29).
- */
-function optimisticRoutine(formData: FormData): RoutineWithHistory {
-	const at = nowUtc();
-	const timeOfDay = TimeOfDayBucketSchema.safeParse(formData.get("time_of_day"));
-	return {
-		id: crypto.randomUUID(),
-		name: String(formData.get("name") ?? "").trim() || "Untitled",
-		description: null,
-		position: 0,
-		active: true,
-		time_of_day: timeOfDay.success ? timeOfDay.data : "anytime",
-		specific_time: null,
-		reminder_enabled: false,
-		last_reminder_sent_date: null,
-		goal_days: null,
-		archived_at: null,
-		created_at: at,
-		updated_at: at,
-		completions: [],
-	};
-}
+import { TIME_OF_DAY_LABELS, TIME_OF_DAY_ORDER } from "@/lib/schemas/routine";
+import { useWrites } from "@/lib/store";
+import { routineWrites } from "@/lib/writes/routine";
 
 /** Create a routine — dialog behind the header's `+` (Gate B / B1). */
 export function RoutineCreateButton() {
-	const write = useStoreWrite("routine");
+	const { submit } = useWrites();
 
 	return (
 		<CreateDialogButton
@@ -47,11 +16,7 @@ export function RoutineCreateButton() {
 			title="New routine"
 			submitLabel="Add routine"
 			errorMessage="Couldn't add routine. Try again."
-			action={(formData) =>
-				write({ type: "create", routine: optimisticRoutine(formData) }, () =>
-					createRoutineAction(formData),
-				)
-			}
+			action={(formData) => submit(routineWrites.create(formData))}
 		>
 			<Field label="Name" name="name">
 				<Input

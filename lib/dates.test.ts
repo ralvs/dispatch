@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	acceptedDay,
 	calendarDaysBetween,
 	dateOfInstant,
 	dayWindowUtc,
@@ -156,5 +157,23 @@ describe("recentDoneSinceDate / recentDoneSinceUtc", () => {
 	it("floors the query at local midnight of that oldest day", () => {
 		// São Paulo is UTC-3, so 16 Aug 00:00 BRT is 16 Aug 03:00 UTC.
 		expect(recentDoneSinceUtc("2026-08-18", SP)).toBe("2026-08-16T03:00:00.000Z");
+	});
+});
+
+describe("acceptedDay", () => {
+	const today = "2026-07-15";
+	it.each([
+		{ requested: today, out: today },
+		{ requested: "2026-06-16", out: "2026-06-16", back: 29 },
+		{ requested: "2026-06-15", out: null, back: 29 },
+		{ requested: "2026-07-16", out: null },
+		{ requested: "2026-07-14", out: "2026-07-14" },
+		{ requested: "2026-07-13", out: null },
+		{ requested: "2026-02-30", out: null },
+		{ requested: "15/07/2026", out: null },
+		{ requested: undefined, out: null },
+		{ requested: 20260715, out: null },
+	])("$requested (back $back) → $out", ({ requested, out, back = 1 }) => {
+		expect(acceptedDay(requested, today, back)).toBe(out);
 	});
 });

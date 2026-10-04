@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { Card, Checkbox, Progress } from "@/components/ui";
-import { toggleCompletionAction } from "@/lib/actions/routines";
 import { bucketRoutines, type RoutineBucket, type RoutineBucketRow } from "@/lib/routine-buckets";
 import type { RoutineWithHistory } from "@/lib/schemas/routine";
-import { useClock, useRunIntent, useView, viewKey } from "@/lib/store";
+import { useClock, useView, useWrites, viewKey } from "@/lib/store";
 import { PROGRESS_RENDER } from "@/lib/ui/variant";
+import { routineWrites } from "@/lib/writes/routine";
 
 const NO_ROUTINES: RoutineWithHistory[] = [];
 
@@ -54,7 +54,7 @@ const HOT_STREAK = 7;
 export function RoutinesCard({ nowMs }: { nowMs: number }) {
 	const routines = useView(viewKey.routines()) ?? NO_ROUTINES;
 	const { todayIso, tz } = useClock();
-	const run = useRunIntent("routine", { errorMessage: "Couldn't update routine." });
+	const { send } = useWrites();
 
 	const buckets: RoutineBucket[] = bucketRoutines({
 		routines,
@@ -79,12 +79,9 @@ export function RoutinesCard({ nowMs }: { nowMs: number }) {
 		.map((b) => BUCKET_LABELS[b.bucket]);
 
 	function toggle(row: RoutineBucketRow) {
-		const currentlyDone = row.done;
-		// Today's square. The server ticks its own today (no date sent), the
-		// same day this card shows unless the tab has slept past midnight.
-		run({ type: "toggle", id: row.id, date: todayIso, done: !currentlyDone }, () =>
-			toggleCompletionAction(row.id, currentlyDone),
-		);
+		// Today's square as this card shows it. The server ticks that same day,
+		// even when the tab has slept past midnight (docs/adr/0077).
+		send(routineWrites.toggle({ id: row.id, date: todayIso, done: !row.done }));
 	}
 
 	return (

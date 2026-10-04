@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
-import { shiftDay } from "@/lib/dates";
+import { acceptedDay, shiftDay } from "@/lib/dates";
 import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/invalidate";
 import { BACKFILL_DAYS, ROUTINE_HISTORY_DAYS } from "@/lib/routine-stats";
@@ -61,24 +61,25 @@ export async function createRoutineAction(formData: FormData): Promise<ActionRes
 }
 
 /**
- * Toggle one day's completion. Omit `date` for today.
+ * Toggle one day's completion.
  *
- * docs/adr/0054: this used to derive the date from the server clock and never
- * trust the client with one. It now accepts a date and bounds it here instead
- * — a real calendar date, not in the future, and no older than the 30 squares
- * the row already draws. The client picks which visible square to tick; it
- * cannot invent a day the UI is not showing.
+ * docs/adr/0054: the server never trusted the client with a date; it now
+ * accepts one and bounds it here — a real calendar date, not in the future,
+ * and no older than the 30 squares the row already draws. The client picks
+ * which visible square to tick; it cannot invent a day the UI is not showing.
+ * docs/adr/0077: the date is required — the card sends the day its intent
+ * was applied with, so a tab that slept past midnight ticks the day it shows.
  */
 export async function toggleCompletionAction(
 	routineId: string,
 	currentlyDone: boolean,
-	date?: string,
+	date: string,
 ): Promise<ActionResult<RoutineWrite>> {
 	const { sb } = await requireOwnerPage();
 	const id = z.uuid().parse(routineId);
 	const todayIso = await todayForRequest(sb);
-	const requested = date === undefined ? todayIso : z.iso.date().parse(date);
-	if (requested > todayIso || requested < shiftDay(todayIso, -(BACKFILL_DAYS - 1))) {
+	const requested = acceptedDay(date, todayIso, BACKFILL_DAYS - 1);
+	if (requested === null) {
 		throw new Error("Completion date is outside the 30-day window.");
 	}
 	await setCompletion(sb, id, requested, !z.boolean().parse(currentlyDone));

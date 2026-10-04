@@ -26,10 +26,12 @@ beforeEach(() => {
 	store = createDispatchStore({ now: () => NOW });
 });
 
-function renderCard() {
-	const snap = snapshot(T1, [
-		{ key: viewKey.routines(), type: "routineList", data: [stretch, read] },
-	]);
+function renderCard(todayIso = TODAY) {
+	const snap = snapshot(
+		T1,
+		[{ key: viewKey.routines(), type: "routineList", data: [stretch, read] }],
+		{ todayIso },
+	);
 	render(
 		<StoreProvider store={store}>
 			<Seed snapshot={snap}>
@@ -58,7 +60,7 @@ describe("RoutinesCard on the entity store", () => {
 
 		expect(progress()).toHaveAccessibleName("1 of 2 routines done today");
 		await user.click(screen.getByRole("checkbox", { name: 'Complete "Stretch"' }));
-		expect(toggleCompletionAction).toHaveBeenCalledWith("stretch", false);
+		expect(toggleCompletionAction).toHaveBeenCalledWith("stretch", false, TODAY);
 		expect(progress()).toHaveAccessibleName("2 of 2 routines done today");
 
 		const done = { ...stretch, completions: [TODAY] };
@@ -78,5 +80,15 @@ describe("RoutinesCard on the entity store", () => {
 		await act(async () => action.resolve({ ok: false, formError: "Couldn't update routine." }));
 		expect(screen.getByRole("checkbox", { name: 'Undo "Read"' })).toBeChecked();
 		expect(toastError).toHaveBeenCalledWith("Couldn't update routine.");
+	});
+
+	it("a tab that slept past midnight ticks the day it shows, not the server's", async () => {
+		const yesterday = "2026-07-14";
+		vi.mocked(toggleCompletionAction).mockReturnValue(deferred().promise);
+		const user = userEvent.setup();
+		renderCard(yesterday);
+
+		await user.click(screen.getByRole("checkbox", { name: 'Complete "Stretch"' }));
+		expect(toggleCompletionAction).toHaveBeenCalledWith("stretch", false, yesterday);
 	});
 });

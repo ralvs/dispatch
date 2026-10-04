@@ -2,8 +2,8 @@
 
 import { unstable_rethrow } from "next/navigation";
 import { useActionState } from "react";
-import { type ActionResult, formValues, GENERIC_FORM_ERROR } from "@/lib/action-result";
-import { toastError } from "@/lib/client/toast";
+import { type ActionResult, formValues } from "@/lib/action-result";
+import { toastFailure } from "@/lib/client/failure";
 import type { FormState } from "./form-state";
 
 /**
@@ -13,7 +13,8 @@ import type { FormState } from "./form-state";
  *   uncontrolled fields on its own.
  * - Field errors go into the state, for `<Field name>` to show, with the
  *   typed values echoed back so the reset does not wipe them.
- * - A form error, or a request that never came back, is the only toast.
+ * - A form error, a request that never came back, or a failure with no field
+ *   errors to show is the only toast (toastFailure).
  *
  * Put this in a component that mounts with the form, so a closed-and-reopened
  * form starts clean.
@@ -28,16 +29,14 @@ export function useResultAction(
 			result = await action(formData);
 		} catch (error) {
 			unstable_rethrow(error);
-			toastError(errorMessage);
+			toastFailure({ thrown: error }, errorMessage);
 			return { values: formValues(formData) };
 		}
 		if (result.ok) {
 			onSuccess?.();
 			return {};
 		}
-		if (result.formError) {
-			toastError(result.formError === GENERIC_FORM_ERROR ? errorMessage : result.formError);
-		}
+		toastFailure({ result }, errorMessage, { fieldErrorsShown: true });
 		return { fieldErrors: result.fieldErrors, values: result.values ?? formValues(formData) };
 	}, {});
 }
