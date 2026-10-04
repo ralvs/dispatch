@@ -10,11 +10,10 @@ import {
 } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedLinks } from "@/lib/cache/links";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { todayInTz } from "@/lib/dates";
+import { readClock } from "@/lib/cache/settings";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
-import type { Snapshot } from "@/lib/store/types";
+import { seedOf } from "@/lib/store/server";
 import { LinkList } from "./link-list";
 
 // The link reading list (ADR-0014, renamed from /ingest in ADR-0022).
@@ -22,15 +21,13 @@ async function LinksBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
-	const [{ readAt, links }, tz] = await Promise.all([getCachedLinks(), getCachedAppTimezone()]);
+	const [read, clock] = await Promise.all([getCachedLinks(), readClock()]);
+	const { links } = read.data;
 	// The measure and both sections read the entity store (#30); the view
 	// drops dismissed rows.
-	const snapshot: Snapshot = {
-		readAt,
-		todayIso: todayInTz(tz),
-		tz,
+	const snapshot = seedOf(read, clock, {
 		views: [{ key: viewKey.links(), type: "linkList", data: { rows: links } }],
-	};
+	});
 
 	return (
 		<Seed snapshot={snapshot}>

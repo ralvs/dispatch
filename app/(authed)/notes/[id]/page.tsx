@@ -17,12 +17,12 @@ import { Icon } from "@/components/ui/icon";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedNoteEditorContext, getCachedNoteLinks } from "@/lib/cache/notes";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { formatInstant, nowUtc, todayInTz } from "@/lib/dates";
+import { getCachedAppTimezone, readClock } from "@/lib/cache/settings";
+import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
 import { getNote } from "@/lib/services/notes";
 import { Seed } from "@/lib/store/seed";
-import type { Snapshot } from "@/lib/store/types";
+import { seedOf, stampRead } from "@/lib/store/server";
 import { detachLinkAction } from "../actions";
 import { AttachmentStrip } from "./attachment-strip";
 import { LinkPicker } from "./link-picker";
@@ -225,12 +225,13 @@ async function NoteBody({ params }: { params: Promise<{ id: string }> }) {
 
 	// One uncached query, and the one that decides between this note and the
 	// 404, so it is awaited before either section below starts.
-	const [note, tz] = await Promise.all([loadNote(parsedId.data), getCachedAppTimezone()]);
+	const [read, clock] = await Promise.all([stampRead(() => loadNote(parsedId.data)), readClock()]);
+	const note = read.data;
 	if (!note) notFound();
 	// No view to seed: the editor's writes confirm into the entity store (#27)
 	// so /notes shows them, and a write needs the store's clock — this page
 	// can be the first one a tab opens.
-	const snapshot: Snapshot = { readAt: nowUtc(), todayIso: todayInTz(tz), tz };
+	const snapshot = seedOf(read, clock);
 
 	return (
 		<Seed snapshot={snapshot}>

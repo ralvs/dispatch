@@ -14,28 +14,24 @@ import {
 } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomainBoard } from "@/lib/cache/domains";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { todayInTz } from "@/lib/dates";
+import { readClock } from "@/lib/cache/settings";
 import { toDomainItem } from "@/lib/services/observations";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
-import type { Snapshot } from "@/lib/store/types";
+import { seedOf } from "@/lib/store/server";
 import { DomainList } from "./domain-list";
 
 async function DomainsBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
-	const tz = await getCachedAppTimezone();
-	const todayIso = todayInTz(tz);
-	const { readAt, domains, touches } = await getCachedDomainBoard(todayIso, tz);
+	const clock = await readClock();
+	const read = await getCachedDomainBoard(clock.todayIso, clock.tz);
+	const { domains, touches } = read.data;
 	// The header, the band and both sections read the entity store (#30). A
 	// row carries its cadence rule and last touch, so the band is computed
 	// from the same rows the list shows.
-	const snapshot: Snapshot = {
-		readAt,
-		todayIso,
-		tz,
+	const snapshot = seedOf(read, clock, {
 		views: [
 			{
 				key: viewKey.domains(),
@@ -43,7 +39,7 @@ async function DomainsBody() {
 				data: { rows: domains.map((d) => toDomainItem(d, touches)) },
 			},
 		],
-	};
+	});
 
 	return (
 		<Seed snapshot={snapshot}>

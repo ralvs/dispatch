@@ -7,6 +7,7 @@ import { afterMutation } from "@/lib/invalidate";
 import { CaptureRequestSchema } from "@/lib/schemas/capture";
 import { type CapturedRecord, capture, capturedRows } from "@/lib/services/capture";
 import type { Received } from "@/lib/store/receive";
+import { stampRead } from "@/lib/store/server";
 
 /**
  * What the palette gets back: the record its receipt reads, and the rows the
@@ -38,12 +39,14 @@ export async function captureText(input: {
 	const parsed = CaptureRequestSchema.parse(input);
 	const tz = await getCachedAppTimezone();
 	// Stamped before the capture starts, like a seed's (lib/store/server.ts).
-	const readAt = nowUtc();
-	const record = await capture(sb, {
-		kind: "transcript",
-		text: parsed.text,
-		via: parsed.via ?? "text",
-		clientTime: parsed.client_time,
+	// The inner `await capture(` is what lib/invalidate.test.ts scans for.
+	const { data: record, readAt } = await stampRead(async () => {
+		return await capture(sb, {
+			kind: "transcript",
+			text: parsed.text,
+			via: parsed.via ?? "text",
+			clientTime: parsed.client_time,
+		});
 	});
 
 	const rows = capturedRows(record);

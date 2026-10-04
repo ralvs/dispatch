@@ -1,8 +1,6 @@
 import "server-only";
-import { cacheLife, cacheTag } from "next/cache";
-import type { Readers } from "@/lib/cache/reader";
+import { cachedRead, type Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
-import { nowUtc } from "@/lib/dates";
 import { listNotifications, unreadCount } from "@/lib/services/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -12,24 +10,18 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * as the external writers below — the test in
  * lib/invalidate.test.ts holds every route that records a
  * notification to busting this tag.
- *
- * `readAt` is the entity store's version (lib/store/types.ts), stamped inside
- * the cache so a stale entry keeps its old stamp and a confirmed write
- * replays over it.
  */
 export async function getCachedNotifications() {
 	"use cache";
-	cacheTag(CacheTag.notifications);
-	cacheLife("tagged");
-
-	const readAt = nowUtc();
-	const sb = createAdminClient();
-	// The exact unread count, not the list's: the list stops at 100 rows.
-	const [notifications, unread] = await Promise.all([
-		listNotifications(sb, { limit: 100 }),
-		unreadCount(sb),
-	]);
-	return { readAt, notifications, unread };
+	return cachedRead(readers.getCachedNotifications, async () => {
+		const sb = createAdminClient();
+		// The exact unread count, not the list's: the list stops at 100 rows.
+		const [notifications, unread] = await Promise.all([
+			listNotifications(sb, { limit: 100 }),
+			unreadCount(sb),
+		]);
+		return { notifications, unread };
+	});
 }
 
 export const readers = {

@@ -12,25 +12,22 @@ import {
 } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedJournal } from "@/lib/cache/journal";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { todayInTz } from "@/lib/dates";
+import { readClock } from "@/lib/cache/settings";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
-import type { Snapshot } from "@/lib/store/types";
+import { seedOf } from "@/lib/store/server";
 import { JournalList } from "./journal-list";
 
 async function JournalBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
-	const [tz, { readAt, entries }] = await Promise.all([getCachedAppTimezone(), getCachedJournal()]);
+	const [clock, read] = await Promise.all([readClock(), getCachedJournal()]);
+	const { entries } = read.data;
 	// The header, the day groups and the rows read the entity store (#30).
-	const snapshot: Snapshot = {
-		readAt,
-		todayIso: todayInTz(tz),
-		tz,
+	const snapshot = seedOf(read, clock, {
 		views: [{ key: viewKey.journal(), type: "journalList", data: { rows: entries } }],
-	};
+	});
 
 	return (
 		<Seed snapshot={snapshot}>

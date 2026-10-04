@@ -12,13 +12,13 @@ import {
 	TitleMetaBone,
 } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
+import { readClock } from "@/lib/cache/settings";
 import { getCachedTaskBoard } from "@/lib/cache/tasks";
-import { recentDoneSinceUtc, todayInTz } from "@/lib/dates";
+import { recentDoneSinceUtc } from "@/lib/dates";
 import { quietProjectIdsOf } from "@/lib/quiet";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
-import type { Snapshot } from "@/lib/store/types";
+import { seedOf } from "@/lib/store/server";
 import { NewTaskButton } from "./new-task-button";
 import { TaskList } from "./task-list";
 
@@ -41,23 +41,19 @@ async function TasksBody({
 	// inside TaskList — so they are deliberately not part of the cache key.
 	// Timezone first: the done-window floor is a cache key, so it has to be
 	// computed before the board read rather than in parallel with it.
-	const tz = await getCachedAppTimezone();
-	const todayIso = todayInTz(tz);
-	const board = await getCachedTaskBoard(recentDoneSinceUtc(todayIso, tz));
-	const { readAt, openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions } =
-		board;
+	const clock = await readClock();
+	const { todayIso, tz } = clock;
+	const read = await getCachedTaskBoard(recentDoneSinceUtc(todayIso, tz));
+	const { openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions } = read.data;
 	// The board already carries every project, so the quiet ones need no
 	// second read (lib/quiet.ts). They stay off the store's clock: only Today
 	// seeds those, beside the counts they were read with.
 	const quietProjectIds = quietProjectIdsOf(projects);
-	const snapshot: Snapshot = {
-		readAt,
-		todayIso,
-		tz,
+	const snapshot = seedOf(read, clock, {
 		views: [
 			{ key: viewKey.tasks(), type: "taskLists", data: { open: openTasks, done: doneTasks } },
 		],
-	};
+	});
 
 	return (
 		// Header included: the count strip is the status filter, so it lives in

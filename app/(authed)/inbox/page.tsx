@@ -3,26 +3,23 @@ import { ListRow, PageHeader, PillBone, repeat, SkeletonStatus, TextBone } from 
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedInbox } from "@/lib/cache/inbox";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { todayInTz } from "@/lib/dates";
+import { readClock } from "@/lib/cache/settings";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
-import type { Snapshot } from "@/lib/store/types";
+import { seedOf } from "@/lib/store/server";
 import { InboxList } from "./inbox-list";
 
 async function InboxBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
-	const [{ readAt, tasks, taskNoteIds }, domains, tz] = await Promise.all([
+	const [read, domains, clock] = await Promise.all([
 		getCachedInbox(),
 		getCachedDomains(false),
-		getCachedAppTimezone(),
+		readClock(),
 	]);
-	const snapshot: Snapshot = {
-		readAt,
-		todayIso: todayInTz(tz),
-		tz,
+	const { tasks, taskNoteIds } = read.data;
+	const snapshot = seedOf(read, clock, {
 		views: [
 			{
 				key: viewKey.inbox(),
@@ -30,7 +27,7 @@ async function InboxBody() {
 				data: { rows: tasks, scope: { unfiled: true, status: "open" } },
 			},
 		],
-	};
+	});
 
 	return (
 		<Seed snapshot={snapshot}>

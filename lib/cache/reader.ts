@@ -1,5 +1,7 @@
+import { cacheLife, cacheTag } from "next/cache";
 import type { CacheTagName } from "@/lib/cache/tags";
 import type { Table } from "@/lib/cache/writers";
+import { type Stamped, stampRead } from "@/lib/store/server";
 
 /**
  * What a cached reader promises, next to its `"use cache"` function
@@ -25,3 +27,24 @@ export type ReaderDecl = {
 
 /** A cache file's `readers`: one declaration per exported `"use cache"` function. */
 export type Readers = Readonly<Record<string, ReaderDecl>>;
+
+/**
+ * The body of a stamped cached reader, called inside its `"use cache"`
+ * function: tags and cacheLife from the declaration, then `stampRead`. The
+ * stamp is taken inside the cache, before the read, so the instant travels
+ * with the data: a stale entry served after a write keeps its old stamp, and
+ * the entity store's conflict rule replays the write over it
+ * (lib/store/types.ts).
+ */
+export async function cachedRead<T>(decl: ReaderDecl, read: () => Promise<T>): Promise<Stamped<T>> {
+	cacheTag(...decl.tags);
+	cacheLife("tagged");
+	return stampRead(read);
+}
+
+/** As cachedRead, for a reader that seeds nothing: no stamp. */
+export async function cachedValue<T>(decl: ReaderDecl, read: () => Promise<T>): Promise<T> {
+	cacheTag(...decl.tags);
+	cacheLife("tagged");
+	return read();
+}
