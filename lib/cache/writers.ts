@@ -40,7 +40,8 @@ export const TABLE_WRITERS: { readonly [T in Table]: readonly Writer[] } = {
 	note_links: ["notes.write", "notes.links", "capture.settled", "capture.event"],
 	notes: ["notes.write", "capture.settled", "capture.event"],
 	notifications: ["notification.write"],
-	observations: ["cronObservations"],
+	// No cached reader. The neglect cron's bell is the ledger's bust (ADR-0075).
+	observations: [],
 	people: ["people.write"],
 	person_facts: ["people.write"],
 	person_interactions: ["people.write"],
