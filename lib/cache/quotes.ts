@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import type { CachedReader } from "@/lib/cache/manifest";
+import type { Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
 import { nowUtc } from "@/lib/dates";
 import { listQuotes } from "@/lib/services/quotes";
@@ -19,15 +19,6 @@ export async function getCachedQuotes() {
 	return { readAt, quotes };
 }
 
-export const readers: CachedReader[] = [
-	{
-		reader: "getCachedQuotes",
-		reads: [
-			{
-				tag: CacheTag.quotes,
-				writes: ["quotes.write", "capture.settled", "capture.event"],
-				external: ["capture", "sweep"],
-			},
-		],
-	},
-];
+export const readers = {
+	getCachedQuotes: { tags: [CacheTag.quotes], tables: ["quotes"] },
+} satisfies Readers;

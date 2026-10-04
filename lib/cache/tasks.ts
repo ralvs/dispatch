@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import type { CachedReader } from "@/lib/cache/manifest";
+import type { Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
 import { nowUtc } from "@/lib/dates";
 import { listDomains } from "@/lib/services/domains";
@@ -62,32 +62,11 @@ export async function getCachedTaskBoard(sinceUtc: string) {
 	return { readAt, openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions };
 }
 
-export const readers: CachedReader[] = [
-	{
-		reader: "getCachedTaskBoard",
-		reads: [
-			{
-				// Tasks, their mentions, and the domains they are filed under.
-				tag: CacheTag.tasks,
-				writes: [
-					"task.write",
-					"task.assign",
-					"capture.settled",
-					"capture.event",
-					"settings.domain",
-					"settings.timezone",
-				],
-				external: ["capture", "sweep"],
-			},
-			// Which tasks have notes linked to them.
-			{
-				tag: CacheTag.notes,
-				writes: ["notes.write", "capture.settled", "capture.event"],
-				external: ["capture", "sweep"],
-			},
-			// Mention candidates for the task form.
-			{ tag: CacheTag.people, writes: ["people.write"] },
-			{ tag: CacheTag.projects, writes: ["projects.write", "projects.detail"] },
-		],
+export const readers = {
+	getCachedTaskBoard: {
+		// `tasks` covers the domains on task rows and their mentions; `notes`
+		// covers which tasks have notes linked to them.
+		tags: [CacheTag.tasks, CacheTag.notes, CacheTag.people, CacheTag.projects],
+		tables: ["tasks", "stewardship_domains", "projects", "people", "note_links", "mentions"],
 	},
-];
+} satisfies Readers;

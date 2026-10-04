@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import type { CachedReader } from "@/lib/cache/manifest";
+import type { Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
 import { nowUtc } from "@/lib/dates";
 import { listDomains } from "@/lib/services/domains";
@@ -43,26 +43,10 @@ export async function getCachedDomainBoard(todayIso: string, tz: string) {
 	return { readAt, domains, touches };
 }
 
-export const readers: CachedReader[] = [
-	{
-		reader: "getCachedDomains",
-		reads: [{ tag: CacheTag.domains, writes: ["settings.domain"] }],
+export const readers = {
+	getCachedDomains: { tags: [CacheTag.domains], tables: ["stewardship_domains"] },
+	getCachedDomainBoard: {
+		tags: [CacheTag.domains, CacheTag.tasks, CacheTag.projects, CacheTag.notes],
+		tables: ["stewardship_domains", "tasks", "projects", "notes"],
 	},
-	{
-		reader: "getCachedDomainBoard",
-		reads: [
-			{ tag: CacheTag.domains, writes: ["settings.domain"] },
-			{
-				tag: CacheTag.tasks,
-				writes: ["task.write", "task.assign", "capture.settled", "capture.event"],
-				external: ["capture", "sweep"],
-			},
-			{ tag: CacheTag.projects, writes: ["projects.write", "projects.detail"] },
-			{
-				tag: CacheTag.notes,
-				writes: ["notes.write", "capture.settled", "capture.event"],
-				external: ["capture", "sweep"],
-			},
-		],
-	},
-];
+} satisfies Readers;

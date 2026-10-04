@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import type { CachedReader } from "@/lib/cache/manifest";
+import type { Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
 import { getAppTimezone, getReminderSettings } from "@/lib/services/settings";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -21,13 +21,7 @@ export async function getCachedReminderSettings() {
 	return getReminderSettings(createAdminClient());
 }
 
-export const readers: CachedReader[] = [
-	{
-		reader: "getCachedAppTimezone",
-		reads: [{ tag: CacheTag.settings, writes: ["settings.timezone"] }],
-	},
-	{
-		reader: "getCachedReminderSettings",
-		reads: [{ tag: CacheTag.settings, writes: ["settings.reminders"] }],
-	},
-];
+export const readers = {
+	getCachedAppTimezone: { tags: [CacheTag.settings], tables: ["app_settings"] },
+	getCachedReminderSettings: { tags: [CacheTag.settings], tables: ["app_settings"] },
+} satisfies Readers;

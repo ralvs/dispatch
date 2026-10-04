@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import type { CachedReader } from "@/lib/cache/manifest";
+import type { Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
 import { nowUtc } from "@/lib/dates";
 import { listCompletionsForRoutines, listRoutines } from "@/lib/services/routines";
@@ -30,9 +30,6 @@ export async function getCachedRoutines(sinceIso: string) {
 	return { readAt, routines, completionsByRoutine };
 }
 
-export const readers: CachedReader[] = [
-	{
-		reader: "getCachedRoutines",
-		reads: [{ tag: CacheTag.routines, writes: ["routine.write"] }],
-	},
-];
+export const readers = {
+	getCachedRoutines: { tags: [CacheTag.routines], tables: ["routines", "routine_completions"] },
+} satisfies Readers;
