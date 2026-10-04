@@ -20,10 +20,10 @@ import {
 	deleteFact,
 	deleteInteraction,
 	deletePerson,
-	getPerson,
 	updatePerson,
 } from "@/lib/services/people";
 import { getAppTimezone } from "@/lib/services/settings";
+import { written } from "@/lib/services/written";
 import { stampWrite } from "@/lib/store/server";
 import type { StoreWrite } from "@/lib/store/types";
 
@@ -45,8 +45,7 @@ export async function updatePersonAction(
 	const parsed = decodeForm(UpdatePersonSchema, formData);
 	await updatePerson(sb, personId, parsed);
 	revalidatePersonViews();
-	const row = await getPerson(sb, personId);
-	return { ok: true, data: row ? stampWrite([row]) : stampWrite([], [personId]) };
+	return { ok: true, data: await written(sb, "person", personId) };
 }
 
 /** No redirect: that would roll the intent back. The page navigates once the store has it. */

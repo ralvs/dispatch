@@ -1,19 +1,13 @@
 "use server";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { ActionResult } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/invalidate";
 import { type ProjectRow, UpdateProjectSchema } from "@/lib/schemas/project";
-import {
-	archiveProject,
-	completeProject,
-	getProject,
-	updateProject,
-} from "@/lib/services/projects";
-import { stampWrite } from "@/lib/store/server";
+import { archiveProject, completeProject, updateProject } from "@/lib/services/projects";
+import { written } from "@/lib/services/written";
 import type { StoreWrite } from "@/lib/store/types";
 
 // Every action returns the project as it stands after the write (#30), so the
@@ -26,12 +20,6 @@ function revalidateProjectViews() {
 	afterMutation("projects.detail");
 }
 
-/** A project that is gone comes back as a deleted id. */
-async function writtenProject(sb: SupabaseClient, id: string): Promise<ProjectWrite> {
-	const row = await getProject(sb, id);
-	return row ? stampWrite([row]) : stampWrite([], [id]);
-}
-
 export async function updateProjectAction(
 	id: string,
 	formData: FormData,
@@ -41,7 +29,7 @@ export async function updateProjectAction(
 	const parsed = decodeForm(UpdateProjectSchema, formData);
 	await updateProject(sb, projectId, parsed);
 	revalidateProjectViews();
-	return { ok: true, data: await writtenProject(sb, projectId) };
+	return { ok: true, data: await written(sb, "project", projectId) };
 }
 
 export async function completeProjectAction(id: string): Promise<ActionResult<ProjectWrite>> {
@@ -49,7 +37,7 @@ export async function completeProjectAction(id: string): Promise<ActionResult<Pr
 	const projectId = z.uuid().parse(id);
 	await completeProject(sb, projectId);
 	revalidateProjectViews();
-	return { ok: true, data: await writtenProject(sb, projectId) };
+	return { ok: true, data: await written(sb, "project", projectId) };
 }
 
 export async function archiveProjectAction(id: string): Promise<ActionResult<ProjectWrite>> {
@@ -57,5 +45,5 @@ export async function archiveProjectAction(id: string): Promise<ActionResult<Pro
 	const projectId = z.uuid().parse(id);
 	await archiveProject(sb, projectId);
 	revalidateProjectViews();
-	return { ok: true, data: await writtenProject(sb, projectId) };
+	return { ok: true, data: await written(sb, "project", projectId) };
 }

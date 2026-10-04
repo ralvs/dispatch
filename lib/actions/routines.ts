@@ -1,13 +1,12 @@
 "use server";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
-import { acceptedDay, shiftDay } from "@/lib/dates";
+import { acceptedDay } from "@/lib/dates";
 import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/invalidate";
-import { BACKFILL_DAYS, ROUTINE_HISTORY_DAYS } from "@/lib/routine-stats";
+import { BACKFILL_DAYS } from "@/lib/routine-stats";
 import {
 	CreateRoutineSchema,
 	type RoutineWithHistory,
@@ -17,11 +16,11 @@ import {
 	archiveRoutine,
 	createRoutine,
 	deleteRoutine,
-	getRoutineWithHistory,
 	setCompletion,
 	updateRoutine,
 } from "@/lib/services/routines";
 import { todayForRequest } from "@/lib/services/settings";
+import { written } from "@/lib/services/written";
 import { stampWrite } from "@/lib/store/server";
 import type { StoreWrite } from "@/lib/store/types";
 
@@ -34,20 +33,6 @@ type RoutineWrite = StoreWrite<RoutineWithHistory>;
 
 function revalidateRoutineViews() {
 	afterMutation("routine.write");
-}
-
-/**
- * The routine as it stands after the write, with the same history window the
- * pages read. A routine that is gone comes back as a deleted id.
- */
-async function writtenRoutine(
-	sb: SupabaseClient,
-	id: string,
-	todayIso?: string,
-): Promise<RoutineWrite> {
-	const today = todayIso ?? (await todayForRequest(sb));
-	const row = await getRoutineWithHistory(sb, id, shiftDay(today, -ROUTINE_HISTORY_DAYS));
-	return row ? stampWrite([row]) : stampWrite([], [id]);
 }
 
 export async function createRoutineAction(formData: FormData): Promise<ActionResult<RoutineWrite>> {
@@ -84,7 +69,7 @@ export async function toggleCompletionAction(
 	}
 	await setCompletion(sb, id, requested, !z.boolean().parse(currentlyDone));
 	revalidateRoutineViews();
-	return { ok: true, data: await writtenRoutine(sb, id, todayIso) };
+	return { ok: true, data: await written(sb, "routine", id, { todayIso }) };
 }
 
 /**
@@ -101,7 +86,7 @@ export async function updateRoutineAction(
 		const routineId = z.uuid().parse(id);
 		await updateRoutine(sb, routineId, decodeForm(UpdateRoutineSchema, formData));
 		revalidateRoutineViews();
-		return writtenRoutine(sb, routineId);
+		return written(sb, "routine", routineId);
 	});
 }
 
@@ -114,7 +99,7 @@ export async function archiveRoutineAction(
 	const routineId = z.uuid().parse(id);
 	await archiveRoutine(sb, routineId, z.boolean().parse(archived));
 	revalidateRoutineViews();
-	return { ok: true, data: await writtenRoutine(sb, routineId) };
+	return { ok: true, data: await written(sb, "routine", routineId) };
 }
 
 export async function deleteRoutineAction(id: string): Promise<ActionResult<RoutineWrite>> {

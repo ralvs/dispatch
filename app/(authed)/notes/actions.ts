@@ -1,6 +1,5 @@
 "use server";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionResult } from "@/lib/action-result";
@@ -14,13 +13,13 @@ import { createManualLink, deleteLink } from "@/lib/services/note-links";
 import {
 	createNote,
 	deleteNote,
-	getNote,
 	resolveNeedsReview,
 	setPin,
 	updateNote,
 } from "@/lib/services/notes";
 import { getAppTimezone } from "@/lib/services/settings";
 import { searchTasksByTitle } from "@/lib/services/tasks";
+import { written } from "@/lib/services/written";
 import { stampWrite } from "@/lib/store/server";
 import type { StoreWrite } from "@/lib/store/types";
 
@@ -34,12 +33,6 @@ type NoteWrite = StoreWrite<NoteListRow>;
 
 function revalidateNoteViews() {
 	afterMutation("notes.write");
-}
-
-/** The note read back after the write. A note that is gone comes back as a deleted id. */
-async function writtenNote(sb: SupabaseClient, id: string): Promise<ActionResult<NoteWrite>> {
-	const row = await getNote(sb, id);
-	return { ok: true, data: row ? stampWrite([row]) : stampWrite([], [id]) };
 }
 
 /**
@@ -73,7 +66,7 @@ export async function saveNoteAction(
 		body: parsed.body,
 	});
 	revalidateNoteViews();
-	return writtenNote(sb, noteId);
+	return { ok: true, data: await written(sb, "note", noteId) };
 }
 
 /**
@@ -90,7 +83,7 @@ export async function setNoteDomainAction(
 	const domain = domainId === "" ? null : z.uuid().parse(domainId);
 	await updateNote(sb, noteId, { domain_id: domain });
 	revalidateNoteViews();
-	return writtenNote(sb, noteId);
+	return { ok: true, data: await written(sb, "note", noteId) };
 }
 
 export async function resolveNeedsReviewAction(id: string): Promise<ActionResult<NoteWrite>> {
@@ -98,7 +91,7 @@ export async function resolveNeedsReviewAction(id: string): Promise<ActionResult
 	const noteId = z.uuid().parse(id);
 	await resolveNeedsReview(sb, noteId);
 	revalidateNoteViews();
-	return writtenNote(sb, noteId);
+	return { ok: true, data: await written(sb, "note", noteId) };
 }
 
 /** A pin the precondition refused (docs/adr/0037) still answers with the row as it stands. */
@@ -110,7 +103,7 @@ export async function setPinAction(input: {
 	const noteId = z.uuid().parse(input.id);
 	await setPin(sb, noteId, z.boolean().parse(input.pinned));
 	revalidateNoteViews();
-	return writtenNote(sb, noteId);
+	return { ok: true, data: await written(sb, "note", noteId) };
 }
 
 /**
@@ -159,7 +152,7 @@ export async function removeAttachmentAction(
 	const path = z.string().min(1).parse(storagePath);
 	await removeAttachment(sb, id, path);
 	revalidateNoteViews();
-	return writtenNote(sb, id);
+	return { ok: true, data: await written(sb, "note", id) };
 }
 
 export async function detachLinkAction(noteId: string, linkId: string) {

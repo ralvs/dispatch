@@ -1,25 +1,20 @@
 "use server";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
-import { todayInTz } from "@/lib/dates";
 import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/invalidate";
 import { CreateDomainSchema, type DomainItem, UpdateDomainSchema } from "@/lib/schemas/domain";
 import {
 	archiveDomain,
 	createDomain,
-	getDomain,
 	markDomainShipped,
 	reactivateDomain,
 	setDomainCadence,
 	updateDomain,
 } from "@/lib/services/domains";
-import { listDomainTouchesOn, toDomainItem } from "@/lib/services/observations";
-import { getAppTimezone } from "@/lib/services/settings";
-import { stampWrite } from "@/lib/store/server";
+import { written } from "@/lib/services/written";
 import type { StoreWrite } from "@/lib/store/types";
 
 // Every action returns the domain it wrote as /domains shows it — with its
@@ -33,20 +28,12 @@ function revalidateDomainViews() {
 	afterMutation("settings.domain");
 }
 
-/** The domain as it stands after the write; one that is gone comes back as a deleted id. */
-async function writtenDomain(sb: SupabaseClient, id: string): Promise<DomainWrite> {
-	const [row, tz] = await Promise.all([getDomain(sb, id), getAppTimezone(sb)]);
-	if (!row) return stampWrite([], [id]);
-	const touches = row.active ? await listDomainTouchesOn(sb, todayInTz(tz), tz) : [];
-	return stampWrite([toDomainItem(row, touches)]);
-}
-
 export async function createDomainAction(formData: FormData): Promise<ActionResult<DomainWrite>> {
 	const { sb } = await requireOwnerPage();
 	return runFormAction(formData, async () => {
 		const domain = await createDomain(sb, decodeForm(CreateDomainSchema, formData));
 		revalidateDomainViews();
-		return writtenDomain(sb, domain.id);
+		return written(sb, "domain", domain.id);
 	});
 }
 
@@ -76,7 +63,7 @@ export async function updateDomainAction(
 	// this editor does not manage alone.
 	if (days !== undefined) await setDomainCadence(sb, domainId, days);
 	revalidateDomainViews();
-	return { ok: true, data: await writtenDomain(sb, domainId) };
+	return { ok: true, data: await written(sb, "domain", domainId) };
 }
 
 export async function archiveDomainAction(id: string): Promise<ActionResult<DomainWrite>> {
@@ -84,7 +71,7 @@ export async function archiveDomainAction(id: string): Promise<ActionResult<Doma
 	const domainId = z.uuid().parse(id);
 	await archiveDomain(sb, domainId);
 	revalidateDomainViews();
-	return { ok: true, data: await writtenDomain(sb, domainId) };
+	return { ok: true, data: await written(sb, "domain", domainId) };
 }
 
 export async function reactivateDomainAction(id: string): Promise<ActionResult<DomainWrite>> {
@@ -92,7 +79,7 @@ export async function reactivateDomainAction(id: string): Promise<ActionResult<D
 	const domainId = z.uuid().parse(id);
 	await reactivateDomain(sb, domainId);
 	revalidateDomainViews();
-	return { ok: true, data: await writtenDomain(sb, domainId) };
+	return { ok: true, data: await written(sb, "domain", domainId) };
 }
 
 export async function markDomainShippedAction(id: string): Promise<ActionResult<DomainWrite>> {
@@ -100,5 +87,5 @@ export async function markDomainShippedAction(id: string): Promise<ActionResult<
 	const domainId = z.uuid().parse(id);
 	await markDomainShipped(sb, domainId);
 	revalidateDomainViews();
-	return { ok: true, data: await writtenDomain(sb, domainId) };
+	return { ok: true, data: await written(sb, "domain", domainId) };
 }

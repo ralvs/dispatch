@@ -1,6 +1,5 @@
 "use server";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
@@ -15,11 +14,11 @@ import {
 	completeTask,
 	createTask,
 	deleteTask,
-	getTask,
 	reopenTask,
 	setTop3,
 	updateTask,
 } from "@/lib/services/tasks";
+import { written } from "@/lib/services/written";
 import { stampWrite } from "@/lib/store/server";
 import type { StoreWrite } from "@/lib/store/types";
 
@@ -29,20 +28,6 @@ import type { StoreWrite } from "@/lib/store/types";
 // runner rolls back on a throw.
 
 type TaskWrite = StoreWrite<TaskRow>;
-
-/**
- * The row as it stands after the write, read back with its joins. A row that
- * is gone comes back as a deleted id, so the store drops it rather than
- * keeping a row the server no longer has.
- */
-async function writtenRow(
-	sb: SupabaseClient,
-	id: string,
-	extra: TaskRow[] = [],
-): Promise<TaskWrite> {
-	const row = await getTask(sb, id);
-	return row ? stampWrite([row, ...extra]) : stampWrite(extra, [id]);
-}
 
 export async function createTaskAction(formData: FormData): Promise<ActionResult<TaskWrite>> {
 	const { sb } = await requireOwnerPage();
@@ -111,7 +96,7 @@ export async function updateTaskAction(
 			recurrence_rule: parsed.recurrence_rule || null,
 		});
 		afterMutation("task.write");
-		return writtenRow(sb, taskId);
+		return written(sb, "task", taskId);
 	});
 }
 
@@ -139,7 +124,10 @@ export async function completeTaskAction(input: {
 		dueDate: input.observedDueDate,
 	});
 	afterMutation("task.write");
-	return { ok: true, data: await writtenRow(sb, id, result.successor ? [result.successor] : []) };
+	return {
+		ok: true,
+		data: await written(sb, "task", id, { also: result.successor ? [result.successor] : [] }),
+	};
 }
 
 export async function reopenTaskAction(id: string): Promise<ActionResult<TaskWrite>> {
@@ -147,7 +135,7 @@ export async function reopenTaskAction(id: string): Promise<ActionResult<TaskWri
 	const taskId = z.uuid().parse(id);
 	await reopenTask(sb, taskId);
 	afterMutation("task.write");
-	return { ok: true, data: await writtenRow(sb, taskId) };
+	return { ok: true, data: await written(sb, "task", taskId) };
 }
 
 export async function deleteTaskAction(id: string): Promise<ActionResult<TaskWrite>> {
@@ -180,7 +168,7 @@ export async function setTop3Action(input: {
 		starred: input.starred,
 	});
 	afterMutation("task.write");
-	return { ok: true, data: await writtenRow(sb, id) };
+	return { ok: true, data: await written(sb, "task", id) };
 }
 
 export async function assignDomainAction(
@@ -191,5 +179,5 @@ export async function assignDomainAction(
 	const taskId = z.uuid().parse(id);
 	await assignDomain(sb, taskId, z.uuid().parse(domainId));
 	afterMutation("task.assign");
-	return { ok: true, data: await writtenRow(sb, taskId) };
+	return { ok: true, data: await written(sb, "task", taskId) };
 }
