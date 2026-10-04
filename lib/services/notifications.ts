@@ -1,5 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isPushConfigured } from "@/lib/env";
+import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import {
 	type Json,
 	NOTIFICATION_SELECT,
@@ -8,30 +10,37 @@ import {
 } from "@/lib/schemas/notification";
 import { unwrap, unwrapCount } from "@/lib/services/errors";
 import { sendPushToAll } from "@/lib/services/push";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Notification ledger — the sanctioned seam for iron rule #6:
 // "every autonomous/external action writes a `notifications` row."
 //
-// `recordNotification` is the one sanctioned write path: every autonomous/
-// external caller (cron/capture/CalDAV) is expected to route its ledger row
-// through it instead of a raw client, so "did the thing, forgot the row"
-// isn't reachable through this module. It does not *prevent* a caller who
+// Every autonomous/external caller (cron/capture/CalDAV) routes its ledger
+// row through this module instead of a raw client, so "did the thing, forgot
+// the row" isn't reachable through it. It does not *prevent* a caller who
 // holds a SupabaseClient from bypassing it (see Known limits) — it's the
 // blessed path, not a proof of impossibility.
 //
-// Web-push delivery (ADR-0005) landed where this comment always said it
-// belonged: *inside* `recordNotification`, after the ledger row is committed,
-// so callers never changed to get it.
+// Two write paths (ADR-0015, ADR-0075):
+//   - `recordNotification` is the default: best-effort, never rejects, and
+//     resolves null when the row did not land (logged). Callers neither wrap
+//     it nor check it — the durable record they wrote first is the point.
+//   - `recordNotificationOrThrow` is for entries that ARE the delivery (a
+//     fired reminder): it resolves only once the row is committed.
+//
+// Once a row lands, the module announces it: it busts the ledger's cache tags
+// (EXTERNAL_WRITES.ledger) and delivers web push (ADR-0005). Both are
+// best-effort and never reach the caller. Delivery always reads
+// push_subscriptions through the service-role client, so it no longer depends
+// on which `sb` the caller passed — `sb` scopes the insert only (iron rule #3).
 //
 // ── Known limits ──
 //   - Not a hard boundary. Anything holding a SupabaseClient can still write
 //     `notifications` (or skip it) directly; nothing at the type or DB level
-//     forces traffic through this module. Enforcement (e.g. an import-boundary
-//     lint) is deferred until there are callers to protect.
-//   - The ledger write is best-effort on external surfaces (ADR-0015): they
-//     commit the durable record first and swallow a failure here rather than
-//     fail the caller.
+//     forces traffic through this module.
+//   - Never call either function from render or a "use cache" scope: the tag
+//     bust belongs to route handlers and server actions.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type { Json, NotificationRow, NotificationStatus };
@@ -56,21 +65,27 @@ export type NotificationEntry = {
 };
 
 /**
- * Best-effort web-push delivery for a just-committed ledger row (ADR-0005).
- * Awaited (not fire-and-forget — serverless functions don't outlive the
- * response), but never allowed to throw or reject into the caller: a push
- * failure must never turn a successful ledger write into a caller-visible
- * error.
+ * Announce a just-committed ledger row: bust the ledger's tags, then deliver
+ * web push through the service-role client. Awaited (serverless functions
+ * don't outlive the response), but never rejects — neither step may turn a
+ * committed row into a caller-visible error.
  */
-async function pushNotification(sb: SupabaseClient, entry: NotificationEntry): Promise<void> {
+async function announce(entry: NotificationEntry): Promise<void> {
 	try {
-		await sendPushToAll(sb, {
+		afterExternalMutation(...EXTERNAL_WRITES.ledger);
+	} catch (err) {
+		// Next throws without a request scope (tests, scripts).
+		console.error("[notifications] ledger tag bust failed", err);
+	}
+	if (!isPushConfigured()) return;
+	try {
+		await sendPushToAll(createAdminClient(), {
 			title: entry.title,
 			body: entry.body ?? undefined,
 			url: entry.source_url ?? undefined,
 		});
-	} catch {
-		// Never surface a push failure to the caller of recordNotification.
+	} catch (err) {
+		console.error("[notifications] push delivery failed", err);
 	}
 }
 
@@ -96,21 +111,34 @@ async function insertNotification(
 }
 
 /**
- * Record a ledger entry — the one sanctioned write path for iron rule #6.
- * Every autonomous/external event (a completed mutation, a fired reminder,
- * the daily summary) funnels through this call so a `notifications` row is
- * never forgotten by construction.
+ * Record a ledger entry — best-effort (ADR-0015, ADR-0075). Never rejects.
+ * Null when the row did not land (logged).
  */
 export async function recordNotification(
 	sb: SupabaseClient,
 	entry: NotificationEntry,
+): Promise<NotificationRow | null> {
+	let notification: NotificationRow;
+	try {
+		notification = await insertNotification(sb, entry);
+	} catch (err) {
+		console.error("[notifications] ledger row did not land", entry.type, err);
+		return null;
+	}
+	await announce(entry);
+	return notification;
+}
+
+/**
+ * Record a required ledger entry: resolves only after the row commits;
+ * rejects (no bust, no push) when it does not.
+ */
+export async function recordNotificationOrThrow(
+	sb: SupabaseClient,
+	entry: NotificationEntry,
 ): Promise<NotificationRow> {
 	const notification = await insertNotification(sb, entry);
-	// Web-push delivery (ADR-0005). `sb` is RLS-scoped on session paths (server
-	// actions/route handlers via requireOwner()), and push_subscriptions has RLS
-	// enabled with no policies — so that select silently returns zero rows there.
-	// Only a service-role `sb` (cron/capture/autonomous callers) actually pushes.
-	await pushNotification(sb, entry);
+	await announce(entry);
 	return notification;
 }
 

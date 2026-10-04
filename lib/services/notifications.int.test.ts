@@ -1,13 +1,45 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
+
+// The push service is the external edge: web-push is faked, the database is not.
+const { sendNotification } = vi.hoisted(() => ({ sendNotification: vi.fn() }));
+vi.mock("web-push", () => ({
+	default: { setVapidDetails: vi.fn(), sendNotification },
+}));
+vi.mock("@/lib/env", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@/lib/env")>();
+	return {
+		...actual,
+		env: () => ({
+			...actual.env(),
+			NEXT_PUBLIC_VAPID_PUBLIC_KEY: "public-key",
+			VAPID_PRIVATE_KEY: "private-key",
+		}),
+		isPushConfigured: () => true,
+	};
+});
+// Cache invalidation needs a Next request scope; there is none in a test.
+vi.mock("@/lib/invalidate", async (original) => ({
+	...(await original<typeof import("@/lib/invalidate")>()),
+	afterExternalMutation: vi.fn(),
+}));
+
+import { afterExternalMutation } from "@/lib/invalidate";
 import {
 	dismissAllNotifications,
 	listNotifications,
 	markAllNotificationsRead,
 	markNotification,
 	recordNotification,
+	recordNotificationOrThrow,
 	unreadCount,
 } from "@/lib/services/notifications";
-import { anonClient, ownerClient, serviceClient } from "@/test/integration/clients";
+import { savePushSubscription } from "@/lib/services/push";
+import {
+	anonClient,
+	ownerClient,
+	serviceClient,
+	unreachableClient,
+} from "@/test/integration/clients";
 
 // The ledger against the real table (#18): what a mark changes and what it
 // returns, which the entity store confirms from (#28). Cron writes through the
@@ -15,11 +47,99 @@ import { anonClient, ownerClient, serviceClient } from "@/test/integration/clien
 
 async function seedLedger() {
 	const sb = serviceClient();
-	const a = await recordNotification(sb, { type: "reminder.fired", title: "Standup in 10m" });
-	const b = await recordNotification(sb, { type: "caldav.synced", title: "Calendar synced" });
-	const c = await recordNotification(sb, { type: "capture.filed", title: "Note filed" });
+	const a = await recordNotificationOrThrow(sb, {
+		type: "reminder.fired",
+		title: "Standup in 10m",
+	});
+	const b = await recordNotificationOrThrow(sb, {
+		type: "caldav.synced",
+		title: "Calendar synced",
+	});
+	const c = await recordNotificationOrThrow(sb, { type: "capture.filed", title: "Note filed" });
 	return { a, b, c };
 }
+
+const ENTRY = {
+	type: "capture.filed",
+	title: "Event booked",
+	body: "Dentist, Tuesday 10:00",
+	source_url: "/today",
+};
+
+async function ledgerRows() {
+	const { data, error } = await serviceClient().from("notifications").select("id");
+	if (error) throw error;
+	return data;
+}
+
+beforeEach(async () => {
+	sendNotification.mockReset();
+	(afterExternalMutation as Mock).mockReset();
+	await savePushSubscription(serviceClient(), {
+		endpoint: "https://push.example/1",
+		keys: { p256dh: "p", auth: "a" },
+	});
+});
+
+function pushedPayloads() {
+	return sendNotification.mock.calls.map((call) => JSON.parse(call[1] as string));
+}
+
+describe("the ledger announces what it records (ADR-0075)", () => {
+	it("pushes a row recorded through the owner's RLS client", async () => {
+		const row = await recordNotification(await ownerClient(), ENTRY);
+		expect(row).toMatchObject({ type: "capture.filed", title: "Event booked" });
+		expect(sendNotification).toHaveBeenCalledTimes(1);
+		expect(pushedPayloads()).toEqual([
+			{ title: "Event booked", body: "Dentist, Tuesday 10:00", url: "/today" },
+		]);
+	});
+
+	it("pushes a row recorded through the service client", async () => {
+		await recordNotification(serviceClient(), ENTRY);
+		expect(sendNotification).toHaveBeenCalledTimes(1);
+	});
+
+	it("busts the ledger's tags", async () => {
+		await recordNotification(serviceClient(), ENTRY);
+		expect(afterExternalMutation).toHaveBeenCalledWith("notification.write");
+	});
+
+	it("resolves null, logged, with no push or bust, when the row does not land", async () => {
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			expect(await recordNotification(unreachableClient(), ENTRY)).toBeNull();
+			expect(error).toHaveBeenCalled();
+		} finally {
+			error.mockRestore();
+		}
+		expect(sendNotification).not.toHaveBeenCalled();
+		expect(afterExternalMutation).not.toHaveBeenCalled();
+	});
+
+	it("OrThrow rejects, with no push or bust, when the row does not land", async () => {
+		await expect(recordNotificationOrThrow(unreachableClient(), ENTRY)).rejects.toThrow();
+		expect(sendNotification).not.toHaveBeenCalled();
+		expect(afterExternalMutation).not.toHaveBeenCalled();
+	});
+
+	it("still resolves the row when push or the bust fails", async () => {
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			sendNotification.mockRejectedValueOnce(Object.assign(new Error("boom"), { statusCode: 500 }));
+			(afterExternalMutation as Mock).mockImplementationOnce(() => {
+				throw new Error("no request scope");
+			});
+			const row = await recordNotification(serviceClient(), ENTRY);
+			expect(row).toMatchObject({ title: "Event booked" });
+			const strict = await recordNotificationOrThrow(serviceClient(), ENTRY);
+			expect(strict).toMatchObject({ title: "Event booked" });
+		} finally {
+			error.mockRestore();
+		}
+		expect(await ledgerRows()).toHaveLength(2);
+	});
+});
 
 describe("notifications against the local database", () => {
 	it("records an unread row with omitted fields as null", async () => {

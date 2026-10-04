@@ -169,6 +169,8 @@ export const EXTERNAL_WRITES = {
 	cronObservations: ["notification.write"],
 	/** cron/reminders: each delivered reminder is a ledger row. */
 	cronReminders: ["notification.write"],
+	/** Every ledger row, from any caller; the ledger module busts it (ADR-0075). */
+	ledger: ["notification.write"],
 	/** cron/caldav: calendar events only; silent by design. */
 	cronCaldav: ["today.only"],
 	/** /api/calendar/bridge on success: calendar events only; quiet by design. */
