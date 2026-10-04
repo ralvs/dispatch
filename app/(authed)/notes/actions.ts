@@ -147,8 +147,8 @@ export async function attachLinkAction(
  * Remove one file from a note (docs/adr/0052). Upload is a route handler
  * because it carries binary; removal is an action, matching the link rail it
  * sits beside. The storage path identifies the file — the client already has
- * it from the attachment row, and it is validated against the note by the
- * RPC's `where id = p_note_id`.
+ * it from the attachment row, and the service refuses a path outside this
+ * note's prefix.
  */
 export async function removeAttachmentAction(
 	noteId: string,

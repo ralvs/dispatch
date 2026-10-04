@@ -8,7 +8,7 @@ import {
 } from "@/lib/attachments";
 import { nowUtc } from "@/lib/dates";
 import type { Attachment } from "@/lib/schemas/note";
-import { unwrap } from "@/lib/services/errors";
+import { ServiceError, unwrap } from "@/lib/services/errors";
 import { deleteObjects, listPrefix, putObject } from "@/lib/storage";
 
 /*
@@ -70,12 +70,19 @@ export async function uploadAttachment(
  * Row first, bytes second — the mirror of upload, for the same reason. Once
  * the row is gone the file is off the page, and a failed object delete leaks
  * bytes rather than leaving a dead thumbnail.
+ *
+ * The path must sit under this note's prefix. The RPC only edits the named
+ * note, so without this check a path from another note would leave that
+ * note's row alone and still delete its bytes: a dead thumbnail elsewhere.
  */
 export async function removeAttachment(
 	sb: SupabaseClient,
 	noteId: string,
 	storagePath: string,
 ): Promise<void> {
+	if (!storagePath.startsWith(noteStoragePrefix(noteId))) {
+		throw new ServiceError("Attachment does not belong to this note", null);
+	}
 	unwrap(
 		await sb.rpc("note_attachment_remove", {
 			p_note_id: noteId,
