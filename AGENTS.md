@@ -67,7 +67,8 @@ Five layers (docs/adr/0063). Tests sit next to the code they test.
   database is an integration test.
 - Component tests do **not** run through the React Compiler. Write components
   that are correct without it; the compiler only memoizes.
-- The AI gateway is always faked. No test makes a paid call.
+- The AI gateway is always faked, by injecting `test/fakes/parser-model.ts`;
+  no test mocks `ai`. No test makes a paid call.
 
 ## Pull requests
 
