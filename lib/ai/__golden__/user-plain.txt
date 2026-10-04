@@ -1,0 +1,11 @@
+<context>
+{
+  "now": "2026-07-15T12:00:00Z",
+  "today": "2026-07-15",
+  "timezone": "America/Sao_Paulo"
+}
+</context>
+
+<utterance>
+comprar pão amanhã
+</utterance>
