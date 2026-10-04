@@ -1,16 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
-
-// Mirror lib/supabase/cookie-options.ts — proxy cannot import that module
-// (edge bundle; keep this file free of server-only / zod). Keep the two in
-// lockstep: path, sameSite, maxAge, secure.
-const AUTH_COOKIE_OPTIONS = {
-	path: "/",
-	sameSite: "lax" as const,
-	httpOnly: false,
-	maxAge: 400 * 24 * 60 * 60,
-	secure: process.env.NODE_ENV === "production",
-};
+import { AUTH_COOKIE_OPTIONS } from "@/lib/supabase/cookie-options";
 
 /**
  * UX + session upkeep only — never the security boundary (docs/adr/0003).
