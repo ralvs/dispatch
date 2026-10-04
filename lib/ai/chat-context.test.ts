@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderChatContext } from "@/lib/ai/chat-context";
+import { chatSystemPrompt, renderChatContext } from "@/lib/ai/chat-context";
 import type { JournalEntryRow } from "@/lib/services/journal";
 
 function entry(i: number): JournalEntryRow {
@@ -54,5 +54,15 @@ describe("renderChatContext", () => {
 		expect(context).toContain("## Journal entries (15)");
 		expect(context).not.toContain("Entry number 15");
 		expect(context).toContain("Entry number 14");
+	});
+});
+
+describe("chatSystemPrompt", () => {
+	// Iron rule #1: the timezone comes from app_settings, never a literal.
+	it("names the timezone it is given", () => {
+		const prompt = chatSystemPrompt("Europe/Lisbon", "2026-10-04", "");
+		expect(prompt).toContain("Timezone is Europe/Lisbon;");
+		expect(prompt).not.toContain("America/Sao_Paulo");
+		expect(prompt).toContain("CONTEXT (snapshot for 2026-10-04):");
 	});
 });

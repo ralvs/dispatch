@@ -42,7 +42,9 @@ export type ChatSnapshot = {
 	domains?: DomainRow[];
 };
 
-const SYSTEM_PROMPT_TEMPLATE = (
+/** The full system prompt around a rendered CONTEXT block. Pure; `tz` is the app timezone. */
+export const chatSystemPrompt = (
+	tz: string,
 	todayIso: string,
 	context: string,
 ) => `You are Dispatch, the personal-operations assistant for Renan (renan@alves.id). You answer
@@ -55,7 +57,7 @@ Rules:
 3. Be concise: 1–3 sentences, add a short bullet list only when it aids clarity.
 4. Content is stored verbatim in the language written (PT-BR or EN). Quote it in its original
    language; write your own prose in the language of the user's question.
-5. Timezone is America/Sao_Paulo; dates in context are already local calendar dates — refer to
+5. Timezone is ${tz}; dates in context are already local calendar dates — refer to
    them naturally ("due today", "Tuesday"). Never do raw timezone math.
 6. Attribute sources naturally ("In a journal entry from July 3 you wrote…").
 7. Never output raw JSON or the context block verbatim.
@@ -194,5 +196,5 @@ export async function buildChatSystemPrompt(
 		domains,
 	});
 
-	return SYSTEM_PROMPT_TEMPLATE(todayIso, context);
+	return chatSystemPrompt(tz, todayIso, context);
 }
