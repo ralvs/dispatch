@@ -1,23 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { Button, Card, Field, Input, ListRow, rowTitle, Select } from "@/components/ui";
-import {
-	deleteRoutineAction,
-	toggleCompletionAction,
-	updateRoutineAction,
-} from "@/lib/actions/routines";
-import { toastError } from "@/lib/client/toast";
 import type { RoutineStats } from "@/lib/routine-stats";
 import {
 	type RoutineWithHistory,
 	TIME_OF_DAY_LABELS,
 	TIME_OF_DAY_ORDER,
-	TimeOfDayBucketSchema,
 } from "@/lib/schemas/routine";
-import { isNavigationError, useRunIntent, useStoreWrite } from "@/lib/store";
-
-const SAVE_ERROR = "Couldn't save routine.";
+import { useInlineEdit, useWrites } from "@/lib/store";
+import { routineWrites } from "@/lib/writes/routine";
 
 export function RoutineRowItem({
 	routine,
@@ -28,10 +19,9 @@ export function RoutineRowItem({
 	stats: RoutineStats;
 	recentDays: Array<{ date: string; done: boolean; isToday: boolean }>;
 }) {
-	const [pending, startTransition] = useTransition();
-	const [editing, setEditing] = useState(false);
-	const run = useRunIntent("routine", { errorMessage: "Couldn't update routine." });
-	const edit = useStoreWrite("routine");
+	const { send } = useWrites();
+	const edit = useInlineEdit();
+	const { editing, pending } = edit;
 
 	// The grid is the routine's row in the entity store (#29): today is just
 	// the last square, so backfill and "Mark done" are the same intent and
@@ -41,9 +31,7 @@ export function RoutineRowItem({
 	const completedCount = recentDays.filter((d) => d.done).length;
 
 	function toggleDay(date: string, currentlyDone: boolean) {
-		run({ type: "toggle", id: routine.id, date, done: !currentlyDone }, () =>
-			toggleCompletionAction(routine.id, currentlyDone, date),
-		);
+		send(routineWrites.toggle({ id: routine.id, date, done: !currentlyDone }));
 	}
 
 	function toggle() {
@@ -51,31 +39,14 @@ export function RoutineRowItem({
 	}
 
 	function saveDetails(formData: FormData) {
-		const name = String(formData.get("name") ?? "").trim();
-		const timeOfDay = TimeOfDayBucketSchema.safeParse(formData.get("time_of_day"));
-		const patch = {
-			...(name ? { name } : {}),
-			...(timeOfDay.success ? { time_of_day: timeOfDay.data } : {}),
-		};
-		startTransition(async () => {
-			try {
-				const result = await edit({ type: "edit", id: routine.id, patch }, () =>
-					updateRoutineAction(routine.id, formData),
-				);
-				if (result.ok) setEditing(false);
-				else toastError(result.formError ?? SAVE_ERROR);
-			} catch (error) {
-				// A redirect() (an expired session) navigates on its own; it is not a failure.
-				if (!isNavigationError(error)) toastError(SAVE_ERROR);
-			}
-		});
+		edit.submit(routineWrites.update(routine.id, formData));
 	}
 
 	function remove() {
 		if (!window.confirm(`Delete "${routine.name}"? Its completion history will be lost too.`)) {
 			return;
 		}
-		run({ type: "delete", id: routine.id }, () => deleteRoutineAction(routine.id));
+		send(routineWrites.remove(routine.id));
 	}
 
 	if (editing) {
@@ -96,7 +67,7 @@ export function RoutineRowItem({
 							</Select>
 						</Field>
 						<div className="flex justify-end gap-2 pt-1">
-							<Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>
+							<Button type="button" variant="ghost" size="sm" onClick={edit.close}>
 								Cancel
 							</Button>
 							<Button
@@ -139,7 +110,7 @@ export function RoutineRowItem({
 						variant="tertiary"
 						size="sm"
 						aria-label={`Edit routine "${routine.name}"`}
-						onClick={() => setEditing(true)}
+						onClick={edit.open}
 					>
 						Edit
 					</Button>
