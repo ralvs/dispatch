@@ -1,5 +1,10 @@
 import "server-only";
-import { generateObject, type SystemModelMessage } from "ai";
+import {
+	generateObject,
+	type LanguageModel,
+	type LanguageModelUsage,
+	type SystemModelMessage,
+} from "ai";
 import { z } from "zod";
 import { isAiConfigured, MODEL_PROVIDER_OPTIONS, parserModel } from "@/lib/ai/gateway";
 import { guardTitle } from "@/lib/ai/verbatim";
@@ -10,7 +15,10 @@ import { type CaptureAction, CaptureActionsSchema } from "@/lib/schemas/capture"
 // gateway (generateObject, schema-validated). Never throws into the capture
 // path: every failure mode returns a typed fallback the orchestrator degrades.
 //
-//   unavailable  AI_GATEWAY_API_KEY unset (isAiConfigured() false)
+// The model is a parameter (docs/adr/0076): the app leaves it out and gets the
+// gateway's, tests pass test/fakes/parser-model.ts, the eval passes its own.
+//
+//   unavailable  no model: AI_GATEWAY_API_KEY unset, or `model: null` passed
 //   failed       the model call threw, or its output failed CaptureActionsSchema
 //                (including any unknown/unsupported verb) — degrade, never crash
 //   empty        parser ran cleanly but found nothing actionable — the raw text
@@ -29,9 +37,18 @@ export type ParseContext = {
 	projects?: { name: string; domain?: string }[];
 };
 
-export type ParseResult =
-	| { ok: true; actions: CaptureAction[] }
-	| { ok: false; reason: "unavailable" | "failed" | "empty"; raw: string };
+/** The model a parse runs on. The SDK's own port: the gateway's, or a fake. */
+export type ParserModel = Exclude<LanguageModel, string>;
+
+/**
+ * `model` left out → the gateway's parser model when AI is configured, else
+ * unavailable. `model: null` → unavailable, always — never a gateway call.
+ */
+export type ParseOptions = { model?: ParserModel | null };
+
+type ParseFallback = { ok: false; reason: "unavailable" | "failed" | "empty"; raw: string };
+
+export type ParseResult = { ok: true; actions: CaptureAction[] } | ParseFallback;
 
 // ── Shared prompt fragments ────────────────────────────────────────────
 //
@@ -352,25 +369,57 @@ function guardActionTitle(action: CaptureAction, text: string): CaptureAction {
 	return { ...action, title };
 }
 
-export async function parse(text: string, ctx: ParseContext): Promise<ParseResult> {
+/**
+ * The call skeleton both entry points share. The model is resolved INSIDE the
+ * try: env() is lazily validated and can throw, and parserModel() reads it
+ * too, so a config failure degrades like any other, never escapes.
+ */
+async function guarded<T>(
+	where: "parse" | "quick-add",
+	text: string,
+	options: ParseOptions,
+	run: (model: ParserModel) => Promise<T | ParseFallback>,
+): Promise<T | ParseFallback> {
 	try {
-		// Config lookup is INSIDE the try: env() is lazily validated and can throw,
-		// and parserModel() reads it too. A config failure degrades, never escapes.
-		if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
-
-		const { object } = await generateObject({
-			model: parserModel(),
-			schema: z.object({ actions: CaptureActionsSchema }),
-			system: cachedSystem(captureSystemPrompt()),
-			prompt: captureUserMessage(text, ctx),
-			...parseCallOptions(),
-		});
-		if (object.actions.length === 0) return { ok: false, reason: "empty", raw: text };
-		return { ok: true, actions: object.actions.map((a) => guardActionTitle(a, text)) };
+		const model =
+			options.model !== undefined ? options.model : isAiConfigured() ? parserModel() : null;
+		if (!model) return { ok: false, reason: "unavailable", raw: text };
+		return await run(model);
 	} catch (error) {
-		// Model error OR output that failed CaptureActionsSchema (unknown verb,
-		// malformed action). Degrade — the raw text is never lost.
-		logParseFailure("parse", error);
+		// Model error OR output that failed the schema (unknown verb, malformed
+		// action). Degrade — the raw text is never lost.
+		logParseFailure(where, error);
 		return { ok: false, reason: "failed", raw: text };
 	}
+}
+
+/**
+ * The palette request, raw: no title guard, and it throws. The eval scores
+ * this; the app calls parse.
+ */
+export async function requestActions(
+	text: string,
+	ctx: ParseContext,
+	model: ParserModel,
+): Promise<{ actions: CaptureAction[]; usage: LanguageModelUsage }> {
+	const { object, usage } = await generateObject({
+		model,
+		schema: z.object({ actions: CaptureActionsSchema }),
+		system: cachedSystem(captureSystemPrompt()),
+		prompt: captureUserMessage(text, ctx),
+		...parseCallOptions(),
+	});
+	return { actions: object.actions, usage };
+}
+
+export async function parse(
+	text: string,
+	ctx: ParseContext,
+	options: ParseOptions = {},
+): Promise<ParseResult> {
+	return guarded("parse", text, options, async (model) => {
+		const { actions } = await requestActions(text, ctx, model);
+		if (actions.length === 0) return { ok: false, reason: "empty", raw: text };
+		return { ok: true, actions: actions.map((a) => guardActionTitle(a, text)) };
+	});
 }

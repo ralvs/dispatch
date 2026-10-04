@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { captureSystemPrompt, captureUserMessage } from "@/lib/ai/parser";
+import { parse } from "@/lib/ai/parser";
 import { taskCaptureSystemPrompt } from "@/lib/services/capture/quick-add";
+import { fakeParserModel, sentSystem, sentUser } from "@/test/fakes/parser-model";
 
 // The exact text the parser sends, pinned byte for byte. A prompt change is a
 // measured decision (docs/adr/0061, the parser eval), never a side effect of a
@@ -13,9 +14,17 @@ const PLAIN = {
 };
 const ROUTED = { ...PLAIN, domains: ["Home"], projects: [{ name: "Reviews", domain: "Work" }] };
 
+/** What parse sent the model for one context. */
+async function paletteRequest(ctx: typeof PLAIN) {
+	const model = fakeParserModel({ actions: [] });
+	await parse(UTTERANCE, ctx, { model });
+	return { system: sentSystem(model).content, user: sentUser(model) };
+}
+
 describe("parser prompt text", () => {
 	it("sends the capture system prompt unchanged", async () => {
-		await expect(captureSystemPrompt()).toMatchFileSnapshot("./__golden__/capture-system.txt");
+		const { system } = await paletteRequest(PLAIN);
+		await expect(system).toMatchFileSnapshot("./__golden__/capture-system.txt");
 	});
 
 	it("sends the task system prompt unchanged", async () => {
@@ -23,14 +32,12 @@ describe("parser prompt text", () => {
 	});
 
 	it("sends the user message unchanged, without lists", async () => {
-		await expect(captureUserMessage(UTTERANCE, PLAIN)).toMatchFileSnapshot(
-			"./__golden__/user-plain.txt",
-		);
+		const { user } = await paletteRequest(PLAIN);
+		await expect(user).toMatchFileSnapshot("./__golden__/user-plain.txt");
 	});
 
 	it("sends the user message unchanged, with lists", async () => {
-		await expect(captureUserMessage(UTTERANCE, ROUTED)).toMatchFileSnapshot(
-			"./__golden__/user-routed.txt",
-		);
+		const { user } = await paletteRequest(ROUTED);
+		await expect(user).toMatchFileSnapshot("./__golden__/user-routed.txt");
 	});
 });

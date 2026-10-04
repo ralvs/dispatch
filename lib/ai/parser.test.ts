@@ -1,58 +1,50 @@
-import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
-import { parse } from "@/lib/ai/parser";
-
-vi.mock("@/lib/ai/gateway", () => ({
-	isAiConfigured: vi.fn(),
-	parserModel: vi.fn(() => ({})),
-	MODEL_PROVIDER_OPTIONS: { anthropic: { effort: "low" } },
-}));
-vi.mock("ai", () => ({ generateObject: vi.fn() }));
-
-import { generateObject } from "ai";
-import { isAiConfigured } from "@/lib/ai/gateway";
+import { APICallError } from "ai";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { type ParserModel, parse, requestActions } from "@/lib/ai/parser";
 import { CaptureActionsSchema, CreateTaskActionSchema } from "@/lib/schemas/capture";
+import { fakeParserModel, sentOptions, sentSystem, sentUser } from "@/test/fakes/parser-model";
 
 const CTX = { tz: "America/Sao_Paulo", todayIso: "2026-07-15", nowUtc: "2026-07-15T12:00:00Z" };
 const ROUTED = { ...CTX, domains: ["Home"], projects: [{ name: "Reviews", domain: "Work" }] };
 
-/** The system prompt's text, whether it was sent as a string or a message. */
-function systemText(): string {
-	const { system } = (generateObject as Mock).mock.calls[0][0];
-	return typeof system === "string" ? system : system.content;
-}
+const NOTHING = { actions: [] };
 
-function userMessage(): string {
-	return (generateObject as Mock).mock.calls[0][0].prompt;
-}
-
-beforeEach(() => {
-	vi.clearAllMocks();
+afterEach(() => {
+	vi.useRealTimers();
+	vi.restoreAllMocks();
 });
 
 describe("parse", () => {
-	it("returns unavailable when the gateway is not configured", async () => {
-		(isAiConfigured as Mock).mockReturnValue(false);
+	it("returns unavailable when there is no model", async () => {
+		const result = await parse("cria uma tarefa", CTX, { model: null });
 
+		expect(result).toEqual({ ok: false, reason: "unavailable", raw: "cria uma tarefa" });
+	});
+
+	// Unit runs drop AI_GATEWAY_API_KEY (test/unit/setup.ts), so the app's
+	// default — no model passed — is the unconfigured gateway.
+	it("returns unavailable when the gateway is not configured", async () => {
 		const result = await parse("cria uma tarefa", CTX);
 
 		expect(result).toEqual({ ok: false, reason: "unavailable", raw: "cria uma tarefa" });
-		expect(generateObject).not.toHaveBeenCalled();
 	});
 
-	it("returns failed when the model call throws or its output is invalid", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockRejectedValue(new Error("NoObjectGeneratedError"));
+	it("returns failed when the model call throws", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		const model = fakeParserModel(new Error("boom"));
 
-		const result = await parse("blah", CTX);
+		const result = await parse("blah", CTX, { model });
 
 		expect(result).toEqual({ ok: false, reason: "failed", raw: "blah" });
+		expect(console.warn).toHaveBeenCalledWith("parse failed", {
+			where: "parse",
+			name: "Error",
+			message: "boom",
+		});
 	});
 
 	it("returns empty when the parser finds nothing actionable", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
-
-		const result = await parse("hmm", CTX);
+		const result = await parse("hmm", CTX, { model: fakeParserModel(NOTHING) });
 
 		expect(result).toEqual({ ok: false, reason: "empty", raw: "hmm" });
 	});
@@ -64,22 +56,20 @@ describe("parse", () => {
 		expect(CaptureActionsSchema.safeParse([{ action: "create_project", name: "x" }]).success).toBe(
 			false,
 		);
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		const model = fakeParserModel({ actions: [{ action: "create_project", name: "x" }] });
 
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockRejectedValue(new Error("TypeValidationError"));
-
-		const result = await parse("um novo projeto", CTX);
+		const result = await parse("um novo projeto", CTX, { model });
 
 		expect(result).toEqual({ ok: false, reason: "failed", raw: "um novo projeto" });
 	});
 
 	it("returns the parsed actions on success", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({
-			object: { actions: [{ action: "create_task", title: "ligar pro médico" }] },
+		const model = fakeParserModel({
+			actions: [{ action: "create_task", title: "ligar pro médico" }],
 		});
 
-		const result = await parse("ligar pro médico", CTX);
+		const result = await parse("ligar pro médico", CTX, { model });
 
 		expect(result).toEqual({
 			ok: true,
@@ -87,28 +77,63 @@ describe("parse", () => {
 		});
 	});
 
-	it("caps retries, output tokens, and wall time on the model call", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+	// lib/ai/verbatim.ts: a title made of words the user never said is worse
+	// than the raw sentence.
+	it("replaces a title with a word the user never said by the raw text", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		const model = fakeParserModel({
+			actions: [{ action: "create_task", title: "telefonar ao médico" }],
+		});
 
-		await parse("hmm", CTX);
+		const result = await parse("ligar pro médico", CTX, { model });
 
-		const call = (generateObject as Mock).mock.calls[0][0];
-		expect(call.maxRetries).toBe(1);
-		expect(call.maxOutputTokens).toBe(400);
-		expect(call.abortSignal).toBeInstanceOf(AbortSignal);
+		expect(result).toEqual({
+			ok: true,
+			actions: [{ action: "create_task", title: "ligar pro médico" }],
+		});
+		expect(console.warn).toHaveBeenCalledWith("parse title not verbatim", {
+			action: "create_task",
+		});
+	});
+
+	it("caps output tokens and wall time on the model call", async () => {
+		const model = fakeParserModel(NOTHING);
+
+		await parse("hmm", CTX, { model });
+
+		expect(sentOptions(model).maxOutputTokens).toBe(400);
+		expect(sentOptions(model).abortSignal).toBeInstanceOf(AbortSignal);
+	});
+
+	// One retry, not the SDK's default two: a schema miss should not triple.
+	it("retries a retryable failure once", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		vi.useFakeTimers();
+		const model = fakeParserModel(
+			new APICallError({
+				message: "overloaded",
+				url: "https://gateway.test",
+				requestBodyValues: {},
+				statusCode: 529,
+				isRetryable: true,
+			}),
+		);
+
+		const result = parse("hmm", CTX, { model });
+		await vi.advanceTimersByTimeAsync(3_000);
+
+		await expect(result).resolves.toEqual({ ok: false, reason: "failed", raw: "hmm" });
+		expect(model.doGenerateCalls).toHaveLength(2);
 	});
 
 	// Measured: effort low beat the default (high) on the parser eval, on both
 	// Sonnet 5 and Opus 5. Leaving it unset silently restores the default.
 	it("asks for effort low", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+		const model = fakeParserModel(NOTHING);
 
-		await parse("hmm", CTX);
+		await parse("hmm", CTX, { model });
 
-		const call = (generateObject as Mock).mock.calls[0][0];
-		expect(call.providerOptions).toEqual({ anthropic: { effort: "low" } });
+		expect(sentOptions(model).providerOptions).toEqual({ anthropic: { effort: "low" } });
 	});
 
 	// The budget covers the whole call — every attempt plus the backoff between
@@ -116,50 +141,42 @@ describe("parse", () => {
 	// degraded parseable utterances to needs_review notes, so a slow-but-fine
 	// call is asserted to survive rather than left to drift back down.
 	it("lets a 20s model call finish instead of aborting it", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
 		vi.useFakeTimers();
-		try {
-			(generateObject as Mock).mockImplementation(async (opts: { abortSignal: AbortSignal }) => {
-				await vi.advanceTimersByTimeAsync(20_000);
-				if (opts.abortSignal.aborted) throw new Error("aborted mid-call");
-				return { object: { actions: [] } };
-			});
+		const model = fakeParserModel(async (opts) => {
+			await vi.advanceTimersByTimeAsync(20_000);
+			if (opts.abortSignal?.aborted) throw new Error("aborted mid-call");
+			return NOTHING;
+		});
 
-			// "empty" (not "failed") proves the call completed rather than aborting.
-			await expect(parse("hmm", CTX)).resolves.toEqual({
-				ok: false,
-				reason: "empty",
-				raw: "hmm",
-			});
-		} finally {
-			vi.useRealTimers();
-		}
+		// "empty" (not "failed") proves the call completed rather than aborting.
+		await expect(parse("hmm", CTX, { model })).resolves.toEqual({
+			ok: false,
+			reason: "empty",
+			raw: "hmm",
+		});
 	});
 
 	it("makes one model call per parse", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
-		await parse("hmm", CTX);
-		expect(generateObject).toHaveBeenCalledTimes(1);
+		const model = fakeParserModel(NOTHING);
+		await parse("hmm", CTX, { model });
+		expect(model.doGenerateCalls).toHaveLength(1);
 	});
 
 	it("leaves the lists out of <context> when there are none", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+		const model = fakeParserModel(NOTHING);
 
-		await parse("hmm", CTX);
+		await parse("hmm", CTX, { model });
 
-		expect(userMessage()).not.toContain('"domains"');
-		expect(userMessage()).not.toContain('"projects"');
+		expect(sentUser(model)).not.toContain('"domains"');
+		expect(sentUser(model)).not.toContain('"projects"');
 	});
 
 	it("sends the lists in <context>, each project with its domain", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+		const model = fakeParserModel(NOTHING);
 
-		await parse("hmm", ROUTED);
+		await parse("hmm", ROUTED, { model });
 
-		const context = JSON.parse(userMessage().split("<context>")[1].split("</context>")[0]);
+		const context = JSON.parse(sentUser(model).split("<context>")[1].split("</context>")[0]);
 		expect(context.domains).toEqual(["Home"]);
 		expect(context.projects).toEqual([{ name: "Reviews", domain: "Work" }]);
 	});
@@ -167,36 +184,59 @@ describe("parse", () => {
 	// Caching matches the start of the request byte for byte. Anything that
 	// changes per call inside the system prompt makes every request unique.
 	it("keeps the system prompt identical whatever the context", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+		const model = fakeParserModel(NOTHING);
 
-		await parse("hmm", CTX);
-		await parse("other", { ...ROUTED, nowUtc: "2027-01-01T00:00:00Z", todayIso: "2027-01-01" });
+		await parse("hmm", CTX, { model });
+		await parse(
+			"other",
+			{ ...ROUTED, nowUtc: "2027-01-01T00:00:00Z", todayIso: "2027-01-01" },
+			{ model },
+		);
 
-		const [first, second] = (generateObject as Mock).mock.calls.map((c) => c[0].system);
-		expect(second).toEqual(first);
+		expect(sentSystem(model, 1)).toEqual(sentSystem(model, 0));
 	});
 
 	it("marks the system prompt for prompt caching", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+		const model = fakeParserModel(NOTHING);
 
-		await parse("hmm", CTX);
+		await parse("hmm", CTX, { model });
 
-		const { system } = (generateObject as Mock).mock.calls[0][0];
-		expect(system.role).toBe("system");
-		expect(system.providerOptions).toEqual({
+		expect(sentSystem(model).providerOptions).toEqual({
 			anthropic: { cacheControl: { type: "ephemeral" } },
 		});
 	});
 
 	it("puts the utterance after the context, inside its own tags", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
+		const model = fakeParserModel(NOTHING);
 
-		await parse("comprar pão", ROUTED);
+		await parse("comprar pão", ROUTED, { model });
 
-		expect(userMessage()).toMatch(/<\/context>\s+<utterance>\ncomprar pão\n<\/utterance>$/);
+		expect(sentUser(model)).toMatch(/<\/context>\s+<utterance>\ncomprar pão\n<\/utterance>$/);
+	});
+});
+
+describe("requestActions", () => {
+	it("returns the model's actions before the title guard", async () => {
+		const model = fakeParserModel({
+			actions: [{ action: "create_task", title: "telefonar ao médico" }],
+		});
+
+		const { actions } = await requestActions("ligar pro médico", CTX, model);
+
+		expect(actions).toEqual([{ action: "create_task", title: "telefonar ao médico" }]);
+	});
+
+	it("throws when the model call throws", async () => {
+		const model = fakeParserModel(new Error("boom"));
+
+		await expect(requestActions("hmm", CTX, model)).rejects.toThrow("boom");
+	});
+
+	it("reports the call's token usage", async () => {
+		const { usage } = await requestActions("hmm", CTX, fakeParserModel(NOTHING));
+
+		expect(usage.outputTokens).toBe(40);
+		expect(usage.inputTokenDetails.cacheReadTokens).toBe(500);
 	});
 });
 
@@ -238,29 +278,26 @@ describe("shared prompt fragments", () => {
 			[],
 		],
 	])("%s", async (_name, present, absent) => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
-		await parse("hmm", ROUTED);
-		const system = systemText();
+		const model = fakeParserModel(NOTHING);
+		await parse("hmm", ROUTED, { model });
+		const system = sentSystem(model).content;
 		for (const text of present) expect(system).toContain(text);
 		for (const text of absent) expect(system).not.toContain(text);
 	});
 
 	it("resolves relative dates against the app timezone", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
-		await parse("hmm", CTX);
-		expect(userMessage()).toContain('"now": "2026-07-15T12:00:00Z"');
-		expect(userMessage()).toContain('"today": "2026-07-15"');
-		expect(userMessage()).toContain('"timezone": "America/Sao_Paulo"');
-		expect(systemText()).toContain("priority is 1 (high), 2 (medium) or 3 (low).");
+		const model = fakeParserModel(NOTHING);
+		await parse("hmm", CTX, { model });
+		expect(sentUser(model)).toContain('"now": "2026-07-15T12:00:00Z"');
+		expect(sentUser(model)).toContain('"today": "2026-07-15"');
+		expect(sentUser(model)).toContain('"timezone": "America/Sao_Paulo"');
+		expect(sentSystem(model).content).toContain("priority is 1 (high), 2 (medium) or 3 (low).");
 	});
 
 	it("gives NOW in whole seconds", async () => {
-		(isAiConfigured as Mock).mockReturnValue(true);
-		(generateObject as Mock).mockResolvedValue({ object: { actions: [] } });
-		await parse("hmm", { ...CTX, nowUtc: "2026-07-15T12:00:00.123Z" });
-		expect(userMessage()).toContain('"now": "2026-07-15T12:00:00Z"');
+		const model = fakeParserModel(NOTHING);
+		await parse("hmm", { ...CTX, nowUtc: "2026-07-15T12:00:00.123Z" }, { model });
+		expect(sentUser(model)).toContain('"now": "2026-07-15T12:00:00Z"');
 	});
 });
 
