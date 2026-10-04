@@ -11,7 +11,8 @@ process.env.SUPABASE_SECRET_KEY = stack.secretKey;
 process.env.OWNER_USER_ID = OWNER_USER_ID;
 
 // The AI gateway is always faked in tests. With no key, lib/ai degrades to its
-// typed fallbacks, and a test that needs a parse mocks the module explicitly.
+// typed fallbacks, and a test that needs a parse injects
+// test/fakes/parser-model.ts.
 delete process.env.AI_GATEWAY_API_KEY;
 
 beforeEach(async () => {

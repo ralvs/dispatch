@@ -41,10 +41,10 @@ import {
 	captureSystemPrompt,
 	captureUserMessage,
 	parseCallOptions,
+	taskCaptureSystemPrompt,
 } from "@/lib/ai/parser";
 import { guardTitle } from "@/lib/ai/verbatim";
 import { CaptureActionsSchema, CreateTaskActionSchema } from "@/lib/schemas/capture";
-import { taskCaptureSystemPrompt } from "@/lib/services/capture/quick-add";
 import { type RoutingLists, resolveTaskRouting } from "@/lib/services/capture/resolve";
 
 // A fixed world, so a case's expected date never depends on the day the eval

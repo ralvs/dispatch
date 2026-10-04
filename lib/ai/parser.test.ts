@@ -1,6 +1,6 @@
 import { APICallError } from "ai";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { type ParserModel, parse, requestActions } from "@/lib/ai/parser";
+import { parse, parseTask, requestActions, requestTask } from "@/lib/ai/parser";
 import { CaptureActionsSchema, CreateTaskActionSchema } from "@/lib/schemas/capture";
 import { fakeParserModel, sentOptions, sentSystem, sentUser } from "@/test/fakes/parser-model";
 
@@ -234,6 +234,110 @@ describe("requestActions", () => {
 
 	it("reports the call's token usage", async () => {
 		const { usage } = await requestActions("hmm", CTX, fakeParserModel(NOTHING));
+
+		expect(usage.outputTokens).toBe(40);
+		expect(usage.inputTokenDetails.cacheReadTokens).toBe(500);
+	});
+});
+
+describe("parseTask", () => {
+	const TASK = { action: "create_task", title: "pagar aluguel" };
+
+	it("returns unavailable when there is no model", async () => {
+		expect(await parseTask("pagar aluguel", CTX, { model: null })).toEqual({
+			ok: false,
+			reason: "unavailable",
+			raw: "pagar aluguel",
+		});
+	});
+
+	it("returns unavailable when the gateway is not configured", async () => {
+		expect(await parseTask("pagar aluguel", CTX)).toEqual({
+			ok: false,
+			reason: "unavailable",
+			raw: "pagar aluguel",
+		});
+	});
+
+	it("returns failed when the model call throws", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		const model = fakeParserModel(new Error("boom"));
+
+		expect(await parseTask("blah", CTX, { model })).toEqual({
+			ok: false,
+			reason: "failed",
+			raw: "blah",
+		});
+		expect(console.warn).toHaveBeenCalledWith("parse failed", {
+			where: "quick-add",
+			name: "Error",
+			message: "boom",
+		});
+	});
+
+	it("returns empty when the model finds no task", async () => {
+		expect(await parseTask("hmm", CTX, { model: fakeParserModel({ task: null }) })).toEqual({
+			ok: false,
+			reason: "empty",
+			raw: "hmm",
+		});
+	});
+
+	it("returns the parsed task on success", async () => {
+		expect(
+			await parseTask("pagar aluguel", CTX, { model: fakeParserModel({ task: TASK }) }),
+		).toEqual({ ok: true, task: TASK });
+	});
+
+	it("replaces a title with a word the user never said by the raw text", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		const model = fakeParserModel({ task: { ...TASK, title: "quitar aluguel" } });
+
+		expect(await parseTask("pagar aluguel", CTX, { model })).toEqual({ ok: true, task: TASK });
+		expect(console.warn).toHaveBeenCalledWith("quick-add title not verbatim");
+	});
+
+	it("resolves relative dates against the app timezone, behind a cached system prompt", async () => {
+		const model = fakeParserModel({ task: null });
+
+		await parseTask("hmm", CTX, { model });
+
+		expect(sentUser(model)).toContain('"now": "2026-07-15T12:00:00Z"');
+		expect(sentUser(model)).toContain('"today": "2026-07-15"');
+		expect(sentUser(model)).toContain('"timezone": "America/Sao_Paulo"');
+		expect(sentUser(model)).toContain("<utterance>\nhmm\n</utterance>");
+		expect(sentSystem(model).content).toContain("priority is 1 (high), 2 (medium) or 3 (low).");
+		expect(sentSystem(model).providerOptions).toEqual({
+			anthropic: { cacheControl: { type: "ephemeral" } },
+		});
+	});
+
+	it("asks for effort low", async () => {
+		const model = fakeParserModel({ task: null });
+
+		await parseTask("hmm", CTX, { model });
+
+		expect(sentOptions(model).providerOptions).toEqual({ anthropic: { effort: "low" } });
+	});
+});
+
+describe("requestTask", () => {
+	it("returns the model's task before the title guard", async () => {
+		const task = { action: "create_task", title: "quitar aluguel" };
+
+		const result = await requestTask("pagar aluguel", CTX, fakeParserModel({ task }));
+
+		expect(result.task).toEqual(task);
+	});
+
+	it("throws when the model call throws", async () => {
+		await expect(requestTask("hmm", CTX, fakeParserModel(new Error("boom")))).rejects.toThrow(
+			"boom",
+		);
+	});
+
+	it("reports the call's token usage", async () => {
+		const { usage } = await requestTask("hmm", CTX, fakeParserModel({ task: null }));
 
 		expect(usage.outputTokens).toBe(40);
 		expect(usage.inputTokenDetails.cacheReadTokens).toBe(500);

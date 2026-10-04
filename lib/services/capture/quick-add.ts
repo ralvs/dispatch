@@ -1,26 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { generateObject } from "ai";
-import { z } from "zod";
-import { isAiConfigured, parserModel } from "@/lib/ai/gateway";
-import {
-	cachedSystem,
-	captureUserMessage,
-	dateResolution,
-	EXAMPLE_WORLD,
-	logParseFailure,
-	type ParseContext,
-	PERSONA,
-	parseCallOptions,
-	priorityRules,
-	recurrenceRules,
-	routingBlock,
-	TASK_FIELD_FORMATS,
-	taskExamples,
-	titleRules,
-} from "@/lib/ai/parser";
-import { guardTitle } from "@/lib/ai/verbatim";
-import { type CreateTaskAction, CreateTaskActionSchema } from "@/lib/schemas/capture";
+import { type ParserModel, parseTask } from "@/lib/ai/parser";
 import {
 	loadCaptureContext,
 	type RoutingLists,
@@ -37,60 +17,6 @@ import { createTask, type TaskRow } from "@/lib/services/tasks";
 // raw text as title. Only a createTask throw surfaces — same as the form.
 // ─────────────────────────────────────────────────────────────────────────
 
-export type ParseTaskResult =
-	| { ok: true; task: CreateTaskAction }
-	| { ok: false; reason: "unavailable" | "failed" | "empty"; raw: string };
-
-export function taskCaptureSystemPrompt(): string {
-	return [
-		PERSONA,
-		"You convert ONE spoken or typed utterance into a single task, or null if",
-		"the utterance describes nothing actionable.",
-		"The user message holds <context> (app data: the date, the known domains",
-		"and projects) and then <utterance>, the only thing the user said.",
-		"Output shape: { title, notes?, due_date?, due_time?, priority?,",
-		"  recurrence_rule?, domain?, project? }.",
-		"title is required — the task itself, verbatim in the language spoken",
-		"(pt-BR or English). NEVER translate.",
-		TASK_FIELD_FORMATS,
-		...titleRules(),
-		...priorityRules(),
-		...recurrenceRules(),
-		"",
-		...dateResolution(),
-		...routingBlock(),
-		"",
-		EXAMPLE_WORLD,
-		...taskExamples(),
-		'- "that was a nice movie" → null',
-		"",
-		'Return a JSON object of the form {"task": { ... }} or {"task": null}.',
-	].join("\n");
-}
-
-export async function parseTaskCapture(text: string, ctx: ParseContext): Promise<ParseTaskResult> {
-	try {
-		if (!isAiConfigured()) return { ok: false, reason: "unavailable", raw: text };
-
-		const { object } = await generateObject({
-			model: parserModel(),
-			schema: z.object({ task: CreateTaskActionSchema.nullable() }),
-			system: cachedSystem(taskCaptureSystemPrompt()),
-			prompt: captureUserMessage(text, ctx),
-			...parseCallOptions(),
-		});
-		if (!object.task) return { ok: false, reason: "empty", raw: text };
-		// Same guard as the firehose parser: a title made of words the user
-		// never typed is worse than the raw sentence (lib/ai/verbatim.ts).
-		const { title, substituted } = guardTitle(object.task.title, text);
-		if (substituted) console.warn("quick-add title not verbatim");
-		return { ok: true, task: { ...object.task, title } };
-	} catch (error) {
-		logParseFailure("quick-add", error);
-		return { ok: false, reason: "failed", raw: text };
-	}
-}
-
 /**
  * `domainId` is a domain the operator PICKED on the form, not one the parser
  * inferred. The task dialog sends it because its domain field is mandatory now
@@ -98,15 +24,18 @@ export async function parseTaskCapture(text: string, ctx: ParseContext): Promise
  * this sentence" and "file it here". A stated answer beats an inferred one, so
  * it overrides whatever the parse resolved — including on the degraded path,
  * where there is no parse at all and it is the only filing there is.
+ *
+ * `model` is the parser's (lib/ai/parser.ts ParseOptions): left out in the
+ * app, injected by tests.
  */
 export async function quickAddTask(
 	sb: SupabaseClient,
 	text: string,
-	options: { domainId?: string | null } = {},
+	options: { domainId?: string | null; model?: ParserModel | null } = {},
 ): Promise<{ task: TaskRow; parsed: boolean }> {
 	const stated = options.domainId || null;
 	const { routing, ctx } = await loadCaptureContext(sb);
-	const parsed = await parseTaskCapture(text, ctx);
+	const parsed = await parseTask(text, ctx, { model: options.model });
 
 	if (!parsed.ok) {
 		const task = await createTask(

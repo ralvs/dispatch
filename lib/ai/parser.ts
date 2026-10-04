@@ -8,7 +8,12 @@ import {
 import { z } from "zod";
 import { isAiConfigured, MODEL_PROVIDER_OPTIONS, parserModel } from "@/lib/ai/gateway";
 import { guardTitle } from "@/lib/ai/verbatim";
-import { type CaptureAction, CaptureActionsSchema } from "@/lib/schemas/capture";
+import {
+	type CaptureAction,
+	CaptureActionsSchema,
+	type CreateTaskAction,
+	CreateTaskActionSchema,
+} from "@/lib/schemas/capture";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Text -> actions seam. Turns one capture text into v1 capture actions via the
@@ -50,12 +55,15 @@ type ParseFallback = { ok: false; reason: "unavailable" | "failed" | "empty"; ra
 
 export type ParseResult = { ok: true; actions: CaptureAction[] } | ParseFallback;
 
+export type ParseTaskResult = { ok: true; task: CreateTaskAction } | ParseFallback;
+
 // ── Shared prompt fragments ────────────────────────────────────────────
 //
-// Shared with the sentence → task module (lib/services/capture/quick-add.ts).
-// The two prompts are NOT variants of one another — captureSystemPrompt asks for an
-// array of mixed actions, the task prompt for a single task or null — so only
-// the copy they genuinely share lives here.
+// Shared by the two prompts below: the palette's (captureSystemPrompt) and
+// the sentence → task one (taskCaptureSystemPrompt, used by quick-add). They
+// are NOT variants of one another — the first asks for an array of mixed
+// actions, the second for a single task or null — so only the copy they
+// genuinely share is factored out.
 
 // The task field formats. Indentation is the caller's, since captureSystemPrompt
 // nests this under its create_task bullet and the task prompt does not.
@@ -355,6 +363,33 @@ export function captureSystemPrompt(): string {
 	].join("\n");
 }
 
+export function taskCaptureSystemPrompt(): string {
+	return [
+		PERSONA,
+		"You convert ONE spoken or typed utterance into a single task, or null if",
+		"the utterance describes nothing actionable.",
+		"The user message holds <context> (app data: the date, the known domains",
+		"and projects) and then <utterance>, the only thing the user said.",
+		"Output shape: { title, notes?, due_date?, due_time?, priority?,",
+		"  recurrence_rule?, domain?, project? }.",
+		"title is required — the task itself, verbatim in the language spoken",
+		"(pt-BR or English). NEVER translate.",
+		TASK_FIELD_FORMATS,
+		...titleRules(),
+		...priorityRules(),
+		...recurrenceRules(),
+		"",
+		...dateResolution(),
+		...routingBlock(),
+		"",
+		EXAMPLE_WORLD,
+		...taskExamples(),
+		'- "that was a nice movie" → null',
+		"",
+		'Return a JSON object of the form {"task": { ... }} or {"task": null}.',
+	].join("\n");
+}
+
 /**
  * Applies the verbatim guard to the one field it can protect on each action:
  * the line the user will actually read in a list. `create_note`,
@@ -421,5 +456,41 @@ export async function parse(
 		const { actions } = await requestActions(text, ctx, model);
 		if (actions.length === 0) return { ok: false, reason: "empty", raw: text };
 		return { ok: true, actions: actions.map((a) => guardActionTitle(a, text)) };
+	});
+}
+
+/**
+ * The sentence → task request, raw: no title guard, and it throws. The eval
+ * scores this; the app calls parseTask.
+ */
+export async function requestTask(
+	text: string,
+	ctx: ParseContext,
+	model: ParserModel,
+): Promise<{ task: CreateTaskAction | null; usage: LanguageModelUsage }> {
+	const { object, usage } = await generateObject({
+		model,
+		schema: z.object({ task: CreateTaskActionSchema.nullable() }),
+		system: cachedSystem(taskCaptureSystemPrompt()),
+		prompt: captureUserMessage(text, ctx),
+		...parseCallOptions(),
+	});
+	return { task: object.task, usage };
+}
+
+/** One sentence → one task, for quick-add (docs/adr/0019 D3, 0043). */
+export async function parseTask(
+	text: string,
+	ctx: ParseContext,
+	options: ParseOptions = {},
+): Promise<ParseTaskResult> {
+	return guarded("quick-add", text, options, async (model) => {
+		const { task } = await requestTask(text, ctx, model);
+		if (!task) return { ok: false, reason: "empty", raw: text };
+		// Same guard as the palette: a title made of words the user never typed
+		// is worse than the raw sentence (lib/ai/verbatim.ts).
+		const { title, substituted } = guardTitle(task.title, text);
+		if (substituted) console.warn("quick-add title not verbatim");
+		return { ok: true, task: { ...task, title } };
 	});
 }
