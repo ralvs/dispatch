@@ -39,6 +39,7 @@ vi.mock("@/lib/images", () => ({
 import { POST } from "@/app/api/notes/[id]/attachments/route";
 import { afterMutation } from "@/lib/invalidate";
 import { uploadAttachment } from "@/lib/services/note-attachments";
+import { getNote } from "@/lib/services/notes";
 
 const NOTE_ID = "11111111-2222-4333-8444-555555555555";
 
@@ -84,6 +85,14 @@ describe("POST /api/notes/[id]/attachments", () => {
 		const res = await post([file("a.png", "image/png", pngBytes())], "not-a-uuid");
 		expect(res.status).toBe(400);
 		expect(uploadAttachment).not.toHaveBeenCalled();
+	});
+
+	it("404s for a note that does not exist, before touching storage", async () => {
+		vi.mocked(getNote).mockResolvedValueOnce(null);
+		const res = await post([file("a.png", "image/png", pngBytes())]);
+		expect(res.status).toBe(404);
+		expect(uploadAttachment).not.toHaveBeenCalled();
+		expect(afterMutation).not.toHaveBeenCalled();
 	});
 
 	it("attaches an image, a pdf and a markdown file in one batch", async () => {

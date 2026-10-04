@@ -55,6 +55,12 @@ export const POST = ownerRoute(
 			return NextResponse.json({ error: "No files provided" }, { status: 400 });
 		}
 
+		// The attach RPC updates no row for an unknown id and says nothing, so
+		// without this the bytes would land and be reported attached to nothing.
+		if (!(await getNote(sb, parsedId.data))) {
+			return NextResponse.json({ error: "Note not found" }, { status: 404 });
+		}
+
 		const attached: Attachment[] = [];
 		const rejected: Rejection[] = [];
 

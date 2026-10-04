@@ -96,6 +96,27 @@ describe("removeAttachment", () => {
 		expect(deleteObjects).toHaveBeenCalledWith([attachment.storage_path]);
 	});
 
+	it("refuses a path from another note and leaves both notes alone", async () => {
+		const sb = await ownerClient();
+		const mine = await aNote();
+		const other = await aNote();
+		const theirs = await uploadAttachment(sb, other.id, {
+			bytes: BYTES,
+			name: "b.pdf",
+			contentType: "application/pdf",
+		});
+		vi.mocked(deleteObjects).mockClear();
+
+		await expect(removeAttachment(sb, mine.id, theirs.storage_path)).rejects.toThrow(
+			"does not belong",
+		);
+
+		expect(deleteObjects).not.toHaveBeenCalled();
+		expect((await getNote(sb, other.id))?.attachments).toEqual([
+			expect.objectContaining({ storage_path: theirs.storage_path }),
+		]);
+	});
+
 	// A dead thumbnail on the page is worse than a leaked object.
 	it("does not delete the bytes when the row write fails", async () => {
 		const note = await aNote();
