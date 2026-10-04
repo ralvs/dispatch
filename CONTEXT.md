@@ -87,12 +87,14 @@ forward — is retired.
 
 The record, in the `notifications` table, of every autonomous or external
 action the system takes on Renan's behalf (iron rule #6). Writes go through
-`lib/services/notifications.ts`, whose `recordNotification` is the single
-sanctioned write path (it doesn't forbid a raw client from bypassing it).
-Each row has a free-text `type`, a human `title`/`body`, an optional
-`undo_payload`, and a `status` of `unread`, `read`, or `dismissed` (any of
-which is reachable from any other). Web-push delivery (ADR-0005) is planned: it
-will surface this same ledger to the phone.
+`lib/services/notifications.ts`, the single sanctioned write path (it doesn't
+forbid a raw client from bypassing it). `recordNotification` is best-effort and
+never rejects; `recordNotificationOrThrow` is for a row that is the delivery
+itself, such as a fired reminder. Each row has a free-text `type`, a human
+`title`/`body`, an optional `undo_payload`, and a `status` of `unread`, `read`,
+or `dismissed` (any of which is reachable from any other). Once a row lands,
+the module busts the ledger's cache tags and delivers it by web push
+(ADR-0005), whoever the caller (docs/adr/0075).
 
 ## links (reading list)
 
