@@ -2,7 +2,6 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatInstant, isoWeek, shiftDay } from "@/lib/dates";
 import { buildDaySchedule, type DaySchedule, type DaySchedulePayload } from "@/lib/day-schedule";
-import { bucketRoutines, type RoutineBucket } from "@/lib/routine-buckets";
 import { ROUTINE_HISTORY_DAYS } from "@/lib/routine-stats";
 import { type CalendarEventRow, listEventsOn } from "@/lib/services/calendar";
 import { type DomainRow, listDomains } from "@/lib/services/domains";
@@ -23,7 +22,6 @@ import { listQuotes, type QuoteRow } from "@/lib/services/quotes";
 import { listSkippedToday } from "@/lib/services/resurfacing";
 import {
 	type CompletionRow,
-	listCompletionsOn,
 	listCompletionsSince,
 	listRoutines,
 	type RoutineRow,
@@ -64,8 +62,6 @@ export type AnchorData = {
 	overdueCount: number;
 };
 
-export type { RoutineBucket, RoutineBucketRow } from "@/lib/routine-buckets";
-
 export type ProjectBrief = {
 	id: string;
 	name: string;
@@ -91,7 +87,6 @@ export type TodayView = {
 	quoteOfDay: QuoteRow | null;
 	masthead: { isoWeek: number; unreadNotifications: number };
 	anchor: AnchorData;
-	routineBuckets: RoutineBucket[];
 	resurfaced: QuoteRow | null;
 	resurfacedSkips: number;
 	latestQuote: QuoteRow | null;
@@ -183,8 +178,6 @@ export function buildAnchor(input: {
 	};
 }
 
-export { bucketRoutines };
-
 /** Task-progress summary for active projects (shape plan §02, decision D2). */
 export function summarizeProjects(
 	projects: ProjectRow[],
@@ -249,7 +242,6 @@ export async function loadTodayDigest(
 	todayIso: string,
 ): Promise<{
 	routines: RoutineRow[];
-	completionsToday: CompletionRow[];
 	needsReview: number;
 	quotes: QuoteRow[];
 	domains: DomainRow[];
@@ -262,7 +254,6 @@ export async function loadTodayDigest(
 }> {
 	const [
 		routines,
-		completionsToday,
 		needsReview,
 		quotes,
 		domains,
@@ -277,7 +268,6 @@ export async function loadTodayDigest(
 		taskCountsByProject,
 	] = await Promise.all([
 		listRoutines(sb),
-		listCompletionsOn(sb, todayIso),
 		countNeedsReview(sb),
 		listQuotes(sb),
 		listDomains(sb),
@@ -291,7 +281,6 @@ export async function loadTodayDigest(
 
 	return {
 		routines,
-		completionsToday,
 		needsReview,
 		quotes,
 		domains,
@@ -386,7 +375,6 @@ export function assembleTodayView(
 ): TodayView {
 	const {
 		routines,
-		completionsToday,
 		needsReview,
 		quotes,
 		unreadNotifications,
@@ -400,7 +388,10 @@ export function assembleTodayView(
 	const overdue = open.filter((t) => isOverdue(t, todayIso));
 	const inboxCount = open.filter((t) => t.domain_id === null).length;
 
-	const completedRoutineIds = new Set(completionsToday.map((c) => c.routine_id));
+	// Today's completions are the tail of the history the digest already holds.
+	const completedRoutineIds = new Set(
+		completionHistory.filter((c) => c.completed_date === todayIso).map((c) => c.routine_id),
+	);
 	const routinesDone = routines.filter((r) => completedRoutineIds.has(r.id)).length;
 	const remainingNames = routines.filter((r) => !completedRoutineIds.has(r.id)).map((r) => r.name);
 
@@ -426,13 +417,6 @@ export function assembleTodayView(
 			openCount: open.length,
 			overdueCount: overdue.length,
 			nowUtcIso: new Date(nowMs).toISOString(),
-		}),
-		routineBuckets: bucketRoutines({
-			routines,
-			completions: completionHistory,
-			todayIso,
-			tz,
-			nowMs,
 		}),
 		resurfaced,
 		resurfacedSkips: skippedQuoteIds.length,
