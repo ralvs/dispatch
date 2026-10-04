@@ -14,7 +14,7 @@ import { afterMutation } from "@/lib/invalidate";
 import type { Attachment } from "@/lib/schemas/note";
 import { uploadAttachment } from "@/lib/services/note-attachments";
 import { getNote } from "@/lib/services/notes";
-import { stampWrite } from "@/lib/store/server";
+import { written } from "@/lib/services/written";
 
 /*
  * The write side of note attachments (docs/adr/0052).
@@ -74,8 +74,7 @@ export const POST = ownerRoute(
 		let write = null;
 		if (attached.length > 0) {
 			afterMutation("notes.write");
-			const note = await getNote(sb, parsedId.data);
-			write = note ? stampWrite([note]) : null;
+			write = await written(sb, "note", parsedId.data);
 		}
 
 		return NextResponse.json(
