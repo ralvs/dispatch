@@ -14,11 +14,10 @@ import {
 } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedPerson } from "@/lib/cache/people";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { todayInTz } from "@/lib/dates";
+import { readClock } from "@/lib/cache/settings";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
-import type { Snapshot } from "@/lib/store/types";
+import { seedOf } from "@/lib/store/server";
 import { PersonDetail } from "./person-detail";
 
 export async function generateMetadata({
@@ -33,7 +32,7 @@ export async function generateMetadata({
 	// page's notFound() decides the 404.
 	await requireOwnerPage();
 	const detail = await getCachedPerson(parsedId.data);
-	return detail ? { title: detail.person.name } : {};
+	return detail.data ? { title: detail.data.person.name } : {};
 }
 
 async function PersonBody({ params }: { params: Promise<{ id: string }> }) {
@@ -45,14 +44,11 @@ async function PersonBody({ params }: { params: Promise<{ id: string }> }) {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
-	const [detail, tz] = await Promise.all([getCachedPerson(id), getCachedAppTimezone()]);
-	if (!detail) notFound();
-	const { readAt, person, facts, interactions, mentions } = detail;
+	const [detail, clock] = await Promise.all([getCachedPerson(id), readClock()]);
+	if (!detail.data) notFound();
+	const { person, facts, interactions, mentions } = detail.data;
 	// The person, the facts and the interactions read the entity store (#30).
-	const snapshot: Snapshot = {
-		readAt,
-		todayIso: todayInTz(tz),
-		tz,
+	const snapshot = seedOf(detail, clock, {
 		views: [
 			{ key: viewKey.person(id), type: "personList", data: { rows: [person], scope: { id } } },
 			{
@@ -66,13 +62,13 @@ async function PersonBody({ params }: { params: Promise<{ id: string }> }) {
 				data: { rows: interactions, scope: { personId: id } },
 			},
 		],
-	};
+	});
 
 	return (
 		<Seed snapshot={snapshot}>
 			<PersonDetail
 				personId={id}
-				tz={tz}
+				tz={clock.tz}
 				mentionedTasks={mentions.tasks as { id: string; title: string; status: string }[]}
 				mentionedNotes={mentions.notes as { id: string; title: string | null; body: string }[]}
 			/>

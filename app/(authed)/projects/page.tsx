@@ -15,11 +15,10 @@ import {
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedProjectBoard } from "@/lib/cache/projects";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { todayInTz } from "@/lib/dates";
+import { readClock } from "@/lib/cache/settings";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
-import type { Snapshot } from "@/lib/store/types";
+import { seedOf } from "@/lib/store/server";
 import { ProjectList } from "./project-list";
 
 async function ProjectsBody() {
@@ -28,19 +27,17 @@ async function ProjectsBody() {
 	await requireOwnerPage();
 	// Open tasks for the inline lists (plan O5) come with the board: one read
 	// for the whole page rather than one per row.
-	const [{ readAt, projects, openTasks, taskCounts }, domains, tz] = await Promise.all([
+	const [read, domains, clock] = await Promise.all([
 		getCachedProjectBoard(),
 		getCachedDomains(true),
-		getCachedAppTimezone(),
+		readClock(),
 	]);
+	const { projects, openTasks, taskCounts } = read.data;
 
 	// The projects, the rows' open tasks and each row's done count read the
 	// entity store (#30): a project created here, a task added from its row,
 	// or a task finished anywhere shows at once.
-	const snapshot: Snapshot = {
-		readAt,
-		todayIso: todayInTz(tz),
-		tz,
+	const snapshot = seedOf(read, clock, {
 		views: [
 			{ key: viewKey.projects(), type: "projectList", data: { rows: projects } },
 			{
@@ -55,7 +52,7 @@ async function ProjectsBody() {
 		aggregates: Object.fromEntries(
 			projects.map((p) => [`project.done:${p.id}`, taskCounts[p.id]?.done ?? 0]),
 		),
-	};
+	});
 
 	return (
 		<Seed snapshot={snapshot}>

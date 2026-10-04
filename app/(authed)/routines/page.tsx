@@ -12,12 +12,12 @@ import {
 } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedRoutines } from "@/lib/cache/routines";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { shiftDay, todayInTz } from "@/lib/dates";
+import { readClock } from "@/lib/cache/settings";
+import { shiftDay } from "@/lib/dates";
 import { ROUTINE_HISTORY_DAYS, withHistory } from "@/lib/routine-stats";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
-import type { Snapshot } from "@/lib/store/types";
+import { seedOf } from "@/lib/store/server";
 import { RoutineList } from "./routine-list";
 
 async function RoutinesBody() {
@@ -25,17 +25,12 @@ async function RoutinesBody() {
 	// service-role client.
 	await requireOwnerPage();
 	// The window start is the cache key, so the day is settled before the read.
-	const tz = await getCachedAppTimezone();
-	const todayIso = todayInTz(tz);
-	const { readAt, routines, completionsByRoutine } = await getCachedRoutines(
-		shiftDay(todayIso, -ROUTINE_HISTORY_DAYS),
-	);
+	const clock = await readClock();
+	const read = await getCachedRoutines(shiftDay(clock.todayIso, -ROUTINE_HISTORY_DAYS));
+	const { routines, completionsByRoutine } = read.data;
 	// The same view Today's routines card reads (#29), so a tick on either
 	// page moves both.
-	const snapshot: Snapshot = {
-		readAt,
-		todayIso,
-		tz,
+	const snapshot = seedOf(read, clock, {
 		views: [
 			{
 				key: viewKey.routines(),
@@ -43,7 +38,7 @@ async function RoutinesBody() {
 				data: withHistory(routines, Object.values(completionsByRoutine).flat()),
 			},
 		],
-	};
+	});
 
 	return (
 		<Seed snapshot={snapshot}>

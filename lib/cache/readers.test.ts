@@ -49,8 +49,6 @@ const decls: [string, ReaderDecl][] = Object.values(modules).flatMap((m) =>
 );
 
 describe("cached readers declare their tags and tables", () => {
-	const tagKey = new Map<string, string>(Object.entries(CacheTag).map(([k, v]) => [v, k]));
-
 	it("finds the cached readers", () => {
 		expect(cacheFiles.length).toBeGreaterThan(0);
 	});
@@ -63,14 +61,17 @@ describe("cached readers declare their tags and tables", () => {
 		);
 	});
 
-	it.each(cacheFiles)("%s caches each function under its declared tags", (file, src) => {
+	it.each(cacheFiles)("%s reads each function through its own declaration", (file, src) => {
 		for (const [name, body] of cachedFunctions(src)) {
-			const tags = new Set<string>();
-			for (const call of body.matchAll(/cacheTag\(([^)]*)\)/g)) {
-				for (const m of call[1].matchAll(/CacheTag\.(\w+)/g)) tags.add(m[1]);
-			}
-			const declared = (modules[file]?.readers?.[name]?.tags ?? []).map((t) => tagKey.get(t));
-			expect([...tags].sort(), `${file} ${name}`).toEqual([...new Set(declared)].sort());
+			const call = new RegExp(`\\b(cachedRead|cachedValue)\\(readers\\.${name},`);
+			expect(body, `${file} ${name}`).toMatch(call);
+		}
+	});
+
+	it("only reader.ts sets tags, cacheLife or a stamp in lib/cache", () => {
+		for (const [file, src] of Object.entries(sources)) {
+			if (file === "reader.ts") continue;
+			expect(src, file).not.toMatch(/\b(cacheTag|cacheLife|nowUtc)\(/);
 		}
 	});
 
@@ -99,5 +100,24 @@ describe("cached readers declare their tags and tables", () => {
 		}
 		expect(tables.size).toBeGreaterThan(0);
 		for (const t of tables) expect(Object.hasOwn(TABLE_WRITERS, t), t).toBe(true);
+	});
+});
+
+describe("stampRead is the one stamp and a page only seeds", () => {
+	it("no file outside lib/store/server.ts stamps a read or builds a snapshot literal", () => {
+		const root = path.resolve(import.meta.dirname, "../..");
+		const offenders = ["app", "lib"]
+			.flatMap((dir) =>
+				readdirSync(path.join(root, dir), { recursive: true, encoding: "utf8" }).map((f) =>
+					path.join(dir, f),
+				),
+			)
+			.filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f))
+			.filter((f) => f !== path.join("lib", "store", "server.ts"))
+			.filter((f) => {
+				const src = read(path.join(root, f));
+				return /readAt\s*[:=]\s*nowUtc\(/.test(src) || /:\s*Snapshot\s*=\s*\{/.test(src);
+			});
+		expect(offenders).toEqual([]);
 	});
 });

@@ -3,25 +3,22 @@ import { CreateTrigger } from "@/components/create-dialog";
 import { Bone, ListRow, MoreBackLink, PageSkeleton, repeat, TitleMetaBone } from "@/components/ui";
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedPeople } from "@/lib/cache/people";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { todayInTz } from "@/lib/dates";
+import { readClock } from "@/lib/cache/settings";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
-import type { Snapshot } from "@/lib/store/types";
+import { seedOf } from "@/lib/store/server";
 import { PersonList } from "./person-list";
 
 async function PeopleBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
-	const [{ readAt, people }, tz] = await Promise.all([getCachedPeople(), getCachedAppTimezone()]);
+	const [read, clock] = await Promise.all([getCachedPeople(), readClock()]);
+	const { people } = read.data;
 	// The header and the list read the entity store (#30).
-	const snapshot: Snapshot = {
-		readAt,
-		todayIso: todayInTz(tz),
-		tz,
+	const snapshot = seedOf(read, clock, {
 		views: [{ key: viewKey.people(), type: "personList", data: { rows: people } }],
-	};
+	});
 
 	return (
 		<Seed snapshot={snapshot}>

@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionResult } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { parseDateIso, todayInTz } from "@/lib/dates";
+import { readClock } from "@/lib/cache/settings";
+import { parseDateIso } from "@/lib/dates";
 import { afterMutation } from "@/lib/invalidate";
 import { getEvent } from "@/lib/services/calendar";
 import { ServiceError } from "@/lib/services/errors";
@@ -15,7 +15,7 @@ import { clearSkipsToday, recordQuoteSkip } from "@/lib/services/resurfacing";
 import { todayForRequest } from "@/lib/services/settings";
 import { loadDaySchedulePayload, loadResurfaced, type ResurfacedState } from "@/lib/services/today";
 import { viewKey } from "@/lib/store/keys";
-import { stampRead } from "@/lib/store/server";
+import { seedOf, stampRead } from "@/lib/store/server";
 import type { Snapshot } from "@/lib/store/types";
 import { readToday } from "./today-snapshots";
 
@@ -26,8 +26,8 @@ import { readToday } from "./today-snapshots";
  */
 export async function loadDayScheduleAction(rawDate: string): Promise<Snapshot> {
 	const { sb } = await requireOwnerPage();
-	const tz = await getCachedAppTimezone();
-	const todayIso = todayInTz(tz);
+	const clock = await readClock();
+	const { tz, todayIso } = clock;
 	const dateIso = parseDateIso(rawDate);
 	if (!dateIso) throw new ServiceError("Invalid date", null);
 
@@ -40,15 +40,10 @@ export async function loadDayScheduleAction(rawDate: string): Promise<Snapshot> 
 	// older copy would silently erase a freshly-synced event. Two indexed
 	// queries (lib/services/today.ts loadDayScheduleInputs) — the entity store
 	// holding each day is what makes repeat visits free, not this.
-	const { data, readAt } = await stampRead(() =>
-		loadDaySchedulePayload(sb, tz, dateIso, { todayIso }),
-	);
-	return {
-		readAt,
-		todayIso,
-		tz,
-		views: [{ key: viewKey.day(dateIso), type: "day", data }],
-	};
+	const read = await stampRead(() => loadDaySchedulePayload(sb, tz, dateIso, { todayIso }));
+	return seedOf(read, clock, {
+		views: [{ key: viewKey.day(dateIso), type: "day", data: read.data }],
+	});
 }
 
 /**
@@ -61,8 +56,7 @@ export async function loadDayScheduleAction(rawDate: string): Promise<Snapshot> 
  */
 export async function pullTodayAction(shownDate?: string): Promise<Snapshot[]> {
 	const { sb } = await requireOwnerPage();
-	const tz = await getCachedAppTimezone();
-	const todayIso = todayInTz(tz);
+	const { tz, todayIso } = await readClock();
 	// The day on screen gets its bands; everything else on Today is today's.
 	const shown = (shownDate !== undefined && parseDateIso(shownDate)) || todayIso;
 	const { snapshot, digestSnapshot } = await readToday(sb, tz, todayIso, shown, Date.now());

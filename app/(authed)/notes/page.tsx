@@ -13,36 +13,33 @@ import {
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedNoteLists } from "@/lib/cache/notes";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { todayInTz } from "@/lib/dates";
+import { readClock } from "@/lib/cache/settings";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
-import type { Snapshot } from "@/lib/store/types";
+import { seedOf } from "@/lib/store/server";
 import { NoteList } from "./note-list";
 
 async function NotesBody() {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
-	const [{ readAt, needsReview, allNotes }, tz, domains] = await Promise.all([
+	const [read, clock, domains] = await Promise.all([
 		getCachedNoteLists(),
-		getCachedAppTimezone(),
+		readClock(),
 		getCachedDomains(false),
 	]);
+	const { needsReview, allNotes } = read.data;
 	// The lists and the review count go to the entity store (#27). The band
 	// holds every flagged note, so its length is the count Today shows too.
-	const snapshot: Snapshot = {
-		readAt,
-		todayIso: todayInTz(tz),
-		tz,
+	const snapshot = seedOf(read, clock, {
 		views: [{ key: viewKey.notes(), type: "noteLists", data: { needsReview, all: allNotes } }],
 		aggregates: { "notes.needsReview": needsReview.length },
-	};
+	});
 
 	return (
 		<Seed snapshot={snapshot}>
 			<NoteList
-				tz={tz}
+				tz={clock.tz}
 				domains={domains.map((d) => ({ id: d.id, name: d.name, color: d.color }))}
 			/>
 		</Seed>

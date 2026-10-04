@@ -1,8 +1,6 @@
 import "server-only";
-import { cacheLife, cacheTag } from "next/cache";
-import type { Readers } from "@/lib/cache/reader";
+import { cachedRead, type Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
-import { nowUtc } from "@/lib/dates";
 import { loadTodayDigest } from "@/lib/services/today";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -17,17 +15,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 /**
  * Cold digest: quotes, projects, routines, domains, alert counts.
  *
- * `readAt` is the entity store's version for what Today seeds from the digest
- * (lib/store/types.ts), stamped inside the cache: a stale entry served after a
- * write keeps its old stamp, so the confirmed write replays over it.
+ * Stamped through cachedRead: `readAt` is the entity store's version for what
+ * Today seeds from the digest (lib/store/types.ts).
  */
 export async function getCachedTodayDigest(todayIso: string) {
 	"use cache";
-	cacheTag(CacheTag.todayDigest);
-	cacheLife("tagged");
-	const readAt = nowUtc();
-	const digest = await loadTodayDigest(createAdminClient(), todayIso);
-	return { ...digest, readAt };
+	return cachedRead(readers.getCachedTodayDigest, () =>
+		loadTodayDigest(createAdminClient(), todayIso),
+	);
 }
 
 export const readers = {

@@ -1,8 +1,6 @@
 import "server-only";
-import { cacheLife, cacheTag } from "next/cache";
-import type { Readers } from "@/lib/cache/reader";
+import { cachedRead, type Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
-import { nowUtc } from "@/lib/dates";
 import { listDomains } from "@/lib/services/domains";
 import { listMentionsForSources } from "@/lib/services/mentions";
 import { listNoteIdsForTargets } from "@/lib/services/note-links";
@@ -25,16 +23,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function getCachedTaskBoard(sinceUtc: string) {
 	"use cache";
-	// Every tag whose data this read touches. `tasks` covers domains too:
-	// settings.domain names it (see invalidationFor), because a renamed domain
-	// changes how every task row reads.
-	cacheTag(CacheTag.tasks, CacheTag.notes, CacheTag.people, CacheTag.projects);
-	cacheLife("tagged");
+	return cachedRead(readers.getCachedTaskBoard, () => readTaskBoard(sinceUtc));
+}
 
-	// Stamped inside the cache, before the reads, so the instant travels with
-	// the data: a stale entry served after a write keeps its old stamp, and the
-	// entity store's conflict rule replays the write over it (lib/store/types.ts).
-	const readAt = nowUtc();
+async function readTaskBoard(sinceUtc: string) {
 	const sb = createAdminClient();
 	const [openTasks, doneTasks, domains, projects, people] = await Promise.all([
 		listTasks(sb, { status: "open" }),
@@ -59,7 +51,7 @@ export async function getCachedTaskBoard(sinceUtc: string) {
 		),
 	]);
 
-	return { readAt, openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions };
+	return { openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions };
 }
 
 export const readers = {

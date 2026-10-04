@@ -17,11 +17,10 @@ import {
 import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedProject } from "@/lib/cache/projects";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { todayInTz } from "@/lib/dates";
+import { readClock } from "@/lib/cache/settings";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
-import type { Snapshot } from "@/lib/store/types";
+import { seedOf } from "@/lib/store/server";
 import { ProjectDetail } from "./project-detail";
 
 export async function generateMetadata({
@@ -36,7 +35,7 @@ export async function generateMetadata({
 	// page's notFound() decides the 404.
 	await requireOwnerPage();
 	const detail = await getCachedProject(parsedId.data);
-	return detail ? { title: detail.project.name } : {};
+	return detail.data ? { title: detail.data.project.name } : {};
 }
 
 async function ProjectBody({ params }: { params: Promise<{ id: string }> }) {
@@ -48,19 +47,16 @@ async function ProjectBody({ params }: { params: Promise<{ id: string }> }) {
 	// Security boundary first (iron rule #2) — the cached reads use the
 	// service-role client.
 	await requireOwnerPage();
-	const [detail, domains, tz] = await Promise.all([
+	const [detail, domains, clock] = await Promise.all([
 		getCachedProject(id),
 		getCachedDomains(true),
-		getCachedAppTimezone(),
+		readClock(),
 	]);
-	if (!detail) notFound();
-	const { readAt, project, tasks, projects } = detail;
+	if (!detail.data) notFound();
+	const { project, tasks, projects } = detail.data;
 
-	const todayIso = todayInTz(tz);
-	const snapshot: Snapshot = {
-		readAt,
-		todayIso,
-		tz,
+	const { todayIso } = clock;
+	const snapshot = seedOf(detail, clock, {
 		views: [
 			{
 				key: viewKey.projectHead(project.id),
@@ -73,7 +69,7 @@ async function ProjectBody({ params }: { params: Promise<{ id: string }> }) {
 				data: { rows: tasks, scope: { projectId: project.id } },
 			},
 		],
-	};
+	});
 
 	return (
 		<Seed snapshot={snapshot}>

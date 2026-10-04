@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { requireOwnerPage } from "@/lib/auth";
-import { getCachedAppTimezone } from "@/lib/cache/settings";
-import { formatDay, parseDateIso, todayInTz } from "@/lib/dates";
+import { readClock } from "@/lib/cache/settings";
+import { formatDay, parseDateIso } from "@/lib/dates";
 import { SoftRefresh } from "./soft-refresh";
 import { TodayBody } from "./today-body";
 import { TodaySkeleton } from "./today-skeleton";
@@ -22,8 +22,7 @@ export default async function TodayPage({
 	searchParams: Promise<{ d?: string }>;
 }) {
 	const { sb } = await requireOwnerPage();
-	const tz = await getCachedAppTimezone();
-	const todayIso = todayInTz(tz);
+	const { tz, todayIso } = await readClock();
 
 	// `?d=` is the day navigation's only state. Anything unparseable falls back
 	// to today rather than erroring — a hand-edited URL should land somewhere

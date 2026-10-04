@@ -1,7 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCachedTodayDigest } from "@/lib/cache/today";
-import { nowUtc } from "@/lib/dates";
 import { withHistory } from "@/lib/routine-stats";
 import {
 	assembleTodayView,
@@ -9,7 +8,7 @@ import {
 	loadDaySchedulePayload,
 } from "@/lib/services/today";
 import { viewKey } from "@/lib/store/keys";
-import type { Snapshot } from "@/lib/store/types";
+import { seedOf, stampRead } from "@/lib/store/server";
 
 /**
  * Everything Today reads, as the two entity-store snapshots it seeds. One
@@ -24,13 +23,15 @@ export async function readToday(
 	selectedIso: string,
 	nowMs: number,
 ) {
-	// The entity store's version for everything read below (lib/store/types.ts),
-	// stamped before the first read starts.
-	const readAt = nowUtc(nowMs);
-	const [{ open, completed, events: todayEvents, quietProjectIds }, digest] = await Promise.all([
-		loadDayScheduleInputs(sb, tz, todayIso),
+	const clock = { tz, todayIso };
+	// `inputs.readAt` is the entity store's version for everything read below
+	// (lib/store/types.ts), stamped before the first read starts.
+	const [inputs, stampedDigest] = await Promise.all([
+		stampRead(() => loadDayScheduleInputs(sb, tz, todayIso)),
 		getCachedTodayDigest(todayIso),
 	]);
+	const { open, completed, events: todayEvents, quietProjectIds } = inputs.data;
+	const digest = stampedDigest.data;
 	const view = assembleTodayView(digest, open, todayEvents, tz, todayIso, nowMs, completed);
 	const isToday = selectedIso === todayIso;
 
@@ -46,10 +47,7 @@ export async function readToday(
 	// The day's rows and today's task counts go to the entity store (#26), so
 	// a tick anywhere moves them without a page render. Today is locked to the
 	// real today (ADR-0036).
-	const snapshot: Snapshot = {
-		readAt,
-		todayIso,
-		tz,
+	const snapshot = seedOf(inputs, clock, {
 		// So a quiet task ticked or starred elsewhere moves none of the counts
 		// below and never lands on the day (lib/store/kinds/task.ts).
 		quietProjectIds,
@@ -60,14 +58,11 @@ export async function readToday(
 			"tasks.inbox": view.inboxCount,
 			"events.today": view.anchor.eventCount,
 		},
-	};
+	});
 	// What comes from the cached digest carries the digest's own stamp, not
-	// `readAt` above: a stale entry must stay older than the write it missed
+	// `inputs.readAt` above: a stale entry must stay older than the write it missed
 	// (#28). Its own Seed, inside the first, so both reach every consumer.
-	const digestSnapshot: Snapshot = {
-		readAt: digest.readAt,
-		todayIso,
-		tz,
+	const digestSnapshot = seedOf(stampedDigest, clock, {
 		// The routines card's rows (#29): the same view /routines reads.
 		views: [
 			{
@@ -87,7 +82,7 @@ export async function readToday(
 				]),
 			),
 		},
-	};
+	});
 
 	return { view, digest, snapshot, digestSnapshot };
 }
