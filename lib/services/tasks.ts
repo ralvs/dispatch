@@ -144,7 +144,7 @@ export async function getTask(sb: SupabaseClient, id: string): Promise<TaskRow |
 }
 
 /** Escapes ilike wildcards so a search term is matched literally. */
-function escapeLike(q: string): string {
+export function escapeLike(q: string): string {
 	return q.replace(/[%_\\]/g, (m) => `\\${m}`);
 }
 
