@@ -113,6 +113,23 @@ test("Back closes the dialog", async ({ page }) => {
 	expect(new URL(page.url()).pathname).toBe(`/projects/${ids.project}`);
 });
 
+test("the nav keeps lighting the page under the dialog", async ({ page }) => {
+	await openFromProject(page, names.task);
+	await expect(page.locator("[aria-current]", { hasText: "Tasks" })).toHaveCount(0);
+});
+
+// Next keeps the page you leave alive, state and all, and shows it again when
+// you come back: a dialog that remembered being closed stayed closed.
+test("a task closed with Cancel opens again from the same link", async ({ page }) => {
+	await openFromProject(page, names.task);
+	await editDialog(page).getByRole("button", { name: "Cancel" }).click();
+	await page.waitForURL(`**/projects/${ids.project}`);
+	await expect(editDialog(page)).toHaveCount(0);
+
+	await page.locator(`a[href="/tasks/${ids.task}"]`).click();
+	await expect(editDialog(page).getByLabel("Task title")).toHaveValue(names.task);
+});
+
 test("navigating elsewhere closes the dialog", async ({ page }) => {
 	await openFromProject(page, names.task);
 	// Off the title field: the shortcut stands down inside a text input.

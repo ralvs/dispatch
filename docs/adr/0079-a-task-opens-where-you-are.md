@@ -23,6 +23,11 @@ appears.
    Save and Delete return to that page (`router.back()`).
    `@modal/[...catchAll]` and `@modal/default.tsx` render nothing, so the slot
    is empty at rest and empties when you navigate somewhere else.
+   The form is open while the address is the task's own, never by a flag set
+   on close: Cache Components keeps a page you leave alive, state and all, so
+   a flag set on the way out was still set when you opened the same task
+   again. The nav lights the page under the form, not Tasks
+   (`usePagePathname`).
 3. **Loaded directly, it opens over the Tasks board.** `tasks/[id]` is a
    refresh, an outside link or a notification. It draws the board and the form
    in two Suspense boundaries, so neither waits for the other. Closing goes to

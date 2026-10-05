@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { TaskDialog } from "@/components/task-dialog";
 import type { TaskDomainOption, TaskProjectOption } from "@/components/task-fields";
 import {
@@ -53,25 +52,23 @@ export function TaskEditor({
 }) {
 	const leave = useExit(exit);
 	const run = useTaskIntentRunner();
-	// Closed before the navigation lands, so the dialog never lingers over a
-	// page that has already moved on.
-	const [open, setOpen] = useState(true);
-
-	function close() {
-		setOpen(false);
-		leave();
-	}
+	// Open while the address is this task's own, and never a flag set on close.
+	// Cache Components keeps a page you leave alive in a hidden <Activity>,
+	// state and all, and shows it again when you come back: a `closed` flag
+	// set on the way out was still set on the way back in, so opening the same
+	// task a second time from Today showed nothing.
+	const open = usePathname() === `/tasks/${task.id}`;
 
 	function remove() {
 		if (!window.confirm(`Delete "${task.title}"?`)) return;
 		run({ type: "delete", id: task.id }, () => deleteTaskAction(task.id));
-		close();
+		leave();
 	}
 
 	return (
 		<TaskDialog
 			open={open}
-			onClose={close}
+			onClose={leave}
 			mode="edit"
 			taskId={task.id}
 			domains={domains}

@@ -1,8 +1,8 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { IntentLink } from "@/components/intent-link";
 import { isActive, TABS } from "@/components/nav-links";
+import { usePagePathname } from "@/lib/client/use-page-pathname";
 import { toggleMoreMenu } from "@/lib/more-menu-bus";
 import { DOCK_ACTION_SLOT_ID, DOCK_HEIGHT, DOCK_SURFACE } from "@/lib/ui/dock";
 
@@ -37,7 +37,7 @@ export function BottomTabBarFrame({ children }: { children: React.ReactNode }) {
 }
 
 export function BottomTabBar() {
-	return <BottomTabBarView pathname={usePathname()} />;
+	return <BottomTabBarView pathname={usePagePathname()} />;
 }
 
 /**
