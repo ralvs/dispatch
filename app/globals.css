@@ -10,9 +10,10 @@
  * lift). It replaces the Vercel/Geist world outright — that palette was
  * dark-first, display type at 600, and Signal Blue.
  *
- * LIGHT IS THE DEFAULT and dark is a complete peer under [data-theme="dark"] —
- * the inverse of what shipped before. The boot script in app/layout.tsx and
- * components/theme-toggle.tsx both flip with it.
+ * Light is the base and dark is a complete peer under [data-theme="dark"].
+ * `data-theme` is always resolved: the boot script in app/layout.tsx and
+ * app/(authed)/settings/theme-picker.tsx turn the per-device pick (Light,
+ * Dark, or System — the default) into one of the two (docs/adr/0080).
  *
  * The comp names its tokens ground / paper / rule / accent-soft; the app's
  * semantic names are kept instead, because thirteen other surfaces address

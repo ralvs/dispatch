@@ -13,7 +13,7 @@ import { getCachedAppTimezone, getCachedReminderSettings } from "@/lib/cache/set
 import { PushToggle } from "./push-toggle";
 import { ReminderForm } from "./reminder-form";
 import { SignOutButton } from "./sign-out-button";
-import { ThemeToggle } from "./theme-toggle";
+import { ThemePicker } from "./theme-picker";
 import { TimezoneForm } from "./timezone-form";
 
 async function AppSettings() {
@@ -109,7 +109,7 @@ export default function SettingsPage() {
 			<section className="mt-9" aria-label="Account">
 				<SectionHead title="Account" />
 				<div className="space-y-3 pt-1">
-					<ThemeToggle />
+					<ThemePicker />
 					<Suspense
 						fallback={
 							<>
