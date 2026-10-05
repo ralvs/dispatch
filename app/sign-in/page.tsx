@@ -1,33 +1,14 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Button, Field, Input } from "@/components/ui";
+import { SignInForm } from "@/components/sign-in-form";
 import { Wordmark } from "@/components/wordmark";
 import { browserAuth } from "@/lib/supabase/browser";
 
-const SignInSchema = z.object({
-	email: z.email(),
-	password: z.string().min(1, "Password is required"),
-});
-type SignInValues = z.infer<typeof SignInSchema>;
-
-/** Maps the raw Supabase auth error to house copy — never leak provider wording. */
-function mapSignInError(message: string): string {
-	if (typeof navigator !== "undefined" && !navigator.onLine) {
-		return "You're offline. Check your connection and try again.";
-	}
-	if (/invalid login credentials/i.test(message)) {
-		return "Couldn't sign in. Check your email and password and try again.";
-	}
-	return "Couldn't sign in. Try again.";
-}
-
 /**
- * The only unauthenticated UI. Pass 5: brand mark introduces the product,
+ * The owner's way in; the OAuth consent page is the other unauthenticated
+ * UI (docs/adr/0079). Pass 5: brand mark introduces the product,
  * then a page-weight title — no mono eyebrow, no hairline (the silhouette
  * ADR-0042 deleted; this page sat outside every prior sweep).
  *
@@ -38,16 +19,9 @@ function mapSignInError(message: string): string {
  */
 export default function SignInPage() {
 	const router = useRouter();
-	const [serverError, setServerError] = useState<string | null>(null);
 	// True until we know there is no recoverable browser session. Avoids a
 	// flash of the form when cold-start recovery is about to redirect (ADR-0032).
 	const [checkingSession, setCheckingSession] = useState(true);
-	const {
-		register,
-		handleSubmit,
-		formState: { errors, isSubmitting },
-	} = useForm<SignInValues>({ resolver: zodResolver(SignInSchema) });
-
 	useEffect(() => {
 		let cancelled = false;
 		const auth = browserAuth();
@@ -77,14 +51,7 @@ export default function SignInPage() {
 		};
 	}, [router]);
 
-	async function onSubmit(values: SignInValues) {
-		setServerError(null);
-		const auth = browserAuth();
-		const { error } = await auth.signInWithPassword(values);
-		if (error) {
-			setServerError(mapSignInError(error.message));
-			return;
-		}
+	function onSignedIn() {
 		// Refresh so server components re-render with the new session.
 		router.push("/today");
 		router.refresh();
@@ -107,47 +74,7 @@ export default function SignInPage() {
 
 			<h1 className="mt-5 text-t30 text-ink">Sign in</h1>
 
-			<form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-7" noValidate>
-				<Field label="Email" error={errors.email?.message} htmlFor="email">
-					<Input
-						id="email"
-						type="email"
-						autoComplete="email"
-						size="lg"
-						invalid={Boolean(errors.email)}
-						{...register("email")}
-					/>
-				</Field>
-
-				<Field label="Password" error={errors.password?.message} htmlFor="password">
-					<Input
-						id="password"
-						type="password"
-						autoComplete="current-password"
-						size="lg"
-						invalid={Boolean(errors.password)}
-						{...register("password")}
-					/>
-				</Field>
-
-				{serverError && (
-					<p role="alert" className="text-sm text-error">
-						{serverError}
-					</p>
-				)}
-
-				<Button
-					type="submit"
-					variant="primary"
-					shape="pill"
-					fullWidth
-					size="md"
-					isPending={isSubmitting}
-					disabled={isSubmitting}
-				>
-					{isSubmitting ? "Signing in…" : "Sign in"}
-				</Button>
-			</form>
+			<SignInForm onSignedIn={onSignedIn} />
 		</main>
 	);
 }
