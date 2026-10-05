@@ -7,7 +7,8 @@ vi.mock("@/lib/invalidate", async (original) => ({
 }));
 
 import { POST } from "@/app/api/mcp/route";
-import { ownerClient, serviceClient } from "@/test/integration/clients";
+import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
+import { anonClient, ownerClient, serviceClient } from "@/test/integration/clients";
 
 // POST /api/mcp end to end against the local database: the bearer boundary
 // (iron rule #2), then the link tools acting as the owner through RLS.
@@ -75,6 +76,44 @@ describe("POST /api/mcp", () => {
 		expect(res.status).toBe(401);
 	});
 
+	it("answers 401 with the challenge to a signed-in user who is not the owner", async () => {
+		const admin = serviceClient();
+		const email = `stranger-${Date.now()}@example.com`;
+		const password = "stranger-password-1";
+		const { data: created, error } = await admin.auth.admin.createUser({
+			email,
+			password,
+			email_confirm: true,
+		});
+		if (error) throw error;
+		try {
+			const sb = anonClient();
+			const { data, error: signInError } = await sb.auth.signInWithPassword({ email, password });
+			if (signInError || !data.session) throw signInError ?? new Error("no session");
+			const res = await rpc("tools/list", {}, data.session.access_token);
+			expect(res.status).toBe(401);
+			expect(res.headers.get("WWW-Authenticate")).toContain("resource_metadata=");
+		} finally {
+			await admin.auth.admin.deleteUser(created.user.id);
+		}
+	});
+
+	it("answers 401 to the owner's session sent as a cookie, without a bearer", async () => {
+		const token = await ownerToken();
+		const res = await POST(
+			new Request("http://localhost/api/mcp", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					accept: "application/json, text/event-stream",
+					cookie: `sb-127-auth-token=${encodeURIComponent(JSON.stringify({ access_token: token }))}; sb-access-token=${token}`,
+				},
+				body: JSON.stringify({ jsonrpc: "2.0", id: nextId++, method: "tools/list", params: {} }),
+			}),
+		);
+		expect(res.status).toBe(401);
+	});
+
 	it("initializes and lists the link tools", async () => {
 		const token = await ownerToken();
 		const init = await rpc(
@@ -116,6 +155,7 @@ describe("POST /api/mcp", () => {
 		const result = await callTool(token, "mark_link_read", { id: unread.id });
 		expect(result.isError).toBeFalsy();
 		expect(JSON.parse(result.content[0].text)).toMatchObject({ id: unread.id, status: "read" });
+		expect(afterExternalMutation).toHaveBeenCalledWith(...EXTERNAL_WRITES.mcpLinks);
 
 		const sb = serviceClient();
 		const { data: link } = await sb
