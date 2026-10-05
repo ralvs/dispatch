@@ -70,7 +70,7 @@ function toTaskHit(row: TaskRow, query: string, recents: boolean): FindTaskHit {
 		status: row.status,
 		field,
 		snippet,
-		href: `/tasks?edit=${row.id}`,
+		href: `/tasks/${row.id}`,
 	};
 }
 

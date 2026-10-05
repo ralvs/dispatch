@@ -174,10 +174,11 @@ export function TaskDayRow({
 			{/* No `hold`: Today's lists are short enough that a dot which comes and
 			    goes costs nothing. /tasks runs to twenty rows and holds the slot. */}
 			<ColorDot color={slug} />
-			{/* Read-mostly surface: the title opens the task on Tasks rather than
-			    an editor here, which is what the incumbent row did too. */}
+			{/* Read-mostly surface: the title is the task's own URL, which opens
+			    the form over Today rather than an editor in the row
+			    (docs/adr/0079). */}
 			<Link
-				href={`/tasks?edit=${task.id}`}
+				href={`/tasks/${task.id}`}
 				aria-label={`Open task "${task.title}" for editing`}
 				className={rowTitle({
 					tone: done ? "done" : "default",

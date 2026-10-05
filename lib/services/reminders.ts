@@ -67,7 +67,7 @@ async function deliver(
 		title: message.title,
 		body: message.body,
 		source_ref: entry.taskId,
-		source_url: `/tasks?edit=${entry.taskId}`,
+		source_url: `/tasks/${entry.taskId}`,
 	});
 	await markRemindersSent(sb, entry.taskId, { due: entry.dueDate });
 }

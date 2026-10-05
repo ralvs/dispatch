@@ -13,12 +13,15 @@ export const router = {
 export const navigation = {
 	pathname: "/today",
 	searchParams: new URLSearchParams(),
+	/** The authed layout's `children` segment. Null reads it off `pathname`. */
+	page: null as string | null,
 };
 
 export const nextNavigationMock = {
 	useRouter: () => router,
 	usePathname: () => navigation.pathname,
 	useSearchParams: () => navigation.searchParams,
+	useSelectedLayoutSegment: () => navigation.page ?? (navigation.pathname.split("/")[1] || null),
 	useParams: () => ({}),
 	redirect: vi.fn(),
 	notFound: vi.fn(),

@@ -33,12 +33,16 @@ setup("seed a row for every dynamic route", async () => {
 		return created.data.id as string;
 	}
 
+	const domainId = await findOrCreate("stewardship_domains", { name: "E2E Domain" });
+	const projectId = await findOrCreate("projects", { name: "E2E Project", domain_id: domainId });
 	const ids: SeededIds = {
 		notes: await findOrCreate("notes", { title: "E2E note", body: "Seeded by the e2e setup." }),
 		people: await findOrCreate("people", { name: "E2E Person" }),
-		projects: await findOrCreate("projects", {
-			name: "E2E Project",
-			domain_id: await findOrCreate("stewardship_domains", { name: "E2E Domain" }),
+		projects: projectId,
+		tasks: await findOrCreate("tasks", {
+			title: "E2E task",
+			domain_id: domainId,
+			project_id: projectId,
 		}),
 	};
 	mkdirSync(path.dirname(SEEDED_IDS_FILE), { recursive: true });

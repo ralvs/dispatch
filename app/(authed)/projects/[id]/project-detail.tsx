@@ -355,7 +355,7 @@ function ProjectTasksSection({
 									}
 								>
 									<Link
-										href={`/tasks?edit=${t.id}`}
+										href={`/tasks/${t.id}`}
 										className={rowTitle({
 											tone: doneRow ? "done" : "default",
 											className: "hover:text-accent-ink",

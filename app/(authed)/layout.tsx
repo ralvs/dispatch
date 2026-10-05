@@ -42,7 +42,7 @@ async function OwnerGate() {
 	return null;
 }
 
-function AuthedShell({ children }: { children: React.ReactNode }) {
+function AuthedShell({ children, modal }: { children: React.ReactNode; modal: React.ReactNode }) {
 	return (
 		<div className={SHELL}>
 			<a
@@ -73,6 +73,9 @@ function AuthedShell({ children }: { children: React.ReactNode }) {
 				</main>
 				<CapturePalette />
 				<FindPalette />
+				{/* A task opened by its URL, over this page (docs/adr/0079).
+				    Empty unless `@modal/(.)tasks/[id]` matched. */}
+				{modal}
 				{/* Renders nothing until opened, so an empty fallback is the
 				    whole component at rest. */}
 				<Suspense fallback={null}>
@@ -95,12 +98,18 @@ function AuthedShell({ children }: { children: React.ReactNode }) {
  * a hole inside the route — see OwnerGate. Each page's own body remains its own
  * dynamic hole, covered by that route's loading.tsx.
  */
-export default function AuthedLayout({ children }: { children: React.ReactNode }) {
+export default function AuthedLayout({
+	children,
+	modal,
+}: {
+	children: React.ReactNode;
+	modal: React.ReactNode;
+}) {
 	return (
 		// One entity store per tab (#24), above every page, so a row written on
 		// one page is already right on the next. Pages feed it through <Seed>.
 		<StoreProvider>
-			<AuthedShell>{children}</AuthedShell>
+			<AuthedShell modal={modal}>{children}</AuthedShell>
 		</StoreProvider>
 	);
 }

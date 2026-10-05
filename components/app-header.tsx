@@ -2,13 +2,13 @@
 
 import { MessageSquare } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { BrandMark } from "@/components/brand-mark";
 import { IntentLink } from "@/components/intent-link";
 import { isActive, TABS } from "@/components/nav-links";
 import { button } from "@/components/ui/button-variants";
 import { Icon } from "@/components/ui/icon";
 import { openCapturePalette } from "@/lib/capture/palette-bus";
+import { usePagePathname } from "@/lib/client/use-page-pathname";
 import { toggleMoreMenu } from "@/lib/more-menu-bus";
 
 /**
@@ -26,7 +26,7 @@ import { toggleMoreMenu } from "@/lib/more-menu-bus";
  * Hidden below `lg`, where the dock carries the same five tabs.
  */
 export function AppHeader() {
-	return <AppHeaderView pathname={usePathname()} />;
+	return <AppHeaderView pathname={usePagePathname()} />;
 }
 
 /**

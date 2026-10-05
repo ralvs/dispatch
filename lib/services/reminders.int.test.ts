@@ -71,7 +71,7 @@ describe("runTaskReminders against the local database", () => {
 			title: "Pay rent",
 			body: "Due now, at 15:00.",
 			source_ref: task.id,
-			source_url: `/tasks?edit=${task.id}`,
+			source_url: `/tasks/${task.id}`,
 			status: "unread",
 		});
 		const marked = await sentState(task.id);

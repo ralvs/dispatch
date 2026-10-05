@@ -18,17 +18,40 @@ import { tv, type VariantProps } from "./tv";
 const FOCUSABLE =
 	'a[href],button:not([disabled]),textarea,input:not([disabled]),select,[tabindex]:not([tabindex="-1"])';
 
+const overlay = tv({
+	base: "fixed inset-0 z-50 flex justify-center overflow-y-auto bg-bg/80 backdrop-blur-sm",
+	variants: {
+		sheet: {
+			false: "items-start px-4 py-[8vh]",
+			// Below `lg` the panel is the screen, so the overlay holds it edge to
+			// edge; from `lg` up it is the centred dialog again.
+			true: "items-stretch lg:items-start lg:px-4 lg:py-[8vh]",
+		},
+	},
+	defaultVariants: { sheet: false },
+});
+
 const panel = tv({
-	base: "flex max-h-[85dvh] w-full flex-col overflow-hidden rounded-card border border-line-strong bg-surface elevation-overlay",
+	base: "group/dialog flex w-full flex-col overflow-hidden bg-surface",
 	variants: {
 		size: {
 			sm: "max-w-sm",
 			md: "max-w-lg",
 			lg: "max-w-2xl",
 		},
+		sheet: {
+			false: "max-h-[85dvh] rounded-card border border-line-strong elevation-overlay",
+			// `h-full` of a `fixed inset-0` overlay, never a viewport unit: an
+			// installed iOS PWA resolves those against a stale viewport (see
+			// .app-shell in app/globals.css). The safe-area insets go where the
+			// sheet meets an edge: top and bottom on the header and footer, the
+			// sides on the panel (a phone held sideways).
+			true: "h-full max-lg:max-w-none max-lg:pr-[env(safe-area-inset-right)] max-lg:pl-[env(safe-area-inset-left)] lg:h-auto lg:max-h-[85dvh] lg:rounded-card lg:border lg:border-line-strong lg:shadow-overlay",
+		},
 	},
 	defaultVariants: {
 		size: "md",
+		sheet: false,
 	},
 });
 
@@ -41,6 +64,11 @@ export function Dialog({
 	/** Optional line under the title — context, not instruction. */
 	description,
 	size,
+	/**
+	 * Full screen below `lg`, the centred dialog from `lg` up. For a form long
+	 * enough that a phone should give it the whole screen (the task form).
+	 */
+	sheet = false,
 	children,
 	className,
 }: DialogVariants & {
@@ -132,12 +160,7 @@ export function Dialog({
 
 	return createPortal(
 		// biome-ignore lint/a11y/noStaticElementInteractions: backdrop click is a convenience; Escape and the close button are the keyboard paths.
-		<div
-			ref={overlayRef}
-			role="presentation"
-			onClick={onClose}
-			className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-bg/80 px-4 py-[8vh] backdrop-blur-sm"
-		>
+		<div ref={overlayRef} role="presentation" onClick={onClose} className={overlay({ sheet })}>
 			<div
 				ref={dialogRef}
 				role="dialog"
@@ -146,9 +169,10 @@ export function Dialog({
 				aria-describedby={description ? descId : undefined}
 				onClick={(event) => event.stopPropagation()}
 				onKeyDown={onKeyDown}
-				className={panel({ size, className })}
+				data-sheet={sheet || undefined}
+				className={panel({ size, sheet, className })}
 			>
-				<div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+				<div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4 max-lg:group-data-sheet/dialog:pt-[calc(env(safe-area-inset-top)+1rem)]">
 					<div className="min-w-0">
 						<h2
 							id={titleId}
@@ -199,7 +223,7 @@ export function DialogFooter({
 }) {
 	return (
 		<div
-			className={`flex flex-wrap items-center gap-2 border-t border-line px-5 py-3 ${className}`}
+			className={`flex flex-wrap items-center gap-2 border-t border-line px-5 py-3 max-lg:group-data-sheet/dialog:pb-[calc(env(safe-area-inset-bottom)+0.75rem)] ${className}`}
 		>
 			{children}
 		</div>

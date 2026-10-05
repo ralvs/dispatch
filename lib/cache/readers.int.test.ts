@@ -174,6 +174,7 @@ const INVOCATIONS: Record<string, () => Promise<unknown>> = {
 	getCachedAppTimezone: () => settings.getCachedAppTimezone(),
 	getCachedReminderSettings: () => settings.getCachedReminderSettings(),
 	getCachedTaskBoard: () => tasks.getCachedTaskBoard(SINCE_UTC),
+	getCachedTaskFormOptions: () => tasks.getCachedTaskFormOptions(),
 	getCachedTodayDigest: () => today.getCachedTodayDigest(TODAY),
 };
 
