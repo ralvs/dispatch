@@ -173,6 +173,8 @@ export const EXTERNAL_WRITES = {
 	cronCaldav: ["today.only"],
 	/** /api/calendar/bridge on success: calendar events only; quiet by design. */
 	calendarBridge: ["today.only"],
+	/** /api/mcp link tools: an assistant marking a saved link read (ADR-0079). */
+	mcpLinks: ["links.write"],
 } as const satisfies Record<string, readonly MutationKind[]>;
 
 export type ExternalWriter = keyof typeof EXTERNAL_WRITES;

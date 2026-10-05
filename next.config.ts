@@ -73,6 +73,22 @@ const nextConfig: NextConfig = {
 			static: 300,
 		},
 	},
+	// RFC 9728 discovery for the MCP endpoint (docs/adr/0079). A rewrite, not
+	// an app/.well-known folder: dot-segments are not reliably routed by the
+	// filesystem router. Both spellings are probed by real clients — the bare
+	// root, and the path-inserted one (`/.well-known/oauth-protected-resource/api/mcp`).
+	async rewrites() {
+		return [
+			{
+				source: "/.well-known/oauth-protected-resource",
+				destination: "/api/oauth/protected-resource",
+			},
+			{
+				source: "/.well-known/oauth-protected-resource/:path*",
+				destination: "/api/oauth/protected-resource",
+			},
+		];
+	},
 	async redirects() {
 		return [
 			// The unassigned-task queue is /inbox again (docs/adr/0024). It briefly

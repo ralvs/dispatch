@@ -33,9 +33,24 @@ bun run check                # biome + tsc + vitest
 _Grows per phase — sections for Supabase provisioning, iCloud app-specific
 password, VAPID keys, and PWA install land with their features._
 
+### Connect an assistant (MCP)
+
+Dispatch serves MCP tools at `https://dispatch.alves.id/api/mcp`
+(docs/adr/0079). Add that URL as a custom connector in Claude; it registers
+itself, sends you to `/oauth/consent` to sign in and approve, and then acts
+as you.
+
+One-time setup in the Supabase dashboard (the local stack reads
+`supabase/config.toml` instead):
+
+- **Authentication → OAuth Server**: enable it, set the authorization path to
+  `/oauth/consent`, and allow dynamic client registration.
+- **Authentication → URL Configuration**: Site URL `https://dispatch.alves.id`.
+- **Authentication → Sign In / Providers**: keep sign-ups off.
+
 ### The capture Shortcuts (iOS share sheet, Siri, Apple Watch)
 
-`POST /api/capture` is the only external surface (docs/adr/0022). Send it
+`POST /api/capture` is the external capture surface (docs/adr/0022); the other is the MCP endpoint `/api/mcp` (OAuth bearer, docs/adr/0079). Send it
 text; it decides what the text is:
 
 - a bare `https://…` URL → the reading list at `/links`, with the page's title
