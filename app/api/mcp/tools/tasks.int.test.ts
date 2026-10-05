@@ -10,10 +10,11 @@ import { POST } from "@/app/api/mcp/route";
 import { shiftDay } from "@/lib/dates";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { listDomains } from "@/lib/services/domains";
+import { createPerson } from "@/lib/services/people";
 import { createProject } from "@/lib/services/projects";
 import { todayForRequest } from "@/lib/services/settings";
 import { createTask } from "@/lib/services/tasks";
-import { ownerClient, serviceClient } from "@/test/integration/clients";
+import { anonClient, ownerClient, serviceClient } from "@/test/integration/clients";
 
 // The task tools through POST /api/mcp, as the owner, against the local
 // database (docs/adr/0079).
@@ -186,5 +187,68 @@ describe("MCP task tools", () => {
 				},
 			},
 		]);
+	});
+
+	it("list_tasks shows a quiet task", async () => {
+		const { sb, project } = await seed();
+		await serviceClient().from("projects").update({ status: "paused" }).eq("id", project.id);
+		await createTask(sb, { title: "Parked", project_id: project.id });
+		expect(titles((await call("list_tasks", { project: project.id })).json())).toContain("Parked");
+	});
+
+	it("update_task with project null clears the project", async () => {
+		const { soon } = await seed();
+		const result = await call("update_task", { id: soon.id, project: null });
+		expect(result.json()).toMatchObject({ project_id: null, project: null });
+	});
+
+	it("update_task appends and retitles in one call, syncs mentions, and snapshots the old note", async () => {
+		const { sb } = await seed();
+		const ana = await createPerson(sb, { name: "Ana" });
+		const t = await createTask(sb, { title: "Old", notes: "before" });
+		const result = await call("update_task", {
+			id: t.id,
+			title: "New",
+			note_append: "ask @Ana",
+			dated: false,
+		});
+		expect(result.json()).toMatchObject({ title: "New", notes: "before\nask @Ana" });
+		const { data: mentions } = await serviceClient()
+			.from("mentions")
+			.select("person_id")
+			.eq("task_id", t.id);
+		expect(mentions).toEqual([{ person_id: ana.id }]);
+		const [row] = await ledger("mcp.task.updated");
+		expect(row.undo_payload.prev).toEqual({ title: "Old", notes: "before" });
+	});
+
+	it("update_task append stops at exactly 5000 characters", async () => {
+		const { sb } = await seed();
+		const t = await createTask(sb, { title: "Cap", notes: "a" });
+		const fits = await call("update_task", {
+			id: t.id,
+			note_append: "x".repeat(4998),
+			dated: false,
+		});
+		expect(fits.isError).toBe(false);
+		expect(fits.json().notes).toHaveLength(5000);
+		const t2 = await createTask(sb, { title: "Cap2", notes: "ab" });
+		const over = await call("update_task", {
+			id: t2.id,
+			note_append: "x".repeat(4998),
+			dated: false,
+		});
+		expect(over).toMatchObject({ isError: true, text: "Note would exceed 5000 characters." });
+		expect((await call("get_task", { id: t2.id })).json().notes).toBe("ab");
+	});
+
+	it("task_notes_append is closed to anon", async () => {
+		const { loose } = await seed();
+		const { error } = await anonClient().rpc("task_notes_append", {
+			p_task_id: loose.id,
+			p_line: "x",
+			p_max: 5000,
+		});
+		expect(error).not.toBeNull();
 	});
 });
