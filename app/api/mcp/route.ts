@@ -16,8 +16,10 @@ import { createServer } from "./server";
 // path out of its matcher for the same reason.
 //
 // Stateless: a fresh server per request, closed over the owner's RLS client
-// (iron rule #3). JSON responses, no SSE stream; GET and DELETE answer 405
-// from the SDK, which is what a stateless server says.
+// (iron rule #3). `responseMode: "json"` shapes 2026-era exchanges; the SDK's
+// 2025-era stateless fallback answers each POST with a one-event SSE body,
+// which those clients expect. GET and DELETE answer 405 from the SDK, which
+// is what a stateless server says.
 // ─────────────────────────────────────────────────────────────────────────
 
 async function handle(request: Request): Promise<Response> {
