@@ -56,4 +56,19 @@ describe("ThemePicker", () => {
 		expect(root.dataset.theme).toBe("dark");
 		await waitFor(() => expect(setTheme).toHaveBeenCalledWith("system"));
 	});
+
+	it("puts the old pick back when the save fails", async () => {
+		document.documentElement.dataset.themePref = "dark";
+		document.documentElement.dataset.theme = "dark";
+		osPrefersDark(false);
+		vi.mocked(setTheme).mockRejectedValueOnce(new Error("offline"));
+		const user = userEvent.setup();
+		render(<ThemePicker />);
+		await user.click(screen.getByRole("button", { name: "System" }));
+
+		const root = document.documentElement;
+		await waitFor(() => expect(root.dataset.themePref).toBe("dark"));
+		expect(root.dataset.theme).toBe("dark");
+		expect(screen.getByRole("button", { name: "Dark" })).toHaveAttribute("aria-pressed", "true");
+	});
 });

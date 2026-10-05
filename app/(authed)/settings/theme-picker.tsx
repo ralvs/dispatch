@@ -23,10 +23,17 @@ export function ThemePicker() {
 		// listener reads `data-theme-pref`, so System keeps following the OS
 		// from here on. The cookie only has to survive until the next load.
 		const root = document.documentElement;
+		const before = { pref: root.dataset.themePref, theme: root.dataset.theme };
 		root.dataset.themePref = pref;
 		root.dataset.theme = resolveTheme(pref, matchMedia(DARK_QUERY).matches);
 		startTransition(async () => {
-			await runAction(() => setTheme(pref), "Couldn't switch theme.");
+			const saved = await runAction(() => setTheme(pref), "Couldn't switch theme.");
+			// A failed save would come back on the next load, so undo it now —
+			// unless another pick has already replaced this one.
+			if (!saved && root.dataset.themePref === pref) {
+				root.dataset.themePref = before.pref;
+				root.dataset.theme = before.theme;
+			}
 		});
 	}
 

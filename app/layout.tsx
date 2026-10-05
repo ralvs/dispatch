@@ -50,12 +50,13 @@ export const viewport: Viewport = {
 // Runs before paint so Cache Components can keep the root layout free of
 // cookies() while still avoiding a theme flash (docs/adr/0033).
 // The cookie is the pick for this device (docs/adr/0080): "light", "dark",
-// or anything else — no cookie included — which means "system". The pick goes
-// on data-theme-pref and what it resolves to on data-theme, which the CSS
-// reads. One media listener keeps System following the OS live; it reads the
-// attribute, so a later pick from settings takes effect without rebinding.
-// Mirrors lib/theme.ts — change both together.
-const THEME_BOOT = `(function(){var d=document.documentElement;try{var m=document.cookie.match(/(?:^|; )theme=([^;]*)/);var c=m&&decodeURIComponent(m[1]);var p=c==="light"||c==="dark"?c:"system";var q=matchMedia("(prefers-color-scheme: dark)");var a=function(){if(d.getAttribute("data-theme-pref")==="system")d.setAttribute("data-theme",q.matches?"dark":"light");};d.setAttribute("data-theme-pref",p);d.setAttribute("data-theme",p==="system"?(q.matches?"dark":"light"):p);q.addEventListener("change",a);}catch(e){d.setAttribute("data-theme-pref","system");d.setAttribute("data-theme","light");}})();`;
+// or anything else — no cookie, or one that will not decode — which means
+// "system". The pick goes on data-theme-pref and what it resolves to on
+// data-theme, which the CSS reads. `a` resolves from the attribute, so a later
+// pick from settings needs no rebinding. It runs on the OS change event, and
+// again on pageshow and on becoming visible, because a frozen or backgrounded
+// PWA misses the change event. Mirrors lib/theme.ts — change both together.
+const THEME_BOOT = `(function(){var d=document.documentElement;var p="system";try{var m=document.cookie.match(/(?:^|; )theme=([^;]*)/);var c=m&&decodeURIComponent(m[1]);if(c==="light"||c==="dark")p=c;}catch(e){}d.setAttribute("data-theme-pref",p);var q=null;try{q=matchMedia("(prefers-color-scheme: dark)");}catch(e){}var a=function(){var x=d.getAttribute("data-theme-pref");d.setAttribute("data-theme",x==="light"||x==="dark"?x:q&&q.matches?"dark":"light");};a();if(q){try{q.addEventListener("change",a);}catch(e){try{q.addListener(a);}catch(e2){}}}addEventListener("pageshow",a);document.addEventListener("visibilitychange",function(){if(!document.hidden)a();});})();`;
 
 /*
  * Standalone shell height. Installed on iOS, CSS viewport units cannot be
