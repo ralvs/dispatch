@@ -11,6 +11,18 @@ import { browserAuth } from "@/lib/supabase/browser";
 // scope is one space-separated string, and a request the owner already
 // granted comes back without an authorization_id and must redirect at once.
 
+/** Only a web URL may be followed; anything else (javascript:, data:) is refused. */
+function isWebUrl(url: string): boolean {
+	try {
+		const { protocol } = new URL(url);
+		return protocol === "http:" || protocol === "https:";
+	} catch {
+		return false;
+	}
+}
+
+const BAD_REDIRECT = "The assistant sent an invalid return address. Try connecting again.";
+
 type Details = { clientName: string; scopes: string[] };
 type View = "loading" | "sign-in" | "consent" | "done";
 
@@ -36,6 +48,11 @@ export function ConsentView() {
 		}
 		if (!("authorization_id" in data)) {
 			// Already granted: Supabase auto-approved, hand straight back.
+			if (!isWebUrl(data.redirect_url)) {
+				setError(BAD_REDIRECT);
+				setView("consent");
+				return;
+			}
 			setView("done");
 			window.location.replace(data.redirect_url);
 			return;
@@ -76,6 +93,11 @@ export function ConsentView() {
 			: await oauth.denyAuthorization(authorizationId);
 		if (error || !data?.redirect_url) {
 			setError("Couldn't finish the request. Try again.");
+			setDeciding(false);
+			return;
+		}
+		if (!isWebUrl(data.redirect_url)) {
+			setError(BAD_REDIRECT);
 			setDeciding(false);
 			return;
 		}

@@ -50,7 +50,7 @@ One-time setup in the Supabase dashboard (the local stack reads
 
 ### The capture Shortcuts (iOS share sheet, Siri, Apple Watch)
 
-`POST /api/capture` is the only external surface (docs/adr/0022). Send it
+`POST /api/capture` is the external capture surface (docs/adr/0022); the other is the MCP endpoint `/api/mcp` (OAuth bearer, docs/adr/0079). Send it
 text; it decides what the text is:
 
 - a bare `https://…` URL → the reading list at `/links`, with the page's title

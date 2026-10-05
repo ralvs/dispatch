@@ -12,6 +12,13 @@ describe("originOf", () => {
 		});
 		expect(originOf(req)).toBe("https://dispatch.alves.id");
 	});
+
+	it("falls back to https when the forwarded protocol is not http or https", () => {
+		const req = new Request("http://internal:3000/api/mcp", {
+			headers: { "x-forwarded-host": "dispatch.alves.id", "x-forwarded-proto": "javascript" },
+		});
+		expect(originOf(req)).toBe("https://dispatch.alves.id");
+	});
 });
 
 describe("bearerChallenge", () => {

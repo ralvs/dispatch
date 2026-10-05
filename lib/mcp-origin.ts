@@ -23,8 +23,10 @@ export function originOf(request: Request): string {
 		request.headers.get("x-forwarded-host") ??
 		request.headers.get("host") ??
 		new URL(request.url).host;
-	const proto =
+	const raw =
 		request.headers.get("x-forwarded-proto") ?? new URL(request.url).protocol.replace(":", "");
+	// Only a web scheme may reach the discovery URL; anything else is a forged header.
+	const proto = raw === "http" || raw === "https" ? raw : "https";
 	return `${proto}://${host}`;
 }
 

@@ -72,4 +72,35 @@ describe("ConsentView", () => {
 			expect(replace).toHaveBeenCalledWith("https://claude.ai/cb?error=access_denied"),
 		);
 	});
+	it("Allow approves the request and follows the returned redirect", async () => {
+		auth.getSession.mockResolvedValue(SESSION);
+		auth.oauth.getAuthorizationDetails.mockResolvedValue({
+			data: { authorization_id: "auth-1", client: { id: "c", name: "Claude" }, scope: "openid" },
+			error: null,
+		});
+		auth.oauth.approveAuthorization.mockResolvedValue({
+			data: { redirect_url: "https://claude.ai/cb?code=abc" },
+			error: null,
+		});
+		render(<ConsentView />);
+		await userEvent.click(await screen.findByRole("button", { name: "Allow" }));
+		expect(auth.oauth.approveAuthorization).toHaveBeenCalledWith("auth-1");
+		await waitFor(() => expect(replace).toHaveBeenCalledWith("https://claude.ai/cb?code=abc"));
+	});
+
+	it("refuses to follow a redirect that is not http or https", async () => {
+		auth.getSession.mockResolvedValue(SESSION);
+		auth.oauth.getAuthorizationDetails.mockResolvedValue({
+			data: { authorization_id: "auth-1", client: { id: "c", name: "Claude" }, scope: "openid" },
+			error: null,
+		});
+		auth.oauth.approveAuthorization.mockResolvedValue({
+			data: { redirect_url: "javascript:alert(1)" },
+			error: null,
+		});
+		render(<ConsentView />);
+		await userEvent.click(await screen.findByRole("button", { name: "Allow" }));
+		expect(await screen.findByRole("alert")).toBeTruthy();
+		expect(replace).not.toHaveBeenCalled();
+	});
 });
