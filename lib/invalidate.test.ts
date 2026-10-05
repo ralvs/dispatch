@@ -148,9 +148,11 @@ describe("invalidationFor", () => {
 // their overloads collide under tsc.
 const read = (file: string) => readFileSync(file, "utf8");
 const apiDir = path.resolve(import.meta.dirname, "../app/api");
-const routeSources = Object.fromEntries(
+// Every source under app/api, not only route.ts: the MCP tools write from
+// their own files (app/api/mcp/tools).
+const apiSources = Object.fromEntries(
 	readdirSync(apiDir, { recursive: true, encoding: "utf8" })
-		.filter((f) => f.endsWith("route.ts"))
+		.filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
 		.map((f) => [f, read(path.join(apiDir, f))]),
 );
 /**
@@ -160,7 +162,7 @@ const routeSources = Object.fromEntries(
  */
 describe("external writers name the writes that move their data", () => {
 	it("routes spread a declared external writer into afterExternalMutation", () => {
-		for (const [path, src] of Object.entries(routeSources)) {
+		for (const [path, src] of Object.entries(apiSources)) {
 			for (const call of src.matchAll(/afterExternalMutation\(([^)]*)\)/g)) {
 				expect(call[1], path).toMatch(/^\.\.\.EXTERNAL_WRITES\.\w+$/);
 			}
