@@ -115,6 +115,8 @@ test("Back closes the dialog", async ({ page }) => {
 
 test("the nav keeps lighting the page under the dialog", async ({ page }) => {
 	await openFromProject(page, names.task);
+	// A project lives under More. Lit first, so the nav has its pathname.
+	await expect(page.locator("[aria-current]", { hasText: "More" }).first()).toBeAttached();
 	await expect(page.locator("[aria-current]", { hasText: "Tasks" })).toHaveCount(0);
 });
 
