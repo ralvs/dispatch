@@ -2,23 +2,17 @@
 
 import { FileText, Star } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 import { ColorDot } from "@/components/color-dot";
 import { MentionChip } from "@/components/mention-chip";
-import { TaskDialog } from "@/components/task-dialog";
-import type { TaskDomainOption, TaskProjectOption } from "@/components/task-fields";
 import { Checkbox, rowTitle } from "@/components/ui";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
 import { formatDay, formatDueLabel, formatInstant, formatLateLabel } from "@/lib/dates";
-import type { MentionCandidate } from "@/lib/mentions";
 import { RECURRENCE_GLYPH, recurrenceLabel } from "@/lib/recurrence";
 import type { TaskRow } from "@/lib/services/tasks";
 import type { TaskRowHandlers } from "@/lib/task-interaction/run-intent";
 import { isOverdue, isTop3Today } from "@/lib/task-predicates";
 import { TaskNotePopover } from "./task-note-popover";
-
-export type { TaskDomainOption };
 
 /**
  * The Tasks page's row, and deliberately not Today's.
@@ -53,13 +47,9 @@ export function TaskRowItem({
 	todayIso,
 	starDateIso,
 	timeLabel,
-	domains = [],
-	projects = [],
-	manageable = true,
 	handlers,
 	noteId,
 	tz,
-	people = [],
 	mentions,
 }: {
 	task: TaskRow;
@@ -71,11 +61,6 @@ export function TaskRowItem({
 	 */
 	starDateIso?: string;
 	timeLabel?: string | null;
-	domains?: TaskDomainOption[];
-	/** Pickable projects for the edit form's filing row (shape plan §06). */
-	projects?: TaskProjectOption[];
-	/** Edit/delete only make sense on the Tasks page — Today is read-mostly. */
-	manageable?: boolean;
 	handlers: TaskRowHandlers;
 	/** Linked note id, if any — renders a quiet glyph in the meta line. */
 	noteId?: string;
@@ -85,12 +70,9 @@ export function TaskRowItem({
 	 * but does not pass tz — those rows restyle via status, not a timestamp.
 	 */
 	tz?: string;
-	/** @mention candidates (docs/adr/0030) for the edit form's title/notes autocomplete. */
-	people?: MentionCandidate[];
 	/** People already mentioned in this task — rendered as chips in the meta line. */
 	mentions?: { id: string; name: string }[];
 }) {
-	const [editing, setEditing] = useState(false);
 	const done = task.status === "done";
 	const overdue = isOverdue(task, todayIso);
 	// `isOverdue` owns the question (and knows a done task is never late);
@@ -103,16 +85,8 @@ export function TaskRowItem({
 	// say which one — "today's top 3" is a lie on Today's other days.
 	const starDay = starTarget === todayIso ? "today" : formatDay(starTarget, "utc", "cccc d LLLL");
 	const scheduled = timeLabel !== undefined;
-	const canEdit = manageable && domains.length > 0;
 	// The task's own notes field — a whitespace-only value is not a note.
 	const noteText = task.notes?.trim() || null;
-
-	function remove() {
-		if (!handlers.onDelete) return;
-		if (!window.confirm(`Delete "${task.title}"?`)) return;
-		setEditing(false);
-		handlers.onDelete();
-	}
 
 	// Body size at 400 is what DESIGN.md gives every row title; P1 takes the one
 	// step up, which is the same step Today's row takes and the only reason the
@@ -123,36 +97,11 @@ export function TaskRowItem({
 		// The `after:` pseudo-element is this row's 44px touch target, which needs
 		// the link to be its own positioned box rather than a truncating block.
 		layout: "bare",
-		className: `relative block max-w-full text-left after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] active:opacity-70 ${
-			canEdit || !manageable ? "hover:text-accent-ink" : ""
-		}`,
+		className: `relative block max-w-full text-left after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] hover:text-accent-ink active:opacity-70`,
 	});
 
 	return (
 		<li className="hairline flex min-h-12 items-center gap-3 py-3" data-task-id={task.id}>
-			{canEdit && (
-				<TaskDialog
-					open={editing}
-					onClose={() => setEditing(false)}
-					mode="edit"
-					taskId={task.id}
-					domains={domains}
-					projects={projects}
-					todayIso={todayIso}
-					people={people}
-					onDelete={handlers.onDelete ? remove : undefined}
-					defaults={{
-						title: task.title,
-						notes: task.notes,
-						due_date: task.due_date,
-						due_time: task.due_time,
-						domain_id: task.domain_id,
-						project_id: task.project_id,
-						priority: task.priority,
-						recurrence_rule: task.recurrence_rule,
-					}}
-				/>
-			)}
 			{scheduled && timeLabel && (
 				<span className="w-12 shrink-0 font-mono text-meta tabular-nums leading-none text-ink-3">
 					{timeLabel}
@@ -180,26 +129,15 @@ export function TaskRowItem({
 					    Truncation moves to the inner span so the control isn't an
 					    overflow-hidden clipping container that would clip the after:. */}
 					<span className="min-w-0">
-						{canEdit ? (
-							<button
-								type="button"
-								onClick={() => setEditing(true)}
-								className={titleClass}
-								aria-label={`Edit task "${task.title}"`}
-							>
-								<span className="block truncate">{task.title}</span>
-							</button>
-						) : (
-							// Read-mostly surfaces: the task's own URL, which opens the
-							// form over this page (docs/adr/0079).
-							<Link
-								href={`/tasks/${task.id}`}
-								className={titleClass}
-								aria-label={`Open task "${task.title}" for editing`}
-							>
-								<span className="block truncate">{task.title}</span>
-							</Link>
-						)}
+						{/* The task's own URL, which opens the form over this page, as on
+						    every other page (docs/adr/0079). */}
+						<Link
+							href={`/tasks/${task.id}`}
+							className={titleClass}
+							aria-label={`Open task "${task.title}" for editing`}
+						>
+							<span className="block truncate">{task.title}</span>
+						</Link>
 					</span>
 				</p>
 				{/* The row's description of itself, in words. The domain's dot is

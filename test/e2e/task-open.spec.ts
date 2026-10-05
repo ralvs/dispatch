@@ -91,6 +91,22 @@ test("a task link opens over the page it is on, and Save returns to it", async (
 	await page.waitForURL(`**/projects/${ids.project}`);
 	await expect(page.getByRole("link", { name: names.renamed, exact: true })).toBeVisible();
 	names.task = names.renamed;
+
+	// Open again from the same page: the router replays its older render of
+	// the dialog, and the form must still show what was saved.
+	await page.locator(`a[href="/tasks/${ids.task}"]`).click();
+	await expect(editDialog(page).getByLabel("Task title")).toHaveValue(names.renamed);
+});
+
+test("on the Tasks board a row opens the same way, over the board", async ({ page }) => {
+	await page.goto("/tasks");
+	await page.locator(`a[href="/tasks/${ids.task}"]`).first().click();
+	await expect(editDialog(page).getByLabel("Task title")).toHaveValue(names.task);
+	expect(new URL(page.url()).pathname).toBe(`/tasks/${ids.task}`);
+
+	await editDialog(page).getByRole("button", { name: "Cancel" }).click();
+	await page.waitForURL(/\/tasks(\?.*)?$/);
+	await expect(editDialog(page)).toHaveCount(0);
 });
 
 test("Delete removes the task and returns to the page", async ({ page }) => {

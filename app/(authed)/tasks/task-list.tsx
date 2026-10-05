@@ -5,12 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { TaskDialog } from "@/components/task-dialog";
 import type { TaskDomainOption, TaskProjectOption } from "@/components/task-fields";
 import { EmptyState, PageHeader, SectionHead, StatBand } from "@/components/ui";
-import {
-	completeTaskAction,
-	deleteTaskAction,
-	reopenTaskAction,
-	setTop3Action,
-} from "@/lib/actions/tasks";
+import { completeTaskAction, reopenTaskAction, setTop3Action } from "@/lib/actions/tasks";
 import { dateOfInstant, recentDoneSinceDate } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { isQuiet } from "@/lib/quiet";
@@ -137,7 +132,6 @@ export function TaskList({
 				complete: completeTaskAction,
 				reopen: reopenTaskAction,
 				setTop3: setTop3Action,
-				delete: deleteTaskAction,
 			},
 			{ top3DateIso: todayIso, todayIso },
 		);
@@ -274,11 +268,8 @@ export function TaskList({
 										key={t.id}
 										task={t}
 										todayIso={todayIso}
-										domains={domains}
-										projects={projects ?? []}
 										handlers={handlersFor(t)}
 										noteId={taskNoteIds?.[t.id]}
-										people={people}
 										mentions={taskMentions?.[t.id]}
 									/>
 								))}
@@ -301,11 +292,8 @@ export function TaskList({
 										key={t.id}
 										task={t}
 										todayIso={todayIso}
-										domains={domains}
-										projects={projects ?? []}
 										handlers={handlersFor(t)}
 										noteId={taskNoteIds?.[t.id]}
-										people={people}
 										mentions={taskMentions?.[t.id]}
 									/>
 								))}
@@ -322,11 +310,8 @@ export function TaskList({
 										key={t.id}
 										task={t}
 										todayIso={todayIso}
-										domains={domains}
-										projects={projects ?? []}
 										handlers={handlersFor(t)}
 										noteId={taskNoteIds?.[t.id]}
-										people={people}
 										mentions={taskMentions?.[t.id]}
 										tz={tz}
 									/>
@@ -349,11 +334,8 @@ export function TaskList({
 									key={t.id}
 									task={t}
 									todayIso={todayIso}
-									domains={domains}
-									projects={projects ?? []}
 									handlers={handlersFor(t)}
 									noteId={taskNoteIds?.[t.id]}
-									people={people}
 									mentions={taskMentions?.[t.id]}
 								/>
 							))}
@@ -376,11 +358,8 @@ export function TaskList({
 									key={t.id}
 									task={t}
 									todayIso={todayIso}
-									domains={domains}
-									projects={projects ?? []}
 									handlers={handlersFor(t)}
 									noteId={taskNoteIds?.[t.id]}
-									people={people}
 									mentions={taskMentions?.[t.id]}
 								/>
 							))}
@@ -403,11 +382,8 @@ export function TaskList({
 									key={t.id}
 									task={t}
 									todayIso={todayIso}
-									domains={domains}
-									projects={projects ?? []}
 									handlers={handlersFor(t)}
 									noteId={taskNoteIds?.[t.id]}
-									people={people}
 									mentions={taskMentions?.[t.id]}
 								/>
 							))}
