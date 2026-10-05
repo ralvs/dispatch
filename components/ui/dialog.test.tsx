@@ -4,14 +4,14 @@ import { useState } from "react";
 import { describe, expect, it } from "vitest";
 import { Dialog, DialogBody } from "./dialog";
 
-function Harness() {
+function Harness({ sheet = false }: { sheet?: boolean }) {
 	const [open, setOpen] = useState(false);
 	return (
 		<>
 			<button type="button" onClick={() => setOpen(true)}>
 				New project
 			</button>
-			<Dialog open={open} onClose={() => setOpen(false)} title="New project">
+			<Dialog open={open} onClose={() => setOpen(false)} title="New project" sheet={sheet}>
 				<DialogBody>
 					<input aria-label="Name" />
 				</DialogBody>
@@ -51,5 +51,25 @@ describe("Dialog", () => {
 
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "New project" })).toHaveFocus();
+	});
+
+	// The phone layout is a class change; the modal contract must not move with it.
+	it("as a sheet, still traps the page behind it and closes on Escape", async () => {
+		const user = userEvent.setup();
+		render(<Harness sheet />);
+		const trigger = screen.getByRole("button", { name: "New project" });
+
+		await user.click(trigger);
+		const dialog = screen.getByRole("dialog", { name: "New project" });
+		expect(dialog).toHaveAttribute("data-sheet");
+		expect(trigger.closest("[inert]")).not.toBeNull();
+		await waitFor(() =>
+			expect(screen.getByRole("button", { name: "Close new project" })).toHaveFocus(),
+		);
+
+		await user.keyboard("{Escape}");
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+		expect(trigger.closest("[inert]")).toBeNull();
+		expect(trigger).toHaveFocus();
 	});
 });
