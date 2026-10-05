@@ -60,6 +60,13 @@ origin) are the lineage here.
    UPDATE and refuses past 5,000 characters, so two appends at once both
    survive.
 
+   Notes: `list_notes`, `get_note`, `create_note` and `update_note`. A search
+   matches a title, or the body of an untitled note. `update_note`'s `append`
+   goes through `note_body_append`, the same one-UPDATE function without a
+   cap, and re-syncs the note's wikilinks and mentions. Known limit: a note
+   open in the editor autosaves its stale body over an MCP edit, so `append`
+   is the safe update and `body` overwrites.
+
 ## Consequences
 
 - Revoking a grant in Supabase does not stop it at once: `getClaims` verifies
