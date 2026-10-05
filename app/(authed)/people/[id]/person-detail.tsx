@@ -286,7 +286,7 @@ function MentionedInSection({
 				{tasks.map((task) => (
 					<ListRow key={`task-${task.id}`}>
 						<Link
-							href={`/tasks?edit=${task.id}`}
+							href={`/tasks/${task.id}`}
 							className={rowTitle({ className: "hover:text-accent-ink" })}
 						>
 							{task.title}

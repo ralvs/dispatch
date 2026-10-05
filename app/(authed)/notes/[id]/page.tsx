@@ -152,7 +152,7 @@ async function LinkSections({ noteId }: { noteId: string }) {
 							>
 								{task ? (
 									<Link
-										href={`/tasks?edit=${task.id}`}
+										href={`/tasks/${task.id}`}
 										className={rowTitle({ className: "hover:text-accent-ink" })}
 									>
 										{task.title}

@@ -67,7 +67,7 @@ export function ProjectRowItem({
 				<ul className="mt-1.5 space-y-0.5">
 					{shown.map((t) => (
 						<li key={t.id} className="truncate text-sm text-ink-3">
-							<Link href={`/tasks?edit=${t.id}`} className="hover:text-accent-ink">
+							<Link href={`/tasks/${t.id}`} className="hover:text-accent-ink">
 								{t.title}
 							</Link>
 						</li>

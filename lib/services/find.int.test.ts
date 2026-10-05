@@ -35,7 +35,7 @@ describe("find against the local database", () => {
 
 		expect(result.recents).toBe(false);
 		expect(result.tasks).toMatchObject([
-			{ id: byNotes.id, field: "notes", href: `/tasks?edit=${byNotes.id}` },
+			{ id: byNotes.id, field: "notes", href: `/tasks/${byNotes.id}` },
 		]);
 		expect(result.tasks[0]?.snippet).toContain("Dentista");
 		expect(result.notes).toMatchObject([
