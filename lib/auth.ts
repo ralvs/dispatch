@@ -1,11 +1,13 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
-import type { JwtPayload, SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type JwtPayload, type SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import { cache } from "react";
 import { env } from "@/lib/env";
+import { bearerChallenge, MCP_CORS, originOf } from "@/lib/mcp-origin";
+import { bearerToken } from "@/lib/secret-auth";
 import { AUTH_COOKIE_OPTIONS } from "@/lib/supabase/cookie-options";
 
 /**
@@ -130,4 +132,45 @@ export function ownerRoute<Args extends unknown[]>(
 		if (auth instanceof NextResponse) return auth;
 		return handler(request, auth, ...args);
 	};
+}
+
+/**
+ * The boundary for the MCP endpoint (docs/adr/0079): the request carries an
+ * OAuth access token that Supabase Auth issued to an MCP client after the
+ * owner approved it on /oauth/consent. It is an ordinary access token for the
+ * owner, so it is verified the way a session is (getClaims, docs/adr/0031)
+ * and checked against the same owner allowlist.
+ *
+ * Never reads cookies. A browser that happens to be signed in to Dispatch
+ * must not authorize an MCP call it did not present a token for, so the RLS
+ * client is built from the bearer token alone and holds no session.
+ *
+ * A grant revoked in Supabase keeps working until its access token expires
+ * (`jwt_expiry`, an hour): getClaims verifies the signature locally and does
+ * not ask Auth whether the session still exists.
+ *
+ *   const auth = await requireOwnerBearer(request);
+ *   if (auth instanceof Response) return auth;
+ */
+export async function requireOwnerBearer(request: Request): Promise<OwnerAuth | Response> {
+	const token = bearerToken(request);
+	const e = env();
+	if (token && e.NEXT_PUBLIC_SUPABASE_URL && e.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+		const sb = createClient(e.NEXT_PUBLIC_SUPABASE_URL, e.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
+			global: { headers: { Authorization: `Bearer ${token}` } },
+			auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+		});
+		// `data` is null both for a bad signature and for an expired token.
+		const { data } = await sb.auth.getClaims(token);
+		const claims = data?.claims ?? null;
+		if (isOwner(claims)) return { claims, sb };
+	}
+	// One answer for every denial, so a caller cannot tell which check failed.
+	return NextResponse.json(
+		{ error: "Unauthorized" },
+		{
+			status: 401,
+			headers: { ...MCP_CORS, "WWW-Authenticate": bearerChallenge(originOf(request)) },
+		},
+	);
 }

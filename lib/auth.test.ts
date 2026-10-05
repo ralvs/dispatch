@@ -171,3 +171,23 @@ describe("ownerRoute", () => {
 		expect(response.status).toBe(401);
 	});
 });
+
+describe("requireOwnerBearer", () => {
+	beforeEach(() => {
+		vi.resetModules();
+	});
+
+	it("answers 401 with the discovery challenge and CORS when no token is sent", async () => {
+		const { requireOwnerBearer } = await import("@/lib/auth");
+		const res = await requireOwnerBearer(
+			new Request("https://dispatch.example/api/mcp", { method: "POST" }),
+		);
+		expect(res).toBeInstanceOf(Response);
+		const r = res as Response;
+		expect(r.status).toBe(401);
+		expect(r.headers.get("WWW-Authenticate")).toBe(
+			'Bearer resource_metadata="https://dispatch.example/.well-known/oauth-protected-resource"',
+		);
+		expect(r.headers.get("Access-Control-Allow-Origin")).toBe("*");
+	});
+});
