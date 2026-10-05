@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { registerLinkTools } from "./tools/links";
+import { registerTaskTools } from "./tools/tasks";
 
 /**
  * One MCP server per request, closed over the owner's RLS client (iron rule
@@ -10,5 +11,6 @@ import { registerLinkTools } from "./tools/links";
 export function createServer(sb: SupabaseClient): McpServer {
 	const server = new McpServer({ name: "dispatch", version: "1.0.0" });
 	registerLinkTools(server, sb);
+	registerTaskTools(server, sb);
 	return server;
 }
