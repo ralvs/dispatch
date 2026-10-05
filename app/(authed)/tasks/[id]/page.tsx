@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { TaskEditor, TaskEditorLoading, TaskEditorProblem } from "@/components/task-editor";
+import { Seed } from "@/lib/store/seed";
 import { readTaskToOpen } from "@/lib/task-interaction/open-task";
 import { TasksBody, TasksFallback } from "../tasks-body";
 
@@ -16,14 +17,16 @@ async function OpenTask({ params }: { params: Params }) {
 	const open = await readTaskToOpen((await params).id);
 	if (!open) return <TaskEditorProblem exit="tasks" />;
 	return (
-		<TaskEditor
-			task={open.task}
-			domains={open.domains}
-			projects={open.projects}
-			people={open.people}
-			todayIso={open.todayIso}
-			exit="tasks"
-		/>
+		<Seed snapshot={open.snapshot}>
+			<TaskEditor
+				taskId={open.task.id}
+				domains={open.domains}
+				projects={open.projects}
+				people={open.people}
+				todayIso={open.todayIso}
+				exit="tasks"
+			/>
+		</Seed>
 	);
 }
 

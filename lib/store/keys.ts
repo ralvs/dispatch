@@ -8,6 +8,8 @@ export const viewKey = {
 	/** The /projects board: every task tagged with a project that was open at read, and any added since. */
 	projectBoardTasks: () => "projectBoardTasks" as ViewKey<"taskList">,
 	inbox: () => "inbox" as ViewKey<"taskList">,
+	/** A task opened by its URL (docs/adr/0079): a list of one, with no scope, so nothing new joins it. */
+	task: (id: string) => `task:${id}` as ViewKey<"taskList">,
 	notifications: () => "notifications" as ViewKey<"notificationList">,
 	notes: () => "notes" as ViewKey<"noteLists">,
 	/** One list for Today's card and /routines: the same rows, the same order. */

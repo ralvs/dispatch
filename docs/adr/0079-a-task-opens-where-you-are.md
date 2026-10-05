@@ -43,13 +43,19 @@ appears.
    the task's own domain and project when the cached lists lack them: a select
    with no option for the stored value submits nothing, and Save would unfile
    the task.
+   The row also seeds the entity store (ADR-0069) as a list of one,
+   `viewKey.task(id)`, stamped with its read, and the form reads it from
+   there. The router replays its older render of the dialog when you open the
+   same task again; an edit made in this tab since is newer than that read,
+   so it wins, and the form shows what you saved. Nothing is refetched.
 6. **On a phone the task form is a full-screen sheet.** `Dialog` takes
    `sheet`: the whole screen below `lg`, the centred dialog over a blurred
    backdrop from `lg` up. `TaskDialog` always passes it, so every task form
    behaves the same. Other dialogs do not change.
 
-Rows on `/tasks` keep their in-place dialog. They already hold the row and the
-options, so they open with no request.
+Rows on `/tasks` open the same way: the title is the task's own URL, and the
+form opens over the board. One way to open a task, everywhere. It costs one
+render of the slot, where the old in-place dialog cost none.
 
 ## Consequences
 
@@ -59,6 +65,5 @@ options, so they open with no request.
 - A task has a URL that can be shared and reloaded.
 - `TaskList` no longer opens a row from the address, and its filter mirror
   leaves the address alone while it is `/tasks/<id>`.
-- This amends ADR-0040 Decision 2: the entry points are the header's `+`, a
-  row's title on `/tasks`, and the task's own URL, which opens on the page you
-  are on.
+- This amends ADR-0040 Decision 2: the entry points are the header's `+`
+  (create) and the task's own URL (edit), which opens on the page you are on.

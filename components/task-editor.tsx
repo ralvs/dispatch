@@ -14,7 +14,7 @@ import {
 } from "@/components/ui";
 import { deleteTaskAction } from "@/lib/actions/tasks";
 import type { MentionCandidate } from "@/lib/mentions";
-import type { TaskRow } from "@/lib/services/tasks";
+import { useView, viewKey } from "@/lib/store";
 import { useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
 
 /**
@@ -26,6 +26,10 @@ import { useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
  * whatever page the link was on, so closing goes `back` to that page. The
  * hard-load one (`tasks/[id]`) opens over the Tasks board, so closing goes to
  * `/tasks`, the list already behind it.
+ *
+ * The row comes from the entity store (docs/adr/0069), where both routes seed
+ * it as a list of one (`viewKey.task`): an edit made in this tab wins over the
+ * router's older copy of the render, so the form never reopens on old values.
  */
 
 export type TaskEditorExit = "back" | "tasks";
@@ -36,14 +40,14 @@ function useExit(exit: TaskEditorExit) {
 }
 
 export function TaskEditor({
-	task,
+	taskId,
 	domains,
 	projects,
 	people,
 	todayIso,
 	exit,
 }: {
-	task: TaskRow;
+	taskId: string;
 	domains: TaskDomainOption[];
 	projects: TaskProjectOption[];
 	people: MentionCandidate[];
@@ -57,9 +61,13 @@ export function TaskEditor({
 	// state and all, and shows it again when you come back: a `closed` flag
 	// set on the way out was still set on the way back in, so opening the same
 	// task a second time from Today showed nothing.
-	const open = usePathname() === `/tasks/${task.id}`;
+	const open = usePathname() === `/tasks/${taskId}`;
+	// Empty only once this tab deleted it, while the way out is under way.
+	const task = useView(viewKey.task(taskId))?.[0];
+	if (!task) return null;
 
 	function remove() {
+		if (!task) return;
 		if (!window.confirm(`Delete "${task.title}"?`)) return;
 		run({ type: "delete", id: task.id }, () => deleteTaskAction(task.id));
 		leave();

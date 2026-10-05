@@ -6,6 +6,8 @@ import { requireOwnerPage } from "@/lib/auth";
 import { readClock } from "@/lib/cache/settings";
 import { getCachedTaskFormOptions } from "@/lib/cache/tasks";
 import { getTask, type TaskRow } from "@/lib/services/tasks";
+import { viewKey } from "@/lib/store/keys";
+import { seedOf, stampRead } from "@/lib/store/server";
 
 /**
  * Everything a task opened by its own URL needs (docs/adr/0079), for the two
@@ -13,7 +15,13 @@ import { getTask, type TaskRow } from "@/lib/services/tasks";
  *
  * The row is read uncached, one query, like a note's body: it is the thing
  * being edited, so a stale copy would seed the form with an old title. The
- * option lists are cached. `task` is null for an id that is not a task.
+ * option lists are cached. Null for an id that is not a task.
+ *
+ * The row also goes out as `snapshot`, a list of one in the entity store
+ * (docs/adr/0069), and the form reads it from there. The router keeps this
+ * render for a while and replays it when you open the task again, so the
+ * row in it can be older than an edit made since in this tab. Stamped with
+ * its read, it loses to that edit, and the form shows what you saved.
  *
  * `cache`: the page and its generateMetadata both ask, and should pay once.
  */
@@ -22,13 +30,17 @@ export const readTaskToOpen = cache(async (rawId: string) => {
 	// Security boundary first (iron rule #2): the options are a service-role read.
 	const { sb } = await requireOwnerPage();
 	if (!id.success) return null;
-	const [task, options, clock] = await Promise.all([
-		getTask(sb, id.data),
+	const [read, options, clock] = await Promise.all([
+		stampRead(() => getTask(sb, id.data)),
 		getCachedTaskFormOptions(),
 		readClock(),
 	]);
+	const task = read.data;
 	if (!task) return null;
-	return { task, ...withOwnFiling(task, options), todayIso: clock.todayIso };
+	const snapshot = seedOf(read, clock, {
+		views: [{ key: viewKey.task(task.id), type: "taskList", data: { rows: [task] } }],
+	});
+	return { task, snapshot, ...withOwnFiling(task, options), todayIso: clock.todayIso };
 });
 
 type FormOptions = Awaited<ReturnType<typeof getCachedTaskFormOptions>>;
