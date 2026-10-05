@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { TaskDialog } from "@/components/task-dialog";
 import type { TaskDomainOption, TaskProjectOption } from "@/components/task-fields";
@@ -46,7 +45,6 @@ export function TaskList({
 	todayIso,
 	domains,
 	projects,
-	editTaskId,
 	initialStatus,
 	initialProjectId,
 	initialDomainId,
@@ -64,8 +62,6 @@ export function TaskList({
 	 * narrow's filter options are no longer a wide enough shape to pass on.
 	 */
 	projects?: TaskProjectOption[];
-	/** From `?edit=` — opens that row's form and cleans the URL. */
-	editTaskId?: string | null;
 	/** From `?status=` — initial value only; every later change is client state. */
 	initialStatus?: string;
 	/** From `?project=` — same deep-link contract as initialStatus. */
@@ -84,7 +80,6 @@ export function TaskList({
 	quietProjectIds?: string[];
 }) {
 	const quietProjects = useMemo(() => new Set(quietProjectIds), [quietProjectIds]);
-	const router = useRouter();
 	const lists = useView(viewKey.tasks()) ?? NO_LISTS;
 	const run = useTaskIntentRunner();
 	// Unfiled open tasks — the header's link to /inbox. From the store, so
@@ -126,21 +121,13 @@ export function TaskList({
 	// Client state is the source of truth from here on; the URL just mirrors
 	// it so the current view stays shareable (history.replaceState, not a
 	// navigation — filtering is instant and shouldn't add history entries).
+	// Not while the address is a task's own (`/tasks/<id>`, docs/adr/0079): the
+	// board is the page behind that dialog, and the address belongs to it.
 	useEffect(() => {
+		if (window.location.pathname !== "/tasks") return;
 		const qs = filterQuery(status, projectId, domainId);
 		window.history.replaceState(null, "", `/tasks${qs}`);
 	}, [status, projectId, domainId]);
-
-	// Drop the deep-link query so a refresh doesn't re-force the form open.
-	// Preserves whatever filter query is currently live rather than a bare
-	// "/tasks" replace, which would otherwise clobber it on the same tick.
-	// Deliberately editTaskId-only: this fires once for the deep link, not on
-	// every later filter change (the effect above already handles that).
-	// biome-ignore lint/correctness/useExhaustiveDependencies: status/projectId/domainId read at fire time on purpose, not tracked as triggers
-	useEffect(() => {
-		if (!editTaskId) return;
-		router.replace(`/tasks${filterQuery(status, projectId, domainId)}`, { scroll: false });
-	}, [editTaskId, router]);
 
 	function handlersFor(task: TaskRow) {
 		return bindTaskHandlers(
@@ -289,7 +276,6 @@ export function TaskList({
 										todayIso={todayIso}
 										domains={domains}
 										projects={projects ?? []}
-										initialEditing={editTaskId === t.id}
 										handlers={handlersFor(t)}
 										noteId={taskNoteIds?.[t.id]}
 										people={people}
@@ -317,7 +303,6 @@ export function TaskList({
 										todayIso={todayIso}
 										domains={domains}
 										projects={projects ?? []}
-										initialEditing={editTaskId === t.id}
 										handlers={handlersFor(t)}
 										noteId={taskNoteIds?.[t.id]}
 										people={people}
@@ -339,7 +324,6 @@ export function TaskList({
 										todayIso={todayIso}
 										domains={domains}
 										projects={projects ?? []}
-										initialEditing={editTaskId === t.id}
 										handlers={handlersFor(t)}
 										noteId={taskNoteIds?.[t.id]}
 										people={people}
@@ -367,7 +351,6 @@ export function TaskList({
 									todayIso={todayIso}
 									domains={domains}
 									projects={projects ?? []}
-									initialEditing={editTaskId === t.id}
 									handlers={handlersFor(t)}
 									noteId={taskNoteIds?.[t.id]}
 									people={people}
@@ -395,7 +378,6 @@ export function TaskList({
 									todayIso={todayIso}
 									domains={domains}
 									projects={projects ?? []}
-									initialEditing={editTaskId === t.id}
 									handlers={handlersFor(t)}
 									noteId={taskNoteIds?.[t.id]}
 									people={people}
@@ -423,7 +405,6 @@ export function TaskList({
 									todayIso={todayIso}
 									domains={domains}
 									projects={projects ?? []}
-									initialEditing={editTaskId === t.id}
 									handlers={handlersFor(t)}
 									noteId={taskNoteIds?.[t.id]}
 									people={people}

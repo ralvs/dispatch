@@ -2,7 +2,7 @@
 
 import { FileText, Star } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { ColorDot } from "@/components/color-dot";
 import { MentionChip } from "@/components/mention-chip";
 import { TaskDialog } from "@/components/task-dialog";
@@ -56,7 +56,6 @@ export function TaskRowItem({
 	domains = [],
 	projects = [],
 	manageable = true,
-	initialEditing = false,
 	handlers,
 	noteId,
 	tz,
@@ -77,8 +76,6 @@ export function TaskRowItem({
 	projects?: TaskProjectOption[];
 	/** Edit/delete only make sense on the Tasks page — Today is read-mostly. */
 	manageable?: boolean;
-	/** Open the edit form on mount (deep-link from Today via `?edit=`). */
-	initialEditing?: boolean;
 	handlers: TaskRowHandlers;
 	/** Linked note id, if any — renders a quiet glyph in the meta line. */
 	noteId?: string;
@@ -93,8 +90,7 @@ export function TaskRowItem({
 	/** People already mentioned in this task — rendered as chips in the meta line. */
 	mentions?: { id: string; name: string }[];
 }) {
-	const [editing, setEditing] = useState(initialEditing);
-	const rowRef = useRef<HTMLLIElement>(null);
+	const [editing, setEditing] = useState(false);
 	const done = task.status === "done";
 	const overdue = isOverdue(task, todayIso);
 	// `isOverdue` owns the question (and knows a done task is never late);
@@ -110,13 +106,6 @@ export function TaskRowItem({
 	const canEdit = manageable && domains.length > 0;
 	// The task's own notes field — a whitespace-only value is not a note.
 	const noteText = task.notes?.trim() || null;
-
-	// The row stays in place behind the dialog, so bring it into view rather
-	// than leaving the deep-linked task somewhere off-screen underneath.
-	useEffect(() => {
-		if (!initialEditing || !editing) return;
-		rowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
-	}, [initialEditing, editing]);
 
 	function remove() {
 		if (!handlers.onDelete) return;
@@ -140,11 +129,7 @@ export function TaskRowItem({
 	});
 
 	return (
-		<li
-			ref={rowRef}
-			className="hairline flex min-h-12 items-center gap-3 py-3"
-			data-task-id={task.id}
-		>
+		<li className="hairline flex min-h-12 items-center gap-3 py-3" data-task-id={task.id}>
 			{canEdit && (
 				<TaskDialog
 					open={editing}
@@ -205,9 +190,10 @@ export function TaskRowItem({
 								<span className="block truncate">{task.title}</span>
 							</button>
 						) : (
-							// Today (and other read-mostly surfaces): jump to Tasks with this row open.
+							// Read-mostly surfaces: the task's own URL, which opens the
+							// form over this page (docs/adr/0079).
 							<Link
-								href={`/tasks?edit=${task.id}`}
+								href={`/tasks/${task.id}`}
 								className={titleClass}
 								aria-label={`Open task "${task.title}" for editing`}
 							>

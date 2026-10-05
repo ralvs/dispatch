@@ -1,5 +1,5 @@
 import "server-only";
-import { cachedRead, type Readers } from "@/lib/cache/reader";
+import { cachedRead, cachedValue, type Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
 import { listDomains } from "@/lib/services/domains";
 import { listMentionsForSources } from "@/lib/services/mentions";
@@ -54,7 +54,29 @@ async function readTaskBoard(sinceUtc: string) {
 	return { openTasks, doneTasks, domains, projects, people, taskNoteIds, taskMentions };
 }
 
+/**
+ * What the task form offers, for a task opened by its own URL (docs/adr/0079):
+ * the domains, the projects and the @mention candidates. The board above
+ * carries the same lists; this is them without the rows.
+ */
+export async function getCachedTaskFormOptions() {
+	"use cache";
+	return cachedValue(readers.getCachedTaskFormOptions, async () => {
+		const sb = createAdminClient();
+		const [domains, projects, people] = await Promise.all([
+			listDomains(sb),
+			listProjects(sb),
+			listMentionCandidates(sb),
+		]);
+		return { domains, projects, people };
+	});
+}
+
 export const readers = {
+	getCachedTaskFormOptions: {
+		tags: [CacheTag.domains, CacheTag.projects, CacheTag.people],
+		tables: ["stewardship_domains", "projects", "people"],
+	},
 	getCachedTaskBoard: {
 		// `tasks` covers the domains on task rows and their mentions; `notes`
 		// covers which tasks have notes linked to them.
