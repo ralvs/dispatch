@@ -67,6 +67,16 @@ describe("Dialog", () => {
 			expect(screen.getByRole("button", { name: "Close new project" })).toHaveFocus(),
 		);
 
+		// The trap: Tab from the last control wraps to the first, and back.
+		const close = screen.getByRole("button", { name: "Close new project" });
+		const name = screen.getByRole("textbox", { name: "Name" });
+		await user.tab();
+		expect(name).toHaveFocus();
+		await user.tab();
+		expect(close).toHaveFocus();
+		await user.tab({ shift: true });
+		expect(name).toHaveFocus();
+
 		await user.keyboard("{Escape}");
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 		expect(trigger.closest("[inert]")).toBeNull();

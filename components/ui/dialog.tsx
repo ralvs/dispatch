@@ -43,9 +43,10 @@ const panel = tv({
 			false: "max-h-[85dvh] rounded-card border border-line-strong elevation-overlay",
 			// `h-full` of a `fixed inset-0` overlay, never a viewport unit: an
 			// installed iOS PWA resolves those against a stale viewport (see
-			// .app-shell in app/globals.css). The safe-area insets go on the
-			// header and footer, which are the parts that touch the edges.
-			true: "h-full max-lg:max-w-none lg:h-auto lg:max-h-[85dvh] lg:rounded-card lg:border lg:border-line-strong lg:shadow-overlay",
+			// .app-shell in app/globals.css). The safe-area insets go where the
+			// sheet meets an edge: top and bottom on the header and footer, the
+			// sides on the panel (a phone held sideways).
+			true: "h-full max-lg:max-w-none max-lg:pr-[env(safe-area-inset-right)] max-lg:pl-[env(safe-area-inset-left)] lg:h-auto lg:max-h-[85dvh] lg:rounded-card lg:border lg:border-line-strong lg:shadow-overlay",
 		},
 	},
 	defaultVariants: {

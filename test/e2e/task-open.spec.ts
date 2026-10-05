@@ -22,8 +22,9 @@ const names = {
 	task: `E2E open task ${stamp}`,
 	renamed: `E2E open task renamed ${stamp}`,
 	quiet: `E2E quiet task ${stamp}`,
+	doomed: `E2E doomed task ${stamp}`,
 };
-const ids = { domain: "", project: "", paused: "", task: "", quiet: "" };
+const ids = { domain: "", project: "", paused: "", task: "", quiet: "", doomed: "" };
 
 async function insert(table: string, row: Record<string, unknown>): Promise<string> {
 	const { data, error } = await sb.from(table).insert([row]).select("id").single();
@@ -44,6 +45,11 @@ test.beforeAll(async () => {
 		domain_id: ids.domain,
 		project_id: ids.project,
 	});
+	ids.doomed = await insert("tasks", {
+		title: names.doomed,
+		domain_id: ids.domain,
+		project_id: ids.project,
+	});
 	// Undated, in a paused project: quiet, so not on the board's default view —
 	// the case where `?edit=` never opened anything.
 	ids.quiet = await insert("tasks", {
@@ -54,21 +60,21 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-	await sb.from("tasks").delete().in("id", [ids.task, ids.quiet]);
+	await sb.from("tasks").delete().in("id", [ids.task, ids.quiet, ids.doomed]);
 	await sb.from("projects").delete().in("id", [ids.project, ids.paused]);
 	await sb.from("stewardship_domains").delete().eq("id", ids.domain);
 });
 
 const editDialog = (page: Page) => page.getByRole("dialog", { name: "Edit task" });
 
-async function openFromProject(page: Page, title: string) {
+async function openFromProject(page: Page, title: string, id = ids.task) {
 	await page.goto(`/projects/${ids.project}`);
 	// By address, not name: a write busts the project's cache stale-while-
 	// revalidate, so the next load may still draw the old title.
-	await page.locator(`a[href="/tasks/${ids.task}"]`).click();
+	await page.locator(`a[href="/tasks/${id}"]`).click();
 	// The dialog reads the row uncached, so it always has the current one.
 	await expect(editDialog(page).getByLabel("Task title")).toHaveValue(title);
-	expect(new URL(page.url()).pathname).toBe(`/tasks/${ids.task}`);
+	expect(new URL(page.url()).pathname).toBe(`/tasks/${id}`);
 	// The project is still the page under the dialog.
 	await expect(page.getByRole("heading", { name: names.project, level: 1 })).toBeAttached();
 }
@@ -85,6 +91,19 @@ test("a task link opens over the page it is on, and Save returns to it", async (
 	await page.waitForURL(`**/projects/${ids.project}`);
 	await expect(page.getByRole("link", { name: names.renamed, exact: true })).toBeVisible();
 	names.task = names.renamed;
+});
+
+test("Delete removes the task and returns to the page", async ({ page }) => {
+	await openFromProject(page, names.doomed, ids.doomed);
+	page.once("dialog", (confirm) => confirm.accept());
+	await editDialog(page).getByRole("button", { name: "Delete" }).click();
+
+	await page.waitForURL(`**/projects/${ids.project}`);
+	await expect(editDialog(page)).toHaveCount(0);
+	await expect(page.locator(`a[href="/tasks/${ids.doomed}"]`)).toHaveCount(0);
+	await expect
+		.poll(async () => (await sb.from("tasks").select("id").eq("id", ids.doomed)).data?.length)
+		.toBe(0);
 });
 
 test("Back closes the dialog", async ({ page }) => {
@@ -129,6 +148,8 @@ test("the old ?edit= address goes to the task's own", async ({ page }) => {
 test("a phone gets the whole screen; a desktop gets the dialog", async ({ page }) => {
 	await page.setViewportSize({ width: 393, height: 852 });
 	await page.goto(`/tasks/${ids.quiet}`);
+	// Measured once the form is in, not while the loading frame stands in.
+	await expect(editDialog(page).getByLabel("Task title")).toHaveValue(names.quiet);
 	const sheet = await editDialog(page).boundingBox();
 	expect(sheet).toMatchObject({ x: 0, y: 0, width: 393, height: 852 });
 
@@ -136,4 +157,9 @@ test("a phone gets the whole screen; a desktop gets the dialog", async ({ page }
 	const dialog = await editDialog(page).boundingBox();
 	expect(dialog?.width).toBeLessThan(1280);
 	expect(dialog?.y).toBeGreaterThan(0);
+	// The page behind is blurred, not just dimmed.
+	const backdrop = await editDialog(page).evaluate(
+		(el) => getComputedStyle(el.parentElement as HTMLElement).backdropFilter,
+	);
+	expect(backdrop).toMatch(/blur/);
 });
