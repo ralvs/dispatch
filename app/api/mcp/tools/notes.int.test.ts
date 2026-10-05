@@ -165,8 +165,13 @@ describe("MCP note tools", () => {
 		expect(body.split("\n").sort()).toEqual([`${today} — one`, "tomatoes", "two"].sort());
 		const rows = await ledger("mcp.note.updated");
 		expect(rows).toHaveLength(2);
-		const prevs = rows.map((r) => r.undo_payload.prev.body).sort();
+		// Each row holds the body its own append replaced: the original for the
+		// first to land, the original plus that line for the second.
+		const prevs = rows.map((r) => r.undo_payload.prev.body as string);
+		expect(prevs[0]).not.toBe(prevs[1]);
 		expect(prevs).toContain("tomatoes");
+		const other = prevs.find((p) => p !== "tomatoes");
+		expect([`tomatoes\n${today} — one`, "tomatoes\ntwo"]).toContain(other);
 	});
 
 	it("update_note append syncs a mention and a wikilink", async () => {
@@ -188,6 +193,53 @@ describe("MCP note tools", () => {
 			.eq("note_id", titled.id)
 			.eq("kind", "wikilink");
 		expect(links).toEqual([{ target_note_id: untitled.id }]);
+	});
+
+	it("list_notes matches punctuation and wildcards literally", async () => {
+		const sb = await ownerClient();
+		const odd = await createNote(sb, { title: 'odd a,b(c)"\\ here', body: "x" });
+		const pct = await createNote(sb, { title: "50% off", body: "x" });
+		await createNote(sb, { title: "50 off", body: "x" });
+		const under = await createNote(sb, { title: "a_b", body: "x" });
+		await createNote(sb, { title: "axb", body: "x" });
+		const ids = async (query: string) => {
+			const result = await call("list_notes", { query });
+			expect(result.isError).toBe(false);
+			return (result.json() as { id: string }[]).map((n) => n.id);
+		};
+		expect(await ids('a,b(c)"\\')).toEqual([odd.id]);
+		expect(await ids("50%")).toEqual([pct.id]);
+		expect(await ids("a_b")).toEqual([under.id]);
+	});
+
+	it("update_note with only a title snapshots only the title, and busts", async () => {
+		const { titled } = await seed();
+		vi.mocked(afterExternalMutation).mockClear();
+		await call("update_note", { id: titled.id, title: "Veg plan" });
+		const [row] = await ledger("mcp.note.updated");
+		expect(row.undo_payload.prev).toEqual({ title: "Garden plan" });
+		expect(afterExternalMutation).toHaveBeenCalledWith(...EXTERNAL_WRITES.mcpNotes);
+	});
+
+	it("update_note resolves a domain given by id", async () => {
+		const { titled, domainA, domainB } = await seed();
+		const result = await call("update_note", { id: titled.id, domain: domainB.id });
+		expect(result.json()).toMatchObject({ domain_id: domainB.id, domain: domainB.name });
+		const [row] = await ledger("mcp.note.updated");
+		expect(row.undo_payload.prev).toEqual({ domain_id: domainA.id });
+	});
+
+	it("update_note body overwrite stores a new wikilink", async () => {
+		const { titled, untitled } = await seed();
+		await call("update_note", { id: titled.id, body: `see [[${untitled.id}|Shed]]` });
+		const { data: links } = await serviceClient()
+			.from("note_links")
+			.select("target_note_id")
+			.eq("note_id", titled.id)
+			.eq("kind", "wikilink");
+		expect(links).toEqual([{ target_note_id: untitled.id }]);
+		const [row] = await ledger("mcp.note.updated");
+		expect(row.undo_payload.prev).toEqual({ body: "tomatoes" });
 	});
 
 	it("note_body_append is closed to anon", async () => {

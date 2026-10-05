@@ -51,17 +51,13 @@ async function mustGetNote(sb: SupabaseClient, id: string): Promise<NoteListRow>
 async function recordUpdate(
 	sb: SupabaseClient,
 	id: string,
-	before: NoteListRow,
-	after: NoteListRow,
+	prev: Record<string, string | null>,
+	label: string,
 ): Promise<void> {
-	const prev: Record<string, string | null> = {};
-	for (const key of ["title", "body", "domain_id"] as const) {
-		if (before[key] !== after[key]) prev[key] = before[key];
-	}
 	await recordNotification(sb, {
 		type: "mcp.note.updated",
 		title: "Assistant updated a note",
-		body: displayTitle(after),
+		body: label,
 		source_ref: id,
 		undo_payload: { table: "notes", id, prev },
 	});
@@ -175,10 +171,15 @@ export function registerNoteTools(server: McpServer, sb: SupabaseClient): void {
 				throw new ToolError("Nothing to change: send at least one field.");
 			}
 
-			// The previous values are what the ledger's undo replays.
+			// The previous values are what the ledger's undo replays: only the
+			// fields this call writes, from the pre-read or the append's old body.
 			const before = await mustGetNote(sb, id);
-			let appended = false;
-			let after: NoteListRow = before;
+			const prev: Record<string, string | null> = {};
+			if ("title" in patch) prev.title = before.title;
+			if ("domain_id" in patch) prev.domain_id = before.domain_id;
+			if ("body" in patch) prev.body = before.body;
+			let savedBody: string | null = null;
+			let after: NoteListRow;
 
 			try {
 				if (append !== undefined) {
@@ -195,26 +196,31 @@ export function registerNoteTools(server: McpServer, sb: SupabaseClient): void {
 					}
 					const row = (data as { old_body: string; new_body: string }[] | null)?.[0];
 					if (!row) throw new ToolError("No note with that id.");
-					appended = true;
-					before.body = row.old_body;
+					prev.body = row.old_body;
+					savedBody = row.new_body;
 				}
 
 				// updateNote re-derives the graph when body moves; body and append are
 				// exclusive, so an append re-syncs here once from the saved body.
 				if (Object.keys(patch).length > 0) await updateNote(sb, id, patch);
-				if (appended) await resyncNoteGraph(sb, id);
+				if (savedBody !== null) await resyncNoteGraph(sb, id);
 				after = await mustGetNote(sb, id);
 			} catch (err) {
-				// The append landed but a later write failed: the ledger still owes
-				// the owner a row for the append, then the error goes on.
-				if (appended) {
-					after = (await getNote(sb, id)) ?? after;
-					await recordUpdate(sb, id, before, after);
+				// The append landed but a later step failed: re-sync the graph from the
+				// saved body if we can, then the ledger still owes the owner a row for
+				// the append, then the error goes on.
+				if (savedBody !== null) {
+					try {
+						await resyncNoteGraph(sb, id);
+					} catch (syncErr) {
+						console.error("resyncNoteGraph after failed update_note", syncErr);
+					}
+					await recordUpdate(sb, id, prev, displayTitle({ ...before, body: savedBody }));
 				}
 				throw err;
 			}
 
-			await recordUpdate(sb, id, before, after);
+			await recordUpdate(sb, id, prev, displayTitle(after));
 			return toDetail(sb, after);
 		},
 	);
