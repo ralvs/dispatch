@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { registerLinkTools } from "./tools/links";
+import { registerNoteTools } from "./tools/notes";
 import { registerTaskTools } from "./tools/tasks";
 
 /**
@@ -12,5 +13,6 @@ export function createServer(sb: SupabaseClient): McpServer {
 	const server = new McpServer({ name: "dispatch", version: "1.0.0" });
 	registerLinkTools(server, sb);
 	registerTaskTools(server, sb);
+	registerNoteTools(server, sb);
 	return server;
 }
