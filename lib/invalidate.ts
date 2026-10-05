@@ -175,6 +175,8 @@ export const EXTERNAL_WRITES = {
 	calendarBridge: ["today.only"],
 	/** /api/mcp link tools: an assistant marking a saved link read (ADR-0079). */
 	mcpLinks: ["links.write"],
+	/** /api/mcp task tools: an assistant creating or editing a task (ADR-0079). */
+	mcpTasks: ["task.write"],
 } as const satisfies Record<string, readonly MutationKind[]>;
 
 export type ExternalWriter = keyof typeof EXTERNAL_WRITES;

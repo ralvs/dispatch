@@ -52,6 +52,14 @@ origin) are the lineage here.
    out on purpose, per the issue: Today, capture, chat, journal, quotes,
    people, settings and notifications.
 
+   Tasks: `list_tasks`, `get_task`, `create_task` and `update_task`.
+   Projects and domains are named, not referenced by id (`"inbox"` means
+   unfiled), and an unknown name answers with the valid ones. Completing and
+   deleting stay in the app. `update_task`'s `note_append` goes through
+   `task_notes_append`, a security-invoker SQL function that appends in one
+   UPDATE and refuses past 5,000 characters, so two appends at once both
+   survive.
+
 ## Consequences
 
 - Revoking a grant in Supabase does not stop it at once: `getClaims` verifies
