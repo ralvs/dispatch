@@ -28,6 +28,10 @@ export async function listTasks(
 		/** Tasks with no domain at all — the inbox. Distinct from domainId. */
 		unfiled?: boolean;
 		projectId?: string;
+		/** Due strictly before this date (`YYYY-MM-DD`); undated tasks drop out. */
+		dueBefore?: string;
+		/** At most this many rows. */
+		limit?: number;
 		/**
 		 * Drop quiet tasks (lib/quiet.ts). Today asks for this; /tasks loads them
 		 * and files them into their own view. `true` reads the quiet projects;
@@ -46,6 +50,8 @@ export async function listTasks(
 	if (filters.domainId) q = q.eq("domain_id", filters.domainId);
 	if (filters.unfiled) q = q.is("domain_id", null);
 	if (filters.projectId) q = q.eq("project_id", filters.projectId);
+	if (filters.dueBefore) q = q.lt("due_date", filters.dueBefore);
+	if (filters.limit) q = q.limit(filters.limit);
 	if (filters.excludeQuiet) {
 		const quiet =
 			filters.excludeQuiet === true ? await listQuietProjectIds(sb) : filters.excludeQuiet;

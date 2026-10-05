@@ -11,6 +11,11 @@ const RecurrenceRuleSchema = z.string().refine(isRecurrenceRule, {
 
 import { WallClockTimeSchema } from "@/lib/schemas/time";
 
+/** Longest task title any write path accepts. */
+export const TASK_TITLE_MAX = 500;
+/** Longest task notes any write path accepts. */
+export const TASK_NOTES_MAX = 5000;
+
 export const TaskStatusSchema = z.enum(["open", "done"]);
 export const TaskSourceSchema = z.enum(["manual", "voice", "email", "observation", "import"]);
 
@@ -73,8 +78,8 @@ export const CreateTaskFormSchema = z
 			.string({ error: "Give the task a title." })
 			.trim()
 			.min(1, "Give the task a title.")
-			.max(500),
-		notes: z.string().trim().max(5000).optional(),
+			.max(TASK_TITLE_MAX),
+		notes: z.string().trim().max(TASK_NOTES_MAX).optional(),
 		due_date: z.iso.date().optional().or(z.literal("")),
 		due_time: WallClockTimeSchema.optional().or(z.literal("")),
 		priority: z.coerce.number().int().min(1).max(3).default(3),
