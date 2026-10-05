@@ -200,8 +200,7 @@ export function TaskList({
 
 			{/* `quickAdd` is what makes this dialog the fast path too: a create
 			    carrying nothing but a title goes through the parser, anything
-			    else is taken literally (docs/adr/0043). The row-level dialogs
-			    are edit-mode and never see it. */}
+			    else is taken literally (docs/adr/0043). */}
 			<TaskDialog
 				open={creating}
 				onClose={() => setCreating(false)}

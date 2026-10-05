@@ -42,8 +42,10 @@ folding it in is a separate change.
 > into this form behind one rule: a create carrying nothing but a title parses,
 > anything else is literal. The keyboard contract below is unchanged.
 >
-> **Amended by ADR-0079.** `?edit=` is gone: a task's address is `/tasks/<id>`,
-> and from another page the form opens over that page rather than on `/tasks`.
+> **Amended by ADR-0079.** `?edit=` is gone, and so is a row's own dialog. The
+> entry points are the header's `+` (create) and a task's address,
+> `/tasks/<id>` (edit), which opens the form over the page you are on, the
+> Tasks board included.
 
 `app/(authed)/tasks/task-dialog.tsx` renders `TaskFormFields` (title, notes,
 meta) for both modes. Create and edit differ in three strings and two
