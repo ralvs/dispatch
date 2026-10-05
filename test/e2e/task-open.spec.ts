@@ -23,8 +23,9 @@ const names = {
 	renamed: `E2E open task renamed ${stamp}`,
 	quiet: `E2E quiet task ${stamp}`,
 	doomed: `E2E doomed task ${stamp}`,
+	board: `E2E board task ${stamp}`,
 };
-const ids = { domain: "", project: "", paused: "", task: "", quiet: "", doomed: "" };
+const ids = { domain: "", project: "", paused: "", task: "", quiet: "", doomed: "", board: "" };
 
 async function insert(table: string, row: Record<string, unknown>): Promise<string> {
 	const { data, error } = await sb.from(table).insert([row]).select("id").single();
@@ -61,11 +62,13 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
 	await sb.from("tasks").delete().in("id", [ids.task, ids.quiet, ids.doomed]);
+	await sb.from("tasks").delete().eq("title", names.board);
 	await sb.from("projects").delete().in("id", [ids.project, ids.paused]);
 	await sb.from("stewardship_domains").delete().eq("id", ids.domain);
 });
 
 const editDialog = (page: Page) => page.getByRole("dialog", { name: "Edit task" });
+const newDialog = (page: Page) => page.getByRole("dialog", { name: "New task" });
 
 async function openFromProject(page: Page, title: string, id = ids.task) {
 	await page.goto(`/projects/${ids.project}`);
@@ -98,11 +101,28 @@ test("a task link opens over the page it is on, and Save returns to it", async (
 	await expect(editDialog(page).getByLabel("Task title")).toHaveValue(names.renamed);
 });
 
+// Created through the app, not inserted with the service client: /tasks reads
+// a cross-request cache that only an app write busts, and the skeleton smoke
+// running beside this test may already have filled it (as in tick-flow).
 test("on the Tasks board a row opens the same way, over the board", async ({ page }) => {
 	await page.goto("/tasks");
-	await page.locator(`a[href="/tasks/${ids.task}"]`).first().click();
-	await expect(editDialog(page).getByLabel("Task title")).toHaveValue(names.task);
-	expect(new URL(page.url()).pathname).toBe(`/tasks/${ids.task}`);
+	await page.getByRole("button", { name: "New task" }).click();
+	await newDialog(page).getByLabel("Task title").fill(names.board);
+	await newDialog(page)
+		.getByRole("combobox", { name: "Domain" })
+		.selectOption({ label: "E2E Domain" });
+	await newDialog(page).getByRole("button", { name: "Add task" }).click();
+	// The row links to its server id once the create is confirmed.
+	await expect
+		.poll(async () => {
+			const { data } = await sb.from("tasks").select("id").eq("title", names.board);
+			ids.board = data?.[0]?.id ?? "";
+			return ids.board;
+		})
+		.not.toBe("");
+	await page.locator(`a[href="/tasks/${ids.board}"]`).first().click();
+	await expect(editDialog(page).getByLabel("Task title")).toHaveValue(names.board);
+	expect(new URL(page.url()).pathname).toBe(`/tasks/${ids.board}`);
 
 	await editDialog(page).getByRole("button", { name: "Cancel" }).click();
 	await page.waitForURL(/\/tasks(\?.*)?$/);
