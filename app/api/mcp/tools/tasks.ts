@@ -42,6 +42,34 @@ function toDetail(row: TaskRow) {
 	};
 }
 
+/** Iron rule #6: the assistant's edit lands in the ledger with what undo needs. */
+async function recordUpdate(
+	sb: SupabaseClient,
+	id: string,
+	before: TaskRow,
+	after: TaskRow,
+): Promise<void> {
+	const prev: Record<string, string | null> = {};
+	for (const key of [
+		"title",
+		"notes",
+		"due_date",
+		"due_time",
+		"project_id",
+		"domain_id",
+	] as const) {
+		if (before[key] !== after[key]) prev[key] = before[key];
+	}
+	await recordNotification(sb, {
+		type: "mcp.task.updated",
+		title: "Assistant updated a task",
+		body: after.title,
+		source_ref: id,
+		undo_payload: { table: "tasks", id, prev },
+	});
+	afterExternalMutation(...EXTERNAL_WRITES.mcpTasks);
+}
+
 async function mustGetTask(sb: SupabaseClient, id: string): Promise<TaskRow> {
 	const row = await getTask(sb, id);
 	if (!row) throw new ToolError("No task with that id.");
@@ -144,7 +172,12 @@ export function registerTaskTools(server: McpServer, sb: SupabaseClient): void {
 				title: z.string().trim().min(1).max(TASK_TITLE_MAX).optional(),
 				due_date: DateSchema.nullable().optional().describe("YYYY-MM-DD, or null to clear."),
 				project: z.string().min(1).nullable().optional().describe("Name or id, or null."),
-				note_append: z.string().min(1).optional().describe("One line added to the notes."),
+				note_append: z
+					.string()
+					.min(1)
+					.max(TASK_NOTES_MAX)
+					.optional()
+					.describe("One line added to the notes."),
 				note_replace: z.string().max(TASK_NOTES_MAX).optional().describe("The whole notes."),
 				dated: z.boolean().default(true).describe("Prefix an appended line with today's date."),
 			}),
@@ -167,49 +200,50 @@ export function registerTaskTools(server: McpServer, sb: SupabaseClient): void {
 
 			// The previous values are what the ledger's undo replays.
 			const before = await mustGetTask(sb, id);
+			let appended = false;
+			let after: TaskRow = before;
 
-			if (note_append !== undefined) {
-				const line = dated ? `${await todayForRequest(sb)} — ${note_append}` : note_append;
-				// One UPDATE, so two appends at once both survive (the migration).
-				const { data, error } = await sb.rpc("task_notes_append", {
-					p_task_id: id,
-					p_line: line,
-					p_max: TASK_NOTES_MAX,
-				});
-				if (error) throw new Error(error.message);
-				if (data === null) {
-					await mustGetTask(sb, id);
-					throw new ToolError(`Note would exceed ${TASK_NOTES_MAX} characters.`);
+			try {
+				if (note_append !== undefined) {
+					const line = dated ? `${await todayForRequest(sb)} — ${note_append}` : note_append;
+					// One UPDATE, so two appends at once both survive, and it hands back
+					// the notes it replaced, so the undo snapshot cannot race (the migration).
+					const { data, error } = await sb.rpc("task_notes_append", {
+						p_task_id: id,
+						p_line: line,
+						p_max: TASK_NOTES_MAX,
+					});
+					if (error) {
+						console.error("task_notes_append failed", error);
+						throw new ToolError("Could not append to the task note.");
+					}
+					const row = (data as { old_notes: string | null; new_notes: string }[] | null)?.[0];
+					if (!row) {
+						await mustGetTask(sb, id);
+						throw new ToolError(`Note would exceed ${TASK_NOTES_MAX} characters.`);
+					}
+					appended = true;
+					before.notes = row.old_notes;
 				}
+
+				// updateTask re-derives mentions when the title or notes move; an
+				// append without them moves the notes outside it, so sync here only then.
+				if (Object.keys(patch).length > 0) await updateTask(sb, id, patch);
+				after = await mustGetTask(sb, id);
+				if (note_append !== undefined && !("title" in patch)) {
+					await syncTaskMentionsFromText(sb, id, after.title, after.notes);
+				}
+			} catch (err) {
+				// The append landed but a later write failed: the ledger still owes
+				// the owner a row for the append, then the error goes on.
+				if (appended) {
+					after = (await getTask(sb, id)) ?? after;
+					await recordUpdate(sb, id, before, after);
+				}
+				throw err;
 			}
 
-			// updateTask re-derives mentions when the title or notes move; an
-			// append alone moves the notes outside it, so sync here only then.
-			if (Object.keys(patch).length > 0) await updateTask(sb, id, patch);
-			const after = await mustGetTask(sb, id);
-			if (note_append !== undefined && !("title" in patch)) {
-				await syncTaskMentionsFromText(sb, id, after.title, after.notes);
-			}
-
-			const prev: Record<string, string | null> = {};
-			for (const key of [
-				"title",
-				"notes",
-				"due_date",
-				"due_time",
-				"project_id",
-				"domain_id",
-			] as const) {
-				if (before[key] !== after[key]) prev[key] = before[key];
-			}
-			await recordNotification(sb, {
-				type: "mcp.task.updated",
-				title: "Assistant updated a task",
-				body: after.title,
-				source_ref: id,
-				undo_payload: { table: "tasks", id, prev },
-			});
-			afterExternalMutation(...EXTERNAL_WRITES.mcpTasks);
+			await recordUpdate(sb, id, before, after);
 			return toDetail(after);
 		},
 	);
