@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { nowUtc } from "@/lib/dates";
+import { escapeLike } from "@/lib/like";
 import {
 	type CreateNoteSchema,
 	NOTE_LIST_SELECT,
@@ -21,6 +22,14 @@ export type NoteWriteOpts = {
 	/** Capture swallows graph failures (iron rule #4). Forms throw. Default throw. */
 	graphFail?: GraphFail;
 };
+
+/** Re-derive a note's wikilinks + mentions from its saved body (an append outside updateNote). */
+export async function resyncNoteGraph(sb: SupabaseClient, noteId: string): Promise<void> {
+	const data = unwrap(await sb.from("notes").select("body").eq("id", noteId).single()) as {
+		body: string;
+	};
+	await syncNoteGraph(sb, noteId, data.body, "throw");
+}
 
 /** Wikilinks + person mentions derived from note text. */
 async function syncNoteGraph(
@@ -136,7 +145,15 @@ export async function createNeedsReviewNote(
 
 export async function listNotes(
 	sb: SupabaseClient,
-	filters: { needsReview?: boolean } = {},
+	filters: {
+		needsReview?: boolean;
+		/** A titled note matches on its title; an untitled one on its body. */
+		query?: string;
+		/** null means unfiled. */
+		domainId?: string | null;
+		pinned?: boolean;
+		limit?: number;
+	} = {},
 ): Promise<NoteListRow[]> {
 	let q = sb
 		.from("notes")
@@ -144,6 +161,16 @@ export async function listNotes(
 		.order("pinned_at", { ascending: false, nullsFirst: false })
 		.order("created_at", { ascending: false });
 	if (filters.needsReview !== undefined) q = q.eq("needs_review", filters.needsReview);
+	if (filters.query) {
+		// Double-quoted so commas and parens in the query cannot break the or() list.
+		const pattern = `"%${escapeLike(filters.query).replace(/["\\]/g, (m) => `\\${m}`)}%"`;
+		q = q.or(`title.ilike.${pattern},and(title.is.null,body.ilike.${pattern})`);
+	}
+	if (filters.domainId === null) q = q.is("domain_id", null);
+	else if (filters.domainId !== undefined) q = q.eq("domain_id", filters.domainId);
+	if (filters.pinned === true) q = q.not("pinned_at", "is", null);
+	else if (filters.pinned === false) q = q.is("pinned_at", null);
+	if (filters.limit !== undefined) q = q.limit(filters.limit);
 	const data = unwrap(await q);
 	return (data ?? []) as unknown as NoteListRow[];
 }

@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { dayWindowUtc, nowUtc } from "@/lib/dates";
+import { escapeLike } from "@/lib/like";
 import { notQuietFilter } from "@/lib/quiet";
 import { TASK_SELECT, type TaskRow } from "@/lib/schemas/task";
 import { unwrap } from "@/lib/services/errors";
@@ -141,11 +142,6 @@ export async function lastCompletedByDomain(sb: SupabaseClient): Promise<Record<
 export async function getTask(sb: SupabaseClient, id: string): Promise<TaskRow | null> {
 	const data = unwrap(await sb.from("tasks").select(TASK_SELECT).eq("id", id).maybeSingle());
 	return data ? flatten(data) : null;
-}
-
-/** Escapes ilike wildcards so a search term is matched literally. */
-function escapeLike(q: string): string {
-	return q.replace(/[%_\\]/g, (m) => `\\${m}`);
 }
 
 export type TaskSearchResult = {
