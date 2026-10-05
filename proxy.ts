@@ -88,6 +88,12 @@ export const config = {
 		// also meant a cold PWA got a 307 to /sign-in *for its manifest*. No
 		// route in this app ends in one of these, and RSC payloads are a query
 		// param on a normal path, so nothing that needs auth is let through.
-		"/((?!_next/static|_next/image|favicon.ico|sign-in|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|js|json|webmanifest|woff2?)$).*)",
+		//
+		// The MCP surface stays out too (docs/adr/0079), and all four fail
+		// silently if dropped: /.well-known discovery and /api/oauth must answer
+		// JSON before the client holds any token; /oauth/consent is reached
+		// signed out and would bounce to /sign-in, losing its authorization_id;
+		// /api/mcp is bearer-only and must not take part in cookie sessions.
+		"/((?!_next/static|_next/image|favicon.ico|sign-in|\\.well-known|oauth/consent|api/mcp|api/oauth|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|js|json|webmanifest|woff2?)$).*)",
 	],
 };

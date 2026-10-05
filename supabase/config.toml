@@ -364,12 +364,13 @@ enabled = false
 
 # OAuth server configuration
 [auth.oauth_server]
-# Enable OAuth server functionality
-enabled = false
+# The MCP endpoint's authorization server (docs/adr/0079). Local stack only:
+# the hosted project is set in the dashboard (Authentication → OAuth Server).
+enabled = true
 # Path for OAuth consent flow UI
 authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
-allow_dynamic_registration = false
+allow_dynamic_registration = true
 
 [edge_runtime]
 enabled = true
