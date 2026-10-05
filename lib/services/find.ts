@@ -1,7 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-	escapeLike,
 	FIND_FETCH_CAP,
 	FIND_GROUP_CAP,
 	FIND_MIN_QUERY,
@@ -13,6 +12,7 @@ import {
 	taskField,
 	taskScore,
 } from "@/lib/find/match";
+import { escapeLike } from "@/lib/like";
 import { displayTitle } from "@/lib/note-display";
 import { unwrap } from "@/lib/services/errors";
 

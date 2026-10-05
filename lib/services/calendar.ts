@@ -7,6 +7,7 @@ import { CALENDAR_SYNC_WINDOW_MS } from "@/lib/constants";
 import { dayWindowUtc, nowUtc, shiftDay } from "@/lib/dates";
 import { eventFallsOnDay } from "@/lib/day-schedule";
 import { env } from "@/lib/env";
+import { escapeLike } from "@/lib/like";
 import { type CalendarEventRow, EVENT_SELECT } from "@/lib/schemas/calendar";
 import { ServiceError, unwrap } from "@/lib/services/errors";
 import { inListLiteral } from "@/lib/services/in-list";
@@ -165,11 +166,6 @@ export async function getEvent(sb: SupabaseClient, id: string): Promise<Calendar
 		await sb.from("calendar_events").select(EVENT_SELECT).eq("id", id).maybeSingle(),
 	);
 	return (data as unknown as CalendarEventRow | null) ?? null;
-}
-
-/** Escapes ilike wildcards so a search term is matched literally. */
-function escapeLike(q: string): string {
-	return q.replace(/[%_\\]/g, (m) => `\\${m}`);
 }
 
 export type EventSearchResult = {

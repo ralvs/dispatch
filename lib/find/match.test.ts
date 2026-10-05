@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { escapeLike } from "@/lib/like";
 import {
-	escapeLike,
 	haystackHas,
 	noteField,
 	sanitizeFindQuery,

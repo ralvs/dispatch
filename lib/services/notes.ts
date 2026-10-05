@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { nowUtc } from "@/lib/dates";
+import { escapeLike } from "@/lib/like";
 import {
 	type CreateNoteSchema,
 	NOTE_LIST_SELECT,
@@ -13,7 +14,6 @@ import { unwrap, unwrapCount } from "@/lib/services/errors";
 import { type GraphFail, syncNoteMentionsFromText } from "@/lib/services/mentions";
 import { removeAllForNote } from "@/lib/services/note-attachments";
 import { syncWikilinks } from "@/lib/services/note-links";
-import { escapeLike } from "@/lib/services/tasks";
 import { extractWikilinkIds } from "@/lib/wikilinks";
 
 export type { NoteListRow, NoteRow };

@@ -8,10 +8,6 @@ export const FIND_RECENTS = 5;
 /** Fetch a wider window so ranking is not just "newest 8 that matched". */
 export const FIND_FETCH_CAP = 24;
 
-export function escapeLike(q: string): string {
-	return q.replace(/[%_\\]/g, (m) => `\\${m}`);
-}
-
 /** Strip characters that would split a PostgREST `or()` filter. */
 export function sanitizeFindQuery(q: string): string {
 	return q.replace(/[,()]/g, " ").replace(/\s+/g, " ").trim();
