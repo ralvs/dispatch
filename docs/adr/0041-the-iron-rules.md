@@ -22,7 +22,9 @@ superseded in place; new rules append.
 2. **`requireOwner()` is the security boundary** — first line of every server
    action and session route handler. `proxy.ts` only refreshes sessions and
    redirects page loads. External endpoints use `lib/secret-auth.ts`
-   (timing-safe). There is no unauthenticated surface. → ADR-0003.
+   (timing-safe). The MCP endpoint's boundary is `requireOwnerBearer()`, an
+   OAuth bearer token checked against the same owner (docs/adr/0079). There
+   is no unauthenticated surface. → ADR-0003.
 3. **Services take `sb` as the first argument** so the same function runs
    RLS-scoped (pages/actions) or service-role (cron/capture). → ADR-0001.
 4. **Never lose a capture.** The capture pipeline degrades to a `needs_review`

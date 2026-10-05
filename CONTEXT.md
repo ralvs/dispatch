@@ -108,6 +108,14 @@ URL here and everything else to the parser (`capture.link` ledger row).
 A reading list of links, not the unfiled-task **inbox** at `/inbox`. See
 ADR-0014, ADR-0022 and ADR-0024.
 
+## MCP server
+
+The tools an assistant such as Claude calls on Dispatch, at **`/api/mcp`**.
+A client connects through OAuth: Supabase Auth issues it a token once the
+owner approves it on `/oauth/consent`, and every tool then acts as the owner
+through RLS. Each write records an `mcp.*` row in the **notification ledger**.
+See docs/adr/0079.
+
 ## mention
 
 A **person** linked to a **task** or **note** because the person appears in
