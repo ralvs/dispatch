@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isPushConfigured } from "@/lib/env";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
+import { notificationKind } from "@/lib/notification-kind";
 import {
 	type Json,
 	NOTIFICATION_SELECT,
@@ -34,6 +35,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // best-effort and never reach the caller. Delivery always reads
 // push_subscriptions through the service-role client, so it no longer depends
 // on which `sb` the caller passed — `sb` scopes the insert only (iron rule #3).
+//
+// A row lands unread only when it is an alert (lib/notification-kind.ts,
+// ADR-0080). Activity — a capture filed, a reminder fired — lands read: its
+// push is the delivery, and the row is the record. So unread means "something
+// failed", and a real failure is not buried under routine work.
 //
 // ── Known limits ──
 //   - Not a hard boundary. Anything holding a SupabaseClient can still write
@@ -103,6 +109,7 @@ async function insertNotification(
 				source_ref: entry.source_ref ?? null,
 				source_url: entry.source_url ?? null,
 				undo_payload: entry.undo_payload ?? null,
+				status: notificationKind(entry.type) === "alert" ? "unread" : "read",
 			})
 			.select(NOTIFICATION_SELECT)
 			.single(),

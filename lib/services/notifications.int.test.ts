@@ -45,17 +45,18 @@ import {
 // returns, which the entity store confirms from (#28). Cron writes through the
 // service client; the page reads and marks through the owner's.
 
+// Alerts, so every seeded row starts unread (ADR-0080).
 async function seedLedger() {
 	const sb = serviceClient();
 	const a = await recordNotificationOrThrow(sb, {
-		type: "reminder.fired",
-		title: "Standup in 10m",
+		type: "gcal.sync_failed",
+		title: "Calendar bridge failed",
 	});
 	const b = await recordNotificationOrThrow(sb, {
-		type: "caldav.synced",
-		title: "Calendar synced",
+		type: "cron.sweep",
+		title: "Sweep reconciled 1 stuck capture(s)",
 	});
-	const c = await recordNotificationOrThrow(sb, { type: "capture.filed", title: "Note filed" });
+	const c = await recordNotificationOrThrow(sb, { type: "push.failed", title: "Push failed" });
 	return { a, b, c };
 }
 
@@ -142,20 +143,33 @@ describe("the ledger announces what it records (ADR-0075)", () => {
 });
 
 describe("notifications against the local database", () => {
-	it("records an unread row with omitted fields as null", async () => {
+	it("records an alert unread, with omitted fields as null", async () => {
 		const row = await recordNotification(serviceClient(), {
-			type: "reminder.fired",
-			title: "Standup in 10m",
+			type: "gcal.sync_failed",
+			title: "Calendar bridge failed",
 		});
 		expect(row).toMatchObject({
-			type: "reminder.fired",
-			title: "Standup in 10m",
+			type: "gcal.sync_failed",
+			title: "Calendar bridge failed",
 			body: null,
 			source_ref: null,
 			source_url: null,
 			undo_payload: null,
 			status: "unread",
 		});
+	});
+
+	it("records activity already read, still pushed, and out of the unread count", async () => {
+		const sb = serviceClient();
+		const fired = await recordNotificationOrThrow(sb, {
+			type: "reminder.fired",
+			title: "Standup in 10m",
+		});
+		const captured = await recordNotification(sb, { type: "capture.link", title: "Saved link" });
+		expect(fired.status).toBe("read");
+		expect(captured?.status).toBe("read");
+		expect(sendNotification).toHaveBeenCalledTimes(2);
+		expect(await unreadCount(await ownerClient())).toBe(0);
 	});
 
 	it("lists newest first, filters by status and limits", async () => {
