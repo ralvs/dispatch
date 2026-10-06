@@ -47,8 +47,10 @@ export async function syncBridgeEvents(
 		existingRows.filter((r) => r.caldav_uid !== null).map((r) => [r.caldav_uid as string, r]),
 	);
 
-	let pulled = 0;
 	const seenUids = new Set<string>();
+	// One row per uid, the last one winning, as the per-event loop did: a single
+	// upsert cannot touch the same row twice.
+	const changed = new Map<string, Record<string, unknown>>();
 
 	for (const event of input.events) {
 		const startMs = Date.parse(event.start_at);
@@ -66,30 +68,37 @@ export async function syncBridgeEvents(
 			Date.parse(known.start_at) === Date.parse(event.start_at) &&
 			known.calendar_name === event.calendar_name
 		) {
+			changed.delete(event.uid);
 			continue;
 		}
 
+		changed.set(event.uid, {
+			caldav_uid: event.uid,
+			caldav_etag: etag,
+			caldav_href: null,
+			calendar_name: event.calendar_name,
+			title: event.title,
+			description: event.description ?? null,
+			start_at: event.start_at,
+			end_at: event.end_at,
+			all_day: event.all_day,
+			location: event.location ?? null,
+			attendees: [],
+			source: "google",
+			synced_at: syncedAt,
+		});
+	}
+
+	// One request for every changed event. A request per event made a busy
+	// snapshot a long chain of round trips, and the bridge saw Gateway
+	// Timeouts (#96).
+	const pulled = changed.size;
+	if (pulled > 0) {
 		unwrap(
-			await sb.from("calendar_events").upsert(
-				{
-					caldav_uid: event.uid,
-					caldav_etag: etag,
-					caldav_href: null,
-					calendar_name: event.calendar_name,
-					title: event.title,
-					description: event.description ?? null,
-					start_at: event.start_at,
-					end_at: event.end_at,
-					all_day: event.all_day,
-					location: event.location ?? null,
-					attendees: [],
-					source: "google",
-					synced_at: syncedAt,
-				},
-				{ onConflict: "source,caldav_uid" },
-			),
+			await sb
+				.from("calendar_events")
+				.upsert([...changed.values()], { onConflict: "source,caldav_uid" }),
 		);
-		pulled++;
 	}
 
 	// Bridge is the source of truth for source=google. An authenticated empty

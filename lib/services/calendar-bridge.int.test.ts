@@ -57,6 +57,20 @@ describe("syncBridgeEvents against the local database", () => {
 		expect(await sync([event()])).toEqual({ pulled: 0, removed: 0 });
 	});
 
+	it("stores a batch in one go, and a uid sent twice keeps its last copy", async () => {
+		const batch = [
+			event(),
+			event({ uid: "ek-2", title: "Planning" }),
+			event({ uid: "ek-1", title: "Eng sync (moved)", etag: "etag-2" }),
+		];
+
+		expect(await sync(batch)).toEqual({ pulled: 2, removed: 0 });
+		expect(await rows()).toMatchObject([
+			{ caldav_uid: "ek-1", title: "Eng sync (moved)" },
+			{ caldav_uid: "ek-2", title: "Planning" },
+		]);
+	});
+
 	it("rewrites calendar_name when the Apple calendar is renamed", async () => {
 		await sync([event({ calendar_name: "renan.alves@engine.com" })]);
 
