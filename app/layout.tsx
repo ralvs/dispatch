@@ -36,10 +36,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-	// Follows the OS color-scheme preference. The in-app toggle is a
-	// cookie-driven data-theme override applied after hydration, so browser
-	// chrome and canvas can disagree when the user overrides the OS
-	// preference — a known, accepted limitation of a static viewport export.
+	// Follows the OS color-scheme preference, which is exactly right for the
+	// System pick (the default). A forced Light or Dark pick can still disagree
+	// with the browser chrome — a known, accepted limitation of a static
+	// viewport export.
 	themeColor: [
 		{ media: "(prefers-color-scheme: dark)", color: GROUND_DARK },
 		{ media: "(prefers-color-scheme: light)", color: GROUND_LIGHT },
@@ -49,10 +49,14 @@ export const viewport: Viewport = {
 
 // Runs before paint so Cache Components can keep the root layout free of
 // cookies() while still avoiding a theme flash (docs/adr/0033).
-// Light is the default and dark is the opt-in peer, so the cookie is tested
-// for "dark" and everything else falls to light — the inverse of what this
-// script did before the revision-A token port (app/globals.css).
-const THEME_BOOT = `(function(){try{var m=document.cookie.match(/(?:^|; )theme=([^;]*)/);var t=m&&decodeURIComponent(m[1])==="dark"?"dark":"light";document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","light");}})();`;
+// The cookie is the pick for this device (docs/adr/0080): "light", "dark",
+// or anything else — no cookie, or one that will not decode — which means
+// "system". The pick goes on data-theme-pref and what it resolves to on
+// data-theme, which the CSS reads. `a` resolves from the attribute, so a later
+// pick from settings needs no rebinding. It runs on the OS change event, and
+// again on pageshow and on becoming visible, because a frozen or backgrounded
+// PWA misses the change event. Mirrors lib/theme.ts — change both together.
+const THEME_BOOT = `(function(){var d=document.documentElement;var p="system";try{var m=document.cookie.match(/(?:^|; )theme=([^;]*)/);var c=m&&decodeURIComponent(m[1]);if(c==="light"||c==="dark")p=c;}catch(e){}d.setAttribute("data-theme-pref",p);var q=null;try{q=matchMedia("(prefers-color-scheme: dark)");}catch(e){}var a=function(){var x=d.getAttribute("data-theme-pref");d.setAttribute("data-theme",x==="light"||x==="dark"?x:q&&q.matches?"dark":"light");};a();if(q){try{q.addEventListener("change",a);}catch(e){try{q.addListener(a);}catch(e2){}}}addEventListener("pageshow",a);document.addEventListener("visibilitychange",function(){if(!document.hidden)a();});})();`;
 
 /*
  * Standalone shell height. Installed on iOS, CSS viewport units cannot be

@@ -12,9 +12,9 @@ export default function manifest(): MetadataRoute.Manifest {
 		display: "standalone",
 		orientation: "portrait",
 		// Manifest cannot media-query the way the viewport themeColor export
-		// can. Light is the app default (THEME_BOOT, Pass 0), so the install
-		// splash and OS task-switcher card use the light ground — not the
-		// near-black Vercel/Geist leftover, and not the dark warm stone.
+		// can. The app default is System (docs/adr/0080), which the manifest
+		// cannot follow, so the install splash and OS task-switcher card use
+		// the light ground — not the near-black Vercel/Geist leftover.
 		background_color: GROUND_LIGHT,
 		theme_color: GROUND_LIGHT,
 		lang: "en",
