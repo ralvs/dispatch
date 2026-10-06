@@ -48,8 +48,10 @@ export async function syncBridgeEvents(
 	);
 
 	const seenUids = new Set<string>();
-	// One row per uid, the last one winning, as the per-event loop did: a single
-	// upsert cannot touch the same row twice.
+	// One row per uid, the last copy in the snapshot winning — a single upsert
+	// cannot touch the same row twice. A last copy that matches the stored row
+	// drops an earlier changed copy, so the stored row stays as the last copy
+	// says. (The old per-event loop wrote the earlier copy instead.)
 	const changed = new Map<string, Record<string, unknown>>();
 
 	for (const event of input.events) {

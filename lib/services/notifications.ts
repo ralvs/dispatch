@@ -205,7 +205,7 @@ export async function listNotifications(
  * the alerts (ADR-0080) — then the newest of the rest, newest first within
  * each part. Unread rows are read on their own so an old failure is never cut
  * off by a page of newer activity. Dismissed rows are left out. `limit` caps
- * each part.
+ * the whole list; unread rows take their places first.
  */
 export async function listLedger(
 	sb: SupabaseClient,
@@ -215,7 +215,7 @@ export async function listLedger(
 		listNotifications(sb, { status: "unread", limit: opts.limit }),
 		listNotifications(sb, { status: "read", limit: opts.limit }),
 	]);
-	return [...unread, ...rest];
+	return [...unread, ...rest].slice(0, opts.limit);
 }
 
 /** Count of unread notifications — the badge number. */

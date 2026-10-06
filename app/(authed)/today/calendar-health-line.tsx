@@ -38,13 +38,17 @@ export function CalendarHealthLine({
 
 	function syncNow() {
 		startTransition(async () => {
-			await runAction(async () => {
+			const synced = await runAction(async () => {
 				const result = await syncIcloudCalendarAction();
 				if (!result.ok) throw new Error(result.formError);
 				setShown(result.data);
+			}, "Couldn't sync the iCloud calendar.");
+			if (!synced) return;
+			// The sync worked; only the day on screen can still be behind.
+			await runAction(async () => {
 				const shownDay = new URLSearchParams(window.location.search).get("d") ?? undefined;
 				for (const snapshot of await pullTodayAction(shownDay)) seed(snapshot);
-			}, "Couldn't sync the iCloud calendar.");
+			}, "Synced. Couldn't refresh the day — it updates within five minutes.");
 		});
 	}
 

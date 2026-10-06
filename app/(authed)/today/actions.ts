@@ -127,5 +127,12 @@ export async function syncIcloudCalendarAction(): Promise<ActionResult<FeedHealt
 		return { ok: false, formError: "Couldn't sync the iCloud calendar." };
 	}
 	afterMutation("today.only");
-	return { ok: true, data: calendarHealth(await readCalendarSyncStates(admin), Date.now()) };
+	// The sync worked; a failed read afterwards must not say it did not. The
+	// line then clears, and the next render of Today reads it again.
+	try {
+		return { ok: true, data: calendarHealth(await readCalendarSyncStates(admin), Date.now()) };
+	} catch (error) {
+		console.error("[today] calendar sync state read failed", error);
+		return { ok: true, data: [] };
+	}
 }

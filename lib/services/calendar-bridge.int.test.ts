@@ -82,6 +82,14 @@ describe("syncBridgeEvents against the local database", () => {
 		]);
 	});
 
+	it("a uid whose last copy matches the stored row keeps the stored row", async () => {
+		await sync([event()]);
+
+		const batch = [event({ title: "Eng sync (moved)", etag: "etag-2" }), event()];
+		expect(await sync(batch)).toEqual({ pulled: 0, removed: 0 });
+		expect(await rows()).toMatchObject([{ caldav_uid: "ek-1", title: "Eng sync" }]);
+	});
+
 	it("rewrites calendar_name when the Apple calendar is renamed", async () => {
 		await sync([event({ calendar_name: "renan.alves@engine.com" })]);
 

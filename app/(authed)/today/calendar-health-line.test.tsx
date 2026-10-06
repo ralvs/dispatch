@@ -71,6 +71,23 @@ describe("CalendarHealthLine", () => {
 		expect(pullTodayAction).toHaveBeenCalledTimes(1);
 	});
 
+	it("a good sync with a failed day pull says the sync worked", async () => {
+		vi.mocked(syncIcloudCalendarAction).mockResolvedValue({ ok: true, data: [] });
+		vi.mocked(pullTodayAction).mockRejectedValue(new Error("offline"));
+		const user = userEvent.setup();
+		renderLine([icloudFailed]);
+
+		await user.click(screen.getByRole("button", { name: "Sync now" }));
+
+		await vi.waitFor(() =>
+			expect(toastErrorMock).toHaveBeenCalledWith(
+				"Synced. Couldn't refresh the day — it updates within five minutes.",
+				expect.anything(),
+			),
+		);
+		expect(screen.queryByText(/iCloud calendar/)).not.toBeInTheDocument();
+	});
+
 	it("a failed Sync now keeps the line and says so", async () => {
 		vi.mocked(syncIcloudCalendarAction).mockResolvedValue({
 			ok: false,

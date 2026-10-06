@@ -195,9 +195,10 @@ describe("notifications against the local database", () => {
 		});
 		await markNotification(sb, b.id, "dismissed");
 
-		// The alerts are older than the reminder, and still lead.
-		const ledger = await listLedger(sb, { limit: 1 });
-		expect(ledger.map((n) => n.id)).toEqual([c.id, reminder.id]);
+		// The alerts are older than the reminder, and still lead; the cap is on
+		// the whole list.
+		const ledger = await listLedger(sb, { limit: 2 });
+		expect(ledger.map((n) => n.id)).toEqual([c.id, a.id]);
 		const full = await listLedger(sb, { limit: 100 });
 		expect(full.map((n) => n.id)).toEqual([c.id, a.id, reminder.id]);
 	});
