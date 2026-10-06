@@ -166,6 +166,24 @@ export async function listNotifications(
 	return (data ?? []) as unknown as NotificationRow[];
 }
 
+/**
+ * The ledger as /notifications shows it: every unread row first — in practice
+ * the alerts (ADR-0080) — then the newest of the rest, newest first within
+ * each part. Unread rows are read on their own so an old failure is never cut
+ * off by a page of newer activity. Dismissed rows are left out. `limit` caps
+ * each part.
+ */
+export async function listLedger(
+	sb: SupabaseClient,
+	opts: { limit: number },
+): Promise<NotificationRow[]> {
+	const [unread, rest] = await Promise.all([
+		listNotifications(sb, { status: "unread", limit: opts.limit }),
+		listNotifications(sb, { status: "read", limit: opts.limit }),
+	]);
+	return [...unread, ...rest];
+}
+
 /** Count of unread notifications — the badge number. */
 export async function unreadCount(sb: SupabaseClient): Promise<number> {
 	return unwrapCount(

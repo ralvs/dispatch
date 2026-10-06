@@ -26,6 +26,7 @@ vi.mock("@/lib/invalidate", async (original) => ({
 import { afterExternalMutation } from "@/lib/invalidate";
 import {
 	dismissAllNotifications,
+	listLedger,
 	listNotifications,
 	markAllNotificationsRead,
 	markNotification,
@@ -182,6 +183,22 @@ describe("notifications against the local database", () => {
 		const unread = await listNotifications(sb, { status: "unread", limit: 1 });
 		expect(unread.map((n) => n.id)).toEqual([c.id]);
 		expect(await unreadCount(sb)).toBe(2);
+	});
+
+	it("the ledger view puts every unread row first, then the newest read, and drops dismissed", async () => {
+		const sb = await ownerClient();
+		const { a, b, c } = await seedLedger();
+		const reminder = await recordNotificationOrThrow(serviceClient(), {
+			type: "reminder.fired",
+			title: "Standup in 10m",
+		});
+		await markNotification(sb, b.id, "dismissed");
+
+		// The alerts are older than the reminder, and still lead.
+		const ledger = await listLedger(sb, { limit: 1 });
+		expect(ledger.map((n) => n.id)).toEqual([c.id, reminder.id]);
+		const full = await listLedger(sb, { limit: 100 });
+		expect(full.map((n) => n.id)).toEqual([c.id, a.id, reminder.id]);
 	});
 
 	it("marks one row and returns it as it now stands", async () => {

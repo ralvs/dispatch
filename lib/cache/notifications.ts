@@ -1,7 +1,7 @@
 import "server-only";
 import { cachedRead, type Readers } from "@/lib/cache/reader";
 import { CacheTag } from "@/lib/cache/tags";
-import { listNotifications, unreadCount } from "@/lib/services/notifications";
+import { listLedger, unreadCount } from "@/lib/services/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -16,8 +16,9 @@ export async function getCachedNotifications() {
 	return cachedRead(readers.getCachedNotifications, async () => {
 		const sb = createAdminClient();
 		// The exact unread count, not the list's: the list stops at 100 rows.
+		// Unread rows come first (ADR-0080), so a failure is never cut off.
 		const [notifications, unread] = await Promise.all([
-			listNotifications(sb, { limit: 100 }),
+			listLedger(sb, { limit: 100 }),
 			unreadCount(sb),
 		]);
 		return { notifications, unread };
