@@ -1,4 +1,4 @@
-# Alerts and activity in the ledger
+# A failure stays visible
 
 Date: 2026-10-06
 
@@ -7,6 +7,11 @@ rows: 27 fired reminders, 38 captures, and two calendar failures from three
 weeks before. Today's counter said "67 notifications", and the two rows that
 needed the owner were buried (#99). Each reminder and capture had already
 reached the owner as a push.
+
+Those two failures were also never settled. Later runs of the calendar bridge
+worked, but nothing said so, and Today could not tell an empty day from a
+calendar that had stopped syncing (#96). Most bridge failures never reach the
+server at all: the Mac is asleep or offline, and the run just does not arrive.
 
 ## Amends
 
@@ -28,7 +33,18 @@ Iron rule #6 is unchanged: every autonomous action still writes its row.
    it now shows only when an alert is waiting.
 4. **/notifications keeps every row.** Unread rows sort to the top, then the
    rest, newest first. Activity stays on the record, read.
-5. **The backlog follows the same rule once.** Migration
+5. **A success settles the failure before it.** A successful bridge run marks
+   unread `gcal.sync_failed` rows read (`resolveAlerts`). It busts the
+   ledger's tags and does not push.
+6. **Today says when a calendar feed is behind** (`lib/calendar-health.ts`).
+   A feed is stale when its sync-state row has no success for two hours, and
+   failed when the last run wrote `{ error }`. Today prints one quiet line per
+   such feed under the headline, and nothing on a healthy day. The read is
+   request-fresh, not cached: staleness is measured against now. The iCloud
+   line has "Sync now", which runs the CalDAV sync as a server action. The
+   work line has no button: the Mac bridge pushes, and the server cannot ask
+   it to.
+7. **The backlog follows the same rule once.** Migration
    `20261006143823_ledger_activity_read.sql` marks unread activity read. Its
    `where` clause mirrors `notificationKind`.
 
@@ -38,3 +54,6 @@ Iron rule #6 is unchanged: every autonomous action still writes its row.
   autonomous action, and iron rule #6 would ask for a row about it.
 - A type that should interrupt must end in `failed` or join `ALERT_TYPES`.
   Change the migration's rule only with a new migration.
+- Who announces a failed calendar sync is still AC-09's decision (ADR-0075).
+  This ADR only settles the bridge's own failure rows and reads the two
+  sync-state rows as they are.

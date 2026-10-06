@@ -32,6 +32,7 @@ import {
 	markNotification,
 	recordNotification,
 	recordNotificationOrThrow,
+	resolveAlerts,
 	unreadCount,
 } from "@/lib/services/notifications";
 import { savePushSubscription } from "@/lib/services/push";
@@ -199,6 +200,39 @@ describe("notifications against the local database", () => {
 		expect(ledger.map((n) => n.id)).toEqual([c.id, reminder.id]);
 		const full = await listLedger(sb, { limit: 100 });
 		expect(full.map((n) => n.id)).toEqual([c.id, a.id, reminder.id]);
+	});
+
+	it("resolving alerts marks only that type's unread rows read, and busts only when it did", async () => {
+		const sb = serviceClient();
+		const failed = await recordNotificationOrThrow(sb, {
+			type: "gcal.sync_failed",
+			title: "Calendar bridge failed",
+		});
+		const other = await recordNotificationOrThrow(sb, {
+			type: "push.failed",
+			title: "Push failed",
+		});
+		(afterExternalMutation as Mock).mockReset();
+
+		expect(await resolveAlerts(sb, "gcal.sync_failed")).toBe(1);
+		expect(afterExternalMutation).toHaveBeenCalledTimes(1);
+		const rows = await listNotifications(sb);
+		expect(rows.find((n) => n.id === failed.id)?.status).toBe("read");
+		expect(rows.find((n) => n.id === other.id)?.status).toBe("unread");
+
+		(afterExternalMutation as Mock).mockReset();
+		expect(await resolveAlerts(sb, "gcal.sync_failed")).toBe(0);
+		expect(afterExternalMutation).not.toHaveBeenCalled();
+	});
+
+	it("resolving alerts resolves 0, logged, when the database is unreachable", async () => {
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			expect(await resolveAlerts(unreachableClient(), "gcal.sync_failed")).toBe(0);
+			expect(error).toHaveBeenCalled();
+		} finally {
+			error.mockRestore();
+		}
 	});
 
 	it("marks one row and returns it as it now stands", async () => {

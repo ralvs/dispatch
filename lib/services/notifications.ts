@@ -149,6 +149,40 @@ export async function recordNotificationOrThrow(
 	return notification;
 }
 
+/**
+ * Mark every unread alert of one type read, because the thing that failed has
+ * since worked — a calendar bridge run that succeeded after a failed one
+ * (ADR-0080). The rows stay on the record. Best-effort like
+ * `recordNotification`: never rejects, resolves how many rows it marked, and
+ * busts the ledger's tags only when it marked any. No push: nothing new
+ * happened that the owner has to hear about.
+ */
+export async function resolveAlerts(sb: SupabaseClient, type: string): Promise<number> {
+	let marked: number;
+	try {
+		const data = unwrap(
+			await sb
+				.from("notifications")
+				.update({ status: "read" })
+				.eq("type", type)
+				.eq("status", "unread")
+				.select("id"),
+		);
+		marked = ((data ?? []) as unknown[]).length;
+	} catch (err) {
+		console.error("[notifications] resolving alerts failed", type, err);
+		return 0;
+	}
+	if (marked > 0) {
+		try {
+			afterExternalMutation(...EXTERNAL_WRITES.ledger);
+		} catch (err) {
+			console.error("[notifications] ledger tag bust failed", err);
+		}
+	}
+	return marked;
+}
+
 // ─── Read / update surface ─────────────────────────────────────────────────
 // Implied directly by the table's `status` enum and idx_notifications_status_time.
 

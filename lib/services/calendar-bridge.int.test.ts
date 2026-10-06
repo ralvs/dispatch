@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BridgeEvent } from "@/lib/schemas/calendar";
+import { readCalendarSyncStates } from "@/lib/services/calendar";
 import { syncBridgeEvents } from "@/lib/services/calendar-bridge";
 import { ServiceError } from "@/lib/services/errors";
 import { serviceClient } from "@/test/integration/clients";
@@ -49,6 +50,16 @@ describe("syncBridgeEvents against the local database", () => {
 		]);
 		const { data } = await serviceClient().from("google_sync_state").select("last_result").single();
 		expect(data?.last_result).toEqual({ pulled: 1, removed: 0, via: "eventkit_bridge" });
+	});
+
+	it("its run is what Today's health line reads for the work feed", async () => {
+		expect(await readCalendarSyncStates(serviceClient())).toEqual({ work: null, icloud: null });
+		await sync([event()]);
+
+		const { work, icloud } = await readCalendarSyncStates(serviceClient());
+		expect(work?.last_synced_at).toEqual(expect.any(String));
+		expect(work?.last_result).toEqual({ pulled: 1, removed: 0, via: "eventkit_bridge" });
+		expect(icloud).toBeNull();
 	});
 
 	it("writes nothing for an unchanged event", async () => {

@@ -5,9 +5,12 @@ import { z } from "zod";
 import type { ActionResult } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { readClock } from "@/lib/cache/settings";
+import { createCaldavClient } from "@/lib/caldav/client";
+import { calendarHealth, type FeedHealth } from "@/lib/calendar-health";
 import { parseDateIso } from "@/lib/dates";
+import { isCaldavConfigured } from "@/lib/env";
 import { afterMutation } from "@/lib/invalidate";
-import { getEvent } from "@/lib/services/calendar";
+import { getEvent, readCalendarSyncStates, syncCalendar } from "@/lib/services/calendar";
 import { ServiceError } from "@/lib/services/errors";
 import { createManualLink } from "@/lib/services/note-links";
 import { createNote } from "@/lib/services/notes";
@@ -17,6 +20,7 @@ import { loadDaySchedulePayload, loadResurfaced, type ResurfacedState } from "@/
 import { viewKey } from "@/lib/store/keys";
 import { seedOf, stampRead } from "@/lib/store/server";
 import type { Snapshot } from "@/lib/store/types";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { readToday } from "./today-snapshots";
 
 /**
@@ -100,4 +104,28 @@ export async function createMeetingNoteForEventAction(eventId: string) {
 	afterMutation("notes.write");
 	afterMutation("today.only");
 	redirect(`/notes/${note.id}`);
+}
+
+/**
+ * "Sync now" on Today's calendar health line (#96): run the iCloud CalDAV
+ * sync the cron runs, and answer with the feeds' health after it. The work
+ * calendar has no such button — the Mac bridge pushes; the server cannot pull.
+ *
+ * Service client, as the cron uses: caldav_sync_state is RLS-on with no
+ * policy. The owner check above it is the boundary (iron rule #2). A failed
+ * run leaves the sync state as it was; the cron records its own failures.
+ */
+export async function syncIcloudCalendarAction(): Promise<ActionResult<FeedHealth[]>> {
+	await requireOwnerPage();
+	if (!isCaldavConfigured()) return { ok: false, formError: "The iCloud calendar is not set up." };
+
+	const admin = createAdminClient();
+	try {
+		await syncCalendar(admin, await createCaldavClient());
+	} catch (error) {
+		console.error("[today] iCloud sync failed", error);
+		return { ok: false, formError: "Couldn't sync the iCloud calendar." };
+	}
+	afterMutation("today.only");
+	return { ok: true, data: calendarHealth(await readCalendarSyncStates(admin), Date.now()) };
 }
