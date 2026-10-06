@@ -44,6 +44,7 @@ export function DayView({
 	todayIso,
 	domains = [],
 	counters,
+	calendarHealth,
 	aside,
 	quote,
 }: {
@@ -60,6 +61,8 @@ export function DayView({
 	 * tree for the phone reorder to work at all.
 	 */
 	counters: React.ReactNode;
+	/** Stale or failing calendar feeds (#96), under the headline; usually empty. */
+	calendarHealth?: React.ReactNode;
 	aside: React.ReactNode;
 	quote: React.ReactNode;
 }) {
@@ -203,6 +206,7 @@ export function DayView({
 				/>
 				{counters}
 			</div>
+			{calendarHealth}
 
 			<DayTape
 				timeline={projected.timeline}

@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { calendarHealth } from "@/lib/calendar-health";
+import { readCalendarSyncStates } from "@/lib/services/calendar";
 import { Seed } from "@/lib/store/seed";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { CalendarHealthLine } from "./calendar-health-line";
 import { Counters } from "./counters";
 import { DayView } from "./day-view";
 import { ProjectsCard } from "./projects-card";
@@ -36,13 +40,17 @@ export async function TodayBody({
 	selectedIso: string;
 }) {
 	const nowMs = Date.now();
-	const { view, digest, snapshot, digestSnapshot } = await readToday(
-		sb,
-		tz,
-		todayIso,
-		selectedIso,
-		nowMs,
-	);
+	const [{ view, digest, snapshot, digestSnapshot }, syncStates] = await Promise.all([
+		readToday(sb, tz, todayIso, selectedIso, nowMs),
+		// Request-fresh, not cached: staleness is measured against now, and the
+		// CalDAV cron busts no tag on a quiet tick. Service client because both
+		// singletons are RLS-on with no policy; page.tsx ran the owner check.
+		// A failed read only loses the line, never the page.
+		readCalendarSyncStates(createAdminClient()).catch((error) => {
+			console.error("[today] calendar sync state read failed", error);
+			return { work: null, icloud: null };
+		}),
+	]);
 
 	return (
 		<Seed snapshot={snapshot}>
@@ -60,6 +68,13 @@ export async function TodayBody({
 							inbox={view.inboxCount}
 							needsReview={view.needsReviewCount}
 							notifications={view.masthead.unreadNotifications}
+						/>
+					}
+					calendarHealth={
+						<CalendarHealthLine
+							health={calendarHealth(syncStates, nowMs)}
+							tz={tz}
+							todayIso={todayIso}
 						/>
 					}
 					aside={

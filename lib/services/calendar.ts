@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CaldavConnection } from "@/lib/caldav/client";
 import { parseCalendarObject } from "@/lib/caldav/ical";
+import type { SyncState } from "@/lib/calendar-health";
 import { CALENDAR_SYNC_WINDOW_MS } from "@/lib/constants";
 import { dayWindowUtc, nowUtc, shiftDay } from "@/lib/dates";
 import { eventFallsOnDay } from "@/lib/day-schedule";
@@ -136,6 +137,24 @@ export async function syncCalendar(
 	);
 
 	return { pulled, removed };
+}
+
+/**
+ * Both feeds' sync-state singletons, for Today's calendar health line (#96).
+ * Both tables are RLS-on with no policy, so `sb` must be the service client;
+ * call it only after the owner check (iron rule #2). A missing row is null.
+ */
+export async function readCalendarSyncStates(
+	sb: SupabaseClient,
+): Promise<{ work: SyncState | null; icloud: SyncState | null }> {
+	const [work, icloud] = await Promise.all([
+		sb.from("google_sync_state").select("last_synced_at, last_result").maybeSingle(),
+		sb.from("caldav_sync_state").select("last_synced_at, last_result").maybeSingle(),
+	]);
+	return {
+		work: (unwrap(work) ?? null) as SyncState | null,
+		icloud: (unwrap(icloud) ?? null) as SyncState | null,
+	};
 }
 
 export async function listEventsOn(

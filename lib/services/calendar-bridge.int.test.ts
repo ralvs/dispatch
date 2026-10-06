@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BridgeEvent } from "@/lib/schemas/calendar";
+import { readCalendarSyncStates } from "@/lib/services/calendar";
 import { syncBridgeEvents } from "@/lib/services/calendar-bridge";
 import { ServiceError } from "@/lib/services/errors";
 import { serviceClient } from "@/test/integration/clients";
@@ -51,10 +52,42 @@ describe("syncBridgeEvents against the local database", () => {
 		expect(data?.last_result).toEqual({ pulled: 1, removed: 0, via: "eventkit_bridge" });
 	});
 
+	it("its run is what Today's health line reads for the work feed", async () => {
+		expect(await readCalendarSyncStates(serviceClient())).toEqual({ work: null, icloud: null });
+		await sync([event()]);
+
+		const { work, icloud } = await readCalendarSyncStates(serviceClient());
+		expect(work?.last_synced_at).toEqual(expect.any(String));
+		expect(work?.last_result).toEqual({ pulled: 1, removed: 0, via: "eventkit_bridge" });
+		expect(icloud).toBeNull();
+	});
+
 	it("writes nothing for an unchanged event", async () => {
 		await sync([event()]);
 
 		expect(await sync([event()])).toEqual({ pulled: 0, removed: 0 });
+	});
+
+	it("stores a batch in one go, and a uid sent twice keeps its last copy", async () => {
+		const batch = [
+			event(),
+			event({ uid: "ek-2", title: "Planning" }),
+			event({ uid: "ek-1", title: "Eng sync (moved)", etag: "etag-2" }),
+		];
+
+		expect(await sync(batch)).toEqual({ pulled: 2, removed: 0 });
+		expect(await rows()).toMatchObject([
+			{ caldav_uid: "ek-1", title: "Eng sync (moved)" },
+			{ caldav_uid: "ek-2", title: "Planning" },
+		]);
+	});
+
+	it("a uid whose last copy matches the stored row keeps the stored row", async () => {
+		await sync([event()]);
+
+		const batch = [event({ title: "Eng sync (moved)", etag: "etag-2" }), event()];
+		expect(await sync(batch)).toEqual({ pulled: 0, removed: 0 });
+		expect(await rows()).toMatchObject([{ caldav_uid: "ek-1", title: "Eng sync" }]);
 	});
 
 	it("rewrites calendar_name when the Apple calendar is renamed", async () => {

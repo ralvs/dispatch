@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isPushConfigured } from "@/lib/env";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
+import { notificationKind } from "@/lib/notification-kind";
 import {
 	type Json,
 	NOTIFICATION_SELECT,
@@ -34,6 +35,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // best-effort and never reach the caller. Delivery always reads
 // push_subscriptions through the service-role client, so it no longer depends
 // on which `sb` the caller passed — `sb` scopes the insert only (iron rule #3).
+//
+// A row lands unread only when it is an alert (lib/notification-kind.ts,
+// ADR-0080). Activity — a capture filed, a reminder fired — lands read: its
+// push is the delivery, and the row is the record. So unread means "something
+// failed", and a real failure is not buried under routine work.
 //
 // ── Known limits ──
 //   - Not a hard boundary. Anything holding a SupabaseClient can still write
@@ -103,6 +109,7 @@ async function insertNotification(
 				source_ref: entry.source_ref ?? null,
 				source_url: entry.source_url ?? null,
 				undo_payload: entry.undo_payload ?? null,
+				status: notificationKind(entry.type) === "alert" ? "unread" : "read",
 			})
 			.select(NOTIFICATION_SELECT)
 			.single(),
@@ -142,6 +149,40 @@ export async function recordNotificationOrThrow(
 	return notification;
 }
 
+/**
+ * Mark every unread alert of one type read, because the thing that failed has
+ * since worked — a calendar bridge run that succeeded after a failed one
+ * (ADR-0080). The rows stay on the record. Best-effort like
+ * `recordNotification`: never rejects, resolves how many rows it marked, and
+ * busts the ledger's tags only when it marked any. No push: nothing new
+ * happened that the owner has to hear about.
+ */
+export async function resolveAlerts(sb: SupabaseClient, type: string): Promise<number> {
+	let marked: number;
+	try {
+		const data = unwrap(
+			await sb
+				.from("notifications")
+				.update({ status: "read" })
+				.eq("type", type)
+				.eq("status", "unread")
+				.select("id"),
+		);
+		marked = ((data ?? []) as unknown[]).length;
+	} catch (err) {
+		console.error("[notifications] resolving alerts failed", type, err);
+		return 0;
+	}
+	if (marked > 0) {
+		try {
+			afterExternalMutation(...EXTERNAL_WRITES.ledger);
+		} catch (err) {
+			console.error("[notifications] ledger tag bust failed", err);
+		}
+	}
+	return marked;
+}
+
 // ─── Read / update surface ─────────────────────────────────────────────────
 // Implied directly by the table's `status` enum and idx_notifications_status_time.
 
@@ -157,6 +198,24 @@ export async function listNotifications(
 	if (opts.limit != null) q = q.limit(opts.limit);
 	const data = unwrap(await q);
 	return (data ?? []) as unknown as NotificationRow[];
+}
+
+/**
+ * The ledger as /notifications shows it: every unread row first — in practice
+ * the alerts (ADR-0080) — then the newest of the rest, newest first within
+ * each part. Unread rows are read on their own so an old failure is never cut
+ * off by a page of newer activity. Dismissed rows are left out. `limit` caps
+ * the whole list; unread rows take their places first.
+ */
+export async function listLedger(
+	sb: SupabaseClient,
+	opts: { limit: number },
+): Promise<NotificationRow[]> {
+	const [unread, rest] = await Promise.all([
+		listNotifications(sb, { status: "unread", limit: opts.limit }),
+		listNotifications(sb, { status: "read", limit: opts.limit }),
+	]);
+	return [...unread, ...rest].slice(0, opts.limit);
 }
 
 /** Count of unread notifications — the badge number. */

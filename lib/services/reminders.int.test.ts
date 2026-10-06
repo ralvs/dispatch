@@ -72,7 +72,8 @@ describe("runTaskReminders against the local database", () => {
 			body: "Due now, at 15:00.",
 			source_ref: task.id,
 			source_url: `/tasks/${task.id}`,
-			status: "unread",
+			// Activity: the push is the delivery, the row lands read (ADR-0080).
+			status: "read",
 		});
 		const marked = await sentState(task.id);
 		expect(marked.reminders_sent).toEqual({ due: TODAY });

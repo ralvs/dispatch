@@ -26,11 +26,13 @@ vi.mock("@/lib/invalidate", async (original) => ({
 import { afterExternalMutation } from "@/lib/invalidate";
 import {
 	dismissAllNotifications,
+	listLedger,
 	listNotifications,
 	markAllNotificationsRead,
 	markNotification,
 	recordNotification,
 	recordNotificationOrThrow,
+	resolveAlerts,
 	unreadCount,
 } from "@/lib/services/notifications";
 import { savePushSubscription } from "@/lib/services/push";
@@ -45,17 +47,18 @@ import {
 // returns, which the entity store confirms from (#28). Cron writes through the
 // service client; the page reads and marks through the owner's.
 
+// Alerts, so every seeded row starts unread (ADR-0080).
 async function seedLedger() {
 	const sb = serviceClient();
 	const a = await recordNotificationOrThrow(sb, {
-		type: "reminder.fired",
-		title: "Standup in 10m",
+		type: "gcal.sync_failed",
+		title: "Calendar bridge failed",
 	});
 	const b = await recordNotificationOrThrow(sb, {
-		type: "caldav.synced",
-		title: "Calendar synced",
+		type: "cron.sweep",
+		title: "Sweep reconciled 1 stuck capture(s)",
 	});
-	const c = await recordNotificationOrThrow(sb, { type: "capture.filed", title: "Note filed" });
+	const c = await recordNotificationOrThrow(sb, { type: "push.failed", title: "Push failed" });
 	return { a, b, c };
 }
 
@@ -142,20 +145,33 @@ describe("the ledger announces what it records (ADR-0075)", () => {
 });
 
 describe("notifications against the local database", () => {
-	it("records an unread row with omitted fields as null", async () => {
+	it("records an alert unread, with omitted fields as null", async () => {
 		const row = await recordNotification(serviceClient(), {
-			type: "reminder.fired",
-			title: "Standup in 10m",
+			type: "gcal.sync_failed",
+			title: "Calendar bridge failed",
 		});
 		expect(row).toMatchObject({
-			type: "reminder.fired",
-			title: "Standup in 10m",
+			type: "gcal.sync_failed",
+			title: "Calendar bridge failed",
 			body: null,
 			source_ref: null,
 			source_url: null,
 			undo_payload: null,
 			status: "unread",
 		});
+	});
+
+	it("records activity already read, still pushed, and out of the unread count", async () => {
+		const sb = serviceClient();
+		const fired = await recordNotificationOrThrow(sb, {
+			type: "reminder.fired",
+			title: "Standup in 10m",
+		});
+		const captured = await recordNotification(sb, { type: "capture.link", title: "Saved link" });
+		expect(fired.status).toBe("read");
+		expect(captured?.status).toBe("read");
+		expect(sendNotification).toHaveBeenCalledTimes(2);
+		expect(await unreadCount(await ownerClient())).toBe(0);
 	});
 
 	it("lists newest first, filters by status and limits", async () => {
@@ -168,6 +184,56 @@ describe("notifications against the local database", () => {
 		const unread = await listNotifications(sb, { status: "unread", limit: 1 });
 		expect(unread.map((n) => n.id)).toEqual([c.id]);
 		expect(await unreadCount(sb)).toBe(2);
+	});
+
+	it("the ledger view puts every unread row first, then the newest read, and drops dismissed", async () => {
+		const sb = await ownerClient();
+		const { a, b, c } = await seedLedger();
+		const reminder = await recordNotificationOrThrow(serviceClient(), {
+			type: "reminder.fired",
+			title: "Standup in 10m",
+		});
+		await markNotification(sb, b.id, "dismissed");
+
+		// The alerts are older than the reminder, and still lead; the cap is on
+		// the whole list.
+		const ledger = await listLedger(sb, { limit: 2 });
+		expect(ledger.map((n) => n.id)).toEqual([c.id, a.id]);
+		const full = await listLedger(sb, { limit: 100 });
+		expect(full.map((n) => n.id)).toEqual([c.id, a.id, reminder.id]);
+	});
+
+	it("resolving alerts marks only that type's unread rows read, and busts only when it did", async () => {
+		const sb = serviceClient();
+		const failed = await recordNotificationOrThrow(sb, {
+			type: "gcal.sync_failed",
+			title: "Calendar bridge failed",
+		});
+		const other = await recordNotificationOrThrow(sb, {
+			type: "push.failed",
+			title: "Push failed",
+		});
+		(afterExternalMutation as Mock).mockReset();
+
+		expect(await resolveAlerts(sb, "gcal.sync_failed")).toBe(1);
+		expect(afterExternalMutation).toHaveBeenCalledTimes(1);
+		const rows = await listNotifications(sb);
+		expect(rows.find((n) => n.id === failed.id)?.status).toBe("read");
+		expect(rows.find((n) => n.id === other.id)?.status).toBe("unread");
+
+		(afterExternalMutation as Mock).mockReset();
+		expect(await resolveAlerts(sb, "gcal.sync_failed")).toBe(0);
+		expect(afterExternalMutation).not.toHaveBeenCalled();
+	});
+
+	it("resolving alerts resolves 0, logged, when the database is unreachable", async () => {
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			expect(await resolveAlerts(unreachableClient(), "gcal.sync_failed")).toBe(0);
+			expect(error).toHaveBeenCalled();
+		} finally {
+			error.mockRestore();
+		}
 	});
 
 	it("marks one row and returns it as it now stands", async () => {

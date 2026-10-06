@@ -4,7 +4,7 @@ import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { BridgeSyncBodySchema } from "@/lib/schemas/calendar";
 import { isAuthorized } from "@/lib/secret-auth";
 import { syncBridgeEvents } from "@/lib/services/calendar-bridge";
-import { recordNotification } from "@/lib/services/notifications";
+import { recordNotification, resolveAlerts } from "@/lib/services/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -13,7 +13,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // there). Secret-authed; never talks to Google OAuth.
 //
 // Quiet on success — a 15m bridge would otherwise spam the ledger/push.
-// Failures still write a notification so the owner hears about it.
+// Failures still write a notification so the owner hears about it, and the
+// next success marks those failures read (ADR-0080).
 // ─────────────────────────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
@@ -40,6 +41,9 @@ export async function POST(request: Request) {
 		});
 
 		afterExternalMutation(...EXTERNAL_WRITES.calendarBridge);
+		// A success settles any earlier failure: it leaves the unread alerts
+		// for the record (ADR-0080). Never rejects; busts its own tags.
+		await resolveAlerts(sb, "gcal.sync_failed");
 
 		return NextResponse.json(result);
 	} catch (err) {
