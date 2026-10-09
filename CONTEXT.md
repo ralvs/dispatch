@@ -6,7 +6,7 @@ for the iron rules and `docs/adr/` for the decisions behind them.
 
 ## capture
 
-Frictionless intake of a raw thought — typed or pasted text, or text from a
+Frictionless intake of raw input — typed or pasted text, or text from a
 webhook, watch, or shared link — into the system before it is understood.
 Capture must never be lost (iron rule #4): the raw input is persisted first,
 then parsed; any failure degrades to a `needs_review` note rather than
@@ -184,3 +184,41 @@ than a span — the shape is what tells you which is which.
 
 Colour is the domain's for a task and the **calendar's** for an event, since
 a calendar event carries no domain (`lib/ui/event-color.ts`).
+
+## Memex
+
+*Planned, not built (map #117).* The knowledge engine inside Dispatch, after
+Karpathy's LLM Wiki. Renan's notes and tasks are its **sources**; Memex reads
+them and never edits them. From them it compiles **thoughts**, which it owns.
+It may *propose* a note or a task, and Renan accepts it. Code lives in
+`memex/`, tables in the `memex` schema, and Dispatch never imports it.
+
+## thought
+
+*Planned (#120).* Memex's unit of knowledge: **one fact or one event**, in
+English (docs/adr/0081), never a note. A thought has a **kind**:
+
+- **event** — something happened on a date, with a precision of day, month
+  or year, and an optional amount and currency. "Main bedroom AC cleaned in
+  April 2026, R$ 150."
+- **fact** — something that stays true. "Mother-in-law is Andrea."
+- **rule** — something that repeats, with an interval, or a preference.
+  "Main bedroom AC needs cleaning every 6 months."
+- **insight** — a conclusion Memex draws across thoughts.
+
+Each thought has at least one **source**: a note, a task, Renan's answer to a
+question, a Chat answer, an Echo import, or an MCP capture. It is
+**inferred** (Memex read it) or **confirmed** (Renan said or approved it). Its
+meaning is never edited: a newer thought **supersedes** it, and the old one
+stays as history; only a typo fix edits in place. "Last cleaned" is not
+stored — it is the newest event on the same entity as the rule. A thought
+whose sources are all deleted stays, marked as having no source; Dream
+reviews it. A thought Renan deletes is hidden, not erased, and Memex does not
+write it again from the same source.
+
+## entity (Memex)
+
+*Planned (#120).* A person, place or thing that thoughts are about ("Main
+bedroom AC", "Andrea"). Thoughts link to entities, and that is the graph an
+agent walks; the only link between two thoughts is **supersedes**. Not the
+`people` table behind a **mention**.
