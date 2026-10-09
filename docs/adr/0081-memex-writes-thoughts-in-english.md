@@ -22,8 +22,9 @@ that rule. This ADR says why it is not.
 1. **A thought's text is always English**, whatever the language of its
    sources. A PT-BR note about "limpeza do ar-condicionado" gives the thought
    "Main bedroom AC cleaned in April 2026, R$ 150".
-2. **Names and amounts stay as written.** People, places and things keep
-   their own names ("Andrea", "Rua Augusta"). Money keeps its currency
+2. **Proper names and amounts stay as written.** A proper name is never
+   translated ("Andrea", "Rua Augusta"). A plain description is English like
+   the rest of the thought ("Main bedroom AC"). Money keeps its currency
    ("R$ 150", never converted).
 3. **Renan's content is unchanged.** Notes and tasks stay verbatim, in the
    language written. Memex never edits them (map #117). The language of a

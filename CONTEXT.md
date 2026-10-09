@@ -210,7 +210,7 @@ every 6 months" is two thoughts: an event and a rule. A thought has a
 
 There is no task kind: tasks are Dispatch's.
 
-Each thought has at least one **source**: a note, a task, Renan's answer to a
+A thought is created from at least one **source**: a note, a task, Renan's answer to a
 question, a Chat answer, an Echo import, or an MCP capture. It is
 **inferred** (Memex read it) or **confirmed** (Renan said or approved it). A
 thought from Renan's answer is confirmed at once. Memex asks Renan only when
@@ -229,7 +229,8 @@ source.
 ## entity (Memex)
 
 *Planned (#120).* A person, place or thing that thoughts are about ("Main
-bedroom AC", "Andrea"). A rule and its events link to the same entity.
+bedroom AC", "Andrea"). A proper name stays as written; a plain
+description is English (docs/adr/0081). A rule and its events link to the same entity.
 Thoughts link to entities, and that is the graph an agent walks; the only
 link between two thoughts is **supersedes**, and everything else goes through
 entities and search. Memex extracts entities again from its thoughts; it does
