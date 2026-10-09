@@ -3,9 +3,9 @@
 Date: 2026-10-09
 
 Memex is the knowledge engine planned inside Dispatch (map #117). It reads
-Renan's notes and tasks and compiles them into **thoughts**: short,
-one-fact statements that Memex writes and owns (#120). Renan writes in
-PT-BR and in English, often in the same day.
+Renan's notes and tasks and compiles them into **thoughts**: short, atomic
+statements (one event, fact, rule or insight) that Memex writes and owns
+(#120). Renan writes in PT-BR and in English, often in the same day.
 
 Search across languages is weak today. A note saved in PT-BR is hard to find
 with an English query, for a person and for an agent: Postgres full-text
@@ -29,8 +29,8 @@ that rule. This ADR says why it is not.
    language written. Memex never edits them (map #117). The language of a
    note or task that Memex *proposes* is left to the ticket that designs
    proposals.
-4. **Every thought links to its sources**, so the original words are always
-   one step away (#120).
+4. **Every thought links to its sources**, so the original words are one
+   step away while the source exists (#120).
 
 ## Why rule #5 still holds
 
@@ -41,11 +41,12 @@ outside its scope.
 
 ## Consequences
 
-- Thought search can use one language: English full-text search plus
-  embeddings. Bilingual search over notes is still a separate problem.
+- Thought search needs only one language: English full-text search, plus
+  embeddings if the search ticket keeps them. Bilingual search over notes is
+  still a separate problem.
 - A thought from a PT-BR answer ("paguei 3.500") reads differently from the
   answer. The source link keeps the original.
-- Translation can lose a nuance. A thought is one fact (#120), so the loss is
+- Translation can lose a nuance. A thought is atomic (#120), so the loss is
   small, and the source is the record of truth.
 - Reverting means rewriting each thought from its sources in their own
   language. Memex can do that from the source links.

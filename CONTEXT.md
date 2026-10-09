@@ -195,8 +195,10 @@ It may *propose* a note or a task, and Renan accepts it. Code lives in
 
 ## thought
 
-*Planned (#120).* Memex's unit of knowledge: **one fact or one event**, in
-English (docs/adr/0081), never a note. A thought has a **kind**:
+*Planned (#120).* Memex's unit of knowledge: **one atomic statement**, in
+English (docs/adr/0081), never a note. Echo's "AC cleaned in April, R$ 150,
+every 6 months" is two thoughts: an event and a rule. A thought has a
+**kind**:
 
 - **event** — something happened on a date, with a precision of day, month
   or year, and an optional amount and currency. "Main bedroom AC cleaned in
@@ -206,19 +208,29 @@ English (docs/adr/0081), never a note. A thought has a **kind**:
   "Main bedroom AC needs cleaning every 6 months."
 - **insight** — a conclusion Memex draws across thoughts.
 
+There is no task kind: tasks are Dispatch's.
+
 Each thought has at least one **source**: a note, a task, Renan's answer to a
 question, a Chat answer, an Echo import, or an MCP capture. It is
-**inferred** (Memex read it) or **confirmed** (Renan said or approved it). Its
-meaning is never edited: a newer thought **supersedes** it, and the old one
-stays as history; only a typo fix edits in place. "Last cleaned" is not
-stored — it is the newest event on the same entity as the rule. A thought
-whose sources are all deleted stays, marked as having no source; Dream
-reviews it. A thought Renan deletes is hidden, not erased, and Memex does not
-write it again from the same source.
+**inferred** (Memex read it) or **confirmed** (Renan said or approved it). A
+thought from Renan's answer is confirmed at once. Memex asks Renan only when
+a thought matters, such as a cost or a rule, never to confirm everything.
+
+Its meaning is never edited: a newer thought **supersedes** it, and the old
+one stays as history. Only a typo fix edits in place, and it keeps the old
+text as a version. "Last cleaned" is not stored: it is the newest event that
+the rule covers, on the rule's entity. When Renan edits a source note, Memex
+reads it again and may supersede the thought. When every source of a thought
+is deleted, the thought stays, marked as having no source: a confirmed one is
+kept, and for an inferred one Dream proposes removal. A thought Renan deletes
+is hidden, not erased, and Memex does not write it again from the same
+source.
 
 ## entity (Memex)
 
 *Planned (#120).* A person, place or thing that thoughts are about ("Main
-bedroom AC", "Andrea"). Thoughts link to entities, and that is the graph an
-agent walks; the only link between two thoughts is **supersedes**. Not the
-`people` table behind a **mention**.
+bedroom AC", "Andrea"). A rule and its events link to the same entity.
+Thoughts link to entities, and that is the graph an agent walks; the only
+link between two thoughts is **supersedes**, and everything else goes through
+entities and search. Memex extracts entities again from its thoughts; it does
+not copy Echo's. Not the `people` table behind a **mention**.
