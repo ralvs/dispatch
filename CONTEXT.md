@@ -218,8 +218,10 @@ a thought matters, such as a cost or a rule, never to confirm everything.
 
 Its meaning is never edited: a newer thought **supersedes** it, and the old
 one stays as history. Only a typo fix edits in place, and it keeps the old
-text as a version. "Last cleaned" is not stored: it is the newest event that
-the rule covers, on the rule's entity. When Renan edits a source note, Memex
+text as a version. An event that counts for a rule **fulfils** it: "AC
+cleaned" fulfils "AC needs cleaning every 6 months", and "AC repaired" does
+not. Memex decides this once, when it ingests the event, and stores the link.
+"Last cleaned" is then the newest event that fulfils the rule. When Renan edits a source note, Memex
 reads it again and may supersede the thought. When every source of a thought
 is deleted, the thought stays, marked as having no source: a confirmed one is
 kept, and for an inferred one Dream proposes removal. A thought Renan deletes
@@ -230,8 +232,8 @@ source.
 
 *Planned (#120).* A person, place or thing that thoughts are about ("Main
 bedroom AC", "Andrea"). A proper name stays as written; a plain
-description is English (docs/adr/0081). A rule and its events link to the same entity.
-Thoughts link to entities, and that is the graph an agent walks; the only
-link between two thoughts is **supersedes**, and everything else goes through
-entities and search. Memex extracts entities again from its thoughts; it does
+description is English (docs/adr/0081). A rule and its events link to the
+same entity. Thoughts link to entities, and that is the graph an agent walks.
+Only two links join one thought to another: **supersedes** and **fulfils**
+(an event to its rule). Everything else goes through entities and search. Memex extracts entities again from its thoughts; it does
 not copy Echo's. Not the `people` table behind a **mention**.
