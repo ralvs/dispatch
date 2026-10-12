@@ -3,7 +3,8 @@
 Date: 2026-10-12
 
 Memex is the knowledge engine planned inside Dispatch (map #117). It reads
-Renan's notes and tasks and compiles them into thoughts (#120, ADR-0081). It
+Renan's notes and done tasks (point 4) and compiles them into thoughts
+(#120, ADR-0081). It
 must learn when a source changes: a new note, an edit, a tick, an un-tick, a
 delete.
 
@@ -22,14 +23,18 @@ do that.
    like the other crons, reads `public.notes` and `public.tasks` and compares
    them with what Memex already read. Memex keeps that state in its own
    schema. There is no trigger, publication or queue on a `public` table.
+   The poll code lives in `memex/`. The only file outside it is the route
+   file Next.js needs under `app/api/`, which is Memex's entry point and the
+   one place allowed to import `memex/`. Dispatch code still never does.
 2. **A change is a change in the text Memex reads**, not a new `updated_at`.
    Memex stores a hash of the fields it reads for each source: title and body
    for a note; title, notes, `completed_at`, `due_date`, `due_time` and
    `recurrence_rule` for a task. A pin, a top-3 star or a sent reminder moves
    `updated_at` but not the hash, so it costs nothing.
 3. **A note is read when it is quiet.** Memex reads a note only after 10
-   minutes with no change, so an autosaving note is read once, not on every
-   save.
+   minutes with no new `updated_at`, so an autosaving note is read once, not
+   on every save. A pin can delay a read by those 10 minutes, but it never
+   causes one: the hash decides whether there is anything to read.
 4. **Only done tasks are sources** (map #117). Memex reacts to a task
    completed, edited while done, reopened, or deleted. A recurring tick is a
    new done snapshot (ADR-0083); an un-tick deletes it. Open tasks are read
@@ -37,7 +42,10 @@ do that.
    already exists, and they never become thoughts.
 5. **Deletes are found by difference.** Memex already links each thought to
    its sources (#120). A linked source that is gone, or a task that is no
-   longer done, is a lost source, handled as #120 says.
+   longer done, is a lost source, handled as #120 says. This check comes
+   before the hash: a reopened task has a new hash (its `completed_at` is
+   cleared), but it is lost, not read again. A source that is gone or no
+   longer done also leaves Memex's progress state, so it is never retried.
 6. **Each run checks the switch and has a cap.** If Memex is off in
    `app_settings`, the run does nothing. Each run reads at most about 20
    sources, to bound the paid AI calls; the rest wait for the next run.
@@ -68,5 +76,5 @@ for a question about a ticked task, that is soon enough.
   trigger stays the last resort.
 - A change made and undone between two runs is never seen. That is fine:
   nothing lasting happened.
-- The first run sees every existing note as new. Whether that is the
+- The first run sees every existing note and done task as new. Whether that is the
   backfill, and how it is paced, belongs to the migration ticket (#125).
