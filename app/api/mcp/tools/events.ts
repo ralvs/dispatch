@@ -151,7 +151,7 @@ export function registerEventTools(server: McpServer, sb: SupabaseClient): void 
 		{
 			title: "Get an event",
 			description:
-				"One event in full, by its id from list_events, with description and attendees. A non-editable event says why.",
+				"One event in full, by its id from list_events, with description and attendees. A non-editable event says why. A work event (source google) can be up to 15 minutes old.",
 			inputSchema: z.object({ id: z.uuid().describe("The event's id.") }),
 			annotations: { readOnlyHint: true },
 		},

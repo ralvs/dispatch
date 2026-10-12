@@ -393,6 +393,8 @@ describe("MCP event tools: write", () => {
 
 		expect(result.isError).toBe(true);
 		expect(result.text).toMatch(/changed in iCloud since the last sync/);
+		expect(caldav.conn?.updateObject).not.toHaveBeenCalled();
+		expect(await rows()).toEqual([expect.objectContaining({ title: "Dentist" })]);
 		expect(await ledger("mcp.event.updated")).toEqual([]);
 	});
 
