@@ -6,15 +6,24 @@ import { TASK_NOTES_MAX, TASK_TITLE_MAX } from "@/lib/schemas/task";
 import { syncTaskMentionsFromText } from "@/lib/services/mentions";
 import { recordNotification } from "@/lib/services/notifications";
 import { todayForRequest } from "@/lib/services/settings";
-import { createTask, getTask, listTasks, type TaskRow, updateTask } from "@/lib/services/tasks";
+import {
+	completeTask,
+	createTask,
+	getTask,
+	listTasks,
+	skipTask,
+	type TaskRow,
+	updateTask,
+} from "@/lib/services/tasks";
 import { isOverdue } from "@/lib/task-predicates";
 import { registerTextTool, ToolError } from "../contract";
 import { resolveDomain, resolveProject, UNFILED } from "../resolve";
 import { extractUrls } from "../urls";
 
 // The owner's tasks, as an assistant sees them (docs/adr/0079): read, create,
-// edit. Completing and deleting stay in the app. Projects and domains are
-// named, not referenced by id (../resolve.ts).
+// edit, complete, and skip a recurring task's cycle (docs/adr/0083). Deleting
+// stays in the app. Projects and domains are named, not referenced by id
+// (../resolve.ts).
 
 const DateSchema = z.iso.date();
 
@@ -68,6 +77,26 @@ async function recordUpdate(
 		undo_payload: { table: "tasks", id, prev },
 	});
 	afterExternalMutation(...EXTERNAL_WRITES.mcpTasks);
+}
+
+/**
+ * The due date the assistant last read, for the precondition a tick and a skip
+ * share (docs/adr/0037): a retried call finds the task moved on and writes
+ * nothing, so it never ticks the next cycle by mistake.
+ */
+const ObservedDueSchema = DateSchema.nullable().describe(
+	"The task's due_date as you last read it (null if it had none). If the task has moved on since, nothing changes.",
+);
+
+/** Why a tick or a skip wrote nothing, read from the row as it is now. */
+function refusal(row: TaskRow, observed: string | null): ToolError {
+	if (row.status !== "open") return new ToolError("That task is already done.");
+	if (row.due_date !== observed) {
+		return new ToolError(
+			`That task is now due ${row.due_date ?? "with no date"}, not ${observed ?? "with no date"}. Read it again before acting.`,
+		);
+	}
+	return new ToolError("Nothing changed.");
 }
 
 async function mustGetTask(sb: SupabaseClient, id: string): Promise<TaskRow> {
@@ -244,6 +273,83 @@ export function registerTaskTools(server: McpServer, sb: SupabaseClient): void {
 			}
 
 			await recordUpdate(sb, id, before, after);
+			return toDetail(after);
+		},
+	);
+
+	registerTextTool(
+		server,
+		"complete_task",
+		{
+			title: "Complete a task",
+			description:
+				"Mark a task done, by id. A recurring task stays one task: this cycle is saved as a done copy (`done`) and the task moves to its next due date (`task`).",
+			inputSchema: z.object({
+				id: z.uuid().describe("The task's id."),
+				due_date: ObservedDueSchema,
+			}),
+			annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+		},
+		async ({ id, due_date }) => {
+			const today = await todayForRequest(sb);
+			const result = await completeTask(sb, id, today, { dueDate: due_date });
+			const after = await mustGetTask(sb, id);
+			if (!result.applied) throw refusal(after, due_date);
+			// Iron rule #6. The done copy is what the owner would undo, so it is
+			// the ledger's reference for a recurring tick.
+			await recordNotification(sb, {
+				type: "mcp.task.completed",
+				title: "Assistant completed a task",
+				body: after.title,
+				source_ref: result.snapshot?.id ?? id,
+			});
+			afterExternalMutation(...EXTERNAL_WRITES.mcpTasks);
+			return {
+				task: toDetail(after),
+				done: result.snapshot ? toDetail(result.snapshot) : null,
+			};
+		},
+	);
+
+	registerTextTool(
+		server,
+		"skip_task",
+		{
+			title: "Skip a recurring task's cycle",
+			description:
+				"Move a recurring task to its next due date without marking this cycle done. Only for a task with a recurrence rule.",
+			inputSchema: z.object({
+				id: z.uuid().describe("The task's id."),
+				due_date: ObservedDueSchema,
+			}),
+			annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+		},
+		async ({ id, due_date }) => {
+			const before = await mustGetTask(sb, id);
+			if (before.recurrence_rule === null) {
+				throw new ToolError("That task does not repeat, so it has no cycle to skip.");
+			}
+			const today = await todayForRequest(sb);
+			const result = await skipTask(sb, id, today, { dueDate: due_date });
+			const after = await mustGetTask(sb, id);
+			if (!result.applied) throw refusal(after, due_date);
+			await recordNotification(sb, {
+				type: "mcp.task.skipped",
+				title: "Assistant skipped a task's cycle",
+				body: after.title,
+				source_ref: id,
+				undo_payload: {
+					table: "tasks",
+					id,
+					prev: {
+						due_date: before.due_date,
+						due_time: before.due_time,
+						recurrence_day: before.recurrence_day,
+						top3_for_date: before.top3_for_date,
+					},
+				},
+			});
+			afterExternalMutation(...EXTERNAL_WRITES.mcpTasks);
 			return toDetail(after);
 		},
 	);

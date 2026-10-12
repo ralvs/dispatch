@@ -251,4 +251,91 @@ describe("MCP task tools", () => {
 		});
 		expect(error).not.toBeNull();
 	});
+
+	it("complete_task closes a plain task, and a retry with the old date writes nothing", async () => {
+		const s = await seed();
+		const result = await call("complete_task", { id: s.late.id, due_date: s.late.due_date });
+		expect(result.isError).toBe(false);
+		expect(result.json()).toMatchObject({
+			task: { id: s.late.id, status: "done" },
+			done: null,
+		});
+		expect(await ledger("mcp.task.completed")).toEqual([
+			{ type: "mcp.task.completed", source_ref: s.late.id, undo_payload: null },
+		]);
+		expect(afterExternalMutation).toHaveBeenCalledWith(...EXTERNAL_WRITES.mcpTasks);
+
+		const again = await call("complete_task", { id: s.late.id, due_date: s.late.due_date });
+		expect(again.isError).toBe(true);
+		expect(again.text).toContain("already done");
+		expect(await ledger("mcp.task.completed")).toHaveLength(1);
+	});
+
+	it("complete_task on a recurring task keeps its id and saves this cycle as done (docs/adr/0083)", async () => {
+		const s = await seed();
+		const due = shiftDay(s.today, -1);
+		const daily = await createTask(s.sb, {
+			title: "Water plants",
+			due_date: due,
+			recurrence_rule: "daily",
+		});
+		const result = (await call("complete_task", { id: daily.id, due_date: due })).json();
+		expect(result.task).toMatchObject({ id: daily.id, status: "open", recurrence_rule: "daily" });
+		expect(result.task.due_date > due).toBe(true);
+		expect(result.done).toMatchObject({
+			title: "Water plants",
+			status: "done",
+			due_date: due,
+			recurrence_rule: null,
+			series_id: daily.id,
+		});
+		expect(await ledger("mcp.task.completed")).toEqual([
+			{ type: "mcp.task.completed", source_ref: result.done.id, undo_payload: null },
+		]);
+
+		// A retry with the date it read first finds the task moved on: no second cycle.
+		const retry = await call("complete_task", { id: daily.id, due_date: due });
+		expect(retry.isError).toBe(true);
+		expect(retry.text).toContain(`now due ${result.task.due_date}`);
+		const { data: snapshots } = await serviceClient()
+			.from("tasks")
+			.select("id")
+			.eq("series_id", daily.id);
+		expect(snapshots).toHaveLength(1);
+	});
+
+	it("skip_task moves a recurring task with nothing saved, and refuses a plain one", async () => {
+		const s = await seed();
+		const daily = await createTask(s.sb, {
+			title: "Stretch",
+			due_date: s.today,
+			recurrence_rule: "daily",
+		});
+		const moved = (await call("skip_task", { id: daily.id, due_date: s.today })).json();
+		expect(moved).toMatchObject({ id: daily.id, status: "open", due_date: shiftDay(s.today, 1) });
+		const { data: snapshots } = await serviceClient()
+			.from("tasks")
+			.select("id")
+			.eq("series_id", daily.id);
+		expect(snapshots).toEqual([]);
+		expect(await ledger("mcp.task.skipped")).toEqual([
+			{
+				type: "mcp.task.skipped",
+				source_ref: daily.id,
+				undo_payload: {
+					table: "tasks",
+					id: daily.id,
+					prev: { due_date: s.today, due_time: null, recurrence_day: null, top3_for_date: null },
+				},
+			},
+		]);
+
+		const retry = await call("skip_task", { id: daily.id, due_date: s.today });
+		expect(retry.isError).toBe(true);
+		expect(await ledger("mcp.task.skipped")).toHaveLength(1);
+
+		const plain = await call("skip_task", { id: s.soon.id, due_date: s.soon.due_date });
+		expect(plain.isError).toBe(true);
+		expect(plain.text).toContain("does not repeat");
+	});
 });
