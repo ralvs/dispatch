@@ -179,6 +179,8 @@ export const EXTERNAL_WRITES = {
 	mcpTasks: ["task.write"],
 	/** /api/mcp note tools: an assistant creating or editing a note (ADR-0079). */
 	mcpNotes: ["notes.write"],
+	/** /api/mcp event tools: an assistant creating, editing or deleting an event (ADR-0079). */
+	mcpEvents: ["today.only"],
 } as const satisfies Record<string, readonly MutationKind[]>;
 
 export type ExternalWriter = keyof typeof EXTERNAL_WRITES;

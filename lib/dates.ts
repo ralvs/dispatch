@@ -87,6 +87,11 @@ export function instantFromLocal(dateIso: string, time: string, tz: string): str
 	return iso;
 }
 
+/** Whether `laterIso` is strictly after `earlierIso`. Instants, not strings: "Z" and "+00:00" sort apart. */
+export function isAfter(laterIso: string, earlierIso: string): boolean {
+	return Date.parse(laterIso) > Date.parse(earlierIso);
+}
+
 /** Shift a UTC instant by N minutes (positive or negative). DST-safe by construction — instant math, not wall-clock math. */
 export function shiftMinutes(utcIso: string, minutes: number): string {
 	const dt = DateTime.fromISO(utcIso, { zone: "utc" }).plus({ minutes });

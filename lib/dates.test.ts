@@ -5,6 +5,7 @@ import {
 	dateOfInstant,
 	dayWindowUtc,
 	instantFromLocal,
+	isAfter,
 	isoWeek,
 	isValidTimezone,
 	isWallClockTime,
@@ -78,6 +79,13 @@ describe("isoWeek", () => {
 
 	it("throws on an invalid date", () => {
 		expect(() => isoWeek("not-a-date")).toThrow();
+	});
+});
+
+describe("isAfter", () => {
+	it("compares instants, whatever their offset notation", () => {
+		expect(isAfter("2026-07-16T14:00:00+00:00", "2026-07-16T13:59:59.000Z")).toBe(true);
+		expect(isAfter("2026-07-16T14:00:00+00:00", "2026-07-16T14:00:00.000Z")).toBe(false);
 	});
 });
 
