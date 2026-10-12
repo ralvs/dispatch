@@ -1,4 +1,4 @@
-// What one row adds to each counter, in one place (docs/adr/0084). Client-safe:
+// What one row adds to each counter, in one place (docs/adr/0085). Client-safe:
 // the server readers sum it over the rows they read, and the entity store's
 // adapters take the difference a write makes to one row, so a seed and a tick
 // cannot drift on what a counter counts. Extends the shape of lib/quiet.ts.

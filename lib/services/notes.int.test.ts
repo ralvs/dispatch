@@ -44,7 +44,7 @@ describe("notes against the local database", () => {
 		expect(band.some((r) => r.id === n.id)).toBe(false);
 	});
 
-	it("Today's count in SQL is the rule /notes sums (lib/counts.ts, docs/adr/0084)", async () => {
+	it("Today's count in SQL is the rule /notes sums (lib/counts.ts, docs/adr/0085)", async () => {
 		const sb = await ownerClient();
 		await createNote(sb, { body: "Flagged", needs_review: true });
 		await createNote(sb, { body: "Placed" });

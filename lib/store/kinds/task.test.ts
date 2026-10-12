@@ -611,7 +611,7 @@ describe("Today's task counters", () => {
 		expect(read(created)).toEqual([2, 0, 2]);
 	});
 
-	it("a domain's open count moves with a tick and a filing (/domains, docs/adr/0084)", () => {
+	it("a domain's open count moves with a tick and a filing (/domains, docs/adr/0085)", () => {
 		const a = task({ id: "a", domain_id: "domain-1" });
 		const u = task({ id: "u", domain_id: null });
 		const s = applySeed(

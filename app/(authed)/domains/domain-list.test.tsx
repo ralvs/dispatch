@@ -79,7 +79,7 @@ describe("DomainList on the entity store", () => {
 		expect(getMeasure(1, "archived")).toBeInTheDocument();
 	});
 
-	it("a row's open count is the store's, so a tick anywhere moves it (docs/adr/0084)", () => {
+	it("a row's open count is the store's, so a tick anywhere moves it (docs/adr/0085)", () => {
 		render(
 			<StoreProvider store={store}>
 				<Seed

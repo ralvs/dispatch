@@ -2,7 +2,7 @@
 // (lib/task-interaction/apply-intent.ts); everything here is where that row
 // then sits — /tasks' open and done lists, a scoped list, a day's bands — and
 // how far it moves the counters. What one row adds to each counter is
-// lib/counts.ts (docs/adr/0084); this file only takes the difference.
+// lib/counts.ts (docs/adr/0085); this file only takes the difference.
 
 import { type Counts, change, plus, taskCounts } from "@/lib/counts";
 import { dateOfInstant } from "@/lib/dates";

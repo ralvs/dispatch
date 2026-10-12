@@ -168,7 +168,7 @@ export type ViewSeed = {
 
 /**
  * Every counter the store carries. What a row adds to a `CounterKey` is
- * lib/counts.ts (docs/adr/0084), so a seed and a write agree on it; the other
+ * lib/counts.ts (docs/adr/0085), so a seed and a write agree on it; the other
  * two move by their kind's own deltas or only with a seed.
  * `project.*:<id>` and `domain.open:<id>` are one per project or domain, and
  * move only once a seed has named them.
