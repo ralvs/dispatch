@@ -5,7 +5,12 @@ import { useEffect, useMemo, useState } from "react";
 import { TaskDialog } from "@/components/task-dialog";
 import type { TaskDomainOption, TaskProjectOption } from "@/components/task-fields";
 import { EmptyState, PageHeader, SectionHead, StatBand } from "@/components/ui";
-import { completeTaskAction, reopenTaskAction, setTop3Action } from "@/lib/actions/tasks";
+import {
+	completeTaskAction,
+	reopenTaskAction,
+	setTop3Action,
+	skipTaskAction,
+} from "@/lib/actions/tasks";
 import { dateOfInstant, recentDoneSinceDate } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { isQuiet } from "@/lib/quiet";
@@ -132,6 +137,7 @@ export function TaskList({
 				complete: completeTaskAction,
 				reopen: reopenTaskAction,
 				setTop3: setTop3Action,
+				skip: skipTaskAction,
 			},
 			{ top3DateIso: todayIso, todayIso },
 		);

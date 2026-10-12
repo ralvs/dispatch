@@ -159,4 +159,51 @@ describe("bindTaskHandlers", () => {
 		);
 		expect(actions.complete).toHaveBeenCalledWith({ id: "r", observedDueDate: "2026-07-10" });
 	});
+
+	it("names the snapshot a recurring tick saves (docs/adr/0083)", () => {
+		const run = vi.fn((_intent: TaskIntent, action: () => Promise<unknown>) => {
+			void action();
+			return true;
+		});
+		const row = task({
+			id: "r",
+			title: "Weekly",
+			due_date: "2026-07-10",
+			recurrence_rule: "weekly",
+		});
+		bindTaskHandlers(row, run, actions, { top3DateIso: TODAY, todayIso: TODAY }).onToggleDone();
+		const intent = run.mock.calls[0]?.[0];
+		expect(intent).toMatchObject({ type: "complete", id: "r", snapshotId: expect.any(String) });
+		expect(actions.complete).toHaveBeenCalledWith({
+			id: "r",
+			observedDueDate: "2026-07-10",
+			snapshotId: intent?.type === "complete" ? intent.snapshotId : undefined,
+		});
+	});
+
+	it("offers a skip only on an open recurring row, and toasts where it went", () => {
+		const skip = vi.fn();
+		const run = vi.fn((_intent: TaskIntent, action: () => Promise<unknown>) => {
+			void action();
+			return true;
+		});
+		const opts = { top3DateIso: TODAY, todayIso: TODAY };
+		const plain = task({ id: "a", title: "Ship" });
+		expect(bindTaskHandlers(plain, run, { ...actions, skip }, opts).onSkip).toBeUndefined();
+		const row = task({
+			id: "r",
+			title: "Weekly",
+			due_date: "2026-07-10",
+			recurrence_rule: "weekly",
+		});
+		expect(bindTaskHandlers(row, run, actions, opts).onSkip).toBeUndefined();
+
+		bindTaskHandlers(row, run, { ...actions, skip }, opts).onSkip?.();
+		expect(run).toHaveBeenCalledWith(
+			{ type: "skip", id: "r", observedDueDate: "2026-07-10" },
+			expect.any(Function),
+		);
+		expect(skip).toHaveBeenCalledWith({ id: "r", observedDueDate: "2026-07-10" });
+		expect(toastSuccessMock).toHaveBeenCalledWith("Skipped", "Next due in 2d");
+	});
 });

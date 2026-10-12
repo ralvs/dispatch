@@ -4,6 +4,7 @@ import { FileText, Star } from "lucide-react";
 import Link from "next/link";
 import { ColorDot } from "@/components/color-dot";
 import { MentionChip } from "@/components/mention-chip";
+import { SkipButton } from "@/components/skip-button";
 import { Checkbox, rowTitle } from "@/components/ui";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
@@ -205,6 +206,7 @@ export function TaskRowItem({
 					</Link>
 				)}
 				{noteText && <TaskNotePopover notes={noteText} title={task.title} />}
+				{handlers.onSkip && <SkipButton title={task.title} onSkip={handlers.onSkip} />}
 				<button
 					type="button"
 					aria-label={`${starred ? "Remove from" : "Pin to"} ${starDay}'s top 3`}

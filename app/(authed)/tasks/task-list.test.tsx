@@ -21,6 +21,7 @@ vi.mock("@/lib/actions/tasks", () => ({
 	quickAddTaskAction: vi.fn(),
 	reopenTaskAction: vi.fn(),
 	setTop3Action: vi.fn(),
+	skipTaskAction: vi.fn(),
 	updateTaskAction: vi.fn(),
 }));
 vi.mock("@/lib/client/toast", () => ({
