@@ -111,7 +111,7 @@ const DAY_MS = 86_400_000;
  * which source a row came from. Stepping a millisecond off the end folds
  * CalDAV's exclusive midnight and EventKit's 23:59:59 onto the same last date.
  */
-function allDayDateSpan(
+export function allDayDateSpan(
 	event: Pick<CalendarEventRow, "start_at" | "end_at">,
 	tz: string,
 ): { first: string; last: string } {
@@ -137,15 +137,26 @@ export function eventFallsOnDay(
 	dateIso: string,
 	tz: string,
 ): boolean {
+	return eventFallsOnDays(event, dateIso, dateIso, tz);
+}
+
+/** {@link eventFallsOnDay} for a run of days, `firstIso` to `lastIso` inclusive. */
+export function eventFallsOnDays(
+	event: Pick<CalendarEventRow, "start_at" | "end_at" | "all_day">,
+	firstIso: string,
+	lastIso: string,
+	tz: string,
+): boolean {
 	const startMs = Date.parse(event.start_at);
 	if (!Number.isFinite(startMs)) return false;
 
 	if (event.all_day) {
 		const { first, last } = allDayDateSpan(event, tz);
-		return dateIso >= first && dateIso <= last;
+		return lastIso >= first && firstIso <= last;
 	}
 
-	const { startUtc, endUtc } = dayWindowUtc(dateIso, tz);
+	const { startUtc } = dayWindowUtc(firstIso, tz);
+	const { endUtc } = dayWindowUtc(lastIso, tz);
 	// Instants, not strings: Postgres writes "+00:00" where toISOString() writes
 	// "Z", so the two only sort alike by accident.
 	return startMs < Date.parse(endUtc) && Date.parse(event.end_at) > Date.parse(startUtc);

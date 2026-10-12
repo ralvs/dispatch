@@ -14,7 +14,7 @@ import { whyNotEditable } from "@/lib/calendar-edit";
 import type { SyncState } from "@/lib/calendar-health";
 import { CALENDAR_SYNC_WINDOW_MS } from "@/lib/constants";
 import { dayWindowUtc, nowUtc, shiftDay } from "@/lib/dates";
-import { eventFallsOnDay } from "@/lib/day-schedule";
+import { eventFallsOnDay, eventFallsOnDays } from "@/lib/day-schedule";
 import { env } from "@/lib/env";
 import { escapeLike } from "@/lib/like";
 import { type CalendarEventRow, EVENT_SELECT } from "@/lib/schemas/calendar";
@@ -247,6 +247,49 @@ export async function listEventsOn(
 	);
 	const rows = (data ?? []) as unknown as CalendarEventRow[];
 	return rows.filter((event) => eventFallsOnDay(event, dateIso, tz));
+}
+
+/** An event with what tells whether it may be edited (lib/calendar-edit.ts). */
+export type CalendarEventWithKind = CalendarEventRow & { recurring: boolean | null };
+
+/**
+ * Events on the days `firstIso` to `lastIso` (inclusive) in `tz`, soonest
+ * first, by the same membership rule as the day view. Optionally only the
+ * calendar named `calendarName`.
+ */
+export async function listEventsBetween(
+	sb: SupabaseClient,
+	firstIso: string,
+	lastIso: string,
+	tz: string,
+	calendarName?: string,
+): Promise<CalendarEventWithKind[]> {
+	// A day wider on each side, for the reason listEventsOn gives.
+	const { startUtc } = dayWindowUtc(shiftDay(firstIso, -1), tz);
+	const { endUtc } = dayWindowUtc(shiftDay(lastIso, 1), tz);
+	let query = sb
+		.from("calendar_events")
+		.select(`${EVENT_SELECT}, recurring`)
+		.lt("start_at", endUtc)
+		.gt("end_at", startUtc);
+	if (calendarName !== undefined) query = query.ilike("calendar_name", escapeLike(calendarName));
+	const data = unwrap(await query.order("start_at", { ascending: true }));
+	const rows = (data ?? []) as unknown as CalendarEventWithKind[];
+	return rows.filter((event) => eventFallsOnDays(event, firstIso, lastIso, tz));
+}
+
+export async function getEventWithKind(
+	sb: SupabaseClient,
+	id: string,
+): Promise<CalendarEventWithKind | null> {
+	const data = unwrap(
+		await sb
+			.from("calendar_events")
+			.select(`${EVENT_SELECT}, recurring`)
+			.eq("id", id)
+			.maybeSingle(),
+	);
+	return (data as unknown as CalendarEventWithKind | null) ?? null;
 }
 
 export async function getEvent(sb: SupabaseClient, id: string): Promise<CalendarEventRow | null> {

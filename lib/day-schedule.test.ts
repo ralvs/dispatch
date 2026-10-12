@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildDaySchedule, doingTodayFromSchedule, eventFallsOnDay } from "@/lib/day-schedule";
+import {
+	buildDaySchedule,
+	doingTodayFromSchedule,
+	eventFallsOnDay,
+	eventFallsOnDays,
+} from "@/lib/day-schedule";
 import type { CalendarEventRow } from "@/lib/schemas/calendar";
 import type { TaskRow } from "@/lib/schemas/task";
 
@@ -232,6 +237,32 @@ describe("buildDaySchedule", () => {
 			expect(day.open).toHaveLength(11);
 			expect(day.open.at(-1)?.id).toBe("closed");
 		});
+	});
+});
+
+describe("eventFallsOnDays", () => {
+	it("holds a timed event that overlaps any day of the run, and no other", () => {
+		// 17th 23:30 to 18th 00:30 in São Paulo (UTC-3).
+		const e = event({
+			id: "e1",
+			start_at: "2026-08-18T02:30:00.000Z",
+			end_at: "2026-08-18T03:30:00.000Z",
+		});
+		expect(eventFallsOnDays(e, "2026-08-15", "2026-08-17", SP)).toBe(true);
+		expect(eventFallsOnDays(e, "2026-08-18", "2026-08-20", SP)).toBe(true);
+		expect(eventFallsOnDays(e, "2026-08-19", "2026-08-21", SP)).toBe(false);
+	});
+
+	it("holds an all-day event by its dates", () => {
+		const e = event({
+			id: "e1",
+			all_day: true,
+			start_at: "2026-08-18T00:00:00.000Z",
+			end_at: "2026-08-20T00:00:00.000Z",
+		});
+		expect(eventFallsOnDays(e, "2026-08-10", "2026-08-18", SP)).toBe(true);
+		expect(eventFallsOnDays(e, "2026-08-19", "2026-08-25", SP)).toBe(true);
+		expect(eventFallsOnDays(e, "2026-08-20", "2026-08-25", SP)).toBe(false);
 	});
 });
 
