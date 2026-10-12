@@ -67,6 +67,18 @@ origin) are the lineage here.
    open in the editor autosaves its stale body over an MCP edit, so `append`
    is the safe update and `body` overwrites.
 
+   Events: `list_events`, `get_event`, `create_event`, `update_event` and
+   `delete_event`. Dates and times cross the boundary as wall clock in the
+   app timezone; `lib/dates.ts` converts them, the tool does no date math.
+   `list_events` takes a day range (at most 62 days) and an optional
+   calendar name, and says that Dispatch holds only ±21 days and that work
+   events can be 15 minutes old. Each event carries `editable`. Writes go to
+   the write calendar through the services of docs/adr/0082, which allow
+   only a single event there; a refusal (work event, another calendar, a
+   series, a change in iCloud since the last sync) answers with its reason.
+   The ledger keeps undo: the id for a create, the previous fields for an
+   update, the whole event for a delete.
+
 ## Consequences
 
 - Revoking a grant in Supabase does not stop it at once: `getClaims` verifies
