@@ -19,9 +19,9 @@ describe("whyNotEditable", () => {
 		);
 	});
 
-	it("refuses a series, and an event whose kind is not known yet", () => {
+	it("refuses a series, and leaves an event whose kind is not known yet to the live copy", () => {
 		expect(whyNotEditable({ ...ON_RENAN, recurring: true }, "Renan")).toMatch(/repeats/);
-		expect(whyNotEditable({ ...ON_RENAN, recurring: null }, "Renan")).toMatch(/not synced/);
+		expect(whyNotEditable({ ...ON_RENAN, recurring: null }, "Renan")).toBeNull();
 	});
 
 	it("refuses everything when no write calendar is set", () => {

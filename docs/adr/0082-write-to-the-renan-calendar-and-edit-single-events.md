@@ -49,8 +49,10 @@ Two problems came with it:
    calendar (some are shared), and series. One row stands for a whole
    series (`lib/caldav/ical.ts`), so an edit through it would change every
    occurrence. A new `calendar_events.recurring` column records which rows
-   are series; null means not synced yet, and such a row is refused until
-   the next sync fills it in.
+   are series; null means not synced yet. The column only shapes what the
+   UI offers. Edit and delete read the live iCloud copy first and refuse a
+   series from that, so a null row (outside the sync window, or not synced
+   yet) is still safe to edit.
 5. **A created event stores its href and etag**, so it can be edited at
    once.
 
@@ -64,5 +66,7 @@ Two problems came with it:
   does not have.
 - Deleting an event deletes its note links with the row (`on delete
   cascade`).
-- The first sync after the migration rewrites every iCloud row once, to
-  learn `recurring`.
+- The first sync after the migration rewrites every iCloud row inside its
+  window once, to learn `recurring`. Rows outside the window stay null.
+- An edit that finds the event gone from iCloud removes its row, since a
+  sync drops only rows inside its window.

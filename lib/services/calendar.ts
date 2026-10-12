@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { type CaldavConnection, changedSinceSyncError } from "@/lib/caldav/client";
 import {
+	assertSingleEvent,
 	buildEventObject,
 	type EventPatch,
 	EventPatchError,
@@ -377,6 +378,25 @@ function sameEtag(a: string, b: string): boolean {
 }
 
 /**
+ * The iCloud copy behind an edit, checked against the etag the last sync
+ * saw. A copy iCloud no longer has takes its row with it, since a sync drops
+ * only rows inside its window. Null then.
+ */
+async function liveCopy(
+	sb: SupabaseClient,
+	conn: CaldavConnection,
+	row: EditableRow & { caldav_href: string; caldav_etag: string },
+): Promise<{ etag: string; data: string } | null> {
+	const current = await conn.fetchObject(row.caldav_href);
+	if (!current) {
+		unwrap(await sb.from("calendar_events").delete().eq("id", row.id));
+		return null;
+	}
+	if (!sameEtag(current.etag, row.caldav_etag)) throw changedSinceSyncError();
+	return current;
+}
+
+/**
  * Edit an event on iCloud first, then its row (docs/adr/0082). The iCloud
  * copy is read and patched, not rebuilt, so what Dispatch does not store —
  * alarms, attendees, time zones — survives. The write carries the etag the
@@ -390,11 +410,10 @@ export async function updateEvent(
 	patch: UpdateEventInput,
 ): Promise<CalendarEventRow> {
 	const row = await loadEditable(sb, id);
-	const current = await conn.fetchObject(row.caldav_href);
+	const current = await liveCopy(sb, conn, row);
 	if (!current) {
-		throw new ServiceError("This event is no longer in iCloud. Sync to drop it.", "NOT_FOUND");
+		throw new ServiceError("This event is no longer in iCloud. Dispatch removed it.", "NOT_FOUND");
 	}
-	if (!sameEtag(current.etag, row.caldav_etag)) throw changedSinceSyncError();
 
 	let patched: ReturnType<typeof patchEventObject>;
 	try {
@@ -427,8 +446,10 @@ export async function updateEvent(
 
 /**
  * Delete an event on iCloud first, then its row, under the same rules and
- * the same etag check as `updateEvent`. Answers with the row as it was, so a
- * caller can offer to create it again. Note links to it go with the row.
+ * the same etag check as `updateEvent`. The live copy is read first, so a
+ * series is refused even before a sync has marked the row. Answers with the
+ * row as it was, so a caller can offer to create it again. Note links to it
+ * go with the row.
  */
 export async function deleteEvent(
 	sb: SupabaseClient,
@@ -436,8 +457,17 @@ export async function deleteEvent(
 	id: string,
 ): Promise<CalendarEventRow> {
 	const row = await loadEditable(sb, id);
-	await conn.deleteObject(row.caldav_href, row.caldav_etag);
-	unwrap(await sb.from("calendar_events").delete().eq("id", id));
+	const current = await liveCopy(sb, conn, row);
+	if (current) {
+		try {
+			assertSingleEvent(current.data);
+		} catch (err) {
+			if (err instanceof EventPatchError) throw new ServiceError(err.message, "NOT_EDITABLE");
+			throw err;
+		}
+		await conn.deleteObject(row.caldav_href, current.etag);
+		unwrap(await sb.from("calendar_events").delete().eq("id", id));
+	}
 	const { caldav_href: _href, caldav_etag: _etag, recurring: _recurring, ...event } = row;
 	return event;
 }

@@ -8,7 +8,10 @@ import type { CalendarEventSource } from "@/lib/schemas/calendar";
 export type EditableFields = {
 	source: CalendarEventSource;
 	calendar_name: string | null;
-	/** Null until a sync has read the event's iCloud copy. */
+	/**
+	 * Null until a sync has read the event's iCloud copy. Not a refusal: the
+	 * edit reads the live copy and refuses a series from that.
+	 */
 	recurring: boolean | null;
 };
 
@@ -29,9 +32,6 @@ export function whyNotEditable(
 	}
 	if (event.recurring === true) {
 		return "This event repeats. Dispatch does not edit a series.";
-	}
-	if (event.recurring === null) {
-		return "Dispatch has not synced this event yet. Sync, then try again.";
 	}
 	return null;
 }

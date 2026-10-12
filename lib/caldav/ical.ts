@@ -262,11 +262,11 @@ export type PatchedEvent = {
  * no new end keeps the event's length. Throws EventPatchError for a series,
  * an all-day event whose times change, or an end at or before the start.
  */
-export function patchEventObject(
-	icalText: string,
-	patch: EventPatch,
-	nowIso: string,
-): PatchedEvent {
+/**
+ * The one VEVENT of an object Dispatch may change, or an EventPatchError:
+ * unreadable, a series, or not exactly one event.
+ */
+function singleEvent(icalText: string): { root: ICAL.Component; vevent: ICAL.Component } {
 	let root: ICAL.Component;
 	try {
 		root = new ICAL.Component(ICAL.parse(icalText));
@@ -275,13 +275,26 @@ export function patchEventObject(
 	}
 	registerTimezones(root);
 	if (holdsSeries(root)) {
-		throw new EventPatchError("This event repeats; Dispatch does not edit a series.");
+		throw new EventPatchError("This event repeats. Dispatch does not edit a series.");
 	}
 	const vevents = root.getAllSubcomponents("vevent");
 	if (vevents.length !== 1) {
 		throw new EventPatchError("The iCloud copy of this event holds no single event.");
 	}
-	const vevent = vevents[0] as ICAL.Component;
+	return { root, vevent: vevents[0] as ICAL.Component };
+}
+
+/** Throws an EventPatchError unless the object is one single event. */
+export function assertSingleEvent(icalText: string): void {
+	singleEvent(icalText);
+}
+
+export function patchEventObject(
+	icalText: string,
+	patch: EventPatch,
+	nowIso: string,
+): PatchedEvent {
+	const { root, vevent } = singleEvent(icalText);
 	const event = new ICAL.Event(vevent);
 
 	if (patch.title !== undefined) event.summary = patch.title;

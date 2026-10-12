@@ -572,7 +572,6 @@ describe("updateEvent against the local database", () => {
 		["a work event", { source: "google" }],
 		["an event on another calendar", { calendar_name: "Nivers" }],
 		["a series", { recurring: true }],
-		["an event not synced yet", { recurring: null }],
 	])("refuses %s without reaching iCloud", async (_label, overrides) => {
 		const id = await insertOnRenan(overrides);
 		const conn = editConn();
@@ -581,6 +580,25 @@ describe("updateEvent against the local database", () => {
 			code: "NOT_EDITABLE",
 		});
 		expect(conn.fetchObject).not.toHaveBeenCalled();
+	});
+
+	it("edits an event a sync has not marked yet, when its live copy is single", async () => {
+		const id = await insertOnRenan({ recurring: null });
+		const conn = editConn();
+
+		await updateEvent(await ownerClient(), conn, id, { title: "Dentist, moved" });
+
+		expect(conn.updateObject).toHaveBeenCalled();
+	});
+
+	it("removes the row when iCloud no longer has the event", async () => {
+		const id = await insertOnRenan();
+		const conn = editConn({ fetchObject: vi.fn(async () => null) });
+
+		await expect(updateEvent(await ownerClient(), conn, id, { title: "x" })).rejects.toMatchObject({
+			code: "NOT_FOUND",
+		});
+		expect(await allRows()).toEqual([]);
 	});
 });
 
@@ -622,5 +640,44 @@ describe("deleteEvent against the local database", () => {
 			code: "NOT_EDITABLE",
 		});
 		expect(conn.deleteObject).not.toHaveBeenCalled();
+	});
+
+	it("refuses a series the row does not know about, from the live copy", async () => {
+		const id = await insertOnRenan({ recurring: null });
+		const conn = editConn({
+			fetchObject: vi.fn(async () => ({
+				href: HREF,
+				etag: '"etag-1"',
+				data: RENAN_ICS.replace("SUMMARY:Dentist", "SUMMARY:Dentist\r\nRRULE:FREQ=WEEKLY"),
+			})),
+		});
+
+		await expect(deleteEvent(await ownerClient(), conn, id)).rejects.toMatchObject({
+			code: "NOT_EDITABLE",
+		});
+		expect(conn.deleteObject).not.toHaveBeenCalled();
+		expect(await allRows()).toHaveLength(1);
+	});
+
+	it("refuses with CONFLICT when iCloud changed since the last sync", async () => {
+		const id = await insertOnRenan();
+		const conn = editConn({
+			fetchObject: vi.fn(async () => ({ href: HREF, etag: '"etag-9"', data: RENAN_ICS })),
+		});
+
+		await expect(deleteEvent(await ownerClient(), conn, id)).rejects.toMatchObject({
+			code: "CONFLICT",
+		});
+		expect(conn.deleteObject).not.toHaveBeenCalled();
+	});
+
+	it("drops the row when iCloud already lost the event", async () => {
+		const id = await insertOnRenan();
+		const conn = editConn({ fetchObject: vi.fn(async () => null) });
+
+		await deleteEvent(await ownerClient(), conn, id);
+
+		expect(conn.deleteObject).not.toHaveBeenCalled();
+		expect(await allRows()).toEqual([]);
 	});
 });
