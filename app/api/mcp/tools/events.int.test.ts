@@ -350,8 +350,38 @@ describe("MCP event tools: write", () => {
 			expect(caldav.conn?.fetchObject).not.toHaveBeenCalled();
 			expect(await rows()).toHaveLength(1);
 			expect(await ledger("mcp.event.updated")).toEqual([]);
+			expect(await ledger("mcp.event.deleted")).toEqual([]);
 		},
 	);
+
+	it("update_event refuses an end before the start without reaching iCloud", async () => {
+		const id = await insertDentist();
+
+		const result = await call("update_event", { id, end: "2026-07-16T10:00" });
+
+		expect(result).toMatchObject({ isError: true, text: "end must be after start." });
+		expect(caldav.conn?.fetchObject).not.toHaveBeenCalled();
+		expect(await ledger("mcp.event.updated")).toEqual([]);
+	});
+
+	it("refuses a series the row does not know about yet, from the live iCloud copy", async () => {
+		const id = await insertDentist({ recurring: null });
+		const series = RENAN_ICS.replace("SUMMARY:Dentist", "SUMMARY:Dentist\r\nRRULE:FREQ=WEEKLY");
+		caldav.conn = fakeConn({
+			fetchObject: vi.fn(async () => ({ href: HREF, etag: '"etag-1"', data: series })),
+		});
+
+		const update = await call("update_event", { id, title: "x" });
+		const del = await call("delete_event", { id });
+
+		expect(update.text).toMatch(/repeats/);
+		expect(del.text).toMatch(/repeats/);
+		expect(caldav.conn?.updateObject).not.toHaveBeenCalled();
+		expect(caldav.conn?.deleteObject).not.toHaveBeenCalled();
+		expect(await rows()).toHaveLength(1);
+		expect(await ledger("mcp.event.updated")).toEqual([]);
+		expect(await ledger("mcp.event.deleted")).toEqual([]);
+	});
 
 	it("update_event answers a change made in iCloud since the last sync with the reason", async () => {
 		const id = await insertDentist();
@@ -391,6 +421,7 @@ describe("MCP event tools: write", () => {
 				},
 			},
 		]);
+		expect(afterExternalMutation).toHaveBeenCalledWith(...EXTERNAL_WRITES.mcpEvents);
 	});
 
 	it("delete_event keeps the event when iCloud refuses", async () => {

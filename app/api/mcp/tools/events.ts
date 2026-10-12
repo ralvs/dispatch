@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { type CaldavConnection, createCaldavClient } from "@/lib/caldav/client";
 import { whyNotEditable } from "@/lib/calendar-edit";
-import { calendarDaysBetween, formatInstant, instantFromLocal } from "@/lib/dates";
+import { calendarDaysBetween, formatInstant, instantFromLocal, isAfter } from "@/lib/dates";
 import { allDayDateSpan } from "@/lib/day-schedule";
 import { env, isCaldavConfigured } from "@/lib/env";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
@@ -181,7 +181,7 @@ export function registerEventTools(server: McpServer, sb: SupabaseClient): void 
 			const tz = await getAppTimezone(sb);
 			const startUtc = instantOf(start, tz);
 			const endUtc = instantOf(end, tz);
-			if (Date.parse(endUtc) <= Date.parse(startUtc)) {
+			if (!isAfter(endUtc, startUtc)) {
 				throw new ToolError("end must be after start.");
 			}
 			const conn = await connect();
@@ -231,6 +231,14 @@ export function registerEventTools(server: McpServer, sb: SupabaseClient): void 
 			}
 
 			const before = await mustGetEditable(sb, id);
+			// The service refuses this too, after a read from iCloud; this answers first.
+			if (patch.startUtc !== undefined || patch.endUtc !== undefined) {
+				const startUtc = patch.startUtc ?? before.start_at;
+				const endUtc = patch.endUtc ?? (patch.startUtc === undefined ? before.end_at : undefined);
+				if (endUtc !== undefined && !isAfter(endUtc, startUtc)) {
+					throw new ToolError("end must be after start.");
+				}
+			}
 			const conn = await connect();
 			const after = await refusalsAsToolErrors(() => updateEvent(sb, conn, id, patch));
 
