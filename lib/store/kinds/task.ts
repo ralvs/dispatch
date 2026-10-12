@@ -22,11 +22,7 @@ import type {
 	TaskScope,
 	ViewAdapter,
 } from "@/lib/store/types";
-import {
-	nextCompleteFields,
-	projectTask,
-	type TaskIntent,
-} from "@/lib/task-interaction/apply-intent";
+import { projectTask, snapshotOf, type TaskIntent } from "@/lib/task-interaction/apply-intent";
 import { isOverdue } from "@/lib/task-predicates";
 
 /** /tasks: the open list and the recently done strip. */
@@ -62,25 +58,21 @@ function countsOf(row: TaskRow | undefined, clock: Clock): TaskCounts {
 
 /**
  * The row after the intent, for counting; `before` is undefined when the row
- * was never loaded, and then nothing moves. `successor` is the next occurrence
- * a recurring completion creates (docs/adr/0059): open, filed where its
- * source was, and dated as the server will date it — so it is not overdue,
- * and it is quiet only when the server's would be.
+ * was never loaded, and then nothing moves. `snapshot` is the done row a
+ * recurring tick saves (docs/adr/0083); it is counted even when the tick
+ * named no id for it, because the server saves it all the same.
  */
 function afterIntent(
 	intent: TaskIntent,
 	before: TaskRow | undefined,
 	ctx: IntentCtx,
-): { after: TaskRow | undefined; successor: TaskRow | undefined } {
-	if (intent.type === "create") return { after: intent.task, successor: undefined };
-	if (!before) return { after: undefined, successor: undefined };
+): { after: TaskRow | undefined; snapshot: TaskRow | undefined } {
+	if (intent.type === "create") return { after: intent.task, snapshot: undefined };
+	if (!before) return { after: undefined, snapshot: undefined };
 	const after = projectTask(before, intent, ctx);
-	const recurring =
-		intent.type === "complete" &&
-		before.recurrence_rule !== null &&
-		after?.recurrence_rule === null;
-	const spawn = recurring ? nextCompleteFields(before, ctx).spawn : null;
-	return { after, successor: spawn ? { ...before, ...spawn } : undefined };
+	const counted =
+		intent.type === "complete" ? { ...intent, snapshotId: intent.snapshotId ?? "counted" } : intent;
+	return { after, snapshot: snapshotOf(before, counted, ctx) };
 }
 
 /**
@@ -96,20 +88,20 @@ function taskDeltas(intent: TaskIntent, before: TaskRow | undefined, ctx: Intent
 	// No row, nothing to move; a create the store already holds (a seed read
 	// a received row first) is already counted.
 	if (intent.type === "create" ? before !== undefined : !before) return {};
-	const { after, successor } = afterIntent(intent, before, ctx);
+	const { after, snapshot } = afterIntent(intent, before, ctx);
 	const was = intent.type === "create" ? NONE : countsOf(before, ctx);
 	const now = countsOf(after, ctx);
-	const next = countsOf(successor, ctx);
 	const out: Deltas = {};
-	const open = now.open + next.open - was.open;
-	const overdue = now.overdue + next.overdue - was.overdue;
-	const inbox = now.inbox + next.inbox - was.inbox;
+	// A snapshot is done, so it never moves the open counts.
+	const open = now.open - was.open;
+	const overdue = now.overdue - was.overdue;
+	const inbox = now.inbox - was.inbox;
 	if (open !== 0) out["tasks.open"] = open;
 	if (overdue !== 0) out["tasks.overdue"] = overdue;
 	if (inbox !== 0) out["tasks.inbox"] = inbox;
 	// A project's done and open counts (/projects, Today's rings): the row
-	// leaving one, the row arriving in another, and the open occurrence a
-	// recurring completion leaves behind.
+	// leaving one, the row arriving in another, and the done snapshot a
+	// recurring tick saves.
 	const move = (key: `project.${"done" | "open"}:${string}`, by: number) => {
 		const next = (out[key] ?? 0) + by;
 		if (next === 0) delete out[key];
@@ -119,7 +111,7 @@ function taskDeltas(intent: TaskIntent, before: TaskRow | undefined, ctx: Intent
 	for (const [row, by] of [
 		[prior, -1],
 		[after, 1],
-		[successor, 1],
+		[snapshot, 1],
 	] as const) {
 		if (row?.project_id == null) continue;
 		if (row.status === "done") move(`project.done:${row.project_id}`, by);
@@ -129,25 +121,48 @@ function taskDeltas(intent: TaskIntent, before: TaskRow | undefined, ctx: Intent
 }
 
 /**
- * A completion the server refused (ADR-0037: the row moved on since it was
- * seen) comes back still open, so the counters it moved move back. Done or
- * gone is what the intent predicted, and its deltas stand.
+ * The server's answer can say the intent did not happen, or happened another
+ * way; the counters follow what it says.
  *
- * One gap, left on purpose: a recurring row another tab already completed
- * comes back done with no successor in the write — nothing links a row to the
- * occurrence it spawned — so the next occurrence shows once a seed newer than
- * the write arrives.
+ * - A tick the server refused (ADR-0037: the row moved on since it was seen)
+ *   comes back open with no snapshot, so the counters it moved move back. A
+ *   recurring tick that landed comes back open too, but with its snapshot.
+ * - A skip the server refused leaves the row on the cycle the click saw.
+ * - A reopen that un-ticked the latest snapshot of a recurring task
+ *   (docs/adr/0083) deleted that snapshot instead of reopening it: only its
+ *   project's done count moves. The recurring row's own move back is left to
+ *   the next seed.
  */
 function settleTaskDeltas(intent: TaskIntent, write: StoreWrite<TaskRow>, deltas: Deltas): Deltas {
-	if (intent.type !== "complete") return deltas;
-	const row = write.rows.find((r) => r.id === intent.id);
-	return row?.status === "open" ? {} : deltas;
+	const rowOf = (id: string) => write.rows.find((r) => r.id === id);
+	switch (intent.type) {
+		case "complete":
+			if (intent.snapshotId && write.rows.some((r) => r.id === intent.snapshotId)) return deltas;
+			return rowOf(intent.id)?.status === "open" ? {} : deltas;
+		case "skip":
+			return rowOf(intent.id)?.due_date === intent.observedDueDate ? {} : deltas;
+		case "reopen": {
+			if (!write.deletedIds?.includes(intent.id)) return deltas;
+			const out: Deltas = {};
+			for (const [key, by] of Object.entries(deltas) as [keyof Deltas, number][]) {
+				if (key.startsWith("project.done:")) out[key] = by;
+			}
+			return out;
+		}
+		default:
+			return deltas;
+	}
 }
 
 export const taskKind: KindAdapter<"task"> = {
 	idOf: (row) => row.id,
 	targetId: (intent) => (intent.type === "create" ? intent.task.id : intent.id),
-	provisionalIds: (intent) => (intent.type === "create" ? [intent.task.id] : []),
+	provisionalIds: (intent) => {
+		if (intent.type === "create") return [intent.task.id];
+		// A recurring tick's snapshot shows before the server has written it.
+		if (intent.type === "complete" && intent.snapshotId) return [intent.snapshotId];
+		return [];
+	},
 	// For counting only. A pending delete leaves no row, so a later intent on
 	// it — a second delete, a tick — counts nothing: the delete already took
 	// its counts away.
@@ -205,6 +220,24 @@ function replaceById(rows: TaskRow[], row: TaskRow): TaskRow[] {
 	return rows.map((r) => (r.id === row.id ? row : r));
 }
 
+/**
+ * A recurring tick's done snapshot (docs/adr/0083), added where `wants` it.
+ * Projected from the clicked row as `pool` held it before the intent.
+ */
+function withSnapshot(
+	rows: TaskRow[],
+	pool: TaskRow[],
+	intent: TaskIntent,
+	ctx: IntentCtx,
+	wants: (snapshot: TaskRow) => boolean,
+): TaskRow[] {
+	if (intent.type !== "complete") return rows;
+	const row = pool.find((r) => r.id === intent.id);
+	const snapshot = row && snapshotOf(row, intent, ctx);
+	if (!snapshot || holds(rows, snapshot.id) || !wants(snapshot)) return rows;
+	return [snapshot, ...rows];
+}
+
 export const taskListsView: ViewAdapter<"taskLists"> = {
 	kind: "task",
 	fromSeed: (data) => ({ base: data, params: undefined }),
@@ -220,6 +253,17 @@ export const taskListsView: ViewAdapter<"taskLists"> = {
 			const next = row && projectTask(row, intent, ctx);
 			if (!row || !next || next === row) return view;
 			const gone = new Set([row.id]);
+			// A recurring tick keeps the row open where it is, on its next cycle,
+			// and its done snapshot leads the done list (docs/adr/0083).
+			const snapshot = snapshotOf(row, intent, ctx);
+			if (snapshot) {
+				return {
+					open: replaceById(view.open, next),
+					done: holds(view.done, snapshot.id)
+						? view.done
+						: [snapshot, ...view.done].slice(0, DONE_CAP),
+				};
+			}
 			if (next.status === "open") {
 				return { open: [next, ...without(view.open, gone)], done: without(view.done, gone) };
 			}
@@ -249,8 +293,8 @@ export const taskListsView: ViewAdapter<"taskLists"> = {
 			}
 			open = without(open, new Set([row.id]));
 			done = without(done, new Set([row.id]));
-			// A recurring completion's successor (ADR-0059) is a server-made open
-			// row, and this is how it appears.
+			// A row the server made — a recurring tick's snapshot when the tick
+			// named no id for it (docs/adr/0083) — appears here.
 			if (row.status === "open") open = [row, ...open];
 			else done = [row, ...done].slice(0, DONE_CAP);
 		}
@@ -295,7 +339,9 @@ export const taskListView: ViewAdapter<"taskList"> = {
 				? [intent.task, ...view]
 				: view;
 		}
-		const out = projectRows(view, intent, ctx);
+		const out = withSnapshot(projectRows(view, intent, ctx), view, intent, ctx, (snapshot) =>
+			inTaskScope(snapshot, scope),
+		);
 		return intent.type === "assign" ? inScopeOnly(out, scope) : out;
 	},
 	upsert: (view, rows, _clock, scope) => {
@@ -357,9 +403,13 @@ export const dayView: ViewAdapter<"day"> = {
 				: withoutQuiet(projectRows(pool, intent, ctx), ctx);
 		// ADR-0038 rule 2: a finished task stays struck on today's view only; a
 		// cached other day drops it (its completion does not fall on that day).
+		// A recurring tick leaves its row open on the next cycle, where
+		// placement puts it, and its done snapshot is the struck row.
 		if (intent.type === "complete" && view.dateIso !== ctx.todayIso) {
-			tasks = without(tasks, new Set([intent.id]));
+			const row = tasks.find((t) => t.id === intent.id);
+			if (row?.status === "done") tasks = without(tasks, new Set([intent.id]));
 		}
+		tasks = withSnapshot(tasks, pool, intent, ctx, (snapshot) => onDay(snapshot, view, ctx));
 		return tasks === pool ? view : replace(view, tasks, ctx);
 	},
 	upsert: (view, rows, clock) => {
@@ -369,8 +419,8 @@ export const dayView: ViewAdapter<"day"> = {
 			const held = tasks.some((t) => t.id === row.id);
 			// An open row that went quiet leaves; any other row the day already
 			// holds is patched in place, done or not (ADR-0038). A row the day
-			// would read is offered, and placement decides (the ADR-0059
-			// successor lands here).
+			// would read is offered, and placement decides (a recurring tick's
+			// snapshot lands here when the client did not project it).
 			if (held && wentQuiet(row, clock)) {
 				tasks = without(tasks, new Set([row.id]));
 			} else if (held) {

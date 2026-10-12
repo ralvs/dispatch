@@ -53,7 +53,7 @@ describe("task adapter", () => {
 		expect(yesterday && collectDayTasks(yesterday.schedule)).toEqual([]);
 	});
 
-	it("ADR-0059: a recurring completion's successor is admitted by placement", () => {
+	it("docs/adr/0083: a recurring tick moves the row on and shows its done snapshot", () => {
 		const a = task({ id: "a", due_date: TODAY, recurrence_rule: "daily" });
 		const s = deepFreeze(
 			applySeed(
@@ -64,20 +64,43 @@ describe("task adapter", () => {
 				]),
 			),
 		);
-		const [applied, token] = applyIntent(
-			s,
-			{ kind: "task", intent: { type: "complete", id: "a", observedDueDate: TODAY } },
-			NOW,
-		);
-		const closed = task({ id: "a", due_date: TODAY, status: "done", completed_at: NOW });
-		const successor = task({ id: "b", due_date: "2026-07-16", recurrence_rule: "daily" });
-		const next = confirmWrite(deepFreeze(applied), token, { at: T2, rows: [closed, successor] });
+		const intent = {
+			type: "complete" as const,
+			id: "a",
+			observedDueDate: TODAY,
+			snapshotId: "snap",
+		};
+		const [applied, token] = applyIntent(s, { kind: "task", intent }, NOW);
 
-		// Due tomorrow: offered to today's pool, but placement keeps it off the day.
-		const today = selectView(next, viewKey.day(TODAY));
-		expect(today && collectDayTasks(today.schedule).map((t) => t.id)).toEqual(["a"]);
-		expect(selectView(next, viewKey.tasks())?.open.map((t) => t.id)).toEqual(["b"]);
+		// Before the server answers: one row, open on its next cycle, and the
+		// struck snapshot on today's view and at the top of done.
+		const lists = selectView(applied, viewKey.tasks());
+		expect(lists?.open).toEqual([expect.objectContaining({ id: "a", due_date: "2026-07-16" })]);
+		expect(lists?.done).toEqual([
+			expect.objectContaining({
+				id: "snap",
+				status: "done",
+				due_date: TODAY,
+				recurrence_rule: null,
+				series_id: "a",
+			}),
+		]);
+		const today = selectView(applied, viewKey.day(TODAY));
+		expect(today && collectDayTasks(today.schedule).map((t) => t.id)).toEqual(["snap"]);
 
+		// The server confirms the same two rows under the same ids.
+		const moved = task({ id: "a", due_date: "2026-07-16", recurrence_rule: "daily" });
+		const snap = task({
+			id: "snap",
+			due_date: TODAY,
+			status: "done",
+			completed_at: NOW,
+			series_id: "a",
+		});
+		const next = confirmWrite(deepFreeze(applied), token, { at: T2, rows: [moved, snap] });
+		expect(selectView(next, viewKey.tasks())).toEqual({ open: [moved], done: [snap] });
+
+		// Tomorrow's view reads the row on its next cycle.
 		const tomorrow = applySeed(
 			next,
 			snapshot(T1, [
@@ -85,7 +108,67 @@ describe("task adapter", () => {
 			]),
 		);
 		const day2 = selectView(tomorrow, viewKey.day("2026-07-16"));
-		expect(day2 && collectDayTasks(day2.schedule).map((t) => t.id)).toEqual(["b"]);
+		expect(day2 && collectDayTasks(day2.schedule).map((t) => t.id)).toEqual(["a"]);
+	});
+
+	it("docs/adr/0083: a refused recurring tick drops its snapshot and keeps the row", () => {
+		const a = task({ id: "a", due_date: TODAY, recurrence_rule: "daily" });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ key: viewKey.tasks(), type: "taskLists", data: { open: [a], done: [] } }]),
+		);
+		const [applied, token] = applyIntent(
+			s,
+			{
+				kind: "task",
+				intent: { type: "complete", id: "a", observedDueDate: TODAY, snapshotId: "snap" },
+			},
+			NOW,
+		);
+		const next = confirmWrite(applied, token, { at: T2, rows: [a] });
+		expect(selectView(next, viewKey.tasks())).toEqual({ open: [a], done: [] });
+	});
+
+	it("docs/adr/0083: a skip moves the row on and saves nothing", () => {
+		const a = task({ id: "a", due_date: TODAY, recurrence_rule: "daily" });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ key: viewKey.tasks(), type: "taskLists", data: { open: [a], done: [] } }]),
+		);
+		const [applied] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "skip", id: "a", observedDueDate: TODAY } },
+			NOW,
+		);
+		expect(selectView(applied, viewKey.tasks())).toEqual({
+			open: [expect.objectContaining({ id: "a", due_date: "2026-07-16", status: "open" })],
+			done: [],
+		});
+	});
+
+	it("docs/adr/0083: un-ticking the latest snapshot deletes it and moves the row back", () => {
+		const a = task({ id: "a", due_date: "2026-07-16", recurrence_rule: "daily" });
+		const snap = task({
+			id: "snap",
+			due_date: TODAY,
+			status: "done",
+			completed_at: NOW,
+			series_id: "a",
+		});
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [
+				{ key: viewKey.tasks(), type: "taskLists", data: { open: [a], done: [snap] } },
+			]),
+		);
+		const [applied, token] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "reopen", id: "snap" } },
+			NOW,
+		);
+		const back = task({ id: "a", due_date: TODAY, recurrence_rule: "daily" });
+		const next = confirmWrite(applied, token, { at: T2, rows: [back], deletedIds: ["snap"] });
+		expect(selectView(next, viewKey.tasks())).toEqual({ open: [back], done: [] });
 	});
 
 	it("one intent updates both taskLists and day", () => {
@@ -386,7 +469,7 @@ describe("Today's task counters", () => {
 		]);
 	});
 
-	it("a recurring tick keeps the open count: the successor replaces it", () => {
+	it("a recurring tick keeps the open count: the row moves on, its snapshot is done", () => {
 		const r = task({ id: "r", due_date: YESTERDAY, recurrence_rule: "daily" });
 		const s = applySeed(
 			initialState(),
@@ -394,12 +477,38 @@ describe("Today's task counters", () => {
 				aggregates: counts(2, 1, 0),
 			}),
 		);
-		const [applied] = applyIntent(
+		const intent = {
+			type: "complete" as const,
+			id: "r",
+			observedDueDate: YESTERDAY,
+			snapshotId: "snap",
+		};
+		const [applied, token] = applyIntent(s, { kind: "task", intent }, NOW);
+		expect(read(applied)).toEqual([2, 0, 0]);
+		const moved = selectView(applied, viewKey.tasks())?.open[0];
+		const snap = selectView(applied, viewKey.tasks())?.done[0];
+		if (!moved || !snap) throw new Error("tick did not project");
+		// Confirmed with its snapshot: the counts hold.
+		expect(read(confirmWrite(applied, token, { at: T2, rows: [moved, snap] }))).toEqual([2, 0, 0]);
+		// Refused (no snapshot, the row as it was): the counts move back.
+		expect(read(confirmWrite(applied, token, { at: T2, rows: [r] }))).toEqual([2, 1, 0]);
+	});
+
+	it("a refused skip moves the counts back", () => {
+		const r = task({ id: "r", due_date: YESTERDAY, recurrence_rule: "daily" });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ key: viewKey.tasks(), type: "taskLists", data: { open: [r], done: [] } }], {
+				aggregates: counts(2, 1, 0),
+			}),
+		);
+		const [applied, token] = applyIntent(
 			s,
-			{ kind: "task", intent: { type: "complete", id: "r", observedDueDate: YESTERDAY } },
+			{ kind: "task", intent: { type: "skip", id: "r", observedDueDate: YESTERDAY } },
 			NOW,
 		);
 		expect(read(applied)).toEqual([2, 0, 0]);
+		expect(read(confirmWrite(applied, token, { at: T2, rows: [r] }))).toEqual([2, 1, 0]);
 	});
 
 	it("filing moves the inbox count; creating an unfiled task raises open and inbox", () => {

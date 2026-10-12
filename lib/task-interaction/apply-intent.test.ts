@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { task } from "@/lib/store/test-fixtures";
-import { nextCompleteFields, projectTask } from "@/lib/task-interaction/apply-intent";
+import { nextCompleteFields, projectTask, snapshotOf } from "@/lib/task-interaction/apply-intent";
 
 // Where a projected row then sits — which list, which band — is the task
 // adapter's, and is tested through the store (lib/store/kinds/task.test.ts).
@@ -26,16 +26,51 @@ describe("nextCompleteFields", () => {
 });
 
 describe("projectTask", () => {
-	// docs/adr/0059: a recurring tick closes the row it landed on, keeping its
-	// own due date, and gives up the rule to the server-made successor.
-	it("closes a recurring task in place and drops its rule", () => {
+	// docs/adr/0083: a recurring tick keeps the row open and moves it to its
+	// next cycle; its star follows it there.
+	it("moves a recurring task to its next cycle and keeps it open", () => {
 		const t = task({ id: "r", recurrence_rule: "daily", due_date: TODAY, top3_for_date: TODAY });
 		expect(projectTask(t, { type: "complete", id: "r", observedDueDate: TODAY }, ctx)).toEqual({
 			...t,
+			due_date: "2026-07-16",
+			top3_for_date: "2026-07-16",
+		});
+	});
+
+	it("leaves a recurring row alone when the tick saw another cycle", () => {
+		const t = task({ id: "r", recurrence_rule: "daily", due_date: "2026-07-16" });
+		expect(projectTask(t, { type: "complete", id: "r", observedDueDate: TODAY }, ctx)).toBe(t);
+	});
+
+	it("projects the done snapshot a recurring tick saves", () => {
+		const t = task({ id: "r", recurrence_rule: "daily", due_date: TODAY, top3_for_date: TODAY });
+		const tick = {
+			type: "complete",
+			id: "r",
+			observedDueDate: TODAY,
+			snapshotId: "snap",
+		} as const;
+		expect(snapshotOf(t, tick, ctx)).toEqual({
+			...t,
+			id: "snap",
 			status: "done",
 			completed_at: ctx.nowIso,
+			created_at: ctx.nowIso,
 			recurrence_rule: null,
+			series_id: "r",
 		});
+		// No snapshot for a plain task, a stale tick, or a tick that named no id.
+		expect(snapshotOf(task({ id: "r" }), tick, ctx)).toBeUndefined();
+		expect(snapshotOf({ ...t, due_date: "2026-07-16" }, tick, ctx)).toBeUndefined();
+		expect(snapshotOf(t, { ...tick, snapshotId: undefined }, ctx)).toBeUndefined();
+	});
+
+	it("skips a recurring task to its next cycle and leaves a plain task alone", () => {
+		const t = task({ id: "r", recurrence_rule: "weekly", due_date: TODAY });
+		const skip = { type: "skip", id: "r", observedDueDate: TODAY } as const;
+		expect(projectTask(t, skip, ctx)).toMatchObject({ status: "open", due_date: "2026-07-22" });
+		const plain = task({ id: "r", due_date: TODAY });
+		expect(projectTask(plain, skip, ctx)).toBe(plain);
 	});
 
 	// The server's close is guarded on status = open; so is the projection, so

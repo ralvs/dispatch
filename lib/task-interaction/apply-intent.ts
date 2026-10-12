@@ -13,7 +13,18 @@ import type { TaskRow } from "@/lib/schemas/task";
  * into. `assign` files an inbox task under a domain (docs/adr/0027).
  */
 export type TaskIntent =
-	| { type: "complete"; id: string; observedDueDate: string | null }
+	| {
+			type: "complete";
+			id: string;
+			observedDueDate: string | null;
+			/**
+			 * The id a recurring tick's done snapshot takes (docs/adr/0083). The
+			 * row taps send one so the snapshot shows before the server answers;
+			 * without it, the snapshot arrives with the confirmed write.
+			 */
+			snapshotId?: string;
+	  }
+	| { type: "skip"; id: string; observedDueDate: string | null }
 	| { type: "reopen"; id: string }
 	| { type: "setTop3"; id: string; starred: boolean; forDateIso: string }
 	| { type: "delete"; id: string }
@@ -24,16 +35,14 @@ export type TaskIntent =
 /**
  * What completing a task writes.
  *
- * Every completion closes its row, recurring included (docs/adr/0059). A
- * recurring row additionally hands back `spawn` — the due date of the next
- * occurrence, which the server materialises as a NEW row. The completed row
- * keeps its history (title, notes, completed_at, the day it was starred for)
- * and gives up its rule: `recurrence_rule` moves to the spawned row, so
- * re-opening and re-ticking the old occurrence can never spawn a second one.
+ * A plain task closes. A recurring task stays open on one permanent row
+ * (docs/adr/0083): `spawn` is the next cycle the row moves to, and the cycle
+ * it leaves is saved as a done snapshot. Skipping a cycle moves the row the
+ * same way, with no snapshot.
  */
 export type CompleteProjection = {
 	completed_at: string;
-	/** Non-null only for a recurring row: the next occurrence to create. */
+	/** Non-null only for a recurring row: the next cycle it moves to. */
 	spawn: { due_date: string | null; recurrence_day: number | null } | null;
 };
 
@@ -62,15 +71,38 @@ export function nextCompleteFields(
 	return { completed_at, spawn: { due_date: next.dueDate, recurrence_day: next.recurrenceDay } };
 }
 
+/** The recurring row on its next cycle; its star, if any, follows it there. */
+function moveToNextCycle(
+	row: TaskRow,
+	next: { due_date: string | null; recurrence_day: number | null },
+): TaskRow {
+	return {
+		...row,
+		due_date: next.due_date,
+		due_time: next.due_date === null ? null : row.due_time,
+		recurrence_day: next.recurrence_day,
+		top3_for_date: row.top3_for_date === null ? null : next.due_date,
+	};
+}
+
+/**
+ * Whether a tick or a skip still lands: the row is open and on the cycle the
+ * click saw, as the server's gate checks (docs/adr/0037). A replay, or a
+ * second tick before the first answers, finds the row already moved.
+ */
+function landsOn(row: TaskRow, observedDueDate: string | null): boolean {
+	return row.status === "open" && row.due_date === observedDueDate;
+}
+
 /**
  * One row after an intent: undefined when the intent deletes it, the same
  * reference when the intent changes nothing on it — another row's intent, a
  * create, an edit, or a replay the row already reflects. That last case is
- * what makes a second tick on a ticked row a no-op, like the server's
- * `status = open` guard (completeTask).
+ * what makes a second tick on a ticked row a no-op, like the server's gate
+ * (completeTask).
  *
- * A recurring close does not project its successor: that is a server-made row
- * with a server-made id, and it arrives with the confirmed write.
+ * A recurring tick moves the row and keeps it open. Its done snapshot is a
+ * second row: `snapshotOf` projects it.
  */
 export function projectTask(
 	row: TaskRow,
@@ -82,13 +114,15 @@ export function projectTask(
 		case "complete": {
 			if (row.status !== "open") return row;
 			const fields = nextCompleteFields(row, ctx);
-			return {
-				...row,
-				status: "done",
-				completed_at: fields.completed_at,
-				// The rule leaves with the spawned occurrence.
-				recurrence_rule: fields.spawn ? null : row.recurrence_rule,
-			};
+			if (!fields.spawn) return { ...row, status: "done", completed_at: fields.completed_at };
+			// A recurring row stays open, so its due date is what makes a stale
+			// second tick a no-op.
+			return landsOn(row, intent.observedDueDate) ? moveToNextCycle(row, fields.spawn) : row;
+		}
+		case "skip": {
+			if (!landsOn(row, intent.observedDueDate)) return row;
+			const next = nextCompleteFields(row, ctx).spawn;
+			return next ? moveToNextCycle(row, next) : row;
 		}
 		case "reopen":
 			return row.status === "open" ? row : { ...row, status: "open", completed_at: null };
@@ -107,4 +141,30 @@ export function projectTask(
 		case "delete":
 			return undefined;
 	}
+}
+
+/**
+ * The done snapshot a recurring tick saves (docs/adr/0083), as the server
+ * will write it: the row's text and star on the cycle it fulfilled, no rule,
+ * linked to the row. Undefined for any other intent, a plain task, a tick
+ * that will not land, or a tick that named no snapshot id.
+ */
+export function snapshotOf(
+	row: TaskRow,
+	intent: TaskIntent,
+	ctx: { todayIso: string; nowIso: string },
+): TaskRow | undefined {
+	if (intent.type !== "complete" || row.id !== intent.id || !intent.snapshotId) return undefined;
+	if (!landsOn(row, intent.observedDueDate)) return undefined;
+	const fields = nextCompleteFields(row, ctx);
+	if (!fields.spawn) return undefined;
+	return {
+		...row,
+		id: intent.snapshotId,
+		status: "done",
+		completed_at: fields.completed_at,
+		recurrence_rule: null,
+		series_id: row.id,
+		created_at: fields.completed_at,
+	};
 }

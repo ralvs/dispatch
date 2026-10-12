@@ -21,6 +21,8 @@ export type TaskRowHandlers = {
 	onToggleDone: () => void;
 	onToggleTop3: () => void;
 	onDelete?: () => void;
+	/** Only on an open recurring row: skip this cycle (docs/adr/0083). */
+	onSkip?: () => void;
 };
 
 export type TaskIntentRun = (
@@ -29,13 +31,13 @@ export type TaskIntentRun = (
 ) => boolean;
 
 /**
- * A recurring tick closes the row you clicked and creates the next occurrence
- * elsewhere (docs/adr/0059). The checkbox now stays ticked, so the pill's job
- * is to name where the series went next. Fired on claim, not after the server
+ * A recurring tick saves this cycle as done and moves the task to its next
+ * cycle (docs/adr/0083); a skip moves it with nothing saved. Either way the
+ * pill names where the task went next. Fired on claim, not after the server
  * round-trip, so it lands with the optimistic tick.
  */
 export function toastTaskToggle(
-	kind: "complete" | "reopen",
+	kind: "complete" | "reopen" | "skip",
 	task: Pick<TaskRow, "recurrence_rule" | "due_date" | "recurrence_day">,
 	todayIso: string,
 ): void {
@@ -44,11 +46,12 @@ export function toastTaskToggle(
 		return;
 	}
 	const next = nextCompleteFields(task, { todayIso });
+	const label = kind === "skip" ? "Skipped" : "Done";
 	if (next.spawn?.due_date) {
-		toastSuccess("Done", `Next ${formatDueLabel(next.spawn.due_date, todayIso)}`);
+		toastSuccess(label, `Next ${formatDueLabel(next.spawn.due_date, todayIso)}`);
 		return;
 	}
-	toastSuccess("Done");
+	toastSuccess(label);
 }
 
 /**
@@ -69,8 +72,13 @@ export function top3DesiredState(
 }
 
 export type TaskWriteActions = {
-	complete: (input: { id: string; observedDueDate: string | null }) => Promise<TaskActionResult>;
+	complete: (input: {
+		id: string;
+		observedDueDate: string | null;
+		snapshotId?: string;
+	}) => Promise<TaskActionResult>;
 	reopen: (id: string) => Promise<TaskActionResult>;
+	skip?: (input: { id: string; observedDueDate: string | null }) => Promise<TaskActionResult>;
 	setTop3: (input: {
 		id: string;
 		starred: boolean;
@@ -82,7 +90,7 @@ export type TaskWriteActions = {
 /**
  * Bind a row's checkbox / star / delete to intent + preconditioned actions.
  * `top3DateIso` is the day the star pins to (today on Tasks; day on screen on Today).
- * `todayIso` is the real calendar today — a spawned occurrence is dated from it, not the day on screen.
+ * `todayIso` is the real calendar today — a recurring task's next cycle is dated from it, not the day on screen.
  */
 export function bindTaskHandlers(
 	task: TaskRow,
@@ -91,6 +99,7 @@ export function bindTaskHandlers(
 	opts: { top3DateIso: string; todayIso: string },
 ) {
 	const done = task.status === "done";
+	const recurring = !done && task.recurrence_rule !== null;
 	return {
 		onToggleDone: () => {
 			if (done) {
@@ -101,10 +110,16 @@ export function bindTaskHandlers(
 					type: "complete" as const,
 					id: task.id,
 					observedDueDate: task.due_date,
+					// The snapshot shows at once under the id the server will give it.
+					...(recurring ? { snapshotId: crypto.randomUUID() } : {}),
 				};
 				if (
 					!run(intent, () =>
-						actions.complete({ id: intent.id, observedDueDate: intent.observedDueDate }),
+						actions.complete({
+							id: intent.id,
+							observedDueDate: intent.observedDueDate,
+							snapshotId: intent.snapshotId,
+						}),
 					)
 				) {
 					return;
@@ -127,6 +142,25 @@ export function bindTaskHandlers(
 				}),
 			);
 		},
+		...(recurring && actions.skip
+			? {
+					onSkip: () => {
+						const skip = actions.skip;
+						if (!skip) return;
+						const intent = {
+							type: "skip" as const,
+							id: task.id,
+							observedDueDate: task.due_date,
+						};
+						if (
+							!run(intent, () => skip({ id: intent.id, observedDueDate: intent.observedDueDate }))
+						) {
+							return;
+						}
+						toastTaskToggle("skip", task, opts.todayIso);
+					},
+				}
+			: {}),
 		...(actions.delete
 			? {
 					onDelete: () => {
