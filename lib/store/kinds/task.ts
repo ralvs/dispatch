@@ -238,6 +238,25 @@ function withSnapshot(
 	return [snapshot, ...rows];
 }
 
+/**
+ * A reopen of a recurring tick's done snapshot (docs/adr/0083). The server
+ * un-ticks it if it is the series' latest — the snapshot goes and the series
+ * row moves back — or reopens it as a plain task if it is older. The client
+ * cannot tell which, so the snapshot leaves every view until the answer
+ * brings back what is true. Shown as an open task meanwhile, it would be a
+ * second copy of the series to tick.
+ */
+function untickHides(intent: TaskIntent, row: TaskRow | undefined): boolean {
+	return intent.type === "reopen" && row?.status === "done" && row.series_id !== null;
+}
+
+/** The rows without a snapshot whose reopen is pending; same array when there is none. */
+function withoutUntick(rows: TaskRow[], intent: TaskIntent): TaskRow[] {
+	if (intent.type !== "reopen") return rows;
+	const row = rows.find((r) => r.id === intent.id);
+	return untickHides(intent, row) ? without(rows, new Set([intent.id])) : rows;
+}
+
 export const taskListsView: ViewAdapter<"taskLists"> = {
 	kind: "task",
 	fromSeed: (data) => ({ base: data, params: undefined }),
@@ -250,9 +269,12 @@ export const taskListsView: ViewAdapter<"taskLists"> = {
 		if (intent.type === "complete" || intent.type === "reopen") {
 			// A tick or an untick moves the row between the lists, to the top.
 			const row = [...view.open, ...view.done].find((r) => r.id === intent.id);
+			const gone = new Set([intent.id]);
+			if (untickHides(intent, row)) {
+				return { open: without(view.open, gone), done: without(view.done, gone) };
+			}
 			const next = row && projectTask(row, intent, ctx);
 			if (!row || !next || next === row) return view;
-			const gone = new Set([row.id]);
 			// A recurring tick keeps the row open where it is, on its next cycle,
 			// and its done snapshot leads the done list (docs/adr/0083).
 			const snapshot = snapshotOf(row, intent, ctx);
@@ -339,8 +361,12 @@ export const taskListView: ViewAdapter<"taskList"> = {
 				? [intent.task, ...view]
 				: view;
 		}
-		const out = withSnapshot(projectRows(view, intent, ctx), view, intent, ctx, (snapshot) =>
-			inTaskScope(snapshot, scope),
+		const out = withSnapshot(
+			projectRows(withoutUntick(view, intent), intent, ctx),
+			view,
+			intent,
+			ctx,
+			(snapshot) => inTaskScope(snapshot, scope),
 		);
 		return intent.type === "assign" ? inScopeOnly(out, scope) : out;
 	},
@@ -400,7 +426,7 @@ export const dayView: ViewAdapter<"day"> = {
 				? onDay(intent.task, view, ctx) && !holds(pool, intent.task.id)
 					? [intent.task, ...pool]
 					: pool
-				: withoutQuiet(projectRows(pool, intent, ctx), ctx);
+				: withoutQuiet(projectRows(withoutUntick(pool, intent), intent, ctx), ctx);
 		// ADR-0038 rule 2: a finished task stays struck on today's view only; a
 		// cached other day drops it (its completion does not fall on that day).
 		// A recurring tick leaves its row open on the next cycle, where

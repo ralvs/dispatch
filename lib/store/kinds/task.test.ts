@@ -166,9 +166,39 @@ describe("task adapter", () => {
 			{ kind: "task", intent: { type: "reopen", id: "snap" } },
 			NOW,
 		);
+		// Before the answer: the snapshot leaves, so it is never a second open
+		// copy of the series to tick; the series row waits for the server.
+		expect(selectView(applied, viewKey.tasks())).toEqual({ open: [a], done: [] });
 		const back = task({ id: "a", due_date: TODAY, recurrence_rule: "daily" });
 		const next = confirmWrite(applied, token, { at: T2, rows: [back], deletedIds: ["snap"] });
 		expect(selectView(next, viewKey.tasks())).toEqual({ open: [back], done: [] });
+
+		// An older snapshot reopens as a plain task: the answer brings it back, open.
+		const reopened = { ...snap, status: "open" as const, completed_at: null };
+		const older = confirmWrite(applied, token, { at: T2, rows: [reopened] });
+		expect(selectView(older, viewKey.tasks())).toEqual({ open: [reopened, a], done: [] });
+	});
+
+	it("docs/adr/0083: an overdue recurring tick keeps its snapshot struck on Today", () => {
+		const a = task({ id: "a", due_date: YESTERDAY, recurrence_rule: "daily" });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ key: viewKey.day(TODAY), type: "day", data: dayPayload(TODAY, [a]) }]),
+		);
+		const [applied] = applyIntent(
+			s,
+			{
+				kind: "task",
+				intent: { type: "complete", id: "a", observedDueDate: YESTERDAY, snapshotId: "snap" },
+			},
+			NOW,
+		);
+		const today = selectView(applied, viewKey.day(TODAY));
+		const tasks = today ? collectDayTasks(today.schedule) : [];
+		expect(tasks.find((t) => t.id === "snap")).toMatchObject({
+			status: "done",
+			due_date: YESTERDAY,
+		});
 	});
 
 	it("one intent updates both taskLists and day", () => {
