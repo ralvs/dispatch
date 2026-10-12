@@ -4,7 +4,7 @@ import { CreateDialogButton } from "@/components/create-dialog";
 import { Field, Input, Textarea } from "@/components/ui";
 import { nowUtc } from "@/lib/dates";
 import type { DomainItem } from "@/lib/schemas/domain";
-import { useStoreWrite } from "@/lib/store";
+import { useClock, useStoreActions, useStoreWrite } from "@/lib/store";
 import { createDomainAction } from "./actions";
 import { ColorSwatchPicker } from "./color-swatch-picker";
 
@@ -41,6 +41,22 @@ function optimisticDomain(formData: FormData): DomainItem {
  */
 export function DomainCreateButton() {
 	const write = useStoreWrite("domain");
+	const { seed } = useStoreActions();
+	const clock = useClock();
+
+	async function create(formData: FormData) {
+		const result = await write({ type: "create", row: optimisticDomain(formData) }, () =>
+			createDomainAction(formData),
+		);
+		// A new domain has no open tasks yet: its count starts at zero, read as
+		// of the write, so a task filed into it moves it (lib/counts.ts).
+		if (result.ok) {
+			const [row] = result.data.rows;
+			if (row)
+				seed({ ...clock, readAt: result.data.at, aggregates: { [`domain.open:${row.id}`]: 0 } });
+		}
+		return result;
+	}
 
 	return (
 		<CreateDialogButton
@@ -48,11 +64,7 @@ export function DomainCreateButton() {
 			title="New domain"
 			submitLabel="Add domain"
 			errorMessage="Couldn't create domain. Try again."
-			action={(formData) =>
-				write({ type: "create", row: optimisticDomain(formData) }, () =>
-					createDomainAction(formData),
-				)
-			}
+			action={create}
 			size="lg"
 		>
 			<Field name="name">

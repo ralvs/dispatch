@@ -78,4 +78,24 @@ describe("DomainList on the entity store", () => {
 		expect(store.getState().pending).toEqual([]);
 		expect(getMeasure(1, "archived")).toBeInTheDocument();
 	});
+
+	it("a row's open count is the store's, so a tick anywhere moves it (docs/adr/0085)", () => {
+		render(
+			<StoreProvider store={store}>
+				<Seed
+					snapshot={snapshot(
+						T1,
+						[{ key: viewKey.domains(), type: "domainList", data: { rows: [health, work] } }],
+						{ aggregates: { "domain.open:work": 2 } },
+					)}
+				>
+					<DomainList />
+				</Seed>
+			</StoreProvider>,
+		);
+		const row = (id: string) => document.getElementById(`domain-${id}`) as HTMLElement;
+		expect(within(row("work")).getByText("2 open tasks")).toBeInTheDocument();
+		// Not seeded: the row's own count stands in.
+		expect(within(row("health")).getByText("0 open tasks")).toBeInTheDocument();
+	});
 });

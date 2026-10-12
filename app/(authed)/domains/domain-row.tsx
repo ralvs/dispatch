@@ -6,7 +6,13 @@ import { Button, Card, Field, Input, ListRow, rowTitle, Textarea } from "@/compo
 import { toastError } from "@/lib/client/toast";
 import { formatInstant, nowUtc } from "@/lib/dates";
 import type { DomainItem } from "@/lib/schemas/domain";
-import { isNavigationError, useProvisionalIds, useRunIntent, useStoreWrite } from "@/lib/store";
+import {
+	isNavigationError,
+	useAggregate,
+	useProvisionalIds,
+	useRunIntent,
+	useStoreWrite,
+} from "@/lib/store";
 import {
 	archiveDomainAction,
 	markDomainShippedAction,
@@ -62,6 +68,9 @@ export function DomainRowItem({ domain, tz }: { domain: DomainItem; tz: string }
 	// Still being saved: its id is the client's, so nothing may act on it yet.
 	const saving = useProvisionalIds("domain").has(domain.id);
 	const { cadenceDays, touch } = domain;
+	// The open count moves with a tick or a filing anywhere (lib/counts.ts);
+	// the row's own count stands in until the page has seeded it.
+	const openCount = useAggregate(`domain.open:${domain.id}`) ?? touch?.openTasks;
 
 	function saveDetails(formData: FormData) {
 		startTransition(async () => {
@@ -162,7 +171,9 @@ export function DomainRowItem({ domain, tz }: { domain: DomainItem; tz: string }
 					? "Touched today"
 					: `${touch.daysSinceTouch}d since last touch`;
 	const openTasks =
-		touch === null ? null : `${touch.openTasks} open task${touch.openTasks === 1 ? "" : "s"}`;
+		touch === null || openCount === undefined
+			? null
+			: `${openCount} open task${openCount === 1 ? "" : "s"}`;
 
 	return (
 		<ListRow

@@ -1,3 +1,4 @@
+import { isRoutineDoneOn } from "@/lib/counts";
 import { calendarDaysBetween, shiftDay } from "@/lib/dates";
 
 // Streak + completion-rate math for routines.
@@ -121,7 +122,7 @@ export function computeRoutineStats(
 		completions_7d,
 		completions_30d,
 		total: completionDates.length,
-		done_today: set.has(todayIso),
+		done_today: isRoutineDoneOn(completionDates, todayIso),
 	};
 }
 

@@ -6,6 +6,7 @@
 // The body is on the row (the list reads it for the title fallback), so an
 // editor save confirms here and a changed title shows in the list.
 
+import { change, noteCounts } from "@/lib/counts";
 import type { NoteListRow } from "@/lib/schemas/note";
 import type { Deltas, IntentCtx, KindAdapter, RowEntry, ViewAdapter } from "@/lib/store/types";
 
@@ -53,16 +54,19 @@ export function applyNoteIntent(
 /**
  * Today's and /notes' needs-review count moves when a flagged note is filed
  * or deleted — as the user sees the row (`project`), so filing then deleting
- * moves it once — and when a flagged note arrives.
+ * moves it once — and when a flagged note arrives. What a note adds to it is
+ * lib/counts.ts.
  */
-function noteDeltas(intent: NoteIntent, before: NoteListRow | undefined, _ctx: IntentCtx): Deltas {
+function noteDeltas(intent: NoteIntent, before: NoteListRow | undefined, ctx: IntentCtx): Deltas {
 	// A create the store already holds (a seed read it) is already counted.
-	if (intent.type === "create") {
-		return !before && intent.row.needs_review ? { "notes.needsReview": 1 } : {};
+	if (intent.type === "create") return before ? {} : noteCounts(intent.row);
+	if (!before) {
+		// Never loaded (opened from Today): the flag the user saw stands in, and
+		// a resolve or a delete takes the note out of the count.
+		const flagged = (intent.type === "resolve" || intent.type === "delete") && intent.flagged;
+		return change(noteCounts({ needs_review: flagged === true }), {});
 	}
-	if (intent.type !== "resolve" && intent.type !== "delete") return {};
-	const flagged = before ? before.needs_review : intent.flagged === true;
-	return flagged ? { "notes.needsReview": -1 } : {};
+	return change(noteCounts(before), noteCounts(applyNoteIntent(before, intent, ctx.nowIso)));
 }
 
 export const noteKind: KindAdapter<"note"> = {

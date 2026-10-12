@@ -2,9 +2,11 @@
 
 import { CreateDialogButton } from "@/components/create-dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui";
+import { projectCounters } from "@/lib/counts";
 import { nowUtc } from "@/lib/dates";
 import type { DomainRow } from "@/lib/schemas/domain";
 import type { ProjectRow } from "@/lib/schemas/project";
+import { EMPTY_TASK_COUNTS } from "@/lib/services/projects-shared";
 import { useClock, useStoreActions, useStoreWrite } from "@/lib/store";
 import { createProjectAction } from "./actions";
 
@@ -52,12 +54,16 @@ export function ProjectCreateButton({ domains }: { domains: DomainRow[] }) {
 		const result = await write({ type: "create", row: optimisticProject(formData, domains) }, () =>
 			createProjectAction(formData),
 		);
-		// A new project has done nothing yet: its row's count starts at zero,
-		// read as of the write, so every later finish moves it.
+		// A new project has no tasks yet: both its counts start at zero,
+		// read as of the write, so every later task and finish moves them.
 		if (result.ok) {
 			const [row] = result.data.rows;
 			if (row) {
-				seed({ ...clock, readAt: result.data.at, aggregates: { [`project.done:${row.id}`]: 0 } });
+				seed({
+					...clock,
+					readAt: result.data.at,
+					aggregates: projectCounters({ [row.id]: EMPTY_TASK_COUNTS }),
+				});
 			}
 		}
 		return result;

@@ -1,8 +1,9 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { countOf, openWorkCounts, tally } from "@/lib/counts";
 import { calendarDaysBetween, dateOfInstant, todayInTz } from "@/lib/dates";
-import { isQuiet } from "@/lib/quiet";
 import type { DomainItem, DomainRow, DomainTouch } from "@/lib/schemas/domain";
+import type { TaskRow } from "@/lib/schemas/task";
 import { cadenceThresholdDays, listDomains } from "@/lib/services/domains";
 import { unwrap } from "@/lib/services/errors";
 import { listQuietProjectIds } from "@/lib/services/quiet";
@@ -161,7 +162,7 @@ export async function listDomainTouchesOn(
 				.range(0, 49_999),
 		) as Array<{
 			domain_id: string | null;
-			status: string;
+			status: TaskRow["status"];
 			completed_at: string | null;
 			due_date: string | null;
 			project_id: string | null;
@@ -188,13 +189,9 @@ export async function listDomainTouchesOn(
 
 	// Quiet tasks are not open work — an undated task in a project that is not
 	// active is already parked, and counting it would make a domain look busy
-	// for something nobody is carrying right now.
-	const openByDomain = new Map<string, number>();
-	for (const t of tasks) {
-		if (t.domain_id === null || t.status !== "open") continue;
-		if (isQuiet(t, quietProjectIds)) continue;
-		openByDomain.set(t.domain_id, (openByDomain.get(t.domain_id) ?? 0) + 1);
-	}
+	// for something nobody is carrying right now. The rule is `openWorkCounts`
+	// (lib/counts.ts), the one the entity store moves /domains' count by.
+	const open = tally(tasks, (t) => openWorkCounts(t, { todayIso, quietProjectIds }));
 
 	return domains.map((d) =>
 		resolveTouch({
@@ -205,7 +202,7 @@ export async function listDomainTouchesOn(
 			lastTaskDoneAt: lastTaskDone.get(d.id) ?? null,
 			lastProjectActivityAt: lastProject.get(d.id) ?? null,
 			lastNoteAt: lastNote.get(d.id) ?? null,
-			openTasks: openByDomain.get(d.id) ?? 0,
+			openTasks: countOf(open, `domain.open:${d.id}`),
 			todayIso,
 			tz,
 		}),

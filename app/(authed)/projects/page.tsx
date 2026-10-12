@@ -16,6 +16,8 @@ import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedProjectBoard } from "@/lib/cache/projects";
 import { readClock } from "@/lib/cache/settings";
+import { projectCounters } from "@/lib/counts";
+import { EMPTY_TASK_COUNTS } from "@/lib/services/projects-shared";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
 import { seedOf } from "@/lib/store/server";
@@ -49,8 +51,10 @@ async function ProjectsBody() {
 				},
 			},
 		],
-		aggregates: Object.fromEntries(
-			projects.map((p) => [`project.done:${p.id}`, taskCounts[p.id]?.done ?? 0]),
+		// Both counts, as Today seeds them (lib/counts.ts), so neither surface
+		// leaves the other's key unseeded.
+		aggregates: projectCounters(
+			Object.fromEntries(projects.map((p) => [p.id, taskCounts[p.id] ?? EMPTY_TASK_COUNTS])),
 		),
 	});
 

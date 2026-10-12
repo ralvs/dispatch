@@ -33,6 +33,7 @@
 // the exception: a concurrent read/write window may briefly double-count, and
 // the next seed heals it.
 
+import type { CounterKey } from "@/lib/counts";
 import type { DaySchedulePayload } from "@/lib/day-schedule";
 import type { DomainItem } from "@/lib/schemas/domain";
 import type { JournalEntryRow } from "@/lib/schemas/journal";
@@ -166,24 +167,17 @@ export type ViewSeed = {
 }[ViewType];
 
 /**
- * Entity issues extend this union. The `tasks.*` counts are Today's counters
- * (#26): open, overdue and inbox leave out quiet tasks; inbox is unfiled open
- * tasks.
- * `project.done:<id>` and `project.open:<id>` are one per project, seeded by
- * /projects and by Today's projects card.
+ * Every counter the store carries. What a row adds to a `CounterKey` is
+ * lib/counts.ts (docs/adr/0085), so a seed and a write agree on it; the other
+ * two move by their kind's own deltas or only with a seed.
+ * `project.*:<id>` and `domain.open:<id>` are one per project or domain, and
+ * move only once a seed has named them.
  */
 export type AggregateKey =
-	| "notes.needsReview"
+	| CounterKey
 	| "notifications.unread"
-	| "tasks.open"
-	| "tasks.overdue"
-	| "tasks.inbox"
 	/** Today's calendar events — the counters' first row. Seeds only: a crons' write (#4). */
-	| "events.today"
-	/** Done tasks in one project — the /projects row's `n/m done` (#30). */
-	| `project.done:${string}`
-	/** Open tasks in one project — with `project.done`, Today's project rings (#31). */
-	| `project.open:${string}`;
+	| "events.today";
 export type Deltas = Partial<Record<AggregateKey, number>>;
 
 export type Snapshot = Clock & {
