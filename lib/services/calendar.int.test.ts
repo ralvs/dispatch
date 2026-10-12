@@ -422,6 +422,30 @@ describe("create, then sync", () => {
 		]);
 	});
 
+	it("drops a caldav twin of a created_here row", async () => {
+		await insertEvent({
+			caldav_uid: "evt-1@icloud.com",
+			source: "created_here",
+			caldav_etag: "etag-1",
+			recurring: false,
+			start_at: "2026-07-16T14:00:00Z",
+			end_at: "2026-07-16T15:00:00Z",
+		});
+		// Written by a sync that read the known rows before the create committed.
+		await insertEvent({
+			caldav_uid: "evt-1@icloud.com",
+			source: "caldav",
+			caldav_etag: "etag-1",
+			recurring: false,
+			start_at: "2026-07-16T14:00:00Z",
+			end_at: "2026-07-16T15:00:00Z",
+		});
+
+		await syncCalendar(serviceClient(), connWithEvent(), { nowMs: NOW_MS });
+
+		expect((await allRows()).map((r) => r.source)).toEqual(["created_here"]);
+	});
+
 	it("rewrites an unchanged row once to learn whether it repeats", async () => {
 		await insertEvent({
 			caldav_uid: "evt-1@icloud.com",
@@ -586,8 +610,12 @@ describe("deleteEvent against the local database", () => {
 		expect(await allRows()).toHaveLength(1);
 	});
 
-	it("refuses a series", async () => {
-		const id = await insertOnRenan({ recurring: true });
+	it.each([
+		["a work event", { source: "google" }],
+		["an event on another calendar", { calendar_name: "Nivers" }],
+		["a series", { recurring: true }],
+	])("refuses %s without reaching iCloud", async (_label, overrides) => {
+		const id = await insertOnRenan(overrides);
 		const conn = editConn();
 
 		await expect(deleteEvent(await ownerClient(), conn, id)).rejects.toMatchObject({

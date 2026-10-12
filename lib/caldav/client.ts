@@ -120,7 +120,8 @@ export async function createCaldavClient(): Promise<CaldavConnection> {
 			calendar: { url: collectionOf(href) },
 			objectUrls: [href],
 		});
-		const found = objects.find((o) => o.data);
+		const path = new URL(href).pathname;
+		const found = objects.find((o) => o.data && new URL(o.url).pathname === path);
 		return found ? { href: found.url, etag: found.etag ?? "", data: found.data } : null;
 	}
 

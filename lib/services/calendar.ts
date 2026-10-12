@@ -167,6 +167,8 @@ export async function syncCalendar(
 		removed = ((deleted as unknown[] | null) ?? []).length;
 	}
 
+	await dropCaldavTwins(sb);
+
 	unwrap(
 		await sb
 			.from("caldav_sync_state")
@@ -177,6 +179,32 @@ export async function syncCalendar(
 	);
 
 	return { pulled, removed };
+}
+
+/**
+ * A `caldav` row whose UID a `created_here` row holds is a twin: the same
+ * event, written by a sync that read the known rows before the create
+ * committed. The `created_here` row is the one row (docs/adr/0082).
+ */
+async function dropCaldavTwins(sb: SupabaseClient): Promise<void> {
+	const created = (unwrap(
+		await sb
+			.from("calendar_events")
+			.select("caldav_uid")
+			.eq("source", "created_here")
+			.not("caldav_uid", "is", null),
+	) ?? []) as { caldav_uid: string }[];
+	if (created.length === 0) return;
+	unwrap(
+		await sb
+			.from("calendar_events")
+			.delete()
+			.eq("source", "caldav")
+			.in(
+				"caldav_uid",
+				created.map((r) => r.caldav_uid),
+			),
+	);
 }
 
 /**
@@ -386,7 +414,9 @@ export async function updateEvent(
 				location: patched.location,
 				start_at: patched.startUtc,
 				end_at: patched.endUtc,
-				caldav_etag: written.etag,
+				// No new etag from iCloud: keep the old one. The next edit then
+				// gets a CONFLICT, and a sync learns the real etag.
+				caldav_etag: written.etag ?? row.caldav_etag,
 			})
 			.eq("id", id)
 			.select(EVENT_SELECT)
