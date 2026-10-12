@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
-import { SkipButton } from "@/components/skip-button";
 import {
 	Button,
 	Card,
@@ -18,12 +17,7 @@ import {
 	Select,
 	Textarea,
 } from "@/components/ui";
-import {
-	completeTaskAction,
-	reopenTaskAction,
-	setTop3Action,
-	skipTaskAction,
-} from "@/lib/actions/tasks";
+import { completeTaskAction, reopenTaskAction, setTop3Action } from "@/lib/actions/tasks";
 import { toastError } from "@/lib/client/toast";
 import { nowUtc } from "@/lib/dates";
 import { ProjectStatusSchema } from "@/lib/schemas/project";
@@ -107,7 +101,6 @@ export function ProjectDetail({
 				complete: completeTaskAction,
 				reopen: reopenTaskAction,
 				setTop3: setTop3Action,
-				skip: skipTaskAction,
 			},
 			{ top3DateIso: todayIso, todayIso },
 		);
@@ -313,7 +306,7 @@ function ProjectTasksSection({
 	projectId: string;
 	open: TaskRow[];
 	done: TaskRow[];
-	handlersFor: (task: TaskRow) => { onToggleDone: () => void; onSkip?: () => void };
+	handlersFor: (task: TaskRow) => { onToggleDone: () => void };
 }) {
 	const total = open.length + done.length;
 	const progress = taskProgress({ done: done.length, open: open.length });
@@ -348,19 +341,15 @@ function ProjectTasksSection({
 					<ul className="mt-3">
 						{[...open, ...done].map((t) => {
 							const doneRow = t.status === "done";
-							const handlers = handlersFor(t);
 							return (
 								<ListRow
 									key={t.id}
-									trailing={
-										handlers.onSkip && <SkipButton title={t.title} onSkip={handlers.onSkip} />
-									}
 									leading={
 										<Checkbox
 											checked={doneRow}
 											priority={t.priority}
 											aria-label={doneRow ? `Reopen "${t.title}"` : `Complete "${t.title}"`}
-											onChange={handlers.onToggleDone}
+											onChange={handlersFor(t).onToggleDone}
 											className="shrink-0"
 										/>
 									}

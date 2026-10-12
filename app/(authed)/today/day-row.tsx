@@ -4,7 +4,6 @@ import { Calendar, FilePlus, FileText, Star } from "lucide-react";
 import Link from "next/link";
 import { useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
-import { SkipButton } from "@/components/skip-button";
 import { Checkbox, rowTitle } from "@/components/ui";
 import { NOTE_CHIP_CLASS } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
@@ -207,7 +206,6 @@ export function TaskDayRow({
 					<Icon icon={FileText} size="sm" />
 				</Link>
 			)}
-			{handlers.onSkip && <SkipButton title={task.title} onSkip={handlers.onSkip} />}
 			<StarButton
 				task={task}
 				starDay={dateIso === todayIso ? "today" : "that day"}

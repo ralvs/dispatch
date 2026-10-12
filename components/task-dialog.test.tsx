@@ -36,10 +36,12 @@ function Harness({
 	onClose = () => {},
 	mode = "create",
 	quickAdd = false,
+	onSkip,
 }: {
 	onClose?: () => void;
 	mode?: TaskDialogMode;
 	quickAdd?: boolean;
+	onSkip?: () => void;
 }) {
 	const [open, setOpen] = useState(true);
 	// Every write goes through the entity store, which every page that opens
@@ -57,6 +59,7 @@ function Harness({
 					domains={DOMAINS}
 					todayIso="2026-09-22"
 					quickAdd={quickAdd}
+					onSkip={onSkip}
 					{...(mode === "edit"
 						? { taskId: OLD.id, defaults: { title: OLD.title, domain_id: HOME } }
 						: {})}
@@ -171,5 +174,18 @@ describe("TaskDialog", () => {
 		await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
 		expect(updateTaskAction).toHaveBeenCalledWith(OLD.id, expect.any(FormData));
 		expect(openTasks()).toEqual([edited]);
+	});
+
+	it("offers Skip only when the editor passes it (docs/adr/0083)", async () => {
+		const user = userEvent.setup();
+		const { unmount } = render(<Harness mode="edit" />);
+		expect(screen.queryByRole("button", { name: "Skip this time" })).not.toBeInTheDocument();
+		unmount();
+
+		const onSkip = vi.fn();
+		render(<Harness mode="edit" onSkip={onSkip} />);
+		await user.click(screen.getByRole("button", { name: "Skip this time" }));
+		expect(onSkip).toHaveBeenCalledOnce();
+		expect(updateTaskAction).not.toHaveBeenCalled();
 	});
 });

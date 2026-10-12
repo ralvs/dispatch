@@ -44,8 +44,9 @@ and a later `created_at`. An older snapshot is history: un-ticking it reopens
 it as a plain task, and the series row does not move.
 
 **Skip.** `skip_recurring_task` moves the row to its next cycle and saves no
-snapshot. Same gate. It is a control beside the star on Tasks, Today and a
-project page, and the `skip_task` MCP tool.
+snapshot. Same gate. It is a "Skip this time" button in the task's edit
+form, beside Delete, and the `skip_task` MCP tool. It is not on the row: a
+skip saves nothing, so a stray tap on a row would lose a cycle unseen.
 
 **The snapshot copies `reminders_sent` and `recurrence_day`.** The issue said
 the snapshot takes the column default for `reminders_sent`. It copies the

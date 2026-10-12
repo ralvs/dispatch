@@ -2,12 +2,7 @@
 
 import { unstable_rethrow } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import {
-	completeTaskAction,
-	reopenTaskAction,
-	setTop3Action,
-	skipTaskAction,
-} from "@/lib/actions/tasks";
+import { completeTaskAction, reopenTaskAction, setTop3Action } from "@/lib/actions/tasks";
 import { parseDateIso } from "@/lib/dates";
 import type { TaskRow } from "@/lib/services/tasks";
 import { useDispatchStore, useStoreActions, useView, viewKey } from "@/lib/store";
@@ -25,7 +20,6 @@ const WRITE_ACTIONS = {
 	complete: completeTaskAction,
 	reopen: reopenTaskAction,
 	setTop3: setTop3Action,
-	skip: skipTaskAction,
 };
 
 /**

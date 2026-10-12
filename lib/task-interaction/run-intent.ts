@@ -21,8 +21,6 @@ export type TaskRowHandlers = {
 	onToggleDone: () => void;
 	onToggleTop3: () => void;
 	onDelete?: () => void;
-	/** Only on an open recurring row: skip this cycle (docs/adr/0083). */
-	onSkip?: () => void;
 };
 
 export type TaskIntentRun = (
@@ -78,7 +76,6 @@ export type TaskWriteActions = {
 		snapshotId?: string;
 	}) => Promise<TaskActionResult>;
 	reopen: (id: string) => Promise<TaskActionResult>;
-	skip?: (input: { id: string; observedDueDate: string | null }) => Promise<TaskActionResult>;
 	setTop3: (input: {
 		id: string;
 		starred: boolean;
@@ -100,6 +97,25 @@ const lastRecurringMove = new Map<string, number>();
 function movedJustNow(id: string): boolean {
 	const last = lastRecurringMove.get(id);
 	return last !== undefined && Date.now() - last < RECURRING_REPEAT_MS;
+}
+
+/**
+ * Skip this cycle of a recurring task (docs/adr/0083): it moves to its next
+ * due date and nothing is saved as done. Offered in the task's edit form, not
+ * on the row, so a stray tap never skips. Same gate as a tick: the due date
+ * the form showed.
+ */
+export function skipRecurringTask(
+	task: TaskRow,
+	run: TaskIntentRun,
+	skip: (input: { id: string; observedDueDate: string | null }) => Promise<TaskActionResult>,
+	todayIso: string,
+): void {
+	if (task.status !== "open" || task.recurrence_rule === null || movedJustNow(task.id)) return;
+	const intent = { type: "skip" as const, id: task.id, observedDueDate: task.due_date };
+	if (!run(intent, () => skip({ id: intent.id, observedDueDate: intent.observedDueDate }))) return;
+	lastRecurringMove.set(task.id, Date.now());
+	toastTaskToggle("skip", task, todayIso);
 }
 
 /**
@@ -159,26 +175,6 @@ export function bindTaskHandlers(
 				}),
 			);
 		},
-		...(recurring && actions.skip
-			? {
-					onSkip: () => {
-						const skip = actions.skip;
-						if (!skip || movedJustNow(task.id)) return;
-						const intent = {
-							type: "skip" as const,
-							id: task.id,
-							observedDueDate: task.due_date,
-						};
-						if (
-							!run(intent, () => skip({ id: intent.id, observedDueDate: intent.observedDueDate }))
-						) {
-							return;
-						}
-						lastRecurringMove.set(task.id, Date.now());
-						toastTaskToggle("skip", task, opts.todayIso);
-					},
-				}
-			: {}),
 		...(actions.delete
 			? {
 					onDelete: () => {

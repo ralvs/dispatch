@@ -11,7 +11,7 @@ vi.mock("@/lib/client/toast", () => ({
 	toastNotice: (...args: unknown[]) => toastNoticeMock(...args),
 }));
 
-const { bindTaskHandlers, toastTaskToggle } = await import("./run-intent");
+const { bindTaskHandlers, skipRecurringTask, toastTaskToggle } = await import("./run-intent");
 
 const TODAY = "2026-07-15";
 
@@ -185,29 +185,27 @@ describe("bindTaskHandlers", () => {
 		});
 	});
 
-	it("offers a skip only on an open recurring row, and toasts where it went", () => {
+	it("skips only an open recurring task, and toasts where it went", () => {
 		const skip = vi.fn();
 		const run = vi.fn((_intent: TaskIntent, action: () => Promise<unknown>) => {
 			void action();
 			return true;
 		});
-		const opts = { top3DateIso: TODAY, todayIso: TODAY };
-		const plain = task({ id: "a", title: "Ship" });
-		expect(bindTaskHandlers(plain, run, { ...actions, skip }, opts).onSkip).toBeUndefined();
+		skipRecurringTask(task({ id: "plain", title: "Ship" }), run, skip, TODAY);
+		expect(run).not.toHaveBeenCalled();
+
 		const row = task({
-			id: "r",
+			id: "skip-r",
 			title: "Weekly",
 			due_date: "2026-07-10",
 			recurrence_rule: "weekly",
 		});
-		expect(bindTaskHandlers(row, run, actions, opts).onSkip).toBeUndefined();
-
-		bindTaskHandlers(row, run, { ...actions, skip }, opts).onSkip?.();
+		skipRecurringTask(row, run, skip, TODAY);
 		expect(run).toHaveBeenCalledWith(
-			{ type: "skip", id: "r", observedDueDate: "2026-07-10" },
+			{ type: "skip", id: "skip-r", observedDueDate: "2026-07-10" },
 			expect.any(Function),
 		);
-		expect(skip).toHaveBeenCalledWith({ id: "r", observedDueDate: "2026-07-10" });
+		expect(skip).toHaveBeenCalledWith({ id: "skip-r", observedDueDate: "2026-07-10" });
 		expect(toastSuccessMock).toHaveBeenCalledWith("Skipped", "Next due in 2d");
 	});
 
