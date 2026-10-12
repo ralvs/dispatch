@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Card, Checkbox, Progress } from "@/components/ui";
+import { routinesDoneOn } from "@/lib/counts";
 import { bucketRoutines, type RoutineBucket, type RoutineBucketRow } from "@/lib/routine-buckets";
 import type { RoutineWithHistory } from "@/lib/schemas/routine";
 import { useClock, useView, useWrites, viewKey } from "@/lib/store";
@@ -68,10 +69,8 @@ export function RoutinesCard({ nowMs }: { nowMs: number }) {
 	const total = routines.length;
 	if (total === 0) return null;
 
-	const displayDone = buckets.reduce(
-		(n, bucket) => n + bucket.rows.filter((r) => r.done).length,
-		0,
-	);
+	// The rule Today's summary counts by (lib/counts.ts), on the same rows.
+	const displayDone = routinesDoneOn(routines, todayIso);
 	// Which blocks still have something in them — the useful summary, because
 	// "3 left" does not tell you when you have to do them.
 	const blocksLeft = buckets
