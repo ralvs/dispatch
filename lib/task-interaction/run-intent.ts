@@ -17,7 +17,6 @@ export type TaskSender = { send(w: Write<"task">): boolean };
 export type TaskRowHandlers = {
 	onToggleDone: () => void;
 	onToggleTop3: () => void;
-	onDelete?: () => void;
 };
 
 /**
