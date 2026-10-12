@@ -91,8 +91,20 @@ recurring row within 800 ms counts as the same click
 (`lib/task-interaction/run-intent.ts`). It is a client guard, not a lock: it
 never blocks the store, and a deliberate tick a second later goes through.
 
-On an un-tick, the client drops the snapshot and the server returns the
-moved-back row. The overdue counter's move back is left to the next seed.
+An older snapshot reopened as a plain task keeps its `series_id`, so a
+re-tick puts it back in the history. The history of X is therefore the
+**done** rows `where series_id = X`, and only done rows count when the
+un-tick asks which snapshot is the latest. The un-tick locks the series row
+before it asks, so a tick cannot land in between.
+
+An un-tick happens after a skip too: it moves the task back to the cycle it
+un-ticked, as the issue states, and the skip is lost.
+
+The client cannot tell whether a reopened snapshot is the latest, so the
+snapshot leaves every view until the server answers. Shown as an open task
+meanwhile, it would be a second copy of the series to tick. The server
+returns the moved-back row, or the snapshot reopened as a plain task. The
+overdue counter's move back is left to the next seed.
 
 Upcoming cycles ("shadow tasks", shown dimmed on future days) are a
 follow-up: computed at read time from the rule and the due date, never
