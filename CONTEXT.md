@@ -188,8 +188,13 @@ a calendar event carries no domain (`lib/ui/event-color.ts`).
 ## Memex
 
 *Planned, not built (map #117).* The knowledge engine inside Dispatch, after
-Karpathy's LLM Wiki. Renan's notes and tasks are its **sources**; Memex reads
-them and never edits them. From them it compiles **thoughts**, which it owns.
+Karpathy's LLM Wiki. Renan's notes and **done** tasks are its **sources**;
+Memex reads them and never edits them. From them it compiles **thoughts**,
+which it owns. An open task is a plan, not a source: Memex looks at it when
+it needs to (so it does not propose a task that already exists), and never
+learns a thought from it. A source **changes** when the text Memex reads
+changes (for a task, that includes its dates), not when it is pinned or
+starred (docs/adr/0084).
 It may *propose* a note or a task, and Renan accepts it. Code lives in
 `memex/`, tables in the `memex` schema, and Dispatch never imports it.
 
@@ -221,8 +226,9 @@ one stays as history. Only a typo fix edits in place, and it keeps the old
 text as a version. An event that counts for a rule **fulfils** it: "AC
 cleaned" fulfils "AC needs cleaning every 6 months", and "AC repaired" does
 not. Memex decides this once, when it ingests the event, and stores the link.
-"Last cleaned" is then the newest event that fulfils the rule. When Renan edits a source note, Memex
-reads it again and may supersede the thought. When every source of a thought
+"Last cleaned" is then the newest event that fulfils the rule. When Renan edits a source, Memex
+reads it again and may supersede the thought. A task that is reopened or
+un-ticked is a lost source, like a deleted one. When every source of a thought
 is deleted, the thought stays, marked as having no source: a confirmed one is
 kept, and for an inferred one Dream proposes removal. A thought Renan deletes
 is hidden, not erased, and Memex does not write it again from the same
