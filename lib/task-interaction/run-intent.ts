@@ -88,6 +88,21 @@ export type TaskWriteActions = {
 };
 
 /**
+ * How long a second tick or skip on the same recurring row counts as the same
+ * click. The row stays open after a tick (docs/adr/0083), so its box is empty
+ * again at once: without this, a double click ticks two cycles. The server's
+ * gate cannot tell, because the second click saw the new due date.
+ */
+const RECURRING_REPEAT_MS = 800;
+const lastRecurringMove = new Map<string, number>();
+
+/** Whether this recurring row moved a moment ago. */
+function movedJustNow(id: string): boolean {
+	const last = lastRecurringMove.get(id);
+	return last !== undefined && Date.now() - last < RECURRING_REPEAT_MS;
+}
+
+/**
  * Bind a row's checkbox / star / delete to intent + preconditioned actions.
  * `top3DateIso` is the day the star pins to (today on Tasks; day on screen on Today).
  * `todayIso` is the real calendar today — a recurring task's next cycle is dated from it, not the day on screen.
@@ -106,6 +121,7 @@ export function bindTaskHandlers(
 				if (!run({ type: "reopen", id: task.id }, () => actions.reopen(task.id))) return;
 				toastTaskToggle("reopen", task, opts.todayIso);
 			} else {
+				if (recurring && movedJustNow(task.id)) return;
 				const intent = {
 					type: "complete" as const,
 					id: task.id,
@@ -124,6 +140,7 @@ export function bindTaskHandlers(
 				) {
 					return;
 				}
+				if (recurring) lastRecurringMove.set(task.id, Date.now());
 				toastTaskToggle("complete", task, opts.todayIso);
 			}
 		},
@@ -146,7 +163,7 @@ export function bindTaskHandlers(
 			? {
 					onSkip: () => {
 						const skip = actions.skip;
-						if (!skip) return;
+						if (!skip || movedJustNow(task.id)) return;
 						const intent = {
 							type: "skip" as const,
 							id: task.id,
@@ -157,6 +174,7 @@ export function bindTaskHandlers(
 						) {
 							return;
 						}
+						lastRecurringMove.set(task.id, Date.now());
 						toastTaskToggle("skip", task, opts.todayIso);
 					},
 				}
