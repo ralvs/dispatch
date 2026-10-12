@@ -1,8 +1,10 @@
 // The task kind. What an intent does to one row is projectTask
 // (lib/task-interaction/apply-intent.ts); everything here is where that row
 // then sits — /tasks' open and done lists, a scoped list, a day's bands — and
-// what it does to Today's counters.
+// how far it moves the counters. What one row adds to each counter is
+// lib/counts.ts (docs/adr/0084); this file only takes the difference.
 
+import { type Counts, change, plus, taskCounts } from "@/lib/counts";
 import { dateOfInstant } from "@/lib/dates";
 import {
 	collectDayEvents,
@@ -23,7 +25,6 @@ import type {
 	ViewAdapter,
 } from "@/lib/store/types";
 import { projectTask, snapshotOf, type TaskIntent } from "@/lib/task-interaction/apply-intent";
-import { isOverdue } from "@/lib/task-predicates";
 
 /** /tasks: the open list and the recently done strip. */
 export type TaskLists = {
@@ -34,26 +35,17 @@ export type TaskLists = {
 /** How many finished rows /tasks keeps. */
 const DONE_CAP = 10;
 
-type TaskCounts = { open: number; overdue: number; inbox: number };
-const NONE: TaskCounts = { open: 0, overdue: 0, inbox: 0 };
-
 /** The quiet projects the server last told the store about (lib/quiet.ts). */
 function quietOf(clock: Clock): ReadonlySet<string> {
 	return new Set(clock.quietProjectIds);
 }
 
 /**
- * What one row adds to Today's counters (lib/services/today.ts
- * assembleTodayView). Today reads its tasks without the quiet ones, so a quiet
- * row adds nothing.
+ * What one row adds to each counter (lib/counts.ts), on the clock's day and
+ * with its quiet projects — the same rule the server readers sum.
  */
-function countsOf(row: TaskRow | undefined, clock: Clock): TaskCounts {
-	if (row?.status !== "open" || isQuiet(row, quietOf(clock))) return NONE;
-	return {
-		open: 1,
-		overdue: isOverdue(row, clock.todayIso) ? 1 : 0,
-		inbox: row.domain_id === null ? 1 : 0,
-	};
+function countsOf(row: TaskRow | undefined, clock: Clock): Counts {
+	return taskCounts(row, { todayIso: clock.todayIso, quietProjectIds: quietOf(clock) });
 }
 
 /**
@@ -76,7 +68,7 @@ function afterIntent(
 }
 
 /**
- * Today's counters move with the intent. An edit moves nothing here — its
+ * The counters move with the intent. An edit moves nothing here — its
  * new due date is only known once the server answers — and the next seed
  * heals it.
  *
@@ -89,35 +81,11 @@ function taskDeltas(intent: TaskIntent, before: TaskRow | undefined, ctx: Intent
 	// a received row first) is already counted.
 	if (intent.type === "create" ? before !== undefined : !before) return {};
 	const { after, snapshot } = afterIntent(intent, before, ctx);
-	const was = intent.type === "create" ? NONE : countsOf(before, ctx);
-	const now = countsOf(after, ctx);
-	const out: Deltas = {};
-	// A snapshot is done, so it never moves the open counts.
-	const open = now.open - was.open;
-	const overdue = now.overdue - was.overdue;
-	const inbox = now.inbox - was.inbox;
-	if (open !== 0) out["tasks.open"] = open;
-	if (overdue !== 0) out["tasks.overdue"] = overdue;
-	if (inbox !== 0) out["tasks.inbox"] = inbox;
-	// A project's done and open counts (/projects, Today's rings): the row
-	// leaving one, the row arriving in another, and the done snapshot a
-	// recurring tick saves.
-	const move = (key: `project.${"done" | "open"}:${string}`, by: number) => {
-		const next = (out[key] ?? 0) + by;
-		if (next === 0) delete out[key];
-		else out[key] = next;
-	};
-	const prior = intent.type === "create" ? undefined : before;
-	for (const [row, by] of [
-		[prior, -1],
-		[after, 1],
-		[snapshot, 1],
-	] as const) {
-		if (row?.project_id == null) continue;
-		if (row.status === "done") move(`project.done:${row.project_id}`, by);
-		else if (row.status === "open") move(`project.open:${row.project_id}`, by);
-	}
-	return out;
+	// The row leaving its counters, the row arriving in its new ones, and the
+	// done snapshot a recurring tick saves (done, so it adds to its project's
+	// done count and to no open work).
+	const was = intent.type === "create" ? undefined : before;
+	return change(countsOf(was, ctx), plus(countsOf(after, ctx), countsOf(snapshot, ctx)));
 }
 
 /**

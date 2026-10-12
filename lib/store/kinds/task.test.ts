@@ -611,6 +611,35 @@ describe("Today's task counters", () => {
 		expect(read(created)).toEqual([2, 0, 2]);
 	});
 
+	it("a domain's open count moves with a tick and a filing (/domains, docs/adr/0084)", () => {
+		const a = task({ id: "a", domain_id: "domain-1" });
+		const u = task({ id: "u", domain_id: null });
+		const s = applySeed(
+			initialState(),
+			snapshot(
+				T1,
+				[{ key: viewKey.tasks(), type: "taskLists", data: { open: [a, u], done: [] } }],
+				{ aggregates: { "domain.open:domain-1": 1, "domain.open:domain-2": 0 } },
+			),
+		);
+		const domains = (st: typeof s) =>
+			(["domain.open:domain-1", "domain.open:domain-2"] as AggregateKey[]).map((k) =>
+				selectAggregate(st, k),
+			);
+		const [ticked] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "complete", id: "a", observedDueDate: null } },
+			NOW,
+		);
+		expect(domains(ticked)).toEqual([0, 0]);
+		const [filed] = applyIntent(
+			ticked,
+			{ kind: "task", intent: { type: "assign", id: "u", domainId: "domain-2" } },
+			NOW,
+		);
+		expect(domains(filed)).toEqual([0, 1]);
+	});
+
 	// Each intent counts from the row as the user sees it — pending intents
 	// folded on — so a quick tick and untick, or a double tick, move a count
 	// once, before and after the server answers.
