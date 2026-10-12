@@ -146,9 +146,14 @@ export function countByProject(
 }
 
 /**
- * A project's two counters as a seed carries them: both named, zero
+ * Projects' two counters as a seed carries them: both named, zero
  * included, since a counter moves only once a seed has started it.
  */
-export function projectCounters(projectId: string, counts: ProjectTaskCounts): Counts {
-	return { [`project.done:${projectId}`]: counts.done, [`project.open:${projectId}`]: counts.open };
+export function projectCounters(byProject: Readonly<Record<string, ProjectTaskCounts>>): Counts {
+	const out: Counts = {};
+	for (const [projectId, counts] of Object.entries(byProject)) {
+		out[`project.done:${projectId}`] = counts.done;
+		out[`project.open:${projectId}`] = counts.open;
+	}
+	return out;
 }

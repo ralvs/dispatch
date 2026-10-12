@@ -154,9 +154,11 @@ describe("per project", () => {
 	});
 
 	it("projectCounters names both counters, zeros included", () => {
-		expect(projectCounters("p1", { done: 0, open: 0 })).toEqual({
+		expect(projectCounters({ p1: { done: 0, open: 0 }, p2: { done: 3, open: 1 } })).toEqual({
 			"project.done:p1": 0,
 			"project.open:p1": 0,
+			"project.done:p2": 3,
+			"project.open:p2": 1,
 		});
 	});
 });

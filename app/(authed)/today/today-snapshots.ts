@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCachedTodayDigest } from "@/lib/cache/today";
+import { projectCounters } from "@/lib/counts";
 import { withHistory } from "@/lib/routine-stats";
 import {
 	assembleTodayView,
@@ -75,11 +76,10 @@ export async function readToday(
 			"notifications.unread": view.masthead.unreadNotifications,
 			"notes.needsReview": view.needsReviewCount,
 			// The projects card's rings (#31): a tick anywhere moves them.
-			...Object.fromEntries(
-				view.projects.flatMap((p) => [
-					[`project.done:${p.id}`, p.doneCount],
-					[`project.open:${p.id}`, p.totalCount - p.doneCount],
-				]),
+			...projectCounters(
+				Object.fromEntries(
+					view.projects.map((p) => [p.id, { done: p.doneCount, open: p.totalCount - p.doneCount }]),
+				),
 			),
 		},
 	});
