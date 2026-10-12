@@ -63,6 +63,7 @@ export type Database = {
 					end_at: string;
 					id: string;
 					location: string | null;
+					recurring: boolean | null;
 					source: string;
 					start_at: string;
 					synced_at: string;
@@ -81,6 +82,7 @@ export type Database = {
 					end_at: string;
 					id?: string;
 					location?: string | null;
+					recurring?: boolean | null;
 					source?: string;
 					start_at: string;
 					synced_at?: string;
@@ -99,6 +101,7 @@ export type Database = {
 					end_at?: string;
 					id?: string;
 					location?: string | null;
+					recurring?: boolean | null;
 					source?: string;
 					start_at?: string;
 					synced_at?: string;
