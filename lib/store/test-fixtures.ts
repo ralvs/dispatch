@@ -35,6 +35,7 @@ export function task(partial: Partial<TaskRow> & Pick<TaskRow, "id">): TaskRow {
 		domain_id: "domain-1",
 		recurrence_rule: null,
 		recurrence_day: null,
+		series_id: null,
 		top3_for_date: null,
 		source: "manual",
 		created_at: "2026-07-01T12:00:00.000Z",

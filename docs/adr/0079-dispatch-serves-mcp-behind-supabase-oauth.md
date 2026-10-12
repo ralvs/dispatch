@@ -54,8 +54,9 @@ origin) are the lineage here.
 
    Tasks: `list_tasks`, `get_task`, `create_task` and `update_task`.
    Projects and domains are named, not referenced by id (`"inbox"` means
-   unfiled), and an unknown name answers with the valid ones. Completing and
-   deleting stay in the app. `update_task`'s `note_append` goes through
+   unfiled), and an unknown name answers with the valid ones. Deleting stays
+   in the app. (Completing stayed in the app too, until ADR-0083 added
+   `complete_task` and `skip_task`.) `update_task`'s `note_append` goes through
    `task_notes_append`, a security-invoker SQL function that appends in one
    UPDATE and refuses past 5,000 characters, so two appends at once both
    survive.

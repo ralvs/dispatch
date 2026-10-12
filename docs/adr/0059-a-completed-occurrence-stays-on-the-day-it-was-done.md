@@ -1,5 +1,11 @@
 # A completed occurrence stays on the day it was done
 
+> **Superseded in part (2026-10-12).** A recurring task is now one permanent
+> row that moves to its next cycle, and each tick saves a done snapshot
+> linked by `series_id` ([0083](./0083-a-recurring-task-is-one-row-with-done-snapshots.md)).
+> "The rule moves with the series", "the star follows the series" and the
+> note-links consequence below no longer hold. Past days stay honest, as here.
+
 Date: 2026-09-07
 
 ## Context

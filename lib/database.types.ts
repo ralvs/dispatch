@@ -1010,6 +1010,7 @@ export type Database = {
 					recurrence_rule: string | null;
 					reminder_offsets: Json;
 					reminders_sent: Json;
+					series_id: string | null;
 					source: string;
 					status: string;
 					title: string;
@@ -1030,6 +1031,7 @@ export type Database = {
 					recurrence_rule?: string | null;
 					reminder_offsets?: Json;
 					reminders_sent?: Json;
+					series_id?: string | null;
 					source?: string;
 					status?: string;
 					title: string;
@@ -1050,6 +1052,7 @@ export type Database = {
 					recurrence_rule?: string | null;
 					reminder_offsets?: Json;
 					reminders_sent?: Json;
+					series_id?: string | null;
 					source?: string;
 					status?: string;
 					title?: string;

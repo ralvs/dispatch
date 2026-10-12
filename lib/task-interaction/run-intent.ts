@@ -29,13 +29,13 @@ export type TaskIntentRun = (
 ) => boolean;
 
 /**
- * A recurring tick closes the row you clicked and creates the next occurrence
- * elsewhere (docs/adr/0059). The checkbox now stays ticked, so the pill's job
- * is to name where the series went next. Fired on claim, not after the server
+ * A recurring tick saves this cycle as done and moves the task to its next
+ * cycle (docs/adr/0083); a skip moves it with nothing saved. Either way the
+ * pill names where the task went next. Fired on claim, not after the server
  * round-trip, so it lands with the optimistic tick.
  */
 export function toastTaskToggle(
-	kind: "complete" | "reopen",
+	kind: "complete" | "reopen" | "skip",
 	task: Pick<TaskRow, "recurrence_rule" | "due_date" | "recurrence_day">,
 	todayIso: string,
 ): void {
@@ -44,11 +44,12 @@ export function toastTaskToggle(
 		return;
 	}
 	const next = nextCompleteFields(task, { todayIso });
+	const label = kind === "skip" ? "Skipped" : "Done";
 	if (next.spawn?.due_date) {
-		toastSuccess("Done", `Next ${formatDueLabel(next.spawn.due_date, todayIso)}`);
+		toastSuccess(label, `Next ${formatDueLabel(next.spawn.due_date, todayIso)}`);
 		return;
 	}
-	toastSuccess("Done");
+	toastSuccess(label);
 }
 
 /**
@@ -69,7 +70,11 @@ export function top3DesiredState(
 }
 
 export type TaskWriteActions = {
-	complete: (input: { id: string; observedDueDate: string | null }) => Promise<TaskActionResult>;
+	complete: (input: {
+		id: string;
+		observedDueDate: string | null;
+		snapshotId?: string;
+	}) => Promise<TaskActionResult>;
 	reopen: (id: string) => Promise<TaskActionResult>;
 	setTop3: (input: {
 		id: string;
@@ -80,9 +85,43 @@ export type TaskWriteActions = {
 };
 
 /**
+ * How long a second tick or skip on the same recurring row counts as the same
+ * click. The row stays open after a tick (docs/adr/0083), so its box is empty
+ * again at once: without this, a double click ticks two cycles. The server's
+ * gate cannot tell, because the second click saw the new due date.
+ */
+const RECURRING_REPEAT_MS = 800;
+const lastRecurringMove = new Map<string, number>();
+
+/** Whether this recurring row moved a moment ago. */
+function movedJustNow(id: string): boolean {
+	const last = lastRecurringMove.get(id);
+	return last !== undefined && Date.now() - last < RECURRING_REPEAT_MS;
+}
+
+/**
+ * Skip this cycle of a recurring task (docs/adr/0083): it moves to its next
+ * due date and nothing is saved as done. Offered in the task's edit form, not
+ * on the row, so a stray tap never skips. Same gate as a tick: the due date
+ * the form showed.
+ */
+export function skipRecurringTask(
+	task: TaskRow,
+	run: TaskIntentRun,
+	skip: (input: { id: string; observedDueDate: string | null }) => Promise<TaskActionResult>,
+	todayIso: string,
+): void {
+	if (task.status !== "open" || task.recurrence_rule === null || movedJustNow(task.id)) return;
+	const intent = { type: "skip" as const, id: task.id, observedDueDate: task.due_date };
+	if (!run(intent, () => skip({ id: intent.id, observedDueDate: intent.observedDueDate }))) return;
+	lastRecurringMove.set(task.id, Date.now());
+	toastTaskToggle("skip", task, todayIso);
+}
+
+/**
  * Bind a row's checkbox / star / delete to intent + preconditioned actions.
  * `top3DateIso` is the day the star pins to (today on Tasks; day on screen on Today).
- * `todayIso` is the real calendar today — a spawned occurrence is dated from it, not the day on screen.
+ * `todayIso` is the real calendar today — a recurring task's next cycle is dated from it, not the day on screen.
  */
 export function bindTaskHandlers(
 	task: TaskRow,
@@ -91,24 +130,33 @@ export function bindTaskHandlers(
 	opts: { top3DateIso: string; todayIso: string },
 ) {
 	const done = task.status === "done";
+	const recurring = !done && task.recurrence_rule !== null;
 	return {
 		onToggleDone: () => {
 			if (done) {
 				if (!run({ type: "reopen", id: task.id }, () => actions.reopen(task.id))) return;
 				toastTaskToggle("reopen", task, opts.todayIso);
 			} else {
+				if (recurring && movedJustNow(task.id)) return;
 				const intent = {
 					type: "complete" as const,
 					id: task.id,
 					observedDueDate: task.due_date,
+					// The snapshot shows at once under the id the server will give it.
+					...(recurring ? { snapshotId: crypto.randomUUID() } : {}),
 				};
 				if (
 					!run(intent, () =>
-						actions.complete({ id: intent.id, observedDueDate: intent.observedDueDate }),
+						actions.complete({
+							id: intent.id,
+							observedDueDate: intent.observedDueDate,
+							snapshotId: intent.snapshotId,
+						}),
 					)
 				) {
 					return;
 				}
+				if (recurring) lastRecurringMove.set(task.id, Date.now());
 				toastTaskToggle("complete", task, opts.todayIso);
 			}
 		},

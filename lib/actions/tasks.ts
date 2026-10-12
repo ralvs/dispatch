@@ -16,6 +16,7 @@ import {
 	deleteTask,
 	reopenTask,
 	setTop3,
+	skipTask,
 	updateTask,
 } from "@/lib/services/tasks";
 import { written } from "@/lib/services/written";
@@ -100,42 +101,81 @@ export async function updateTaskAction(
 	});
 }
 
+/** A client-sent date the row was showing: parsed, never trusted. */
+function observedDate(value: string | null): string | null {
+	if (value !== null && parseDateIso(value) === null) {
+		throw new Error(`Invalid observed due date: ${value}`);
+	}
+	return value;
+}
+
 /**
  * `observedDueDate` is the due date the clicked row was showing — the
- * precondition that keeps a replayed completion from rolling a recurring task
- * forward a second interval (docs/adr/0037). Untrusted like any client
- * argument, so it is parsed rather than trusted.
+ * precondition that keeps a replayed completion from moving a recurring task
+ * forward a second cycle (docs/adr/0037). Untrusted like any client argument,
+ * so it is parsed rather than trusted.
  *
  * Returns the row as it stands even when the precondition rejected the write
  * (`applied: false`): the row is then already done, or has moved on, and the
- * store must show that rather than revert the tick. A recurring completion
- * returns its successor too (docs/adr/0059).
+ * store must show that rather than revert the tick. A recurring tick returns
+ * the done snapshot it saved too (docs/adr/0083), under `snapshotId` when the
+ * client named one.
  */
 export async function completeTaskAction(input: {
 	id: string;
 	observedDueDate: string | null;
+	snapshotId?: string;
 }): Promise<ActionResult<TaskWrite>> {
 	const { sb } = await requireOwnerPage();
-	if (input.observedDueDate !== null && parseDateIso(input.observedDueDate) === null) {
-		throw new Error(`Invalid observed due date: ${input.observedDueDate}`);
-	}
+	const observed = observedDate(input.observedDueDate);
 	const id = z.uuid().parse(input.id);
-	const result = await completeTask(sb, id, await todayForRequest(sb), {
-		dueDate: input.observedDueDate,
-	});
+	const snapshotId = input.snapshotId === undefined ? undefined : z.uuid().parse(input.snapshotId);
+	const result = await completeTask(
+		sb,
+		id,
+		await todayForRequest(sb),
+		{ dueDate: observed },
+		{ snapshotId },
+	);
 	afterMutation("task.write");
 	return {
 		ok: true,
-		data: await written(sb, "task", id, { also: result.successor ? [result.successor] : [] }),
+		data: await written(sb, "task", id, { also: result.snapshot ? [result.snapshot] : [] }),
 	};
 }
 
+/**
+ * Skip one cycle of a recurring task (docs/adr/0083). Same precondition as a
+ * tick; a refused skip returns the row as it stands.
+ */
+export async function skipTaskAction(input: {
+	id: string;
+	observedDueDate: string | null;
+}): Promise<ActionResult<TaskWrite>> {
+	const { sb } = await requireOwnerPage();
+	const observed = observedDate(input.observedDueDate);
+	const id = z.uuid().parse(input.id);
+	await skipTask(sb, id, await todayForRequest(sb), { dueDate: observed });
+	afterMutation("task.write");
+	return { ok: true, data: await written(sb, "task", id) };
+}
+
+/**
+ * Un-ticking the latest snapshot of a recurring task deletes it and moves
+ * the recurring row back (docs/adr/0083): the write then carries that row and
+ * the snapshot's id as deleted.
+ */
 export async function reopenTaskAction(id: string): Promise<ActionResult<TaskWrite>> {
 	const { sb } = await requireOwnerPage();
 	const taskId = z.uuid().parse(id);
-	await reopenTask(sb, taskId);
+	const { seriesId } = await reopenTask(sb, taskId);
 	afterMutation("task.write");
-	return { ok: true, data: await written(sb, "task", taskId) };
+	if (!seriesId) return { ok: true, data: await written(sb, "task", taskId) };
+	const series = await written(sb, "task", seriesId);
+	return {
+		ok: true,
+		data: { ...series, deletedIds: [...(series.deletedIds ?? []), taskId] },
+	};
 }
 
 export async function deleteTaskAction(id: string): Promise<ActionResult<TaskWrite>> {

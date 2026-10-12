@@ -8,10 +8,13 @@ import {
 	assignDomain,
 	completeTask,
 	createTask,
+	deleteTask,
 	getTask,
 	listInboxTasks,
 	listTasks,
+	reopenTask,
 	setTop3,
+	skipTask,
 	updateTask,
 } from "@/lib/services/tasks";
 import { anonClient, ownerClient, serviceClient } from "@/test/integration/clients";
@@ -29,7 +32,7 @@ describe("tasks against the local database", () => {
 		expect(task.status).toBe("open");
 
 		const first = await completeTask(sb, task.id, TODAY, { dueDate: TODAY });
-		expect(first).toEqual({ applied: true, spawned: false, nextDue: null, successor: null });
+		expect(first).toEqual({ applied: true, nextDue: null, snapshot: null });
 
 		const done = await getTask(sb, task.id);
 		expect(done?.status).toBe("done");
@@ -56,7 +59,7 @@ describe("tasks against the local database", () => {
 		await sb.from("tasks").delete().eq("id", task.id);
 
 		const result = await completeTask(sb, task.id, TODAY, { dueDate: null });
-		expect(result).toEqual({ applied: false, spawned: false, nextDue: null, successor: null });
+		expect(result).toEqual({ applied: false, nextDue: null, snapshot: null });
 	});
 
 	it("matches a null due date with `is`, not `eq`", async () => {
@@ -69,33 +72,25 @@ describe("tasks against the local database", () => {
 
 	it("carries a monthly series on the 31st through February and back", async () => {
 		const sb = await ownerClient();
-		const jan = await createTask(sb, {
+		const rent = await createTask(sb, {
 			title: "Pay rent",
 			due_date: "2027-01-31",
 			recurrence_rule: "monthly",
 		});
 
-		const toFeb = await completeTask(sb, jan.id, "2027-01-31", { dueDate: "2027-01-31" });
+		const toFeb = await completeTask(sb, rent.id, "2027-01-31", { dueDate: "2027-01-31" });
 		expect(toFeb.nextDue).toBe("2027-02-28");
-		const feb = await sb
-			.from("tasks")
-			.select("id, recurrence_day")
-			.eq("status", "open")
-			.eq("due_date", "2027-02-28")
-			.single();
-		expect(feb.data?.recurrence_day).toBe(31);
-
-		const toMar = await completeTask(sb, feb.data?.id ?? "", "2027-02-28", {
-			dueDate: "2027-02-28",
+		expect(await getTask(sb, rent.id)).toMatchObject({
+			due_date: "2027-02-28",
+			recurrence_day: 31,
 		});
+
+		const toMar = await completeTask(sb, rent.id, "2027-02-28", { dueDate: "2027-02-28" });
 		expect(toMar.nextDue).toBe("2027-03-31");
-		const mar = await sb
-			.from("tasks")
-			.select("recurrence_day")
-			.eq("status", "open")
-			.eq("due_date", "2027-03-31")
-			.single();
-		expect(mar.data?.recurrence_day).toBeNull();
+		expect(await getTask(sb, rent.id)).toMatchObject({
+			due_date: "2027-03-31",
+			recurrence_day: null,
+		});
 	});
 
 	it("rejects a recurrence day that can never clamp", async () => {
@@ -136,71 +131,75 @@ async function aDomain(sb: Sb): Promise<string> {
 async function rowsTitled(sb: Sb, title: string) {
 	const { data } = await sb
 		.from("tasks")
-		.select("id, status, due_date, due_time, recurrence_rule, top3_for_date, completed_at")
+		.select(
+			"id, status, due_date, due_time, recurrence_rule, recurrence_day, top3_for_date, completed_at, series_id, reminders_sent",
+		)
 		.eq("title", title)
 		.order("created_at", { ascending: true });
 	return data ?? [];
 }
 
-describe("completeTask · recurring series (docs/adr/0059)", () => {
-	it("closes the occurrence it landed on and spawns the next one beside it", async () => {
+const SNAPSHOT_ID = "5a7e0000-0000-4000-8000-000000000001";
+
+describe("completeTask · a recurring task stays one row (docs/adr/0083)", () => {
+	it("saves a done snapshot of the cycle and moves the row to the next one", async () => {
 		const sb = await ownerClient();
 		const task = await createTask(sb, {
 			title: "Weekly review",
+			notes: "Inbox zero first.",
 			due_date: "2026-07-10",
+			due_time: "09:00",
 			recurrence_rule: "weekly",
 		});
+		await sb
+			.from("tasks")
+			.update({ reminders_sent: { "15": true } })
+			.eq("id", task.id);
 
-		const result = await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
-		expect(result).toMatchObject({ applied: true, spawned: true, nextDue: "2026-07-17" });
-
-		const rows = await rowsTitled(sb, "Weekly review");
-		expect(rows).toHaveLength(2);
-		const closed = rows.find((r) => r.id === task.id);
-		const next = rows.find((r) => r.id !== task.id);
-		// The closed row keeps its own due date and drops the rule, so re-ticking
-		// it can never fork the series.
-		expect(closed).toMatchObject({
-			id: task.id,
+		const result = await completeTask(
+			sb,
+			task.id,
+			JULY_15,
+			{ dueDate: "2026-07-10" },
+			{ snapshotId: SNAPSHOT_ID },
+		);
+		expect(result).toMatchObject({ applied: true, nextDue: "2026-07-17" });
+		expect(result.snapshot).toMatchObject({
+			id: SNAPSHOT_ID,
+			title: "Weekly review",
+			notes: "Inbox zero first.",
 			status: "done",
 			due_date: "2026-07-10",
 			recurrence_rule: null,
+			series_id: task.id,
 		});
-		expect(closed?.completed_at).not.toBeNull();
-		expect(next).toMatchObject({
+		expect(result.snapshot?.completed_at).not.toBeNull();
+
+		// The row keeps its id, its rule and its time; its reminders start over.
+		const rows = await rowsTitled(sb, "Weekly review");
+		expect(rows).toHaveLength(2);
+		expect(rows.find((r) => r.id === task.id)).toMatchObject({
 			status: "open",
 			due_date: "2026-07-17",
+			due_time: "09:00:00",
 			recurrence_rule: "weekly",
+			series_id: null,
+			reminders_sent: {},
 		});
 	});
 
-	it("closes a non-recurring task without spawning anything", async () => {
+	it("closes a non-recurring task and saves no snapshot", async () => {
 		const sb = await ownerClient();
 		const task = await createTask(sb, { title: "One-off", due_date: "2026-07-10" });
 
 		const result = await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
-		expect(result).toMatchObject({ applied: true, spawned: false });
+		expect(result).toEqual({ applied: true, nextDue: null, snapshot: null });
 		const rows = await rowsTitled(sb, "One-off");
 		expect(rows).toHaveLength(1);
-		expect(rows[0]).toMatchObject({ status: "done", recurrence_rule: null });
-		expect(rows[0].completed_at).not.toBeNull();
+		expect(rows[0]).toMatchObject({ status: "done", series_id: null });
 	});
 
-	it("carries due_time onto the spawned occurrence", async () => {
-		const sb = await ownerClient();
-		const task = await createTask(sb, {
-			title: "Meds",
-			due_date: "2026-07-10",
-			due_time: "09:00",
-			recurrence_rule: "daily",
-		});
-
-		await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
-		const next = (await rowsTitled(sb, "Meds")).find((r) => r.status === "open");
-		expect(next?.due_time).toBe("09:00:00");
-	});
-
-	it("moves a star onto the spawned occurrence's due date", async () => {
+	it("keeps the star on the snapshot and moves the row's star to its new date", async () => {
 		const sb = await ownerClient();
 		const task = await createTask(sb, {
 			title: "Starred weekly",
@@ -209,12 +208,12 @@ describe("completeTask · recurring series (docs/adr/0059)", () => {
 			top3_for_date: JULY_15,
 		});
 
-		await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
-		const next = (await rowsTitled(sb, "Starred weekly")).find((r) => r.status === "open");
-		expect(next?.top3_for_date).toBe("2026-07-17");
+		const { snapshot } = await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
+		expect(snapshot?.top3_for_date).toBe(JULY_15);
+		expect((await getTask(sb, task.id))?.top3_for_date).toBe("2026-07-17");
 	});
 
-	it("spawns an unstarred occurrence when the completed one was not starred", async () => {
+	it("leaves an unstarred row unstarred", async () => {
 		const sb = await ownerClient();
 		const task = await createTask(sb, {
 			title: "Plain weekly",
@@ -223,13 +222,10 @@ describe("completeTask · recurring series (docs/adr/0059)", () => {
 		});
 
 		await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
-		const next = (await rowsTitled(sb, "Plain weekly")).find((r) => r.status === "open");
-		expect(next?.top3_for_date).toBeNull();
+		expect((await getTask(sb, task.id))?.top3_for_date).toBeNull();
 	});
 
-	// The reason the insert is gated on the close having moved a row: a click
-	// that matched nothing must not leave a duplicate occurrence behind.
-	it("makes a tick against a moved occurrence a no-op", async () => {
+	it("makes a tick against a moved cycle a no-op", async () => {
 		const sb = await ownerClient();
 		const task = await createTask(sb, {
 			title: "Moved weekly",
@@ -238,13 +234,13 @@ describe("completeTask · recurring series (docs/adr/0059)", () => {
 		});
 
 		const result = await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
-		expect(result).toMatchObject({ applied: false, spawned: false });
+		expect(result).toEqual({ applied: false, nextDue: null, snapshot: null });
 		const rows = await rowsTitled(sb, "Moved weekly");
 		expect(rows).toHaveLength(1);
-		expect(rows[0].status).toBe("open");
+		expect(rows[0]).toMatchObject({ status: "open", due_date: "2026-07-17" });
 	});
 
-	it("spawns once when a recurring tick is replayed against the closed row", async () => {
+	it("saves one snapshot when a tick is replayed", async () => {
 		const sb = await ownerClient();
 		const task = await createTask(sb, {
 			title: "Double tick",
@@ -256,21 +252,232 @@ describe("completeTask · recurring series (docs/adr/0059)", () => {
 		const replay = await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
 		expect(replay.applied).toBe(false);
 		expect(await rowsTitled(sb, "Double tick")).toHaveLength(2);
+		expect((await getTask(sb, task.id))?.due_date).toBe("2026-07-17");
 	});
 
-	it("closes an undated recurring task (is null, not = null)", async () => {
+	it("ticks an undated recurring task (is null, not = null)", async () => {
 		const sb = await ownerClient();
 		const task = await createTask(sb, { title: "Undated weekly", recurrence_rule: "weekly" });
 
 		const result = await completeTask(sb, task.id, TODAY, { dueDate: null });
-		expect(result).toMatchObject({ applied: true, spawned: true });
-		const rows = await rowsTitled(sb, "Undated weekly");
-		expect(rows.find((r) => r.id === task.id)).toMatchObject({
-			status: "done",
-			due_date: null,
-			recurrence_rule: null,
+		expect(result.applied).toBe(true);
+		expect(result.snapshot).toMatchObject({ due_date: null, series_id: task.id });
+		expect((await getTask(sb, task.id))?.status).toBe("open");
+	});
+
+	it("derives the snapshot's mentions from its text", async () => {
+		const sb = await ownerClient();
+		const ana = await createPerson(sb, { name: "Ana" });
+		const task = await createTask(sb, {
+			title: "Call @Ana",
+			due_date: "2026-07-10",
+			recurrence_rule: "weekly",
 		});
-		expect(rows.filter((r) => r.status === "open")).toMatchObject([{ recurrence_rule: "weekly" }]);
+
+		const { snapshot } = await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
+		const { data } = await sb
+			.from("mentions")
+			.select("person_id")
+			.eq("task_id", snapshot?.id ?? "");
+		expect(data).toEqual([{ person_id: ana.id }]);
+	});
+
+	it("unlinks the snapshots when the recurring row is deleted", async () => {
+		const sb = await ownerClient();
+		const task = await createTask(sb, {
+			title: "Dropped series",
+			due_date: "2026-07-10",
+			recurrence_rule: "weekly",
+		});
+		const { snapshot } = await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
+
+		await deleteTask(sb, task.id);
+		expect(await getTask(sb, snapshot?.id ?? "")).toMatchObject({
+			status: "done",
+			series_id: null,
+		});
+	});
+});
+
+describe("reopenTask · un-ticking a recurring task (docs/adr/0083)", () => {
+	async function tickedTwice(sb: Sb, title: string) {
+		const task = await createTask(sb, {
+			title,
+			due_date: "2026-07-10",
+			recurrence_rule: "weekly",
+			top3_for_date: "2026-07-10",
+		});
+		const first = await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
+		const second = await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-17" });
+		if (!first.snapshot || !second.snapshot) throw new Error("both ticks land");
+		return { task, older: first.snapshot, latest: second.snapshot };
+	}
+
+	it("deletes the latest snapshot and moves the row back to its cycle", async () => {
+		const sb = await ownerClient();
+		const { task, latest } = await tickedTwice(sb, "Undo the last tick");
+		expect((await getTask(sb, task.id))?.due_date).toBe("2026-07-24");
+
+		expect(await reopenTask(sb, latest.id)).toEqual({ seriesId: task.id });
+		expect(await getTask(sb, latest.id)).toBeNull();
+		expect(await getTask(sb, task.id)).toMatchObject({
+			status: "open",
+			due_date: "2026-07-17",
+			top3_for_date: "2026-07-17",
+			recurrence_rule: "weekly",
+		});
+	});
+
+	it("reopens an older snapshot as a plain task and leaves the row alone", async () => {
+		const sb = await ownerClient();
+		const { task, older } = await tickedTwice(sb, "Reopen history");
+
+		expect(await reopenTask(sb, older.id)).toEqual({ seriesId: null });
+		expect(await getTask(sb, older.id)).toMatchObject({
+			status: "open",
+			completed_at: null,
+			recurrence_rule: null,
+			due_date: "2026-07-10",
+		});
+		expect((await getTask(sb, task.id))?.due_date).toBe("2026-07-24");
+	});
+
+	it("puts back the reminders the tick reset", async () => {
+		const sb = await ownerClient();
+		const task = await createTask(sb, {
+			title: "Reminded weekly",
+			due_date: "2026-07-10",
+			recurrence_rule: "weekly",
+		});
+		const sent = { "2026-07-10T09:00:00.000Z": true };
+		await serviceClient().from("tasks").update({ reminders_sent: sent }).eq("id", task.id);
+		const { snapshot } = await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
+		if (!snapshot) throw new Error("tick lands");
+		const read = async (id: string) =>
+			(await serviceClient().from("tasks").select("reminders_sent").eq("id", id).single()).data
+				?.reminders_sent;
+		expect(await read(snapshot.id)).toEqual(sent);
+		expect(await read(task.id)).toEqual({});
+
+		await reopenTask(sb, snapshot.id);
+		expect(await read(task.id)).toEqual(sent);
+	});
+
+	it("an older snapshot reopened as a plain task does not stop the latest un-tick", async () => {
+		const sb = await ownerClient();
+		const { task, older, latest } = await tickedTwice(sb, "Reopened history");
+		await reopenTask(sb, older.id);
+		// Moved past the latest snapshot's cycle: open history is not history.
+		await updateTask(sb, older.id, { due_date: "2026-08-01" });
+
+		expect(await reopenTask(sb, latest.id)).toEqual({ seriesId: task.id });
+		expect((await getTask(sb, task.id))?.due_date).toBe("2026-07-17");
+	});
+
+	it("un-ticks once when the un-tick is replayed", async () => {
+		const sb = await ownerClient();
+		const { task, latest, older } = await tickedTwice(sb, "Double untick");
+
+		await reopenTask(sb, latest.id);
+		// The latest snapshot is gone; a replay reopens nothing and moves nothing.
+		expect(await reopenTask(sb, latest.id)).toEqual({ seriesId: null });
+		expect((await getTask(sb, task.id))?.due_date).toBe("2026-07-17");
+		expect((await getTask(sb, older.id))?.status).toBe("done");
+	});
+
+	it("reopens a snapshot as a plain task once its series stops repeating", async () => {
+		const sb = await ownerClient();
+		const { task, latest } = await tickedTwice(sb, "Stopped series");
+		await updateTask(sb, task.id, { recurrence_rule: null });
+
+		expect(await reopenTask(sb, latest.id)).toEqual({ seriesId: null });
+		expect((await getTask(sb, latest.id))?.status).toBe("open");
+		expect((await getTask(sb, task.id))?.due_date).toBe("2026-07-24");
+	});
+
+	it("reopens a plain done task as before", async () => {
+		const sb = await ownerClient();
+		const task = await createTask(sb, { title: "Plain reopen", due_date: TODAY });
+		await completeTask(sb, task.id, TODAY, { dueDate: TODAY });
+
+		expect(await reopenTask(sb, task.id)).toEqual({ seriesId: null });
+		expect(await getTask(sb, task.id)).toMatchObject({ status: "open", completed_at: null });
+	});
+});
+
+describe("skipTask (docs/adr/0083)", () => {
+	it("moves the row to its next cycle and saves no snapshot", async () => {
+		const sb = await ownerClient();
+		const task = await createTask(sb, {
+			title: "Skip a week",
+			due_date: "2026-07-10",
+			recurrence_rule: "weekly",
+			top3_for_date: JULY_15,
+		});
+
+		const result = await skipTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
+		expect(result).toEqual({ applied: true, nextDue: "2026-07-17" });
+		const rows = await rowsTitled(sb, "Skip a week");
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({
+			status: "open",
+			due_date: "2026-07-17",
+			top3_for_date: "2026-07-17",
+		});
+	});
+
+	it("skips once when the skip is replayed", async () => {
+		const sb = await ownerClient();
+		const task = await createTask(sb, {
+			title: "Double skip",
+			due_date: "2026-07-10",
+			recurrence_rule: "weekly",
+		});
+
+		await skipTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
+		const replay = await skipTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
+		expect(replay).toEqual({ applied: false, nextDue: null });
+		expect((await getTask(sb, task.id))?.due_date).toBe("2026-07-17");
+	});
+
+	it("writes nothing for a task that does not repeat", async () => {
+		const sb = await ownerClient();
+		const task = await createTask(sb, { title: "No cycle", due_date: "2026-07-10" });
+
+		expect(await skipTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" })).toEqual({
+			applied: false,
+			nextDue: null,
+		});
+		expect((await getTask(sb, task.id))?.due_date).toBe("2026-07-10");
+	});
+});
+
+describe("recurring task functions · RLS", () => {
+	it("refuses a caller with no session", async () => {
+		const sb = await ownerClient();
+		const task = await createTask(sb, {
+			title: "Private series",
+			due_date: "2026-07-10",
+			recurrence_rule: "weekly",
+		});
+		const anon = anonClient();
+		const args = {
+			p_task_id: task.id,
+			p_observed_due: "2026-07-10",
+			p_next_due: "2026-07-17",
+			p_next_recurrence_day: null,
+		};
+
+		const tick = await anon.rpc("complete_recurring_task", {
+			...args,
+			p_completed_at: "2026-07-15T12:00:00Z",
+		});
+		const skip = await anon.rpc("skip_recurring_task", args);
+		const untick = await anon.rpc("untick_recurring_snapshot", { p_snapshot_id: task.id });
+		for (const call of [tick, skip, untick]) expect(call.error).not.toBeNull();
+		expect(await rowsTitled(sb, "Private series")).toMatchObject([
+			{ status: "open", due_date: "2026-07-10" },
+		]);
 	});
 });
 

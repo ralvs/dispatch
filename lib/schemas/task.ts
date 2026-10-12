@@ -124,6 +124,8 @@ export const TaskRowSchema = z.object({
 	domain_id: z.string().uuid().nullable(),
 	recurrence_rule: z.string().nullable(),
 	recurrence_day: z.number().nullable(),
+	// On a done snapshot, the recurring task it was ticked from (docs/adr/0083).
+	series_id: z.string().uuid().nullable(),
 	top3_for_date: z.string().nullable(),
 	source: z.string(),
 	created_at: z.string(),

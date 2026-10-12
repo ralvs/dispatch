@@ -11,7 +11,7 @@ vi.mock("@/lib/client/toast", () => ({
 	toastNotice: (...args: unknown[]) => toastNoticeMock(...args),
 }));
 
-const { bindTaskHandlers, toastTaskToggle } = await import("./run-intent");
+const { bindTaskHandlers, skipRecurringTask, toastTaskToggle } = await import("./run-intent");
 
 const TODAY = "2026-07-15";
 
@@ -26,6 +26,7 @@ function task(partial: Partial<TaskRow> & Pick<TaskRow, "id" | "title">): TaskRo
 		domain_id: "domain-1",
 		recurrence_rule: null,
 		recurrence_day: null,
+		series_id: null,
 		top3_for_date: null,
 		source: "manual",
 		created_at: "2026-07-01T12:00:00.000Z",
@@ -157,5 +158,73 @@ describe("bindTaskHandlers", () => {
 			expect.any(Function),
 		);
 		expect(actions.complete).toHaveBeenCalledWith({ id: "r", observedDueDate: "2026-07-10" });
+	});
+
+	it("names the snapshot a recurring tick saves (docs/adr/0083)", () => {
+		const run = vi.fn((_intent: TaskIntent, action: () => Promise<unknown>) => {
+			void action();
+			return true;
+		});
+		const row = task({
+			id: "snap-r",
+			title: "Weekly",
+			due_date: "2026-07-10",
+			recurrence_rule: "weekly",
+		});
+		bindTaskHandlers(row, run, actions, { top3DateIso: TODAY, todayIso: TODAY }).onToggleDone();
+		const intent = run.mock.calls[0]?.[0];
+		expect(intent).toMatchObject({
+			type: "complete",
+			id: "snap-r",
+			snapshotId: expect.any(String),
+		});
+		expect(actions.complete).toHaveBeenCalledWith({
+			id: "snap-r",
+			observedDueDate: "2026-07-10",
+			snapshotId: intent?.type === "complete" ? intent.snapshotId : undefined,
+		});
+	});
+
+	it("skips only an open recurring task, and toasts where it went", () => {
+		const skip = vi.fn();
+		const run = vi.fn((_intent: TaskIntent, action: () => Promise<unknown>) => {
+			void action();
+			return true;
+		});
+		skipRecurringTask(task({ id: "plain", title: "Ship" }), run, skip, TODAY);
+		expect(run).not.toHaveBeenCalled();
+
+		const row = task({
+			id: "skip-r",
+			title: "Weekly",
+			due_date: "2026-07-10",
+			recurrence_rule: "weekly",
+		});
+		skipRecurringTask(row, run, skip, TODAY);
+		expect(run).toHaveBeenCalledWith(
+			{ type: "skip", id: "skip-r", observedDueDate: "2026-07-10" },
+			expect.any(Function),
+		);
+		expect(skip).toHaveBeenCalledWith({ id: "skip-r", observedDueDate: "2026-07-10" });
+		expect(toastSuccessMock).toHaveBeenCalledWith("Skipped", "Next due in 2d");
+	});
+
+	it("takes a fast second tick on a recurring row as the same click", () => {
+		vi.useFakeTimers();
+		try {
+			const run = vi.fn(() => true);
+			const opts = { top3DateIso: TODAY, todayIso: TODAY };
+			const row = task({ id: "dbl", title: "Daily", due_date: TODAY, recurrence_rule: "daily" });
+			bindTaskHandlers(row, run, actions, opts).onToggleDone();
+			// The re-rendered row is on its next cycle, under the same cursor.
+			const moved = { ...row, due_date: "2026-07-16" };
+			bindTaskHandlers(moved, run, actions, opts).onToggleDone();
+			expect(run).toHaveBeenCalledTimes(1);
+			vi.advanceTimersByTime(1000);
+			bindTaskHandlers(moved, run, actions, opts).onToggleDone();
+			expect(run).toHaveBeenCalledTimes(2);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 });

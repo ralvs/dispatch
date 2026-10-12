@@ -12,10 +12,10 @@ import {
 	SkeletonStatus,
 	TextBone,
 } from "@/components/ui";
-import { deleteTaskAction } from "@/lib/actions/tasks";
+import { deleteTaskAction, skipTaskAction } from "@/lib/actions/tasks";
 import type { MentionCandidate } from "@/lib/mentions";
 import { useView, viewKey } from "@/lib/store";
-import { useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
+import { skipRecurringTask, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
 
 /**
  * A task opened by its own URL, `/tasks/<id>` (docs/adr/0079): the one task
@@ -73,6 +73,14 @@ export function TaskEditor({
 		leave();
 	}
 
+	// Only an open recurring task has a next cycle to skip to (docs/adr/0083).
+	const skippable = task.status === "open" && task.recurrence_rule !== null;
+	function skip() {
+		if (!task) return;
+		skipRecurringTask(task, run, skipTaskAction, todayIso);
+		leave();
+	}
+
 	return (
 		<TaskDialog
 			open={open}
@@ -84,6 +92,7 @@ export function TaskEditor({
 			todayIso={todayIso}
 			people={people}
 			onDelete={remove}
+			onSkip={skippable ? skip : undefined}
 			defaults={{
 				title: task.title,
 				notes: task.notes,

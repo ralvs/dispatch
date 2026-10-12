@@ -95,6 +95,8 @@ export function TaskDialog({
 	taskId,
 	/** Edit only: parent owns the confirm + optimistic removal. */
 	onDelete,
+	/** Edit only, on an open recurring task: skip this cycle (docs/adr/0083). */
+	onSkip,
 	/** Runs after a successful write, before the dialog closes. */
 	onSaved,
 }: {
@@ -117,6 +119,7 @@ export function TaskDialog({
 	onCreating?: (id: string) => void;
 	taskId?: string;
 	onDelete?: () => void;
+	onSkip?: () => void;
 	onSaved?: () => void;
 }) {
 	// A domain or project created in this tab is offered at once (#31).
@@ -140,6 +143,7 @@ export function TaskDialog({
 				onCreating={onCreating}
 				taskId={taskId}
 				onDelete={onDelete}
+				onSkip={onSkip}
 				onDone={() => {
 					onSaved?.();
 					onClose();
@@ -163,6 +167,7 @@ function TaskDialogForm({
 	onCreating,
 	taskId,
 	onDelete,
+	onSkip,
 	onDone,
 	onCancel,
 }: {
@@ -178,6 +183,7 @@ function TaskDialogForm({
 	onCreating?: (id: string) => void;
 	taskId?: string;
 	onDelete?: () => void;
+	onSkip?: () => void;
 	onDone: () => void;
 	onCancel: () => void;
 }) {
@@ -302,11 +308,17 @@ function TaskDialogForm({
 				</DialogBody>
 			</FormStateProvider>
 
-			{/* Destructive left · primary right: Delete | … | Cancel | Save */}
+			{/* Destructive left · primary right: Delete · Skip | … | Cancel | Save.
+			    Skip lives here, not on the row, so a stray tap never skips. */}
 			<DialogFooter>
 				{onDelete && (
 					<FormButton variant="danger" size="sm" onClick={onDelete}>
 						Delete
+					</FormButton>
+				)}
+				{onSkip && (
+					<FormButton variant="tertiary" size="sm" onClick={onSkip}>
+						Skip this time
 					</FormButton>
 				)}
 				<span className="min-w-2 flex-1" />

@@ -50,7 +50,7 @@ const readers: {
 
 /**
  * The row as it stands after the write, with `also` (rows the same write
- * made, such as a recurring task's successor) after it. A row that is gone
+ * made, such as a recurring tick's done snapshot) after it. A row that is gone
  * comes back as a deleted id, so the store drops it rather than keeping a row
  * the server no longer has.
  */
