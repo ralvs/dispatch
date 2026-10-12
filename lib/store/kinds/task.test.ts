@@ -179,6 +179,54 @@ describe("task adapter", () => {
 		expect(selectView(older, viewKey.tasks())).toEqual({ open: [reopened, a], done: [] });
 	});
 
+	it("docs/adr/0083: a pending un-tick hides the snapshot on a project and on Today too", () => {
+		const a = task({ id: "a", due_date: "2026-07-16", recurrence_rule: "daily", project_id: "p1" });
+		const snap = task({
+			id: "snap",
+			due_date: TODAY,
+			status: "done",
+			completed_at: NOW,
+			series_id: "a",
+			project_id: "p1",
+		});
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [
+				{
+					key: viewKey.project("p1"),
+					type: "taskList",
+					data: { rows: [a, snap], scope: { projectId: "p1" } },
+				},
+				{ key: viewKey.day(TODAY), type: "day", data: dayPayload(TODAY, [snap]) },
+			]),
+		);
+		const ids = (state: typeof s) => {
+			const day = selectView(state, viewKey.day(TODAY));
+			return {
+				project: selectView(state, viewKey.project("p1"))?.map((t) => `${t.id}:${t.status}`),
+				today: (day ? collectDayTasks(day.schedule) : []).map((t) => `${t.id}:${t.status}`),
+			};
+		};
+		expect(ids(s).today).toEqual(["snap:done"]);
+		const [applied, token] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "reopen", id: "snap" } },
+			NOW,
+		);
+		expect(ids(applied)).toEqual({ project: ["a:open"], today: [] });
+
+		// The latest: the snapshot is gone and the row is back on today's cycle.
+		const back = { ...a, due_date: TODAY };
+		const latest = confirmWrite(applied, token, { at: T2, rows: [back], deletedIds: ["snap"] });
+		expect(ids(latest)).toEqual({ project: ["a:open"], today: ["a:open"] });
+
+		// An older one: it comes back as a plain open task.
+		const reopened = { ...snap, status: "open" as const, completed_at: null };
+		const older = confirmWrite(applied, token, { at: T2, rows: [reopened] });
+		expect(ids(older).project).toEqual(expect.arrayContaining(["a:open", "snap:open"]));
+		expect(ids(older).today).toEqual(["snap:open"]);
+	});
+
 	it("docs/adr/0083: an overdue recurring tick keeps its snapshot struck on Today", () => {
 		const a = task({ id: "a", due_date: YESTERDAY, recurrence_rule: "daily" });
 		const s = applySeed(
