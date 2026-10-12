@@ -27,11 +27,15 @@ async function DomainsBody() {
 	await requireOwnerPage();
 	const clock = await readClock();
 	const read = await getCachedDomainBoard(clock.todayIso, clock.tz);
-	const { domains, touches } = read.data;
+	const { domains, touches, quietProjectIds } = read.data;
 	// The header, the band and both sections read the entity store (#30). A
 	// row carries its cadence rule and last touch, so the band is computed
-	// from the same rows the list shows.
+	// from the same rows the list shows. Each open count is seeded too, with
+	// the quiet projects that left tasks out of it, so a tick or a filing
+	// anywhere moves it (lib/counts.ts).
 	const snapshot = seedOf(read, clock, {
+		quietProjectIds,
+		aggregates: Object.fromEntries(touches.map((t) => [`domain.open:${t.domainId}`, t.openTasks])),
 		views: [
 			{
 				key: viewKey.domains(),
