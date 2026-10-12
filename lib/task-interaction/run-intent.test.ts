@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { completeTaskAction, skipTaskAction } from "@/lib/actions/tasks";
 import type { TaskRow } from "@/lib/schemas/task";
-import type { TaskIntent } from "@/lib/task-interaction/apply-intent";
+import type { Write } from "@/lib/store/write";
 
 const toastSuccessMock = vi.fn();
 const toastNoticeMock = vi.fn();
@@ -10,6 +11,30 @@ vi.mock("@/lib/client/toast", () => ({
 	toastSuccess: (...args: unknown[]) => toastSuccessMock(...args),
 	toastNotice: (...args: unknown[]) => toastNoticeMock(...args),
 }));
+
+vi.mock("@/lib/actions/tasks", () => ({
+	assignDomainAction: vi.fn(),
+	completeTaskAction: vi.fn(),
+	createTaskAction: vi.fn(),
+	deleteTaskAction: vi.fn(),
+	quickAddTaskAction: vi.fn(),
+	reopenTaskAction: vi.fn(),
+	setTop3Action: vi.fn(),
+	skipTaskAction: vi.fn(),
+	updateTaskAction: vi.fn(),
+}));
+
+const CTX = { todayIso: "2026-07-15", tz: "America/Sao_Paulo", nowIso: "2026-07-15T12:00:00.000Z" };
+
+/** A runner that claims (or refuses) and runs the server half with CTX. */
+function writesThat(claims: boolean) {
+	return {
+		send: vi.fn((w: Write<"task">) => {
+			if (claims) void w.call(CTX);
+			return claims;
+		}),
+	};
+}
 
 const { bindTaskHandlers, skipRecurringTask, toastTaskToggle } = await import("./run-intent");
 
@@ -70,25 +95,16 @@ describe("toastTaskToggle", () => {
 });
 
 describe("bindTaskHandlers", () => {
-	const actions = {
-		complete: vi.fn(),
-		reopen: vi.fn(),
-		setTop3: vi.fn(),
-		delete: vi.fn(),
-	};
-
 	beforeEach(() => {
 		toastSuccessMock.mockClear();
 		toastNoticeMock.mockClear();
-		actions.complete.mockReset();
-		actions.reopen.mockReset();
-		actions.setTop3.mockReset();
-		actions.delete.mockReset();
+		vi.mocked(completeTaskAction).mockReset();
+		vi.mocked(skipTaskAction).mockReset();
 	});
 
 	it("toasts on complete when the runner claims", () => {
-		const run = vi.fn(() => true);
-		const handlers = bindTaskHandlers(task({ id: "a", title: "Ship" }), run, actions, {
+		const run = writesThat(true);
+		const handlers = bindTaskHandlers(task({ id: "a", title: "Ship" }), run, {
 			top3DateIso: TODAY,
 			todayIso: TODAY,
 		});
@@ -97,8 +113,8 @@ describe("bindTaskHandlers", () => {
 	});
 
 	it("does not toast when the runner refuses the claim", () => {
-		const run = vi.fn(() => false);
-		const handlers = bindTaskHandlers(task({ id: "a", title: "Ship" }), run, actions, {
+		const run = writesThat(false);
+		const handlers = bindTaskHandlers(task({ id: "a", title: "Ship" }), run, {
 			top3DateIso: TODAY,
 			todayIso: TODAY,
 		});
@@ -108,21 +124,19 @@ describe("bindTaskHandlers", () => {
 	});
 
 	it("toasts Reopened on uncheck", () => {
-		const run = vi.fn(() => true);
-		const handlers = bindTaskHandlers(
-			task({ id: "a", title: "Ship", status: "done" }),
-			run,
-			actions,
-			{ top3DateIso: TODAY, todayIso: TODAY },
-		);
+		const run = writesThat(true);
+		const handlers = bindTaskHandlers(task({ id: "a", title: "Ship", status: "done" }), run, {
+			top3DateIso: TODAY,
+			todayIso: TODAY,
+		});
 		handlers.onToggleDone();
 		expect(toastNoticeMock).toHaveBeenCalledWith("Reopened");
 		expect(toastSuccessMock).not.toHaveBeenCalled();
 	});
 
 	it("does not toast on star", () => {
-		const run = vi.fn(() => true);
-		const handlers = bindTaskHandlers(task({ id: "a", title: "Ship" }), run, actions, {
+		const run = writesThat(true);
+		const handlers = bindTaskHandlers(task({ id: "a", title: "Ship" }), run, {
 			top3DateIso: TODAY,
 			todayIso: TODAY,
 		});
@@ -131,68 +145,54 @@ describe("bindTaskHandlers", () => {
 		expect(toastNoticeMock).not.toHaveBeenCalled();
 	});
 
-	it("does not toast on delete", () => {
-		const run = vi.fn(() => true);
-		const handlers = bindTaskHandlers(task({ id: "a", title: "Ship" }), run, actions, {
-			top3DateIso: TODAY,
-			todayIso: TODAY,
-		});
-		handlers.onDelete?.();
-		expect(toastSuccessMock).not.toHaveBeenCalled();
-		expect(toastNoticeMock).not.toHaveBeenCalled();
-	});
-
 	it("passes a complete intent with the observed due date", () => {
-		const run = vi.fn((_intent: TaskIntent, action: () => Promise<unknown>) => {
-			void action();
-			return true;
-		});
+		const run = writesThat(true);
 		const row = task({ id: "r", title: "Weekly", due_date: "2026-07-10" });
-		const handlers = bindTaskHandlers(row, run, actions, {
+		const handlers = bindTaskHandlers(row, run, {
 			top3DateIso: TODAY,
 			todayIso: TODAY,
 		});
 		handlers.onToggleDone();
-		expect(run).toHaveBeenCalledWith(
-			{ type: "complete", id: "r", observedDueDate: "2026-07-10" },
-			expect.any(Function),
-		);
-		expect(actions.complete).toHaveBeenCalledWith({ id: "r", observedDueDate: "2026-07-10" });
+		expect(run.send.mock.calls[0]?.[0].intent).toEqual({
+			type: "complete",
+			id: "r",
+			observedDueDate: "2026-07-10",
+		});
+		// The server dates the tick from the day the store applied it with.
+		expect(completeTaskAction).toHaveBeenCalledWith({
+			id: "r",
+			observedDueDate: "2026-07-10",
+			todayIso: CTX.todayIso,
+		});
 	});
 
 	it("names the snapshot a recurring tick saves (docs/adr/0083)", () => {
-		const run = vi.fn((_intent: TaskIntent, action: () => Promise<unknown>) => {
-			void action();
-			return true;
-		});
+		const run = writesThat(true);
 		const row = task({
 			id: "snap-r",
 			title: "Weekly",
 			due_date: "2026-07-10",
 			recurrence_rule: "weekly",
 		});
-		bindTaskHandlers(row, run, actions, { top3DateIso: TODAY, todayIso: TODAY }).onToggleDone();
-		const intent = run.mock.calls[0]?.[0];
+		bindTaskHandlers(row, run, { top3DateIso: TODAY, todayIso: TODAY }).onToggleDone();
+		const intent = run.send.mock.calls[0]?.[0].intent;
 		expect(intent).toMatchObject({
 			type: "complete",
 			id: "snap-r",
 			snapshotId: expect.any(String),
 		});
-		expect(actions.complete).toHaveBeenCalledWith({
+		expect(completeTaskAction).toHaveBeenCalledWith({
 			id: "snap-r",
 			observedDueDate: "2026-07-10",
 			snapshotId: intent?.type === "complete" ? intent.snapshotId : undefined,
+			todayIso: CTX.todayIso,
 		});
 	});
 
 	it("skips only an open recurring task, and toasts where it went", () => {
-		const skip = vi.fn();
-		const run = vi.fn((_intent: TaskIntent, action: () => Promise<unknown>) => {
-			void action();
-			return true;
-		});
-		skipRecurringTask(task({ id: "plain", title: "Ship" }), run, skip, TODAY);
-		expect(run).not.toHaveBeenCalled();
+		const run = writesThat(true);
+		skipRecurringTask(task({ id: "plain", title: "Ship" }), run, TODAY);
+		expect(run.send).not.toHaveBeenCalled();
 
 		const row = task({
 			id: "skip-r",
@@ -200,29 +200,34 @@ describe("bindTaskHandlers", () => {
 			due_date: "2026-07-10",
 			recurrence_rule: "weekly",
 		});
-		skipRecurringTask(row, run, skip, TODAY);
-		expect(run).toHaveBeenCalledWith(
-			{ type: "skip", id: "skip-r", observedDueDate: "2026-07-10" },
-			expect.any(Function),
-		);
-		expect(skip).toHaveBeenCalledWith({ id: "skip-r", observedDueDate: "2026-07-10" });
+		skipRecurringTask(row, run, TODAY);
+		expect(run.send.mock.calls[0]?.[0].intent).toEqual({
+			type: "skip",
+			id: "skip-r",
+			observedDueDate: "2026-07-10",
+		});
+		expect(skipTaskAction).toHaveBeenCalledWith({
+			id: "skip-r",
+			observedDueDate: "2026-07-10",
+			todayIso: CTX.todayIso,
+		});
 		expect(toastSuccessMock).toHaveBeenCalledWith("Skipped", "Next due in 2d");
 	});
 
 	it("takes a fast second tick on a recurring row as the same click", () => {
 		vi.useFakeTimers();
 		try {
-			const run = vi.fn(() => true);
+			const run = writesThat(true);
 			const opts = { top3DateIso: TODAY, todayIso: TODAY };
 			const row = task({ id: "dbl", title: "Daily", due_date: TODAY, recurrence_rule: "daily" });
-			bindTaskHandlers(row, run, actions, opts).onToggleDone();
+			bindTaskHandlers(row, run, opts).onToggleDone();
 			// The re-rendered row is on its next cycle, under the same cursor.
 			const moved = { ...row, due_date: "2026-07-16" };
-			bindTaskHandlers(moved, run, actions, opts).onToggleDone();
-			expect(run).toHaveBeenCalledTimes(1);
+			bindTaskHandlers(moved, run, opts).onToggleDone();
+			expect(run.send).toHaveBeenCalledTimes(1);
 			vi.advanceTimersByTime(1000);
-			bindTaskHandlers(moved, run, actions, opts).onToggleDone();
-			expect(run).toHaveBeenCalledTimes(2);
+			bindTaskHandlers(moved, run, opts).onToggleDone();
+			expect(run.send).toHaveBeenCalledTimes(2);
 		} finally {
 			vi.useRealTimers();
 		}

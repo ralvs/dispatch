@@ -73,7 +73,11 @@ describe("TaskList on the entity store", () => {
 
 		await user.click(completeBox() as HTMLElement);
 		expect(reopenBox()).toBeInTheDocument();
-		expect(completeTaskAction).toHaveBeenCalledWith({ id: "milk", observedDueDate: null });
+		expect(completeTaskAction).toHaveBeenCalledWith({
+			id: "milk",
+			observedDueDate: null,
+			todayIso: TODAY,
+		});
 
 		await act(async () => action.resolve({ ok: true, data: { at: T2, rows: [milkDone] } }));
 		expect(reopenBox()).toBeInTheDocument();

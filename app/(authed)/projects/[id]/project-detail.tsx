@@ -17,7 +17,6 @@ import {
 	Select,
 	Textarea,
 } from "@/components/ui";
-import { completeTaskAction, reopenTaskAction, setTop3Action } from "@/lib/actions/tasks";
 import { toastError } from "@/lib/client/toast";
 import { nowUtc } from "@/lib/dates";
 import { ProjectStatusSchema } from "@/lib/schemas/project";
@@ -25,8 +24,15 @@ import type { DomainRow } from "@/lib/services/domains";
 import type { ProjectRow } from "@/lib/services/projects";
 import { taskProgress } from "@/lib/services/projects-shared";
 import type { TaskRow } from "@/lib/services/tasks";
-import { isNavigationError, useRunIntent, useStoreWrite, useView, viewKey } from "@/lib/store";
-import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
+import {
+	isNavigationError,
+	useRunIntent,
+	useStoreWrite,
+	useView,
+	useWrites,
+	viewKey,
+} from "@/lib/store";
+import { bindTaskHandlers } from "@/lib/task-interaction/run-intent";
 import { AddTaskButton } from "../add-task-button";
 import { statusLabel } from "../constants";
 import { archiveProjectAction, completeProjectAction, updateProjectAction } from "./actions";
@@ -85,7 +91,7 @@ export function ProjectDetail({
 	const [editing, setEditing] = useState(false);
 	const project = useView(viewKey.projectHead(projectId))?.[0];
 	const optTasks = useView(viewKey.project(projectId)) ?? NO_TASKS;
-	const run = useTaskIntentRunner();
+	const writes = useWrites();
 	const edit = useStoreWrite("project");
 	const runProject = useRunIntent("project", { errorMessage: "Couldn't update project." });
 	const domainOptions = domains.map((d) => ({ id: d.id, name: d.name, color: d.color }));
@@ -94,16 +100,7 @@ export function ProjectDetail({
 	const doneTasks = optTasks.filter((t) => t.status === "done");
 
 	function handlersFor(task: TaskRow) {
-		return bindTaskHandlers(
-			task,
-			run,
-			{
-				complete: completeTaskAction,
-				reopen: reopenTaskAction,
-				setTop3: setTop3Action,
-			},
-			{ top3DateIso: todayIso, todayIso },
-		);
+		return bindTaskHandlers(task, writes, { top3DateIso: todayIso, todayIso });
 	}
 
 	// Projects are never deleted from here; gone means deleted elsewhere.

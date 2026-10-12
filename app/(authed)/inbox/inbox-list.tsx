@@ -2,10 +2,9 @@
 
 import { ColorDot } from "@/components/color-dot";
 import { EmptyState } from "@/components/ui";
-import { assignDomainAction, deleteTaskAction } from "@/lib/actions/tasks";
 import type { TaskRow } from "@/lib/services/tasks";
-import { useView, viewKey } from "@/lib/store";
-import { useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
+import { useView, useWrites, viewKey } from "@/lib/store";
+import { taskWrites } from "@/lib/writes/task";
 import { InboxRow } from "./inbox-row";
 
 type DomainOption = { id: string; name: string; color: string | null };
@@ -26,17 +25,16 @@ export function InboxList({
 	taskNoteIds: Record<string, string>;
 }) {
 	const rows = useView(viewKey.inbox()) ?? NO_TASKS;
-	const removeRun = useTaskIntentRunner("Couldn't delete task.");
-	const fileRun = useTaskIntentRunner("Couldn't file task.");
+	const { send } = useWrites();
 
 	function remove(task: TaskRow) {
 		// Matches the confirm treatment task-row.tsx uses for the same action.
 		if (!window.confirm(`Delete "${task.title}"?`)) return;
-		removeRun({ type: "delete", id: task.id }, () => deleteTaskAction(task.id));
+		send(taskWrites.remove(task.id));
 	}
 
 	function file(task: TaskRow, domainId: string) {
-		fileRun({ type: "assign", id: task.id, domainId }, () => assignDomainAction(task.id, domainId));
+		send(taskWrites.assign(task.id, domainId));
 	}
 
 	if (rows.length === 0) {

@@ -2,25 +2,16 @@
 
 import { unstable_rethrow } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { completeTaskAction, reopenTaskAction, setTop3Action } from "@/lib/actions/tasks";
 import { parseDateIso } from "@/lib/dates";
 import type { TaskRow } from "@/lib/services/tasks";
-import { useDispatchStore, useStoreActions, useView, viewKey } from "@/lib/store";
-import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
+import { useDispatchStore, useStoreActions, useView, useWrites, viewKey } from "@/lib/store";
+import { bindTaskHandlers } from "@/lib/task-interaction/run-intent";
 import type { DomainColorSource } from "@/lib/ui/event-color";
 import { loadDayScheduleAction } from "./actions";
 import { OpenSection, TimelineSection, Top3Section } from "./day-bands";
 import { DayHeadline } from "./day-headline";
 import { DayNav } from "./day-nav";
 import { DayTape } from "./day-tape";
-
-// Module-level so handlersFor's dependency list can be honest: a fresh object
-// literal each render would make the callback identity churn for nothing.
-const WRITE_ACTIONS = {
-	complete: completeTaskAction,
-	reopen: reopenTaskAction,
-	setTop3: setTop3Action,
-};
 
 /**
  * A day already in the store paints at once; one fetched longer ago than this
@@ -163,11 +154,10 @@ export function DayView({
 	// One store for the whole day: Top 3 and the Timeline sit in different
 	// columns and can hold the same task, and both read this one view, so a
 	// tick cannot land in one and not the other.
-	const run = useTaskIntentRunner();
+	const writes = useWrites();
 	const handlersFor = useCallback(
-		(task: TaskRow) =>
-			bindTaskHandlers(task, run, WRITE_ACTIONS, { top3DateIso: dateIso, todayIso }),
-		[run, dateIso, todayIso],
+		(task: TaskRow) => bindTaskHandlers(task, writes, { top3DateIso: dateIso, todayIso }),
+		[writes, dateIso, todayIso],
 	);
 
 	// The page's <Seed> always holds the day it names, and a chevron only moves

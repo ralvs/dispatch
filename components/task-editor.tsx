@@ -12,10 +12,10 @@ import {
 	SkeletonStatus,
 	TextBone,
 } from "@/components/ui";
-import { deleteTaskAction, skipTaskAction } from "@/lib/actions/tasks";
 import type { MentionCandidate } from "@/lib/mentions";
-import { useView, viewKey } from "@/lib/store";
-import { skipRecurringTask, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
+import { useView, useWrites, viewKey } from "@/lib/store";
+import { skipRecurringTask } from "@/lib/task-interaction/run-intent";
+import { taskWrites } from "@/lib/writes/task";
 
 /**
  * A task opened by its own URL, `/tasks/<id>` (docs/adr/0079): the one task
@@ -55,7 +55,7 @@ export function TaskEditor({
 	exit: TaskEditorExit;
 }) {
 	const leave = useExit(exit);
-	const run = useTaskIntentRunner();
+	const writes = useWrites();
 	// Open while the address is this task's own, and never a flag set on close.
 	// Cache Components keeps a page you leave alive in a hidden <Activity>,
 	// state and all, and shows it again when you come back: a `closed` flag
@@ -69,7 +69,7 @@ export function TaskEditor({
 	function remove() {
 		if (!task) return;
 		if (!window.confirm(`Delete "${task.title}"?`)) return;
-		run({ type: "delete", id: task.id }, () => deleteTaskAction(task.id));
+		writes.send(taskWrites.remove(task.id));
 		leave();
 	}
 
@@ -77,7 +77,7 @@ export function TaskEditor({
 	const skippable = task.status === "open" && task.recurrence_rule !== null;
 	function skip() {
 		if (!task) return;
-		skipRecurringTask(task, run, skipTaskAction, todayIso);
+		skipRecurringTask(task, writes, todayIso);
 		leave();
 	}
 

@@ -1,17 +1,14 @@
 "use client";
 
-import type { ActionResult } from "@/lib/action-result";
 import { toastNotice, toastSuccess } from "@/lib/client/toast";
 import { formatDueLabel } from "@/lib/dates";
 import type { TaskRow } from "@/lib/schemas/task";
-import { useRunIntent } from "@/lib/store/run";
-import type { StoreWrite } from "@/lib/store/types";
-import { nextCompleteFields, type TaskIntent } from "@/lib/task-interaction/apply-intent";
+import type { Write } from "@/lib/store/write";
+import { nextCompleteFields } from "@/lib/task-interaction/apply-intent";
+import { taskWrites } from "@/lib/writes/task";
 
-const DEFAULT_ERROR = "Couldn't update that task. Try again.";
-
-/** What every task action resolves to: the rows it wrote, for the entity store. */
-export type TaskActionResult = ActionResult<StoreWrite<TaskRow>>;
+/** The part of `useWrites()` a row's handlers run task writes through. */
+export type TaskSender = { send(w: Write<"task">): boolean };
 
 /**
  * Parent-owned intents (the entity store applies, then the server action).
@@ -20,13 +17,7 @@ export type TaskActionResult = ActionResult<StoreWrite<TaskRow>>;
 export type TaskRowHandlers = {
 	onToggleDone: () => void;
 	onToggleTop3: () => void;
-	onDelete?: () => void;
 };
-
-export type TaskIntentRun = (
-	intent: TaskIntent,
-	action: () => Promise<TaskActionResult>,
-) => boolean;
 
 /**
  * A recurring tick saves this cycle as done and moves the task to its next
@@ -52,15 +43,6 @@ export function toastTaskToggle(
 	toastSuccess(label);
 }
 
-/**
- * Apply to the entity store → server action → confirm or roll back
- * (lib/store/run.ts). Surfaces only supply the intent and the action (so this
- * module never imports server actions).
- */
-export function useTaskIntentRunner(errorMessage: string = DEFAULT_ERROR): TaskIntentRun {
-	return useRunIntent("task", { errorMessage });
-}
-
 /** Desired-state star flag — the same comparison projectTask makes. */
 export function top3DesiredState(
 	task: Pick<TaskRow, "top3_for_date">,
@@ -68,21 +50,6 @@ export function top3DesiredState(
 ): boolean {
 	return task.top3_for_date !== forDateIso;
 }
-
-export type TaskWriteActions = {
-	complete: (input: {
-		id: string;
-		observedDueDate: string | null;
-		snapshotId?: string;
-	}) => Promise<TaskActionResult>;
-	reopen: (id: string) => Promise<TaskActionResult>;
-	setTop3: (input: {
-		id: string;
-		starred: boolean;
-		forDateIso?: string;
-	}) => Promise<TaskActionResult>;
-	delete?: (id: string) => Promise<TaskActionResult>;
-};
 
 /**
  * How long a second tick or skip on the same recurring row counts as the same
@@ -105,28 +72,21 @@ function movedJustNow(id: string): boolean {
  * on the row, so a stray tap never skips. Same gate as a tick: the due date
  * the form showed.
  */
-export function skipRecurringTask(
-	task: TaskRow,
-	run: TaskIntentRun,
-	skip: (input: { id: string; observedDueDate: string | null }) => Promise<TaskActionResult>,
-	todayIso: string,
-): void {
+export function skipRecurringTask(task: TaskRow, writes: TaskSender, todayIso: string): void {
 	if (task.status !== "open" || task.recurrence_rule === null || movedJustNow(task.id)) return;
-	const intent = { type: "skip" as const, id: task.id, observedDueDate: task.due_date };
-	if (!run(intent, () => skip({ id: intent.id, observedDueDate: intent.observedDueDate }))) return;
+	if (!writes.send(taskWrites.skip({ id: task.id, observedDueDate: task.due_date }))) return;
 	lastRecurringMove.set(task.id, Date.now());
 	toastTaskToggle("skip", task, todayIso);
 }
 
 /**
- * Bind a row's checkbox / star / delete to intent + preconditioned actions.
+ * Bind a row's checkbox and star to the task writes (lib/writes/task.ts).
  * `top3DateIso` is the day the star pins to (today on Tasks; day on screen on Today).
  * `todayIso` is the real calendar today — a recurring task's next cycle is dated from it, not the day on screen.
  */
 export function bindTaskHandlers(
 	task: TaskRow,
-	run: TaskIntentRun,
-	actions: TaskWriteActions,
+	writes: TaskSender,
 	opts: { top3DateIso: string; todayIso: string },
 ) {
 	const done = task.status === "done";
@@ -134,55 +94,29 @@ export function bindTaskHandlers(
 	return {
 		onToggleDone: () => {
 			if (done) {
-				if (!run({ type: "reopen", id: task.id }, () => actions.reopen(task.id))) return;
+				if (!writes.send(taskWrites.reopen(task.id))) return;
 				toastTaskToggle("reopen", task, opts.todayIso);
 			} else {
 				if (recurring && movedJustNow(task.id)) return;
-				const intent = {
-					type: "complete" as const,
+				const w = taskWrites.complete({
 					id: task.id,
 					observedDueDate: task.due_date,
 					// The snapshot shows at once under the id the server will give it.
 					...(recurring ? { snapshotId: crypto.randomUUID() } : {}),
-				};
-				if (
-					!run(intent, () =>
-						actions.complete({
-							id: intent.id,
-							observedDueDate: intent.observedDueDate,
-							snapshotId: intent.snapshotId,
-						}),
-					)
-				) {
-					return;
-				}
+				});
+				if (!writes.send(w)) return;
 				if (recurring) lastRecurringMove.set(task.id, Date.now());
 				toastTaskToggle("complete", task, opts.todayIso);
 			}
 		},
 		onToggleTop3: () => {
-			const intent = {
-				type: "setTop3" as const,
-				id: task.id,
-				starred: top3DesiredState(task, opts.top3DateIso),
-				forDateIso: opts.top3DateIso,
-			};
-			run(intent, () =>
-				actions.setTop3({
-					id: intent.id,
-					starred: intent.starred,
-					forDateIso: intent.forDateIso,
+			writes.send(
+				taskWrites.setTop3({
+					id: task.id,
+					starred: top3DesiredState(task, opts.top3DateIso),
+					forDateIso: opts.top3DateIso,
 				}),
 			);
 		},
-		...(actions.delete
-			? {
-					onDelete: () => {
-						const del = actions.delete;
-						if (!del) return;
-						run({ type: "delete", id: task.id }, () => del(task.id));
-					},
-				}
-			: {}),
 	};
 }
