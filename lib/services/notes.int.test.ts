@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { countOf, noteCounts, tally } from "@/lib/counts";
 import { persistRaw } from "@/lib/services/capture/store";
 import {
 	countNeedsReview,
@@ -41,6 +42,17 @@ describe("notes against the local database", () => {
 		expect(await countNeedsReview(sb)).toBe(before);
 		const band = await listNotes(sb, { needsReview: true });
 		expect(band.some((r) => r.id === n.id)).toBe(false);
+	});
+
+	it("Today's count in SQL is the rule /notes sums (lib/counts.ts, docs/adr/0084)", async () => {
+		const sb = await ownerClient();
+		await createNote(sb, { body: "Flagged", needs_review: true });
+		await createNote(sb, { body: "Placed" });
+		await createNeedsReviewNote(sb, { body: "Unplaced", reason: "low_confidence" });
+
+		const summed = countOf(tally(await listNotes(sb), noteCounts), "notes.needsReview");
+		expect(summed).toBe(2);
+		expect(await countNeedsReview(sb)).toBe(summed);
 	});
 
 	it("a save's title and body come back on the row; a deleted note reads as null", async () => {

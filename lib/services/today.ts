@@ -1,8 +1,9 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { countOf, isRoutineDoneOn, openWorkCounts, routinesDoneOn, tally } from "@/lib/counts";
 import { formatInstant, isoWeek, shiftDay } from "@/lib/dates";
 import { buildDaySchedule, type DaySchedule, type DaySchedulePayload } from "@/lib/day-schedule";
-import { ROUTINE_HISTORY_DAYS } from "@/lib/routine-stats";
+import { ROUTINE_HISTORY_DAYS, withHistory } from "@/lib/routine-stats";
 import { type CalendarEventRow, listEventsOn } from "@/lib/services/calendar";
 import { type DomainRow, listDomains } from "@/lib/services/domains";
 import { unreadLinkCount } from "@/lib/services/links";
@@ -27,7 +28,9 @@ import {
 	type RoutineRow,
 } from "@/lib/services/routines";
 import { listCompletedOn, listTasks, type TaskRow } from "@/lib/services/tasks";
-import { isOverdue } from "@/lib/task-predicates";
+
+/** Today reads `open` without the quiet tasks (loadDayScheduleInputs): none is left to leave out. */
+const NO_QUIET: ReadonlySet<string> = new Set();
 
 // Day placement lives in lib/day-schedule.ts (client-safe). Import Day*
 // types from there — this module is the Today read (digest + loaders).
@@ -385,21 +388,23 @@ export function assembleTodayView(
 		taskCountsByProject,
 	} = digest;
 
-	const overdue = open.filter((t) => isOverdue(t, todayIso));
-	const inboxCount = open.filter((t) => t.domain_id === null).length;
+	// What each open task adds to Today's counters (lib/counts.ts) — the rule
+	// the entity store moves them by.
+	const counts = tally(open, (t) => openWorkCounts(t, { todayIso, quietProjectIds: NO_QUIET }));
 
-	// Today's completions are the tail of the history the digest already holds.
-	const completedRoutineIds = new Set(
-		completionHistory.filter((c) => c.completed_date === todayIso).map((c) => c.routine_id),
-	);
-	const routinesDone = routines.filter((r) => completedRoutineIds.has(r.id)).length;
-	const remainingNames = routines.filter((r) => !completedRoutineIds.has(r.id)).map((r) => r.name);
+	// Today's completions are the tail of the history the digest already holds,
+	// the same rows the routines card counts from.
+	const listed = withHistory(routines, completionHistory);
+	const routinesDone = routinesDoneOn(listed, todayIso);
+	const remainingNames = listed
+		.filter((r) => !isRoutineDoneOn(r.completions, todayIso))
+		.map((r) => r.name);
 
 	const resurfaced = pickResurfaced(quotes, todayIso, skippedQuoteIds);
 	const latestQuote = [...quotes].sort((a, b) => (a.created_at > b.created_at ? -1 : 1))[0] ?? null;
 
 	return {
-		inboxCount,
+		inboxCount: countOf(counts, "tasks.inbox"),
 		needsReviewCount: needsReview,
 		linksUnreadCount: linksUnread,
 		daySchedule: buildDaySchedule({
@@ -414,8 +419,8 @@ export function assembleTodayView(
 		masthead: { isoWeek: isoWeek(todayIso), unreadNotifications },
 		anchor: buildAnchor({
 			events: todayEvents,
-			openCount: open.length,
-			overdueCount: overdue.length,
+			openCount: countOf(counts, "tasks.open"),
+			overdueCount: countOf(counts, "tasks.overdue"),
 			nowUtcIso: new Date(nowMs).toISOString(),
 		}),
 		resurfaced,

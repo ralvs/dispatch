@@ -14,6 +14,7 @@ import { requireOwnerPage } from "@/lib/auth";
 import { getCachedDomains } from "@/lib/cache/domains";
 import { getCachedNoteLists } from "@/lib/cache/notes";
 import { readClock } from "@/lib/cache/settings";
+import { countOf, noteCounts, tally } from "@/lib/counts";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
 import { seedOf } from "@/lib/store/server";
@@ -29,11 +30,13 @@ async function NotesBody() {
 		getCachedDomains(false),
 	]);
 	const { needsReview, allNotes } = read.data;
-	// The lists and the review count go to the entity store (#27). The band
-	// holds every flagged note, so its length is the count Today shows too.
+	// The lists and the review count go to the entity store (#27). The count
+	// is what each note adds to it (lib/counts.ts), the rule Today's count and
+	// the store's moves share.
+	const review = tally([...needsReview, ...allNotes], noteCounts);
 	const snapshot = seedOf(read, clock, {
 		views: [{ key: viewKey.notes(), type: "noteLists", data: { needsReview, all: allNotes } }],
-		aggregates: { "notes.needsReview": needsReview.length },
+		aggregates: { "notes.needsReview": countOf(review, "notes.needsReview") },
 	});
 
 	return (

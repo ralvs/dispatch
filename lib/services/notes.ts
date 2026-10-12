@@ -263,6 +263,12 @@ export async function listNoteTitles(
 	}));
 }
 
+/**
+ * Today's review count, counted in the database. It is `noteCounts`
+ * (lib/counts.ts) as a filter, as `notQuietFilter` is `isQuiet`: Today does
+ * not read the notes, so it cannot sum them. notes.int.test.ts holds the two
+ * to the same answer.
+ */
 export async function countNeedsReview(sb: SupabaseClient): Promise<number> {
 	return unwrapCount(
 		await sb.from("notes").select("*", { count: "exact", head: true }).eq("needs_review", true),

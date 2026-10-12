@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
+import { countByProject } from "@/lib/counts";
 import { nowUtc } from "@/lib/dates";
 import {
 	type CreateProjectSchema,
@@ -78,24 +79,16 @@ export { EMPTY_TASK_COUNTS, type ProjectTaskCounts, taskProgress };
  *
  * Nothing is excluded. A quiet task is quiet only elsewhere — on Today and in
  * the default /tasks views. The project's own page exists to show the project
- * whole, so its counts have to include every task tagged to it.
+ * whole, so its counts have to include every task tagged to it. The rule is
+ * `projectCounts` (lib/counts.ts), the one the entity store moves them by.
  */
 export async function countTasksByProject(
 	sb: SupabaseClient,
 ): Promise<Record<string, ProjectTaskCounts>> {
 	const data = unwrap(
 		await sb.from("tasks").select("project_id, status").not("project_id", "is", null),
-	) as Array<{ project_id: string | null; status: string }> | null;
-
-	const out: Record<string, ProjectTaskCounts> = {};
-	for (const row of data ?? []) {
-		if (row.project_id === null) continue;
-		out[row.project_id] ??= { done: 0, open: 0 };
-		const counts = out[row.project_id];
-		if (row.status === "done") counts.done += 1;
-		else counts.open += 1;
-	}
-	return out;
+	) as Array<Pick<TaskRow, "project_id" | "status">> | null;
+	return countByProject(data ?? []);
 }
 
 /**
