@@ -60,7 +60,7 @@ async function degrade(
 /**
  * The one capture action that leaves the building: it writes a VEVENT to the
  * iCloud calendar named by ICLOUD_CALENDAR_NAME before the local mirror row
- * exists (docs/adr/0006's single push target, docs/adr/0023).
+ * exists (the write calendar, docs/adr/0082, docs/adr/0023).
  *
  * Throws on every failure — no CalDAV credentials, no such calendar, a
  * network error, or an end that precedes its start — so runOne's catch turns

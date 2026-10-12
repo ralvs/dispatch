@@ -1,5 +1,10 @@
 # Calendar sync is iCloud CalDAV: pull all calendars, push to one
 
+> **Push target superseded (2026-10-12)** by
+> [0082](./0082-write-to-the-renan-calendar-and-edit-single-events.md):
+> Dispatch writes to the "Renan" calendar, not a dedicated one, and may edit
+> and delete single events there. Pull-all is unchanged.
+
 Google Calendar OAuth is replaced by CalDAV against `caldav.icloud.com`
 (tsdav, Basic auth with an app-specific password — no OAuth flow, no token
 table). Sync pulls VEVENTs ±21 days from ALL calendars on the account (each
