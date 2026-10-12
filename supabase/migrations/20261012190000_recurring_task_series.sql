@@ -126,12 +126,28 @@ begin
     return null;
   end if;
 
-  -- A later row of the same series means this one is history.
+  -- Lock the recurring row before asking whether this snapshot is the latest:
+  -- a tick takes the same lock before it inserts, so no newer snapshot can
+  -- land between the check and the move back.
+  select id into series
+    from public.tasks
+   where id = s.series_id
+     and status = 'open'
+     and recurrence_rule is not null
+     for update;
+  if series is null then
+    return null;
+  end if;
+
+  -- A later done row of the same series means this one is history. An older
+  -- snapshot reopened as a plain task is no longer history, so it does not
+  -- count.
   if exists (
     select 1
       from public.tasks o
      where o.series_id = s.series_id
        and o.id <> s.id
+       and o.status = 'done'
        and (
          coalesce(o.due_date, '-infinity'::date) > coalesce(s.due_date, '-infinity'::date)
          or (o.due_date is not distinct from s.due_date and o.created_at > s.created_at)
@@ -146,13 +162,7 @@ begin
          recurrence_day = s.recurrence_day,
          reminders_sent = s.reminders_sent,
          top3_for_date = s.top3_for_date
-   where o.id = s.series_id
-     and o.status = 'open'
-     and o.recurrence_rule is not null
-  returning o.id into series;
-  if series is null then
-    return null;
-  end if;
+   where o.id = series;
 
   delete from public.tasks where id = s.id;
   return series;

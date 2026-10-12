@@ -342,6 +342,38 @@ describe("reopenTask · un-ticking a recurring task (docs/adr/0083)", () => {
 		expect((await getTask(sb, task.id))?.due_date).toBe("2026-07-24");
 	});
 
+	it("puts back the reminders the tick reset", async () => {
+		const sb = await ownerClient();
+		const task = await createTask(sb, {
+			title: "Reminded weekly",
+			due_date: "2026-07-10",
+			recurrence_rule: "weekly",
+		});
+		const sent = { "2026-07-10T09:00:00.000Z": true };
+		await serviceClient().from("tasks").update({ reminders_sent: sent }).eq("id", task.id);
+		const { snapshot } = await completeTask(sb, task.id, JULY_15, { dueDate: "2026-07-10" });
+		if (!snapshot) throw new Error("tick lands");
+		const read = async (id: string) =>
+			(await serviceClient().from("tasks").select("reminders_sent").eq("id", id).single()).data
+				?.reminders_sent;
+		expect(await read(snapshot.id)).toEqual(sent);
+		expect(await read(task.id)).toEqual({});
+
+		await reopenTask(sb, snapshot.id);
+		expect(await read(task.id)).toEqual(sent);
+	});
+
+	it("an older snapshot reopened as a plain task does not stop the latest un-tick", async () => {
+		const sb = await ownerClient();
+		const { task, older, latest } = await tickedTwice(sb, "Reopened history");
+		await reopenTask(sb, older.id);
+		// Moved past the latest snapshot's cycle: open history is not history.
+		await updateTask(sb, older.id, { due_date: "2026-08-01" });
+
+		expect(await reopenTask(sb, latest.id)).toEqual({ seriesId: task.id });
+		expect((await getTask(sb, task.id))?.due_date).toBe("2026-07-17");
+	});
+
 	it("un-ticks once when the un-tick is replayed", async () => {
 		const sb = await ownerClient();
 		const { task, latest, older } = await tickedTwice(sb, "Double untick");

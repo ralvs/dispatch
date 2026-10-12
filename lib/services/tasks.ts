@@ -345,15 +345,16 @@ export async function completeTask(
 			}),
 		) as string | null;
 		if (!snapshotId) return { applied: false, nextDue: null, snapshot: null };
-		// The snapshot's text is the series' text, which resolved once already;
-		// a lost mention re-derives on the next edit, and the tick has landed
-		// (docs/adr/0030 keeps the graph text-owned).
-		await syncTaskMentionsFromText(sb, snapshotId, task.title, task.notes, { fail: "swallow" });
-		return {
-			applied: true,
-			nextDue: next.spawn.due_date,
-			snapshot: await getTask(sb, snapshotId),
-		};
+		// Mentions come from the text the snapshot saved, which the function
+		// read under its lock. A lost mention re-derives on the next edit, and
+		// the tick has landed (docs/adr/0030 keeps the graph text-owned).
+		const snapshot = await getTask(sb, snapshotId);
+		if (snapshot) {
+			await syncTaskMentionsFromText(sb, snapshotId, snapshot.title, snapshot.notes, {
+				fail: "swallow",
+			});
+		}
+		return { applied: true, nextDue: next.spawn.due_date, snapshot };
 	}
 
 	// Guarding on status=open makes a replayed close a no-op rather than a
