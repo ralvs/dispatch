@@ -12,16 +12,16 @@ import {
 	useResultAction,
 } from "@/components/ui";
 import type { ActionResult } from "@/lib/action-result";
-import { createTaskAction, quickAddTaskAction, updateTaskAction } from "@/lib/actions/tasks";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { DomainItem } from "@/lib/schemas/domain";
 import type { ProjectRow } from "@/lib/schemas/project";
 import { useLiveOptions } from "@/lib/store/live-options";
-import { useStoreWrite } from "@/lib/store/run";
+import { useWrites } from "@/lib/store/run";
 import {
 	optimisticTaskFromForm,
 	optimisticTaskFromText,
 } from "@/lib/task-interaction/optimistic-task";
+import { taskWrites } from "@/lib/writes/task";
 import {
 	type TaskDomainOption,
 	type TaskFieldDefaults,
@@ -192,7 +192,7 @@ function TaskDialogForm({
 	// whole form controlled — the server still carries the real enforcement.
 	const [hasTitle, setHasTitle] = useState(Boolean(defaults?.title?.trim()));
 	const copy = COPY[mode];
-	const store = useStoreWrite("task");
+	const { submit } = useWrites();
 
 	/**
 	 * Whether the form carries anything beyond its title. Every value here is
@@ -213,7 +213,7 @@ function TaskDialogForm({
 		if (mode === "edit") {
 			if (!taskId) throw new Error("TaskDialog: edit mode needs a taskId");
 			// The edit waits for the server; the store takes the saved row.
-			return store({ type: "edit", id: taskId }, () => updateTaskAction(taskId, formData));
+			return submit(taskWrites.update(taskId, formData));
 		}
 		const title = String(formData.get("title") ?? "").trim();
 		if (quickAdd && title && titleOnlyCreate(formData)) {
@@ -224,9 +224,7 @@ function TaskDialogForm({
 			const domainId = String(formData.get("domain_id") ?? "");
 			const optimistic = optimisticTaskFromText(title, domainId, domains);
 			onCreating?.(optimistic.id);
-			const result = await store({ type: "create", task: optimistic }, () =>
-				quickAddTaskAction({ text: title, domainId }),
-			);
+			const result = await submit(taskWrites.quickAdd({ text: title, domainId }, optimistic));
 			if (!result.ok) throw new Error(result.formError ?? "Couldn't add that task.");
 			return { ok: true, data: undefined };
 		}
@@ -234,7 +232,7 @@ function TaskDialogForm({
 		// optimistic row; a confirmed one swaps it for the server's.
 		const optimistic = optimisticTaskFromForm(formData, domains, projects);
 		onCreating?.(optimistic.id);
-		return store({ type: "create", task: optimistic }, () => createTaskAction(formData));
+		return submit(taskWrites.create(formData, optimistic));
 	}
 
 	const [state, formAction, pending] = useResultAction(write, {

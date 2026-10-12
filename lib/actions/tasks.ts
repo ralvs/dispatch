@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
-import { parseDateIso } from "@/lib/dates";
+import { acceptedDay, parseDateIso } from "@/lib/dates";
 import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/invalidate";
 import { CreateTaskFormSchema, type TaskRow } from "@/lib/schemas/task";
@@ -110,10 +110,28 @@ function observedDate(value: string | null): string | null {
 }
 
 /**
+ * How many days behind the server's today a tick's day may be: a tab that
+ * slept past midnight still ticks the day it showed (docs/adr/0077).
+ */
+const TICK_DAYS_BACK = 1;
+
+/**
+ * The day the client applied the intent with, which a recurring task's next
+ * cycle is dated from. Checked against the server's today (iron rule #1).
+ */
+async function tickDay(sb: Parameters<typeof todayForRequest>[0], requested: unknown) {
+	const day = acceptedDay(requested, await todayForRequest(sb), TICK_DAYS_BACK);
+	if (day === null)
+		throw new Error(`Tick day is outside the accepted window: ${String(requested)}`);
+	return day;
+}
+
+/**
  * `observedDueDate` is the due date the clicked row was showing — the
  * precondition that keeps a replayed completion from moving a recurring task
  * forward a second cycle (docs/adr/0037). Untrusted like any client argument,
- * so it is parsed rather than trusted.
+ * so it is parsed rather than trusted. `todayIso` is the day the client
+ * applied the tick with; the next cycle is dated from it (docs/adr/0077).
  *
  * Returns the row as it stands even when the precondition rejected the write
  * (`applied: false`): the row is then already done, or has moved on, and the
@@ -125,6 +143,7 @@ export async function completeTaskAction(input: {
 	id: string;
 	observedDueDate: string | null;
 	snapshotId?: string;
+	todayIso: string;
 }): Promise<ActionResult<TaskWrite>> {
 	const { sb } = await requireOwnerPage();
 	const observed = observedDate(input.observedDueDate);
@@ -133,7 +152,7 @@ export async function completeTaskAction(input: {
 	const result = await completeTask(
 		sb,
 		id,
-		await todayForRequest(sb),
+		await tickDay(sb, input.todayIso),
 		{ dueDate: observed },
 		{ snapshotId },
 	);
@@ -151,11 +170,12 @@ export async function completeTaskAction(input: {
 export async function skipTaskAction(input: {
 	id: string;
 	observedDueDate: string | null;
+	todayIso: string;
 }): Promise<ActionResult<TaskWrite>> {
 	const { sb } = await requireOwnerPage();
 	const observed = observedDate(input.observedDueDate);
 	const id = z.uuid().parse(input.id);
-	await skipTask(sb, id, await todayForRequest(sb), { dueDate: observed });
+	await skipTask(sb, id, await tickDay(sb, input.todayIso), { dueDate: observed });
 	afterMutation("task.write");
 	return { ok: true, data: await written(sb, "task", id) };
 }

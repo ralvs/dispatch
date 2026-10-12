@@ -5,14 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import { TaskDialog } from "@/components/task-dialog";
 import type { TaskDomainOption, TaskProjectOption } from "@/components/task-fields";
 import { EmptyState, PageHeader, SectionHead, StatBand } from "@/components/ui";
-import { completeTaskAction, reopenTaskAction, setTop3Action } from "@/lib/actions/tasks";
 import { dateOfInstant, recentDoneSinceDate } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
 import { isQuiet } from "@/lib/quiet";
 import type { TaskRow } from "@/lib/services/tasks";
-import { useView, viewKey } from "@/lib/store";
+import { useView, useWrites, viewKey } from "@/lib/store";
 import type { TaskLists } from "@/lib/store/kinds/task";
-import { bindTaskHandlers, useTaskIntentRunner } from "@/lib/task-interaction/run-intent";
+import { bindTaskHandlers } from "@/lib/task-interaction/run-intent";
 import { isDueToday, isOverdue, isTop3Today, TOP3_SLOTS } from "@/lib/task-predicates";
 import { NewTaskButton } from "./new-task-button";
 import { TaskScopeFilters, type TaskStatusFilter, TaskStatusStrip, UNFILED } from "./task-filters";
@@ -76,7 +75,7 @@ export function TaskList({
 }) {
 	const quietProjects = useMemo(() => new Set(quietProjectIds), [quietProjectIds]);
 	const lists = useView(viewKey.tasks()) ?? NO_LISTS;
-	const run = useTaskIntentRunner();
+	const writes = useWrites();
 	// Unfiled open tasks — the header's link to /inbox. From the store, so
 	// filing one elsewhere moves it here too.
 	const inboxCount = lists.open.filter((t) => t.domain_id === null).length;
@@ -125,16 +124,7 @@ export function TaskList({
 	}, [status, projectId, domainId]);
 
 	function handlersFor(task: TaskRow) {
-		return bindTaskHandlers(
-			task,
-			run,
-			{
-				complete: completeTaskAction,
-				reopen: reopenTaskAction,
-				setTop3: setTop3Action,
-			},
-			{ top3DateIso: todayIso, todayIso },
-		);
+		return bindTaskHandlers(task, writes, { top3DateIso: todayIso, todayIso });
 	}
 
 	// Project/Domain AND together and apply across whichever status is showing.
