@@ -4,9 +4,8 @@ Date: 2026-10-12
 
 Memex is the knowledge engine planned inside Dispatch (map #117). It reads
 Renan's notes and done tasks (point 4) and compiles them into thoughts
-(#120, ADR-0081). It
-must learn when a source changes: a new note, an edit, a tick, an un-tick, a
-delete.
+(#120, ADR-0081). It must learn when a source changes: a new note, an edit,
+a tick, an un-tick, a delete.
 
 No single place in the app sees every change (#119). Notes and tasks are
 written by service functions, by SQL functions (`note_body_append`,
@@ -76,5 +75,6 @@ for a question about a ticked task, that is soon enough.
   trigger stays the last resort.
 - A change made and undone between two runs is never seen. That is fine:
   nothing lasting happened.
-- The first run sees every existing note and done task as new. Whether that is the
-  backfill, and how it is paced, belongs to the migration ticket (#125).
+- The first run sees every existing note and done task as new. Whether that
+  is the backfill, and how it is paced, belongs to the migration ticket
+  (#125).
