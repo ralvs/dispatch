@@ -1,5 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@/lib/supabase/types";
 import { registerEventTools } from "./tools/events";
 import { registerLinkTools } from "./tools/links";
 import { registerNoteTools } from "./tools/notes";

@@ -73,7 +73,11 @@ async function ledger(type: string) {
 		.from("notifications")
 		.select("type, source_ref, undo_payload")
 		.eq("type", type);
-	return data ?? [];
+	// undo_payload is a Json column; these tools always write { prev: {...} }.
+	return (data ?? []).map((r) => ({
+		...r,
+		undo_payload: r.undo_payload as { prev: Record<string, unknown> },
+	}));
 }
 
 describe("MCP note tools", () => {

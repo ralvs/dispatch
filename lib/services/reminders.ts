@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { shiftDay } from "@/lib/dates";
 import {
 	planReminders,
@@ -10,6 +9,7 @@ import {
 import { unwrap } from "@/lib/services/errors";
 import { recordNotificationOrThrow } from "@/lib/services/notifications";
 import { getReminderSettings } from "@/lib/services/settings";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 /**
  * Open tasks with a due_date inside the window a reminder tick could act on.

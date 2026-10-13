@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { dayWindowUtc, nowUtc } from "@/lib/dates";
 import { escapeLike } from "@/lib/like";
 import { notQuietFilter } from "@/lib/quiet";
@@ -7,6 +6,7 @@ import { TASK_SELECT, type TaskRow } from "@/lib/schemas/task";
 import { unwrap } from "@/lib/services/errors";
 import { type GraphFail, syncTaskMentionsFromText } from "@/lib/services/mentions";
 import { listQuietProjectIds } from "@/lib/services/quiet";
+import type { SupabaseClient } from "@/lib/supabase/types";
 import { nextCompleteFields } from "@/lib/task-interaction/apply-intent";
 
 export type { TaskRow } from "@/lib/schemas/task";

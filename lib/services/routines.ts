@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { nowUtc } from "@/lib/dates";
 import { ROUTINE_HISTORY_DAYS, withHistory } from "@/lib/routine-stats";
@@ -13,6 +12,7 @@ import {
 	type UpdateRoutineSchema,
 } from "@/lib/schemas/routine";
 import { unwrap } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─── Routines ───────────────────────────────────────────────────────────
 

@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { type ParserModel, parseTask } from "@/lib/ai/parser";
 import {
 	loadCaptureContext,
@@ -7,6 +6,7 @@ import {
 	taskInputFromAction,
 } from "@/lib/services/capture/resolve";
 import { createTask, type TaskRow } from "@/lib/services/tasks";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Sentence → task (docs/adr/0019 D3, 0043). Task-scoped: skips captured_data,

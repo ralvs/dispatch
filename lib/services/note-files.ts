@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import {
 	type AllowedContentType,
 	ATTACHMENT_MAX_BYTES,
@@ -15,6 +14,7 @@ import type { Attachment } from "@/lib/schemas/note";
 import { uploadAttachment, type WithStorage } from "@/lib/services/note-attachments";
 import { getNote } from "@/lib/services/notes";
 import { written } from "@/lib/services/written";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 /*
  * Taking in a note file (docs/adr/0088): the intake rule, the batch, and the

@@ -1,10 +1,11 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { type CalendarFeed, type SyncState, syncFailure } from "@/lib/calendar-health";
+import type { TablesInsert } from "@/lib/database.types";
 import { nowUtc } from "@/lib/dates";
 import { unwrap } from "@/lib/services/errors";
 import { inListLiteral } from "@/lib/services/in-list";
 import { recordNotification, resolveAlerts } from "@/lib/services/notifications";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // One calendar mirror, two source adapters (docs/adr/0086). An adapter —
@@ -177,7 +178,7 @@ async function reconcile(
 		changed.set(event.uid, event);
 	}
 
-	const upserts: Record<string, unknown>[] = [];
+	const upserts: TablesInsert<"calendar_events">[] = [];
 	for (const event of changed.values()) {
 		const fields = {
 			caldav_uid: event.uid,

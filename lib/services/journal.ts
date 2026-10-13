@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import {
 	type CreateJournalEntrySchema,
@@ -9,6 +8,7 @@ import {
 	type JournalEntryRow,
 } from "@/lib/schemas/journal";
 import { unwrap } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 export type { JournalBookRow, JournalEntryRow };
 

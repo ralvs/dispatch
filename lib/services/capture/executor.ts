@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createCaldavClient } from "@/lib/caldav/client";
 import { instantFromLocal, todayInTz } from "@/lib/dates";
 import { isCaldavConfigured } from "@/lib/env";
@@ -13,6 +12,7 @@ import { createNote } from "@/lib/services/notes";
 import { recordNotification } from "@/lib/services/notifications";
 import { createQuote } from "@/lib/services/quotes";
 import { createTask } from "@/lib/services/tasks";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Turns parsed capture actions into service calls, one at a time, each fully

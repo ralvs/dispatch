@@ -1,5 +1,7 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { inject } from "vitest";
+import type { Database } from "@/lib/database";
+import type { SupabaseClient } from "@/lib/supabase/types";
 import { OWNER_EMAIL, OWNER_PASSWORD } from "./stack";
 
 /**
@@ -14,18 +16,18 @@ const NO_PERSIST = { auth: { persistSession: false, autoRefreshToken: false } } 
 
 export function serviceClient(): SupabaseClient {
 	const stack = inject("supabase");
-	return createClient(stack.apiUrl, stack.secretKey, NO_PERSIST);
+	return createClient<Database>(stack.apiUrl, stack.secretKey, NO_PERSIST);
 }
 
 export function anonClient(): SupabaseClient {
 	const stack = inject("supabase");
-	return createClient(stack.apiUrl, stack.publishableKey, NO_PERSIST);
+	return createClient<Database>(stack.apiUrl, stack.publishableKey, NO_PERSIST);
 }
 
 /** Every request fails at the network — nothing listens on port 9. For the
  * paths that must survive a database that is down. */
 export function unreachableClient(): SupabaseClient {
-	return createClient("http://127.0.0.1:9", "unreachable", NO_PERSIST);
+	return createClient<Database>("http://127.0.0.1:9", "unreachable", NO_PERSIST);
 }
 
 let owner: Promise<SupabaseClient> | undefined;

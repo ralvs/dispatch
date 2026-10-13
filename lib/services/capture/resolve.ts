@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ParseContext } from "@/lib/ai/parser";
 import { isVerbatim } from "@/lib/ai/verbatim";
 import { nowUtc, todayInTz } from "@/lib/dates";
@@ -9,6 +8,7 @@ import { listDomains } from "@/lib/services/domains";
 import { listProjects } from "@/lib/services/projects";
 import { getAppTimezone } from "@/lib/services/settings";
 import type { createTask } from "@/lib/services/tasks";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // What both write paths need around a parse — the capture pipeline

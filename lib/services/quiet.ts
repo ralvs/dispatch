@@ -1,7 +1,7 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { quietProjectIdsOf } from "@/lib/quiet";
 import { unwrap } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 /**
  * The ids of the quiet projects (lib/quiet.ts), read from the database.

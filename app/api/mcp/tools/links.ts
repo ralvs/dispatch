@@ -1,9 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { type LinkRow, listLinks, setLinkStatus } from "@/lib/services/links";
 import { recordNotification } from "@/lib/services/notifications";
+import type { SupabaseClient } from "@/lib/supabase/types";
 import { registerTextTool, ToolError } from "../contract";
 
 // The reading list at /links, as an assistant sees it (docs/adr/0079). Saving

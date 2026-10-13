@@ -1,9 +1,9 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { nowUtc } from "@/lib/dates";
 import { recordNeedsReview } from "@/lib/services/capture/degrade";
 import { markParsed } from "@/lib/services/capture/store";
 import { unwrap } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Reconciliation sweep (docs/adr/0008). Any captured_data row stuck at

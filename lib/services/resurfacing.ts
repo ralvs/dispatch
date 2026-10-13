@@ -1,6 +1,6 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { unwrap } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─── Resurfacing skips ──────────────────────────────────────────────────
 // The Today page's "Resurfaced" card lets the owner skip past today's pick

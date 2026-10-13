@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { countOf, isRoutineDoneOn, openWorkCounts, routinesDoneOn, tally } from "@/lib/counts";
 import { formatInstant, isoWeek, shiftDay } from "@/lib/dates";
 import { buildDaySchedule, type DaySchedule, type DaySchedulePayload } from "@/lib/day-schedule";
@@ -28,6 +27,7 @@ import {
 	type RoutineRow,
 } from "@/lib/services/routines";
 import { listCompletedOn, listTasks, type TaskRow } from "@/lib/services/tasks";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 /** Today reads `open` without the quiet tasks (loadDayScheduleInputs): none is left to leave out. */
 const NO_QUIET: ReadonlySet<string> = new Set();

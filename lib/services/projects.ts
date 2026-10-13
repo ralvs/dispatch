@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { countByProject } from "@/lib/counts";
 import { nowUtc } from "@/lib/dates";
@@ -17,6 +16,7 @@ import {
 	taskProgress,
 } from "@/lib/services/projects-shared";
 import { listTasks, type TaskRow } from "@/lib/services/tasks";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─── Projects ───────────────────────────────────────────────────────────
 

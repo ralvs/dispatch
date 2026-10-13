@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { parse } from "@/lib/ai/parser";
 import type { CaptureAction } from "@/lib/schemas/capture";
 import { recordNeedsReview } from "@/lib/services/capture/degrade";
@@ -10,6 +9,7 @@ import type { JournalEntryRow } from "@/lib/services/journal";
 import type { NoteListRow } from "@/lib/services/notes";
 import type { QuoteRow } from "@/lib/services/quotes";
 import type { TaskRow } from "@/lib/services/tasks";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // The capture module (docs/adr/0008). One deep function, capture(sb, raw),

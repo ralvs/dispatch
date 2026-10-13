@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { shiftDay, todayInTz } from "@/lib/dates";
 import { ROUTINE_HISTORY_DAYS } from "@/lib/routine-stats";
 import { getDomain } from "@/lib/services/domains";
@@ -12,6 +11,7 @@ import { getAppTimezone, todayForRequest } from "@/lib/services/settings";
 import { getTask } from "@/lib/services/tasks";
 import { stampWrite } from "@/lib/store/server";
 import type { EntityMap, StoreWrite } from "@/lib/store/types";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // The one read-back (docs/adr/0077): the row a write left, as the store holds
 // it, for the client to confirm its intent from. Takes `sb` first (iron rule

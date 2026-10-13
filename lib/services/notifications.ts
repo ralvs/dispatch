@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { isPushConfigured } from "@/lib/env";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { notificationKind } from "@/lib/notification-kind";
@@ -12,6 +11,7 @@ import {
 import { unwrap, unwrapCount } from "@/lib/services/errors";
 import { sendPushToAll } from "@/lib/services/push";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Notification ledger — the sanctioned seam for iron rule #6:

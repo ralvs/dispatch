@@ -1,6 +1,8 @@
 import "server-only";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/database";
 import { env } from "@/lib/env";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 let cached: SupabaseClient | undefined;
 
@@ -17,7 +19,7 @@ export function createAdminClient(): SupabaseClient {
 		if (!e.NEXT_PUBLIC_SUPABASE_URL || !e.SUPABASE_SECRET_KEY) {
 			throw new Error("Supabase admin env vars are not configured");
 		}
-		cached = createClient(e.NEXT_PUBLIC_SUPABASE_URL, e.SUPABASE_SECRET_KEY, {
+		cached = createClient<Database>(e.NEXT_PUBLIC_SUPABASE_URL, e.SUPABASE_SECRET_KEY, {
 			auth: { persistSession: false, autoRefreshToken: false },
 		});
 	}

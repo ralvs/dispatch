@@ -1,8 +1,8 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BridgeEvent } from "@/lib/schemas/calendar";
 import { type MirrorResult, syncFeed } from "@/lib/services/calendar-mirror";
 import { ServiceError } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Mac EventKit bridge adapter (docs/adr/0018, docs/adr/0086). Replaces Google

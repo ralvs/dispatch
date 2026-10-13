@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import {
 	type CreateLinkInput,
 	LINK_SELECT,
@@ -7,6 +6,7 @@ import {
 	type LinkStatus,
 } from "@/lib/schemas/link";
 import { unwrap, unwrapCount } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // The link reading list at /links (docs/adr/0014, renamed in docs/adr/0022).

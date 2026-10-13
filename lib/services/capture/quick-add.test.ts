@@ -9,10 +9,10 @@ vi.mock("@/lib/services/settings", () => ({
 }));
 vi.mock("@/lib/services/tasks", () => ({ createTask: vi.fn(async () => ({ id: "task-1" })) }));
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { quickAddTask } from "@/lib/services/capture/quick-add";
 import { listDomains } from "@/lib/services/domains";
 import { createTask } from "@/lib/services/tasks";
+import type { SupabaseClient } from "@/lib/supabase/types";
 import { fakeParserModel } from "@/test/fakes/parser-model";
 
 beforeEach(() => {
