@@ -4,6 +4,7 @@ import {
 	createFactAction,
 	createInteractionAction,
 	deleteFactAction,
+	deleteInteractionAction,
 	deletePersonAction,
 	updatePersonAction,
 } from "./actions";
@@ -68,7 +69,9 @@ describe("personFactWrites", () => {
 	});
 
 	it("a delete names the same fact", async () => {
-		await personFactWrites.remove("p1", "f1").call(ctx);
+		const w = personFactWrites.remove("p1", "f1");
+		expect(w.intent).toEqual({ type: "delete", id: "f1" });
+		await w.call(ctx);
 		expect(deleteFactAction).toHaveBeenCalledWith("p1", "f1");
 	});
 });
@@ -87,5 +90,12 @@ describe("personInteractionWrites", () => {
 		});
 		await w.call(ctx);
 		expect(createInteractionAction).toHaveBeenCalledWith("p1", fd);
+	});
+
+	it("a delete names the same interaction", async () => {
+		const w = personInteractionWrites.remove("p1", "i1");
+		expect(w.intent).toEqual({ type: "delete", id: "i1" });
+		await w.call(ctx);
+		expect(deleteInteractionAction).toHaveBeenCalledWith("p1", "i1");
 	});
 });

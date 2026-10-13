@@ -28,12 +28,26 @@ function optimisticEntry(formData: FormData, todayIso: string): JournalEntryRow 
 	};
 }
 
+/**
+ * The form with a blank date filled with `todayIso`, so the server writes the
+ * day the list showed, not its own today (ADR-0077 item 2).
+ */
+function dated(form: FormData, todayIso: string): FormData {
+	if (String(form.get("entry_date") ?? "").trim()) return form;
+	const copy = new FormData();
+	for (const [key, value] of form) copy.append(key, value);
+	copy.set("entry_date", todayIso);
+	return copy;
+}
+
 export const journalWrites = {
-	/** `todayIso` dates an entry whose form left the date blank, as the server does. */
-	create: (form: FormData, todayIso: string): Write<"journal"> =>
-		write("journal", { type: "create", row: optimisticEntry(form, todayIso) }, () =>
-			createEntryAction(form),
-		),
+	/** `todayIso` dates an entry whose form left the date blank, on both halves. */
+	create: (form: FormData, todayIso: string): Write<"journal"> => {
+		const sent = dated(form, todayIso);
+		return write("journal", { type: "create", row: optimisticEntry(sent, todayIso) }, () =>
+			createEntryAction(sent),
+		);
+	},
 	remove: (id: string): Write<"journal"> =>
 		write("journal", { type: "delete", id }, () => deleteEntryAction(id), "Couldn't delete entry."),
 };

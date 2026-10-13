@@ -16,7 +16,7 @@ const ctx: IntentCtx = {
 };
 
 describe("journalWrites", () => {
-	it("a blank date falls back to the page's today; the form goes to the server as is", async () => {
+	it("a blank date is the page's today on both halves", async () => {
 		const fd = new FormData();
 		fd.set("transcription_text", "Dia bom");
 		fd.set("tags", "a, b,");
@@ -25,6 +25,18 @@ describe("journalWrites", () => {
 			type: "create",
 			row: { entry_date: "2026-07-15", transcription_text: "Dia bom", tags: ["a", "b"] },
 		});
+		await w.call(ctx);
+		const sent = vi.mocked(createEntryAction).mock.calls[0][0];
+		expect(sent.get("entry_date")).toBe("2026-07-15");
+		expect(sent.get("transcription_text")).toBe("Dia bom");
+		expect(fd.get("entry_date")).toBeNull();
+	});
+
+	it("a picked date goes to the server as is", async () => {
+		const fd = new FormData();
+		fd.set("entry_date", "2026-07-01");
+		const w = journalWrites.create(fd, "2026-07-15");
+		expect(w.intent).toMatchObject({ row: { entry_date: "2026-07-01" } });
 		await w.call(ctx);
 		expect(createEntryAction).toHaveBeenCalledWith(fd);
 	});
