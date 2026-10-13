@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { calendarHealth, describeFeedHealth, STALE_AFTER_MS } from "@/lib/calendar-health";
+import {
+	calendarHealth,
+	describeFeedHealth,
+	STALE_AFTER_MS,
+	syncFailure,
+} from "@/lib/calendar-health";
+
+describe("syncFailure", () => {
+	it("reads the error a failed run recorded, and null for a run that worked", () => {
+		expect(syncFailure({ error: "network down" })).toBe("network down");
+		expect(syncFailure({ error: 42 })).toBe("failed");
+		expect(syncFailure({ pulled: 1, removed: 0 })).toBeNull();
+		expect(syncFailure(null)).toBeNull();
+	});
+});
 
 const TZ = "America/Sao_Paulo";
 // Tuesday 6 Oct 2026, 15:00 in São Paulo.

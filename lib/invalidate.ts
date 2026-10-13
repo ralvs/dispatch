@@ -169,7 +169,7 @@ export const EXTERNAL_WRITES = {
 	sweep: ["capture.settled"],
 	/** Every ledger row, from any caller; the ledger module busts it (ADR-0075). */
 	ledger: ["notification.write"],
-	/** cron/caldav: calendar events only; silent by design. */
+	/** cron/caldav when rows moved: calendar events only. The mirror records failures (ADR-0086). */
 	cronCaldav: ["today.only"],
 	/** /api/calendar/bridge on success: calendar events only; quiet by design. */
 	calendarBridge: ["today.only"],

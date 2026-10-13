@@ -17,7 +17,7 @@ const ALERT_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 export function notificationKind(type: string): NotificationKind {
-	// `gcal.sync_failed`, and any `*.failed` a later writer adds.
+	// `gcal.sync_failed`, `caldav.sync_failed` (docs/adr/0086), and any `*.failed` a later writer adds.
 	if (type.endsWith("failed") || ALERT_TYPES.has(type)) return "alert";
 	return "activity";
 }

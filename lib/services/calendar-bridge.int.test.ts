@@ -1,8 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/invalidate", async (original) => ({
+	...(await original<typeof import("@/lib/invalidate")>()),
+	afterExternalMutation: vi.fn(),
+}));
+
 import type { BridgeEvent } from "@/lib/schemas/calendar";
-import { readCalendarSyncStates } from "@/lib/services/calendar";
 import { syncBridgeEvents } from "@/lib/services/calendar-bridge";
-import { ServiceError } from "@/lib/services/errors";
+import { readCalendarSyncStates } from "@/lib/services/calendar-mirror";
 import { serviceClient } from "@/test/integration/clients";
 
 // The Mac EventKit bridge ingest against the real tables (#18). It runs under
@@ -43,7 +48,7 @@ async function rows(source = "google") {
 
 describe("syncBridgeEvents against the local database", () => {
 	it("stores new events as source google and records the run", async () => {
-		expect(await sync([event()])).toEqual({ pulled: 1, removed: 0 });
+		expect(await sync([event()])).toEqual({ ok: true, pulled: 1, removed: 0 });
 
 		expect(await rows()).toMatchObject([
 			{ caldav_uid: "ek-1", calendar_name: "Work", title: "Eng sync" },
@@ -65,7 +70,7 @@ describe("syncBridgeEvents against the local database", () => {
 	it("writes nothing for an unchanged event", async () => {
 		await sync([event()]);
 
-		expect(await sync([event()])).toEqual({ pulled: 0, removed: 0 });
+		expect(await sync([event()])).toEqual({ ok: true, pulled: 0, removed: 0 });
 	});
 
 	it("stores a batch in one go, and a uid sent twice keeps its last copy", async () => {
@@ -75,7 +80,7 @@ describe("syncBridgeEvents against the local database", () => {
 			event({ uid: "ek-1", title: "Eng sync (moved)", etag: "etag-2" }),
 		];
 
-		expect(await sync(batch)).toEqual({ pulled: 2, removed: 0 });
+		expect(await sync(batch)).toEqual({ ok: true, pulled: 2, removed: 0 });
 		expect(await rows()).toMatchObject([
 			{ caldav_uid: "ek-1", title: "Eng sync (moved)" },
 			{ caldav_uid: "ek-2", title: "Planning" },
@@ -86,14 +91,14 @@ describe("syncBridgeEvents against the local database", () => {
 		await sync([event()]);
 
 		const batch = [event({ title: "Eng sync (moved)", etag: "etag-2" }), event()];
-		expect(await sync(batch)).toEqual({ pulled: 0, removed: 0 });
+		expect(await sync(batch)).toEqual({ ok: true, pulled: 0, removed: 0 });
 		expect(await rows()).toMatchObject([{ caldav_uid: "ek-1", title: "Eng sync" }]);
 	});
 
 	it("rewrites calendar_name when the Apple calendar is renamed", async () => {
 		await sync([event({ calendar_name: "renan.alves@engine.com" })]);
 
-		expect((await sync([event({ calendar_name: "Engine" })])).pulled).toBe(1);
+		expect(await sync([event({ calendar_name: "Engine" })])).toMatchObject({ pulled: 1 });
 		expect(await rows()).toMatchObject([{ caldav_uid: "ek-1", calendar_name: "Engine" }]);
 	});
 
@@ -114,7 +119,7 @@ describe("syncBridgeEvents against the local database", () => {
 			},
 		);
 
-		expect(await sync([event()])).toEqual({ pulled: 0, removed: 1 });
+		expect(await sync([event()])).toEqual({ ok: true, pulled: 0, removed: 1 });
 		expect((await rows()).map((r) => r.caldav_uid)).toEqual(["ek-1", "ek-old"]);
 	});
 
@@ -130,7 +135,7 @@ describe("syncBridgeEvents against the local database", () => {
 		});
 		if (error) throw error;
 
-		expect(await sync([])).toEqual({ pulled: 0, removed: 1 });
+		expect(await sync([])).toEqual({ ok: true, pulled: 0, removed: 1 });
 		expect(await rows()).toEqual([]);
 		expect(await rows("caldav")).toHaveLength(1);
 	});
@@ -144,17 +149,25 @@ describe("syncBridgeEvents against the local database", () => {
 					end_at: "2026-08-01T16:00:00.000Z",
 				}),
 			]),
-		).toEqual({ pulled: 0, removed: 0 });
+		).toEqual({ ok: true, pulled: 0, removed: 0 });
 		expect(await rows()).toEqual([]);
 	});
 
-	it("rejects an inverted window before writing", async () => {
-		await expect(
-			sync([event()], {
+	it("records an inverted window as a failed sync, writing no events", async () => {
+		expect(
+			await sync([event()], {
 				windowStart: "2026-07-28T00:00:00.000Z",
 				windowEnd: "2026-07-14T00:00:00.000Z",
 			}),
-		).rejects.toBeInstanceOf(ServiceError);
+		).toEqual({ ok: false, error: "Invalid bridge window" });
 		expect(await rows()).toEqual([]);
+		const { work } = await readCalendarSyncStates(serviceClient());
+		expect(work?.last_result).toEqual({ error: "Invalid bridge window", via: "eventkit_bridge" });
+		const { data, error } = await serviceClient()
+			.from("notifications")
+			.select("type, status")
+			.eq("type", "gcal.sync_failed");
+		if (error) throw error;
+		expect(data).toEqual([{ type: "gcal.sync_failed", status: "unread" }]);
 	});
 });

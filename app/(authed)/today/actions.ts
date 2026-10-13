@@ -10,7 +10,8 @@ import { calendarHealth, type FeedHealth } from "@/lib/calendar-health";
 import { parseDateIso } from "@/lib/dates";
 import { isCaldavConfigured } from "@/lib/env";
 import { afterMutation } from "@/lib/invalidate";
-import { getEvent, readCalendarSyncStates, syncCalendar } from "@/lib/services/calendar";
+import { getEvent, syncCalendar } from "@/lib/services/calendar";
+import { readCalendarSyncStates } from "@/lib/services/calendar-mirror";
 import { ServiceError } from "@/lib/services/errors";
 import { createManualLink } from "@/lib/services/note-links";
 import { createNote } from "@/lib/services/notes";
@@ -113,17 +114,17 @@ export async function createMeetingNoteForEventAction(eventId: string) {
  *
  * Service client, as the cron uses: caldav_sync_state is RLS-on with no
  * policy. The owner check above it is the boundary (iron rule #2). A failed
- * run leaves the sync state as it was; the cron records its own failures.
+ * run is recorded like the cron's: the mirror writes `{ error }` to the sync
+ * state and announces the outage once (docs/adr/0086).
  */
 export async function syncIcloudCalendarAction(): Promise<ActionResult<FeedHealth[]>> {
 	await requireOwnerPage();
 	if (!isCaldavConfigured()) return { ok: false, formError: "The iCloud calendar is not set up." };
 
 	const admin = createAdminClient();
-	try {
-		await syncCalendar(admin, await createCaldavClient());
-	} catch (error) {
-		console.error("[today] iCloud sync failed", error);
+	const result = await syncCalendar(admin, createCaldavClient);
+	if (!result.ok) {
+		console.error("[today] iCloud sync failed", result.error);
 		return { ok: false, formError: "Couldn't sync the iCloud calendar." };
 	}
 	afterMutation("today.only");

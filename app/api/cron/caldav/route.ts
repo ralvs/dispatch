@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createCaldavClient } from "@/lib/caldav/client";
-import { nowUtc } from "@/lib/dates";
 import { env, isCaldavConfigured, isSupabaseConfigured } from "@/lib/env";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { isAuthorized } from "@/lib/secret-auth";
@@ -9,9 +8,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // ─────────────────────────────────────────────────────────────────────────
 // iCloud CalDAV sync cron (docs/adr/0006) — invoked by cron-job.org behind
-// CRON_SECRET. Pulls ±21 days from every calendar on the account and reports
-// pulled/removed counts. Silent on both success and failure — the sync
-// state is durable in caldav_sync_state; nothing here writes a ledger row.
+// CRON_SECRET. Pulls ±21 days from every calendar on the account. The
+// calendar mirror writes caldav_sync_state and announces an outage once
+// (docs/adr/0086); this route only turns its result into a response.
 // ─────────────────────────────────────────────────────────────────────────
 
 async function runCaldavSync(request: Request) {
@@ -25,35 +24,14 @@ async function runCaldavSync(request: Request) {
 		return NextResponse.json({ error: "not_configured" }, { status: 503 });
 	}
 
-	const sb = createAdminClient();
+	const result = await syncCalendar(createAdminClient(), createCaldavClient);
+	if (!result.ok) return NextResponse.json({ error: "sync_failed" }, { status: 502 });
 
-	try {
-		const conn = await createCaldavClient();
-		const result = await syncCalendar(sb, conn);
+	// Only when rows actually moved — a quiet tick every few minutes must
+	// not throw away a warm cache for nothing.
+	if (result.pulled > 0 || result.removed > 0) afterExternalMutation(...EXTERNAL_WRITES.cronCaldav);
 
-		// Only when rows actually moved — a quiet tick every few minutes must
-		// not throw away a warm cache for nothing.
-		if (result.pulled > 0 || result.removed > 0)
-			afterExternalMutation(...EXTERNAL_WRITES.cronCaldav);
-
-		return NextResponse.json(result);
-	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err);
-		// Best-effort: still record the failed state on the singleton so the
-		// next successful run (and any future status UI) can see it happened.
-		await sb
-			.from("caldav_sync_state")
-			.upsert(
-				{ id: true, last_synced_at: nowUtc(), last_result: { error: message } },
-				{ onConflict: "id" },
-			)
-			.then(
-				() => {},
-				() => {},
-			);
-
-		return NextResponse.json({ error: "sync_failed" }, { status: 502 });
-	}
+	return NextResponse.json({ pulled: result.pulled, removed: result.removed });
 }
 
 // cron-job.org defaults to GET; POST kept for manual/scripted invocation.
