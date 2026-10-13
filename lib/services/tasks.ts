@@ -3,7 +3,7 @@ import type { Database } from "@/lib/database";
 import { dayWindowUtc, nowUtc } from "@/lib/dates";
 import { escapeLike } from "@/lib/like";
 import { notQuietFilter } from "@/lib/quiet";
-import { TASK_SELECT, type TaskRow } from "@/lib/schemas/task";
+import { TASK_HOT_SELECT, TASK_SELECT, type TaskHotRow, type TaskRow } from "@/lib/schemas/task";
 import { unwrap } from "@/lib/services/errors";
 import { type GraphFail, syncTaskMentionsFromText } from "@/lib/services/mentions";
 import { listQuietProjectIds } from "@/lib/services/quiet";
@@ -11,16 +11,6 @@ import type { SupabaseClient } from "@/lib/supabase/types";
 import { nextCompleteFields } from "@/lib/task-interaction/apply-intent";
 
 export type { TaskRow } from "@/lib/schemas/task";
-
-// supabase-js types FK joins as arrays; flatten to single objects.
-// biome-ignore lint/suspicious/noExplicitAny: PostgREST row shape normalized here once
-function flatten(row: any): TaskRow {
-	return {
-		...row,
-		domain: Array.isArray(row.domain) ? (row.domain[0] ?? null) : row.domain,
-		project: Array.isArray(row.project) ? (row.project[0] ?? null) : row.project,
-	};
-}
 
 export async function listTasks(
 	sb: SupabaseClient,
@@ -61,7 +51,7 @@ export async function listTasks(
 		if (keep) q = q.or(keep);
 	}
 	const data = unwrap(await q);
-	return (data ?? []).map(flatten);
+	return data ?? [];
 }
 
 /**
@@ -99,7 +89,7 @@ export async function listCompletedOn(
 			.lt("completed_at", endUtc)
 			.order("completed_at", { ascending: true }),
 	);
-	return (data ?? []).map(flatten);
+	return data ?? [];
 }
 
 /** Recently completed tasks only — Tasks page strip, not full history. */
@@ -112,7 +102,7 @@ export async function listRecentDone(sb: SupabaseClient, sinceUtc: string): Prom
 			.gte("completed_at", sinceUtc)
 			.order("completed_at", { ascending: false, nullsFirst: false }),
 	);
-	return (data ?? []).map(flatten);
+	return data ?? [];
 }
 
 /**
@@ -142,7 +132,7 @@ export async function lastCompletedByDomain(sb: SupabaseClient): Promise<Record<
 
 export async function getTask(sb: SupabaseClient, id: string): Promise<TaskRow | null> {
 	const data = unwrap(await sb.from("tasks").select(TASK_SELECT).eq("id", id).maybeSingle());
-	return data ? flatten(data) : null;
+	return data ?? null;
 }
 
 export type TaskSearchResult = {
@@ -167,28 +157,12 @@ export async function searchTasksByTitle(
 			.order("created_at", { ascending: false })
 			.limit(limit),
 	);
-	return (data ?? []) as unknown as TaskSearchResult[];
+	return data ?? [];
 }
-
-/**
- * Columns completeTask and skipTask need — no joined domain/project on the
- * hot path. The next cycle comes from the rule, the due date and the intended
- * day; the text is for the snapshot's mentions. The database copies the rest.
- */
-type TaskHotRow = {
-	id: string;
-	title: string;
-	notes: string | null;
-	recurrence_rule: string | null;
-	recurrence_day: number | null;
-	due_date: string | null;
-};
-
-const TASK_HOT_SELECT = "id, title, notes, recurrence_rule, recurrence_day, due_date";
 
 async function getTaskHot(sb: SupabaseClient, id: string): Promise<TaskHotRow | null> {
 	const data = unwrap(await sb.from("tasks").select(TASK_HOT_SELECT).eq("id", id).maybeSingle());
-	return (data as TaskHotRow | null) ?? null;
+	return data ?? null;
 }
 
 export type TaskWriteOpts = {
@@ -236,7 +210,7 @@ export async function createTask(
 			.select(TASK_SELECT)
 			.single(),
 	);
-	const task = flatten(data);
+	const task = data;
 	// Text write owns the person graph — callers must not post-sync.
 	await syncTaskMentionsFromText(sb, task.id, input.title, input.notes ?? null, {
 		fail: opts.graphFail ?? "throw",
@@ -344,7 +318,7 @@ export async function completeTask(
 				p_next_recurrence_day: next.spawn.recurrence_day,
 				p_snapshot_id: opts.snapshotId ?? null,
 			}),
-		) as string | null;
+		);
 		if (!snapshotId) return { applied: false, nextDue: null, snapshot: null };
 		// Mentions come from the text the snapshot saved, which the function
 		// read under its lock. A lost mention re-derives on the next edit, and
@@ -398,7 +372,7 @@ export async function skipTask(
 			p_next_due: next.due_date,
 			p_next_recurrence_day: next.recurrence_day,
 		}),
-	) as string | null;
+	);
 	return moved ? { applied: true, nextDue: next.due_date } : { applied: false, nextDue: null };
 }
 

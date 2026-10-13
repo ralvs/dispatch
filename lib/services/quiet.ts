@@ -13,9 +13,6 @@ import type { SupabaseClient } from "@/lib/supabase/types";
  * exactly the set that must never go quiet.
  */
 export async function listQuietProjectIds(sb: SupabaseClient): Promise<Set<string>> {
-	const data = unwrap(await sb.from("projects").select("id, status")) as Array<{
-		id: string;
-		status: string;
-	}> | null;
+	const data = unwrap(await sb.from("projects").select("id, status"));
 	return new Set(quietProjectIdsOf(data ?? []));
 }

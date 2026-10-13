@@ -109,8 +109,8 @@ async function recents(sb: SupabaseClient): Promise<FindResult> {
 	return {
 		query: "",
 		recents: true,
-		tasks: ((taskRows ?? []) as TaskRow[]).map((row) => toTaskHit(row, "", true)),
-		notes: ((noteRows ?? []) as NoteRow[]).map((row) => toNoteHit(row, "", true)),
+		tasks: (taskRows ?? []).map((row) => toTaskHit(row, "", true)),
+		notes: (noteRows ?? []).map((row) => toNoteHit(row, "", true)),
 	};
 }
 
@@ -142,14 +142,14 @@ export async function find(sb: SupabaseClient, raw: string): Promise<FindResult>
 		),
 	]);
 
-	const tasks = ((taskRows ?? []) as TaskRow[])
+	const tasks = (taskRows ?? [])
 		.map((row) => ({ row, score: taskScore({ ...row, query }) }))
 		.filter((item) => item.score > 0)
 		.sort((a, b) => b.score - a.score || b.row.created_at.localeCompare(a.row.created_at))
 		.slice(0, FIND_GROUP_CAP)
 		.map((item) => toTaskHit(item.row, query, false));
 
-	const notes = ((noteRows ?? []) as NoteRow[])
+	const notes = (noteRows ?? [])
 		.map((row) => ({
 			row,
 			score: noteScore({

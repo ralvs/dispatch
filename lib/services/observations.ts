@@ -2,7 +2,6 @@ import "server-only";
 import { countOf, openWorkCounts, tally } from "@/lib/counts";
 import { calendarDaysBetween, dateOfInstant, todayInTz } from "@/lib/dates";
 import type { DomainItem, DomainRow, DomainTouch } from "@/lib/schemas/domain";
-import type { TaskRow } from "@/lib/schemas/task";
 import { cadenceThresholdDays, listDomains } from "@/lib/services/domains";
 import { unwrap } from "@/lib/services/errors";
 import { listQuietProjectIds } from "@/lib/services/quiet";
@@ -160,21 +159,9 @@ export async function listDomainTouchesOn(
 				.from("tasks")
 				.select("domain_id, status, completed_at, due_date, project_id")
 				.range(0, 49_999),
-		) as Array<{
-			domain_id: string | null;
-			status: TaskRow["status"];
-			completed_at: string | null;
-			due_date: string | null;
-			project_id: string | null;
-		}> | null,
-		unwrap(await sb.from("projects").select("domain_id, updated_at").range(0, 49_999)) as Array<{
-			domain_id: string;
-			updated_at: string | null;
-		}> | null,
-		unwrap(await sb.from("notes").select("domain_id, updated_at").range(0, 49_999)) as Array<{
-			domain_id: string | null;
-			updated_at: string | null;
-		}> | null,
+		),
+		unwrap(await sb.from("projects").select("domain_id, updated_at").range(0, 49_999)),
+		unwrap(await sb.from("notes").select("domain_id, updated_at").range(0, 49_999)),
 		listQuietProjectIds(sb),
 	]);
 
@@ -217,7 +204,7 @@ async function openNeglectDomainIds(sb: SupabaseClient): Promise<Set<string>> {
 			.select("domain_id")
 			.eq("type", NEGLECT_OBSERVATION_TYPE)
 			.is("dismissed_at", null),
-	) as Array<{ domain_id: string | null }> | null;
+	);
 	return new Set((rows ?? []).flatMap((r) => (r.domain_id === null ? [] : [r.domain_id])));
 }
 

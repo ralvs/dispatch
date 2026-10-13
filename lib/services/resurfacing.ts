@@ -18,7 +18,7 @@ export async function listSkippedToday(sb: SupabaseClient, todayIso: string): Pr
 			.eq("surfaced_on", todayIso)
 			.eq("user_response", "dismissed"),
 	);
-	return ((data ?? []) as Array<{ item_id: string }>).map((r) => r.item_id);
+	return (data ?? []).map((r) => r.item_id);
 }
 
 /** Record a "Next →" skip. Re-skipping the same quote on the same day is a no-op. */

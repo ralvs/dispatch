@@ -1,6 +1,8 @@
 import { z } from "zod";
+import type { Selected } from "@/lib/database";
 import { formDecoder } from "@/lib/form-decode";
 import { ColorSlugSchema } from "@/lib/schemas/color";
+import type { PartialBy } from "@/lib/schemas/task";
 
 export const ProjectStatusSchema = z.enum(["active", "paused", "done", "archived"]);
 // `type` (client/internal/content) and `kind` (project/area) are gone: both
@@ -58,36 +60,9 @@ export type UpdateProjectInput = z.output<typeof UpdateProjectSchema>;
 
 // ─── Row shape actually returned by the projects service ───────────────
 //
-// Mirrors exactly the columns PROJECT_SELECT reads
-// (lib/services/projects.ts). PROJECT_SELECT is derived from this schema's
-// keys, so a field added here automatically flows into the query — keep the
-// domain join listed last, since it maps to PostgREST embedded-resource
-// syntax rather than a plain column name (cf. TaskRowSchema/TASK_SELECT).
-export const ProjectRowSchema = z.object({
-	id: z.string().uuid(),
-	name: z.string(),
-	description: z.string().nullable(),
-	domain_id: z.string().uuid(),
-	status: ProjectStatusSchema,
-	start_date: z.string().nullable(),
-	target_date: z.string().nullable(),
-	completed_at: z.string().nullable(),
-	color: z.string().nullable(),
-	created_at: z.string(),
-	updated_at: z.string(),
-	domain: z
-		.object({ id: z.string().uuid(), name: z.string(), color: z.string().nullable() })
-		.optional(),
-});
-export type ProjectRow = z.infer<typeof ProjectRowSchema>;
-
-// Plain columns select as-is; the domain relation needs PostgREST's
-// embedded-resource syntax. Keep this map in sync with any relation added
-// to ProjectRowSchema.
-const PROJECT_JOIN_SELECTS: Record<string, string> = {
-	domain: "domain:stewardship_domains(id, name, color)",
-};
-
-export const PROJECT_SELECT = Object.keys(ProjectRowSchema.shape)
-	.map((key) => PROJECT_JOIN_SELECTS[key] ?? key)
-	.join(", ");
+// The select is the source of truth: ProjectRow is inferred from it against
+// the generated database types (cf. TASK_SELECT).
+export const PROJECT_SELECT =
+	"id, name, description, domain_id, status, start_date, target_date, completed_at, color, created_at, updated_at, domain:stewardship_domains(id, name, color)" as const;
+/** The domain embed is optional: an optimistic row built client-side may lack it. */
+export type ProjectRow = PartialBy<Selected<"projects", typeof PROJECT_SELECT>, "domain">;

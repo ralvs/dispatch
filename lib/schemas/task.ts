@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Selected } from "@/lib/database";
 import { formDecoder } from "@/lib/form-decode";
 import { isRecurrenceRule } from "@/lib/recurrence";
 
@@ -142,44 +143,25 @@ export function taskFormFields(parsed: z.output<typeof CreateTaskFormSchema>): T
 
 // ─── Row shape actually returned by the tasks service ──────────────────
 //
-// Mirrors exactly the columns TASK_SELECT reads (lib/services/tasks.ts).
-// TASK_SELECT is derived from this schema's keys, so a field added here
-// automatically flows into the query — keep the two joins (domain/project)
-// listed last, since they map to PostgREST embedded-resource syntax rather
-// than a plain column name.
-export const TaskRowSchema = z.object({
-	id: z.string().uuid(),
-	title: z.string(),
-	notes: z.string().nullable(),
-	status: TaskStatusSchema,
-	due_date: z.string().nullable(),
-	due_time: z.string().nullable(),
-	priority: z.number(),
-	project_id: z.string().uuid().nullable(),
-	domain_id: z.string().uuid().nullable(),
-	recurrence_rule: z.string().nullable(),
-	recurrence_day: z.number().nullable(),
-	// On a done snapshot, the recurring task it was ticked from (docs/adr/0083).
-	series_id: z.string().uuid().nullable(),
-	top3_for_date: z.string().nullable(),
-	source: z.string(),
-	created_at: z.string(),
-	completed_at: z.string().nullable(),
-	domain: z
-		.object({ id: z.string().uuid(), name: z.string(), color: z.string().nullable() })
-		.nullable()
-		.optional(),
-	project: z.object({ id: z.string().uuid(), name: z.string() }).nullable().optional(),
-});
-export type TaskRow = z.infer<typeof TaskRowSchema>;
+// The select is the source of truth: TaskRow is inferred from it against the
+// generated database types, so a column added here flows into the row type.
+export const TASK_SELECT =
+	"id, title, notes, status, due_date, due_time, priority, project_id, domain_id, recurrence_rule, recurrence_day, series_id, top3_for_date, source, created_at, completed_at, domain:stewardship_domains(id, name, color), project:projects(id, name)" as const;
+/**
+ * A task row as the store and the UI hold it. The embeds are optional because
+ * rows built client-side (optimistic writes) may not carry them; every row the
+ * service returns does.
+ */
+export type TaskRow = PartialBy<Selected<"tasks", typeof TASK_SELECT>, "domain" | "project">;
 
-// Plain columns select as-is; joins need PostgREST's embedded-resource
-// syntax. Keep this map in sync with any relation added to TaskRowSchema.
-const TASK_JOIN_SELECTS: Record<string, string> = {
-	domain: "domain:stewardship_domains(id, name, color)",
-	project: "project:projects(id, name)",
-};
+/**
+ * Columns completeTask and skipTask need — no joined domain/project on the
+ * hot path. The next cycle comes from the rule, the due date and the intended
+ * day; the text is for the snapshot's mentions. The database copies the rest.
+ */
+export const TASK_HOT_SELECT =
+	"id, title, notes, recurrence_rule, recurrence_day, due_date" as const;
+export type TaskHotRow = Selected<"tasks", typeof TASK_HOT_SELECT>;
 
-export const TASK_SELECT = Object.keys(TaskRowSchema.shape)
-	.map((key) => TASK_JOIN_SELECTS[key] ?? key)
-	.join(", ");
+/** `T` with the keys `K` made optional. */
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;

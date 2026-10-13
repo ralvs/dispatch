@@ -32,12 +32,12 @@ export async function listProjects(
 	let q = sb.from("projects").select(PROJECT_SELECT).order("name", { ascending: true });
 	if (filters.status) q = q.eq("status", filters.status);
 	const data = unwrap(await q);
-	return (data ?? []) as unknown as ProjectRow[];
+	return data ?? [];
 }
 
 export async function getProject(sb: SupabaseClient, id: string): Promise<ProjectRow | null> {
 	const data = unwrap(await sb.from("projects").select(PROJECT_SELECT).eq("id", id).maybeSingle());
-	return (data as unknown as ProjectRow | null) ?? null;
+	return data ?? null;
 }
 
 export async function createProject(
@@ -45,7 +45,7 @@ export async function createProject(
 	input: CreateProjectInput,
 ): Promise<ProjectRow> {
 	const data = unwrap(await sb.from("projects").insert(input).select(PROJECT_SELECT).single());
-	return data as unknown as ProjectRow;
+	return data;
 }
 
 export async function updateProject(
@@ -87,7 +87,7 @@ export async function countTasksByProject(
 ): Promise<Record<string, ProjectTaskCounts>> {
 	const data = unwrap(
 		await sb.from("tasks").select("project_id, status").not("project_id", "is", null),
-	) as Array<Pick<TaskRow, "project_id" | "status">> | null;
+	);
 	return countByProject(data ?? []);
 }
 

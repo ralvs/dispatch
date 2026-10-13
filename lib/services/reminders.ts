@@ -21,7 +21,7 @@ import type { SupabaseClient } from "@/lib/supabase/types";
  * offset up to REMINDER_CHOICES' max (1 day) plus scheduling slop.
  *
  * Hand-written select (like getTaskHot in lib/services/tasks.ts), not
- * TASK_SELECT — this must not widen TaskRowSchema for a cron-only read.
+ * TASK_SELECT — this must not widen TASK_SELECT for a cron-only read.
  */
 export async function listReminderCandidates(
 	sb: SupabaseClient,
@@ -35,7 +35,7 @@ export async function listReminderCandidates(
 			.gte("due_date", shiftDay(todayIso, -1))
 			.lte("due_date", shiftDay(todayIso, 3)),
 	);
-	return (data ?? []) as unknown as ReminderCandidate[];
+	return data ?? [];
 }
 
 export async function markRemindersSent(
