@@ -137,12 +137,13 @@ async function reconcile(
 	// recurring event's start advances as the window slides, etag doesn't)
 	// skip their write. Keeps `pulled` meaning "new or changed". A row whose
 	// `recurring` is still null is rewritten once, to learn it.
-	const existingRows = (unwrap(
-		await sb
-			.from("calendar_events")
-			.select("id, source, caldav_uid, caldav_etag, start_at, calendar_name, recurring")
-			.in("source", [...spec.sources]),
-	) ?? []) as KnownRow[];
+	const existingRows: KnownRow[] =
+		unwrap(
+			await sb
+				.from("calendar_events")
+				.select("id, source, caldav_uid, caldav_etag, start_at, calendar_name, recurring")
+				.in("source", [...spec.sources]),
+		) ?? [];
 	// An event Dispatch created comes back under the same UID. Its
 	// `created_here` row is the one row for it, so a non-primary source wins
 	// the UID: the sync updates it in place instead of adding a twin.
@@ -226,7 +227,7 @@ async function reconcile(
 		if (snap.calendars !== "all") query = query.in("calendar_name", [...snap.calendars]);
 		if (seen.size > 0) query = query.not("caldav_uid", "in", inListLiteral(seen));
 		const deleted = unwrap(await query.select("id"));
-		removed = ((deleted as unknown[] | null) ?? []).length;
+		removed = (deleted ?? []).length;
 	}
 
 	if (spec.sources.length > 1) await dropTwins(sb, spec);
@@ -283,9 +284,9 @@ async function recordFailure(
 ): Promise<void> {
 	let alreadyAnnounced = false;
 	try {
-		const prior = unwrap(
+		const prior: SyncState | null = unwrap(
 			await sb.from(spec.stateTable).select("last_synced_at, last_result").maybeSingle(),
-		) as SyncState | null;
+		);
 		alreadyAnnounced =
 			prior !== null &&
 			syncFailure(prior.last_result) !== null &&
@@ -337,7 +338,7 @@ export async function readCalendarSyncStates(
 		sb.from("caldav_sync_state").select("last_synced_at, last_result").maybeSingle(),
 	]);
 	return {
-		work: (unwrap(work) ?? null) as SyncState | null,
-		icloud: (unwrap(icloud) ?? null) as SyncState | null,
+		work: unwrap(work) ?? null,
+		icloud: unwrap(icloud) ?? null,
 	};
 }

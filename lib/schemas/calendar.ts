@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Selected } from "@/lib/database";
 
 // Calendar events — iCloud CalDAV (ADR-0006), Mac EventKit bridge for work
 // Google calendars (ADR-0018, source='google'), or created here.
@@ -38,20 +39,8 @@ export type BridgeSyncBody = z.infer<typeof BridgeSyncBodySchema>;
 
 // ─── Row shape actually returned by the calendar service ────────────────
 //
-// Mirrors exactly the columns EVENT_SELECT reads (lib/services/calendar.ts).
-// EVENT_SELECT is derived from this schema's keys. No joins for this entity.
-export const CalendarEventRowSchema = z.object({
-	id: z.string().uuid(),
-	title: z.string(),
-	description: z.string().nullable(),
-	start_at: z.string(),
-	end_at: z.string(),
-	all_day: z.boolean(),
-	location: z.string().nullable(),
-	calendar_name: z.string().nullable(),
-	attendees: z.array(z.string()),
-	source: CalendarEventSourceSchema,
-});
-export type CalendarEventRow = z.infer<typeof CalendarEventRowSchema>;
-
-export const EVENT_SELECT = Object.keys(CalendarEventRowSchema.shape).join(", ");
+// The columns the calendar service reads (lib/services/calendar.ts). The row
+// type is inferred from this literal select. No joins for this entity.
+export const EVENT_SELECT =
+	"id, title, description, start_at, end_at, all_day, location, calendar_name, attendees, source" as const;
+export type CalendarEventRow = Selected<"calendar_events", typeof EVENT_SELECT>;
