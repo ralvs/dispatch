@@ -36,12 +36,12 @@ export async function listQuotes(
 	let q = sb.from("quotes").select(QUOTE_SELECT).order("created_at", { ascending: false });
 	if (filters.tag) q = q.contains("tags", [filters.tag]);
 	const data = unwrap(await q);
-	return (data ?? []) as unknown as QuoteRow[];
+	return data ?? [];
 }
 
 export async function getQuote(sb: SupabaseClient, id: string): Promise<QuoteRow | null> {
 	const data = unwrap(await sb.from("quotes").select(QUOTE_SELECT).eq("id", id).maybeSingle());
-	return (data as unknown as QuoteRow | null) ?? null;
+	return data ?? null;
 }
 
 /** Create a quote. Text is stored verbatim in whatever language it arrived in. */
@@ -56,7 +56,7 @@ export async function createQuote(sb: SupabaseClient, input: CreateQuoteInput): 
 			.select(QUOTE_SELECT)
 			.single(),
 	);
-	return data as unknown as QuoteRow;
+	return data;
 }
 
 export async function updateQuote(
@@ -84,7 +84,7 @@ export async function listAnnotations(
 			.eq("quote_id", quoteId)
 			.order("annotated_at", { ascending: false }),
 	);
-	return (data ?? []) as unknown as QuoteAnnotationRow[];
+	return data ?? [];
 }
 
 export async function createAnnotation(
@@ -99,7 +99,7 @@ export async function createAnnotation(
 	const data = unwrap(
 		await sb.from("quote_annotations").insert(input).select(QUOTE_ANNOTATION_SELECT).single(),
 	);
-	return data as unknown as QuoteAnnotationRow;
+	return data;
 }
 
 export async function updateAnnotation(

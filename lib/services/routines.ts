@@ -32,12 +32,12 @@ export async function listRoutines(
 		.order("position", { ascending: true });
 	if (!filters.includeArchived) q = q.is("archived_at", null);
 	const data = unwrap(await q);
-	return (data ?? []) as unknown as RoutineRow[];
+	return data ?? [];
 }
 
 export async function getRoutine(sb: SupabaseClient, id: string): Promise<RoutineRow | null> {
 	const data = unwrap(await sb.from("routines").select(ROUTINE_SELECT).eq("id", id).maybeSingle());
-	return (data as unknown as RoutineRow | null) ?? null;
+	return data ?? null;
 }
 
 /**
@@ -61,7 +61,7 @@ export async function createRoutine(
 	input: CreateRoutineInput,
 ): Promise<RoutineRow> {
 	const data = unwrap(await sb.from("routines").insert(input).select(ROUTINE_SELECT).single());
-	return data as unknown as RoutineRow;
+	return data;
 }
 
 export async function updateRoutine(
@@ -104,7 +104,7 @@ export async function listCompletions(
 		.order("completed_date", { ascending: true });
 	if (sinceIso) q = q.gte("completed_date", sinceIso);
 	const data = unwrap(await q);
-	return (data ?? []) as unknown as CompletionRow[];
+	return data ?? [];
 }
 
 /**
@@ -133,7 +133,7 @@ export async function listCompletionsForRoutines(
 	q = q.order("completed_date", { ascending: false });
 	const data = unwrap(await q);
 	const byRoutine: Record<string, CompletionRow[]> = {};
-	for (const row of ((data ?? []) as unknown as CompletionRow[]).reverse()) {
+	for (const row of (data ?? []).reverse()) {
 		if (!byRoutine[row.routine_id]) byRoutine[row.routine_id] = [];
 		byRoutine[row.routine_id].push(row);
 	}
@@ -156,7 +156,7 @@ export async function listCompletionsSince(
 			.gte("completed_date", sinceIso)
 			.order("completed_date", { ascending: false }),
 	);
-	return ((data ?? []) as unknown as CompletionRow[]).reverse();
+	return (data ?? []).reverse();
 }
 
 /**

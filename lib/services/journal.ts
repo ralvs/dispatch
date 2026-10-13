@@ -28,14 +28,14 @@ export async function listEntries(
 	if (filters.tag) q = q.contains("tags", [filters.tag]);
 	if (filters.bookId) q = q.eq("book_id", filters.bookId);
 	const data = unwrap(await q);
-	return (data ?? []) as unknown as JournalEntryRow[];
+	return data ?? [];
 }
 
 export async function getEntry(sb: SupabaseClient, id: string): Promise<JournalEntryRow | null> {
 	const data = unwrap(
 		await sb.from("journal_entries").select(JOURNAL_ENTRY_SELECT).eq("id", id).maybeSingle(),
 	);
-	return (data as unknown as JournalEntryRow | null) ?? null;
+	return data ?? null;
 }
 
 /** Create a text journal entry. Text is stored verbatim in whatever language it arrived in. */
@@ -53,7 +53,7 @@ export async function createEntry(
 			.select(JOURNAL_ENTRY_SELECT)
 			.single(),
 	);
-	return data as unknown as JournalEntryRow;
+	return data;
 }
 
 export async function updateEntry(
@@ -77,5 +77,5 @@ export async function listBooks(sb: SupabaseClient): Promise<JournalBookRow[]> {
 			.select(JOURNAL_BOOK_SELECT)
 			.order("book_number", { ascending: false }),
 	);
-	return (data ?? []) as unknown as JournalBookRow[];
+	return data ?? [];
 }
