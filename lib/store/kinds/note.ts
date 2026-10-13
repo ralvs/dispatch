@@ -173,3 +173,38 @@ export const noteListsView: ViewAdapter<"noteLists"> = {
 		return ordered(moved.length > 0 ? place(lists, moved) : lists);
 	},
 };
+
+/** Each row through `fn`; the same array when nothing changed. Undefined drops the row. */
+function mapRows(
+	view: NoteListRow[],
+	fn: (row: NoteListRow) => NoteListRow | undefined,
+): NoteListRow[] {
+	let changed = false;
+	const out: NoteListRow[] = [];
+	for (const row of view) {
+		const next = fn(row);
+		if (next !== row) changed = true;
+		if (next !== undefined) out.push(next);
+	}
+	return changed ? out : view;
+}
+
+/** A note opened by its URL: a list of one, so no new row joins it. */
+export const openNoteView: ViewAdapter<"openNote"> = {
+	kind: "note",
+	fromSeed: (data) => ({ base: data, params: undefined }),
+	rowsOf: (view) => view,
+	// A create is another note: applyNoteIntent leaves this row as it is.
+	reduce: (view, intent, ctx) => mapRows(view, (row) => applyNoteIntent(row, intent, ctx.nowIso)),
+	upsert: (view, rows) => {
+		const byId = new Map(rows.map((r) => [r.id, r]));
+		return mapRows(view, (row) => byId.get(row.id) ?? row);
+	},
+	remove: (view, ids) => mapRows(view, (row) => (ids.has(row.id) ? undefined : row)),
+	patch: (view, rowOf) =>
+		mapRows(view, (row) => {
+			const entry: RowEntry<NoteListRow> | undefined = rowOf(row.id);
+			if (entry === undefined) return row;
+			return "deleted" in entry ? undefined : entry.row;
+		}),
+};

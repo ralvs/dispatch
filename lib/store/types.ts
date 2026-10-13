@@ -129,6 +129,8 @@ export type ViewTypes = {
 	};
 	/** /notes: the needs-review band and every other note, each in list order. */
 	noteLists: { kind: "note"; data: NoteLists; out: NoteLists; params: undefined };
+	/** A note opened by its URL: a list of one, so nothing new joins it. */
+	openNote: { kind: "note"; data: NoteListRow[]; out: NoteListRow[]; params: undefined };
 	/** /routines and Today's routines card: the listed routines, in list order. */
 	routineList: {
 		kind: "routine";

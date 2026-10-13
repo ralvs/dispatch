@@ -6,7 +6,7 @@
 import { domainKind, domainListView } from "@/lib/store/kinds/domain";
 import { journalKind, journalListView } from "@/lib/store/kinds/journal";
 import { linkKind, linkListView } from "@/lib/store/kinds/link";
-import { noteKind, noteListsView } from "@/lib/store/kinds/note";
+import { noteKind, noteListsView, openNoteView } from "@/lib/store/kinds/note";
 import { notificationKind, notificationListView } from "@/lib/store/kinds/notification";
 import {
 	personFactKind,
@@ -67,6 +67,7 @@ export const defaultAdapters: Adapters = {
 		notificationList: notificationListView,
 		routineList: routineListView,
 		noteLists: noteListsView,
+		openNote: openNoteView,
 		quoteList: quoteListView,
 		journalList: journalListView,
 		linkList: linkListView,
