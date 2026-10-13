@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Selected } from "@/lib/database";
 
 // Spec Addendum 02 §3 — notes use a finer-grained source_type instead of
 // the old `type` enum. The type field has been removed entirely.
@@ -111,31 +112,14 @@ export const UpdateNoteSchema = CreateNoteSchema.partial().extend({
 
 // ─── Row shapes actually returned by the notes service ──────────────────
 //
-// NoteRowSchema is the core shape; NoteListRowSchema extends it with the
-// columns the UI reads. Every read and every create selects the list shape
-// (NOTE_LIST_SELECT, derived from its keys): a create hands its row to the
+// NoteRow is the core shape; NoteListRow adds the columns the UI reads. Every
+// read and every create selects the list shape: a create hands its row to the
 // entity store, which holds list rows. No joins for this entity.
-export const NoteRowSchema = z.object({
-	id: z.string().uuid(),
-	title: z.string().nullable(),
-	body: z.string(),
-	source_type: NoteSourceTypeSchema,
-	needs_review: z.boolean(),
-	tags: z.array(z.string()),
-	origin_capture_id: z.string().uuid().nullable(),
-	created_at: z.string(),
-});
-export type NoteRow = z.infer<typeof NoteRowSchema>;
+const NOTE_CORE_COLUMNS =
+	"id, title, body, source_type, needs_review, tags, origin_capture_id, created_at" as const;
+export const NOTE_SELECT = NOTE_CORE_COLUMNS;
+export type NoteRow = Selected<"notes", typeof NOTE_SELECT>;
 
-export const NoteListRowSchema = NoteRowSchema.extend({
-	source_reference: z.string().nullable(),
-	domain_id: z.string().uuid().nullable(),
-	related_project_id: z.string().uuid().nullable(),
-	related_person_id: z.string().uuid().nullable(),
-	related_quote_id: z.string().uuid().nullable(),
-	pinned_at: z.string().nullable(),
-	attachments: z.array(AttachmentSchema).default([]),
-});
-export type NoteListRow = z.infer<typeof NoteListRowSchema>;
-
-export const NOTE_LIST_SELECT = Object.keys(NoteListRowSchema.shape).join(", ");
+export const NOTE_LIST_SELECT =
+	`${NOTE_CORE_COLUMNS}, source_reference, domain_id, related_project_id, related_person_id, related_quote_id, pinned_at, attachments` as const;
+export type NoteListRow = Selected<"notes", typeof NOTE_LIST_SELECT>;
