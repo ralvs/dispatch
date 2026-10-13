@@ -26,6 +26,7 @@ vi.mock("@/lib/caldav/client", async (original) => ({
 
 import { POST } from "@/app/api/mcp/route";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
+import type { CalendarEventSource } from "@/lib/schemas/calendar";
 import { ServiceError } from "@/lib/services/errors";
 import { ownerClient, serviceClient } from "@/test/integration/clients";
 
@@ -106,7 +107,7 @@ type Seeded = {
 	start_at: string;
 	end_at: string;
 	calendar_name?: string;
-	source?: string;
+	source?: CalendarEventSource;
 	all_day?: boolean;
 	recurring?: boolean | null;
 	description?: string;
@@ -332,7 +333,7 @@ describe("MCP event tools: write", () => {
 	});
 
 	it.each([
-		["a work event", { source: "google", calendar_name: "Work" }, /work event/],
+		["a work event", { source: "google" as const, calendar_name: "Work" }, /work event/],
 		["an event on another calendar", { calendar_name: "Home" }, /"Home" calendar/],
 		["a repeating event", { recurring: true }, /repeats/],
 	])(

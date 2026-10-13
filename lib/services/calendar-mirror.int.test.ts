@@ -5,6 +5,7 @@ vi.mock("@/lib/invalidate", async (original) => ({
 	afterExternalMutation: vi.fn(),
 }));
 
+import type { CalendarEventSource } from "@/lib/schemas/calendar";
 import {
 	type MirrorEvent,
 	type MirrorSnapshot,
@@ -43,7 +44,7 @@ function snapshot(overrides: Partial<MirrorSnapshot> = {}): MirrorSnapshot {
 
 async function insertRow(row: {
 	caldav_uid: string;
-	source: string;
+	source: CalendarEventSource;
 	calendar_name?: string;
 	start_at?: string;
 	synced_at?: string;
