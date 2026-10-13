@@ -159,3 +159,27 @@ describe("useWrites", () => {
 		expect(store.getState().confirmed).toHaveLength(1);
 	});
 });
+
+describe("save with onFieldErrors", () => {
+	const refused = async () => ({ ok: false as const, fieldErrors: { name: ["Required"] } });
+
+	it("hands field errors over and skips the toast", async () => {
+		vi.mocked(toastError).mockClear();
+		const { result } = renderHook(() => useWrites(), { wrapper });
+		const onFieldErrors = vi.fn();
+		await act(async () => {
+			await result.current.save(write("task", intent, refused, "Nope"), { onFieldErrors });
+		});
+		expect(onFieldErrors).toHaveBeenCalledWith({ fieldErrors: { name: ["Required"] } });
+		expect(toastError).not.toHaveBeenCalled();
+	});
+
+	it("without it, field errors still toast", async () => {
+		vi.mocked(toastError).mockClear();
+		const { result } = renderHook(() => useWrites(), { wrapper });
+		await act(async () => {
+			await result.current.save(write("task", intent, refused, "Nope"));
+		});
+		expect(toastError).toHaveBeenCalledWith("Nope");
+	});
+});

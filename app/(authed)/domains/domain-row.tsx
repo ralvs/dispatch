@@ -1,7 +1,16 @@
 "use client";
 
 import { ColorDot } from "@/components/color-dot";
-import { Button, Card, Field, Input, ListRow, rowTitle, Textarea } from "@/components/ui";
+import {
+	Button,
+	Card,
+	Field,
+	FormStateProvider,
+	Input,
+	ListRow,
+	rowTitle,
+	Textarea,
+} from "@/components/ui";
 import { formatInstant } from "@/lib/dates";
 import type { DomainItem } from "@/lib/schemas/domain";
 import { useAggregate, useInlineEdit, useProvisionalIds, useWrites } from "@/lib/store";
@@ -19,7 +28,7 @@ import { domainWrites } from "./writes";
  * through ColorDot → `var(--domain-<slug>)`, never a hex.
  */
 export function DomainRowItem({ domain, tz }: { domain: DomainItem; tz: string }) {
-	const edit = useInlineEdit();
+	const edit = useInlineEdit({ fieldErrors: true });
 	const { send } = useWrites();
 	// Still being saved: its id is the client's, so nothing may act on it yet.
 	const saving = useProvisionalIds("domain").has(domain.id);
@@ -35,62 +44,71 @@ export function DomainRowItem({ domain, tz }: { domain: DomainItem; tz: string }
 	if (edit.editing) {
 		return (
 			<li id={`domain-${domain.id}`} className="hairline scroll-mt-24 py-3">
-				<form action={saveDetails}>
-					<Card className="space-y-3" padding="compact">
-						<Field label="Name">
-							<Input name="name" required defaultValue={domain.name} />
-						</Field>
-						<Field label="Description">
-							<Textarea
-								name="description"
-								rows={2}
-								defaultValue={domain.description ?? ""}
-								size="sm"
-							/>
-						</Field>
-						<Field label="Fruit definition">
-							<Textarea
-								name="fruit_definition"
-								rows={2}
-								defaultValue={domain.fruit_definition ?? ""}
-								size="sm"
-							/>
-						</Field>
-						<Field label="Expected cadence">
-							<Input name="expected_cadence" defaultValue={domain.expected_cadence ?? ""} />
-						</Field>
-						<Field
-							label="Flag after (days)"
-							description="How long this domain may go untouched before the nightly sweep marks it quiet and rings the bell."
-						>
-							<Input
+				<FormStateProvider state={edit.formState}>
+					<form
+						action={saveDetails}
+						onChange={(e) => {
+							const name = (e.target as Element).getAttribute("name");
+							if (name) edit.clearField(name);
+						}}
+					>
+						<Card className="space-y-3" padding="compact">
+							<Field label="Name" name="name">
+								<Input name="name" required defaultValue={domain.name} />
+							</Field>
+							<Field label="Description" name="description">
+								<Textarea
+									name="description"
+									rows={2}
+									defaultValue={domain.description ?? ""}
+									size="sm"
+								/>
+							</Field>
+							<Field label="Fruit definition" name="fruit_definition">
+								<Textarea
+									name="fruit_definition"
+									rows={2}
+									defaultValue={domain.fruit_definition ?? ""}
+									size="sm"
+								/>
+							</Field>
+							<Field label="Expected cadence" name="expected_cadence">
+								<Input name="expected_cadence" defaultValue={domain.expected_cadence ?? ""} />
+							</Field>
+							<Field
+								label="Flag after (days)"
+								description="How long this domain may go untouched before the nightly sweep marks it quiet and rings the bell."
 								name="cadence_days"
-								type="number"
-								min={1}
-								max={365}
-								step={1}
-								inputMode="numeric"
-								placeholder="Leave blank for never"
-								defaultValue={cadenceDays ?? ""}
-							/>
-						</Field>
-						<ColorSwatchPicker name="color" defaultValue={domain.color} />
-						<div className="flex justify-end gap-2 pt-1">
-							<Button type="button" variant="ghost" size="sm" onClick={edit.close}>
-								Cancel
-							</Button>
-							<Button
-								type="submit"
-								variant="primary"
-								size="sm"
-								isPending={edit.pending}
-								disabled={edit.pending}
 							>
-								Save
-							</Button>
-						</div>
-					</Card>
-				</form>
+								<Input
+									name="cadence_days"
+									type="number"
+									min={1}
+									max={365}
+									step={1}
+									inputMode="numeric"
+									placeholder="Leave blank for never"
+									defaultValue={cadenceDays ?? ""}
+								/>
+							</Field>
+							<ColorSwatchPicker name="color" defaultValue={domain.color} />
+							<div className="flex justify-end gap-2 pt-1">
+								<Button type="button" variant="ghost" size="sm" onClick={edit.close}>
+									Cancel
+								</Button>
+								<Button
+									type="submit"
+									variant="primary"
+									size="sm"
+									isPending={edit.pending}
+									disabled={edit.pending}
+								>
+									Save
+								</Button>
+							</div>
+						</Card>
+					</form>
+				</FormStateProvider>
 			</li>
 		);
 	}
