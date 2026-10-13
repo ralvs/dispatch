@@ -17,9 +17,9 @@ import { Icon } from "@/components/ui/icon";
 import { attachmentKind, formatBytes, isAllowedContentType } from "@/lib/attachments";
 import { toastError } from "@/lib/client/toast";
 import type { Attachment, NoteListRow } from "@/lib/schemas/note";
-import { isNavigationError, useStoreWrite } from "@/lib/store";
+import { useWrites } from "@/lib/store";
 import type { StoreWrite } from "@/lib/store/types";
-import { removeAttachmentAction } from "../actions";
+import { noteWrites } from "../writes";
 
 /*
  * Files on a note (docs/adr/0052).
@@ -61,7 +61,7 @@ export function AttachmentStrip({
 	const [pending, startTransition] = useTransition();
 	// The note row in the entity store carries its attachments (#27): a change
 	// here confirms the row the server read back, so /notes shows it too.
-	const confirm = useStoreWrite("note");
+	const { adopt, save } = useWrites();
 
 	// dragenter/dragleave fire once per child element the pointer crosses, so a
 	// boolean flickers as you move over the editor. Counting depth doesn't.
@@ -96,8 +96,7 @@ export function AttachmentStrip({
 				}
 				if (body?.attached?.length) {
 					const write = body.write as StoreWrite<NoteListRow> | null;
-					if (write)
-						await confirm({ type: "touch", id: noteId }, async () => ({ ok: true, data: write }));
+					if (write) adopt("note", { type: "touch", id: noteId }, write);
 					router.refresh();
 				}
 			} catch {
@@ -106,7 +105,7 @@ export function AttachmentStrip({
 				setUploading(false);
 			}
 		},
-		[noteId, router, confirm],
+		[noteId, router, adopt],
 	);
 
 	function onDragEnter(event: ReactDragEvent) {
@@ -217,15 +216,8 @@ export function AttachmentStrip({
 								disabled={busy}
 								onRemove={() =>
 									startTransition(async () => {
-										try {
-											const result = await confirm({ type: "touch", id: noteId }, () =>
-												removeAttachmentAction(noteId, attachment.storage_path),
-											);
-											if (!result.ok) toastError(result.formError ?? "Couldn't remove the file.");
-										} catch (error) {
-											// A redirect() (an expired session) navigates on its own.
-											if (!isNavigationError(error)) toastError("Couldn't remove the file.");
-										}
+										// save() toasts a failure; a redirect() navigates on its own.
+										await save(noteWrites.removeAttachment(noteId, attachment.storage_path));
 									})
 								}
 							/>

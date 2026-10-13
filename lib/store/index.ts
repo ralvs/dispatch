@@ -13,8 +13,6 @@ export { StoreProvider, useDispatchStore } from "@/lib/store/provider";
 export {
 	isNavigationError,
 	useInlineEdit,
-	useRunIntent,
-	useStoreWrite,
 	useWrites,
 	type Writes,
 } from "@/lib/store/run";

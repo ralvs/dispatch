@@ -60,3 +60,4 @@ copy rules.
   write's specific copy, and a form failure with neither a form error nor
   field errors now toasts instead of staying silent.
 - `useRunIntent` and `useStoreWrite` stay until every kind has moved, then go.
+  Done: the note kind moved last (slice 6), and slice 7 deleted both.
