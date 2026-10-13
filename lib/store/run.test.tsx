@@ -182,4 +182,20 @@ describe("save with onFieldErrors", () => {
 		});
 		expect(toastError).toHaveBeenCalledWith("Nope");
 	});
+
+	it("a form error still toasts, even with field errors beside it", async () => {
+		vi.mocked(toastError).mockClear();
+		const { result } = renderHook(() => useWrites(), { wrapper });
+		const onFieldErrors = vi.fn();
+		const both = async () => ({
+			ok: false as const,
+			formError: "Boom",
+			fieldErrors: { name: ["Required"] },
+		});
+		await act(async () => {
+			await result.current.save(write("task", intent, both, "Nope"), { onFieldErrors });
+		});
+		expect(onFieldErrors).not.toHaveBeenCalled();
+		expect(toastError).toHaveBeenCalled();
+	});
 });
