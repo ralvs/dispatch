@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formDecoder } from "@/lib/form-decode";
 import { ColorSlugSchema } from "@/lib/schemas/color";
 
 export const ProjectStatusSchema = z.enum(["active", "paused", "done", "archived"]);
@@ -38,6 +39,12 @@ export const CreateProjectSchema = z.object({
 export const UpdateProjectSchema = CreateProjectSchema.partial().extend({
 	status: ProjectStatusSchema.optional(),
 });
+
+/** The project forms' one decode each, shared by the optimistic half and the server (docs/adr/0087). */
+export const createProjectForm = formDecoder(CreateProjectSchema);
+export type CreateProjectInput = z.output<typeof CreateProjectSchema>;
+export const updateProjectForm = formDecoder(UpdateProjectSchema);
+export type UpdateProjectInput = z.output<typeof UpdateProjectSchema>;
 
 // Retired here by the shape plan's P5 (§08): client_id, quoted_hours,
 // hours_logged and engagement_type. Every one of them exists to prove what was

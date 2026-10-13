@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { decodeFields, decodeForm } from "./form-decode";
+import { decodeFields, decodeForm, formDecoder } from "./form-decode";
 
 function fd(entries: Record<string, string>): FormData {
 	const f = new FormData();
@@ -146,5 +146,50 @@ describe("decodeForm", () => {
 			spec: NUMERIC_SPEC,
 		});
 		expect(parsed.rating).toBe(10);
+	});
+});
+
+describe("list fields", () => {
+	const schema = z.object({ tags: z.array(z.string()).optional() });
+	const spec = { tags: "list" } as const;
+
+	it("absent → omitted", () => {
+		expect(decodeFields(schema, new FormData(), spec)).toEqual({});
+	});
+
+	it("blank → []", () => {
+		expect(decodeFields(schema, fd({ tags: "" }), spec)).toEqual({ tags: [] });
+	});
+
+	it("split, trimmed, empties dropped", () => {
+		expect(decodeFields(schema, fd({ tags: " a, ,b " }), spec)).toEqual({ tags: ["a", "b"] });
+	});
+});
+
+describe("formDecoder", () => {
+	const schema = z.object({ title: z.string().min(1), via: z.string().optional() });
+
+	it("read returns null on a refused form without throwing", () => {
+		expect(formDecoder(schema).read(new FormData())).toBeNull();
+	});
+
+	it("read returns null when a refine throws", () => {
+		const throwing = z.object({ title: z.string() }).refine(() => {
+			throw new Error("boom");
+		});
+		expect(formDecoder(throwing).read(fd({ title: "x" }))).toBeNull();
+	});
+
+	it("parse throws a ZodError on a refused form", () => {
+		expect(() => formDecoder(schema).parse(new FormData())).toThrow(z.ZodError);
+	});
+
+	it("fixed overrides merge first, per-call overrides last", () => {
+		const d = formDecoder(schema, { overrides: { via: "fixed", title: "fixed" } });
+		expect(d.parse(fd({ title: "typed" }))).toEqual({ title: "fixed", via: "fixed" });
+		expect(d.read(fd({ title: "typed" }), { via: "call" })).toEqual({
+			title: "fixed",
+			via: "call",
+		});
 	});
 });

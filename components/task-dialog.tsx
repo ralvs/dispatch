@@ -17,10 +17,7 @@ import type { DomainItem } from "@/lib/schemas/domain";
 import type { ProjectRow } from "@/lib/schemas/project";
 import { useLiveOptions } from "@/lib/store/live-options";
 import { useWrites } from "@/lib/store/run";
-import {
-	optimisticTaskFromForm,
-	optimisticTaskFromText,
-} from "@/lib/task-interaction/optimistic-task";
+import { optimisticTaskFromText } from "@/lib/task-interaction/optimistic-task";
 import { taskWrites } from "@/lib/writes/task";
 import {
 	type TaskDomainOption,
@@ -229,10 +226,11 @@ function TaskDialogForm({
 			return { ok: true, data: undefined };
 		}
 		// A rejected field resolves as a failed result and the store drops the
-		// optimistic row; a confirmed one swaps it for the server's.
-		const optimistic = optimisticTaskFromForm(formData, domains, projects);
-		onCreating?.(optimistic.id);
-		return submit(taskWrites.create(formData, optimistic));
+		// optimistic row; a confirmed one swaps it for the server's. A form the
+		// decoder refuses shows no row, so there is none to announce.
+		const w = taskWrites.create(formData, { domains, projects });
+		if (w.intent.type === "create") onCreating?.(w.intent.task.id);
+		return submit(w);
 	}
 
 	const [state, formAction, pending] = useResultAction(write, {

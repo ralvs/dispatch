@@ -5,7 +5,7 @@ import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/invalidate";
-import { CreateQuoteAnnotationSchema, CreateQuoteSchema } from "@/lib/schemas/quote";
+import { CreateQuoteAnnotationSchema, createQuoteForm } from "@/lib/schemas/quote";
 import {
 	createAnnotation,
 	createQuote,
@@ -26,22 +26,10 @@ function revalidateQuoteViews() {
 	afterMutation("quotes.write");
 }
 
-function tagsFromForm(raw: FormDataEntryValue | null): string[] | undefined {
-	if (typeof raw !== "string") return undefined;
-	const tags = raw
-		.split(",")
-		.map((t) => t.trim())
-		.filter(Boolean);
-	return tags.length > 0 ? tags : [];
-}
-
 export async function createQuoteAction(formData: FormData): Promise<ActionResult<QuoteWrite>> {
 	const { sb } = await requireOwnerPage();
 	return runFormAction(formData, async () => {
-		const parsed = decodeForm(CreateQuoteSchema, formData, {
-			overrides: { tags: tagsFromForm(formData.get("tags")), added_via: "manual" },
-		});
-		const quote = await createQuote(sb, parsed);
+		const quote = await createQuote(sb, createQuoteForm.parse(formData));
 		revalidateQuoteViews();
 		return stampWrite([quote]);
 	});

@@ -15,13 +15,13 @@ import {
 } from "@/components/ui";
 import { shiftDay } from "@/lib/dates";
 import type { MentionCandidate } from "@/lib/mentions";
-
 import {
 	formatCustomWeekly,
 	parseCustomWeekly,
 	RECURRENCE_LABELS,
 	RECURRENCE_PATTERNS,
 } from "@/lib/recurrence";
+import { DEFAULT_TASK_PRIORITY } from "@/lib/schemas/task";
 
 /*
  * The two pickers are react-aria-components + @internationalized/date: ~435 KB,
@@ -493,7 +493,7 @@ export function TaskMetaFields({
 						</Select>
 					</Field>
 
-					<PriorityPicker defaultValue={defaults.priority ?? 3} />
+					<PriorityPicker defaultValue={defaults.priority ?? DEFAULT_TASK_PRIORITY} />
 				</div>
 			</div>
 		</div>
@@ -600,7 +600,11 @@ function TaskNotesField({
  * shares the grid's rhythm with Domain instead of leaving a gap at the end
  * of the row.
  */
-export function PriorityPicker({ defaultValue = 3 }: { defaultValue?: number }) {
+export function PriorityPicker({
+	defaultValue = DEFAULT_TASK_PRIORITY,
+}: {
+	defaultValue?: number;
+}) {
 	// A rejected submit hands back the pick, so the form's reset keeps it (#23).
 	const echoed = useFieldValue("priority");
 	const checked = echoed ? Number(echoed) : defaultValue;

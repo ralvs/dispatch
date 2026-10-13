@@ -12,9 +12,11 @@ import type { z } from "zod";
 // create and partial-update schemas, without per-site branching. Boolean
 // (checkbox) fields are unaffected by the absent/blank distinction: a
 // checkbox spec'd in FormSpec is by definition part of the form, and its
-// absence from FormData means unchecked → `false`.
+// absence from FormData means unchecked → `false`. A "list" field is a
+// comma-separated string: absent → omitted, present → split on ",", trimmed,
+// empties dropped (so a blank list is `[]`, which clears it).
 
-export type FieldKind = "string" | "number" | "boolean";
+export type FieldKind = "string" | "number" | "boolean" | "list";
 export type FormSpec = Record<string, FieldKind>; // default per field: "string"
 
 function isNullable(schema: z.ZodObject, key: string): boolean {
@@ -41,6 +43,16 @@ export function decodeFields(
 
 		if (kind === "boolean") {
 			result[key] = raw != null && raw !== "";
+			continue;
+		}
+
+		if (kind === "list") {
+			if (typeof raw === "string") {
+				result[key] = raw
+					.split(",")
+					.map((t) => t.trim())
+					.filter(Boolean);
+			}
 			continue;
 		}
 
@@ -96,4 +108,40 @@ export function decodeForm<T extends z.ZodObject>(
 ): z.infer<T> {
 	const fields = decodeFields(schema, formData, opts?.spec);
 	return schema.parse({ ...fields, ...opts?.overrides });
+}
+
+/** One form's decode, shared by the optimistic half (`read`) and the server half (`parse`). */
+export type FormDecoder<T> = {
+	/** Server: throws ZodError on a refused field. Run it inside `runFormAction`, where it is the authority. */
+	parse(fd: FormData, overrides?: Record<string, unknown>): T;
+	/** Client: never throws; null when the form is refused. */
+	read(fd: FormData, overrides?: Record<string, unknown>): T | null;
+};
+
+/**
+ * One decoder per form, kept beside its schema (docs/adr/0087). Fixed
+ * `overrides` merge first, per-call overrides last.
+ */
+export function formDecoder<S extends z.ZodObject>(
+	schema: S,
+	opts?: { spec?: FormSpec; overrides?: Record<string, unknown> },
+): FormDecoder<z.output<S>> {
+	const input = (fd: FormData, overrides?: Record<string, unknown>) => ({
+		...decodeFields(schema, fd, opts?.spec),
+		...opts?.overrides,
+		...overrides,
+	});
+	return {
+		parse: (fd, overrides) => schema.parse(input(fd, overrides)),
+		read: (fd, overrides) => {
+			// A refused form (or a refine that throws) shows nothing optimistic;
+			// the server reports the error as a field error.
+			try {
+				const result = schema.safeParse(input(fd, overrides));
+				return result.success ? result.data : null;
+			} catch {
+				return null;
+			}
+		},
+	};
 }

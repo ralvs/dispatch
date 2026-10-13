@@ -13,8 +13,12 @@ import {
 	skipTaskAction,
 	updateTaskAction,
 } from "@/lib/actions/tasks";
-import type { TaskRow } from "@/lib/schemas/task";
+import { type TaskRow, taskForm, taskFormFields } from "@/lib/schemas/task";
 import { type Write, write } from "@/lib/store/write";
+import { optimisticTaskFromFields } from "@/lib/task-interaction/optimistic-task";
+
+type DomainOption = { id: string; name: string; color?: string | null };
+type ProjectOption = { id: string; name: string };
 
 const UPDATE_ERROR = "Couldn't update that task. Try again.";
 const DELETE_ERROR = "Couldn't delete task.";
@@ -59,9 +63,27 @@ export const taskWrites = {
 			() => assignDomainAction(id, domainId),
 			FILE_ERROR,
 		),
-	/** The form's create; `optimistic` is the row the list shows while the server writes. */
-	create: (form: FormData, optimistic: TaskRow): Write<"task"> =>
-		write("task", { type: "create", task: optimistic }, () => createTaskAction(form)),
+	/**
+	 * The form's create. The list shows the row the form decodes to, joined to
+	 * the domain and project it picked; a form the decoder refuses shows
+	 * nothing, and the server's field errors do (docs/adr/0087).
+	 */
+	create: (
+		form: FormData,
+		opts: { domains: readonly DomainOption[]; projects: readonly ProjectOption[] },
+	): Write<"task"> => {
+		const parsed = taskForm.read(form);
+		return write(
+			"task",
+			parsed
+				? {
+						type: "create",
+						task: optimisticTaskFromFields(taskFormFields(parsed), opts.domains, opts.projects),
+					}
+				: { type: "edit", id: crypto.randomUUID() },
+			() => createTaskAction(form),
+		);
+	},
 	/** The form's other create: the sentence goes to the parser, the domain as stated. */
 	quickAdd: (i: { text: string; domainId: string }, optimistic: TaskRow): Write<"task"> =>
 		write("task", { type: "create", task: optimistic }, () => quickAddTaskAction(i)),

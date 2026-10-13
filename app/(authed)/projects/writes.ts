@@ -6,34 +6,25 @@
 
 import { nowUtc } from "@/lib/dates";
 import type { DomainRow } from "@/lib/schemas/domain";
-import type { ProjectRow } from "@/lib/schemas/project";
+import { type CreateProjectInput, createProjectForm, type ProjectRow } from "@/lib/schemas/project";
+import { unshown } from "@/lib/store/kinds/record";
 import { type Write, write } from "@/lib/store/write";
 import { createProjectAction } from "./actions";
 
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
-
 /** The project the list shows while the server writes it; the server's row replaces it (#30). */
-function optimisticProject(formData: FormData, domains: DomainRow[]): ProjectRow {
-	const text = (key: string) => {
-		const value = String(formData.get(key) ?? "").trim();
-		return value === "" ? null : value;
-	};
-	const date = (key: string) => {
-		const value = text(key);
-		return value && DATE.test(value) ? value : null;
-	};
-	const domain = domains.find((d) => d.id === text("domain_id"));
+function optimisticProject(input: CreateProjectInput, domains: DomainRow[]): ProjectRow {
+	const domain = domains.find((d) => d.id === input.domain_id);
 	const at = nowUtc();
 	return {
 		id: crypto.randomUUID(),
-		name: text("name") ?? "",
-		description: text("description"),
-		domain_id: domain?.id ?? "",
+		name: input.name,
+		description: input.description ?? null,
+		domain_id: input.domain_id,
 		status: "active",
-		start_date: date("start_date"),
-		target_date: date("target_date"),
+		start_date: input.start_date ?? null,
+		target_date: input.target_date ?? null,
 		completed_at: null,
-		color: null,
+		color: input.color ?? null,
 		created_at: at,
 		updated_at: at,
 		...(domain ? { domain: { id: domain.id, name: domain.name, color: domain.color } } : {}),
@@ -41,8 +32,13 @@ function optimisticProject(formData: FormData, domains: DomainRow[]): ProjectRow
 }
 
 export const projectWrites = {
-	create: (form: FormData, domains: DomainRow[]): Write<"project"> =>
-		write("project", { type: "create", row: optimisticProject(form, domains) }, () =>
-			createProjectAction(form),
-		),
+	/** A form the decoder refuses shows nothing; the server's field errors do (docs/adr/0087). */
+	create: (form: FormData, domains: DomainRow[]): Write<"project"> => {
+		const input = createProjectForm.read(form);
+		return write(
+			"project",
+			input ? { type: "create", row: optimisticProject(input, domains) } : unshown(),
+			() => createProjectAction(form),
+		);
+	},
 };

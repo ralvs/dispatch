@@ -37,8 +37,10 @@ function Harness({
 	mode = "create",
 	quickAdd = false,
 	onSkip,
+	onCreating,
 }: {
 	onClose?: () => void;
+	onCreating?: (id: string) => void;
 	mode?: TaskDialogMode;
 	quickAdd?: boolean;
 	onSkip?: () => void;
@@ -60,6 +62,7 @@ function Harness({
 					todayIso="2026-09-22"
 					quickAdd={quickAdd}
 					onSkip={onSkip}
+					onCreating={onCreating}
 					{...(mode === "edit"
 						? { taskId: OLD.id, defaults: { title: OLD.title, domain_id: HOME } }
 						: {})}
@@ -99,6 +102,26 @@ describe("TaskDialog", () => {
 		expect(openTasks()).toEqual([OLD]);
 	});
 
+	it("a create the decoder refuses shows no row and announces none (docs/adr/0087)", async () => {
+		let answer: (value: Awaited<ReturnType<typeof createTaskAction>>) => void = () => {};
+		vi.mocked(createTaskAction).mockReturnValue(new Promise((resolve) => (answer = resolve)));
+		const onCreating = vi.fn();
+		const user = userEvent.setup();
+		render(<Harness onCreating={onCreating} />);
+		await user.type(screen.getByLabelText("Task title"), "Buy milk");
+		await user.click(screen.getByRole("button", { name: "Add task" }));
+
+		// No domain: the write is in flight, but it shows nothing.
+		await waitFor(() => expect(store.getState().pending).toHaveLength(1));
+		expect(store.getState().pending[0]).toMatchObject({ kind: "task", intent: { type: "edit" } });
+		expect(openTasks()).toEqual([OLD]);
+		expect(onCreating).not.toHaveBeenCalled();
+		answer({ ok: false, fieldErrors: { domain_id: ["Pick a domain."] }, values: {} });
+		expect(await screen.findByText("Pick a domain.")).toBeInTheDocument();
+		expect(store.getState().pending).toEqual([]);
+		expect(openTasks()).toEqual([OLD]);
+	});
+
 	it("shows a rejected title under the title", async () => {
 		vi.mocked(createTaskAction).mockResolvedValue({
 			ok: false,
@@ -122,6 +145,8 @@ describe("TaskDialog", () => {
 		const user = userEvent.setup();
 		render(<Harness onClose={onClose} />);
 		await user.type(screen.getByLabelText("Task title"), "Buy milk");
+		// A form the server would refuse shows no row (docs/adr/0087): file it.
+		await user.selectOptions(screen.getByLabelText("Domain"), HOME);
 		await user.click(screen.getByRole("button", { name: "Add task" }));
 
 		// The create is in the store before the server answers…

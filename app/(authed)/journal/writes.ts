@@ -3,24 +3,26 @@
 // references only.
 
 import { nowUtc } from "@/lib/dates";
-import type { JournalEntryRow } from "@/lib/schemas/journal";
+import {
+	type CreateJournalEntryInput,
+	createJournalEntryForm,
+	type JournalEntryRow,
+	pickedEntryDate,
+} from "@/lib/schemas/journal";
+import { unshown } from "@/lib/store/kinds/record";
 import { type Write, write } from "@/lib/store/write";
 import { createEntryAction, deleteEntryAction } from "./actions";
 
 /** The entry the list shows while the server writes it; the server's row replaces it (#30). */
-function optimisticEntry(formData: FormData, todayIso: string): JournalEntryRow {
-	const field = (key: string) => String(formData.get(key) ?? "").trim();
+function optimisticEntry(input: CreateJournalEntryInput): JournalEntryRow {
 	return {
 		id: crypto.randomUUID(),
-		book_id: null,
-		entry_date: /^\d{4}-\d{2}-\d{2}$/.test(field("entry_date")) ? field("entry_date") : todayIso,
+		book_id: input.book_id ?? null,
+		entry_date: input.entry_date,
 		image_path: null,
-		transcription_text: field("transcription_text") || null,
-		source: "typed",
-		tags: field("tags")
-			.split(",")
-			.map((t) => t.trim())
-			.filter(Boolean),
+		transcription_text: input.transcription_text,
+		source: input.source ?? "typed",
+		tags: input.tags ?? [],
 		extracted_facts: {},
 		attachments: [],
 		resurface_weight: 1,
@@ -33,7 +35,7 @@ function optimisticEntry(formData: FormData, todayIso: string): JournalEntryRow 
  * day the list showed, not its own today (ADR-0077 item 2).
  */
 function dated(form: FormData, todayIso: string): FormData {
-	if (String(form.get("entry_date") ?? "").trim()) return form;
+	if (pickedEntryDate(form.get("entry_date")) !== null) return form;
 	const copy = new FormData();
 	for (const [key, value] of form) copy.append(key, value);
 	copy.set("entry_date", todayIso);
@@ -41,11 +43,18 @@ function dated(form: FormData, todayIso: string): FormData {
 }
 
 export const journalWrites = {
-	/** `todayIso` dates an entry whose form left the date blank, on both halves. */
+	/**
+	 * `todayIso` dates an entry whose form left the date blank, on both halves.
+	 * A form the decoder refuses shows nothing; the server's field errors do
+	 * (docs/adr/0087).
+	 */
 	create: (form: FormData, todayIso: string): Write<"journal"> => {
 		const sent = dated(form, todayIso);
-		return write("journal", { type: "create", row: optimisticEntry(sent, todayIso) }, () =>
-			createEntryAction(sent),
+		const input = createJournalEntryForm.read(sent);
+		return write(
+			"journal",
+			input ? { type: "create", row: optimisticEntry(input) } : unshown(),
+			() => createEntryAction(sent),
 		);
 	},
 	remove: (id: string): Write<"journal"> =>

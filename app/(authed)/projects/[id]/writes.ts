@@ -4,50 +4,34 @@
 
 import { nowUtc } from "@/lib/dates";
 import type { DomainRow } from "@/lib/schemas/domain";
-import { type ProjectRow, ProjectStatusSchema } from "@/lib/schemas/project";
+import { type ProjectRow, type UpdateProjectInput, updateProjectForm } from "@/lib/schemas/project";
+import { unshown } from "@/lib/store/kinds/record";
 import { type Write, write } from "@/lib/store/write";
 import { archiveProjectAction, completeProjectAction, updateProjectAction } from "./actions";
 
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const UPDATE_ERROR = "Couldn't update project.";
 const SAVE_ERROR = "Couldn't save project.";
 
 /** What an edit asks for, so the page shows it while the server writes it. */
-function projectPatch(formData: FormData, domains: DomainRow[]): Partial<ProjectRow> {
-	const text = (key: string) => {
-		const value = String(formData.get(key) ?? "").trim();
-		return value === "" ? null : value;
-	};
-	const date = (key: string) => {
-		const value = text(key);
-		return value && DATE.test(value) ? value : null;
-	};
-	const name = text("name");
-	const domain = domains.find((d) => d.id === text("domain_id"));
-	const status = ProjectStatusSchema.safeParse(formData.get("status"));
+function projectPatch(input: UpdateProjectInput, domains: DomainRow[]): Partial<ProjectRow> {
+	const domain = domains.find((d) => d.id === input.domain_id);
 	return {
-		...(name ? { name } : {}),
-		description: text("description"),
-		start_date: date("start_date"),
-		target_date: date("target_date"),
-		...(domain
-			? {
-					domain_id: domain.id,
-					domain: { id: domain.id, name: domain.name, color: domain.color },
-				}
-			: {}),
-		...(status.success ? { status: status.data } : {}),
+		...input,
+		...(domain ? { domain: { id: domain.id, name: domain.name, color: domain.color } } : {}),
 	};
 }
 
 export const projectDetailWrites = {
-	update: (id: string, form: FormData, domains: DomainRow[]): Write<"project"> =>
-		write(
+	/** A form the decoder refuses shows nothing; the server's field errors do (docs/adr/0087). */
+	update: (id: string, form: FormData, domains: DomainRow[]): Write<"project"> => {
+		const input = updateProjectForm.read(form);
+		return write(
 			"project",
-			{ type: "patch", id, patch: projectPatch(form, domains) },
+			input ? { type: "patch", id, patch: projectPatch(input, domains) } : unshown(id),
 			() => updateProjectAction(id, form),
 			SAVE_ERROR,
-		),
+		);
+	},
 	complete: (id: string): Write<"project"> =>
 		write(
 			"project",

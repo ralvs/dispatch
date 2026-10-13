@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formDecoder } from "@/lib/form-decode";
 
 // Spec Addendum 02 §3 — quotes lose `my_notes` (replaced by
 // quote_annotations) and gain source_reference for non-DB sources.
@@ -50,6 +51,13 @@ export const CreateQuoteSchema = z.object({
 	tags: z.array(z.string()).optional(),
 	added_via: z.enum(DB_ADDED_VIA).optional(),
 });
+
+/** The add-quote form's one decode, shared by the optimistic row and the server (docs/adr/0087). */
+export const createQuoteForm = formDecoder(CreateQuoteSchema, {
+	spec: { tags: "list" },
+	overrides: { added_via: "manual" },
+});
+export type CreateQuoteInput = z.output<typeof CreateQuoteSchema>;
 
 export const UpdateQuoteSchema = CreateQuoteSchema.partial().extend({
 	resurface_weight: z.number().min(0).optional(),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CreateTaskFormSchema } from "@/lib/schemas/task";
+import { CreateTaskFormSchema, taskFormFields } from "@/lib/schemas/task";
 
 const DOMAIN = "11111111-1111-4111-8111-111111111111";
 
@@ -115,5 +115,31 @@ describe("CreateTaskFormSchema · priority", () => {
 		const parsed = CreateTaskFormSchema.safeParse(base);
 		expect(parsed.success && parsed.data.priority).toBe(3);
 		expect(CreateTaskFormSchema.safeParse({ ...base, priority: "4" }).success).toBe(false);
+	});
+});
+
+describe("taskFormFields", () => {
+	it("a blank optional field is null", () => {
+		expect(
+			taskFormFields({
+				title: "x",
+				notes: "",
+				due_date: "",
+				due_time: "",
+				priority: 3,
+				domain_id: DOMAIN,
+				project_id: "",
+				recurrence_rule: "",
+			}),
+		).toEqual({
+			title: "x",
+			notes: null,
+			due_date: null,
+			due_time: null,
+			priority: 3,
+			domain_id: DOMAIN,
+			project_id: null,
+			recurrence_rule: null,
+		});
 	});
 });

@@ -14,6 +14,14 @@ export type RecordIntent<R> =
 	| { type: "patch"; id: string; patch: Partial<R> }
 	| { type: "delete"; id: string };
 
+/**
+ * The intent for a write the client cannot show (its form was refused): a
+ * patch no row holds, so only the server's answer moves the view (docs/adr/0087).
+ */
+export function unshown<R>(id: string = crypto.randomUUID()): RecordIntent<R> {
+	return { type: "patch", id, patch: {} };
+}
+
 /** What a record view is seeded with: its rows, and what a row needs to join it. */
 export type RecordSeed<R, S = undefined> = { rows: R[]; scope?: S };
 
