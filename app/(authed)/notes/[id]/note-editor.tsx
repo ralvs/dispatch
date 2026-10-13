@@ -6,10 +6,11 @@ import TaskList from "@tiptap/extension-task-list";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Markdown, type MarkdownStorage } from "tiptap-markdown";
-import { Button, type ScopeOption, ScopeSelect } from "@/components/ui";
+import { Button, EmptyState, type ScopeOption, ScopeSelect } from "@/components/ui";
 import { createDebouncedSave } from "@/lib/debounced-save";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { NoteListRow } from "@/lib/services/notes";
@@ -21,6 +22,7 @@ import { Ink } from "./ink-mark";
 import { Mention } from "./mention-extension";
 import { createMentionSuggestionExtension } from "./mention-suggestion";
 import { TickRail } from "./tick-rail";
+import { useOpenNote } from "./use-open-note";
 import { Wikilink } from "./wikilink-extension";
 import { createWikilinkSuggestionExtension, type WikilinkCandidate } from "./wikilink-suggestion";
 
@@ -75,25 +77,40 @@ type SaveState = "idle" | "saving" | "saved";
 // on the closed ramp inside `.measure-prose`. Autosave layer untouched.
 const NO_PEOPLE: MentionCandidate[] = [];
 
-export function NoteEditor({
-	note,
-	noteTitles,
-	people = NO_PEOPLE,
-	domains,
-}: {
-	note: NoteListRow;
+type EditorProps = {
 	noteTitles: WikilinkCandidate[];
 	/** @mention candidates (docs/adr/0030) for the `@` autocomplete. */
 	people?: MentionCandidate[];
 	/** Active domains for the filing picker. A note's domain is optional. */
 	domains: ScopeOption[];
-}) {
+};
+
+/** The open note, read from the store; its form, or word that it is gone. */
+export function NoteEditor({ noteId, ...props }: EditorProps & { noteId: string }) {
+	const note = useOpenNote(noteId);
+	if (!note) {
+		return (
+			<EmptyState>
+				This note is gone. <Link href="/notes">Back to Notes</Link>
+			</EmptyState>
+		);
+	}
+	// Keyed by the note: the form reads its title and body once, at mount.
+	return <NoteForm key={note.id} note={note} {...props} />;
+}
+
+function NoteForm({
+	note,
+	noteTitles,
+	people = NO_PEOPLE,
+	domains,
+}: EditorProps & { note: NoteListRow }) {
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
 	// Every write here goes through the entity store (#27), so /notes and
 	// Today's review count show it without a page render. save() toasts a
 	// failure (a redirect navigates without one) and resolves false.
-	const { save: saveWrite } = useWrites();
+	const { save: saveWrite, send } = useWrites();
 	// The editor is built once; the `@` pool is read through a ref so a person
 	// created in this tab is offered without rebuilding it (#30).
 	const livePeople = useMentionPeople(people);
@@ -101,17 +118,18 @@ export function NoteEditor({
 	useEffect(() => {
 		peopleRef.current = livePeople;
 	}, [livePeople]);
-	// Optimistic so the meta line settles before the server answers; filing is
-	// a one-click move and a select that snaps back reads as a failure.
-	const [domainId, setDomainId] = useState(note.domain_id ?? "");
-	const [needsReview, setNeedsReview] = useState(note.needs_review);
+	// Title and body are read once, at mount: after that TipTap and the title
+	// input own the text, and a row update from the store (this editor's own
+	// save confirming) must not reset the cursor. The meta fields below read
+	// the live row, so filing and resolving show at once and roll back with it.
+	const [opened] = useState(note);
 
 	const [saveState, setSaveState] = useState<SaveState>("idle");
-	const titleRef = useRef(note.title ?? "");
+	const titleRef = useRef(opened.title ?? "");
 	const titleInputRef = useRef<HTMLInputElement>(null);
 	const articleRef = useRef<HTMLElement>(null);
-	const bodyRef = useRef(note.body);
-	const lastSavedRef = useRef(`${note.title ?? ""}\u0000${note.body}`);
+	const bodyRef = useRef(opened.body);
+	const lastSavedRef = useRef(`${opened.title ?? ""}\u0000${opened.body}`);
 	const savedIndicatorTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 	const mountedRef = useRef(true);
 
@@ -153,7 +171,7 @@ export function NoteEditor({
 
 	const editor = useEditor({
 		immediatelyRender: false,
-		autofocus: note.body === "" ? "start" : false,
+		autofocus: opened.body === "" ? "start" : false,
 		extensions: [
 			StarterKit.configure({ paragraph: false }),
 			ParagraphKeepBlank,
@@ -168,6 +186,9 @@ export function NoteEditor({
 			// (docs/adr/0009 amendment). The schema only accepts that span.
 			Markdown.configure({ html: true }),
 		],
+		// The live row, not `opened`: TipTap reads `content` only when it builds
+		// an editor. It builds one again when Next shows a page it had hidden
+		// (the hide destroyed it), and that one must open on the latest save.
 		content: note.body,
 		editorProps: {
 			attributes: {
@@ -201,7 +222,7 @@ export function NoteEditor({
 			<input
 				ref={titleInputRef}
 				aria-label="Note title"
-				defaultValue={note.title ?? ""}
+				defaultValue={opened.title ?? ""}
 				placeholder="Untitled"
 				onChange={(e) => {
 					titleRef.current = e.target.value;
@@ -219,15 +240,8 @@ export function NoteEditor({
 				<span>{note.source_type}</span>
 				<span aria-hidden>·</span>
 				<ScopeSelect
-					value={domainId}
-					onChange={(next) => {
-						const previous = domainId;
-						setDomainId(next);
-						startTransition(async () => {
-							const ok = await saveWrite(noteWrites.file(note.id, next));
-							if (!ok) setDomainId(previous);
-						});
-					}}
+					value={note.domain_id ?? ""}
+					onChange={(next) => send(noteWrites.file(note.id, next))}
 					label="Domain"
 					allLabel="No domain"
 					options={domains}
@@ -241,21 +255,14 @@ export function NoteEditor({
 				</span>
 			</p>
 			<div className="mt-4 flex gap-2">
-				{needsReview && (
+				{note.needs_review && (
 					<Button
 						type="button"
 						variant="tertiary"
 						size="sm"
 						aria-label="Resolve needs-review flag"
 						disabled={pending}
-						isPending={pending}
-						onClick={() =>
-							startTransition(async () => {
-								setNeedsReview(false);
-								const ok = await saveWrite(noteWrites.resolve(note.id));
-								if (!ok) setNeedsReview(true);
-							})
-						}
+						onClick={() => send(noteWrites.resolve(note.id))}
 					>
 						Resolve
 					</Button>
@@ -271,7 +278,7 @@ export function NoteEditor({
 						startTransition(async () => {
 							// Nothing left to save once the note is gone.
 							debouncedRef.current.cancel();
-							const ok = await saveWrite(noteWrites.remove(note.id, needsReview));
+							const ok = await saveWrite(noteWrites.remove(note.id, note.needs_review));
 							if (ok) router.push("/notes");
 						})
 					}

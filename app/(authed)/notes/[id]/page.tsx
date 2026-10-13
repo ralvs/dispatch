@@ -21,8 +21,10 @@ import { getCachedAppTimezone, readClock } from "@/lib/cache/settings";
 import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
 import { getNote } from "@/lib/services/notes";
+import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
 import { seedOf, stampRead } from "@/lib/store/server";
+import type { Snapshot } from "@/lib/store/types";
 import { detachLinkAction } from "../actions";
 import { AttachmentStrip } from "./attachment-strip";
 import { LinkPicker } from "./link-picker";
@@ -34,18 +36,24 @@ import { NoteEditor } from "./note-editor";
  * links, then a dependent second wave for the manual targets' labels — and
  * streams in behind its own boundary rather than holding the note hostage.
  */
-async function EditorSection({ note }: { note: NonNullable<Awaited<ReturnType<typeof getNote>>> }) {
+async function EditorSection({ noteId, snapshot }: { noteId: string; snapshot: Snapshot }) {
 	const [{ noteTitles, people }, domains] = await Promise.all([
 		getCachedNoteEditorContext(),
 		getCachedDomains(false),
 	]);
+	// Seeded again inside its own boundary: this boundary hydrates after the
+	// outer Seed has fed the real store, and a store read while hydrating sees
+	// the empty initial state — without its own Seed the editor would hydrate
+	// as "gone" against the server's note.
 	return (
-		<NoteEditor
-			note={note}
-			noteTitles={noteTitles}
-			people={people}
-			domains={domains.map((d) => ({ id: d.id, name: d.name }))}
-		/>
+		<Seed snapshot={snapshot}>
+			<NoteEditor
+				noteId={noteId}
+				noteTitles={noteTitles}
+				people={people}
+				domains={domains.map((d) => ({ id: d.id, name: d.name }))}
+			/>
+		</Seed>
 	);
 }
 
@@ -228,10 +236,12 @@ async function NoteBody({ params }: { params: Promise<{ id: string }> }) {
 	const [read, clock] = await Promise.all([stampRead(() => loadNote(parsedId.data)), readClock()]);
 	const note = read.data;
 	if (!note) notFound();
-	// No view to seed: the editor's writes confirm into the entity store (#27)
-	// so /notes shows them, and a write needs the store's clock — this page
-	// can be the first one a tab opens.
-	const snapshot = seedOf(read, clock);
+	// The note is a view of one (docs/adr/0079): the editor and the strip read
+	// it from the store, so /notes and this page move together. Stamped with
+	// its read, a replayed render loses to an edit made since in this tab.
+	const snapshot = seedOf(read, clock, {
+		views: [{ key: viewKey.note(note.id), type: "openNote", data: [note] }],
+	});
 
 	return (
 		<Seed snapshot={snapshot}>
@@ -241,9 +251,9 @@ async function NoteBody({ params }: { params: Promise<{ id: string }> }) {
 				{/* The strip wraps the editor rather than following it: the drop
 			    target is the whole note, not a landing pad below it. */}
 				<div className="min-w-0">
-					<AttachmentStrip noteId={note.id} attachments={note.attachments}>
+					<AttachmentStrip noteId={note.id}>
 						<Suspense fallback={<EditorFallback />}>
-							<EditorSection note={note} />
+							<EditorSection noteId={note.id} snapshot={snapshot} />
 						</Suspense>
 					</AttachmentStrip>
 				</div>

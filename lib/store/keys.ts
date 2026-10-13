@@ -12,6 +12,8 @@ export const viewKey = {
 	task: (id: string) => `task:${id}` as ViewKey<"taskList">,
 	notifications: () => "notifications" as ViewKey<"notificationList">,
 	notes: () => "notes" as ViewKey<"noteLists">,
+	/** A note opened by its URL: a list of one. */
+	note: (id: string) => `note:${id}` as ViewKey<"openNote">,
 	/** One list for Today's card and /routines: the same rows, the same order. */
 	routines: () => "routines" as ViewKey<"routineList">,
 	quotes: () => "quotes" as ViewKey<"quoteList">,

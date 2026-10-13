@@ -159,3 +159,94 @@ describe("note adapter", () => {
 		});
 	});
 });
+
+describe("open note view", () => {
+	const open = viewKey.note("older");
+	const seedOpen = (s: StoreState, readAt = T1, row = older) =>
+		applySeed(s, snapshot(readAt, [{ key: open, type: "openNote", data: [row] }]));
+	const opened = (readAt = T1) => deepFreeze(seedOpen(initialState(), readAt));
+	const row = (s: StoreState) => selectView(s, open)?.[0];
+
+	it("a save changes title and body; its confirmation leaves the server's row", () => {
+		const [s1, t] = applyIntent(
+			opened(),
+			intent({ type: "save", id: "older", title: "Renamed", body: "new body" }),
+			NOW,
+		);
+		expect(row(s1)).toMatchObject({ title: "Renamed", body: "new body" });
+		const server = { ...older, title: "Renamed", body: "new body" };
+		expect(row(confirmWrite(s1, t, { at: T2, rows: [server] }))).toEqual(server);
+	});
+
+	it("filing sets the domain; a rollback restores it", () => {
+		const [s1, t] = applyIntent(
+			opened(),
+			intent({ type: "file", id: "older", domainId: "d1" }),
+			NOW,
+		);
+		expect(row(s1)?.domain_id).toBe("d1");
+		expect(row(rollbackWrite(s1, t))?.domain_id).toBe(older.domain_id);
+	});
+
+	it("a resolve clears the flag and the row stays", () => {
+		const s0 = deepFreeze(
+			applySeed(
+				initialState(),
+				snapshot(T1, [{ key: viewKey.note("flagged"), type: "openNote", data: [flagged] }]),
+			),
+		);
+		const [s1] = applyIntent(s0, intent({ type: "resolve", id: "flagged" }), NOW);
+		const v = selectView(s1, viewKey.note("flagged"));
+		expect(v).toHaveLength(1);
+		expect(v?.[0].needs_review).toBe(false);
+	});
+
+	it("an adopted touch whose write carries new files shows them", () => {
+		const [s1, t] = applyIntent(opened(), intent({ type: "touch", id: "older" }), NOW);
+		const withFile = {
+			...older,
+			attachments: [
+				{ url: "/f", storage_path: "p", name: "a.png", content_type: "image/png", size_bytes: 1 },
+			],
+		};
+		expect(row(confirmWrite(s1, t, { at: T2, rows: [withFile] }))?.attachments).toHaveLength(1);
+	});
+
+	it("a delete empties the view; confirmed it stays empty; a rollback brings the row back", () => {
+		const [s1, t] = applyIntent(opened(), intent({ type: "delete", id: "older" }), NOW);
+		expect(selectView(s1, open)).toEqual([]);
+		expect(
+			selectView(confirmWrite(s1, t, { at: T2, rows: [], deletedIds: ["older"] }), open),
+		).toEqual([]);
+		expect(selectView(rollbackWrite(s1, t), open)?.map((n) => n.id)).toEqual(["older"]);
+	});
+
+	it("a create of another note and a confirmed write of another id keep the same view", () => {
+		const s0 = opened();
+		const before = selectView(s0, open);
+		const [s1] = applyIntent(s0, intent({ type: "create", row: newer }), NOW);
+		expect(selectView(s1, open)).toBe(before);
+		const [s2, t] = applyIntent(s1, intent({ type: "touch", id: "newer" }), NOW);
+		const s3 = confirmWrite(s2, t, { at: T2, rows: [{ ...newer, title: "Other" }] });
+		expect(selectView(s3, open)).toBe(before);
+	});
+
+	it("a seed older than a confirmed save shows the saved body", () => {
+		const [s1, t] = applyIntent(
+			opened(),
+			intent({ type: "save", id: "older", title: "Saved", body: "saved body" }),
+			NOW,
+		);
+		const s2 = deepFreeze(
+			confirmWrite(s1, t, { at: T2, rows: [{ ...older, title: "Saved", body: "saved body" }] }),
+		);
+		expect(row(seedOpen(s2, T1))?.body).toBe("saved body");
+	});
+
+	it("one filing moves the /notes lists and the open note together", () => {
+		const s0 = deepFreeze(seedOpen(seeded()));
+		const [s1] = applyIntent(s0, intent({ type: "file", id: "older", domainId: "d1" }), NOW);
+		expect(row(s1)?.domain_id).toBe("d1");
+		expect(selectView(s1, key)?.all.find((n) => n.id === "older")?.domain_id).toBe("d1");
+	});
+});
