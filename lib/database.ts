@@ -6,9 +6,9 @@ import type { z } from "zod";
 import type { Database as Generated } from "@/lib/database.types";
 import type { CalendarEventSourceSchema } from "@/lib/schemas/calendar";
 import type {
-	CapturedDataSchema,
 	CaptureSourceSchema,
 	DisplayHintSchema,
+	ProcessedStatusSchema,
 } from "@/lib/schemas/captured";
 import type { FailurePatternSchema } from "@/lib/schemas/domain";
 import type { JournalEntrySourceSchema } from "@/lib/schemas/journal";
@@ -84,7 +84,7 @@ type Overrides = {
 		{
 			source: Infer<typeof CaptureSourceSchema>;
 			display_hint: Infer<typeof DisplayHintSchema>;
-			processed_status: Infer<typeof CapturedDataSchema>["processed_status"];
+			processed_status: Infer<typeof ProcessedStatusSchema>;
 		}
 	>;
 	journal_entries: Narrow<"journal_entries", { source: Infer<typeof JournalEntrySourceSchema> }>;

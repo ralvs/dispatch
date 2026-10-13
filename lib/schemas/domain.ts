@@ -10,27 +10,6 @@ export const FailurePatternSchema = z
 	})
 	.passthrough();
 
-export const DomainSchema = z.object({
-	id: z.string().uuid(),
-	name: z.string().min(1),
-	description: z.string().nullable().optional(),
-	fruit_definition: z.string().nullable().optional(),
-	failure_patterns: z.array(FailurePatternSchema).default([]),
-	expected_cadence: z.string().nullable().optional(),
-	active: z.boolean(),
-	// Added by migration 0027. Manual "I shipped something" timestamp for
-	// domains whose work lives off-dashboard (Substack, social, etc.). The
-	// cadence helper's days_since_publish rule reads MAX of this and the
-	// latest content_items.published_at.
-	last_shipped_at: z.string().datetime({ offset: true }).nullable().optional(),
-	// .nullable() is load-bearing: lib/form-decode.ts's isNullable probe
-	// (field.safeParse(null).success) is what turns a blank "None" swatch
-	// submission into an explicit null that CLEARS the column.
-	color: ColorSlugSchema.nullable().optional(),
-	created_at: z.string().datetime({ offset: true }),
-	updated_at: z.string().datetime({ offset: true }),
-});
-
 // Create-time shape used by the "new domain" form. active/last_shipped_at are
 // not settable on create — new domains are always active, and last_shipped_at
 // starts unset.

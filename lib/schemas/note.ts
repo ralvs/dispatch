@@ -53,27 +53,6 @@ export const AttachmentSchema = z.object({
 });
 export type Attachment = z.infer<typeof AttachmentSchema>;
 
-export const NoteSchema = z.object({
-	id: z.string().uuid(),
-	title: z.string().nullable().optional(),
-	body: z.string().min(1),
-	source_type: NoteSourceTypeSchema,
-	source_reference: z.string().nullable().optional(),
-	tags: z.array(z.string()).default([]),
-	// Optional, with no Inbox fallback — a loose thought stays loose
-	// (shape plan D1). A note may carry a domain, a project, both or neither.
-	domain_id: z.string().uuid().nullable().optional(),
-	related_project_id: z.string().uuid().nullable().optional(),
-	related_person_id: z.string().uuid().nullable().optional(),
-	related_quote_id: z.string().uuid().nullable().optional(),
-	needs_review: z.boolean().default(false),
-	// Set when the note was degraded from a raw capture (docs/adr/0008); the
-	// reconciliation sweep dedupes on it. Null for hand-authored notes.
-	origin_capture_id: z.string().uuid().nullable().optional(),
-	attachments: z.array(AttachmentSchema).default([]),
-	created_at: z.string().datetime({ offset: true }),
-});
-
 export const CreateNoteSchema = z.object({
 	title: z.string().nullable().optional(),
 	body: z.string().min(1),
