@@ -1,11 +1,6 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
-	// Allows to automatically instantiate createClient with right options
-	// instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-	__InternalSupabase: {
-		PostgrestVersion: "14.5";
-	};
 	public: {
 		Tables: {
 			app_settings: {
@@ -1074,6 +1069,13 @@ export type Database = {
 						referencedRelation: "projects";
 						referencedColumns: ["id"];
 					},
+					{
+						foreignKeyName: "tasks_series_id_fkey";
+						columns: ["series_id"];
+						isOneToOne: false;
+						referencedRelation: "tasks";
+						referencedColumns: ["id"];
+					},
 				];
 			};
 		};
@@ -1081,6 +1083,17 @@ export type Database = {
 			[_ in never]: never;
 		};
 		Functions: {
+			complete_recurring_task: {
+				Args: {
+					p_completed_at: string;
+					p_next_due: string;
+					p_next_recurrence_day: number;
+					p_observed_due: string;
+					p_snapshot_id?: string;
+					p_task_id: string;
+				};
+				Returns: string;
+			};
 			note_attachment_add: {
 				Args: { p_item: Json; p_note_id: string };
 				Returns: undefined;
@@ -1088,6 +1101,33 @@ export type Database = {
 			note_attachment_remove: {
 				Args: { p_note_id: string; p_storage_path: string };
 				Returns: undefined;
+			};
+			note_body_append: {
+				Args: { p_line: string; p_note_id: string };
+				Returns: {
+					new_body: string;
+					old_body: string;
+				}[];
+			};
+			skip_recurring_task: {
+				Args: {
+					p_next_due: string;
+					p_next_recurrence_day: number;
+					p_observed_due: string;
+					p_task_id: string;
+				};
+				Returns: string;
+			};
+			task_notes_append: {
+				Args: { p_line: string; p_max: number; p_task_id: string };
+				Returns: {
+					new_notes: string;
+					old_notes: string;
+				}[];
+			};
+			untick_recurring_snapshot: {
+				Args: { p_snapshot_id: string };
+				Returns: string;
 			};
 		};
 		Enums: {
