@@ -10,16 +10,23 @@ type GenPublic = Generated["public"];
 type GenTables = GenPublic["Tables"];
 type GenFunctions = GenPublic["Functions"];
 
+/** The keys of `T` that are not optional. */
+type RequiredKeys<T> = { [K in keyof T]-?: object extends Pick<T, K> ? never : K }[keyof T];
+
 /**
  * Narrows columns of one generated table. `C` may only name columns the table
  * has, so a renamed or dropped column fails here instead of silently widening.
+ * An Insert column stays required when the generated Insert requires it (NOT
+ * NULL, no default), so narrowing never lets an insert omit it.
  */
 export type Narrow<
 	T extends keyof GenTables,
 	C extends Partial<Record<keyof GenTables[T]["Row"], unknown>>,
 > = Omit<GenTables[T], "Row" | "Insert" | "Update"> & {
 	Row: Omit<GenTables[T]["Row"], keyof C> & C;
-	Insert: Omit<GenTables[T]["Insert"], keyof C> & { [K in keyof C]?: C[K] };
+	Insert: Omit<GenTables[T]["Insert"], keyof C> & {
+		[K in keyof C & RequiredKeys<GenTables[T]["Insert"]>]: C[K];
+	} & { [K in Exclude<keyof C, RequiredKeys<GenTables[T]["Insert"]>>]?: C[K] };
 	Update: Omit<GenTables[T]["Update"], keyof C> & { [K in keyof C]?: C[K] };
 };
 

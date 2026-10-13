@@ -142,7 +142,7 @@ export async function createInteraction(
 	const data = unwrap(
 		await sb
 			.from("person_interactions")
-			.insert({ ...rest, ...(occurred_at ? { occurred_at } : {}), person_id: personId })
+			.insert({ ...rest, ...(occurred_at != null ? { occurred_at } : {}), person_id: personId })
 			.select(PERSON_INTERACTION_SELECT)
 			.single(),
 	);

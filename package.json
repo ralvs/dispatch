@@ -14,7 +14,7 @@
 		"test:e2e": "playwright test",
 		"test:watch": "vitest --project unit --project component",
 		"eval:parser": "bun --conditions=react-server scripts/parser-eval.ts",
-		"db:types": "supabase gen types typescript --local --schema public | biome format --stdin-file-path=lib/database.types.ts > lib/database.types.ts.tmp && mv lib/database.types.ts.tmp lib/database.types.ts",
+		"db:types": "supabase gen types typescript --local --schema public > lib/database.types.gen.ts && biome format --write lib/database.types.gen.ts && mv lib/database.types.gen.ts lib/database.types.ts",
 		"backfill:links": "bun --conditions=react-server scripts/backfill-link-metadata.ts",
 		"check": "biome check . && tsc --noEmit && vitest run --project unit --project component"
 	},
