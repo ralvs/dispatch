@@ -3,42 +3,10 @@
 import { CreateDialogButton } from "@/components/create-dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui";
 import { projectCounters } from "@/lib/counts";
-import { nowUtc } from "@/lib/dates";
 import type { DomainRow } from "@/lib/schemas/domain";
-import type { ProjectRow } from "@/lib/schemas/project";
 import { EMPTY_TASK_COUNTS } from "@/lib/services/projects-shared";
-import { useClock, useStoreActions, useStoreWrite } from "@/lib/store";
-import { createProjectAction } from "./actions";
-
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-/** The project the list shows while the server writes it; the server's row replaces it (#30). */
-function optimisticProject(formData: FormData, domains: DomainRow[]): ProjectRow {
-	const text = (key: string) => {
-		const value = String(formData.get(key) ?? "").trim();
-		return value === "" ? null : value;
-	};
-	const date = (key: string) => {
-		const value = text(key);
-		return value && DATE.test(value) ? value : null;
-	};
-	const domain = domains.find((d) => d.id === text("domain_id"));
-	const at = nowUtc();
-	return {
-		id: crypto.randomUUID(),
-		name: text("name") ?? "",
-		description: text("description"),
-		domain_id: domain?.id ?? "",
-		status: "active",
-		start_date: date("start_date"),
-		target_date: date("target_date"),
-		completed_at: null,
-		color: null,
-		created_at: at,
-		updated_at: at,
-		...(domain ? { domain: { id: domain.id, name: domain.name, color: domain.color } } : {}),
-	};
-}
+import { useClock, useStoreActions, useWrites } from "@/lib/store";
+import { projectWrites } from "./writes";
 
 /**
  * Create a project — dialog behind the header's `+` (Gate B / B1, ADR-0043
@@ -46,14 +14,12 @@ function optimisticProject(formData: FormData, domains: DomainRow[]): ProjectRow
  * gone; the form is one action on the page, not furniture in it.
  */
 export function ProjectCreateButton({ domains }: { domains: DomainRow[] }) {
-	const write = useStoreWrite("project");
+	const { submit } = useWrites();
 	const { seed } = useStoreActions();
 	const clock = useClock();
 
 	async function create(formData: FormData) {
-		const result = await write({ type: "create", row: optimisticProject(formData, domains) }, () =>
-			createProjectAction(formData),
-		);
+		const result = await submit(projectWrites.create(formData, domains));
 		// A new project has no tasks yet: both its counts start at zero,
 		// read as of the write, so every later task and finish moves them.
 		if (result.ok) {
