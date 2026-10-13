@@ -18,7 +18,9 @@ export const CreateDomainSchema = z.object({
 	description: z.string().nullable().optional(),
 	fruit_definition: z.string().nullable().optional(),
 	expected_cadence: z.string().nullable().optional(),
-	// .nullable() is load-bearing — see DomainRow.color.
+	// .nullable() is load-bearing: lib/form-decode.ts's isNullable probe
+	// (field.safeParse(null).success) is what turns a blank "None" swatch
+	// submission into an explicit null that CLEARS the column.
 	color: ColorSlugSchema.nullable().optional(),
 });
 
@@ -37,7 +39,7 @@ export const UpdateDomainSchema = z.object({
 	// Stamped via the "Mark shipped" button on the domain detail page.
 	// Accept ISO datetime or null (to clear).
 	last_shipped_at: z.string().datetime({ offset: true }).nullable().optional(),
-	// .nullable() is load-bearing — see DomainRow.color.
+	// .nullable() is load-bearing — see CreateDomainSchema.color.
 	color: ColorSlugSchema.nullable().optional(),
 });
 
