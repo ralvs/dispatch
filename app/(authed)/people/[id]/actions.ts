@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import type { ActionResult } from "@/lib/action-result";
+import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { instantFromLocal } from "@/lib/dates";
 import { decodeForm } from "@/lib/form-decode";
@@ -29,7 +29,8 @@ import type { StoreWrite } from "@/lib/store/types";
 
 // Every action returns what it wrote (#30), so the person page's entity-store
 // views — the person, the facts, the interactions — confirm their optimistic
-// intent from it instead of waiting on a page render. Failures throw; the
+// intent from it instead of waiting on a page render. A form write returns a
+// rejected field as a result (runFormAction); other failures throw, and the
 // store runner rolls back on a throw.
 
 function revalidatePersonViews() {
@@ -42,10 +43,11 @@ export async function updatePersonAction(
 ): Promise<ActionResult<StoreWrite<PersonRow>>> {
 	const { sb } = await requireOwnerPage();
 	const personId = z.uuid().parse(id);
-	const parsed = decodeForm(UpdatePersonSchema, formData);
-	await updatePerson(sb, personId, parsed);
-	revalidatePersonViews();
-	return { ok: true, data: await written(sb, "person", personId) };
+	return runFormAction(formData, async () => {
+		await updatePerson(sb, personId, decodeForm(UpdatePersonSchema, formData));
+		revalidatePersonViews();
+		return written(sb, "person", personId);
+	});
 }
 
 /** No redirect: that would roll the intent back. The page navigates once the store has it. */
@@ -63,10 +65,11 @@ export async function createFactAction(
 ): Promise<ActionResult<StoreWrite<PersonFactRow>>> {
 	const { sb } = await requireOwnerPage();
 	const id = z.uuid().parse(personId);
-	const parsed = decodeForm(CreatePersonFactSchema, formData);
-	const fact = await createFact(sb, id, parsed);
-	revalidatePersonViews();
-	return { ok: true, data: stampWrite([fact]) };
+	return runFormAction(formData, async () => {
+		const fact = await createFact(sb, id, decodeForm(CreatePersonFactSchema, formData));
+		revalidatePersonViews();
+		return stampWrite([fact]);
+	});
 }
 
 export async function deleteFactAction(
