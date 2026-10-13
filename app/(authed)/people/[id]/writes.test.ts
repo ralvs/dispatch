@@ -122,7 +122,7 @@ describe("personFactWrites.create agrees with the server's decode", () => {
 			const w = personFactWrites.create("p1", fd);
 			if (c.server === "refused") {
 				expect(() => createPersonFactForm.parse(fd)).toThrow();
-				expect(w.intent).toMatchObject({ type: "patch", patch: {} });
+				expect(w.intent).toEqual({ type: "patch", id: expect.any(String), patch: {} });
 			} else {
 				expect(createPersonFactForm.parse(fd)).toEqual(c.server);
 				expect(w.intent).toMatchObject({ type: "create", row: c.shown });
@@ -152,6 +152,8 @@ const interactionCases: Case[] = [
 		shown: { interaction_type: "text", occurred_at: "2026-07-14T03:00:00.000Z", notes: null },
 	},
 	{
+		// The server sends null and the database stamps now(); the shown row
+		// needs a string, so it carries the client's clock as the stand-in.
 		name: "no day is now",
 		fields: { interaction_type: "email", notes: "Hi" },
 		server: { interaction_type: "email", occurred_at: null, notes: "Hi" },
@@ -172,7 +174,7 @@ describe("personInteractionWrites.create agrees with the server's decode", () =>
 			const w = personInteractionWrites.create("p1", fd, TZ);
 			if (c.server === "refused") {
 				expect(() => serverInteraction(fd)).toThrow();
-				expect(w.intent).toMatchObject({ type: "patch", patch: {} });
+				expect(w.intent).toEqual({ type: "patch", id: expect.any(String), patch: {} });
 			} else {
 				expect(serverInteraction(fd)).toEqual(c.server);
 				expect(w.intent).toMatchObject({ type: "create", row: c.shown });

@@ -57,7 +57,7 @@ describe("personListWrites.create agrees with the server's decode", () => {
 			const w = personListWrites.create(fd);
 			if (c.server === "refused") {
 				expect(() => createPersonForm.parse(fd)).toThrow();
-				expect(w.intent).toMatchObject({ type: "patch", patch: {} });
+				expect(w.intent).toEqual({ type: "patch", id: expect.any(String), patch: {} });
 			} else {
 				expect(createPersonForm.parse(fd)).toEqual(c.server);
 				expect(w.intent).toMatchObject({ type: "create", row: c.row });

@@ -79,7 +79,7 @@ describe("routineWrites.create agrees with the server's decode", () => {
 			const w = routineWrites.create(fd);
 			if (c.server === "refused") {
 				expect(() => createRoutineForm.parse(fd)).toThrow();
-				expect(w.intent).toMatchObject({ type: "edit", patch: {} });
+				expect(w.intent).toEqual({ type: "edit", id: expect.any(String), patch: {} });
 			} else {
 				expect(createRoutineForm.parse(fd)).toEqual(c.server);
 				expect(w.intent).toMatchObject({ type: "create", routine: c.shown });

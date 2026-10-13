@@ -41,11 +41,12 @@ export async function updateDomainAction(
 	formData: FormData,
 ): Promise<ActionResult<DomainWrite>> {
 	const { sb } = await requireOwnerPage();
-	// A refused field — a bad cadence included — comes back as a field error,
-	// not a throw, and is parsed before any write, so it changes nothing
+	// A bad id is the caller's bug, not a form field: it throws, as in the
+	// other actions. A refused field — a bad cadence included — comes back as
+	// a field error, parsed before any write, so it changes nothing
 	// (docs/adr/0087).
+	const domainId = z.uuid().parse(id);
 	return runFormAction(formData, async () => {
-		const domainId = z.uuid().parse(id);
 		const { cadence_days: days, ...patch } = updateDomainForm.parse(formData);
 		await updateDomain(sb, domainId, patch);
 		// The cadence rule rides in the same form but not the same patch: it lives

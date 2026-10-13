@@ -59,7 +59,7 @@ describe("domainWrites.create agrees with the server's decode", () => {
 			const w = domainWrites.create(f);
 			if (c.server === "refused") {
 				expect(() => createDomainForm.parse(f)).toThrow();
-				expect(w.intent).toMatchObject({ type: "patch", patch: {} });
+				expect(w.intent).toEqual({ type: "patch", id: expect.any(String), patch: {} });
 			} else {
 				expect(createDomainForm.parse(f)).toEqual(c.server);
 				expect(w.intent).toMatchObject({ type: "create", row: c.row });
