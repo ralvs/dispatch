@@ -24,13 +24,14 @@ function make(extensions: Editor["options"]["extensions"]): Editor {
 	return editor;
 }
 
-async function type(e: Editor, text: string) {
+// The suggestion plugin resolves items asynchronously, then mounts the panel:
+// wait for the text the panel must show, not just for the panel shell.
+async function type(e: Editor, text: string, shows: string) {
 	act(() => {
 		e.commands.focus("end");
 		e.commands.insertContent(text);
 	});
-	// The suggestion plugin resolves items asynchronously, then mounts the panel.
-	await waitFor(() => expect(document.body.querySelector("li, div[style] > div")).not.toBeNull());
+	await waitFor(() => expect(document.body.textContent).toContain(shows));
 }
 
 function key(e: Editor, k: string) {
@@ -60,26 +61,26 @@ const notes = [
 describe("the [[ wikilink autocomplete", () => {
 	it("offers every other note on an empty query, never the note itself", async () => {
 		const e = make([Wikilink, createWikilinkSuggestionExtension(notes, SELF)]);
-		await type(e, "[[");
+		await type(e, "[[", "Weekly plan");
 		expect(options()).toEqual(["Weekly plan", "Reading list"]);
 	});
 
 	it("filters by title, case-insensitively", async () => {
 		const e = make([Wikilink, createWikilinkSuggestionExtension(notes, SELF)]);
-		await type(e, "[[WEEK");
+		await type(e, "[[WEEK", "Weekly plan");
 		expect(options()).toEqual(["Weekly plan"]);
 	});
 
 	it("shows the empty label when nothing matches", async () => {
 		const e = make([Wikilink, createWikilinkSuggestionExtension(notes, SELF)]);
-		await type(e, "[[zzz");
+		await type(e, "[[zzz", "No matching notes");
 		expect(options()).toEqual([]);
 		expect(document.body.textContent).toContain("No matching notes");
 	});
 
 	it("inserts the picked note as a wikilink node plus a trailing space", async () => {
 		const e = make([Wikilink, createWikilinkSuggestionExtension(notes, SELF)]);
-		await type(e, "[[read");
+		await type(e, "[[read", "Reading list");
 		key(e, "Enter");
 		expect(nodesOf(e, "wikilink")).toEqual([{ id: B, label: "Reading list" }]);
 		expect(e.getText()).toBe(`[[${B}|Reading list]] `);
@@ -88,7 +89,7 @@ describe("the [[ wikilink autocomplete", () => {
 
 	it("moves the selection with the arrow keys and wraps", async () => {
 		const e = make([Wikilink, createWikilinkSuggestionExtension(notes, SELF)]);
-		await type(e, "[[");
+		await type(e, "[[", "Reading list");
 		key(e, "ArrowUp");
 		key(e, "Enter");
 		expect(nodesOf(e, "wikilink")).toEqual([{ id: B, label: "Reading list" }]);
@@ -96,7 +97,7 @@ describe("the [[ wikilink autocomplete", () => {
 
 	it("closes on Escape without inserting", async () => {
 		const e = make([Wikilink, createWikilinkSuggestionExtension(notes, SELF)]);
-		await type(e, "[[week");
+		await type(e, "[[week", "Weekly plan");
 		key(e, "Escape");
 		expect(options()).toEqual([]);
 		expect(nodesOf(e, "wikilink")).toEqual([]);
@@ -104,17 +105,17 @@ describe("the [[ wikilink autocomplete", () => {
 });
 
 describe("the @ mention autocomplete", () => {
-	it("reads the people pool on every keystroke and matches accent-insensitively", async () => {
+	it("reads the people pool when the query runs, not when the editor is made, and matches accent-insensitively", async () => {
 		const people = [{ id: A, name: "João Silva" }];
 		const e = make([Mention, createMentionSuggestionExtension(() => people)]);
 		people.push({ id: B, name: "Joana" });
-		await type(e, "@joa");
+		await type(e, "@joa", "Joana");
 		expect(options()).toEqual(["João Silva", "Joana"]);
 	});
 
 	it("inserts the picked person as a mention node", async () => {
 		const e = make([Mention, createMentionSuggestionExtension(() => [{ id: A, name: "Ana" }])]);
-		await type(e, "@an");
+		await type(e, "@an", "Ana");
 		key(e, "Enter");
 		expect(nodesOf(e, "mention")).toEqual([{ id: A, name: "Ana" }]);
 	});
@@ -134,7 +135,7 @@ describe("createSuggestionExtension", () => {
 				toNode: () => ({ type: "text", attrs: {} }),
 			}),
 		]);
-		await type(e, "#");
+		await type(e, "#", "Item 0");
 		expect(options()).toHaveLength(8);
 	});
 

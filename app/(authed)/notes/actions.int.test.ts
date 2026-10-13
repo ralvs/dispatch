@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { afterMutation } from "@/lib/invalidate";
 import { createDomain } from "@/lib/services/domains";
 import { createNote, getNote } from "@/lib/services/notes";
@@ -209,18 +210,24 @@ describe("attachLinkAction / detachLinkAction", () => {
 // the guards. Only the refusals that come before storage are tested here;
 // the storage path itself is covered in lib/services/note-attachments.int.test.ts.
 describe("removeAttachmentAction", () => {
+	// Each refusal must come from its own guard, not from storage: a missing
+	// guard would reach R2, which the test setup leaves unconfigured.
 	it("refuses a bad note id", async () => {
-		await expect(removeAttachmentAction("nope", "notes/x/y.png")).rejects.toThrow();
+		await expect(removeAttachmentAction("nope", "notes/x/y.png")).rejects.toBeInstanceOf(
+			z.ZodError,
+		);
 	});
 
 	it("refuses an empty storage path", async () => {
 		const note = await aNote();
-		await expect(removeAttachmentAction(note.id, "")).rejects.toThrow();
+		await expect(removeAttachmentAction(note.id, "")).rejects.toBeInstanceOf(z.ZodError);
 	});
 
 	it("refuses a path outside the note's prefix", async () => {
 		const note = await aNote();
-		await expect(removeAttachmentAction(note.id, `notes/${UNKNOWN}/a.png`)).rejects.toThrow();
+		await expect(removeAttachmentAction(note.id, `notes/${UNKNOWN}/a.png`)).rejects.toThrow(
+			"Attachment does not belong to this note",
+		);
 		expect(afterMutation).not.toHaveBeenCalled();
 	});
 });
@@ -233,10 +240,15 @@ describe("searchLinkTargetsAction", () => {
 	it("finds tasks by title and marks done ones", async () => {
 		const sb = await ownerClient();
 		const task = await createTask(sb, { title: "Renew passport" });
+		const done = await createTask(sb, { title: "Old passport photo" });
+		const { error } = await sb.from("tasks").update({ status: "done" }).eq("id", done.id);
+		if (error) throw error;
 
 		const results = await searchLinkTargetsAction("task", "passport");
 
-		expect(results).toEqual([{ id: task.id, label: "Renew passport" }]);
+		expect(results).toHaveLength(2);
+		expect(results).toContainEqual({ id: task.id, label: "Renew passport" });
+		expect(results).toContainEqual({ id: done.id, label: "Old passport photo · done" });
 	});
 
 	it("finds events by title, labelled with their start", async () => {

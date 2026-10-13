@@ -44,6 +44,7 @@ describe("Wikilink extension", () => {
 	it("leaves a token whose id is not a uuid as plain text", () => {
 		const e = make("See [[not-a-uuid|Plan]] today");
 		expect(wikilinks(e)).toEqual([]);
+		expect(e.getText()).toContain("[[not-a-uuid|Plan]]");
 	});
 
 	it("renders a link to the target note", () => {
