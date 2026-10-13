@@ -8,6 +8,7 @@ import {
 	selectView,
 } from "@/lib/store/core";
 import { viewKey } from "@/lib/store/keys";
+import { unshown } from "@/lib/store/kinds/record";
 import {
 	deepFreeze,
 	journalEntry,
@@ -172,5 +173,25 @@ describe("record views", () => {
 		const [s1] = applyIntent(seededQuotes(), intent, NOW);
 		const [s2] = applyIntent(s1, intent, NOW);
 		expect(selectView(s2, quotes)).toEqual(selectView(s1, quotes));
+	});
+});
+
+describe("unshown (docs/adr/0087)", () => {
+	it("a refused form's intent shows nothing; the server's row still lands on confirm", () => {
+		const s = seededQuotes();
+		const [s1, t] = applyIntent(s, { kind: "quote", intent: unshown() }, NOW);
+		expect(selectView(s1, quotes)).toBe(selectView(s, quotes));
+		const saved = quote({ id: "saved", created_at: "2026-07-15T12:02:31+00:00" });
+		const s2 = confirmWrite(s1, t, { at: T2, rows: [saved] });
+		expect(ids(selectView(s2, quotes))).toEqual(["saved", "newer", "older"]);
+	});
+
+	it("a refused edit shows nothing; the server's row still lands on confirm", () => {
+		const s = seededQuotes();
+		const [s1, t] = applyIntent(s, { kind: "quote", intent: unshown("newer") }, NOW);
+		expect(selectView(s1, quotes)).toEqual(selectView(s, quotes));
+		const edited = { ...newer, text: "Edited" };
+		const s2 = confirmWrite(s1, t, { at: T2, rows: [edited] });
+		expect(selectView(s2, quotes)?.[0]).toEqual(edited);
 	});
 });

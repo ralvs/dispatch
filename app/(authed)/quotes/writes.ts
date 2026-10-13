@@ -3,39 +3,37 @@
 // references only.
 
 import { nowUtc } from "@/lib/dates";
-import { type QuoteRow, QuoteSourceTypeSchema } from "@/lib/schemas/quote";
+import { type CreateQuoteInput, createQuoteForm, type QuoteRow } from "@/lib/schemas/quote";
+import { unshown } from "@/lib/store/kinds/record";
 import { type Write, write } from "@/lib/store/write";
 import { createQuoteAction, deleteQuoteAction } from "./actions";
 
 /** The row the list shows while the server writes it; the server's row replaces it (#30). */
-function optimisticQuote(formData: FormData): QuoteRow {
-	const text = (key: string) => {
-		const value = String(formData.get(key) ?? "").trim();
-		return value === "" ? null : value;
-	};
-	const source = QuoteSourceTypeSchema.safeParse(formData.get("source_type"));
+function optimisticQuote(input: CreateQuoteInput): QuoteRow {
 	return {
 		id: crypto.randomUUID(),
-		text: text("text") ?? "",
-		page_number: null,
-		chapter: null,
-		source_type: source.success ? source.data : null,
-		source_reference: null,
-		source_url: null,
-		source_author: text("source_author"),
-		tags: (text("tags") ?? "")
-			.split(",")
-			.map((t) => t.trim())
-			.filter(Boolean),
-		added_via: "manual",
+		text: input.text,
+		page_number: input.page_number ?? null,
+		chapter: input.chapter ?? null,
+		source_type: input.source_type ?? null,
+		source_reference: input.source_reference ?? null,
+		source_url: input.source_url ?? null,
+		source_author: input.source_author ?? null,
+		tags: input.tags ?? [],
+		added_via: input.added_via ?? "manual",
 		last_surfaced_at: null,
 		created_at: nowUtc(),
 	};
 }
 
 export const quoteWrites = {
-	create: (form: FormData): Write<"quote"> =>
-		write("quote", { type: "create", row: optimisticQuote(form) }, () => createQuoteAction(form)),
+	/** A form the decoder refuses shows nothing; the server's field errors do (docs/adr/0087). */
+	create: (form: FormData): Write<"quote"> => {
+		const input = createQuoteForm.read(form);
+		return write("quote", input ? { type: "create", row: optimisticQuote(input) } : unshown(), () =>
+			createQuoteAction(form),
+		);
+	},
 	remove: (id: string): Write<"quote"> =>
 		write("quote", { type: "delete", id }, () => deleteQuoteAction(id), "Couldn't delete quote."),
 };
