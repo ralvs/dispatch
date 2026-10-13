@@ -48,7 +48,11 @@ describe("projectDetailWrites", () => {
 
 	it("complete marks it done and calls complete on the same id", async () => {
 		const w = projectDetailWrites.complete("p1");
-		expect(w.intent).toMatchObject({ type: "patch", id: "p1", patch: { status: "done" } });
+		expect(w.intent).toMatchObject({
+			type: "patch",
+			id: "p1",
+			patch: { status: "done", completed_at: expect.any(String) },
+		});
 		expect(w.errorMessage).toBe("Couldn't update project.");
 		await w.call(ctx);
 		expect(completeProjectAction).toHaveBeenCalledWith("p1");
@@ -57,6 +61,7 @@ describe("projectDetailWrites", () => {
 	it("archive marks it archived and calls archive on the same id", async () => {
 		const w = projectDetailWrites.archive("p1");
 		expect(w.intent).toEqual({ type: "patch", id: "p1", patch: { status: "archived" } });
+		expect(w.errorMessage).toBe("Couldn't update project.");
 		await w.call(ctx);
 		expect(archiveProjectAction).toHaveBeenCalledWith("p1");
 	});

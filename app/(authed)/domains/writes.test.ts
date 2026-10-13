@@ -3,6 +3,7 @@ import {
 	archiveDomainAction,
 	createDomainAction,
 	markDomainShippedAction,
+	reactivateDomainAction,
 	updateDomainAction,
 } from "@/app/(authed)/domains/actions";
 import type { IntentCtx } from "@/lib/store/types";
@@ -68,8 +69,21 @@ describe("domainWrites", () => {
 
 	it("mark shipped stamps last_shipped_at and calls the action", async () => {
 		const w = domainWrites.markShipped("d1");
-		expect(w.intent).toMatchObject({ type: "patch", id: "d1" });
+		expect(w.intent).toMatchObject({
+			type: "patch",
+			id: "d1",
+			patch: { last_shipped_at: expect.any(String) },
+		});
+		expect(w.errorMessage).toBe("Couldn't update domain.");
 		await w.call(ctx);
 		expect(markDomainShippedAction).toHaveBeenCalledWith("d1");
+	});
+
+	it("reactivate marks it active and calls reactivate on the same id", async () => {
+		const w = domainWrites.reactivate("d1");
+		expect(w.intent).toEqual({ type: "patch", id: "d1", patch: { active: true } });
+		expect(w.errorMessage).toBe("Couldn't update domain.");
+		await w.call(ctx);
+		expect(reactivateDomainAction).toHaveBeenCalledWith("d1");
 	});
 });
