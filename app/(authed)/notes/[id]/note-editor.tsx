@@ -95,7 +95,8 @@ export function NoteEditor({ noteId, ...props }: EditorProps & { noteId: string 
 			</EmptyState>
 		);
 	}
-	return <NoteForm note={note} {...props} />;
+	// Keyed by the note: the form reads its title and body once, at mount.
+	return <NoteForm key={note.id} note={note} {...props} />;
 }
 
 function NoteForm({

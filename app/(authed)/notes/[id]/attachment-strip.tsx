@@ -99,7 +99,10 @@ export function AttachmentStrip({
 				}
 				if (body?.attached?.length) {
 					const write = body.write as StoreWrite<NoteListRow> | null;
+					// The route sends the row whenever a file landed; without it the
+					// strip cannot show the file, so say so rather than look unchanged.
 					if (write) adopt("note", { type: "touch", id: noteId }, write);
+					else toastError("The file is attached. Reload to see it.");
 				}
 			} catch {
 				toastError("Couldn't attach the file.");

@@ -12,11 +12,15 @@ import { useView, viewKey } from "@/lib/store";
  */
 export function useOpenNote(noteId: string): NoteListRow | undefined {
 	const stored = useView(viewKey.note(noteId))?.[0];
-	const [last, setLast] = useState(stored);
-	if (stored !== undefined && stored !== last) setLast(stored);
+	// The held row names its note, so a page reused for another id never
+	// falls back to the previous note's row.
+	const [held, setHeld] = useState({ id: noteId, row: stored });
+	if (held.id !== noteId || (stored !== undefined && stored !== held.row)) {
+		setHeld({ id: noteId, row: stored });
+	}
 	// Next keeps a left page mounted but hidden, and hiding runs effect
 	// cleanups: forget the held row here, so going Back to a deleted note shows
 	// it gone rather than held.
-	useEffect(() => () => setLast(undefined), []);
-	return stored ?? last;
+	useEffect(() => () => setHeld((h) => ({ id: h.id, row: undefined })), []);
+	return stored ?? (held.id === noteId ? held.row : undefined);
 }
