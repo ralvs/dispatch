@@ -75,7 +75,10 @@ export type NullableArgs<
 type Infer<S extends z.ZodType> = z.infer<S>;
 
 type Overrides = {
-	calendar_events: Narrow<"calendar_events", { source: Infer<typeof CalendarEventSourceSchema> }>;
+	calendar_events: Narrow<
+		"calendar_events",
+		{ source: Infer<typeof CalendarEventSourceSchema>; attendees: string[] }
+	>;
 	captured_data: Narrow<
 		"captured_data",
 		{
