@@ -1,7 +1,7 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { archiveDomainAction } from "@/app/(authed)/domains/actions";
+import { archiveDomainAction, updateDomainAction } from "@/app/(authed)/domains/actions";
 import type { ActionResult } from "@/lib/action-result";
 import type { DomainItem } from "@/lib/schemas/domain";
 import { createDispatchStore, type DispatchStore } from "@/lib/store/create-store";
@@ -97,5 +97,64 @@ describe("DomainList on the entity store", () => {
 		expect(within(row("work")).getByText("2 open tasks")).toBeInTheDocument();
 		// Not seeded: the row's own count stands in.
 		expect(within(row("health")).getByText("0 open tasks")).toBeInTheDocument();
+	});
+});
+
+describe("DomainRowItem inline edit", () => {
+	function renderList() {
+		render(
+			<StoreProvider store={store}>
+				<Seed
+					snapshot={snapshot(T1, [
+						{ key: viewKey.domains(), type: "domainList", data: { rows: [work] } },
+					])}
+				>
+					<DomainList />
+				</Seed>
+			</StoreProvider>,
+		);
+	}
+
+	it("a refused edit shows the field error inline, a good one clears it", async () => {
+		const user = userEvent.setup();
+		vi.mocked(updateDomainAction).mockResolvedValueOnce({
+			ok: false,
+			fieldErrors: { name: ["Name is taken"] },
+		});
+		renderList();
+		await user.click(screen.getByRole("button", { name: "Edit Work" }));
+		await user.click(screen.getByRole("button", { name: "Save" }));
+		expect(await screen.findByText("Name is taken")).toBeInTheDocument();
+
+		// Editing the field again clears its error.
+		fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Job" } });
+		expect(screen.queryByText("Name is taken")).not.toBeInTheDocument();
+
+		vi.mocked(updateDomainAction).mockResolvedValueOnce({
+			ok: false,
+			fieldErrors: { name: ["Name is taken"] },
+		});
+		await user.click(screen.getByRole("button", { name: "Save" }));
+		expect(await screen.findByText("Name is taken")).toBeInTheDocument();
+
+		vi.mocked(updateDomainAction).mockResolvedValueOnce({
+			ok: true,
+			data: { at: T2, rows: [{ ...work, name: "Job" }] },
+		});
+		await user.click(screen.getByRole("button", { name: "Save" }));
+		await user.click(await screen.findByRole("button", { name: "Edit Job" }));
+		expect(screen.queryByText("Name is taken")).not.toBeInTheDocument();
+	});
+
+	it("a refused colour shows its error inline too", async () => {
+		const user = userEvent.setup();
+		vi.mocked(updateDomainAction).mockResolvedValueOnce({
+			ok: false,
+			fieldErrors: { color: ["Pick a colour from the list"] },
+		});
+		renderList();
+		await user.click(screen.getByRole("button", { name: "Edit Work" }));
+		await user.click(screen.getByRole("button", { name: "Save" }));
+		expect(await screen.findByText("Pick a colour from the list")).toBeInTheDocument();
 	});
 });

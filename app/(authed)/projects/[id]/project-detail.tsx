@@ -8,6 +8,7 @@ import {
 	Checkbox,
 	EmptyState,
 	Field,
+	FormStateProvider,
 	Input,
 	ListRow,
 	PageHeader,
@@ -45,7 +46,7 @@ export function ProjectDetail({
 	/** App-timezone today (docs/adr/0002) — recurrence rolls from this. */
 	todayIso: string;
 }) {
-	const edit = useInlineEdit();
+	const edit = useInlineEdit({ fieldErrors: true });
 	const project = useView(viewKey.projectHead(projectId))?.[0];
 	const optTasks = useView(viewKey.project(projectId)) ?? NO_TASKS;
 	const writes = useWrites();
@@ -109,51 +110,63 @@ export function ProjectDetail({
 
 			<section aria-label="Details">
 				{edit.editing ? (
-					<form action={saveDetails}>
-						<Card className="space-y-4" padding="default">
-							<Field label="Name">
-								<Input name="name" required defaultValue={project.name} />
-							</Field>
-							<Field label="Description">
-								<Textarea
-									name="description"
-									rows={2}
-									defaultValue={project.description ?? ""}
-									size="sm"
-								/>
-							</Field>
-							<div className="grid grid-cols-2 gap-3">
-								<Field label="Domain">
-									<Select name="domain_id" defaultValue={project.domain_id} required>
-										{domains.map((d) => (
-											<option key={d.id} value={d.id}>
-												{d.name}
-											</option>
-										))}
-									</Select>
+					<FormStateProvider state={edit.formState}>
+						<form
+							action={saveDetails}
+							onChange={(e) => {
+								const name = (e.target as Element).getAttribute("name");
+								if (name) edit.clearField(name);
+							}}
+						>
+							<Card className="space-y-4" padding="default">
+								<Field label="Name" name="name">
+									<Input name="name" required defaultValue={project.name} />
 								</Field>
-								<Field label="Start date">
-									<Input name="start_date" type="date" defaultValue={project.start_date ?? ""} />
+								<Field label="Description" name="description">
+									<Textarea
+										name="description"
+										rows={2}
+										defaultValue={project.description ?? ""}
+										size="sm"
+									/>
 								</Field>
-								<Field label="Target date">
-									<Input name="target_date" type="date" defaultValue={project.target_date ?? ""} />
-								</Field>
-							</div>
-							<div className="flex justify-end gap-2 pt-1">
-								<Button type="button" variant="ghost" onClick={edit.close}>
-									Cancel
-								</Button>
-								<Button
-									type="submit"
-									variant="primary"
-									isPending={edit.pending}
-									disabled={edit.pending}
-								>
-									Save
-								</Button>
-							</div>
-						</Card>
-					</form>
+								<div className="grid grid-cols-2 gap-3">
+									<Field label="Domain" name="domain_id">
+										<Select name="domain_id" defaultValue={project.domain_id} required>
+											{domains.map((d) => (
+												<option key={d.id} value={d.id}>
+													{d.name}
+												</option>
+											))}
+										</Select>
+									</Field>
+									<Field label="Start date" name="start_date">
+										<Input name="start_date" type="date" defaultValue={project.start_date ?? ""} />
+									</Field>
+									<Field label="Target date" name="target_date">
+										<Input
+											name="target_date"
+											type="date"
+											defaultValue={project.target_date ?? ""}
+										/>
+									</Field>
+								</div>
+								<div className="flex justify-end gap-2 pt-1">
+									<Button type="button" variant="ghost" onClick={edit.close}>
+										Cancel
+									</Button>
+									<Button
+										type="submit"
+										variant="primary"
+										isPending={edit.pending}
+										disabled={edit.pending}
+									>
+										Save
+									</Button>
+								</div>
+							</Card>
+						</form>
+					</FormStateProvider>
 				) : (
 					<div>
 						<dl className="grid grid-cols-2 gap-2 text-sm text-ink">
