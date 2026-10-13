@@ -91,6 +91,19 @@ export const CreateNoteSchema = z.object({
 	attachments: z.array(AttachmentSchema).optional(),
 });
 
+/**
+ * The editor's autosave, decoded once for both halves (docs/adr/0087): the
+ * client builds its optimistic intent from it and the server action parses
+ * with it. A blank or whitespace-only title is no title.
+ */
+export const SaveNoteSchema = z.object({
+	title: z
+		.string()
+		.nullable()
+		.transform((t) => (t === null || t.trim() === "" ? null : t)),
+	body: z.string(),
+});
+
 export const UpdateNoteSchema = CreateNoteSchema.partial().extend({
 	resurface_weight: z.number().min(0).optional(),
 	pinned_at: z.string().datetime({ offset: true }).nullable().optional(),
