@@ -1,6 +1,6 @@
 import "server-only";
 import { type CalendarFeed, type SyncState, syncFailure } from "@/lib/calendar-health";
-import type { TablesInsert } from "@/lib/database.types";
+import type { Database } from "@/lib/database";
 import { nowUtc } from "@/lib/dates";
 import { unwrap } from "@/lib/services/errors";
 import { inListLiteral } from "@/lib/services/in-list";
@@ -50,10 +50,12 @@ export type MirrorResult =
 	| { ok: true; pulled: number; removed: number }
 	| { ok: false; error: string };
 
+type EventInsert = Database["public"]["Tables"]["calendar_events"]["Insert"];
+
 type FeedSpec = {
 	stateTable: "caldav_sync_state" | "google_sync_state";
 	/** The sources this feed owns. The first is the one new rows are written as. */
-	sources: readonly string[];
+	sources: readonly NonNullable<EventInsert["source"]>[];
 	failure: { type: string; title: string };
 	/** Extra fields stamped on every `last_result`. */
 	stamp: Record<string, string>;
@@ -178,7 +180,7 @@ async function reconcile(
 		changed.set(event.uid, event);
 	}
 
-	const upserts: TablesInsert<"calendar_events">[] = [];
+	const upserts: EventInsert[] = [];
 	for (const event of changed.values()) {
 		const fields = {
 			caldav_uid: event.uid,
