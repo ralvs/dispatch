@@ -2,9 +2,9 @@ import "server-only";
 import type { z } from "zod";
 import {
 	type AnnotationContextSchema,
+	type DbAddedVia,
 	QUOTE_ANNOTATION_SELECT,
 	QUOTE_SELECT,
-	type QuoteAddedViaSchema,
 	type QuoteAnnotationRow,
 	type QuoteRow,
 	type QuoteSourceTypeSchema,
@@ -14,11 +14,9 @@ import type { SupabaseClient } from "@/lib/supabase/types";
 
 export type { QuoteAnnotationRow, QuoteRow };
 
-// shape intentionally differs from CreateQuoteSchema: added_via here allows
-// the full QuoteAddedViaSchema enum (incl. kindle_import, reserved for a
-// future import job) while CreateQuoteSchema's zod validator restricts to
-// DB_ADDED_VIA (the current CHECK constraint's value set, which excludes
-// kindle_import). Keeping the wider hand-written type here.
+// added_via is the CHECK constraint's value set (DbAddedVia), not the wider
+// QuoteAddedViaSchema: kindle_import is reserved for a future import job and
+// the database refuses it today.
 export type CreateQuoteInput = {
 	text: string;
 	page_number?: number | null;
@@ -28,7 +26,7 @@ export type CreateQuoteInput = {
 	source_url?: string | null;
 	source_author?: string | null;
 	tags?: string[];
-	added_via?: z.infer<typeof QuoteAddedViaSchema>;
+	added_via?: DbAddedVia;
 };
 
 export async function listQuotes(
