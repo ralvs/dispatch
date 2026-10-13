@@ -114,7 +114,7 @@ async function insertNotification(
 			.select(NOTIFICATION_SELECT)
 			.single(),
 	);
-	return data as unknown as NotificationRow;
+	return data;
 }
 
 /**
@@ -197,7 +197,7 @@ export async function listNotifications(
 	if (opts.status) q = q.eq("status", opts.status);
 	if (opts.limit != null) q = q.limit(opts.limit);
 	const data = unwrap(await q);
-	return (data ?? []) as unknown as NotificationRow[];
+	return data ?? [];
 }
 
 /**
@@ -245,7 +245,7 @@ export async function markNotification(
 			.select(NOTIFICATION_SELECT)
 			.maybeSingle(),
 	);
-	return (data ?? null) as unknown as NotificationRow | null;
+	return data ?? null;
 }
 
 /**
@@ -268,7 +268,7 @@ export async function markAllNotificationsRead(sb: SupabaseClient): Promise<Noti
 			.eq("status", "unread")
 			.select(NOTIFICATION_SELECT),
 	);
-	return (data ?? []) as unknown as NotificationRow[];
+	return data ?? [];
 }
 
 export async function dismissAllNotifications(sb: SupabaseClient): Promise<string[]> {

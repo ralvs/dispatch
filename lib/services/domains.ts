@@ -28,14 +28,14 @@ export async function listDomains(
 		.order("name", { ascending: true });
 	if (!filters.includeArchived) q = q.eq("active", true);
 	const data = unwrap(await q);
-	return (data ?? []) as unknown as DomainRow[];
+	return data ?? [];
 }
 
 export async function getDomain(sb: SupabaseClient, id: string): Promise<DomainRow | null> {
 	const data = unwrap(
 		await sb.from("stewardship_domains").select(DOMAIN_SELECT).eq("id", id).maybeSingle(),
 	);
-	return (data as DomainRow | null) ?? null;
+	return data ?? null;
 }
 
 export async function createDomain(
@@ -45,7 +45,7 @@ export async function createDomain(
 	const data = unwrap(
 		await sb.from("stewardship_domains").insert(input).select(DOMAIN_SELECT).single(),
 	);
-	return data as unknown as DomainRow;
+	return data;
 }
 
 export async function updateDomain(

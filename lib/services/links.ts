@@ -33,7 +33,7 @@ export async function listLinks(
 	if (opts.status) q = q.eq("status", opts.status);
 	if (opts.limit != null) q = q.limit(opts.limit);
 	const data = unwrap(await q);
-	return (data ?? []) as unknown as LinkRow[];
+	return data ?? [];
 }
 
 /**
@@ -53,7 +53,7 @@ export async function createLink(sb: SupabaseClient, input: CreateLinkInput): Pr
 			.select(LINK_SELECT)
 			.single(),
 	);
-	return data as unknown as LinkRow;
+	return data;
 }
 
 /** Patch title/description/image after a persist-first save (POST /api/capture). */
@@ -70,7 +70,7 @@ export async function updateLinkMetadata(
 			.select(LINK_SELECT)
 			.single(),
 	);
-	return data as unknown as LinkRow;
+	return data;
 }
 
 /**
@@ -85,7 +85,7 @@ export async function setLinkStatus(
 	const data = unwrap(
 		await sb.from(TABLE).update({ status }).eq("id", id).select(LINK_SELECT).maybeSingle(),
 	);
-	return (data as unknown as LinkRow | null) ?? null;
+	return data ?? null;
 }
 
 /** The Today alerts badge. */

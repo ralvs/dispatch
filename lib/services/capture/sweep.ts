@@ -24,8 +24,6 @@ export type SweepResult = {
 	reconciled: string[];
 };
 
-type OrphanRow = { id: string; payload: unknown };
-
 /** Best-effort readable body for the fallback note. */
 function orphanBody(payload: unknown): string {
 	if (payload && typeof payload === "object") {
@@ -42,13 +40,14 @@ export async function sweepRawCaptures(
 	const minutes = opts.olderThanMinutes ?? SWEEP_THRESHOLD_MINUTES;
 	const cutoffUtc = nowUtc((opts.nowMs ?? Date.now()) - minutes * 60_000);
 
-	const orphans = (unwrap(
-		await sb
-			.from("captured_data")
-			.select("id, payload")
-			.eq("processed_status", "raw")
-			.lt("created_at", cutoffUtc),
-	) ?? []) as OrphanRow[];
+	const orphans =
+		unwrap(
+			await sb
+				.from("captured_data")
+				.select("id, payload")
+				.eq("processed_status", "raw")
+				.lt("created_at", cutoffUtc),
+		) ?? [];
 
 	if (orphans.length === 0) return { swept: [], reconciled: [] };
 
