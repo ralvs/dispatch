@@ -1,7 +1,6 @@
 "use client";
 
 import { File as FileIcon, FileText, Paperclip, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import {
 	type ClipboardEvent as ReactClipboardEvent,
 	type DragEvent as ReactDragEvent,
@@ -20,6 +19,7 @@ import type { Attachment, NoteListRow } from "@/lib/schemas/note";
 import { useWrites } from "@/lib/store";
 import type { StoreWrite } from "@/lib/store/types";
 import { noteWrites } from "../writes";
+import { useOpenNote } from "./use-open-note";
 
 /*
  * Files on a note (docs/adr/0052).
@@ -36,6 +36,8 @@ import { noteWrites } from "../writes";
 
 const ACCEPT = "image/*,application/pdf,.md,.txt,.markdown";
 
+const NO_ATTACHMENTS: readonly Attachment[] = Object.freeze([]);
+
 /**
  * Only react to files. Dragging selected text inside the note is an ordinary
  * text drag and must keep working — module scope so the window listener below
@@ -47,15 +49,16 @@ function carriesFiles(transfer: DataTransfer | null): boolean {
 
 export function AttachmentStrip({
 	noteId,
-	attachments,
 	children,
 }: {
 	noteId: string;
-	attachments: Attachment[];
 	/** The editor subtree. Wrapped so the whole note is droppable. */
 	children: ReactNode;
 }) {
-	const router = useRouter();
+	// The note's files are on its row in the store: an upload's adopted write
+	// or a removal's confirmed one updates this view, with no page refresh.
+	const note = useOpenNote(noteId);
+	const attachments = note?.attachments ?? NO_ATTACHMENTS;
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [uploading, setUploading] = useState(false);
 	const [pending, startTransition] = useTransition();
@@ -97,7 +100,6 @@ export function AttachmentStrip({
 				if (body?.attached?.length) {
 					const write = body.write as StoreWrite<NoteListRow> | null;
 					if (write) adopt("note", { type: "touch", id: noteId }, write);
-					router.refresh();
 				}
 			} catch {
 				toastError("Couldn't attach the file.");
@@ -105,7 +107,7 @@ export function AttachmentStrip({
 				setUploading(false);
 			}
 		},
-		[noteId, router, adopt],
+		[noteId, adopt],
 	);
 
 	function onDragEnter(event: ReactDragEvent) {
@@ -178,6 +180,9 @@ export function AttachmentStrip({
 	}, []);
 
 	const busy = uploading || pending;
+
+	// A gone note: the editor says so, and there is nothing to attach to.
+	if (!note) return <>{children}</>;
 
 	return (
 		<div

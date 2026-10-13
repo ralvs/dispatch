@@ -244,7 +244,7 @@ async function NoteBody({ params }: { params: Promise<{ id: string }> }) {
 				{/* The strip wraps the editor rather than following it: the drop
 			    target is the whole note, not a landing pad below it. */}
 				<div className="min-w-0">
-					<AttachmentStrip noteId={note.id} attachments={note.attachments}>
+					<AttachmentStrip noteId={note.id}>
 						<Suspense fallback={<EditorFallback />}>
 							<EditorSection noteId={note.id} />
 						</Suspense>
