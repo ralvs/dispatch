@@ -3,7 +3,7 @@
 import { Star } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { createBlankNoteAction, setPinAction } from "@/app/(authed)/notes/actions";
+import { createBlankNoteAction } from "@/app/(authed)/notes/actions";
 import { ColorDot } from "@/components/color-dot";
 import {
 	HeaderCreateButton,
@@ -19,7 +19,8 @@ import { Icon } from "@/components/ui/icon";
 import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
 import type { NoteListRow } from "@/lib/services/notes";
-import { type NoteLists, useRunIntent, useView, viewKey } from "@/lib/store";
+import { type NoteLists, useView, useWrites, viewKey } from "@/lib/store";
+import { noteWrites } from "./writes";
 
 const NO_LISTS: NoteLists = { needsReview: [], all: [] };
 
@@ -119,7 +120,7 @@ export function NoteList({
 	domains: Array<ScopeOption & { color: string | null }>;
 }) {
 	const { needsReview: review, all: notes } = useView(viewKey.notes()) ?? NO_LISTS;
-	const run = useRunIntent("note", { errorMessage: "Couldn't update pin." });
+	const { send } = useWrites();
 	// "" = every note, UNFILED = the notes with no domain. Client-side over the
 	// already-loaded list, the same shape /tasks uses.
 	const [domainFilter, setDomainFilter] = useState("");
@@ -140,9 +141,7 @@ export function NoteList({
 	// (docs/adr/0037).
 	function toggle(note: NoteListRow) {
 		const nextPinned = note.pinned_at === null;
-		run({ type: "pin", id: note.id, pinned: nextPinned }, () =>
-			setPinAction({ id: note.id, pinned: nextPinned }),
-		);
+		send(noteWrites.pin(note.id, nextPinned));
 	}
 
 	return (

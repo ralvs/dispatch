@@ -10,19 +10,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Markdown, type MarkdownStorage } from "tiptap-markdown";
 import { Button, type ScopeOption, ScopeSelect } from "@/components/ui";
-import type { ActionResult } from "@/lib/action-result";
-import { toastError } from "@/lib/client/toast";
 import { createDebouncedSave } from "@/lib/debounced-save";
 import type { MentionCandidate } from "@/lib/mentions";
 import type { NoteListRow } from "@/lib/services/notes";
-import { isNavigationError, useStoreWrite } from "@/lib/store";
+import { useWrites } from "@/lib/store";
 import { useMentionPeople } from "@/lib/store/mention-people";
-import {
-	deleteNoteAction,
-	resolveNeedsReviewAction,
-	saveNoteAction,
-	setNoteDomainAction,
-} from "../actions";
+import { noteWrites } from "../writes";
 import { InkBubble } from "./ink-bubble";
 import { Ink } from "./ink-mark";
 import { Mention } from "./mention-extension";
@@ -98,8 +91,9 @@ export function NoteEditor({
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
 	// Every write here goes through the entity store (#27), so /notes and
-	// Today's review count show it without a page render.
-	const write = useStoreWrite("note");
+	// Today's review count show it without a page render. save() toasts a
+	// failure (a redirect navigates without one) and resolves false.
+	const { save: saveWrite } = useWrites();
 	// The editor is built once; the `@` pool is read through a ref so a person
 	// created in this tab is offered without rebuilding it (#30).
 	const livePeople = useMentionPeople(people);
@@ -112,21 +106,6 @@ export function NoteEditor({
 	const [domainId, setDomainId] = useState(note.domain_id ?? "");
 	const [needsReview, setNeedsReview] = useState(note.needs_review);
 
-	/** Run a store write; a failure (a result or a throw) toasts and reports false. */
-	async function attempt(
-		run: () => Promise<ActionResult<unknown>>,
-		errorMessage: string,
-	): Promise<boolean> {
-		try {
-			const result = await run();
-			if (!result.ok) toastError(result.formError ?? errorMessage);
-			return result.ok;
-		} catch (error) {
-			// A redirect() (an expired session) navigates on its own; it is not a failure.
-			if (!isNavigationError(error)) toastError(errorMessage);
-			return false;
-		}
-	}
 	const [saveState, setSaveState] = useState<SaveState>("idle");
 	const titleRef = useRef(note.title ?? "");
 	const titleInputRef = useRef<HTMLInputElement>(null);
@@ -145,13 +124,7 @@ export function NoteEditor({
 		if (mountedRef.current) setSaveState("saving");
 		const savedTitle = title.trim() === "" ? null : title;
 		startTransition(async () => {
-			const ok = await attempt(
-				() =>
-					write({ type: "save", id: note.id, title: savedTitle, body }, () =>
-						saveNoteAction(note.id, { title: savedTitle, body }),
-					),
-				"Couldn't save note.",
-			);
+			const ok = await saveWrite(noteWrites.save(note.id, savedTitle, body));
 			if (!mountedRef.current) return;
 			if (!ok) {
 				// Allow retry of the same content.
@@ -251,13 +224,7 @@ export function NoteEditor({
 						const previous = domainId;
 						setDomainId(next);
 						startTransition(async () => {
-							const ok = await attempt(
-								() =>
-									write({ type: "file", id: note.id, domainId: next === "" ? null : next }, () =>
-										setNoteDomainAction(note.id, next),
-									),
-								"Couldn't file this note.",
-							);
+							const ok = await saveWrite(noteWrites.file(note.id, next));
 							if (!ok) setDomainId(previous);
 						});
 					}}
@@ -285,13 +252,7 @@ export function NoteEditor({
 						onClick={() =>
 							startTransition(async () => {
 								setNeedsReview(false);
-								const ok = await attempt(
-									() =>
-										write({ type: "resolve", id: note.id, flagged: true }, () =>
-											resolveNeedsReviewAction(note.id),
-										),
-									"Couldn't resolve review flag.",
-								);
+								const ok = await saveWrite(noteWrites.resolve(note.id));
 								if (!ok) setNeedsReview(true);
 							})
 						}
@@ -310,13 +271,7 @@ export function NoteEditor({
 						startTransition(async () => {
 							// Nothing left to save once the note is gone.
 							debouncedRef.current.cancel();
-							const ok = await attempt(
-								() =>
-									write({ type: "delete", id: note.id, flagged: needsReview }, () =>
-										deleteNoteAction(note.id),
-									),
-								"Couldn't delete note.",
-							);
+							const ok = await saveWrite(noteWrites.remove(note.id, needsReview));
 							if (ok) router.push("/notes");
 						})
 					}
