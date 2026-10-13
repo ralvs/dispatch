@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, Suspense, use } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -126,5 +126,108 @@ describe("<Seed>", () => {
 		await act(async () => root.render(<StaleApp />));
 		expect(onRender.mock.calls[0][0]).toEqual(["b:open", "a:done"]);
 		root.unmount();
+	});
+
+	describe("a boundary that hydrates late", () => {
+		type Gate = Promise<undefined>;
+		// What React reads off a thenable it has already seen resolve.
+		const fulfilled = (): Gate =>
+			Object.assign(Promise.resolve(undefined), { status: "fulfilled", value: undefined });
+
+		function Late({ gate }: { gate: Gate }) {
+			use(gate);
+			return <List />;
+		}
+
+		function LateApp({
+			store,
+			gate,
+			inner,
+		}: {
+			store: ReturnType<typeof createDispatchStore>;
+			gate: Gate;
+			inner?: Snapshot;
+		}) {
+			const late = (
+				<Suspense fallback="…">
+					<Late gate={gate} />
+				</Suspense>
+			);
+			return (
+				<StoreProvider store={store}>
+					<Seed snapshot={snap}>{inner ? <Seed snapshot={inner}>{late}</Seed> : late}</Seed>
+				</StoreProvider>
+			);
+		}
+
+		async function hydrateLate(
+			inner?: Snapshot,
+			before?: (s: ReturnType<typeof createDispatchStore>) => void,
+		) {
+			const html = renderToString(
+				<LateApp
+					store={createDispatchStore({ now: () => NOW })}
+					gate={fulfilled()}
+					inner={inner}
+				/>,
+			);
+			expect(html).toContain("a open");
+			const container = document.createElement("div");
+			container.innerHTML = html;
+			document.body.appendChild(container);
+			const onRecoverableError = vi.fn();
+			const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+			const store = createDispatchStore({ now: () => NOW });
+			let resolve!: (v: undefined) => void;
+			const gate: Gate = new Promise<undefined>((r) => {
+				resolve = r;
+			});
+			let root: ReturnType<typeof hydrateRoot> | undefined;
+			await act(async () => {
+				root = hydrateRoot(container, <LateApp store={store} gate={gate} inner={inner} />, {
+					onRecoverableError,
+				});
+			});
+			expect(store.getState().views[key]).toBeDefined();
+			expect(container.innerHTML).toBe(html);
+			before?.(store);
+			await act(async () => resolve(undefined));
+			const done = () => {
+				errors.mockRestore();
+				root?.unmount();
+				container.remove();
+			};
+			return { html, container, onRecoverableError, errors, done };
+		}
+
+		it("hydrates clean", async () => {
+			const r = await hydrateLate();
+			expect(r.onRecoverableError.mock.calls.map((c) => String(c[0]))).toEqual([]);
+			expect(r.errors.mock.calls).toEqual([]);
+			expect(r.container.innerHTML).toBe(r.html);
+			r.done();
+		});
+
+		it("a write before it hydrates lands after, with no recoverable error", async () => {
+			const r = await hydrateLate(undefined, (store) => {
+				act(() => {
+					store.getState().apply({
+						kind: "task",
+						intent: { type: "complete", id: "a", observedDueDate: null },
+					});
+				});
+			});
+			expect(r.onRecoverableError.mock.calls.map((c) => String(c[0]))).toEqual([]);
+			expect(r.container.textContent).toContain("a done");
+			r.done();
+		});
+
+		it("under nested Seeds, reads what the outer Seed contributed", async () => {
+			const r = await hydrateLate(snapshot(T1, []));
+			expect(r.onRecoverableError.mock.calls.map((c) => String(c[0]))).toEqual([]);
+			expect(r.container.textContent).toContain("a open");
+			expect(r.container.innerHTML).toBe(r.html);
+			r.done();
+		});
 	});
 });

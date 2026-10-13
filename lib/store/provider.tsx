@@ -7,11 +7,14 @@ import type { Store } from "@/lib/store/types";
 const StoreContext = createContext<DispatchStore | null>(null);
 
 /**
- * The state a `<Seed>` computes for its subtree during render, before its
- * layout effect commits the snapshot into the real store. Hooks prefer it, so
- * server render and hydration read the same thing (no React #418).
+ * What a `<Seed>` gives its subtree: its not-yet-committed state, and what the
+ * server rendered it from. A store read hydrates against `server` — the fold
+ * of its ancestor Seeds' snapshots over the initial state — so a boundary that
+ * hydrates late still matches the server's markup; once hydrated,
+ * useSyncExternalStore moves it to `virtual`, else the real store.
  */
-export const VirtualStateContext = createContext<Store | null>(null);
+export type SeedFrame = { virtual: Store | null; server: () => Store };
+export const SeedContext = createContext<SeedFrame | null>(null);
 
 /**
  * `store` is for tests that need a pre-populated store; the app lets the

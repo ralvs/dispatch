@@ -1,10 +1,9 @@
 "use client";
 
-import { useContext, useMemo } from "react";
-import { useStore } from "zustand";
+import { useContext, useMemo, useSyncExternalStore } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { provisionalIdsOf, selectAggregate, selectView } from "@/lib/store/core";
-import { useDispatchStore, VirtualStateContext } from "@/lib/store/provider";
+import { SeedContext, useDispatchStore } from "@/lib/store/provider";
 import type {
 	AggregateKey,
 	Clock,
@@ -20,13 +19,22 @@ import type {
 
 /**
  * Read a slice of the state this subtree sees: the nearest `<Seed>`'s virtual
- * state, else the real store. The real store is subscribed through `select`
- * (shallow-compared), so a consumer re-renders only when its slice changes.
+ * state, else the real store. While hydrating it reads what the server
+ * rendered from — the fold of its ancestor Seeds' snapshots over the initial
+ * state. `select` is shallow-compared, so a consumer re-renders only when its
+ * slice changes.
  */
 function useSlice<T>(select: (s: Store) => T): T {
-	const virtual = useContext(VirtualStateContext);
-	const real = useStore(useDispatchStore(), useShallow(select));
-	return virtual ? select(virtual) : real;
+	const frame = useContext(SeedContext);
+	const api = useDispatchStore();
+	const sel = useShallow(select);
+	const virtual = frame?.virtual ?? null;
+	const server = frame?.server ?? api.getInitialState;
+	return useSyncExternalStore(
+		api.subscribe,
+		() => sel(virtual ?? api.getState()),
+		() => sel(server()),
+	);
 }
 
 export function useView<T extends ViewType>(key: ViewKey<T>): ViewTypes[T]["out"] | undefined {
