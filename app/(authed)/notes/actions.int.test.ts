@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { afterMutation } from "@/lib/invalidate";
+import { createDomain } from "@/lib/services/domains";
 import { createNote, getNote } from "@/lib/services/notes";
 import { createTask } from "@/lib/services/tasks";
 import { ownerClient } from "@/test/integration/clients";
@@ -110,11 +111,11 @@ describe("saveNoteAction", () => {
 describe("setNoteDomainAction", () => {
 	it("files a note under a domain, and '' unfiles it", async () => {
 		const sb = await ownerClient();
-		const { data: domain } = await sb.from("domains").select("id").limit(1).single();
+		const domain = await createDomain(sb, { name: "Gardening" });
 		const note = await aNote();
 
-		const filed = await setNoteDomainAction(note.id, domain?.id as string);
-		expect(filed).toMatchObject({ ok: true, data: { rows: [{ domain_id: domain?.id }] } });
+		const filed = await setNoteDomainAction(note.id, domain.id);
+		expect(filed).toMatchObject({ ok: true, data: { rows: [{ domain_id: domain.id }] } });
 
 		const unfiled = await setNoteDomainAction(note.id, "");
 		expect(unfiled).toMatchObject({ ok: true, data: { rows: [{ domain_id: null }] } });
