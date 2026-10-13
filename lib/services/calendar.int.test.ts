@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CaldavConnection } from "@/lib/caldav/client";
 
+vi.mock("@/lib/invalidate", async (original) => ({
+	...(await original<typeof import("@/lib/invalidate")>()),
+	afterExternalMutation: vi.fn(),
+}));
 vi.mock("@/lib/env", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("@/lib/env")>();
 	return { ...actual, env: () => ({ ...actual.env(), ICLOUD_CALENDAR_NAME: "Renan" }) };
@@ -107,11 +111,22 @@ async function syncState() {
 	return data;
 }
 
+async function syncAlerts() {
+	const { data, error } = await serviceClient()
+		.from("notifications")
+		.select("status")
+		.eq("type", "caldav.sync_failed");
+	if (error) throw error;
+	return data;
+}
+
 describe("syncCalendar against the local database", () => {
 	it("stores a pulled event as source caldav and records the run", async () => {
-		const result = await syncCalendar(serviceClient(), connWithEvent(), { nowMs: NOW_MS });
+		const result = await syncCalendar(serviceClient(), async () => connWithEvent(), {
+			nowMs: NOW_MS,
+		});
 
-		expect(result).toEqual({ pulled: 1, removed: 0 });
+		expect(result).toEqual({ ok: true, pulled: 1, removed: 0 });
 		expect(await caldavRows()).toMatchObject([
 			{
 				caldav_uid: "evt-1@icloud.com",
@@ -126,9 +141,10 @@ describe("syncCalendar against the local database", () => {
 
 	it("writes nothing for an event with the same etag and start", async () => {
 		const sb = serviceClient();
-		await syncCalendar(sb, connWithEvent(), { nowMs: NOW_MS });
+		await syncCalendar(sb, async () => connWithEvent(), { nowMs: NOW_MS });
 
-		expect(await syncCalendar(sb, connWithEvent(), { nowMs: NOW_MS })).toEqual({
+		expect(await syncCalendar(sb, async () => connWithEvent(), { nowMs: NOW_MS })).toEqual({
+			ok: true,
 			pulled: 0,
 			removed: 0,
 		});
@@ -144,9 +160,11 @@ describe("syncCalendar against the local database", () => {
 			source: "caldav",
 		});
 
-		const result = await syncCalendar(serviceClient(), connWithEvent(), { nowMs: NOW_MS });
+		const result = await syncCalendar(serviceClient(), async () => connWithEvent(), {
+			nowMs: NOW_MS,
+		});
 
-		expect(result.pulled).toBe(1);
+		expect(result).toMatchObject({ ok: true, pulled: 1 });
 		expect(await caldavRows()).toMatchObject([
 			{ caldav_uid: "evt-1@icloud.com", start_at: "2026-07-16T14:00:00+00:00" },
 		]);
@@ -172,9 +190,11 @@ describe("syncCalendar against the local database", () => {
 			source: "google",
 		});
 
-		const result = await syncCalendar(serviceClient(), connWithEvent(), { nowMs: NOW_MS });
+		const result = await syncCalendar(serviceClient(), async () => connWithEvent(), {
+			nowMs: NOW_MS,
+		});
 
-		expect(result.removed).toBe(1);
+		expect(result).toMatchObject({ ok: true, removed: 1 });
 		expect((await caldavRows()).map((r) => r.caldav_uid)).toEqual([
 			"evt-1@icloud.com",
 			"old@icloud.com",
@@ -186,24 +206,41 @@ describe("syncCalendar against the local database", () => {
 		expect(data).toHaveLength(1);
 	});
 
-	it("throws and deletes nothing when every calendar fetch fails", async () => {
+	it("records the failure and deletes nothing when every calendar fetch fails", async () => {
 		await insertEvent({
 			caldav_uid: "kept@icloud.com",
 			start_at: "2026-07-17T14:00:00Z",
 			end_at: "2026-07-17T15:00:00Z",
 		});
-		const before = await syncState();
 		const conn = fakeConn({
 			fetchObjectsInWindow: vi.fn(async () => {
 				throw new Error("network down");
 			}),
 		});
 
-		await expect(syncCalendar(serviceClient(), conn, { nowMs: NOW_MS })).rejects.toBeInstanceOf(
-			ServiceError,
-		);
+		expect(await syncCalendar(serviceClient(), async () => conn, { nowMs: NOW_MS })).toEqual({
+			ok: false,
+			error: "All CalDAV calendar fetches failed",
+		});
 		expect(await caldavRows()).toHaveLength(1);
-		expect(await syncState()).toEqual(before);
+		expect(await syncState()).toMatchObject({
+			last_result: { error: "All CalDAV calendar fetches failed" },
+		});
+		expect(await syncAlerts()).toEqual([{ status: "unread" }]);
+	});
+
+	it("a connection that cannot open records the failure", async () => {
+		const result = await syncCalendar(
+			serviceClient(),
+			async () => {
+				throw new Error("login refused");
+			},
+			{ nowMs: NOW_MS },
+		);
+
+		expect(result).toEqual({ ok: false, error: "login refused" });
+		expect(await syncState()).toMatchObject({ last_result: { error: "login refused" } });
+		expect(await syncAlerts()).toEqual([{ status: "unread" }]);
 	});
 
 	it("deletes nothing when the fetches worked but returned no events", async () => {
@@ -213,7 +250,8 @@ describe("syncCalendar against the local database", () => {
 			end_at: "2026-07-17T15:00:00Z",
 		});
 
-		expect(await syncCalendar(serviceClient(), fakeConn(), { nowMs: NOW_MS })).toEqual({
+		expect(await syncCalendar(serviceClient(), async () => fakeConn(), { nowMs: NOW_MS })).toEqual({
+			ok: true,
 			pulled: 0,
 			removed: 0,
 		});
@@ -358,11 +396,15 @@ describe("create, then sync", () => {
 		// Apple Calendar renamed it, so iCloud now has a new etag.
 		const renamed = written.replace("SUMMARY:Write report", "SUMMARY:Write the report");
 
-		const result = await syncCalendar(serviceClient(), icloudEcho(uid, renamed, '"etag-2"'), {
-			nowMs: NOW_MS,
-		});
+		const result = await syncCalendar(
+			serviceClient(),
+			async () => icloudEcho(uid, renamed, '"etag-2"'),
+			{
+				nowMs: NOW_MS,
+			},
+		);
 
-		expect(result).toEqual({ pulled: 1, removed: 0 });
+		expect(result).toEqual({ ok: true, pulled: 1, removed: 0 });
 		expect(await allRows()).toEqual([
 			{
 				id: event.id,
@@ -391,9 +433,9 @@ describe("create, then sync", () => {
 			]),
 		});
 
-		const result = await syncCalendar(serviceClient(), conn, { nowMs: NOW_MS });
+		const result = await syncCalendar(serviceClient(), async () => conn, { nowMs: NOW_MS });
 
-		expect(result.removed).toBe(1);
+		expect(result).toMatchObject({ ok: true, removed: 1 });
 		expect((await allRows()).map((r) => r.caldav_uid)).toEqual(["evt-1@icloud.com"]);
 	});
 
@@ -415,7 +457,9 @@ describe("create, then sync", () => {
 			}),
 		});
 
-		expect((await syncCalendar(serviceClient(), conn, { nowMs: NOW_MS })).removed).toBe(0);
+		expect(await syncCalendar(serviceClient(), async () => conn, { nowMs: NOW_MS })).toMatchObject({
+			removed: 0,
+		});
 		expect((await allRows()).map((r) => r.caldav_uid).sort()).toEqual([
 			"evt-1@icloud.com",
 			"on-renan",
@@ -441,7 +485,7 @@ describe("create, then sync", () => {
 			end_at: "2026-07-16T15:00:00Z",
 		});
 
-		await syncCalendar(serviceClient(), connWithEvent(), { nowMs: NOW_MS });
+		await syncCalendar(serviceClient(), async () => connWithEvent(), { nowMs: NOW_MS });
 
 		expect((await allRows()).map((r) => r.source)).toEqual(["created_here"]);
 	});
@@ -457,9 +501,13 @@ describe("create, then sync", () => {
 		});
 
 		const sb = serviceClient();
-		expect((await syncCalendar(sb, connWithEvent(), { nowMs: NOW_MS })).pulled).toBe(1);
+		expect(await syncCalendar(sb, async () => connWithEvent(), { nowMs: NOW_MS })).toMatchObject({
+			pulled: 1,
+		});
 		expect((await allRows())[0]?.recurring).toBe(false);
-		expect((await syncCalendar(sb, connWithEvent(), { nowMs: NOW_MS })).pulled).toBe(0);
+		expect(await syncCalendar(sb, async () => connWithEvent(), { nowMs: NOW_MS })).toMatchObject({
+			pulled: 0,
+		});
 	});
 });
 

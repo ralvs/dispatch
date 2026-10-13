@@ -4,7 +4,6 @@ import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { BridgeSyncBodySchema } from "@/lib/schemas/calendar";
 import { isAuthorized } from "@/lib/secret-auth";
 import { syncBridgeEvents } from "@/lib/services/calendar-bridge";
-import { recordNotification, resolveAlerts } from "@/lib/services/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -12,9 +11,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // ±21d snapshot from Apple Calendar (Engine Google calendars already synced
 // there). Secret-authed; never talks to Google OAuth.
 //
-// Quiet on success — a 15m bridge would otherwise spam the ledger/push.
-// Failures still write a notification so the owner hears about it, and the
-// next success marks those failures read (ADR-0080).
+// The calendar mirror writes google_sync_state, announces an outage once,
+// and marks it read on the next success (docs/adr/0080, docs/adr/0086).
+// This route only turns its result into a response.
 // ─────────────────────────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
@@ -31,29 +30,13 @@ export async function POST(request: Request) {
 		return NextResponse.json({ error: "invalid_request" }, { status: 400 });
 	}
 
-	const sb = createAdminClient();
+	const result = await syncBridgeEvents(createAdminClient(), {
+		events: parsed.data.events,
+		windowStart: parsed.data.window_start,
+		windowEnd: parsed.data.window_end,
+	});
+	if (!result.ok) return NextResponse.json({ error: "sync_failed" }, { status: 502 });
 
-	try {
-		const result = await syncBridgeEvents(sb, {
-			events: parsed.data.events,
-			windowStart: parsed.data.window_start,
-			windowEnd: parsed.data.window_end,
-		});
-
-		afterExternalMutation(...EXTERNAL_WRITES.calendarBridge);
-		// A success settles any earlier failure: it leaves the unread alerts
-		// for the record (ADR-0080). Never rejects; busts its own tags.
-		await resolveAlerts(sb, "gcal.sync_failed");
-
-		return NextResponse.json(result);
-	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err);
-		// Best-effort ledger (ADR-0015, ADR-0075); it busts its own tags.
-		await recordNotification(sb, {
-			type: "gcal.sync_failed",
-			title: "Calendar bridge failed",
-			body: message.slice(0, 500),
-		});
-		return NextResponse.json({ error: "sync_failed" }, { status: 502 });
-	}
+	afterExternalMutation(...EXTERNAL_WRITES.calendarBridge);
+	return NextResponse.json({ pulled: result.pulled, removed: result.removed });
 }

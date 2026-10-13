@@ -29,7 +29,8 @@ export type FeedHealth = {
 /** Eight missed bridge runs. Less than that is a blip, not a stale calendar. */
 export const STALE_AFTER_MS = 2 * 60 * 60 * 1000;
 
-function lastError(result: unknown): string | null {
+/** The error a sync-state `last_result` records, or null when the run worked. */
+export function syncFailure(result: unknown): string | null {
 	if (result && typeof result === "object" && "error" in result) {
 		const { error } = result as { error: unknown };
 		return typeof error === "string" ? error : "failed";
@@ -39,7 +40,7 @@ function lastError(result: unknown): string | null {
 
 function feedHealth(feed: CalendarFeed, state: SyncState | null, nowMs: number): FeedHealth | null {
 	if (!state?.last_synced_at) return null;
-	if (lastError(state.last_result) !== null) {
+	if (syncFailure(state.last_result) !== null) {
 		return { feed, status: "failed", at: state.last_synced_at };
 	}
 	if (nowMs - Date.parse(state.last_synced_at) > STALE_AFTER_MS) {

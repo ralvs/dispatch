@@ -11,219 +11,91 @@ import {
 	patchEventObject,
 } from "@/lib/caldav/ical";
 import { whyNotEditable } from "@/lib/calendar-edit";
-import type { SyncState } from "@/lib/calendar-health";
 import { CALENDAR_SYNC_WINDOW_MS } from "@/lib/constants";
 import { dayWindowUtc, nowUtc, shiftDay } from "@/lib/dates";
 import { eventFallsOnDay, eventFallsOnDays } from "@/lib/day-schedule";
 import { env } from "@/lib/env";
 import { escapeLike } from "@/lib/like";
 import { type CalendarEventRow, EVENT_SELECT } from "@/lib/schemas/calendar";
+import {
+	type MirrorEvent,
+	type MirrorResult,
+	type MirrorSnapshot,
+	syncFeed,
+} from "@/lib/services/calendar-mirror";
 import { ServiceError, unwrap } from "@/lib/services/errors";
-import { inListLiteral } from "@/lib/services/in-list";
 
 // ─────────────────────────────────────────────────────────────────────────
-// iCloud CalDAV sync (docs/adr/0006). Pulls VEVENTs ±21 days from every
-// calendar on the account; app-created events push only to the calendar
-// named `ICLOUD_CALENDAR_NAME`, the write calendar (docs/adr/0082), and only
-// single events there may be edited or deleted. Cancellation detection is a
-// windowed set-difference on `caldav_uid` — CalDAV has no tombstones, so a
-// row that falls inside the window but wasn't seen on this sync is gone.
-// Identity is unique on (source, caldav_uid) after docs/adr/0018; an event
-// Dispatch created keeps its one `created_here` row, matched on UID.
+// iCloud CalDAV (docs/adr/0006). Reads VEVENTs ±21 days from every
+// calendar on the account into a snapshot; the calendar mirror reconciles it
+// and keeps the sync state (docs/adr/0086). App-created events push only to
+// the calendar named `ICLOUD_CALENDAR_NAME`, the write calendar
+// (docs/adr/0082), and only single events there may be edited or deleted.
+// An event Dispatch created keeps its one `created_here` row, matched on UID.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type { CalendarEventRow };
 
-/** The sources the CalDAV sync owns: pulled events, and events created here. */
-const ICLOUD_SOURCES = ["caldav", "created_here"];
-
-type KnownRow = {
-	id: string;
-	source: "caldav" | "created_here";
-	caldav_uid: string | null;
-	caldav_etag: string | null;
-	start_at: string;
-	recurring: boolean | null;
-};
-
+/**
+ * Pull iCloud into the mirror (docs/adr/0086). The connection opens inside
+ * the read, so a login failure is recorded like any other failed sync.
+ */
 export async function syncCalendar(
 	sb: SupabaseClient,
-	conn: CaldavConnection,
+	connect: () => Promise<CaldavConnection>,
 	opts: { nowMs?: number } = {},
-): Promise<{ pulled: number; removed: number }> {
+): Promise<MirrorResult> {
 	const nowMs = opts.nowMs ?? Date.now();
-	const windowStartUtc = new Date(nowMs - CALENDAR_SYNC_WINDOW_MS).toISOString();
-	const windowEndUtc = new Date(nowMs + CALENDAR_SYNC_WINDOW_MS).toISOString();
-	const window = { startUtc: windowStartUtc, endUtc: windowEndUtc };
-	const syncedAt = nowUtc(nowMs);
+	return syncFeed(sb, "icloud", async () => readIcloudSnapshot(await connect(), nowMs), { nowMs });
+}
 
+/**
+ * Every calendar's events in the ±21 day window. One calendar that fails to
+ * answer is left out — the snapshot speaks only for the calendars that did.
+ * When none answers the read fails: a dead connection is not an empty window.
+ */
+async function readIcloudSnapshot(conn: CaldavConnection, nowMs: number): Promise<MirrorSnapshot> {
+	const window = {
+		startUtc: new Date(nowMs - CALENDAR_SYNC_WINDOW_MS).toISOString(),
+		endUtc: new Date(nowMs + CALENDAR_SYNC_WINDOW_MS).toISOString(),
+	};
 	const calendars = await conn.listCalendars();
-
-	// Known iCloud rows, so unchanged events (same etag AND same resolved start
-	// — a recurring event's start advances as the window slides, etag doesn't)
-	// skip their upsert. Keeps `pulled` meaning "new or changed", so a quiet
-	// sync writes no rows, no ledger entry, and sends no push. A row whose
-	// `recurring` is still null is rewritten once, to learn it.
-	const existingRows = (unwrap(
-		await sb
-			.from("calendar_events")
-			.select("id, source, caldav_uid, caldav_etag, start_at, recurring")
-			.in("source", ICLOUD_SOURCES),
-	) ?? []) as KnownRow[];
-	// An event Dispatch created comes back on the next sync under the same UID.
-	// Its `created_here` row is the one row for it, so it wins the UID: the
-	// sync updates it in place instead of adding a `caldav` twin.
-	const knownByUid = new Map<string, KnownRow>();
-	for (const row of existingRows) {
-		if (row.caldav_uid === null) continue;
-		const held = knownByUid.get(row.caldav_uid);
-		if (!held || row.source === "created_here") knownByUid.set(row.caldav_uid, row);
-	}
 	const fetchedCalendars: string[] = [];
-
-	let pulled = 0;
-	let anySucceeded = false;
-	const seenUids = new Set<string>();
+	const events: MirrorEvent[] = [];
 
 	for (const calendar of calendars) {
 		let objects: Awaited<ReturnType<CaldavConnection["fetchObjectsInWindow"]>>;
 		try {
 			objects = await conn.fetchObjectsInWindow(calendar.url, window);
 		} catch {
-			// This calendar failed to fetch; keep going with the others rather
-			// than aborting the whole sync.
+			// This calendar failed to fetch; keep going with the others.
 			continue;
 		}
-		anySucceeded = true;
 		fetchedCalendars.push(calendar.displayName);
-
 		for (const object of objects) {
-			const parsedEvents = parseCalendarObject(object.data, window);
-			for (const parsed of parsedEvents) {
-				seenUids.add(parsed.uid);
-				const known = knownByUid.get(parsed.uid);
-				if (
-					known &&
-					known.caldav_etag === object.etag &&
-					known.recurring === parsed.recurring &&
-					Date.parse(known.start_at) === Date.parse(parsed.startUtc)
-				) {
-					continue;
-				}
-				const fields = {
-					caldav_uid: parsed.uid,
-					caldav_etag: object.etag,
-					caldav_href: object.href,
-					calendar_name: calendar.displayName,
+			for (const parsed of parseCalendarObject(object.data, window)) {
+				events.push({
+					uid: parsed.uid,
+					etag: object.etag,
+					href: object.href,
+					calendarName: calendar.displayName,
 					title: parsed.title,
 					description: parsed.description,
-					start_at: parsed.startUtc,
-					end_at: parsed.endUtc,
-					all_day: parsed.allDay,
 					location: parsed.location,
+					startUtc: parsed.startUtc,
+					endUtc: parsed.endUtc,
+					allDay: parsed.allDay,
 					attendees: parsed.attendees,
 					recurring: parsed.recurring,
-					synced_at: syncedAt,
-				};
-				if (known?.source === "created_here") {
-					unwrap(await sb.from("calendar_events").update(fields).eq("id", known.id));
-				} else {
-					unwrap(
-						await sb
-							.from("calendar_events")
-							.upsert({ ...fields, source: "caldav" }, { onConflict: "source,caldav_uid" }),
-					);
-				}
-				pulled++;
+				});
 			}
 		}
 	}
 
-	// Never mass-delete on a dead connection: if every calendar fetch failed,
-	// the "seen" set is meaningless and can't be trusted for set-difference.
-	if (!anySucceeded) {
+	if (fetchedCalendars.length === 0) {
 		throw new ServiceError("All CalDAV calendar fetches failed", null);
 	}
-
-	let removed = 0;
-	// Only run the set-difference delete when we actually saw events this
-	// sync — an empty seen set is treated as "nothing to compare against"
-	// rather than "delete everything in the window". Only calendars that
-	// answered are compared: a calendar whose fetch failed saw nothing. A row
-	// written after this sync began (an event created meanwhile) is not
-	// compared either — the fetch may have run before it existed.
-	if (seenUids.size > 0) {
-		const deleted = unwrap(
-			await sb
-				.from("calendar_events")
-				.delete()
-				.in("source", ICLOUD_SOURCES)
-				.in("calendar_name", fetchedCalendars)
-				.lt("synced_at", syncedAt)
-				.gte("start_at", windowStartUtc)
-				.lt("start_at", windowEndUtc)
-				.not("caldav_uid", "in", inListLiteral(seenUids))
-				.select("id"),
-		);
-		removed = ((deleted as unknown[] | null) ?? []).length;
-	}
-
-	await dropCaldavTwins(sb);
-
-	unwrap(
-		await sb
-			.from("caldav_sync_state")
-			.upsert(
-				{ id: true, last_synced_at: syncedAt, last_result: { pulled, removed } },
-				{ onConflict: "id" },
-			),
-	);
-
-	return { pulled, removed };
-}
-
-/**
- * A `caldav` row whose UID a `created_here` row holds is a twin: the same
- * event, written by a sync that read the known rows before the create
- * committed. The `created_here` row is the one row (docs/adr/0082).
- */
-async function dropCaldavTwins(sb: SupabaseClient): Promise<void> {
-	const created = (unwrap(
-		await sb
-			.from("calendar_events")
-			.select("caldav_uid")
-			.eq("source", "created_here")
-			.not("caldav_uid", "is", null),
-	) ?? []) as { caldav_uid: string }[];
-	if (created.length === 0) return;
-	unwrap(
-		await sb
-			.from("calendar_events")
-			.delete()
-			.eq("source", "caldav")
-			.in(
-				"caldav_uid",
-				created.map((r) => r.caldav_uid),
-			),
-	);
-}
-
-/**
- * Both feeds' sync-state singletons, for Today's calendar health line (#96).
- * Both tables are RLS-on with no policy, so `sb` must be the service client;
- * call it only after the owner check (iron rule #2). A missing row is null.
- */
-export async function readCalendarSyncStates(
-	sb: SupabaseClient,
-): Promise<{ work: SyncState | null; icloud: SyncState | null }> {
-	const [work, icloud] = await Promise.all([
-		sb.from("google_sync_state").select("last_synced_at, last_result").maybeSingle(),
-		sb.from("caldav_sync_state").select("last_synced_at, last_result").maybeSingle(),
-	]);
-	return {
-		work: (unwrap(work) ?? null) as SyncState | null,
-		icloud: (unwrap(icloud) ?? null) as SyncState | null,
-	};
+	return { window, events, calendars: fetchedCalendars, trustEmpty: false };
 }
 
 export async function listEventsOn(
