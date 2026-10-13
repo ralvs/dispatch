@@ -16,7 +16,9 @@ const sb = createClient(stack.apiUrl, stack.secretKey, {
 
 const stamp = Date.now();
 const title = `E2E Note ${stamp}`;
-const domainName = `E2E Domain ${stamp}`;
+// auth.setup.ts seeds this domain before any page loads. A domain inserted
+// here could miss the cached domain list another spec has already filled.
+const domainName = "E2E Domain";
 const typed = `Typed in the browser ${stamp}`;
 let noteId = "";
 let domainId = "";
@@ -24,8 +26,9 @@ let domainId = "";
 test.beforeAll(async () => {
 	const domain = await sb
 		.from("stewardship_domains")
-		.insert({ name: domainName })
 		.select("id")
+		.eq("name", domainName)
+		.limit(1)
 		.single();
 	if (domain.error) throw domain.error;
 	domainId = domain.data.id;
@@ -36,7 +39,6 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
 	await sb.from("notes").delete().eq("id", noteId);
-	await sb.from("stewardship_domains").delete().eq("id", domainId);
 });
 
 test("a note's edit survives reopening, and its filing survives a reload", async ({ page }) => {
