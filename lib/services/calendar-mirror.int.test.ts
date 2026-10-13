@@ -128,6 +128,17 @@ describe("syncFeed against the local database", () => {
 		expect(await uids()).toEqual(["evt-1", "fresh"]);
 	});
 
+	it("a trusted empty snapshot still keeps a row written after the sync began", async () => {
+		await insertRow({ caldav_uid: "fresh", source: "google", synced_at: "2026-07-16T12:00:00Z" });
+
+		expect(await sync("work", snapshot({ trustEmpty: true }))).toEqual({
+			ok: true,
+			pulled: 0,
+			removed: 0,
+		});
+		expect(await uids()).toEqual(["fresh"]);
+	});
+
 	it("ignores events outside the window", async () => {
 		const outside = event({
 			uid: "late",
@@ -174,5 +185,33 @@ describe("syncFeed against the local database", () => {
 		const { work } = await readCalendarSyncStates(serviceClient());
 		expect(work?.last_result).toEqual({ pulled: 1, removed: 0, via: "eventkit_bridge" });
 		expect(await alerts("gcal.sync_failed")).toEqual(["read"]);
+	});
+
+	it("a new outage after a success is announced again", async () => {
+		await sync("work", new Error("down"));
+		await sync("work", snapshot({ trustEmpty: true }));
+		await sync("work", new Error("down again"));
+
+		expect((await alerts("gcal.sync_failed")).sort()).toEqual(["read", "unread"]);
+	});
+
+	it("retries the alert when the last failure could not announce it", async () => {
+		const { error } = await serviceClient()
+			.from("google_sync_state")
+			.upsert(
+				{
+					id: true,
+					last_synced_at: "2026-07-16T11:00:00Z",
+					last_result: { error: "down", via: "eventkit_bridge", announced: false },
+				},
+				{ onConflict: "id" },
+			);
+		if (error) throw error;
+
+		await sync("work", new Error("still down"));
+
+		expect(await alerts("gcal.sync_failed")).toEqual(["unread"]);
+		const { work } = await readCalendarSyncStates(serviceClient());
+		expect(work?.last_result).toEqual({ error: "still down", via: "eventkit_bridge" });
 	});
 });

@@ -111,7 +111,13 @@ export async function syncFeed(
 		return { ok: false, error };
 	}
 
-	await resolveAlerts(sb, spec.failure.type);
+	// resolveAlerts is best-effort itself; the catch only keeps the
+	// never-throw promise if that ever changes.
+	try {
+		await resolveAlerts(sb, spec.failure.type);
+	} catch (err) {
+		console.error("[calendar-mirror] resolving alerts failed", spec.failure.type, err);
+	}
 	return { ok: true, pulled, removed };
 }
 
@@ -263,7 +269,8 @@ async function dropTwins(sb: SupabaseClient, spec: FeedSpec): Promise<void> {
 /**
  * Record a failed sync — best-effort, never throws. The state row always
  * takes the error; the ledger hears only of working → failed, so an outage
- * is one alert, not one per run.
+ * is one alert, not one per run. The alert goes first: if it does not land,
+ * the state says so (`announced: false`) and the next failed run tries again.
  */
 async function recordFailure(
 	sb: SupabaseClient,
@@ -271,34 +278,47 @@ async function recordFailure(
 	error: string,
 	syncedAt: string,
 ): Promise<void> {
-	let alreadyFailing = false;
+	let alreadyAnnounced = false;
 	try {
 		const prior = unwrap(
 			await sb.from(spec.stateTable).select("last_synced_at, last_result").maybeSingle(),
 		) as SyncState | null;
-		alreadyFailing = prior !== null && syncFailure(prior.last_result) !== null;
+		alreadyAnnounced =
+			prior !== null &&
+			syncFailure(prior.last_result) !== null &&
+			(prior.last_result as { announced?: boolean }).announced !== false;
 	} catch (err) {
 		// Unknown prior state: announce anyway.
 		console.error("[calendar-mirror] prior sync state read failed", spec.stateTable, err);
 	}
+	let announced = true;
+	if (!alreadyAnnounced) {
+		try {
+			announced =
+				(await recordNotification(sb, {
+					type: spec.failure.type,
+					title: spec.failure.title,
+					body: error.slice(0, 500),
+				})) !== null;
+		} catch (err) {
+			announced = false;
+			console.error("[calendar-mirror] failure alert did not land", spec.failure.type, err);
+		}
+	}
 	try {
 		unwrap(
-			await sb
-				.from(spec.stateTable)
-				.upsert(
-					{ id: true, last_synced_at: syncedAt, last_result: { error, ...spec.stamp } },
-					{ onConflict: "id" },
-				),
+			await sb.from(spec.stateTable).upsert(
+				{
+					id: true,
+					last_synced_at: syncedAt,
+					last_result: { error, ...spec.stamp, ...(announced ? {} : { announced: false }) },
+				},
+				{ onConflict: "id" },
+			),
 		);
 	} catch (err) {
 		console.error("[calendar-mirror] failed sync state did not land", spec.stateTable, err);
 	}
-	if (alreadyFailing) return;
-	await recordNotification(sb, {
-		type: spec.failure.type,
-		title: spec.failure.title,
-		body: error.slice(0, 500),
-	});
 }
 
 /**
