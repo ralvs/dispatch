@@ -1,54 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
 import { Button, Card, Field, Input, ListRow, rowTitle, Textarea } from "@/components/ui";
-import { toastError } from "@/lib/client/toast";
-import { formatInstant, nowUtc } from "@/lib/dates";
+import { formatInstant } from "@/lib/dates";
 import type { DomainItem } from "@/lib/schemas/domain";
-import {
-	isNavigationError,
-	useAggregate,
-	useProvisionalIds,
-	useRunIntent,
-	useStoreWrite,
-} from "@/lib/store";
-import {
-	archiveDomainAction,
-	markDomainShippedAction,
-	reactivateDomainAction,
-	updateDomainAction,
-} from "./actions";
+import { useAggregate, useInlineEdit, useProvisionalIds, useWrites } from "@/lib/store";
 import { ColorSwatchPicker } from "./color-swatch-picker";
-
-const SAVE_ERROR = "Couldn't save domain.";
-
-/** What an edit asks for, so the row shows it while the server writes it. */
-function domainPatch(formData: FormData): Partial<DomainItem> {
-	const text = (key: string) => {
-		const value = String(formData.get(key) ?? "").trim();
-		return value === "" ? null : value;
-	};
-	const name = text("name");
-	const raw = String(formData.get("cadence_days") ?? "").trim();
-	const days = Number(raw);
-	// Only what the server will keep: blank clears the rule, 1–365 sets it.
-	const cadence = !formData.has("cadence_days")
-		? {}
-		: raw === ""
-			? { cadenceDays: null }
-			: Number.isInteger(days) && days > 0 && days <= 365
-				? { cadenceDays: days }
-				: {};
-	return {
-		...(name ? { name } : {}),
-		description: text("description"),
-		fruit_definition: text("fruit_definition"),
-		expected_cadence: text("expected_cadence"),
-		...(formData.has("color") ? { color: text("color") } : {}),
-		...cadence,
-	};
-}
+import { domainWrites } from "./writes";
 
 /**
  * A row of the entity store's domain view (#30). `cadenceDays` and `touch`
@@ -61,10 +19,8 @@ function domainPatch(formData: FormData): Partial<DomainItem> {
  * through ColorDot → `var(--domain-<slug>)`, never a hex.
  */
 export function DomainRowItem({ domain, tz }: { domain: DomainItem; tz: string }) {
-	const [pending, startTransition] = useTransition();
-	const [editing, setEditing] = useState(false);
-	const run = useRunIntent("domain", { errorMessage: "Couldn't update domain." });
-	const edit = useStoreWrite("domain");
+	const edit = useInlineEdit();
+	const { send } = useWrites();
 	// Still being saved: its id is the client's, so nothing may act on it yet.
 	const saving = useProvisionalIds("domain").has(domain.id);
 	const { cadenceDays, touch } = domain;
@@ -73,22 +29,10 @@ export function DomainRowItem({ domain, tz }: { domain: DomainItem; tz: string }
 	const openCount = useAggregate(`domain.open:${domain.id}`) ?? touch?.openTasks;
 
 	function saveDetails(formData: FormData) {
-		startTransition(async () => {
-			try {
-				const result = await edit(
-					{ type: "patch", id: domain.id, patch: domainPatch(formData) },
-					() => updateDomainAction(domain.id, formData),
-				);
-				if (result.ok) setEditing(false);
-				else toastError(result.formError ?? SAVE_ERROR);
-			} catch (error) {
-				// A redirect() (an expired session) navigates on its own; it is not a failure.
-				if (!isNavigationError(error)) toastError(SAVE_ERROR);
-			}
-		});
+		edit.submit(domainWrites.update(domain.id, formData));
 	}
 
-	if (editing) {
+	if (edit.editing) {
 		return (
 			<li id={`domain-${domain.id}`} className="hairline scroll-mt-24 py-3">
 				<form action={saveDetails}>
@@ -132,15 +76,15 @@ export function DomainRowItem({ domain, tz }: { domain: DomainItem; tz: string }
 						</Field>
 						<ColorSwatchPicker name="color" defaultValue={domain.color} />
 						<div className="flex justify-end gap-2 pt-1">
-							<Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>
+							<Button type="button" variant="ghost" size="sm" onClick={edit.close}>
 								Cancel
 							</Button>
 							<Button
 								type="submit"
 								variant="primary"
 								size="sm"
-								isPending={pending}
-								disabled={pending}
+								isPending={edit.pending}
+								disabled={edit.pending}
 							>
 								Save
 							</Button>
@@ -215,7 +159,7 @@ export function DomainRowItem({ domain, tz }: { domain: DomainItem; tz: string }
 					size="sm"
 					aria-label={`Edit ${domain.name}`}
 					disabled={saving}
-					onClick={() => setEditing(true)}
+					onClick={edit.open}
 				>
 					Edit
 				</Button>
@@ -225,11 +169,7 @@ export function DomainRowItem({ domain, tz }: { domain: DomainItem; tz: string }
 					size="sm"
 					aria-label={`Mark ${domain.name} shipped`}
 					disabled={saving}
-					onClick={() =>
-						run({ type: "patch", id: domain.id, patch: { last_shipped_at: nowUtc() } }, () =>
-							markDomainShippedAction(domain.id),
-						)
-					}
+					onClick={() => send(domainWrites.markShipped(domain.id))}
 				>
 					Mark shipped
 				</Button>
@@ -240,11 +180,7 @@ export function DomainRowItem({ domain, tz }: { domain: DomainItem; tz: string }
 						size="sm"
 						aria-label={`Archive ${domain.name}`}
 						disabled={saving}
-						onClick={() =>
-							run({ type: "patch", id: domain.id, patch: { active: false, touch: null } }, () =>
-								archiveDomainAction(domain.id),
-							)
-						}
+						onClick={() => send(domainWrites.archive(domain.id))}
 					>
 						Archive
 					</Button>
@@ -255,11 +191,7 @@ export function DomainRowItem({ domain, tz }: { domain: DomainItem; tz: string }
 						size="sm"
 						aria-label={`Reactivate ${domain.name}`}
 						disabled={saving}
-						onClick={() =>
-							run({ type: "patch", id: domain.id, patch: { active: true } }, () =>
-								reactivateDomainAction(domain.id),
-							)
-						}
+						onClick={() => send(domainWrites.reactivate(domain.id))}
 					>
 						Reactivate
 					</Button>

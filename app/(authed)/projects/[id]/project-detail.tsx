@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
 import { ColorDot } from "@/components/color-dot";
 import {
 	Button,
@@ -17,58 +16,17 @@ import {
 	Select,
 	Textarea,
 } from "@/components/ui";
-import { toastError } from "@/lib/client/toast";
-import { nowUtc } from "@/lib/dates";
-import { ProjectStatusSchema } from "@/lib/schemas/project";
 import type { DomainRow } from "@/lib/services/domains";
 import type { ProjectRow } from "@/lib/services/projects";
 import { taskProgress } from "@/lib/services/projects-shared";
 import type { TaskRow } from "@/lib/services/tasks";
-import {
-	isNavigationError,
-	useRunIntent,
-	useStoreWrite,
-	useView,
-	useWrites,
-	viewKey,
-} from "@/lib/store";
+import { useInlineEdit, useView, useWrites, viewKey } from "@/lib/store";
 import { bindTaskHandlers } from "@/lib/task-interaction/run-intent";
 import { AddTaskButton } from "../add-task-button";
 import { statusLabel } from "../constants";
-import { archiveProjectAction, completeProjectAction, updateProjectAction } from "./actions";
+import { projectDetailWrites } from "./writes";
 
 const NO_TASKS: TaskRow[] = [];
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const SAVE_ERROR = "Couldn't save project.";
-
-/** What an edit asks for, so the page shows it while the server writes it. */
-function projectPatch(formData: FormData, domains: DomainRow[]): Partial<ProjectRow> {
-	const text = (key: string) => {
-		const value = String(formData.get(key) ?? "").trim();
-		return value === "" ? null : value;
-	};
-	const date = (key: string) => {
-		const value = text(key);
-		return value && DATE.test(value) ? value : null;
-	};
-	const name = text("name");
-	const domain = domains.find((d) => d.id === text("domain_id"));
-	const status = ProjectStatusSchema.safeParse(formData.get("status"));
-	return {
-		...(name ? { name } : {}),
-		description: text("description"),
-		start_date: date("start_date"),
-		target_date: date("target_date"),
-		...(domain
-			? {
-					domain_id: domain.id,
-					domain: { id: domain.id, name: domain.name, color: domain.color },
-				}
-			: {}),
-		...(status.success ? { status: status.data } : {}),
-	};
-}
-
 /**
  * The project and its tasks come from the entity store views the page's
  * <Seed> fed: the project (#30), and every task tagged with it, open and done
@@ -87,13 +45,10 @@ export function ProjectDetail({
 	/** App-timezone today (docs/adr/0002) — recurrence rolls from this. */
 	todayIso: string;
 }) {
-	const [pending, startTransition] = useTransition();
-	const [editing, setEditing] = useState(false);
+	const edit = useInlineEdit();
 	const project = useView(viewKey.projectHead(projectId))?.[0];
 	const optTasks = useView(viewKey.project(projectId)) ?? NO_TASKS;
 	const writes = useWrites();
-	const edit = useStoreWrite("project");
-	const runProject = useRunIntent("project", { errorMessage: "Couldn't update project." });
 	const domainOptions = domains.map((d) => ({ id: d.id, name: d.name, color: d.color }));
 
 	const openTasks = optTasks.filter((t) => t.status !== "done");
@@ -114,23 +69,11 @@ export function ProjectDetail({
 	const domain = domains.find((d) => d.id === project.domain_id);
 
 	function saveDetails(formData: FormData) {
-		startTransition(async () => {
-			try {
-				const result = await edit(
-					{ type: "patch", id: projectId, patch: projectPatch(formData, domains) },
-					() => updateProjectAction(projectId, formData),
-				);
-				if (result.ok) setEditing(false);
-				else toastError(result.formError ?? SAVE_ERROR);
-			} catch (error) {
-				// A redirect() (an expired session) navigates on its own; it is not a failure.
-				if (!isNavigationError(error)) toastError(SAVE_ERROR);
-			}
-		});
+		edit.submit(projectDetailWrites.update(projectId, formData, domains));
 	}
 
 	return (
-		<div className={pending ? "opacity-50" : ""}>
+		<div className={edit.pending ? "opacity-50" : ""}>
 			{/* Name is the title; status is the fact (plain), the task
 			    rollup the measure (Pass 4.5 Gate A). Domain rides the subtitle
 			    with its colour — the list row already settled that domain, not
@@ -165,7 +108,7 @@ export function ProjectDetail({
 			/>
 
 			<section aria-label="Details">
-				{editing ? (
+				{edit.editing ? (
 					<form action={saveDetails}>
 						<Card className="space-y-4" padding="default">
 							<Field label="Name">
@@ -197,10 +140,15 @@ export function ProjectDetail({
 								</Field>
 							</div>
 							<div className="flex justify-end gap-2 pt-1">
-								<Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+								<Button type="button" variant="ghost" onClick={edit.close}>
 									Cancel
 								</Button>
-								<Button type="submit" variant="primary" isPending={pending} disabled={pending}>
+								<Button
+									type="submit"
+									variant="primary"
+									isPending={edit.pending}
+									disabled={edit.pending}
+								>
 									Save
 								</Button>
 							</div>
@@ -230,7 +178,7 @@ export function ProjectDetail({
 								variant="tertiary"
 								size="sm"
 								aria-label={`Edit ${project.name}`}
-								onClick={() => setEditing(true)}
+								onClick={edit.open}
 							>
 								Edit
 							</Button>
@@ -240,16 +188,7 @@ export function ProjectDetail({
 									variant="tertiary"
 									size="sm"
 									aria-label={`Mark ${project.name} done`}
-									onClick={() =>
-										runProject(
-											{
-												type: "patch",
-												id: projectId,
-												patch: { status: "done", completed_at: nowUtc() },
-											},
-											() => completeProjectAction(projectId),
-										)
-									}
+									onClick={() => writes.send(projectDetailWrites.complete(projectId))}
 								>
 									Mark done
 								</Button>
@@ -260,12 +199,7 @@ export function ProjectDetail({
 									variant="danger"
 									size="sm"
 									aria-label={`Archive ${project.name}`}
-									onClick={() =>
-										runProject(
-											{ type: "patch", id: projectId, patch: { status: "archived" } },
-											() => archiveProjectAction(projectId),
-										)
-									}
+									onClick={() => writes.send(projectDetailWrites.archive(projectId))}
 								>
 									Archive
 								</Button>
