@@ -2,15 +2,19 @@
 // interactions. Each builder makes the intent and its server call from the
 // same arguments. Client-safe — server-action references only.
 
-import { instantFromLocal, nowUtc } from "@/lib/dates";
+import { nowUtc } from "@/lib/dates";
 import {
+	type CreatePersonFactFormInput,
+	type CreatePersonInteractionFormInput,
+	createPersonFactForm,
+	createPersonInteractionForm,
+	interactionOccurredAt,
 	type PersonFactRow,
-	PersonFactTypeSchema,
 	type PersonInteractionRow,
-	PersonInteractionTypeSchema,
 	type PersonRow,
-	RelationshipTypeSchema,
+	updatePersonForm,
 } from "@/lib/schemas/person";
+import { unshown } from "@/lib/store/kinds/record";
 import { type Write, write } from "@/lib/store/write";
 import {
 	createFactAction,
@@ -21,79 +25,57 @@ import {
 	updatePersonAction,
 } from "./actions";
 
-/** A text field as the server will store it: blank clears it (lib/form-decode.ts). */
-function textField(formData: FormData, key: string): string | null {
-	const value = String(formData.get(key) ?? "").trim();
-	return value === "" ? null : value;
-}
-
-/** What an edit asks for, so the page shows it while the server writes it. */
-function personPatch(formData: FormData): Partial<PersonRow> {
-	const relationship = RelationshipTypeSchema.safeParse(formData.get("relationship_type"));
-	const name = textField(formData, "name");
-	return {
-		...(name ? { name } : {}),
-		relationship_type: relationship.success ? relationship.data : null,
-		company: textField(formData, "company"),
-		email: textField(formData, "email"),
-		phone: textField(formData, "phone"),
-		notes: textField(formData, "notes"),
-	};
-}
-
 /** The fact the list shows while the server writes it; the server's row replaces it. */
-function optimisticFact(personId: string, formData: FormData): PersonFactRow {
-	const type = PersonFactTypeSchema.safeParse(formData.get("fact_type"));
-	const date = textField(formData, "date_relevant");
+function optimisticFact(personId: string, input: CreatePersonFactFormInput): PersonFactRow {
 	return {
 		id: crypto.randomUUID(),
 		person_id: personId,
-		fact_type: type.success ? type.data : "other",
-		fact_value: textField(formData, "fact_value") ?? "",
-		source_ref: null,
-		date_relevant: date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
-		recurring: false,
+		fact_type: input.fact_type,
+		fact_value: input.fact_value,
+		source_ref: input.source_ref ?? null,
+		date_relevant: input.date_relevant ?? null,
+		recurring: input.recurring ?? false,
 		created_at: nowUtc(),
 	};
 }
 
-/**
- * The interaction the list shows while the server writes it. Its time follows
- * the server's rule: the entered day and time in the app timezone, else now.
- */
+/** The interaction the list shows while the server writes it; no day entered means now. */
 function optimisticInteraction(
 	personId: string,
-	formData: FormData,
-	tz: string,
+	input: CreatePersonInteractionFormInput,
 ): PersonInteractionRow {
-	const type = PersonInteractionTypeSchema.safeParse(formData.get("interaction_type"));
-	const date = textField(formData, "occurred_date");
-	const time = textField(formData, "occurred_time") ?? "00:00";
-	let occurredAt = nowUtc();
-	if (date) {
-		try {
-			occurredAt = instantFromLocal(date, time, tz);
-		} catch {
-			// An unparseable entry: the server rejects it and the row rolls back.
-		}
-	}
 	return {
 		id: crypto.randomUUID(),
 		person_id: personId,
-		interaction_type: type.success ? type.data : "other",
-		notes: textField(formData, "notes"),
-		occurred_at: occurredAt,
+		interaction_type: input.interaction_type,
+		notes: input.notes ?? null,
+		occurred_at: input.occurred_at ?? nowUtc(),
 	};
 }
 
+/** The interaction form as the server reads it; null when it refuses the form or the day and time. */
+function readInteraction(form: FormData, tz: string): CreatePersonInteractionFormInput | null {
+	let occurredAt: string | null;
+	try {
+		occurredAt = interactionOccurredAt(form, tz);
+	} catch {
+		return null;
+	}
+	return createPersonInteractionForm.read(form, { occurred_at: occurredAt });
+}
+
 export const personWrites = {
-	update: (id: string, form: FormData): Write<"person"> =>
-		write(
+	/** A form the decoder refuses shows nothing; the server's field errors do (docs/adr/0087). */
+	update: (id: string, form: FormData): Write<"person"> => {
+		const input = updatePersonForm.read(form);
+		const patch: Partial<PersonRow> | null = input;
+		return write(
 			"person",
-			{ type: "patch", id, patch: personPatch(form) },
+			patch ? { type: "patch", id, patch } : unshown(id),
 			() => updatePersonAction(id, form),
 			"Couldn't save person.",
-		),
+		);
+	},
 	remove: (id: string): Write<"person"> =>
 		write(
 			"person",
@@ -104,13 +86,15 @@ export const personWrites = {
 };
 
 export const personFactWrites = {
-	create: (personId: string, form: FormData): Write<"personFact"> =>
-		write(
+	create: (personId: string, form: FormData): Write<"personFact"> => {
+		const input = createPersonFactForm.read(form);
+		return write(
 			"personFact",
-			{ type: "create", row: optimisticFact(personId, form) },
+			input ? { type: "create", row: optimisticFact(personId, input) } : unshown(),
 			() => createFactAction(personId, form),
 			"Couldn't add fact.",
-		),
+		);
+	},
 	remove: (personId: string, id: string): Write<"personFact"> =>
 		write(
 			"personFact",
@@ -121,13 +105,15 @@ export const personFactWrites = {
 };
 
 export const personInteractionWrites = {
-	create: (personId: string, form: FormData, tz: string): Write<"personInteraction"> =>
-		write(
+	create: (personId: string, form: FormData, tz: string): Write<"personInteraction"> => {
+		const input = readInteraction(form, tz);
+		return write(
 			"personInteraction",
-			{ type: "create", row: optimisticInteraction(personId, form, tz) },
+			input ? { type: "create", row: optimisticInteraction(personId, input) } : unshown(),
 			() => createInteractionAction(personId, form),
 			"Couldn't add interaction.",
-		),
+		);
+	},
 	remove: (personId: string, id: string): Write<"personInteraction"> =>
 		write(
 			"personInteraction",
