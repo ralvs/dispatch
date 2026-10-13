@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { setLinkStatusAction } from "@/app/(authed)/links/actions";
 import { ListRow, rowTitle } from "@/components/ui";
 import { formatInstant } from "@/lib/dates";
 import type { LinkRow } from "@/lib/services/links";
-import { useRunIntent } from "@/lib/store";
+import { useWrites } from "@/lib/store";
+import { linkWrites } from "./writes";
 
 /** "x.com", not the whole href — the raw URL is noise once the row has words. */
 function hostOf(url: string): string {
@@ -46,11 +46,9 @@ export function LinkRowItem({ link, tz }: { link: LinkRow; tz: string }) {
 	const unread = link.status === "unread";
 	// The row moves at once — between Unread and Read, or out of the list on a
 	// dismissal — and a failure moves it back (#30).
-	const run = useRunIntent("link", { errorMessage: "Couldn't update link." });
+	const { send } = useWrites();
 	const mark = (status: "unread" | "read" | "dismissed") =>
-		run({ type: "patch", id: link.id, patch: { status } }, () =>
-			setLinkStatusAction(link.id, status),
-		);
+		send(linkWrites.setStatus(link.id, status));
 
 	return (
 		<ListRow

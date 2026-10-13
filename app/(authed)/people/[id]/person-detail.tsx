@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
 	Button,
 	Card,
@@ -16,23 +16,10 @@ import {
 	Select,
 	Textarea,
 } from "@/components/ui";
-import { toastError } from "@/lib/client/toast";
-import { formatInstant, instantFromLocal, nowUtc } from "@/lib/dates";
+import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
-import {
-	PersonFactTypeSchema,
-	PersonInteractionTypeSchema,
-	RelationshipTypeSchema,
-} from "@/lib/schemas/person";
 import type { PersonFactRow, PersonInteractionRow, PersonRow } from "@/lib/services/people";
-import {
-	isNavigationError,
-	useProvisionalIds,
-	useRunIntent,
-	useStoreWrite,
-	useView,
-	viewKey,
-} from "@/lib/store";
+import { useInlineEdit, useProvisionalIds, useView, useWrites, viewKey } from "@/lib/store";
 import {
 	FACT_TYPES,
 	factTypeLabel,
@@ -41,34 +28,7 @@ import {
 	RELATIONSHIP_TYPES,
 	relationshipLabel,
 } from "../constants";
-import {
-	createFactAction,
-	createInteractionAction,
-	deleteFactAction,
-	deleteInteractionAction,
-	deletePersonAction,
-	updatePersonAction,
-} from "./actions";
-
-/** A text field as the server will store it: blank clears it (lib/form-decode.ts). */
-function textField(formData: FormData, key: string): string | null {
-	const value = String(formData.get(key) ?? "").trim();
-	return value === "" ? null : value;
-}
-
-/** What an edit asks for, so the page shows it while the server writes it. */
-function personPatch(formData: FormData): Partial<PersonRow> {
-	const relationship = RelationshipTypeSchema.safeParse(formData.get("relationship_type"));
-	const name = textField(formData, "name");
-	return {
-		...(name ? { name } : {}),
-		relationship_type: relationship.success ? relationship.data : null,
-		company: textField(formData, "company"),
-		email: textField(formData, "email"),
-		phone: textField(formData, "phone"),
-		notes: textField(formData, "notes"),
-	};
-}
+import { personFactWrites, personInteractionWrites, personWrites } from "./writes";
 
 const NO_FACTS: PersonFactRow[] = [];
 const NO_INTERACTIONS: PersonInteractionRow[] = [];
@@ -93,8 +53,10 @@ export function PersonDetail({
 	mentionedNotes: { id: string; title: string | null; body: string }[];
 }) {
 	const router = useRouter();
-	const [pending, startTransition] = useTransition();
-	const [editing, setEditing] = useState(false);
+	const [removing, startTransition] = useTransition();
+	const edit = useInlineEdit();
+	const { save } = useWrites();
+	const pending = edit.pending || removing;
 	// Set from the delete click until this page unmounts, unless it fails.
 	const [leaving, setLeaving] = useState(false);
 	// Next keeps a left page mounted but hidden, and hiding runs effect
@@ -109,7 +71,6 @@ export function PersonDetail({
 	const person = stored ?? (leaving ? last : undefined);
 	const facts = useView(viewKey.personFacts(personId)) ?? NO_FACTS;
 	const interactions = useView(viewKey.personInteractions(personId)) ?? NO_INTERACTIONS;
-	const write = useStoreWrite("person");
 
 	// Gone, and not by a delete in flight here — deleted in another tab.
 	if (!person) {
@@ -120,36 +81,12 @@ export function PersonDetail({
 		);
 	}
 
-	function saveDetails(formData: FormData) {
-		startTransition(async () => {
-			try {
-				const result = await write(
-					{ type: "patch", id: personId, patch: personPatch(formData) },
-					() => updatePersonAction(personId, formData),
-				);
-				if (result.ok) setEditing(false);
-				else toastError(result.formError ?? "Couldn't save person.");
-			} catch (error) {
-				// A redirect() (an expired session) navigates on its own; it is not a failure.
-				if (!isNavigationError(error)) toastError("Couldn't save person.");
-			}
-		});
-	}
-
 	function remove() {
 		setLeaving(true);
 		startTransition(async () => {
-			try {
-				const result = await write({ type: "delete", id: personId }, () =>
-					deletePersonAction(personId),
-				);
-				if (result.ok) {
-					router.push("/people");
-					return;
-				}
-				toastError(result.formError ?? "Couldn't delete person.");
-			} catch (error) {
-				if (!isNavigationError(error)) toastError("Couldn't delete person.");
+			if (await save(personWrites.remove(personId))) {
+				router.push("/people");
+				return;
 			}
 			setLeaving(false);
 		});
@@ -169,8 +106,8 @@ export function PersonDetail({
 			/>
 
 			<section aria-label="Details">
-				{editing ? (
-					<form action={saveDetails}>
+				{edit.editing ? (
+					<form action={(formData) => edit.submit(personWrites.update(personId, formData))}>
 						<Card className="space-y-4" padding="default">
 							<Field label="Name">
 								<Input name="name" required defaultValue={person.name} />
@@ -199,7 +136,7 @@ export function PersonDetail({
 								</Field>
 							</div>
 							<div className="flex justify-end gap-2 pt-1">
-								<Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+								<Button type="button" variant="ghost" onClick={edit.close}>
 									Cancel
 								</Button>
 								<Button type="submit" variant="primary" isPending={pending} disabled={pending}>
@@ -243,7 +180,7 @@ export function PersonDetail({
 								size="sm"
 								aria-label={`Edit ${person.name}`}
 								disabled={pending}
-								onClick={() => setEditing(true)}
+								onClick={edit.open}
 							>
 								Edit
 							</Button>
@@ -309,49 +246,11 @@ function MentionedInSection({
 	);
 }
 
-/** The fact the list shows while the server writes it; the server's row replaces it. */
-function optimisticFact(personId: string, formData: FormData): PersonFactRow {
-	const type = PersonFactTypeSchema.safeParse(formData.get("fact_type"));
-	const date = textField(formData, "date_relevant");
-	return {
-		id: crypto.randomUUID(),
-		person_id: personId,
-		fact_type: type.success ? type.data : "other",
-		fact_value: textField(formData, "fact_value") ?? "",
-		source_ref: null,
-		date_relevant: date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
-		recurring: false,
-		created_at: nowUtc(),
-	};
-}
-
 function FactsSection({ personId, facts }: { personId: string; facts: PersonFactRow[] }) {
-	const formRef = useRef<HTMLFormElement>(null);
-	const [pending, startTransition] = useTransition();
-	const [open, setOpen] = useState(false);
-	const write = useStoreWrite("personFact");
-	const run = useRunIntent("personFact", { errorMessage: "Couldn't delete fact." });
+	const form = useInlineEdit();
+	const { send } = useWrites();
 	// A fact still being saved has the client's id: no delete until it is real.
 	const saving = useProvisionalIds("personFact");
-
-	function submit(formData: FormData) {
-		startTransition(async () => {
-			try {
-				const result = await write(
-					{ type: "create", row: optimisticFact(personId, formData) },
-					() => createFactAction(personId, formData),
-				);
-				if (!result.ok) {
-					toastError(result.formError ?? "Couldn't add fact.");
-					return;
-				}
-				formRef.current?.reset();
-				setOpen(false);
-			} catch (error) {
-				if (!isNavigationError(error)) toastError("Couldn't add fact.");
-			}
-		});
-	}
 
 	return (
 		<section className="mt-9" aria-label="Facts">
@@ -367,9 +266,7 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 								size="sm"
 								aria-label={`Delete fact "${f.fact_value}"`}
 								disabled={saving.has(f.id)}
-								onClick={() =>
-									run({ type: "delete", id: f.id }, () => deleteFactAction(personId, f.id))
-								}
+								onClick={() => send(personFactWrites.remove(personId, f.id))}
 							>
 								Delete
 							</Button>
@@ -383,8 +280,11 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 					</ListRow>
 				))}
 			</ul>
-			{open ? (
-				<form ref={formRef} action={submit} className="mt-3">
+			{form.editing ? (
+				<form
+					action={(formData) => form.submit(personFactWrites.create(personId, formData))}
+					className="mt-3"
+				>
 					<Card className="space-y-3" padding="compact">
 						<div className="grid grid-cols-2 gap-2">
 							<Field label="Type">
@@ -404,15 +304,15 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 							<Input name="fact_value" required />
 						</Field>
 						<div className="flex justify-end gap-2">
-							<Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
+							<Button type="button" variant="ghost" size="sm" onClick={form.close}>
 								Cancel
 							</Button>
 							<Button
 								type="submit"
 								variant="primary"
 								size="sm"
-								isPending={pending}
-								disabled={pending}
+								isPending={form.pending}
+								disabled={form.pending}
 							>
 								Add
 							</Button>
@@ -425,42 +325,13 @@ function FactsSection({ personId, facts }: { personId: string; facts: PersonFact
 					variant="tertiary"
 					fullWidth
 					className="mt-3 justify-start"
-					onClick={() => setOpen(true)}
+					onClick={form.open}
 				>
 					+ Add fact
 				</Button>
 			)}
 		</section>
 	);
-}
-
-/**
- * The interaction the list shows while the server writes it. Its time follows
- * the server's rule: the entered day and time in the app timezone, else now.
- */
-function optimisticInteraction(
-	personId: string,
-	formData: FormData,
-	tz: string,
-): PersonInteractionRow {
-	const type = PersonInteractionTypeSchema.safeParse(formData.get("interaction_type"));
-	const date = textField(formData, "occurred_date");
-	const time = textField(formData, "occurred_time") ?? "00:00";
-	let occurredAt = nowUtc();
-	if (date) {
-		try {
-			occurredAt = instantFromLocal(date, time, tz);
-		} catch {
-			// An unparseable entry: the server rejects it and the row rolls back.
-		}
-	}
-	return {
-		id: crypto.randomUUID(),
-		person_id: personId,
-		interaction_type: type.success ? type.data : "other",
-		notes: textField(formData, "notes"),
-		occurred_at: occurredAt,
-	};
 }
 
 function InteractionsSection({
@@ -472,31 +343,9 @@ function InteractionsSection({
 	interactions: PersonInteractionRow[];
 	tz: string;
 }) {
-	const formRef = useRef<HTMLFormElement>(null);
-	const [pending, startTransition] = useTransition();
-	const [open, setOpen] = useState(false);
-	const write = useStoreWrite("personInteraction");
-	const run = useRunIntent("personInteraction", { errorMessage: "Couldn't delete interaction." });
+	const form = useInlineEdit();
+	const { send } = useWrites();
 	const saving = useProvisionalIds("personInteraction");
-
-	function submit(formData: FormData) {
-		startTransition(async () => {
-			try {
-				const result = await write(
-					{ type: "create", row: optimisticInteraction(personId, formData, tz) },
-					() => createInteractionAction(personId, formData),
-				);
-				if (!result.ok) {
-					toastError(result.formError ?? "Couldn't add interaction.");
-					return;
-				}
-				formRef.current?.reset();
-				setOpen(false);
-			} catch (error) {
-				if (!isNavigationError(error)) toastError("Couldn't add interaction.");
-			}
-		});
-	}
 
 	return (
 		<section className="mt-9" aria-label="Interactions">
@@ -515,9 +364,7 @@ function InteractionsSection({
 								size="sm"
 								aria-label="Delete interaction"
 								disabled={saving.has(i.id)}
-								onClick={() =>
-									run({ type: "delete", id: i.id }, () => deleteInteractionAction(personId, i.id))
-								}
+								onClick={() => send(personInteractionWrites.remove(personId, i.id))}
 							>
 								Delete
 							</Button>
@@ -530,8 +377,11 @@ function InteractionsSection({
 					</ListRow>
 				))}
 			</ul>
-			{open ? (
-				<form ref={formRef} action={submit} className="mt-3">
+			{form.editing ? (
+				<form
+					action={(formData) => form.submit(personInteractionWrites.create(personId, formData, tz))}
+					className="mt-3"
+				>
 					<Card className="space-y-3" padding="compact">
 						<div className="grid grid-cols-2 gap-2">
 							<Field label="Type">
@@ -556,15 +406,15 @@ function InteractionsSection({
 							<Textarea name="notes" rows={2} size="sm" />
 						</Field>
 						<div className="flex justify-end gap-2">
-							<Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
+							<Button type="button" variant="ghost" size="sm" onClick={form.close}>
 								Cancel
 							</Button>
 							<Button
 								type="submit"
 								variant="primary"
 								size="sm"
-								isPending={pending}
-								disabled={pending}
+								isPending={form.pending}
+								disabled={form.pending}
 							>
 								Log
 							</Button>
@@ -577,7 +427,7 @@ function InteractionsSection({
 					variant="tertiary"
 					fullWidth
 					className="mt-3 justify-start"
-					onClick={() => setOpen(true)}
+					onClick={form.open}
 				>
 					+ Log interaction
 				</Button>

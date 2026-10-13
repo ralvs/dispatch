@@ -1,14 +1,11 @@
 "use client";
 
-import {
-	markAllNotificationsAction,
-	markNotificationAction,
-} from "@/app/(authed)/notifications/actions";
 import { EmptyState } from "@/components/ui";
 import type { NotificationRow as Row } from "@/lib/schemas/notification";
-import { useRunIntent, useView, viewKey } from "@/lib/store";
+import { useView, useWrites, viewKey } from "@/lib/store";
 import { BulkActions } from "./bulk-actions";
 import { NotificationRow } from "./notification-row";
+import { notificationWrites } from "./writes";
 
 const NO_ROWS: Row[] = [];
 
@@ -20,16 +17,15 @@ const NO_ROWS: Row[] = [];
  */
 export function NotificationList({ tz }: { tz: string }) {
 	const rows = useView(viewKey.notifications()) ?? NO_ROWS;
-	const runOne = useRunIntent("notification", { errorMessage: "Couldn't update notification." });
-	const runAll = useRunIntent("notification", { errorMessage: "Couldn't update notifications." });
+	const { send } = useWrites();
 	const unread = rows.filter((n) => n.status === "unread").length;
 
 	function markOne(id: string, status: "read" | "dismissed") {
-		runOne({ type: "mark", id, status }, () => markNotificationAction(id, status));
+		send(notificationWrites.mark(id, status));
 	}
 
 	function markAll(status: "read" | "dismissed") {
-		runAll({ type: "markAll", status }, () => markAllNotificationsAction(status));
+		send(notificationWrites.markAll(status));
 	}
 
 	return (

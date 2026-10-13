@@ -47,6 +47,17 @@ describe("people actions against the local database", () => {
 		});
 	});
 
+	it("a bad edit or fact form is a field error, not a throw", async () => {
+		const ana = await newPerson("Ana");
+		expect(await updatePersonAction(ana.id, form({ relationship_type: "nope" }))).toMatchObject({
+			ok: false,
+			fieldErrors: { relationship_type: expect.any(Array) },
+		});
+		expect(
+			await createFactAction(ana.id, form({ fact_type: "nope", fact_value: "" })),
+		).toMatchObject({ ok: false });
+	});
+
 	it("a fact and an interaction come back as written", async () => {
 		const ana = await newPerson("Ana");
 		const fact = await createFactAction(
