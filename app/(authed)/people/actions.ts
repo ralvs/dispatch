@@ -2,9 +2,8 @@
 
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
-import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/invalidate";
-import { CreatePersonSchema, type PersonRow } from "@/lib/schemas/person";
+import { createPersonForm, type PersonRow } from "@/lib/schemas/person";
 import { createPerson } from "@/lib/services/people";
 import { stampWrite } from "@/lib/store/server";
 import type { StoreWrite } from "@/lib/store/types";
@@ -15,7 +14,7 @@ export async function createPersonAction(
 ): Promise<ActionResult<StoreWrite<PersonRow>>> {
 	const { sb } = await requireOwnerPage();
 	return runFormAction(formData, async () => {
-		const person = await createPerson(sb, decodeForm(CreatePersonSchema, formData));
+		const person = await createPerson(sb, createPersonForm.parse(formData));
 		afterMutation("people.write");
 		return stampWrite([person]);
 	});

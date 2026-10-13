@@ -50,13 +50,18 @@ describe("domain actions against the local database", () => {
 		});
 	});
 
-	it("a bad cadence changes nothing", async () => {
+	it("a bad cadence returns its field error and changes nothing", async () => {
 		const home = await newDomain("Home");
-		await expect(
-			updateDomainAction(home.id, form({ name: "Renamed", cadence_days: "0" })),
-		).rejects.toThrow();
+		const result = await updateDomainAction(home.id, form({ name: "Renamed", cadence_days: "0" }));
+		expect(result).toMatchObject({ ok: false, fieldErrors: { cadence_days: expect.any(Array) } });
 		const again = await reactivateDomainAction(home.id);
 		expect(again).toMatchObject({ ok: true, data: { rows: [{ name: "Home" }] } });
+	});
+
+	it("a bad field returns field errors instead of throwing", async () => {
+		const home = await newDomain("Home");
+		const result = await updateDomainAction(home.id, form({ color: "mauve" }));
+		expect(result).toMatchObject({ ok: false, fieldErrors: { color: expect.any(Array) } });
 	});
 
 	it("archive drops the touch; reactivate brings it back; shipping is a touch", async () => {

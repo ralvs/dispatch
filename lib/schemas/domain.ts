@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formDecoder } from "@/lib/form-decode";
 import { ColorSlugSchema } from "@/lib/schemas/color";
 
 export const FailurePatternSchema = z
@@ -59,6 +60,29 @@ export const UpdateDomainSchema = z.object({
 	// .nullable() is load-bearing — see DomainRowSchema.color.
 	color: ColorSlugSchema.nullable().optional(),
 });
+
+// The edit form also carries the cadence rule. It is not a column: it lives
+// inside failure_patterns, so the action writes it apart from the patch. A
+// blank field clears the rule (the decoder turns blank into null), which stops
+// the observations cron flagging the domain.
+export const CadenceDaysSchema = z
+	.string()
+	.transform(Number)
+	.refine((n) => Number.isInteger(n) && n > 0 && n <= 365, {
+		message: "Cadence must be a whole number of days between 1 and 365",
+	})
+	.nullable()
+	.optional();
+
+export const UpdateDomainFormSchema = UpdateDomainSchema.extend({
+	cadence_days: CadenceDaysSchema,
+});
+
+/** The domain forms' one decode each, shared by the optimistic half and the server (docs/adr/0087). */
+export const createDomainForm = formDecoder(CreateDomainSchema);
+export type CreateDomainFormInput = z.output<typeof CreateDomainSchema>;
+export const updateDomainForm = formDecoder(UpdateDomainFormSchema);
+export type UpdateDomainFormInput = z.output<typeof UpdateDomainFormSchema>;
 
 // ─── Row shape actually returned by the domains service ────────────────
 //

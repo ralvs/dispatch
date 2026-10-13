@@ -3,9 +3,8 @@
 import { z } from "zod";
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
-import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/invalidate";
-import { CreateDomainSchema, type DomainItem, UpdateDomainSchema } from "@/lib/schemas/domain";
+import { createDomainForm, type DomainItem, updateDomainForm } from "@/lib/schemas/domain";
 import {
 	archiveDomain,
 	createDomain,
@@ -31,39 +30,32 @@ function revalidateDomainViews() {
 export async function createDomainAction(formData: FormData): Promise<ActionResult<DomainWrite>> {
 	const { sb } = await requireOwnerPage();
 	return runFormAction(formData, async () => {
-		const domain = await createDomain(sb, decodeForm(CreateDomainSchema, formData));
+		const domain = await createDomain(sb, createDomainForm.parse(formData));
 		revalidateDomainViews();
 		return written(sb, "domain", domain.id);
 	});
 }
-
-// Blank clears the rule, which stops the observations cron flagging the domain.
-const CadenceDaysSchema = z
-	.string()
-	.trim()
-	.transform((raw) => (raw === "" ? null : Number(raw)))
-	.refine((n) => n === null || (Number.isInteger(n) && n > 0 && n <= 365), {
-		message: "Cadence must be a whole number of days between 1 and 365",
-	});
 
 export async function updateDomainAction(
 	id: string,
 	formData: FormData,
 ): Promise<ActionResult<DomainWrite>> {
 	const { sb } = await requireOwnerPage();
+	// A bad id is the caller's bug, not a form field: it throws, as in the
+	// other actions. A refused field — a bad cadence included — comes back as
+	// a field error, parsed before any write, so it changes nothing
+	// (docs/adr/0087).
 	const domainId = z.uuid().parse(id);
-	const parsed = decodeForm(UpdateDomainSchema, formData);
-	// Parsed before any write, so a bad cadence changes nothing.
-	const days = formData.has("cadence_days")
-		? CadenceDaysSchema.parse(String(formData.get("cadence_days")))
-		: undefined;
-	await updateDomain(sb, domainId, parsed);
-	// The cadence rule rides in the same form but not the same patch: it lives
-	// inside failure_patterns and needs a read-merge-write to leave the rules
-	// this editor does not manage alone.
-	if (days !== undefined) await setDomainCadence(sb, domainId, days);
-	revalidateDomainViews();
-	return { ok: true, data: await written(sb, "domain", domainId) };
+	return runFormAction(formData, async () => {
+		const { cadence_days: days, ...patch } = updateDomainForm.parse(formData);
+		await updateDomain(sb, domainId, patch);
+		// The cadence rule rides in the same form but not the same patch: it lives
+		// inside failure_patterns and needs a read-merge-write to leave the rules
+		// this editor does not manage alone.
+		if (days !== undefined) await setDomainCadence(sb, domainId, days);
+		revalidateDomainViews();
+		return written(sb, "domain", domainId);
+	});
 }
 
 export async function archiveDomainAction(id: string): Promise<ActionResult<DomainWrite>> {

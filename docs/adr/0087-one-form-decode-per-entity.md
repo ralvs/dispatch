@@ -42,7 +42,8 @@ an intent that shows nothing, so only the server's answer moves the view.
 
 ## Consequences
 
-- Quotes, journal entries, tasks and projects decode each form once.
+- Quotes, journal entries, tasks, projects, domains, people and routines
+  decode each form once.
 - What the page shows while a write is in flight is what the server will
   write, or nothing.
 - A refused project edit returns its field errors instead of throwing.
@@ -52,6 +53,8 @@ an intent that shows nothing, so only the server's answer moves the view.
 
 ## Deferred
 
-- **Domains**: the cadence field is outside `UpdateDomainSchema`, and
-  `app/(authed)/domains/actions.ts` decodes outside `runFormAction`.
-- **People**, **routines** and **notes** keep their own reading for now.
+- **Notes** keep their own reading until AC-13.
+
+Domains, people and routines followed in a second pass: the domain edit
+form's schema now owns the cadence field, and the domain edit and person
+interaction actions decode inside `runFormAction`.

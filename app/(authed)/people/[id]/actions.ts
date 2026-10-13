@@ -3,16 +3,15 @@
 import { z } from "zod";
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
-import { instantFromLocal } from "@/lib/dates";
-import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/invalidate";
 import {
-	CreatePersonFactSchema,
-	CreatePersonInteractionSchema,
+	createPersonFactForm,
+	createPersonInteractionForm,
+	interactionOccurredAt,
 	type PersonFactRow,
 	type PersonInteractionRow,
 	type PersonRow,
-	UpdatePersonSchema,
+	updatePersonForm,
 } from "@/lib/schemas/person";
 import {
 	createFact,
@@ -44,7 +43,7 @@ export async function updatePersonAction(
 	const { sb } = await requireOwnerPage();
 	const personId = z.uuid().parse(id);
 	return runFormAction(formData, async () => {
-		await updatePerson(sb, personId, decodeForm(UpdatePersonSchema, formData));
+		await updatePerson(sb, personId, updatePersonForm.parse(formData));
 		revalidatePersonViews();
 		return written(sb, "person", personId);
 	});
@@ -66,7 +65,7 @@ export async function createFactAction(
 	const { sb } = await requireOwnerPage();
 	const id = z.uuid().parse(personId);
 	return runFormAction(formData, async () => {
-		const fact = await createFact(sb, id, decodeForm(CreatePersonFactSchema, formData));
+		const fact = await createFact(sb, id, createPersonFactForm.parse(formData));
 		revalidatePersonViews();
 		return stampWrite([fact]);
 	});
@@ -90,19 +89,16 @@ export async function createInteractionAction(
 ): Promise<ActionResult<StoreWrite<PersonInteractionRow>>> {
 	const { sb } = await requireOwnerPage();
 	const id = z.uuid().parse(personId);
-	const dateIso = formData.get("occurred_date");
-	const time = formData.get("occurred_time");
-	let occurredAt: string | null = null;
-	if (typeof dateIso === "string" && dateIso) {
-		const tz = await getAppTimezone(sb);
-		occurredAt = instantFromLocal(dateIso, typeof time === "string" && time ? time : "00:00", tz);
-	}
-	const parsed = decodeForm(CreatePersonInteractionSchema, formData, {
-		overrides: { occurred_at: occurredAt },
+	// A refused field comes back as a field error, not a throw (docs/adr/0087).
+	return runFormAction(formData, async () => {
+		const occurredAt = formData.get("occurred_date")
+			? interactionOccurredAt(formData, await getAppTimezone(sb))
+			: null;
+		const parsed = createPersonInteractionForm.parse(formData, { occurred_at: occurredAt });
+		const interaction = await createInteraction(sb, id, parsed);
+		revalidatePersonViews();
+		return stampWrite([interaction]);
 	});
-	const interaction = await createInteraction(sb, id, parsed);
-	revalidatePersonViews();
-	return { ok: true, data: stampWrite([interaction]) };
 }
 
 export async function deleteInteractionAction(

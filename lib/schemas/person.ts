@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { instantFromLocal } from "@/lib/dates";
+import { formDecoder } from "@/lib/form-decode";
 
 // People + their facts + interactions. Lightweight CRM, scoped to the
 // single user. Three tables share the same person_id FK chain:
@@ -44,6 +46,12 @@ export const CreatePersonSchema = z.object({
 
 export const UpdatePersonSchema = CreatePersonSchema.partial();
 
+/** The person forms' one decode each, shared by the optimistic half and the server (docs/adr/0087). */
+export const createPersonForm = formDecoder(CreatePersonSchema);
+export type CreatePersonFormInput = z.output<typeof CreatePersonSchema>;
+export const updatePersonForm = formDecoder(UpdatePersonSchema);
+export type UpdatePersonFormInput = z.output<typeof UpdatePersonSchema>;
+
 // ─── Person facts ─────────────────────────────────────────────────────
 
 export const PersonFactTypeSchema = z.enum([
@@ -78,6 +86,10 @@ export const CreatePersonFactSchema = z.object({
 
 export const UpdatePersonFactSchema = CreatePersonFactSchema.partial();
 
+/** The add-fact form's one decode (docs/adr/0087). */
+export const createPersonFactForm = formDecoder(CreatePersonFactSchema);
+export type CreatePersonFactFormInput = z.output<typeof CreatePersonFactSchema>;
+
 // ─── Person interactions ──────────────────────────────────────────────
 
 export const PersonInteractionTypeSchema = z.enum([
@@ -107,6 +119,24 @@ export const CreatePersonInteractionSchema = z.object({
 });
 
 export const UpdatePersonInteractionSchema = CreatePersonInteractionSchema.partial();
+
+/**
+ * The add-interaction form's one decode (docs/adr/0087). `occurred_at` is not
+ * a form field: each half passes `interactionOccurredAt` as an override.
+ */
+export const createPersonInteractionForm = formDecoder(CreatePersonInteractionSchema);
+export type CreatePersonInteractionFormInput = z.output<typeof CreatePersonInteractionSchema>;
+
+/**
+ * The entered day and time in the app timezone, or null (the DB stamps now)
+ * when no day was entered. Throws on a day and time that do not parse.
+ */
+export function interactionOccurredAt(formData: FormData, tz: string): string | null {
+	const dateIso = formData.get("occurred_date");
+	const time = formData.get("occurred_time");
+	if (typeof dateIso !== "string" || !dateIso) return null;
+	return instantFromLocal(dateIso, typeof time === "string" && time ? time : "00:00", tz);
+}
 
 // ─── Row shape actually returned by the people service ──────────────────
 //

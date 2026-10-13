@@ -4,13 +4,12 @@ import { z } from "zod";
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { acceptedDay } from "@/lib/dates";
-import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/invalidate";
 import { BACKFILL_DAYS } from "@/lib/routine-stats";
 import {
-	CreateRoutineSchema,
+	createRoutineForm,
 	type RoutineWithHistory,
-	UpdateRoutineSchema,
+	updateRoutineForm,
 } from "@/lib/schemas/routine";
 import {
 	archiveRoutine,
@@ -38,7 +37,7 @@ function revalidateRoutineViews() {
 export async function createRoutineAction(formData: FormData): Promise<ActionResult<RoutineWrite>> {
 	const { sb } = await requireOwnerPage();
 	return runFormAction(formData, async () => {
-		const routine = await createRoutine(sb, decodeForm(CreateRoutineSchema, formData));
+		const routine = await createRoutine(sb, createRoutineForm.parse(formData));
 		revalidateRoutineViews();
 		// A new routine has no completions yet.
 		return stampWrite([{ ...routine, completions: [] }]);
@@ -84,7 +83,7 @@ export async function updateRoutineAction(
 	const { sb } = await requireOwnerPage();
 	return runFormAction(formData, async () => {
 		const routineId = z.uuid().parse(id);
-		await updateRoutine(sb, routineId, decodeForm(UpdateRoutineSchema, formData));
+		await updateRoutine(sb, routineId, updateRoutineForm.parse(formData));
 		revalidateRoutineViews();
 		return written(sb, "routine", routineId);
 	});

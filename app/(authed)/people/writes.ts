@@ -3,34 +3,35 @@
 // person page's own writes sit beside its actions ([id]/writes.ts).
 
 import { nowUtc } from "@/lib/dates";
-import { type PersonRow, RelationshipTypeSchema } from "@/lib/schemas/person";
+import { type CreatePersonFormInput, createPersonForm, type PersonRow } from "@/lib/schemas/person";
+import { unshown } from "@/lib/store/kinds/record";
 import { type Write, write } from "@/lib/store/write";
 import { createPersonAction } from "./actions";
 
 /** The person the list shows while the server writes them; the server's row replaces it (#30). */
-function optimisticPerson(formData: FormData): PersonRow {
-	const text = (key: string) => {
-		const value = String(formData.get(key) ?? "").trim();
-		return value === "" ? null : value;
-	};
-	const relationship = RelationshipTypeSchema.safeParse(formData.get("relationship_type"));
+function optimisticPerson(input: CreatePersonFormInput): PersonRow {
 	const at = nowUtc();
 	return {
 		id: crypto.randomUUID(),
-		name: text("name") ?? "",
-		relationship_type: relationship.success ? relationship.data : null,
-		email: text("email"),
-		phone: text("phone"),
-		company: text("company"),
-		notes: null,
+		name: input.name,
+		relationship_type: input.relationship_type ?? null,
+		email: input.email ?? null,
+		phone: input.phone ?? null,
+		company: input.company ?? null,
+		notes: input.notes ?? null,
 		created_at: at,
 		updated_at: at,
 	};
 }
 
 export const personListWrites = {
-	create: (form: FormData): Write<"person"> =>
-		write("person", { type: "create", row: optimisticPerson(form) }, () =>
-			createPersonAction(form),
-		),
+	/** A form the decoder refuses shows nothing; the server's field errors do (docs/adr/0087). */
+	create: (form: FormData): Write<"person"> => {
+		const input = createPersonForm.read(form);
+		return write(
+			"person",
+			input ? { type: "create", row: optimisticPerson(input) } : unshown(),
+			() => createPersonAction(form),
+		);
+	},
 };
