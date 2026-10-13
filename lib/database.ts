@@ -109,6 +109,8 @@ type Overrides = {
 		{ interaction_type: Infer<typeof PersonInteractionTypeSchema> }
 	>;
 	projects: Narrow<"projects", { status: Infer<typeof ProjectStatusSchema> }>;
+	// The Web Push keys `lib/services/push.ts` stores (its `PushKeys`).
+	push_subscriptions: Narrow<"push_subscriptions", { keys: { p256dh: string; auth: string } }>;
 	quote_annotations: Narrow<
 		"quote_annotations",
 		{ context: Infer<typeof AnnotationContextSchema> | null }
