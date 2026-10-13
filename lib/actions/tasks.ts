@@ -4,9 +4,8 @@ import { z } from "zod";
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { acceptedDay, parseDateIso } from "@/lib/dates";
-import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/invalidate";
-import { CreateTaskFormSchema, type TaskRow } from "@/lib/schemas/task";
+import { type TaskRow, taskForm, taskFormFields } from "@/lib/schemas/task";
 import { quickAddTask } from "@/lib/services/capture/quick-add";
 import { todayForRequest } from "@/lib/services/settings";
 import {
@@ -33,18 +32,7 @@ type TaskWrite = StoreWrite<TaskRow>;
 export async function createTaskAction(formData: FormData): Promise<ActionResult<TaskWrite>> {
 	const { sb } = await requireOwnerPage();
 	return runFormAction(formData, async () => {
-		const parsed = decodeForm(CreateTaskFormSchema, formData);
-		const task = await createTask(sb, {
-			title: parsed.title,
-			notes: parsed.notes || null,
-			due_date: parsed.due_date || null,
-			due_time: parsed.due_time || null,
-			priority: parsed.priority,
-			// Guaranteed by CreateTaskFormSchema — this form cannot make an unfiled task.
-			domain_id: parsed.domain_id,
-			project_id: parsed.project_id || null,
-			recurrence_rule: parsed.recurrence_rule || null,
-		});
+		const task = await createTask(sb, taskFormFields(taskForm.parse(formData)));
 		afterMutation("task.write");
 		return stampWrite([task]);
 	});
@@ -79,23 +67,11 @@ export async function updateTaskAction(
 ): Promise<ActionResult<TaskWrite>> {
 	const { sb } = await requireOwnerPage();
 	return runFormAction(formData, async () => {
-		const parsed = decodeForm(CreateTaskFormSchema, formData);
+		const fields = taskFormFields(taskForm.parse(formData));
 		const taskId = z.uuid().parse(id);
-		await updateTask(sb, taskId, {
-			title: parsed.title,
-			notes: parsed.notes || null,
-			due_date: parsed.due_date || null,
-			due_time: parsed.due_time || null,
-			priority: parsed.priority,
-			// The two mappings used to differ: an empty domain meant "leave it alone"
-			// on edit and "Inbox" on create. The field cannot be empty any more, so
-			// there is one answer and both paths send it.
-			domain_id: parsed.domain_id,
-			// Null, not undefined: clearing the select is how a task leaves a
-			// project, and the field is always present on the form.
-			project_id: parsed.project_id || null,
-			recurrence_rule: parsed.recurrence_rule || null,
-		});
+		// Create and edit send the same columns: the domain cannot be empty, so
+		// an edit no longer reads a blank one as "leave it alone".
+		await updateTask(sb, taskId, fields);
 		afterMutation("task.write");
 		return written(sb, "task", taskId);
 	});

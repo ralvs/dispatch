@@ -122,6 +122,8 @@ describe("TaskDialog", () => {
 		const user = userEvent.setup();
 		render(<Harness onClose={onClose} />);
 		await user.type(screen.getByLabelText("Task title"), "Buy milk");
+		// A form the server would refuse shows no row (docs/adr/0087): file it.
+		await user.selectOptions(screen.getByLabelText("Domain"), HOME);
 		await user.click(screen.getByRole("button", { name: "Add task" }));
 
 		// The create is in the store before the server answers…

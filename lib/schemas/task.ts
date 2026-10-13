@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formDecoder } from "@/lib/form-decode";
 import { isRecurrenceRule } from "@/lib/recurrence";
 
 // A stored recurrence rule: one of the seven literals, or the custom weekly
@@ -72,6 +73,9 @@ export const TaskSchema = z.object({
 // and priority needs z.coerce. Shares its leaves with the capture-side schema —
 // RECURRENCE_PATTERNS, WallClockTimeSchema — rather than redeclaring them, so
 // the two paths cannot drift on what a valid time or cadence is.
+/** The priority a task gets when nothing states one: low. */
+export const DEFAULT_TASK_PRIORITY = 3;
+
 export const CreateTaskFormSchema = z
 	.object({
 		title: z
@@ -82,7 +86,7 @@ export const CreateTaskFormSchema = z
 		notes: z.string().trim().max(TASK_NOTES_MAX).optional(),
 		due_date: z.iso.date().optional().or(z.literal("")),
 		due_time: WallClockTimeSchema.optional().or(z.literal("")),
-		priority: z.coerce.number().int().min(1).max(3).default(3),
+		priority: z.coerce.number().int().min(1).max(3).default(DEFAULT_TASK_PRIORITY),
 		// Required, unlike every other optional here. The form's own `required`
 		// is HTML5 constraint validation, which a disabled control skips and a
 		// non-browser caller never runs at all — so on its own it is a hint,
@@ -104,6 +108,37 @@ export const CreateTaskFormSchema = z
 		message: "A time needs a date.",
 		path: ["due_time"],
 	});
+
+/** The task form's one decode, shared by the optimistic row and the server (docs/adr/0087). */
+export const taskForm = formDecoder(CreateTaskFormSchema);
+
+/** The task form's columns as the service writes them: a blank optional field is null. */
+export type TaskFormFields = {
+	title: string;
+	notes: string | null;
+	due_date: string | null;
+	due_time: string | null;
+	priority: number;
+	domain_id: string;
+	project_id: string | null;
+	recurrence_rule: string | null;
+};
+
+export function taskFormFields(parsed: z.output<typeof CreateTaskFormSchema>): TaskFormFields {
+	return {
+		title: parsed.title,
+		notes: parsed.notes || null,
+		due_date: parsed.due_date || null,
+		due_time: parsed.due_time || null,
+		priority: parsed.priority,
+		// Guaranteed by CreateTaskFormSchema — this form cannot make an unfiled task.
+		domain_id: parsed.domain_id,
+		// Null, not undefined: clearing the select is how a task leaves a
+		// project, and the field is always present on the form.
+		project_id: parsed.project_id || null,
+		recurrence_rule: parsed.recurrence_rule || null,
+	};
+}
 
 // ─── Row shape actually returned by the tasks service ──────────────────
 //

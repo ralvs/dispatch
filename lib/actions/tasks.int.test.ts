@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { shiftDay } from "@/lib/dates";
+import { createDomain } from "@/lib/services/domains";
+import { createProject } from "@/lib/services/projects";
 import { todayForRequest } from "@/lib/services/settings";
 import { completeTask, createTask, getTask } from "@/lib/services/tasks";
 import { ownerClient } from "@/test/integration/clients";
-import { completeTaskAction, skipTaskAction } from "./tasks";
+import { completeTaskAction, createTaskAction, skipTaskAction, updateTaskAction } from "./tasks";
 
 // The guard reads cookies and the invalidation needs a Next request scope;
 // neither exists here. Everything between them runs for real.
@@ -85,5 +87,66 @@ describe("task tick day against the local database", () => {
 			skipTaskAction({ id: task.id, observedDueDate: today, todayIso: "not-a-day" }),
 		).rejects.toThrow("outside the accepted window");
 		expect((await getTask(sb, task.id))?.due_date).toBe(today);
+	});
+});
+
+function form(entries: Record<string, string>): FormData {
+	const fd = new FormData();
+	for (const [k, v] of Object.entries(entries)) fd.set(k, v);
+	return fd;
+}
+
+// docs/adr/0087: the task form's one decode, as the server writes it.
+describe("task form actions against the local database", () => {
+	it("a create with blank optional fields writes nulls and the default priority", async () => {
+		const sb = await ownerClient();
+		const domain = await createDomain(sb, { name: "Home" });
+		const result = await createTaskAction(
+			form({
+				title: "Buy milk",
+				notes: "",
+				due_date: "",
+				due_time: "",
+				domain_id: domain.id,
+				project_id: "",
+				recurrence_rule: "",
+			}),
+		);
+		expect(result).toMatchObject({
+			ok: true,
+			data: {
+				rows: [
+					{
+						title: "Buy milk",
+						notes: null,
+						due_date: null,
+						due_time: null,
+						priority: 3,
+						domain_id: domain.id,
+						project_id: null,
+						recurrence_rule: null,
+					},
+				],
+			},
+		});
+	});
+
+	it("an edit with a blank project clears it", async () => {
+		const sb = await ownerClient();
+		const domain = await createDomain(sb, { name: "Home" });
+		const project = await createProject(sb, { name: "Garden", domain_id: domain.id });
+		const task = await createTask(sb, {
+			title: "Plant",
+			domain_id: domain.id,
+			project_id: project.id,
+		});
+
+		const result = await updateTaskAction(
+			task.id,
+			form({ title: "Plant", domain_id: domain.id, project_id: "" }),
+		);
+
+		expect(result.ok).toBe(true);
+		expect((await getTask(sb, task.id))?.project_id).toBeNull();
 	});
 });

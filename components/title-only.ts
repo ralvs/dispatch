@@ -1,3 +1,4 @@
+import { DEFAULT_TASK_PRIORITY } from "@/lib/schemas/task";
 // Title-only create → sentence parser. TaskDialog reads FormData
 // at submit; the same predicate is unit-tested here (docs/adr/0043).
 
@@ -23,6 +24,6 @@ export function titleOnlyCreate(formData: FormData): boolean {
 		blank("notes") &&
 		blank("project_id") &&
 		blank("recurrence_rule") &&
-		String(formData.get("priority") ?? "3") === "3"
+		String(formData.get("priority") ?? DEFAULT_TASK_PRIORITY) === String(DEFAULT_TASK_PRIORITY)
 	);
 }

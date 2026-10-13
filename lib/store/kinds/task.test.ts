@@ -518,6 +518,28 @@ describe("Today's task counters", () => {
 			selectAggregate(s, k),
 		);
 
+	it("docs/adr/0087: a refused create's intent shows nothing; the server's row lands on confirm", () => {
+		const old = task({ id: "old" });
+		const s = applySeed(
+			initialState(),
+			snapshot(T1, [{ key: viewKey.tasks(), type: "taskLists", data: { open: [old], done: [] } }], {
+				aggregates: counts(4, 1, 0),
+			}),
+		);
+		const [applied, token] = applyIntent(
+			s,
+			{ kind: "task", intent: { type: "edit", id: crypto.randomUUID() } },
+			NOW,
+		);
+		expect(selectView(applied, viewKey.tasks())).toEqual(selectView(s, viewKey.tasks()));
+		expect(read(applied)).toEqual([4, 1, 0]);
+		const saved = task({ id: "srv", title: "Buy milk" });
+		const confirmed = confirmWrite(applied, token, { at: T2, rows: [saved] });
+		expect(selectView(confirmed, viewKey.tasks())?.open.map((t) => t.id)).toContain("srv");
+		// No counter moved on apply, so none settles; the next read counts the row.
+		expect(read(confirmed)).toEqual([4, 1, 0]);
+	});
+
 	it("a tick on an overdue task moves open and overdue, and holds after confirm", () => {
 		const late = task({ id: "late", due_date: YESTERDAY });
 		const s = applySeed(
