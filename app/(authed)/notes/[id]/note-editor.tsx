@@ -13,6 +13,7 @@ import { Markdown, type MarkdownStorage } from "tiptap-markdown";
 import { Button, EmptyState, type ScopeOption, ScopeSelect } from "@/components/ui";
 import { createDebouncedSave } from "@/lib/debounced-save";
 import type { MentionCandidate } from "@/lib/mentions";
+import { SaveNoteSchema } from "@/lib/schemas/note";
 import type { NoteListRow } from "@/lib/services/notes";
 import { useWrites } from "@/lib/store";
 import { useMentionPeople } from "@/lib/store/mention-people";
@@ -140,9 +141,9 @@ function NoteForm({
 		if (key === lastSavedRef.current) return;
 		lastSavedRef.current = key;
 		if (mountedRef.current) setSaveState("saving");
-		const savedTitle = title.trim() === "" ? null : title;
+		const saved = SaveNoteSchema.parse({ title, body });
 		startTransition(async () => {
-			const ok = await saveWrite(noteWrites.save(note.id, savedTitle, body));
+			const ok = await saveWrite(noteWrites.save(note.id, saved.title, saved.body));
 			if (!mountedRef.current) return;
 			if (!ok) {
 				// Allow retry of the same content.

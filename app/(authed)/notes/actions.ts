@@ -6,7 +6,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { formatInstant } from "@/lib/dates";
 import { afterMutation } from "@/lib/invalidate";
-import type { NoteListRow } from "@/lib/schemas/note";
+import { type NoteListRow, SaveNoteSchema } from "@/lib/schemas/note";
 import { searchEventsByTitle } from "@/lib/services/calendar";
 import { removeAttachment } from "@/lib/services/note-attachments";
 import { createManualLink, deleteLink } from "@/lib/services/note-links";
@@ -48,11 +48,6 @@ export async function createBlankNoteAction() {
 	redirect(`/notes/${note.id}`);
 }
 
-const SaveNoteSchema = z.object({
-	title: z.string().nullable(),
-	body: z.string(),
-});
-
 /** Autosave from the editor page. Empty body is allowed — a cleared note stays a note. */
 export async function saveNoteAction(
 	id: string,
@@ -61,10 +56,7 @@ export async function saveNoteAction(
 	const { sb } = await requireOwnerPage();
 	const parsed = SaveNoteSchema.parse(input);
 	const noteId = z.uuid().parse(id);
-	await updateNote(sb, noteId, {
-		title: parsed.title !== null && parsed.title.trim() !== "" ? parsed.title : null,
-		body: parsed.body,
-	});
+	await updateNote(sb, noteId, parsed);
 	revalidateNoteViews();
 	return { ok: true, data: await written(sb, "note", noteId) };
 }

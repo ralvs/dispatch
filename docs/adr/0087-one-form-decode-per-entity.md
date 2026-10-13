@@ -53,7 +53,8 @@ an intent that shows nothing, so only the server's answer moves the view.
 
 ## Deferred
 
-- **Notes** keep their own reading until AC-13.
+- **Notes** followed: the editor autosave decodes through `SaveNoteSchema`
+  (`lib/schemas/note.ts`) on both halves; a blank title is null there.
 
 Domains, people and routines followed in a second pass: the domain edit
 form's schema now owns the cadence field, and the domain edit and person
