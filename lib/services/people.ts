@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { MentionCandidate } from "@/lib/mentions";
 import {
@@ -14,6 +13,7 @@ import {
 	type PersonRow,
 } from "@/lib/schemas/person";
 import { unwrap } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─── People ─────────────────────────────────────────────────────────────
 
@@ -136,10 +136,13 @@ export async function createInteraction(
 	personId: string,
 	input: CreatePersonInteractionInput,
 ): Promise<PersonInteractionRow> {
+	// occurred_at is NOT NULL with a default: a null must leave the key out so
+	// the default applies, not violate the constraint.
+	const { occurred_at, ...rest } = input;
 	const data = unwrap(
 		await sb
 			.from("person_interactions")
-			.insert({ ...input, person_id: personId })
+			.insert({ ...rest, ...(occurred_at ? { occurred_at } : {}), person_id: personId })
 			.select(PERSON_INTERACTION_SELECT)
 			.single(),
 	);
