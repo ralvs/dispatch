@@ -4,6 +4,9 @@
  * share one answer and none of them has to spin up storage to ask.
  */
 
+import type { Attachment, NoteListRow } from "@/lib/schemas/note";
+import type { StoreWrite } from "@/lib/store/types";
+
 /** Matches the Server Action body cap in next.config.ts, and sits under R2's own limit. */
 export const ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
 
@@ -27,6 +30,32 @@ const ALLOWED = {
 } as const satisfies Record<string, { ext: string; kind: AttachmentKind }>;
 
 export type AllowedContentType = keyof typeof ALLOWED;
+
+/** Every content type the allow-list takes, in its declared order. */
+export const ALLOWED_CONTENT_TYPES = Object.keys(ALLOWED) as AllowedContentType[];
+
+/**
+ * The file picker's `accept` list. It must cover every allowed type: images
+ * by family, pdf by type, and text by extension, since browsers disagree on
+ * what to call a markdown file.
+ */
+export const ATTACHMENT_ACCEPT = "image/*,application/pdf,.md,.txt,.markdown";
+
+/** A file refused at intake, and why, in words fit for a toast. */
+export type FileRejection = { name: string; reason: string };
+
+/**
+ * What the attachments route answers with (docs/adr/0088). `write` is the note
+ * row read back for the entity store, present only when something landed.
+ */
+export type AttachFilesReply = {
+	attached: Attachment[];
+	rejected: FileRejection[];
+	write: StoreWrite<NoteListRow> | null;
+};
+
+/** What the route answers with when it refuses the request as a whole. */
+export type AttachFilesRefusal = { error: string };
 
 /** Extension → content type, for the cases where the browser tells us nothing useful. */
 const BY_EXTENSION: Record<string, AllowedContentType> = {

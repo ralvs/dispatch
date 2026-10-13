@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+	ALLOWED_CONTENT_TYPES,
+	ATTACHMENT_ACCEPT,
 	ATTACHMENT_MAX_BYTES,
 	attachmentKind,
 	bytesMatchContentType,
+	extensionFor,
 	formatBytes,
 	mediaUrl,
 	normalizeContentType,
@@ -147,5 +150,21 @@ describe("formatBytes", () => {
 describe("ATTACHMENT_MAX_BYTES", () => {
 	it("matches the 25mb Server Action cap in next.config.ts", () => {
 		expect(ATTACHMENT_MAX_BYTES).toBe(26_214_400);
+	});
+});
+
+describe("ATTACHMENT_ACCEPT", () => {
+	const tokens = ATTACHMENT_ACCEPT.split(",");
+
+	// The picker must never hide a type the server would take.
+	it.each(ALLOWED_CONTENT_TYPES)("covers %s", (type) => {
+		const kind = attachmentKind(type);
+		if (kind === "image") expect(tokens).toContain("image/*");
+		else if (kind === "pdf") expect(tokens).toContain(type);
+		else expect(tokens).toContain(`.${extensionFor(type)}`);
+	});
+
+	it.each(tokens.filter((t) => t.startsWith(".")))("%s resolves with no declared type", (ext) => {
+		expect(normalizeContentType("", `x${ext}`)).not.toBeNull();
 	});
 });
