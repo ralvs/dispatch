@@ -100,4 +100,20 @@ describe("project actions against the local database", () => {
 			fieldErrors: { domain_id: ["Pick a domain."] },
 		});
 	});
+
+	it("an edit with a bad date is a field error and changes nothing", async () => {
+		const home = await newDomain("Home");
+		const created = await createProjectAction(form({ name: "Garden", domain_id: home.id }));
+		if (!created.ok) throw new Error("create failed");
+		const garden = created.data.rows[0];
+
+		const result = await updateProjectAction(
+			garden.id,
+			form({ name: "Backyard", start_date: "soon" }),
+		);
+
+		expect(result).toMatchObject({ ok: false, fieldErrors: { start_date: expect.any(Array) } });
+		const done = await completeProjectAction(garden.id);
+		expect(done).toMatchObject({ ok: true, data: { rows: [{ name: "Garden" }] } });
+	});
 });

@@ -2,9 +2,8 @@
 
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
-import { decodeForm } from "@/lib/form-decode";
 import { afterMutation } from "@/lib/invalidate";
-import { CreateProjectSchema, type ProjectRow } from "@/lib/schemas/project";
+import { createProjectForm, type ProjectRow } from "@/lib/schemas/project";
 import { createProject } from "@/lib/services/projects";
 import { stampWrite } from "@/lib/store/server";
 import type { StoreWrite } from "@/lib/store/types";
@@ -15,7 +14,7 @@ export async function createProjectAction(
 ): Promise<ActionResult<StoreWrite<ProjectRow>>> {
 	const { sb } = await requireOwnerPage();
 	return runFormAction(formData, async () => {
-		const project = await createProject(sb, decodeForm(CreateProjectSchema, formData));
+		const project = await createProject(sb, createProjectForm.parse(formData));
 		afterMutation("projects.write");
 		return stampWrite([project]);
 	});
