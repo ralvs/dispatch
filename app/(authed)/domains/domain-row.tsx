@@ -91,7 +91,9 @@ export function DomainRowItem({ domain, tz }: { domain: DomainItem; tz: string }
 									defaultValue={cadenceDays ?? ""}
 								/>
 							</Field>
-							<ColorSwatchPicker name="color" defaultValue={domain.color} />
+							<Field name="color">
+								<ColorSwatchPicker name="color" defaultValue={domain.color} />
+							</Field>
 							<div className="flex justify-end gap-2 pt-1">
 								<Button type="button" variant="ghost" size="sm" onClick={edit.close}>
 									Cancel

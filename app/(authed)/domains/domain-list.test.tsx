@@ -145,4 +145,16 @@ describe("DomainRowItem inline edit", () => {
 		await user.click(await screen.findByRole("button", { name: "Edit Job" }));
 		expect(screen.queryByText("Name is taken")).not.toBeInTheDocument();
 	});
+
+	it("a refused colour shows its error inline too", async () => {
+		const user = userEvent.setup();
+		vi.mocked(updateDomainAction).mockResolvedValueOnce({
+			ok: false,
+			fieldErrors: { color: ["Pick a colour from the list"] },
+		});
+		renderList();
+		await user.click(screen.getByRole("button", { name: "Edit Work" }));
+		await user.click(screen.getByRole("button", { name: "Save" }));
+		expect(await screen.findByText("Pick a colour from the list")).toBeInTheDocument();
+	});
 });
