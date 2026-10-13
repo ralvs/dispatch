@@ -25,7 +25,7 @@ import type {
 import type { ProjectStatusSchema } from "@/lib/schemas/project";
 import type {
 	AnnotationContextSchema,
-	QuoteAddedViaSchema,
+	DbAddedVia,
 	QuoteSourceTypeSchema,
 } from "@/lib/schemas/quote";
 import type { TimeOfDayBucketSchema } from "@/lib/schemas/routine";
@@ -108,13 +108,13 @@ type Overrides = {
 	projects: Narrow<"projects", { status: Infer<typeof ProjectStatusSchema> }>;
 	quote_annotations: Narrow<
 		"quote_annotations",
-		{ context: Infer<typeof AnnotationContextSchema> }
+		{ context: Infer<typeof AnnotationContextSchema> | null }
 	>;
 	quotes: Narrow<
 		"quotes",
 		{
 			source_type: Infer<typeof QuoteSourceTypeSchema> | null;
-			added_via: Infer<typeof QuoteAddedViaSchema>;
+			added_via: DbAddedVia;
 		}
 	>;
 	routines: Narrow<"routines", { time_of_day: Infer<typeof TimeOfDayBucketSchema> }>;
