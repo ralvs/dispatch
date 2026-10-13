@@ -2,12 +2,12 @@
 
 import { Button, ListRow, rowTitle } from "@/components/ui";
 import type { JournalEntryRow } from "@/lib/services/journal";
-import { useProvisionalIds, useRunIntent } from "@/lib/store";
-import { deleteEntryAction } from "./actions";
+import { useProvisionalIds, useWrites } from "@/lib/store";
+import { journalWrites } from "./writes";
 
 export function EntryRowItem({ entry }: { entry: JournalEntryRow }) {
 	// The entry leaves the list at once; a failure puts it back (#30).
-	const run = useRunIntent("journal", { errorMessage: "Couldn't delete entry." });
+	const { send } = useWrites();
 	// Still being saved: its id is the client's, so nothing may act on it yet.
 	const saving = useProvisionalIds("journal").has(entry.id);
 
@@ -21,7 +21,7 @@ export function EntryRowItem({ entry }: { entry: JournalEntryRow }) {
 					size="sm"
 					aria-label={`Delete journal entry from ${entry.entry_date}`}
 					disabled={saving}
-					onClick={() => run({ type: "delete", id: entry.id }, () => deleteEntryAction(entry.id))}
+					onClick={() => send(journalWrites.remove(entry.id))}
 				>
 					Delete
 				</Button>

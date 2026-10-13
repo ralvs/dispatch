@@ -2,10 +2,8 @@
 
 import { CreateDialogButton } from "@/components/create-dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui";
-import { nowUtc } from "@/lib/dates";
-import { type QuoteRow, QuoteSourceTypeSchema } from "@/lib/schemas/quote";
-import { useStoreWrite } from "@/lib/store";
-import { createQuoteAction } from "./actions";
+import { useWrites } from "@/lib/store";
+import { quoteWrites } from "./writes";
 
 const SOURCE_TYPES = [
 	{ value: "", label: "Unspecified" },
@@ -17,35 +15,9 @@ const SOURCE_TYPES = [
 	{ value: "other", label: "Other" },
 ];
 
-/** The row the list shows while the server writes it; the server's row replaces it (#30). */
-function optimisticQuote(formData: FormData): QuoteRow {
-	const text = (key: string) => {
-		const value = String(formData.get(key) ?? "").trim();
-		return value === "" ? null : value;
-	};
-	const source = QuoteSourceTypeSchema.safeParse(formData.get("source_type"));
-	return {
-		id: crypto.randomUUID(),
-		text: text("text") ?? "",
-		page_number: null,
-		chapter: null,
-		source_type: source.success ? source.data : null,
-		source_reference: null,
-		source_url: null,
-		source_author: text("source_author"),
-		tags: (text("tags") ?? "")
-			.split(",")
-			.map((t) => t.trim())
-			.filter(Boolean),
-		added_via: "manual",
-		last_surfaced_at: null,
-		created_at: nowUtc(),
-	};
-}
-
 /** Create a quote — dialog behind the header's `+` (Gate B / B1). */
 export function QuoteCreateButton() {
-	const write = useStoreWrite("quote");
+	const { submit } = useWrites();
 
 	return (
 		<CreateDialogButton
@@ -53,9 +25,7 @@ export function QuoteCreateButton() {
 			title="New quote"
 			submitLabel="Add quote"
 			errorMessage="Couldn't save quote. Try again."
-			action={(formData) =>
-				write({ type: "create", row: optimisticQuote(formData) }, () => createQuoteAction(formData))
-			}
+			action={(formData) => submit(quoteWrites.create(formData))}
 		>
 			<Field label="Text" name="text">
 				<Textarea
