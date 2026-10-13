@@ -33,12 +33,12 @@ export async function listPeople(
 	let q = sb.from("people").select(PEOPLE_SELECT).order("name", { ascending: true });
 	if (filters.relationshipType) q = q.eq("relationship_type", filters.relationshipType);
 	const data = unwrap(await q);
-	return (data ?? []) as unknown as PersonRow[];
+	return data ?? [];
 }
 
 export async function getPerson(sb: SupabaseClient, id: string): Promise<PersonRow | null> {
 	const data = unwrap(await sb.from("people").select(PEOPLE_SELECT).eq("id", id).maybeSingle());
-	return (data as unknown as PersonRow | null) ?? null;
+	return data ?? null;
 }
 
 export async function createPerson(
@@ -46,7 +46,7 @@ export async function createPerson(
 	input: CreatePersonInput,
 ): Promise<PersonRow> {
 	const data = unwrap(await sb.from("people").insert(input).select(PEOPLE_SELECT).single());
-	return data as unknown as PersonRow;
+	return data;
 }
 
 export async function updatePerson(
@@ -65,7 +65,7 @@ export async function deletePerson(sb: SupabaseClient, id: string): Promise<void
 /** id + name only — what lib/mentions.ts's buildMentionIndex needs, nothing more. */
 export async function listMentionCandidates(sb: SupabaseClient): Promise<MentionCandidate[]> {
 	const data = unwrap(await sb.from("people").select("id, name"));
-	return (data ?? []) as unknown as MentionCandidate[];
+	return data ?? [];
 }
 
 // ─── Person facts ──────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ export async function listFacts(sb: SupabaseClient, personId: string): Promise<P
 			.order("date_relevant", { ascending: true, nullsFirst: true })
 			.order("created_at", { ascending: true }),
 	);
-	return (data ?? []) as unknown as PersonFactRow[];
+	return data ?? [];
 }
 
 export async function createFact(
@@ -98,7 +98,7 @@ export async function createFact(
 			.select(PERSON_FACT_SELECT)
 			.single(),
 	);
-	return data as unknown as PersonFactRow;
+	return data;
 }
 
 export async function updateFact(
@@ -133,7 +133,7 @@ export async function listInteractions(
 			.eq("person_id", personId)
 			.order("occurred_at", { ascending: false }),
 	);
-	return (data ?? []) as unknown as PersonInteractionRow[];
+	return data ?? [];
 }
 
 export async function createInteraction(
@@ -151,7 +151,7 @@ export async function createInteraction(
 			.select(PERSON_INTERACTION_SELECT)
 			.single(),
 	);
-	return data as unknown as PersonInteractionRow;
+	return data;
 }
 
 export async function deleteInteraction(sb: SupabaseClient, id: string): Promise<void> {
