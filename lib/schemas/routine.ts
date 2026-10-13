@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formDecoder } from "@/lib/form-decode";
 
 // Routines = daily habits. The DB layout is simple on purpose: the
 // routine row is just metadata + a sort position, and a completion is
@@ -66,6 +67,12 @@ export const UpdateRoutineSchema = z.object({
 	// archive/unarchive action goes through the same PATCH endpoint.
 	archived_at: z.string().datetime({ offset: true }).nullable().optional(),
 });
+
+/** The routine forms' one decode each, shared by the optimistic half and the server (docs/adr/0087). */
+export const createRoutineForm = formDecoder(CreateRoutineSchema);
+export type CreateRoutineFormInput = z.output<typeof CreateRoutineSchema>;
+export const updateRoutineForm = formDecoder(UpdateRoutineSchema);
+export type UpdateRoutineFormInput = z.output<typeof UpdateRoutineSchema>;
 
 export const RoutineCompletionSchema = z.object({
 	id: z.string().uuid(),

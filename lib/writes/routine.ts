@@ -10,7 +10,14 @@ import {
 	updateRoutineAction,
 } from "@/lib/actions/routines";
 import { nowUtc } from "@/lib/dates";
-import { type RoutineWithHistory, TimeOfDayBucketSchema } from "@/lib/schemas/routine";
+import {
+	type CreateRoutineFormInput,
+	createRoutineForm,
+	type RoutineWithHistory,
+	type UpdateRoutineFormInput,
+	updateRoutineForm,
+} from "@/lib/schemas/routine";
+import type { RoutineIntent } from "@/lib/store/kinds/routine";
 import { type Write, write } from "@/lib/store/write";
 
 const UPDATE_ERROR = "Couldn't update routine.";
@@ -20,20 +27,19 @@ const SAVE_ERROR = "Couldn't save routine.";
  * The row the list shows while the server writes it. A rejected field drops
  * it again; a confirmed one swaps it for the server's row (#29).
  */
-function optimisticRoutine(formData: FormData): RoutineWithHistory {
+function optimisticRoutine(input: CreateRoutineFormInput): RoutineWithHistory {
 	const at = nowUtc();
-	const timeOfDay = TimeOfDayBucketSchema.safeParse(formData.get("time_of_day"));
 	return {
 		id: crypto.randomUUID(),
-		name: String(formData.get("name") ?? "").trim() || "Untitled",
-		description: null,
-		position: 0,
+		name: input.name,
+		description: input.description ?? null,
+		position: input.position ?? 0,
 		active: true,
-		time_of_day: timeOfDay.success ? timeOfDay.data : "anytime",
-		specific_time: null,
-		reminder_enabled: false,
+		time_of_day: input.time_of_day ?? "anytime",
+		specific_time: input.specific_time ?? null,
+		reminder_enabled: input.reminder_enabled ?? false,
 		last_reminder_sent_date: null,
-		goal_days: null,
+		goal_days: input.goal_days ?? null,
 		archived_at: null,
 		created_at: at,
 		updated_at: at,
@@ -41,14 +47,17 @@ function optimisticRoutine(formData: FormData): RoutineWithHistory {
 	};
 }
 
-/** The fields an edit form changes, as the patch its intent applies. */
-function routinePatch(formData: FormData) {
-	const name = String(formData.get("name") ?? "").trim();
-	const timeOfDay = TimeOfDayBucketSchema.safeParse(formData.get("time_of_day"));
+/** The fields an edit form changes that the routine kind patches, as its intent applies them. */
+function routinePatch(input: UpdateRoutineFormInput) {
 	return {
-		...(name ? { name } : {}),
-		...(timeOfDay.success ? { time_of_day: timeOfDay.data } : {}),
+		...(input.name !== undefined ? { name: input.name } : {}),
+		...(input.time_of_day !== undefined ? { time_of_day: input.time_of_day } : {}),
 	};
+}
+
+/** The intent that shows nothing (docs/adr/0087): an empty edit on a row no view holds, or on this one. */
+function unshownRoutine(id: string = crypto.randomUUID()): RoutineIntent {
+	return { type: "edit", id, patch: {} };
 }
 
 export const routineWrites = {
@@ -60,17 +69,24 @@ export const routineWrites = {
 			() => toggleCompletionAction(i.id, !i.done, i.date),
 			UPDATE_ERROR,
 		),
-	create: (form: FormData): Write<"routine"> =>
-		write("routine", { type: "create", routine: optimisticRoutine(form) }, () =>
-			createRoutineAction(form),
-		),
-	update: (id: string, form: FormData): Write<"routine"> =>
-		write(
+	/** A form the decoder refuses shows nothing; the server's field errors do (docs/adr/0087). */
+	create: (form: FormData): Write<"routine"> => {
+		const input = createRoutineForm.read(form);
+		return write(
 			"routine",
-			{ type: "edit", id, patch: routinePatch(form) },
+			input ? { type: "create", routine: optimisticRoutine(input) } : unshownRoutine(),
+			() => createRoutineAction(form),
+		);
+	},
+	update: (id: string, form: FormData): Write<"routine"> => {
+		const input = updateRoutineForm.read(form);
+		return write(
+			"routine",
+			input ? { type: "edit", id, patch: routinePatch(input) } : unshownRoutine(id),
 			() => updateRoutineAction(id, form),
 			SAVE_ERROR,
-		),
+		);
+	},
 	/** Archive has no intent of its own: the row leaves the list when the server's row confirms. */
 	archive: (id: string, archived: boolean): Write<"routine"> =>
 		write("routine", { type: "edit", id, patch: {} }, () => archiveRoutineAction(id, archived)),
