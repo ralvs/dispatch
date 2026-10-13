@@ -55,8 +55,8 @@ test("a note's edit survives reopening, and its filing survives a reload", async
 	await page.waitForURL(`**/notes/${noteId}`);
 	await expect(page.getByLabel("Note body")).toContainText(typed);
 
-	await page.getByLabel("Domain").selectOption({ label: domainName });
-	await expect(page.getByLabel("Domain")).toHaveValue(domainId);
+	await page.getByLabel("Domain", { exact: true }).selectOption({ label: domainName });
+	await expect(page.getByLabel("Domain", { exact: true })).toHaveValue(domainId);
 	// The filing is a server write: wait for it before reading the page again.
 	await expect
 		.poll(async () => {
@@ -66,6 +66,6 @@ test("a note's edit survives reopening, and its filing survives a reload", async
 		.toBe(domainId);
 
 	await page.reload();
-	await expect(page.getByLabel("Domain")).toHaveValue(domainId);
+	await expect(page.getByLabel("Domain", { exact: true })).toHaveValue(domainId);
 	await expect(page.getByLabel("Note body")).toContainText(typed);
 });

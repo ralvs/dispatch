@@ -24,6 +24,7 @@ import { getNote } from "@/lib/services/notes";
 import { viewKey } from "@/lib/store/keys";
 import { Seed } from "@/lib/store/seed";
 import { seedOf, stampRead } from "@/lib/store/server";
+import type { Snapshot } from "@/lib/store/types";
 import { detachLinkAction } from "../actions";
 import { AttachmentStrip } from "./attachment-strip";
 import { LinkPicker } from "./link-picker";
@@ -35,18 +36,24 @@ import { NoteEditor } from "./note-editor";
  * links, then a dependent second wave for the manual targets' labels — and
  * streams in behind its own boundary rather than holding the note hostage.
  */
-async function EditorSection({ noteId }: { noteId: string }) {
+async function EditorSection({ noteId, snapshot }: { noteId: string; snapshot: Snapshot }) {
 	const [{ noteTitles, people }, domains] = await Promise.all([
 		getCachedNoteEditorContext(),
 		getCachedDomains(false),
 	]);
+	// Seeded again inside its own boundary: this boundary hydrates after the
+	// outer Seed has fed the real store, and a store read while hydrating sees
+	// the empty initial state — without its own Seed the editor would hydrate
+	// as "gone" against the server's note.
 	return (
-		<NoteEditor
-			noteId={noteId}
-			noteTitles={noteTitles}
-			people={people}
-			domains={domains.map((d) => ({ id: d.id, name: d.name }))}
-		/>
+		<Seed snapshot={snapshot}>
+			<NoteEditor
+				noteId={noteId}
+				noteTitles={noteTitles}
+				people={people}
+				domains={domains.map((d) => ({ id: d.id, name: d.name }))}
+			/>
+		</Seed>
 	);
 }
 
@@ -246,7 +253,7 @@ async function NoteBody({ params }: { params: Promise<{ id: string }> }) {
 				<div className="min-w-0">
 					<AttachmentStrip noteId={note.id}>
 						<Suspense fallback={<EditorFallback />}>
-							<EditorSection noteId={note.id} />
+							<EditorSection noteId={note.id} snapshot={snapshot} />
 						</Suspense>
 					</AttachmentStrip>
 				</div>

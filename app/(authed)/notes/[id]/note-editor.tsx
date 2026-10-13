@@ -185,7 +185,10 @@ function NoteForm({
 			// (docs/adr/0009 amendment). The schema only accepts that span.
 			Markdown.configure({ html: true }),
 		],
-		content: opened.body,
+		// The live row, not `opened`: TipTap reads `content` only when it builds
+		// an editor. It builds one again when Next shows a page it had hidden
+		// (the hide destroyed it), and that one must open on the latest save.
+		content: note.body,
 		editorProps: {
 			attributes: {
 				"aria-label": "Note body",
