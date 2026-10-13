@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createJournalEntryForm } from "@/lib/schemas/journal";
+import { createJournalEntryForm, pickedEntryDate } from "@/lib/schemas/journal";
 import type { IntentCtx } from "@/lib/store/types";
 import { createEntryAction, deleteEntryAction } from "./actions";
 import { journalWrites } from "./writes";
@@ -74,6 +74,16 @@ describe("journalWrites", () => {
 		const sent = vi.mocked(createEntryAction).mock.calls[0][0];
 		expect(sent.get("entry_date")).toBe("2026-07-15");
 		expect(fd.get("entry_date")).toBeNull();
+	});
+
+	it.each(["", "   "])("a blank date (%j) is today on both halves", async (blank) => {
+		const fd = form({ entry_date: blank, transcription_text: "x" });
+		const w = journalWrites.create(fd, "2026-07-15");
+		await w.call(ctx);
+		const sent = vi.mocked(createEntryAction).mock.calls[0][0];
+		// The server fills only a blank date; the client already filled this one.
+		expect(pickedEntryDate(sent.get("entry_date"))).toBe("2026-07-15");
+		expect(w.intent).toMatchObject({ type: "create", row: { entry_date: "2026-07-15" } });
 	});
 
 	it("a picked date goes to the server as is", async () => {

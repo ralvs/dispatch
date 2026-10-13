@@ -7,6 +7,7 @@ import {
 	type CreateJournalEntryInput,
 	createJournalEntryForm,
 	type JournalEntryRow,
+	pickedEntryDate,
 } from "@/lib/schemas/journal";
 import { unshown } from "@/lib/store/kinds/record";
 import { type Write, write } from "@/lib/store/write";
@@ -34,7 +35,7 @@ function optimisticEntry(input: CreateJournalEntryInput): JournalEntryRow {
  * day the list showed, not its own today (ADR-0077 item 2).
  */
 function dated(form: FormData, todayIso: string): FormData {
-	if (String(form.get("entry_date") ?? "").trim()) return form;
+	if (pickedEntryDate(form.get("entry_date")) !== null) return form;
 	const copy = new FormData();
 	for (const [key, value] of form) copy.append(key, value);
 	copy.set("entry_date", todayIso);

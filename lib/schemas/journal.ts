@@ -33,6 +33,17 @@ export const CreateJournalEntrySchema = z.object({
 });
 
 /** The new-entry form's one decode, shared by the optimistic row and the server (docs/adr/0087). */
+/**
+ * The date a journal form picked, or null when it left the date blank
+ * (absent, empty or whitespace). Both halves of a create use it, so they
+ * agree on when the caller's today fills the date.
+ */
+export function pickedEntryDate(raw: FormDataEntryValue | null): string | null {
+	if (typeof raw !== "string") return null;
+	const date = raw.trim();
+	return date === "" ? null : date;
+}
+
 export const createJournalEntryForm = formDecoder(CreateJournalEntrySchema, {
 	spec: { tags: "list" },
 });

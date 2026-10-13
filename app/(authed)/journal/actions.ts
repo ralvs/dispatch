@@ -4,7 +4,7 @@ import { z } from "zod";
 import { type ActionResult, runFormAction } from "@/lib/action-result";
 import { requireOwnerPage } from "@/lib/auth";
 import { afterMutation } from "@/lib/invalidate";
-import { createJournalEntryForm } from "@/lib/schemas/journal";
+import { createJournalEntryForm, pickedEntryDate } from "@/lib/schemas/journal";
 import { createEntry, deleteEntry, type JournalEntryRow } from "@/lib/services/journal";
 import { todayForRequest } from "@/lib/services/settings";
 import { stampWrite } from "@/lib/store/server";
@@ -23,10 +23,8 @@ function revalidateJournalViews() {
 export async function createEntryAction(formData: FormData): Promise<ActionResult<JournalWrite>> {
 	const { sb } = await requireOwnerPage();
 	return runFormAction(formData, async () => {
-		const entryDate = formData.get("entry_date");
 		const parsed = createJournalEntryForm.parse(formData, {
-			entry_date:
-				typeof entryDate === "string" && entryDate ? entryDate : await todayForRequest(sb),
+			entry_date: pickedEntryDate(formData.get("entry_date")) ?? (await todayForRequest(sb)),
 		});
 		const entry = await createEntry(sb, parsed);
 		revalidateJournalViews();
