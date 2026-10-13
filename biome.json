@@ -25,8 +25,29 @@
 	},
 	"linter": {
 		"enabled": true,
-		"rules": { "preset": "recommended" }
+		"rules": {
+			"preset": "recommended",
+			"style": {
+				"noRestrictedImports": {
+					"level": "error",
+					"options": {
+						"paths": {
+							"@supabase/supabase-js": {
+								"importNames": ["SupabaseClient"],
+								"message": "Use the typed client type from @/lib/supabase/types (docs/adr/0089)."
+							}
+						}
+					}
+				}
+			}
+		}
 	},
+	"overrides": [
+		{
+			"includes": ["lib/supabase/types.ts"],
+			"linter": { "rules": { "style": { "noRestrictedImports": "off" } } }
+		}
+	],
 	"formatter": {
 		"enabled": true,
 		"indentStyle": "tab",
