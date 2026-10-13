@@ -135,6 +135,9 @@ verification and neither visible to mocked tests:
 - **aws4fetch retries 5xx ten times with exponential backoff by default**,
   about 51 seconds inside a request someone is watching. Capped at 2.
 
+Tests pass an in-memory storage port rather than mocking `@/lib/storage`
+(docs/adr/0088).
+
 `sharp` moves from `devDependencies` to `dependencies` — it now runs at request
 time, and a devDependency is not installed in a Vercel production build.
 

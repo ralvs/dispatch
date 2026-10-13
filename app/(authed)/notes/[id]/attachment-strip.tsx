@@ -13,11 +13,17 @@ import {
 } from "react";
 import { Button, ListRow, rowTitle, SectionHead } from "@/components/ui";
 import { Icon } from "@/components/ui/icon";
-import { attachmentKind, formatBytes, isAllowedContentType } from "@/lib/attachments";
+import {
+	ATTACHMENT_ACCEPT,
+	type AttachFilesRefusal,
+	type AttachFilesReply,
+	attachmentKind,
+	formatBytes,
+	isAllowedContentType,
+} from "@/lib/attachments";
 import { toastError } from "@/lib/client/toast";
-import type { Attachment, NoteListRow } from "@/lib/schemas/note";
+import type { Attachment } from "@/lib/schemas/note";
 import { useWrites } from "@/lib/store";
-import type { StoreWrite } from "@/lib/store/types";
 import { noteWrites } from "../writes";
 import { useOpenNote } from "./use-open-note";
 
@@ -33,8 +39,6 @@ import { useOpenNote } from "./use-open-note";
  * The body is never modified. Files live in `notes.attachments`, so the stored
  * markdown stays exactly what was typed (iron rule #5).
  */
-
-const ACCEPT = "image/*,application/pdf,.md,.txt,.markdown";
 
 const NO_ATTACHMENTS: readonly Attachment[] = Object.freeze([]);
 
@@ -83,7 +87,9 @@ export function AttachmentStrip({
 					method: "POST",
 					body: form,
 				});
-				const body = await res.json().catch(() => null);
+				const body = (await res.json().catch(() => null)) as Partial<
+					AttachFilesReply & AttachFilesRefusal
+				> | null;
 
 				if (!res.ok && !body?.rejected?.length) {
 					toastError(body?.error ?? "Couldn't attach the file.");
@@ -92,13 +98,11 @@ export function AttachmentStrip({
 				// Partial success is a real outcome — name what failed, keep what
 				// landed. Silently dropping one of five files is the bug here.
 				if (body?.rejected?.length) {
-					const names = body.rejected
-						.map((r: { name: string; reason: string }) => `${r.name} (${r.reason})`)
-						.join(", ");
+					const names = body.rejected.map((r) => `${r.name} (${r.reason})`).join(", ");
 					toastError(`Couldn't attach ${names}`);
 				}
 				if (body?.attached?.length) {
-					const write = body.write as StoreWrite<NoteListRow> | null;
+					const write = body.write;
 					// The route sends the row whenever a file landed; without it the
 					// strip cannot show the file, so say so rather than look unchanged.
 					if (write) adopt("note", { type: "touch", id: noteId }, write);
@@ -251,7 +255,7 @@ export function AttachmentStrip({
 						ref={inputRef}
 						type="file"
 						multiple
-						accept={ACCEPT}
+						accept={ATTACHMENT_ACCEPT}
 						className="sr-only"
 						aria-label="Add files to this note"
 						onChange={(event) => {

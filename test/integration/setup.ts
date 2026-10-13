@@ -15,6 +15,14 @@ process.env.OWNER_USER_ID = OWNER_USER_ID;
 // test/fakes/parser-model.ts.
 delete process.env.AI_GATEWAY_API_KEY;
 
+// Storage is always faked too (docs/adr/0088). With no R2 credentials, a test
+// that forgets to inject test/fakes/storage.ts throws "R2 is not configured"
+// instead of reaching the bucket.
+delete process.env.R2_ACCOUNT_ID;
+delete process.env.R2_ACCESS_KEY_ID;
+delete process.env.R2_SECRET_ACCESS_KEY;
+delete process.env.R2_BUCKET;
+
 beforeEach(async () => {
 	await resetDatabase();
 });

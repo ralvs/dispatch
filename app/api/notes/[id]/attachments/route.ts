@@ -1,23 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import {
-	ATTACHMENT_MAX_BYTES,
-	attachmentKind,
-	bytesMatchContentType,
-	formatBytes,
-	normalizeContentType,
-} from "@/lib/attachments";
+import type { AttachFilesReply } from "@/lib/attachments";
 import { ownerRoute } from "@/lib/auth";
 import { isR2Configured } from "@/lib/env";
-import { downscaleImage } from "@/lib/images";
 import { afterMutation } from "@/lib/invalidate";
-import type { Attachment } from "@/lib/schemas/note";
-import { uploadAttachment } from "@/lib/services/note-attachments";
-import { getNote } from "@/lib/services/notes";
-import { written } from "@/lib/services/written";
+import { attachNoteFiles } from "@/lib/services/note-files";
 
 /*
- * The write side of note attachments (docs/adr/0052).
+ * The write side of note attachments (docs/adr/0052). This route only
+ * translates HTTP; the intake rule, the batch and the reply live in
+ * lib/services/note-files.ts (docs/adr/0088).
  *
  * A route rather than a server action because this carries binary and wants to
  * answer with the created rows; removal is a server action, matching the link
@@ -27,12 +19,7 @@ import { written } from "@/lib/services/written";
  * When something landed, the answer also carries `write`: the note row read
  * back, for the client's entity store (#27). A route handler cannot call
  * updateTag, so the client confirms from this instead.
- *
- * Partial success is a real outcome here: dropping five files where one is a
- * .zip should attach four and say which one it refused, not fail the batch.
  */
-
-type Rejection = { name: string; reason: string };
 
 export const POST = ownerRoute(
 	async (request, { sb }, ctx: { params: Promise<{ id: string }> }) => {
@@ -55,82 +42,21 @@ export const POST = ownerRoute(
 			return NextResponse.json({ error: "No files provided" }, { status: 400 });
 		}
 
-		// The attach RPC updates no row for an unknown id and says nothing, so
-		// without this the bytes would land and be reported attached to nothing.
-		if (!(await getNote(sb, parsedId.data))) {
+		const result = await attachNoteFiles(sb, parsedId.data, files);
+		if (!result.ok) {
 			return NextResponse.json({ error: "Note not found" }, { status: 404 });
 		}
-
-		const attached: Attachment[] = [];
-		const rejected: Rejection[] = [];
-
-		for (const file of files) {
-			const result = await ingest(sb, parsedId.data, file);
-			if (result.ok) attached.push(result.attachment);
-			else rejected.push({ name: file.name, reason: result.reason });
-		}
+		const { reply } = result;
 
 		// Only bust caches if something actually landed.
-		let write = null;
-		if (attached.length > 0) {
-			afterMutation("notes.write");
-			write = await written(sb, "note", parsedId.data);
-		}
+		if (reply.attached.length) afterMutation("notes.write");
 
 		return NextResponse.json(
-			{ attached, rejected, write },
+			reply satisfies AttachFilesReply,
 			// 207 would be more honest for a mixed batch, but every caller here
 			// reads the two arrays anyway, and a non-2xx makes fetch callers
 			// treat a partial success as total failure.
-			{ status: attached.length === 0 ? 400 : 200 },
+			{ status: reply.attached.length === 0 ? 400 : 200 },
 		);
 	},
 );
-
-type IngestResult = { ok: true; attachment: Attachment } | { ok: false; reason: string };
-
-async function ingest(
-	sb: Parameters<typeof uploadAttachment>[0],
-	noteId: string,
-	file: File,
-): Promise<IngestResult> {
-	// Size is checked on the *incoming* bytes, so an oversized photo is refused
-	// before sharp ever loads it into memory.
-	if (file.size > ATTACHMENT_MAX_BYTES) {
-		return { ok: false, reason: `Too large (max ${formatBytes(ATTACHMENT_MAX_BYTES)})` };
-	}
-	if (file.size === 0) {
-		return { ok: false, reason: "Empty file" };
-	}
-
-	const contentType = normalizeContentType(file.type, file.name);
-	if (!contentType) {
-		return { ok: false, reason: "Unsupported file type" };
-	}
-
-	const bytes = new Uint8Array(await file.arrayBuffer());
-	if (!bytesMatchContentType(bytes, contentType)) {
-		return { ok: false, reason: "File contents do not match its type" };
-	}
-
-	// Images shrink here; everything else passes through untouched. The size
-	// recorded on the row is the post-downscale size, since that is what
-	// actually occupies the quota.
-	const processed =
-		attachmentKind(contentType) === "image"
-			? await downscaleImage(bytes, contentType)
-			: { bytes, contentType };
-
-	try {
-		const attachment = await uploadAttachment(sb, noteId, {
-			bytes: processed.bytes,
-			name: file.name,
-			contentType: processed.contentType,
-		});
-		return { ok: true, attachment };
-	} catch (error) {
-		// The detail belongs in the server log, not in the response body.
-		console.error("attachment upload failed", { noteId, name: file.name, error });
-		return { ok: false, reason: "Upload failed" };
-	}
-}
