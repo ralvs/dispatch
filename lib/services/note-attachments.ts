@@ -9,7 +9,7 @@ import {
 import { nowUtc } from "@/lib/dates";
 import type { Attachment } from "@/lib/schemas/note";
 import { ServiceError, unwrap } from "@/lib/services/errors";
-import { deleteObjects, listPrefix, putObject } from "@/lib/storage";
+import { storage as defaultStorage, type StoragePort } from "@/lib/storage";
 
 /*
  * Note attachments (docs/adr/0052). Two stores are in play — bytes in R2,
@@ -19,6 +19,9 @@ import { deleteObjects, listPrefix, putObject } from "@/lib/storage";
  * `sb` first (iron rule #3): the Postgres half still runs RLS-scoped from
  * pages and actions.
  */
+
+/** Tests pass test/fakes/storage.ts here (docs/adr/0088); app code omits it. */
+export type WithStorage = { storage?: StoragePort };
 
 export type UploadInput = {
 	bytes: Uint8Array;
@@ -37,9 +40,10 @@ export async function uploadAttachment(
 	sb: SupabaseClient,
 	noteId: string,
 	input: UploadInput,
+	{ storage = defaultStorage }: WithStorage = {},
 ): Promise<Attachment> {
 	const key = storageKey(noteId, input.contentType);
-	await putObject(key, input.bytes, input.contentType);
+	await storage.putObject(key, input.bytes, input.contentType);
 
 	const attachment: Attachment = {
 		url: mediaUrl(key),
@@ -59,7 +63,7 @@ export async function uploadAttachment(
 		);
 	} catch (error) {
 		// Don't leave bytes nothing will ever reference.
-		await deleteObjects([key]).catch(() => {});
+		await storage.deleteObjects([key]).catch(() => {});
 		throw error;
 	}
 
@@ -79,6 +83,7 @@ export async function removeAttachment(
 	sb: SupabaseClient,
 	noteId: string,
 	storagePath: string,
+	{ storage = defaultStorage }: WithStorage = {},
 ): Promise<void> {
 	if (!storagePath.startsWith(noteStoragePrefix(noteId))) {
 		throw new ServiceError("Attachment does not belong to this note", null);
@@ -89,7 +94,7 @@ export async function removeAttachment(
 			p_storage_path: storagePath,
 		}),
 	);
-	await deleteObjects([storagePath]);
+	await storage.deleteObjects([storagePath]);
 }
 
 /**
@@ -98,8 +103,11 @@ export async function removeAttachment(
  * rather than the attachments array and catches orphans a failed write left
  * behind.
  */
-export async function removeAllForNote(noteId: string): Promise<void> {
-	const keys = await listPrefix(noteStoragePrefix(noteId));
+export async function removeAllForNote(
+	noteId: string,
+	{ storage = defaultStorage }: WithStorage = {},
+): Promise<void> {
+	const keys = await storage.listPrefix(noteStoragePrefix(noteId));
 	if (keys.length === 0) return;
-	await deleteObjects(keys);
+	await storage.deleteObjects(keys);
 }
