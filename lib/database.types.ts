@@ -492,7 +492,6 @@ export type Database = {
 					status: string;
 					title: string;
 					type: string;
-					undo_payload: Json | null;
 				};
 				Insert: {
 					body?: string | null;
@@ -503,7 +502,6 @@ export type Database = {
 					status?: string;
 					title: string;
 					type: string;
-					undo_payload?: Json | null;
 				};
 				Update: {
 					body?: string | null;
@@ -514,7 +512,6 @@ export type Database = {
 					status?: string;
 					title?: string;
 					type?: string;
-					undo_payload?: Json | null;
 				};
 				Relationships: [];
 			};
