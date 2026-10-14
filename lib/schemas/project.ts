@@ -9,20 +9,6 @@ export const ProjectStatusSchema = z.enum(["active", "paused", "done", "archived
 // were display-only badges, and the project's domain already says what they
 // were reaching for. No replacement vocabulary.
 
-export const ProjectSchema = z.object({
-	id: z.string().uuid(),
-	name: z.string().min(1),
-	description: z.string().nullable().optional(),
-	domain_id: z.string().uuid(),
-	status: ProjectStatusSchema,
-	start_date: z.string().date().nullable().optional(),
-	target_date: z.string().date().nullable().optional(),
-	color: ColorSlugSchema.nullable().optional(),
-	completed_at: z.string().datetime({ offset: true }).nullable().optional(),
-	created_at: z.string().datetime({ offset: true }),
-	updated_at: z.string().datetime({ offset: true }),
-});
-
 // All optional fields are .nullable() so the client can explicitly clear
 // them via PATCH (or send null on create to mean "leave empty"). Without
 // nullable, sending null would fail Zod validation and force the action

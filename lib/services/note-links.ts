@@ -172,11 +172,11 @@ export async function listNoteIdsForTargets(
 	const data = unwrap(
 		await sb
 			.from("note_links")
-			.select(`note_id, ${targetColumn}`)
+			.select("note_id, target_task_id, target_event_id")
 			.eq("target_type", targetType)
 			.in(targetColumn, targetIds)
 			.order("created_at", { ascending: true }),
-	) as unknown as Array<Record<string, string>>;
+	);
 
 	const result = new Map<string, string>();
 	for (const row of data) {

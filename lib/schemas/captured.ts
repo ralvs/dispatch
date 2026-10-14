@@ -13,17 +13,7 @@ export const CaptureSourceSchema = z.enum([
 
 export const DisplayHintSchema = z.enum(["card", "log", "hidden"]);
 
-export const CapturedDataSchema = z.object({
-	id: z.string().uuid(),
-	source: CaptureSourceSchema,
-	type: z.string().min(1),
-	payload: z.record(z.string(), z.unknown()),
-	tags: z.array(z.string()).default([]),
-	display_hint: DisplayHintSchema,
-	processed_status: z.enum(["raw", "parsed", "displayed", "archived"]),
-	source_ref: z.string().nullable().optional(),
-	created_at: z.string().datetime({ offset: true }),
-});
+export const ProcessedStatusSchema = z.enum(["raw", "parsed", "displayed", "archived"]);
 
 // Payload accepted at POST /api/capture. Loose by design — anything with
 // a `type` and `payload` is recorded; the consumer decides how to display.

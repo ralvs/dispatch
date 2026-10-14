@@ -21,52 +21,6 @@ export const TASK_NOTES_MAX = 5000;
 export const TaskStatusSchema = z.enum(["open", "done"]);
 export const TaskSourceSchema = z.enum(["manual", "voice", "email", "observation", "import"]);
 
-// Fields that can be explicitly cleared in updates need .nullable() —
-// .optional() alone only accepts undefined (omit the field). Sending null
-// clears it server-side.
-const nullableString = () => z.string().nullable().optional();
-const nullableDate = () => z.string().date().nullable().optional();
-
-// The full/write-side model — a superset of what TASK_SELECT reads today.
-// Not wired to a query yet (reminder_offsets/reminders_sent have no
-// executor); treat additions here as a wire-in path, not a feature.
-export const TaskSchema = z.object({
-	id: z.string().uuid(),
-	title: z.string().min(1),
-	notes: nullableString(),
-	status: TaskStatusSchema,
-	due_date: nullableDate(),
-	due_time: nullableString(),
-	priority: z.number().int().min(1).max(3),
-	project_id: z.string().uuid().nullable().optional(),
-	// null means unfiled — the /inbox queue (docs/adr/0027).
-	domain_id: z.string().uuid().nullable(),
-	recurrence_rule: RecurrenceRuleSchema.nullable().optional(),
-	reminder_offsets: z.array(z.number()).default([]),
-	source: TaskSourceSchema,
-	top3_for_date: nullableDate(),
-	created_at: z.string().datetime({ offset: true }),
-	completed_at: z.string().datetime({ offset: true }).nullable().optional(),
-	updated_at: z.string().datetime({ offset: true }),
-	// Optional joins — present when API returns linked entity metadata.
-	domain: z
-		.object({
-			id: z.string().uuid(),
-			name: z.string(),
-			color: z.string().nullable(),
-		})
-		.nullable()
-		.optional(),
-	project: z
-		.object({
-			id: z.string().uuid(),
-			name: z.string(),
-			color: z.string().nullable().optional(),
-		})
-		.nullable()
-		.optional(),
-});
-
 // ─── FormData-facing schema (lib/actions/tasks.ts) ────────────
 //
 // FormData only ever produces strings, so empty/unset fields arrive as ""
