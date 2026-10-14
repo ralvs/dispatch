@@ -1,7 +1,7 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { NOTE_LINK_SELECT, type NoteLinkRow } from "@/lib/schemas/note-link";
 import { ServiceError, unwrap } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 export type { NoteLinkRow };
 

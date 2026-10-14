@@ -1,8 +1,8 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import { env, isPushConfigured } from "@/lib/env";
 import { unwrap } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Web Push delivery (ADR-0005). This is the service-role-only counterpart to

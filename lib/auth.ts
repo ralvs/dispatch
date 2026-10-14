@@ -1,14 +1,16 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
-import { createClient, type JwtPayload, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type JwtPayload } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import { cache } from "react";
+import type { Database } from "@/lib/database";
 import { env } from "@/lib/env";
 import { bearerChallenge, MCP_CORS, originOf } from "@/lib/mcp-origin";
 import { bearerToken } from "@/lib/secret-auth";
 import { AUTH_COOKIE_OPTIONS } from "@/lib/supabase/cookie-options";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 /**
  * What a passed guard hands back: the verified claims of the request's access
@@ -39,26 +41,30 @@ async function createRlsClient(): Promise<SupabaseClient> {
 		throw new Error("Supabase env vars are not configured");
 	}
 
-	return createServerClient(e.NEXT_PUBLIC_SUPABASE_URL, e.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
-		cookieOptions: AUTH_COOKIE_OPTIONS,
-		cookies: {
-			getAll() {
-				return cookieStore.getAll();
-			},
-			setAll(cookiesToSet) {
-				try {
-					for (const { name, value, options } of cookiesToSet) {
-						cookieStore.set(name, value, options);
+	return createServerClient<Database>(
+		e.NEXT_PUBLIC_SUPABASE_URL,
+		e.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+		{
+			cookieOptions: AUTH_COOKIE_OPTIONS,
+			cookies: {
+				getAll() {
+					return cookieStore.getAll();
+				},
+				setAll(cookiesToSet) {
+					try {
+						for (const { name, value, options } of cookiesToSet) {
+							cookieStore.set(name, value, options);
+						}
+					} catch {
+						// Server Component render — the cookie store is read-only here and
+						// set() throws. The proxy refreshed on the way in and forwarded the
+						// fresh cookies on `request`, so a rotation this deep into a render
+						// is the rare case, not the norm.
 					}
-				} catch {
-					// Server Component render — the cookie store is read-only here and
-					// set() throws. The proxy refreshed on the way in and forwarded the
-					// fresh cookies on `request`, so a rotation this deep into a render
-					// is the rare case, not the norm.
-				}
+				},
 			},
 		},
-	});
+	);
 }
 
 /**
@@ -156,10 +162,14 @@ export async function requireOwnerBearer(request: Request): Promise<OwnerAuth | 
 	const token = bearerToken(request);
 	const e = env();
 	if (token && e.NEXT_PUBLIC_SUPABASE_URL && e.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
-		const sb = createClient(e.NEXT_PUBLIC_SUPABASE_URL, e.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
-			global: { headers: { Authorization: `Bearer ${token}` } },
-			auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-		});
+		const sb = createClient<Database>(
+			e.NEXT_PUBLIC_SUPABASE_URL,
+			e.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+			{
+				global: { headers: { Authorization: `Bearer ${token}` } },
+				auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+			},
+		);
 		// `data` is null both for a bad signature and for an expired token.
 		const { data } = await sb.auth.getClaims(token);
 		const claims = data?.claims ?? null;

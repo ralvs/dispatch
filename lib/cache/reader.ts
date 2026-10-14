@@ -1,6 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import type { CacheTagName } from "@/lib/cache/tags";
-import type { Table } from "@/lib/cache/writers";
+import type { TableName } from "@/lib/database";
 import { type Stamped, stampRead } from "@/lib/store/server";
 
 /**
@@ -22,7 +22,7 @@ import { type Stamped, stampRead } from "@/lib/store/server";
  */
 export type ReaderDecl = {
 	readonly tags: readonly CacheTagName[];
-	readonly tables: readonly Table[];
+	readonly tables: readonly TableName[];
 };
 
 /** A cache file's `readers`: one declaration per exported `"use cache"` function. */

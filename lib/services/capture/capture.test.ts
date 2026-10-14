@@ -1,10 +1,11 @@
 // Stubbed on purpose: these cases inject a failure into one seam (settings,
 // the fallback note, markParsed) that a real database cannot produce on cue.
 // Everything else about capture() runs for real in capture.int.test.ts.
-import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import { type CapturedRecord, capture, capturedRows } from "@/lib/services/capture";
 import { note, quote, task } from "@/lib/store/test-fixtures";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 vi.mock("@/lib/services/capture/store", () => ({
 	persistRaw: vi.fn(async () => "cap-1"),

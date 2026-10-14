@@ -1,8 +1,8 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { calendarHealth } from "@/lib/calendar-health";
 import { readCalendarSyncStates } from "@/lib/services/calendar-mirror";
 import { Seed } from "@/lib/store/seed";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@/lib/supabase/types";
 import { CalendarHealthLine } from "./calendar-health-line";
 import { Counters } from "./counters";
 import { DayView } from "./day-view";

@@ -1,5 +1,4 @@
 import type { McpServer } from "@modelcontextprotocol/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { type CaldavConnection, createCaldavClient } from "@/lib/caldav/client";
 import { whyNotEditable } from "@/lib/calendar-edit";
@@ -20,6 +19,7 @@ import {
 import { ServiceError } from "@/lib/services/errors";
 import { type Json, recordNotification } from "@/lib/services/notifications";
 import { getAppTimezone } from "@/lib/services/settings";
+import type { SupabaseClient } from "@/lib/supabase/types";
 import { registerTextTool, ToolError } from "../contract";
 
 // The owner's calendar, as an assistant sees it (docs/adr/0079): the work

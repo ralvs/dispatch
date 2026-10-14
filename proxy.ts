@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import type { Database } from "@/lib/database";
 import { AUTH_COOKIE_OPTIONS } from "@/lib/supabase/cookie-options";
 
 /**
@@ -18,7 +19,7 @@ export async function proxy(request: NextRequest) {
 	// downstream handler (via request) and the browser (via response).
 	let response = NextResponse.next({ request });
 
-	const supabase = createServerClient(
+	const supabase = createServerClient<Database>(
 		// biome-ignore lint/style/noNonNullAssertion: edge runtime; lib/env would drag in zod
 		process.env.NEXT_PUBLIC_SUPABASE_URL!,
 		// biome-ignore lint/style/noNonNullAssertion: same

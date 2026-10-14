@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import {
 	FIND_FETCH_CAP,
 	FIND_GROUP_CAP,
@@ -15,6 +14,7 @@ import {
 import { escapeLike } from "@/lib/like";
 import { displayTitle } from "@/lib/note-display";
 import { unwrap } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 export type FindTaskHit = {
 	kind: "task";

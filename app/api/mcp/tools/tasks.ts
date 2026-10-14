@@ -1,5 +1,4 @@
 import type { McpServer } from "@modelcontextprotocol/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { TASK_NOTES_MAX, TASK_TITLE_MAX } from "@/lib/schemas/task";
@@ -15,6 +14,7 @@ import {
 	type TaskRow,
 	updateTask,
 } from "@/lib/services/tasks";
+import type { SupabaseClient } from "@/lib/supabase/types";
 import { isOverdue } from "@/lib/task-predicates";
 import { registerTextTool, ToolError } from "../contract";
 import { resolveDomain, resolveProject, UNFILED } from "../resolve";

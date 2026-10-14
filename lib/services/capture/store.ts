@@ -1,7 +1,7 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CaptureInput } from "@/lib/services/capture";
 import { unwrap } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // The captured_data ledger: persist-first durability for iron rule #4.

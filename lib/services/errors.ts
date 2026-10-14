@@ -18,10 +18,16 @@ export class ServiceError extends Error {
 	}
 }
 
-type SupabaseResult<T> = {
-	data: T;
-	error: { message: string; code?: string; details?: string | null } | null;
-};
+type SupabaseError = { message: string; code?: string; details?: string | null };
+
+type SupabaseResult = { data: unknown; error: SupabaseError | null };
+
+/** The success branch of a Supabase result: `data` with the error case excluded. */
+export type Ok<R> = R extends { error: SupabaseError }
+	? never
+	: R extends { data: infer D }
+		? D
+		: never;
 
 /**
  * Replaces the copy-pasted `const { data, error } = await …; if (error) throw
@@ -33,7 +39,7 @@ type SupabaseResult<T> = {
  *   - mutations: `unwrap(await sb.from(...).update(...).eq(...));` (discard
  *     the returned null — the point of the call is the error check)
  */
-export function unwrap<T>(result: SupabaseResult<T>): T {
+export function unwrap<R extends SupabaseResult>(result: R): Ok<R> {
 	if (result.error) {
 		throw new ServiceError(
 			result.error.message,
@@ -41,7 +47,7 @@ export function unwrap<T>(result: SupabaseResult<T>): T {
 			result.error.details ?? undefined,
 		);
 	}
-	return result.data;
+	return result.data as Ok<R>;
 }
 
 type SupabaseCountResult = {

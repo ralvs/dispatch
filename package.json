@@ -14,6 +14,7 @@
 		"test:e2e": "playwright test",
 		"test:watch": "vitest --project unit --project component",
 		"eval:parser": "bun --conditions=react-server scripts/parser-eval.ts",
+		"db:types": "supabase gen types typescript --local --schema public > lib/database.types.gen.ts && biome format --write lib/database.types.gen.ts && mv lib/database.types.gen.ts lib/database.types.ts",
 		"backfill:links": "bun --conditions=react-server scripts/backfill-link-metadata.ts",
 		"check": "biome check . && tsc --noEmit && vitest run --project unit --project component"
 	},
@@ -24,6 +25,7 @@
 		"@internationalized/date": "^3.12.4",
 		"@modelcontextprotocol/server": "^2.3.1",
 		"@supabase/auth-js": "2.116.0",
+		"@supabase/postgrest-js": "2.116.0",
 		"@supabase/ssr": "^0.12.7",
 		"@supabase/supabase-js": "2.116.0",
 		"@tiptap/extension-paragraph": "^3.31.3",

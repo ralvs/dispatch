@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import {
 	type AllowedContentType,
 	mediaUrl,
@@ -10,6 +9,7 @@ import { nowUtc } from "@/lib/dates";
 import type { Attachment } from "@/lib/schemas/note";
 import { ServiceError, unwrap } from "@/lib/services/errors";
 import { storage as defaultStorage, type StoragePort } from "@/lib/storage";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 /*
  * Note attachments (docs/adr/0052). Two stores are in play — bytes in R2,

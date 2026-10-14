@@ -60,6 +60,14 @@ jobs:
           supabase start
           -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 
+      # lib/database.types.ts is generated, never edited (docs/adr/0089). A
+      # migration without a regenerated file fails here; fix with bun run db:types.
+      - name: Generated types match the schema
+        run: >-
+          supabase gen types typescript --local --schema public
+          | bunx biome format --stdin-file-path=lib/database.types.ts
+          | diff -u lib/database.types.ts -
+
       - name: Playwright version
         id: playwright
         run: echo "version=$(bunx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"

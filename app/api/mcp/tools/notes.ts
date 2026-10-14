@@ -1,5 +1,4 @@
 import type { McpServer } from "@modelcontextprotocol/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { displayTitle } from "@/lib/note-display";
@@ -14,6 +13,7 @@ import {
 } from "@/lib/services/notes";
 import { recordNotification } from "@/lib/services/notifications";
 import { todayForRequest } from "@/lib/services/settings";
+import type { SupabaseClient } from "@/lib/supabase/types";
 import { registerTextTool, ToolError } from "../contract";
 import { resolveDomain, UNFILED } from "../resolve";
 

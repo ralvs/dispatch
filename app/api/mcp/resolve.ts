@@ -1,6 +1,6 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { listDomains } from "@/lib/services/domains";
 import { listProjects } from "@/lib/services/projects";
+import type { SupabaseClient } from "@/lib/supabase/types";
 import { ToolError } from "./contract";
 
 // An assistant names a project or domain the way the owner does: by name.

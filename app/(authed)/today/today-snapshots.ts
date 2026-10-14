@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCachedTodayDigest } from "@/lib/cache/today";
 import { projectCounters } from "@/lib/counts";
 import { withHistory } from "@/lib/routine-stats";
@@ -10,6 +9,7 @@ import {
 } from "@/lib/services/today";
 import { viewKey } from "@/lib/store/keys";
 import { seedOf, stampRead } from "@/lib/store/server";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 /**
  * Everything Today reads, as the two entity-store snapshots it seeds. One

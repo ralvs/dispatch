@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { doingTodayFromSchedule } from "@/lib/day-schedule";
 import type { DomainRow } from "@/lib/services/domains";
 import { listDomains } from "@/lib/services/domains";
@@ -16,6 +15,7 @@ import { listQuotes } from "@/lib/services/quotes";
 import type { TaskRow } from "@/lib/services/tasks";
 import { listTasks } from "@/lib/services/tasks";
 import { getToday, type TodayView } from "@/lib/services/today";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // The read-only snapshot fed to the chat model as its CONTEXT block. The

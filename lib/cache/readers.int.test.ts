@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as domains from "@/lib/cache/domains";
 import * as inbox from "@/lib/cache/inbox";
@@ -15,6 +14,8 @@ import * as settings from "@/lib/cache/settings";
 import * as tasks from "@/lib/cache/tasks";
 import * as today from "@/lib/cache/today";
 import { TABLE_WRITERS } from "@/lib/cache/writers";
+import type { TableName } from "@/lib/database";
+import type { SupabaseClient } from "@/lib/supabase/types";
 import { serviceClient } from "@/test/integration/clients";
 
 // Each cached reader against the real tables, through a client that records
@@ -49,7 +50,7 @@ function recording(sb: SupabaseClient): SupabaseClient {
 				};
 			}
 			if (prop !== "from") return Reflect.get(target, prop, receiver);
-			return (table: string) => {
+			return (table: TableName) => {
 				touched.add(table);
 				const builder = target.from(table);
 				return new Proxy(builder, {
@@ -85,10 +86,14 @@ let seeded: Seeded;
 
 async function insert<T = { id: string }>(
 	sb: SupabaseClient,
-	table: string,
+	table: TableName,
 	row: Record<string, unknown>,
 ): Promise<T> {
-	const { data, error } = await sb.from(table).insert(row).select("id").single();
+	const { data, error } = await sb
+		.from(table)
+		.insert(row as never)
+		.select("id")
+		.single();
 	if (error) throw new Error(`${table}: ${error.message}`);
 	return data as T;
 }

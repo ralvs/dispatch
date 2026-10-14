@@ -1,6 +1,5 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { type CaldavConnection, changedSinceSyncError } from "@/lib/caldav/client";
 import {
 	assertSingleEvent,
@@ -24,6 +23,7 @@ import {
 	syncFeed,
 } from "@/lib/services/calendar-mirror";
 import { ServiceError, unwrap } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // iCloud CalDAV (docs/adr/0006). Reads VEVENTs ±21 days from every

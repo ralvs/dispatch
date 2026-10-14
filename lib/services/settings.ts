@@ -1,9 +1,9 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { cache } from "react";
 import { DEFAULT_TIMEZONE, isValidTimezone, todayInTz } from "@/lib/dates";
 import { UpdateAppSettingsSchema } from "@/lib/schemas/app-settings";
 import { ServiceError, unwrap } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 /**
  * App timezone from the app_settings singleton. React-cached so one request

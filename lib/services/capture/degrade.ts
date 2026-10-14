@@ -1,7 +1,7 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { markParsed } from "@/lib/services/capture/store";
 import { createNeedsReviewNote, type NoteListRow } from "@/lib/services/notes";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 /**
  * The one needs_review write: transcript + origin + reason → note that

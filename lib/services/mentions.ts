@@ -1,9 +1,9 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildMentionIndex, extractMentionMatches, extractMentions } from "@/lib/mentions";
 import { PEOPLE_SELECT, type PersonRow } from "@/lib/schemas/person";
 import { ServiceError, unwrap } from "@/lib/services/errors";
 import { listMentionCandidates } from "@/lib/services/people";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─────────────────────────────────────────────────────────────────────────
 // @mention People (docs/adr/0030 Decision 4). syncMentions mirrors
@@ -133,7 +133,7 @@ export async function syncMentions(
 				await sb.from("mentions").insert(
 					missing.map(([person_id, matched_name]) => ({
 						person_id,
-						[column]: source.id,
+						...(column === "note_id" ? { note_id: source.id } : { task_id: source.id }),
 						source_type: source.type,
 						matched_name,
 					})),

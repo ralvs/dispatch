@@ -1,10 +1,10 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { nowUtc } from "@/lib/dates";
 import type { CreateDomainSchema } from "@/lib/schemas/domain";
 import { DOMAIN_SELECT, type DomainRow, type UpdateDomainSchema } from "@/lib/schemas/domain";
 import { ServiceError, unwrap } from "@/lib/services/errors";
+import type { SupabaseClient } from "@/lib/supabase/types";
 
 // ─── Stewardship domains ───────────────────────────────────────────────
 // docs/adr/0007: domains gain full CRUD here (the reference implementation

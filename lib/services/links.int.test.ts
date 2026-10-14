@@ -98,7 +98,7 @@ describe("links against the local database", () => {
 				.select("created_at")
 				.single();
 			expect(error).toBeNull();
-			expect(new Date(data?.created_at).toISOString()).toBe(new Date(at).toISOString());
+			expect(new Date(data?.created_at as string).toISOString()).toBe(new Date(at).toISOString());
 		}
 		await setLinkStatus(sb, middle.id, "read");
 

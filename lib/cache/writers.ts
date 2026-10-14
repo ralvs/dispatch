@@ -1,14 +1,12 @@
 import type { ReaderDecl } from "@/lib/cache/reader";
 import type { CacheTagName } from "@/lib/cache/tags";
-import type { Database } from "@/lib/database.types";
+import type { TableName } from "@/lib/database";
 import {
 	EXTERNAL_WRITES,
 	type ExternalWriter,
 	invalidationFor,
 	type MutationKind,
 } from "@/lib/invalidate";
-
-export type Table = keyof Database["public"]["Tables"];
 
 /** Something that announces a write: an in-app mutation kind or a cron/`/api/*` writer. */
 export type Writer = MutationKind | ExternalWriter;
@@ -27,7 +25,7 @@ export type Writer = MutationKind | ExternalWriter;
  * A cached reader that declares a table depends on every writer listed here;
  * `lib/cache/readers.test.ts` fails when one of them busts none of its tags.
  */
-export const TABLE_WRITERS: { readonly [T in Table]: readonly Writer[] } = {
+export const TABLE_WRITERS: { readonly [T in TableName]: readonly Writer[] } = {
 	app_settings: ["settings.timezone", "settings.reminders"],
 	calendar_events: ["capture.event", "today.only"],
 	caldav_sync_state: ["today.only"],
@@ -68,8 +66,8 @@ export function tagsBustedBy(w: Writer): CacheTagName[] {
 }
 
 /** Every writer of a declared table that busts none of the reader's tags. */
-export function missingBusts(d: ReaderDecl): { table: Table; writer: Writer }[] {
-	const misses: { table: Table; writer: Writer }[] = [];
+export function missingBusts(d: ReaderDecl): { table: TableName; writer: Writer }[] {
+	const misses: { table: TableName; writer: Writer }[] = [];
 	for (const table of d.tables) {
 		for (const writer of TABLE_WRITERS[table]) {
 			if (!tagsBustedBy(writer).some((t) => d.tags.includes(t))) misses.push({ table, writer });
