@@ -12,7 +12,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // there). Secret-authed; never talks to Google OAuth.
 //
 // The calendar mirror writes google_sync_state, announces an outage once,
-// and marks it read on the next success (docs/adr/0080, docs/adr/0086).
+// and marks it read on the next success (docs/adr/0092, docs/adr/0086).
 // This route only turns its result into a response.
 // ─────────────────────────────────────────────────────────────────────────
 

@@ -6,7 +6,7 @@ type TasksSearch = TaskFilters & { edit?: string };
 
 async function TasksRoute({ searchParams }: { searchParams: Promise<TasksSearch> }) {
 	const { edit, ...filters } = await searchParams;
-	// `?edit=<id>` was a task's address before it had its own (docs/adr/0079).
+	// `?edit=<id>` was a task's address before it had its own (docs/adr/0091).
 	// Old notification rows still carry it, so it goes to `/tasks/<id>`.
 	if (edit) redirect(`/tasks/${encodeURIComponent(edit)}`);
 	return <TasksBody filters={filters} />;

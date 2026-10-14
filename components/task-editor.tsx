@@ -18,7 +18,7 @@ import { skipRecurringTask } from "@/lib/task-interaction/run-intent";
 import { taskWrites } from "@/lib/writes/task";
 
 /**
- * A task opened by its own URL, `/tasks/<id>` (docs/adr/0079): the one task
+ * A task opened by its own URL, `/tasks/<id>` (docs/adr/0091): the one task
  * form (docs/adr/0040) in edit mode, plus the frames it shows before the row
  * arrives and when it cannot.
  *

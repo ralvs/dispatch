@@ -37,7 +37,7 @@ import type { SupabaseClient } from "@/lib/supabase/types";
 // on which `sb` the caller passed — `sb` scopes the insert only (iron rule #3).
 //
 // A row lands unread only when it is an alert (lib/notification-kind.ts,
-// ADR-0080). Activity — a capture filed, a reminder fired — lands read: its
+// ADR-0092). Activity — a capture filed, a reminder fired — lands read: its
 // push is the delivery, and the row is the record. So unread means "something
 // failed", and a real failure is not buried under routine work.
 //
@@ -152,7 +152,7 @@ export async function recordNotificationOrThrow(
 /**
  * Mark every unread alert of one type read, because the thing that failed has
  * since worked — a calendar bridge run that succeeded after a failed one
- * (ADR-0080). The rows stay on the record. Best-effort like
+ * (ADR-0092). The rows stay on the record. Best-effort like
  * `recordNotification`: never rejects, resolves how many rows it marked, and
  * busts the ledger's tags only when it marked any. No push: nothing new
  * happened that the owner has to hear about.
@@ -202,7 +202,7 @@ export async function listNotifications(
 
 /**
  * The ledger as /notifications shows it: every unread row first — in practice
- * the alerts (ADR-0080) — then the newest of the rest, newest first within
+ * the alerts (ADR-0092) — then the newest of the rest, newest first within
  * each part. Unread rows are read on their own so an old failure is never cut
  * off by a page of newer activity. Dismissed rows are left out. `limit` caps
  * the whole list; unread rows take their places first.

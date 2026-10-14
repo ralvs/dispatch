@@ -1,5 +1,7 @@
 # The Find palette is a locate verb, not a page
 
+Renumbered from 0059 on 2026-10-14: the number was used twice.
+
 Date: 2026-09-07
 
 Find is a command palette (⌘K) over tasks and notes. It is not a route, not a

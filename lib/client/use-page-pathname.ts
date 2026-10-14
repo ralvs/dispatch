@@ -4,7 +4,7 @@ import { usePathname, useSelectedLayoutSegment } from "next/navigation";
 
 /**
  * The path the nav lights. Usually the pathname. Not while a task is open over
- * a page (docs/adr/0079): the address is then the task's own, `/tasks/<id>`,
+ * a page (docs/adr/0091): the address is then the task's own, `/tasks/<id>`,
  * but the page behind the dialog is the one you were on, and lighting Tasks
  * would say you had left it. Then it is only that page's top-level path
  * (`/projects`, not `/projects/<id>`), which is all a tab needs.

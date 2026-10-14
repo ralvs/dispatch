@@ -42,7 +42,7 @@ folding it in is a separate change.
 > into this form behind one rule: a create carrying nothing but a title parses,
 > anything else is literal. The keyboard contract below is unchanged.
 >
-> **Amended by ADR-0079.** `?edit=` is gone, and so is a row's own dialog. The
+> **Amended by ADR-0091.** `?edit=` is gone, and so is a row's own dialog. The
 > entry points are the header's `+` (create) and a task's address,
 > `/tasks/<id>` (edit), which opens the form over the page you are on, the
 > Tasks board included.

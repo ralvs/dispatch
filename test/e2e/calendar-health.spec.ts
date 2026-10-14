@@ -4,7 +4,7 @@ import { readLocalStack } from "../integration/stack";
 
 /**
  * Today tells an empty day from a calendar that stopped syncing (#96,
- * ADR-0080). The work feed's sync-state row says its last success was days
+ * ADR-0092). The work feed's sync-state row says its last success was days
  * ago; Today prints that under the headline, with no button — the Mac bridge
  * pushes, the server cannot pull. With the row fresh, the line is gone.
  */

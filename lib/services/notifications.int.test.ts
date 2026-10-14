@@ -47,7 +47,7 @@ import {
 // returns, which the entity store confirms from (#28). Cron writes through the
 // service client; the page reads and marks through the owner's.
 
-// Alerts, so every seeded row starts unread (ADR-0080).
+// Alerts, so every seeded row starts unread (ADR-0092).
 async function seedLedger() {
 	const sb = serviceClient();
 	const a = await recordNotificationOrThrow(sb, {

@@ -14,7 +14,7 @@ no one, the bridge route wrote a ledger row on every failed POST and never
 touched `google_sync_state`, and "Sync now" recorded nothing at all.
 
 Amends ADR-0075 item 5: a calendar sync's failure is announced by the
-mirror, not by a route. Closes the open line in ADR-0080's Consequences:
+mirror, not by a route. Closes the open line in ADR-0092's Consequences:
 iCloud failures now raise and resolve alerts as the bridge's do.
 
 ## Decision
@@ -30,7 +30,7 @@ iCloud failures now raise and resolve alerts as the bridge's do.
 3. **The mirror announces a failed sync.** Working → failed records
    `<feed>.sync_failed` (`caldav.sync_failed`, `gcal.sync_failed`) through
    `recordNotification`; an already-failing feed records only its state.
-4. **A successful sync resolves that type's unread alerts** (ADR-0080). The
+4. **A successful sync resolves that type's unread alerts** (ADR-0092). The
    per-run record is the sync-state row; the ledger records the outage.
 5. **Routes and the "Sync now" action only turn the mirror's `MirrorResult`
    into a response.** The mirror never throws.

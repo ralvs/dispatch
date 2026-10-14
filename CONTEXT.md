@@ -22,7 +22,7 @@ A command palette (⌘K) that locates a **task** or a **note** by substring.
 Tasks are matched on `title` and `notes`; notes on `title` and `body`. Title
 hits rank above body/notes hits. An empty query shows recents. Find does not
 create anything and does not replace Chat (Ask). Quiet and done tasks still
-appear — locating is not Today. Docs/adr/0059.
+appear — locating is not Today. Docs/adr/0090.
 
 ## inbox
 
