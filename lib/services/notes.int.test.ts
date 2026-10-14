@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { countOf, noteCounts, tally } from "@/lib/counts";
 import { persistRaw } from "@/lib/services/capture/store";
+import { AppendRefusedError, PartialWriteError } from "@/lib/services/errors";
 import {
 	countNeedsReview,
 	createNeedsReviewNote,
@@ -13,7 +14,7 @@ import {
 	updateNote,
 } from "@/lib/services/notes";
 import { createPerson } from "@/lib/services/people";
-import { ownerClient } from "@/test/integration/clients";
+import { ownerClient, serviceClient } from "@/test/integration/clients";
 
 // The writes the notes actions make, and the row they read back for the
 // entity store (#27).
@@ -184,5 +185,65 @@ describe("setPin", () => {
 		await deleteNote(sb, n.id);
 
 		await expect(setPin(sb, n.id, true)).resolves.toEqual({ applied: false });
+	});
+});
+
+// An append is one more text write the module owns (docs/adr/0079): one
+// UPDATE, then the one graph sync, so no caller post-syncs.
+describe("updateNote with body_append", () => {
+	const graphOf = async (noteId: string) => {
+		const db = serviceClient();
+		const [{ data: mentions }, { data: links }] = await Promise.all([
+			db.from("mentions").select("person_id").eq("note_id", noteId),
+			db.from("note_links").select("target_note_id").eq("note_id", noteId).eq("kind", "wikilink"),
+		]);
+		return {
+			people: mentions?.map((m) => m.person_id),
+			links: links?.map((l) => l.target_note_id),
+		};
+	};
+
+	it("appends, retitles and syncs the graph from the saved body", async () => {
+		const sb = await ownerClient();
+		const ana = await createPerson(sb, { name: "Ana" });
+		const shed = await createNote(sb, { body: "shed" });
+		const note = await createNote(sb, { title: "Plan", body: "tomatoes" });
+		await updateNote(sb, note.id, {
+			title: "Garden",
+			body_append: `ask @Ana about [[${shed.id}|Shed]]`,
+		});
+		expect(await getNote(sb, note.id)).toMatchObject({
+			title: "Garden",
+			body: `tomatoes\nask @Ana about [[${shed.id}|Shed]]`,
+		});
+		expect(await graphOf(note.id)).toEqual({ people: [ana.id], links: [shed.id] });
+	});
+
+	it("keeps two appends at once", async () => {
+		const sb = await ownerClient();
+		const note = await createNote(sb, { body: "start" });
+		await Promise.all([
+			updateNote(sb, note.id, { body_append: "one" }),
+			updateNote(sb, note.id, { body_append: "two" }),
+		]);
+		expect((await getNote(sb, note.id))?.body.split("\n").sort()).toEqual(["one", "start", "two"]);
+	});
+
+	it("refuses an append to a missing note", async () => {
+		const sb = await ownerClient();
+		await expect(updateNote(sb, crypto.randomUUID(), { body_append: "x" })).rejects.toThrow(
+			AppendRefusedError,
+		);
+	});
+
+	it("says the append landed when a later step fails, with the graph synced", async () => {
+		const sb = await ownerClient();
+		const ana = await createPerson(sb, { name: "Ana" });
+		const note = await createNote(sb, { body: "start" });
+		await expect(
+			updateNote(sb, note.id, { domain_id: crypto.randomUUID(), body_append: "ask @Ana" }),
+		).rejects.toThrow(PartialWriteError);
+		expect((await getNote(sb, note.id))?.body).toBe("start\nask @Ana");
+		expect((await graphOf(note.id)).people).toEqual([ana.id]);
 	});
 });

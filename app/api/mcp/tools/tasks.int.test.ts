@@ -6,10 +6,17 @@ vi.mock("@/lib/invalidate", async (original) => ({
 	afterExternalMutation: vi.fn(),
 }));
 
+// A graph sync that fails once drives a write past its append (PartialWriteError).
+vi.mock("@/lib/services/mentions", async (original) => {
+	const real = await original<typeof import("@/lib/services/mentions")>();
+	return { ...real, syncTaskMentionsFromText: vi.fn(real.syncTaskMentionsFromText) };
+});
+
 import { POST } from "@/app/api/mcp/route";
 import { shiftDay } from "@/lib/dates";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { listDomains } from "@/lib/services/domains";
+import { syncTaskMentionsFromText } from "@/lib/services/mentions";
 import { createPerson } from "@/lib/services/people";
 import { createProject } from "@/lib/services/projects";
 import { todayForRequest } from "@/lib/services/settings";
@@ -326,5 +333,16 @@ describe("MCP task tools", () => {
 		const plain = await call("skip_task", { id: s.soon.id, due_date: s.soon.due_date });
 		expect(plain.isError).toBe(true);
 		expect(plain.text).toContain("does not repeat");
+	});
+
+	it("update_task records an append that landed before a later step failed", async () => {
+		const { loose } = await seed();
+		vi.mocked(syncTaskMentionsFromText).mockRejectedValueOnce(new Error("graph down"));
+		const result = await call("update_task", { id: loose.id, note_append: "kept", dated: false });
+		expect(result.isError).toBe(true);
+		expect((await call("get_task", { id: loose.id })).json().notes).toBe("kept");
+		expect(await ledger("mcp.task.updated")).toEqual([
+			{ type: "mcp.task.updated", source_ref: loose.id },
+		]);
 	});
 });

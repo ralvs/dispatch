@@ -3,12 +3,13 @@ import { z } from "zod";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { displayTitle } from "@/lib/note-display";
 import { listDomains } from "@/lib/services/domains";
+import { AppendRefusedError, PartialWriteError } from "@/lib/services/errors";
 import {
 	createNote,
 	getNote,
 	listNotes,
 	type NoteListRow,
-	resyncNoteGraph,
+	type NotePatch,
 	updateNote,
 } from "@/lib/services/notes";
 import { recordNotification } from "@/lib/services/notifications";
@@ -154,58 +155,37 @@ export function registerNoteTools(server: McpServer, sb: SupabaseClient): void {
 			if (body !== undefined && append !== undefined) {
 				throw new ToolError("Send body or append, not both.");
 			}
-			const patch: Parameters<typeof updateNote>[2] = {};
+			const patch: NotePatch = {};
 			if (title !== undefined) patch.title = title;
 			if (body !== undefined) patch.body = body;
 			if (domain !== undefined) {
 				const resolved = domain === null ? UNFILED : await resolveDomain(sb, domain);
 				patch.domain_id = resolved === UNFILED ? null : resolved.id;
 			}
-			if (Object.keys(patch).length === 0 && append === undefined) {
+			if (append !== undefined) {
+				patch.body_append = dated ? `${await todayForRequest(sb)} — ${append}` : append;
+			}
+			if (Object.keys(patch).length === 0) {
 				throw new ToolError("Nothing to change: send at least one field.");
 			}
 
-			const before = await mustGetNote(sb, id);
-			let savedBody: string | null = null;
-			let after: NoteListRow;
-
+			await mustGetNote(sb, id);
 			try {
-				if (append !== undefined) {
-					const line = dated ? `${await todayForRequest(sb)} — ${append}` : append;
-					// One UPDATE, so two appends at once both survive (the migration).
-					const { data, error } = await sb.rpc("note_body_append", {
-						p_note_id: id,
-						p_line: line,
-					});
-					if (error) {
-						console.error("note_body_append failed", error);
-						throw new ToolError("Could not append to the note.");
-					}
-					const row = (data as { old_body: string; new_body: string }[] | null)?.[0];
-					if (!row) throw new ToolError("No note with that id.");
-					savedBody = row.new_body;
-				}
-
-				// updateNote re-derives the graph when body moves; body and append are
-				// exclusive, so an append re-syncs here once from the saved body.
-				if (Object.keys(patch).length > 0) await updateNote(sb, id, patch);
-				if (savedBody !== null) await resyncNoteGraph(sb, id);
-				after = await mustGetNote(sb, id);
+				await updateNote(sb, id, patch);
 			} catch (err) {
-				// The append landed but a later step failed: re-sync the graph from the
-				// saved body if we can, then the ledger still owes the owner a row for
-				// the append, then the error goes on.
-				if (savedBody !== null) {
-					try {
-						await resyncNoteGraph(sb, id);
-					} catch (syncErr) {
-						console.error("resyncNoteGraph after failed update_note", syncErr);
-					}
-					await recordUpdate(sb, id, displayTitle({ ...before, body: savedBody }));
+				if (err instanceof AppendRefusedError) throw new ToolError(err.message);
+				// The append landed before the failure: the ledger still owes the
+				// owner its row, even when the title can't be read back.
+				if (err instanceof PartialWriteError) {
+					const row = await getNote(sb, id).catch((readErr: unknown) => {
+						console.error("[mcp] update_note re-read after a partial write", readErr);
+						return null;
+					});
+					await recordUpdate(sb, id, row ? displayTitle(row) : "A note");
 				}
 				throw err;
 			}
-
+			const after = await mustGetNote(sb, id);
 			await recordUpdate(sb, id, displayTitle(after));
 			return toDetail(sb, after);
 		},

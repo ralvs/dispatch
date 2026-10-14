@@ -56,15 +56,20 @@ origin) are the lineage here.
    Projects and domains are named, not referenced by id (`"inbox"` means
    unfiled), and an unknown name answers with the valid ones. Deleting stays
    in the app. (Completing stayed in the app too, until ADR-0083 added
-   `complete_task` and `skip_task`.) `update_task`'s `note_append` goes through
+   `complete_task` and `skip_task`.) `update_task`'s `note_append` is a
+   `notes_append` field of `updateTask`. The module appends through
    `task_notes_append`, a security-invoker SQL function that appends in one
    UPDATE and refuses past 5,000 characters, so two appends at once both
-   survive.
+   survive. Then it re-syncs the mentions itself.
 
    Notes: `list_notes`, `get_note`, `create_note` and `update_note`. A search
    matches a title, or the body of an untitled note. `update_note`'s `append`
-   goes through `note_body_append`, the same one-UPDATE function without a
-   cap, and re-syncs the note's wikilinks and mentions. Known limit: a note
+   is a `body_append` field of `updateNote`. The module appends through
+   `note_body_append`, the same one-UPDATE function without a cap, and
+   re-syncs the note's wikilinks and mentions itself. The tool never syncs the
+   graph. Known limit: the sync reads the text after its append commits, so two
+   appends at once keep both lines, but the slower sync can save the graph
+   of the older text. The next text write of that row repairs it. Known limit: a note
    open in the editor autosaves its stale body over an MCP edit, so `append`
    is the safe update and `body` overwrites.
 
@@ -93,3 +98,5 @@ origin) are the lineage here.
   `app/api`, not only `route.ts`.
 
 Amended 2026-10-14: the ledger rows no longer store undo data (ADR-0093).
+Amended 2026-10-14: an append is a field of `updateTask` and `updateNote`,
+so the task and note modules own the graph sync (issue #89, AC-16).

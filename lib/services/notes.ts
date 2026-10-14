@@ -9,7 +9,7 @@ import {
 	type NoteRow,
 	type UpdateNoteSchema,
 } from "@/lib/schemas/note";
-import { unwrap, unwrapCount } from "@/lib/services/errors";
+import { AppendRefusedError, PartialWriteError, unwrap, unwrapCount } from "@/lib/services/errors";
 import { type GraphFail, syncNoteMentionsFromText } from "@/lib/services/mentions";
 import { removeAllForNote } from "@/lib/services/note-attachments";
 import { syncWikilinks } from "@/lib/services/note-links";
@@ -22,12 +22,6 @@ export type NoteWriteOpts = {
 	/** Capture swallows graph failures (iron rule #4). Forms throw. Default throw. */
 	graphFail?: GraphFail;
 };
-
-/** Re-derive a note's wikilinks + mentions from its saved body (an append outside updateNote). */
-export async function resyncNoteGraph(sb: SupabaseClient, noteId: string): Promise<void> {
-	const data = unwrap(await sb.from("notes").select("body").eq("id", noteId).single());
-	await syncNoteGraph(sb, noteId, data.body, "throw");
-}
 
 /** Wikilinks + person mentions derived from note text. */
 async function syncNoteGraph(
@@ -178,17 +172,62 @@ export async function getNote(sb: SupabaseClient, id: string): Promise<NoteListR
 	return data ?? null;
 }
 
+export type NotePatch = z.infer<typeof UpdateNoteSchema> & {
+	/**
+	 * A line added to the end of the body, in one UPDATE (`note_body_append`),
+	 * so two appends at once both survive. Not with `body`.
+	 */
+	body_append?: string;
+};
+
+/**
+ * Edit a note. A text write owns the note graph: when the body moves, by a
+ * patch or an append, wikilinks and mentions re-derive once from the saved
+ * body. Callers must not post-sync.
+ *
+ * An append runs first, so a refusal (AppendRefusedError) writes nothing. If
+ * it lands and a later step fails, the graph is re-derived if it can be and
+ * the error is a PartialWriteError: the row changed, and the caller still
+ * owes its ledger row.
+ */
 export async function updateNote(
 	sb: SupabaseClient,
 	id: string,
-	patch: z.infer<typeof UpdateNoteSchema>,
+	patch: NotePatch,
 	opts: NoteWriteOpts = {},
 ): Promise<void> {
-	unwrap(await sb.from("notes").update(patch).eq("id", id));
-	// Mentions/wikilinks only re-derive when body text moves (not pin/resolve).
-	if ("body" in patch && patch.body !== undefined) {
-		await syncNoteGraph(sb, id, patch.body, opts.graphFail ?? "throw");
+	const { body_append, ...fields } = patch;
+	const fail = opts.graphFail ?? "throw";
+	if (body_append === undefined) {
+		unwrap(await sb.from("notes").update(fields).eq("id", id));
+		// Mentions/wikilinks only re-derive when body text moves (not pin/resolve).
+		if (fields.body !== undefined) await syncNoteGraph(sb, id, fields.body, fail);
+		return;
 	}
+	if (fields.body !== undefined)
+		throw new Error("A note edit sends body or body_append, not both.");
+	const [appended] = unwrap(
+		await sb.rpc("note_body_append", { p_note_id: id, p_line: body_append }),
+	);
+	if (!appended) throw new AppendRefusedError("No note with that id.");
+	try {
+		if (Object.keys(fields).length > 0) {
+			unwrap(await sb.from("notes").update(fields).eq("id", id));
+		}
+		await syncNoteGraph(sb, id, await savedBody(sb, id), fail);
+	} catch (err) {
+		try {
+			await syncNoteGraph(sb, id, await savedBody(sb, id), "throw");
+		} catch (syncErr) {
+			console.error("[notes] graph re-sync after a failed edit", syncErr);
+		}
+		throw new PartialWriteError(err);
+	}
+}
+
+/** The body as saved now: another append may have landed since this one. */
+async function savedBody(sb: SupabaseClient, id: string): Promise<string> {
+	return unwrap(await sb.from("notes").select("body").eq("id", id).single()).body;
 }
 
 /**

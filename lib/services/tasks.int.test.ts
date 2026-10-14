@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { isQuiet } from "@/lib/quiet";
+import { TASK_NOTES_MAX } from "@/lib/schemas/task";
 import { listDomains } from "@/lib/services/domains";
+import { AppendRefusedError, PartialWriteError } from "@/lib/services/errors";
 import { createPerson } from "@/lib/services/people";
 import { createProject, updateProject } from "@/lib/services/projects";
 import { listQuietProjectIds } from "@/lib/services/quiet";
@@ -696,5 +698,53 @@ describe("a task's domain follows its project", () => {
 		await updateProject(sb, project.id, { domain_id: work });
 		expect((await getTask(sb, inside.id))?.domain_id).toBe(work);
 		expect((await getTask(sb, outside.id))?.domain_id).toBe(home);
+	});
+});
+
+// An append is one more text write the module owns (docs/adr/0079): one
+// UPDATE, then the one mention sync, so no caller post-syncs.
+describe("updateTask with notes_append", () => {
+	const mentionsOf = async (taskId: string) =>
+		(await serviceClient().from("mentions").select("person_id").eq("task_id", taskId)).data?.map(
+			(m) => m.person_id,
+		);
+
+	it("appends, retitles and syncs mentions from the saved text", async () => {
+		const sb = await ownerClient();
+		const ana = await createPerson(sb, { name: "Ana" });
+		const task = await createTask(sb, { title: "Old", notes: "before" });
+		await updateTask(sb, task.id, { title: "New", notes_append: "ask @Ana" });
+		expect(await getTask(sb, task.id)).toMatchObject({ title: "New", notes: "before\nask @Ana" });
+		expect(await mentionsOf(task.id)).toEqual([ana.id]);
+	});
+
+	it("keeps two appends at once", async () => {
+		const sb = await ownerClient();
+		const task = await createTask(sb, { title: "Log" });
+		await Promise.all([
+			updateTask(sb, task.id, { notes_append: "one" }),
+			updateTask(sb, task.id, { notes_append: "two" }),
+		]);
+		expect((await getTask(sb, task.id))?.notes?.split("\n").sort()).toEqual(["one", "two"]);
+	});
+
+	it("refuses past the cap and writes nothing", async () => {
+		const sb = await ownerClient();
+		const task = await createTask(sb, { title: "Cap", notes: "a" });
+		await expect(
+			updateTask(sb, task.id, { title: "Moved", notes_append: "x".repeat(TASK_NOTES_MAX) }),
+		).rejects.toThrow(AppendRefusedError);
+		expect(await getTask(sb, task.id)).toMatchObject({ title: "Cap", notes: "a" });
+	});
+
+	it("says the append landed when a later step fails, with mentions synced", async () => {
+		const sb = await ownerClient();
+		const ana = await createPerson(sb, { name: "Ana" });
+		const task = await createTask(sb, { title: "Half" });
+		await expect(
+			updateTask(sb, task.id, { project_id: crypto.randomUUID(), notes_append: "ask @Ana" }),
+		).rejects.toThrow(PartialWriteError);
+		expect((await getTask(sb, task.id))?.notes).toBe("ask @Ana");
+		expect(await mentionsOf(task.id)).toEqual([ana.id]);
 	});
 });

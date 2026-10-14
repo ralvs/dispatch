@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { TASK_NOTES_MAX, TASK_TITLE_MAX } from "@/lib/schemas/task";
-import { syncTaskMentionsFromText } from "@/lib/services/mentions";
+import { AppendRefusedError, PartialWriteError } from "@/lib/services/errors";
 import { recordNotification } from "@/lib/services/notifications";
 import { todayForRequest } from "@/lib/services/settings";
 import {
@@ -11,6 +11,7 @@ import {
 	getTask,
 	listTasks,
 	skipTask,
+	type TaskPatch,
 	type TaskRow,
 	updateTask,
 } from "@/lib/services/tasks";
@@ -52,11 +53,11 @@ function toDetail(row: TaskRow) {
 }
 
 /** Iron rule #6: the assistant's edit lands in the ledger, and so pushes. */
-async function recordUpdate(sb: SupabaseClient, id: string, after: TaskRow): Promise<void> {
+async function recordUpdate(sb: SupabaseClient, id: string, title: string): Promise<void> {
 	await recordNotification(sb, {
 		type: "mcp.task.updated",
 		title: "Assistant updated a task",
-		body: after.title,
+		body: title,
 		source_ref: id,
 	});
 	afterExternalMutation(...EXTERNAL_WRITES.mcpTasks);
@@ -199,60 +200,38 @@ export function registerTaskTools(server: McpServer, sb: SupabaseClient): void {
 			if (note_append !== undefined && note_replace !== undefined) {
 				throw new ToolError("Send note_append or note_replace, not both.");
 			}
-			const patch: Parameters<typeof updateTask>[2] = {};
+			const patch: TaskPatch = {};
 			if (title !== undefined) patch.title = title;
 			if (due_date !== undefined) patch.due_date = due_date;
 			if (project !== undefined) {
 				patch.project_id = project === null ? null : (await resolveProject(sb, project)).id;
 			}
 			if (note_replace !== undefined) patch.notes = note_replace;
-			if (Object.keys(patch).length === 0 && note_append === undefined) {
+			if (note_append !== undefined) {
+				patch.notes_append = dated ? `${await todayForRequest(sb)} — ${note_append}` : note_append;
+			}
+			if (Object.keys(patch).length === 0) {
 				throw new ToolError("Nothing to change: send at least one field.");
 			}
 
-			const before = await mustGetTask(sb, id);
-			let appended = false;
-			let after: TaskRow = before;
-
+			await mustGetTask(sb, id);
 			try {
-				if (note_append !== undefined) {
-					const line = dated ? `${await todayForRequest(sb)} — ${note_append}` : note_append;
-					// One UPDATE, so two appends at once both survive (the migration).
-					const { data, error } = await sb.rpc("task_notes_append", {
-						p_task_id: id,
-						p_line: line,
-						p_max: TASK_NOTES_MAX,
-					});
-					if (error) {
-						console.error("task_notes_append failed", error);
-						throw new ToolError("Could not append to the task note.");
-					}
-					const row = (data as { old_notes: string | null; new_notes: string }[] | null)?.[0];
-					if (!row) {
-						await mustGetTask(sb, id);
-						throw new ToolError(`Note would exceed ${TASK_NOTES_MAX} characters.`);
-					}
-					appended = true;
-				}
-
-				// updateTask re-derives mentions when the title or notes move; an
-				// append without them moves the notes outside it, so sync here only then.
-				if (Object.keys(patch).length > 0) await updateTask(sb, id, patch);
-				after = await mustGetTask(sb, id);
-				if (note_append !== undefined && !("title" in patch)) {
-					await syncTaskMentionsFromText(sb, id, after.title, after.notes);
-				}
+				await updateTask(sb, id, patch);
 			} catch (err) {
-				// The append landed but a later write failed: the ledger still owes
-				// the owner a row for the append, then the error goes on.
-				if (appended) {
-					after = (await getTask(sb, id)) ?? after;
-					await recordUpdate(sb, id, after);
+				if (err instanceof AppendRefusedError) throw new ToolError(err.message);
+				// The append landed before the failure: the ledger still owes the
+				// owner its row, even when the title can't be read back.
+				if (err instanceof PartialWriteError) {
+					const row = await getTask(sb, id).catch((readErr: unknown) => {
+						console.error("[mcp] update_task re-read after a partial write", readErr);
+						return null;
+					});
+					await recordUpdate(sb, id, row?.title ?? "A task");
 				}
 				throw err;
 			}
-
-			await recordUpdate(sb, id, after);
+			const after = await mustGetTask(sb, id);
+			await recordUpdate(sb, id, after.title);
 			return toDetail(after);
 		},
 	);
