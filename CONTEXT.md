@@ -96,10 +96,11 @@ action the system takes on Renan's behalf (iron rule #6). Writes go through
 forbid a raw client from bypassing it). `recordNotification` is best-effort and
 never rejects; `recordNotificationOrThrow` is for a row that is the delivery
 itself, such as a fired reminder. Each row has a free-text `type`, a human
-`title`/`body`, an optional `undo_payload`, and a `status` of `unread`, `read`,
-or `dismissed` (any of which is reachable from any other). Once a row lands,
-the module busts the ledger's cache tags and delivers it by web push
-(ADR-0005), whoever the caller (docs/adr/0075).
+`title`/`body`, and a `status` of `unread`, `read`, or `dismissed` (any of
+which is reachable from any other). A row records what happened, not how to
+undo it (docs/adr/0093). Once a row lands, the module busts the ledger's cache
+tags and delivers it by web push (ADR-0005), whoever the caller
+(docs/adr/0075).
 
 ## links (reading list)
 

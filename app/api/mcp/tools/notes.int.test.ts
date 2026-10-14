@@ -71,13 +71,9 @@ async function seed() {
 async function ledger(type: string) {
 	const { data } = await serviceClient()
 		.from("notifications")
-		.select("type, source_ref, undo_payload")
+		.select("type, source_ref")
 		.eq("type", type);
-	// undo_payload is a Json column; these tools always write { prev: {...} }.
-	return (data ?? []).map((r) => ({
-		...r,
-		undo_payload: r.undo_payload as { prev: Record<string, unknown> },
-	}));
+	return data ?? [];
 }
 
 describe("MCP note tools", () => {
@@ -130,22 +126,18 @@ describe("MCP note tools", () => {
 			source_type: "own_thought",
 		});
 		expect(await ledger("mcp.note.created")).toEqual([
-			{ type: "mcp.note.created", source_ref: note.id, undo_payload: null },
+			{ type: "mcp.note.created", source_ref: note.id },
 		]);
 		expect(afterExternalMutation).toHaveBeenCalledWith(...EXTERNAL_WRITES.mcpNotes);
 	});
 
-	it("update_note edits title and domain and snapshots them", async () => {
-		const { titled, domainA } = await seed();
+	it("update_note edits title and domain and records it", async () => {
+		const { titled } = await seed();
 		const result = await call("update_note", { id: titled.id, title: null, domain: null });
 		expect(result.json()).toMatchObject({ title: null, domain_id: null, domain: null });
-		const [row] = await ledger("mcp.note.updated");
-		expect(row).toMatchObject({ source_ref: titled.id });
-		expect(row.undo_payload).toEqual({
-			table: "notes",
-			id: titled.id,
-			prev: { title: "Garden plan", domain_id: domainA.id },
-		});
+		expect(await ledger("mcp.note.updated")).toEqual([
+			{ type: "mcp.note.updated", source_ref: titled.id },
+		]);
 	});
 
 	it("update_note refuses body with append, and an empty patch", async () => {
@@ -157,7 +149,7 @@ describe("MCP note tools", () => {
 		expect(await call("update_note", { id: titled.id })).toMatchObject({ isError: true });
 	});
 
-	it("update_note appends atomically, dated, and keeps the old body for undo", async () => {
+	it("update_note appends atomically, dated, with a ledger row each", async () => {
 		const { sb, titled } = await seed();
 		const today = await todayForRequest(sb);
 		const [a, b] = await Promise.all([
@@ -167,15 +159,7 @@ describe("MCP note tools", () => {
 		expect(a.isError || b.isError).toBe(false);
 		const body = (await call("get_note", { id: titled.id })).json().body as string;
 		expect(body.split("\n").sort()).toEqual([`${today} — one`, "tomatoes", "two"].sort());
-		const rows = await ledger("mcp.note.updated");
-		expect(rows).toHaveLength(2);
-		// Each row holds the body its own append replaced: the original for the
-		// first to land, the original plus that line for the second.
-		const prevs = rows.map((r) => r.undo_payload.prev.body as string);
-		expect(prevs[0]).not.toBe(prevs[1]);
-		expect(prevs).toContain("tomatoes");
-		const other = prevs.find((p) => p !== "tomatoes");
-		expect([`tomatoes\n${today} — one`, "tomatoes\ntwo"]).toContain(other);
+		expect(await ledger("mcp.note.updated")).toHaveLength(2);
 	});
 
 	it("update_note append syncs a mention and a wikilink", async () => {
@@ -216,21 +200,19 @@ describe("MCP note tools", () => {
 		expect(await ids("a_b")).toEqual([under.id]);
 	});
 
-	it("update_note with only a title snapshots only the title, and busts", async () => {
+	it("update_note with only a title records it, and busts", async () => {
 		const { titled } = await seed();
 		vi.mocked(afterExternalMutation).mockClear();
 		await call("update_note", { id: titled.id, title: "Veg plan" });
-		const [row] = await ledger("mcp.note.updated");
-		expect(row.undo_payload.prev).toEqual({ title: "Garden plan" });
+		expect(await ledger("mcp.note.updated")).toHaveLength(1);
 		expect(afterExternalMutation).toHaveBeenCalledWith(...EXTERNAL_WRITES.mcpNotes);
 	});
 
 	it("update_note resolves a domain given by id", async () => {
-		const { titled, domainA, domainB } = await seed();
+		const { titled, domainB } = await seed();
 		const result = await call("update_note", { id: titled.id, domain: domainB.id });
 		expect(result.json()).toMatchObject({ domain_id: domainB.id, domain: domainB.name });
-		const [row] = await ledger("mcp.note.updated");
-		expect(row.undo_payload.prev).toEqual({ domain_id: domainA.id });
+		expect(await ledger("mcp.note.updated")).toHaveLength(1);
 	});
 
 	it("update_note body overwrite stores a new wikilink", async () => {
@@ -242,8 +224,7 @@ describe("MCP note tools", () => {
 			.eq("note_id", titled.id)
 			.eq("kind", "wikilink");
 		expect(links).toEqual([{ target_note_id: untitled.id }]);
-		const [row] = await ledger("mcp.note.updated");
-		expect(row.undo_payload.prev).toEqual({ body: "tomatoes" });
+		expect(await ledger("mcp.note.updated")).toHaveLength(1);
 	});
 
 	it("note_body_append is closed to anon", async () => {

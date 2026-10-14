@@ -150,7 +150,7 @@ function insertDentist(overrides: Partial<Seeded> = {}) {
 async function ledger(type: string) {
 	const { data } = await serviceClient()
 		.from("notifications")
-		.select("type, source_ref, undo_payload")
+		.select("type, source_ref")
 		.eq("type", type);
 	return data ?? [];
 }
@@ -282,7 +282,6 @@ describe("MCP event tools: write", () => {
 			{
 				type: "mcp.event.created",
 				source_ref: event.id,
-				undo_payload: { table: "calendar_events", id: event.id },
 			},
 		]);
 		expect(afterExternalMutation).toHaveBeenCalledWith(...EXTERNAL_WRITES.mcpEvents);
@@ -298,7 +297,7 @@ describe("MCP event tools: write", () => {
 		expect(caldav.conn?.createObject).not.toHaveBeenCalled();
 	});
 
-	it("update_event moves an event by local time and records what undo needs", async () => {
+	it("update_event moves an event by local time and records it", async () => {
 		const id = await insertDentist();
 
 		const result = await call("update_event", {
@@ -318,15 +317,6 @@ describe("MCP event tools: write", () => {
 			{
 				type: "mcp.event.updated",
 				source_ref: id,
-				undo_payload: {
-					table: "calendar_events",
-					id,
-					prev: {
-						title: "Dentist",
-						start_at: "2026-07-16T14:00:00+00:00",
-						end_at: "2026-07-16T15:00:00+00:00",
-					},
-				},
 			},
 		]);
 		expect(afterExternalMutation).toHaveBeenCalledWith(...EXTERNAL_WRITES.mcpEvents);
@@ -399,7 +389,7 @@ describe("MCP event tools: write", () => {
 		expect(await ledger("mcp.event.updated")).toEqual([]);
 	});
 
-	it("delete_event deletes in iCloud and here, and keeps the whole event for undo", async () => {
+	it("delete_event deletes in iCloud and here, and records it", async () => {
 		const id = await insertDentist({ description: "Bring the card" });
 
 		const result = await call("delete_event", { id });
@@ -411,17 +401,6 @@ describe("MCP event tools: write", () => {
 			{
 				type: "mcp.event.deleted",
 				source_ref: id,
-				undo_payload: {
-					table: "calendar_events",
-					id,
-					event: expect.objectContaining({
-						id,
-						title: "Dentist",
-						description: "Bring the card",
-						start_at: "2026-07-16T14:00:00+00:00",
-						calendar_name: "Renan",
-					}),
-				},
 			},
 		]);
 		expect(afterExternalMutation).toHaveBeenCalledWith(...EXTERNAL_WRITES.mcpEvents);

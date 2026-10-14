@@ -3,7 +3,6 @@ import { isPushConfigured } from "@/lib/env";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { notificationKind } from "@/lib/notification-kind";
 import {
-	type Json,
 	NOTIFICATION_SELECT,
 	type NotificationRow,
 	type NotificationStatus,
@@ -49,7 +48,7 @@ import type { SupabaseClient } from "@/lib/supabase/types";
 //     bust belongs to route handlers and server actions.
 // ─────────────────────────────────────────────────────────────────────────
 
-export type { Json, NotificationRow, NotificationStatus };
+export type { NotificationRow, NotificationStatus };
 
 // What a caller supplies to record a ledger entry. Snake_case to match the
 // columns (and the rest of the services layer, e.g. tasks.createTask).
@@ -58,16 +57,15 @@ export type { Json, NotificationRow, NotificationStatus };
 //              "task.created", "caldav.synced", "reminder.fired". Free text by
 //              schema; keep it dot-namespaced so the read side can group later.
 //   - `title`  NOT NULL. One-line human summary shown in the notification list.
-//   - `undo_payload`  Optional JSON object the UI can later replay to undo the
-//              action. Typed as an object (not any Json) because every real
-//              undo payload is a keyed record, e.g. `{ table, id, prev }`.
+//
+// No undo data: a row records what happened, not how to reverse it
+// (docs/adr/0093).
 export type NotificationEntry = {
 	type: string;
 	title: string;
 	body?: string | null;
 	source_ref?: string | null;
 	source_url?: string | null;
-	undo_payload?: { [key: string]: Json } | null;
 };
 
 /**
@@ -108,7 +106,6 @@ async function insertNotification(
 				body: entry.body ?? null,
 				source_ref: entry.source_ref ?? null,
 				source_url: entry.source_url ?? null,
-				undo_payload: entry.undo_payload ?? null,
 				status: notificationKind(entry.type) === "alert" ? "unread" : "read",
 			})
 			.select(NOTIFICATION_SELECT)

@@ -44,10 +44,9 @@ origin) are the lineage here.
    no credentials, so browser clients can connect and the app's cookies never
    count on this origin.
 7. **Every write writes a ledger row.** A tool that changes a row records a
-   `notifications` row (`mcp.*`) with an `undo_payload` (what an undo would
-   need; nothing replays it yet), which also pushes
-   (iron rule #6, ADR-0075), and busts tags through its `EXTERNAL_WRITES`
-   entry.
+   `notifications` row (`mcp.*`), which also pushes (iron rule #6,
+   ADR-0075), and busts tags through its `EXTERNAL_WRITES` entry. The row
+   holds no undo data (ADR-0093).
 8. **The tool surface is small and grows by group.** Links first
    (`list_links`, `mark_link_read`); tasks and notes in follow-up PRs. Left
    out on purpose, per the issue: Today, capture, chat, journal, quotes,
@@ -78,9 +77,6 @@ origin) are the lineage here.
    the write calendar through the services of docs/adr/0082, which allow
    only a single event there; a refusal (work event, another calendar, a
    series, a change in iCloud since the last sync) answers with its reason.
-   The ledger row stores what an undo would need: the id for a create, the
-   previous fields for an update, the whole event for a delete. Nothing
-   replays it yet.
 
 ## Consequences
 
@@ -96,4 +92,4 @@ origin) are the lineage here.
   `EXTERNAL_WRITES` entry; `lib/invalidate.test.ts` scans every file under
   `app/api`, not only `route.ts`.
 
-Amended 2026-10-14: no code reads undo_payload yet; the owner undoes an assistant's change by hand.
+Amended 2026-10-14: the ledger rows no longer store undo data (ADR-0093).

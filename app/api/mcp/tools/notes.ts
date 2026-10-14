@@ -47,19 +47,13 @@ async function mustGetNote(sb: SupabaseClient, id: string): Promise<NoteListRow>
 	return row;
 }
 
-/** Iron rule #6: the assistant's edit lands in the ledger with what undo needs. */
-async function recordUpdate(
-	sb: SupabaseClient,
-	id: string,
-	prev: Record<string, string | null>,
-	label: string,
-): Promise<void> {
+/** Iron rule #6: the assistant's edit lands in the ledger, and so pushes. */
+async function recordUpdate(sb: SupabaseClient, id: string, label: string): Promise<void> {
 	await recordNotification(sb, {
 		type: "mcp.note.updated",
 		title: "Assistant updated a note",
 		body: label,
 		source_ref: id,
-		undo_payload: { table: "notes", id, prev },
 	});
 	afterExternalMutation(...EXTERNAL_WRITES.mcpNotes);
 }
@@ -171,21 +165,14 @@ export function registerNoteTools(server: McpServer, sb: SupabaseClient): void {
 				throw new ToolError("Nothing to change: send at least one field.");
 			}
 
-			// The previous values are what the ledger's undo replays: only the
-			// fields this call writes, from the pre-read or the append's old body.
 			const before = await mustGetNote(sb, id);
-			const prev: Record<string, string | null> = {};
-			if ("title" in patch) prev.title = before.title;
-			if ("domain_id" in patch) prev.domain_id = before.domain_id;
-			if ("body" in patch) prev.body = before.body;
 			let savedBody: string | null = null;
 			let after: NoteListRow;
 
 			try {
 				if (append !== undefined) {
 					const line = dated ? `${await todayForRequest(sb)} — ${append}` : append;
-					// One UPDATE, so two appends at once both survive, and it hands back
-					// the body it replaced, so the undo snapshot cannot race (the migration).
+					// One UPDATE, so two appends at once both survive (the migration).
 					const { data, error } = await sb.rpc("note_body_append", {
 						p_note_id: id,
 						p_line: line,
@@ -196,7 +183,6 @@ export function registerNoteTools(server: McpServer, sb: SupabaseClient): void {
 					}
 					const row = (data as { old_body: string; new_body: string }[] | null)?.[0];
 					if (!row) throw new ToolError("No note with that id.");
-					prev.body = row.old_body;
 					savedBody = row.new_body;
 				}
 
@@ -215,12 +201,12 @@ export function registerNoteTools(server: McpServer, sb: SupabaseClient): void {
 					} catch (syncErr) {
 						console.error("resyncNoteGraph after failed update_note", syncErr);
 					}
-					await recordUpdate(sb, id, prev, displayTitle({ ...before, body: savedBody }));
+					await recordUpdate(sb, id, displayTitle({ ...before, body: savedBody }));
 				}
 				throw err;
 			}
 
-			await recordUpdate(sb, id, prev, displayTitle(after));
+			await recordUpdate(sb, id, displayTitle(after));
 			return toDetail(sb, after);
 		},
 	);

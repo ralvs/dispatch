@@ -59,14 +59,6 @@ export function registerLinkTools(server: McpServer, sb: SupabaseClient): void {
 			annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
 		},
 		async ({ id }) => {
-			// The previous status is what the ledger's undo replays.
-			const { data: before, error } = await sb
-				.from("ingest_links")
-				.select("status")
-				.eq("id", id)
-				.maybeSingle();
-			if (error) throw new Error(error.message);
-			if (!before) throw new ToolError("No saved link with that id.");
 			const row = await setLinkStatus(sb, id, "read");
 			if (!row) throw new ToolError("No saved link with that id.");
 			// Iron rule #6: the assistant's write lands in the ledger, and so pushes.
@@ -76,7 +68,6 @@ export function registerLinkTools(server: McpServer, sb: SupabaseClient): void {
 				body: row.title ?? hostname(row.url),
 				source_ref: row.id,
 				source_url: row.url,
-				undo_payload: { table: "ingest_links", id: row.id, prev: { status: before.status } },
 			});
 			afterExternalMutation(...EXTERNAL_WRITES.mcpLinks);
 			return toTool(row);

@@ -17,7 +17,7 @@ import {
 	updateEvent,
 } from "@/lib/services/calendar";
 import { ServiceError } from "@/lib/services/errors";
-import { type Json, recordNotification } from "@/lib/services/notifications";
+import { recordNotification } from "@/lib/services/notifications";
 import { getAppTimezone } from "@/lib/services/settings";
 import type { SupabaseClient } from "@/lib/supabase/types";
 import { registerTextTool, ToolError } from "../contract";
@@ -114,11 +114,6 @@ async function mustGetEditable(sb: SupabaseClient, id: string): Promise<Calendar
 	return row;
 }
 
-/** The row's fields, as JSON the ledger stores. */
-function snapshot(row: CalendarEventRow): { [key: string]: Json } {
-	return { ...row };
-}
-
 export function registerEventTools(server: McpServer, sb: SupabaseClient): void {
 	registerTextTool(
 		server,
@@ -188,13 +183,12 @@ export function registerEventTools(server: McpServer, sb: SupabaseClient): void 
 			const created = await refusalsAsToolErrors(() =>
 				createEventHere(sb, conn, { title, startUtc, endUtc, description, location }),
 			);
-			// Iron rule #6: the assistant's write lands in the ledger. Undo deletes it.
+			// Iron rule #6: the assistant's write lands in the ledger, and so pushes.
 			await recordNotification(sb, {
 				type: "mcp.event.created",
 				title: "Assistant created an event",
 				body: created.title,
 				source_ref: created.id,
-				undo_payload: { table: "calendar_events", id: created.id },
 			});
 			afterExternalMutation(...EXTERNAL_WRITES.mcpEvents);
 			return toDetail({ ...created, recurring: false }, tz);
@@ -241,18 +235,11 @@ export function registerEventTools(server: McpServer, sb: SupabaseClient): void 
 			}
 			const conn = await connect();
 			const after = await refusalsAsToolErrors(() => updateEvent(sb, conn, id, patch));
-
-			// The previous values are what the ledger's undo replays.
-			const prev: { [key: string]: Json } = {};
-			for (const key of ["title", "description", "location", "start_at", "end_at"] as const) {
-				if (before[key] !== after[key]) prev[key] = before[key];
-			}
 			await recordNotification(sb, {
 				type: "mcp.event.updated",
 				title: "Assistant updated an event",
 				body: after.title,
 				source_ref: id,
-				undo_payload: { table: "calendar_events", id, prev },
 			});
 			afterExternalMutation(...EXTERNAL_WRITES.mcpEvents);
 			return toDetail({ ...after, recurring: before.recurring }, tz);
@@ -273,13 +260,11 @@ export function registerEventTools(server: McpServer, sb: SupabaseClient): void 
 			await mustGetEditable(sb, id);
 			const conn = await connect();
 			const deleted = await refusalsAsToolErrors(() => deleteEvent(sb, conn, id));
-			// The whole event, so undo can create it again.
 			await recordNotification(sb, {
 				type: "mcp.event.deleted",
 				title: "Assistant deleted an event",
 				body: deleted.title,
 				source_ref: id,
-				undo_payload: { table: "calendar_events", id, event: snapshot(deleted) },
 			});
 			afterExternalMutation(...EXTERNAL_WRITES.mcpEvents);
 			return { deleted: true, id, title: deleted.title };
