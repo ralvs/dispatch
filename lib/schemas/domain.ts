@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Selected } from "@/lib/database";
 import { formDecoder } from "@/lib/form-decode";
 import { ColorSlugSchema } from "@/lib/schemas/color";
 
@@ -38,7 +39,7 @@ export const CreateDomainSchema = z.object({
 	description: z.string().nullable().optional(),
 	fruit_definition: z.string().nullable().optional(),
 	expected_cadence: z.string().nullable().optional(),
-	// .nullable() is load-bearing — see DomainRowSchema.color.
+	// .nullable() is load-bearing — see DomainRow.color.
 	color: ColorSlugSchema.nullable().optional(),
 });
 
@@ -57,7 +58,7 @@ export const UpdateDomainSchema = z.object({
 	// Stamped via the "Mark shipped" button on the domain detail page.
 	// Accept ISO datetime or null (to clear).
 	last_shipped_at: z.string().datetime({ offset: true }).nullable().optional(),
-	// .nullable() is load-bearing — see DomainRowSchema.color.
+	// .nullable() is load-bearing — see DomainRow.color.
 	color: ColorSlugSchema.nullable().optional(),
 });
 
@@ -87,24 +88,10 @@ export type UpdateDomainFormInput = z.output<typeof UpdateDomainFormSchema>;
 // ─── Row shape actually returned by the domains service ────────────────
 //
 // Mirrors exactly the columns DOMAIN_SELECT reads (lib/services/domains.ts).
-// DOMAIN_SELECT is derived from this schema's keys. No joins for this
-// entity.
-export const DomainRowSchema = z.object({
-	id: z.string().uuid(),
-	name: z.string(),
-	description: z.string().nullable(),
-	fruit_definition: z.string().nullable(),
-	failure_patterns: z.unknown(),
-	expected_cadence: z.string().nullable(),
-	active: z.boolean(),
-	last_shipped_at: z.string().nullable(),
-	color: z.string().nullable(),
-	created_at: z.string(),
-	updated_at: z.string(),
-});
-export type DomainRow = z.infer<typeof DomainRowSchema>;
-
-export const DOMAIN_SELECT = Object.keys(DomainRowSchema.shape).join(", ");
+// No joins for this entity.
+export const DOMAIN_SELECT =
+	"id, name, description, fruit_definition, failure_patterns, expected_cadence, active, last_shipped_at, color, created_at, updated_at" as const;
+export type DomainRow = Selected<"stewardship_domains", typeof DOMAIN_SELECT>;
 
 /**
  * What the nightly sweep measures for one active domain

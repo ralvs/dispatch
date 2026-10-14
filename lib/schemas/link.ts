@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Selected } from "@/lib/database";
 
 // The link reading list behind /links (docs/adr/0014, renamed in docs/adr/0022).
 // The word "ingest" used to name three unrelated things; it is gone now, and
@@ -28,20 +29,9 @@ export type CreateLinkInput = z.infer<typeof CreateLinkSchema>;
 
 // ─── Row shape actually returned by the links service ───────────────────
 //
-// LINK_SELECT is derived from these keys (lib/services/links.ts).
+// LINK_SELECT lists these columns (lib/services/links.ts).
 // No joins for this entity.
-export const LinkRowSchema = z.object({
-	id: z.string().uuid(),
-	url: z.string(),
-	title: z.string().nullable(),
-	description: z.string().nullable(),
-	// A hotlinked preview (docs/adr/0066) — the publisher's URL, never a copy.
-	image_url: z.string().nullable(),
-	status: LinkStatusSchema,
-	source: z.string().nullable(),
-	created_at: z.string(),
-	updated_at: z.string(),
-});
-export type LinkRow = z.infer<typeof LinkRowSchema>;
-
-export const LINK_SELECT = Object.keys(LinkRowSchema.shape).join(", ");
+export const LINK_SELECT =
+	"id, url, title, description, image_url, status, source, created_at, updated_at" as const;
+// image_url is a hotlinked preview (docs/adr/0066) — the publisher's URL, never a copy.
+export type LinkRow = Selected<"ingest_links", typeof LINK_SELECT>;

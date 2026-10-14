@@ -15,13 +15,6 @@ import type { SupabaseClient } from "@/lib/supabase/types";
 export type PushKeys = { p256dh: string; auth: string };
 export type PushSubscriptionInput = { endpoint: string; keys: PushKeys };
 
-type PushSubscriptionRow = {
-	id: string;
-	endpoint: string;
-	keys: PushKeys;
-	created_at: string;
-};
-
 export type PushPayload = { title: string; body?: string; url?: string };
 
 let vapidConfigured = false;
@@ -68,9 +61,7 @@ export async function sendPushToAll(
 	if (!isPushConfigured()) return { sent: 0, pruned: 0 };
 	ensureVapidConfigured();
 
-	const rows = unwrap(
-		await sb.from("push_subscriptions").select("id, endpoint, keys, created_at"),
-	) as PushSubscriptionRow[] | null;
+	const rows = unwrap(await sb.from("push_subscriptions").select("id, endpoint, keys, created_at"));
 	if (!rows || rows.length === 0) return { sent: 0, pruned: 0 };
 
 	let sent = 0;
