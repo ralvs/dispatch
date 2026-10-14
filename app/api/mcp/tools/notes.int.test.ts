@@ -6,9 +6,16 @@ vi.mock("@/lib/invalidate", async (original) => ({
 	afterExternalMutation: vi.fn(),
 }));
 
+// A graph sync that fails once drives a write past its append (PartialWriteError).
+vi.mock("@/lib/services/mentions", async (original) => {
+	const real = await original<typeof import("@/lib/services/mentions")>();
+	return { ...real, syncNoteMentionsFromText: vi.fn(real.syncNoteMentionsFromText) };
+});
+
 import { POST } from "@/app/api/mcp/route";
 import { afterExternalMutation, EXTERNAL_WRITES } from "@/lib/invalidate";
 import { listDomains } from "@/lib/services/domains";
+import { syncNoteMentionsFromText } from "@/lib/services/mentions";
 import { createNote, setPin } from "@/lib/services/notes";
 import { createPerson } from "@/lib/services/people";
 import { todayForRequest } from "@/lib/services/settings";
@@ -234,5 +241,23 @@ describe("MCP note tools", () => {
 			p_line: "x",
 		});
 		expect(error).not.toBeNull();
+	});
+
+	it("update_note records an append that landed before a later step failed", async () => {
+		const { titled } = await seed();
+		vi.mocked(syncNoteMentionsFromText).mockRejectedValueOnce(new Error("graph down"));
+		const result = await call("update_note", { id: titled.id, append: "kept", dated: false });
+		expect(result.isError).toBe(true);
+		expect((await call("get_note", { id: titled.id })).json().body).toBe("tomatoes\nkept");
+		expect(await ledger("mcp.note.updated")).toEqual([
+			{ type: "mcp.note.updated", source_ref: titled.id },
+		]);
+	});
+
+	it("update_note writes no ledger row for a refused append", async () => {
+		await seed();
+		const missing = await call("update_note", { id: crypto.randomUUID(), append: "x" });
+		expect(missing).toMatchObject({ isError: true, text: "No note with that id." });
+		expect(await ledger("mcp.note.updated")).toEqual([]);
 	});
 });

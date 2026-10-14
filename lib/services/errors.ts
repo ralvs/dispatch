@@ -18,6 +18,27 @@ export class ServiceError extends Error {
 	}
 }
 
+/**
+ * An append the database refused before anything was written: the row is
+ * gone, or the text would pass its cap. The message says which, as written.
+ */
+export class AppendRefusedError extends Error {
+	override name = "AppendRefusedError";
+}
+
+/**
+ * An edit that landed in part: its append committed, then a later step
+ * failed. The row changed, so a caller that records its writes (iron rule #6)
+ * still owes the ledger a row. `cause` is the failure.
+ */
+export class PartialWriteError extends Error {
+	override name = "PartialWriteError";
+
+	constructor(cause: unknown) {
+		super(cause instanceof Error ? cause.message : String(cause), { cause });
+	}
+}
+
 type SupabaseError = { message: string; code?: string; details?: string | null };
 
 type SupabaseResult = { data: unknown; error: SupabaseError | null };

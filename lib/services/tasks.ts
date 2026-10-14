@@ -3,8 +3,14 @@ import type { Database } from "@/lib/database";
 import { dayWindowUtc, nowUtc } from "@/lib/dates";
 import { escapeLike } from "@/lib/like";
 import { notQuietFilter } from "@/lib/quiet";
-import { TASK_HOT_SELECT, TASK_SELECT, type TaskHotRow, type TaskRow } from "@/lib/schemas/task";
-import { unwrap } from "@/lib/services/errors";
+import {
+	TASK_HOT_SELECT,
+	TASK_NOTES_MAX,
+	TASK_SELECT,
+	type TaskHotRow,
+	type TaskRow,
+} from "@/lib/schemas/task";
+import { AppendRefusedError, PartialWriteError, unwrap } from "@/lib/services/errors";
 import { type GraphFail, syncTaskMentionsFromText } from "@/lib/services/mentions";
 import { listQuietProjectIds } from "@/lib/services/quiet";
 import type { SupabaseClient } from "@/lib/supabase/types";
@@ -218,20 +224,76 @@ export async function createTask(
 	return task;
 }
 
+export type TaskPatch = Partial<{
+	title: string;
+	notes: string | null;
+	due_date: string | null;
+	due_time: string | null;
+	priority: number;
+	domain_id: string;
+	project_id: string | null;
+	recurrence_rule: string | null;
+	/**
+	 * A line added to the end of the notes, in one UPDATE
+	 * (`task_notes_append`), so two appends at once both survive. Refused past
+	 * TASK_NOTES_MAX. Not with `notes`.
+	 */
+	notes_append: string;
+}>;
+
+/**
+ * Edit a task. A text write owns the person graph: when the title or notes
+ * move, by a patch or an append, mentions re-derive once from the saved text.
+ * Callers must not post-sync.
+ *
+ * An append runs first, so a refusal (AppendRefusedError) writes nothing. If
+ * it lands and a later step fails, mentions are re-derived if they can be and
+ * the error is a PartialWriteError: the row changed, and the caller still
+ * owes its ledger row.
+ */
 export async function updateTask(
 	sb: SupabaseClient,
 	id: string,
-	patch: Partial<{
-		title: string;
-		notes: string | null;
-		due_date: string | null;
-		due_time: string | null;
-		priority: number;
-		domain_id: string;
-		project_id: string | null;
-		recurrence_rule: string | null;
-	}>,
+	patch: TaskPatch,
 	opts: TaskWriteOpts = {},
+): Promise<void> {
+	const { notes_append, ...fields } = patch;
+	if (notes_append === undefined) return writeTaskFields(sb, id, fields, false, opts);
+	if ("notes" in fields) throw new Error("A task edit sends notes or notes_append, not both.");
+	const [appended] = unwrap(
+		await sb.rpc("task_notes_append", {
+			p_task_id: id,
+			p_line: notes_append,
+			p_max: TASK_NOTES_MAX,
+		}),
+	);
+	if (!appended) {
+		const exists = await getTask(sb, id);
+		throw new AppendRefusedError(
+			exists ? `Note would exceed ${TASK_NOTES_MAX} characters.` : "No task with that id.",
+		);
+	}
+	try {
+		await writeTaskFields(sb, id, fields, true, opts);
+	} catch (err) {
+		// The appended notes are saved: their mentions should be too.
+		try {
+			const row = await getTask(sb, id);
+			if (row) await syncTaskMentionsFromText(sb, id, row.title, row.notes);
+		} catch (syncErr) {
+			console.error("[tasks] mention re-sync after a failed edit", syncErr);
+		}
+		throw new PartialWriteError(err);
+	}
+}
+
+/** The column writes of an edit, then its one mention sync. */
+async function writeTaskFields(
+	sb: SupabaseClient,
+	id: string,
+	patch: Omit<TaskPatch, "notes_append">,
+	appended: boolean,
+	opts: TaskWriteOpts,
 ): Promise<void> {
 	// due_time may only be set alongside a due_date (DB check constraint).
 	// UpdateTaskSchema is `.partial()`, so a patch that nulls due_date while
@@ -240,10 +302,13 @@ export async function updateTask(
 	// than reject: clearing the date silently clears whatever time no longer
 	// has a date to sit on, whether or not the caller also touched due_time.
 	const nextPatch = patch.due_date === null ? { ...patch, due_time: null } : patch;
-	unwrap(await sb.from("tasks").update(nextPatch).eq("id", id));
+	if (Object.keys(nextPatch).length > 0) {
+		unwrap(await sb.from("tasks").update(nextPatch).eq("id", id));
+	}
 
-	// Mentions only re-derive when text moves (not complete/star/domain).
-	if ("title" in nextPatch || "notes" in nextPatch) {
+	// Mentions only re-derive when text moves (not complete/star/domain). An
+	// append moved the notes in the database, so they are read back.
+	if (appended || "title" in nextPatch || "notes" in nextPatch) {
 		const titleIn = "title" in nextPatch;
 		const notesIn = "notes" in nextPatch;
 		if (titleIn && notesIn) {
