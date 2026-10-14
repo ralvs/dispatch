@@ -14,7 +14,7 @@ export async function listLinksForNote(sb: SupabaseClient, noteId: string): Prom
 			.eq("note_id", noteId)
 			.order("created_at", { ascending: true }),
 	);
-	return (data ?? []) as unknown as NoteLinkRow[];
+	return data ?? [];
 }
 
 export type Backlink = {
@@ -35,14 +35,7 @@ export async function listBacklinks(sb: SupabaseClient, noteId: string): Promise
 			.eq("target_note_id", noteId)
 			.order("created_at", { ascending: true }),
 	);
-	return (
-		(data ?? []) as unknown as Array<{
-			id: string;
-			note_id: string;
-			created_at: string;
-			note: { id: string; title: string | null; body: string } | null;
-		}>
-	)
+	return (data ?? [])
 		.filter((row) => row.note !== null)
 		.map((row) => ({
 			id: row.id,
@@ -66,9 +59,7 @@ export async function syncWikilinks(
 
 	let validIds: string[] = [];
 	if (candidateIds.length > 0) {
-		const found = unwrap(
-			await sb.from("notes").select("id").in("id", candidateIds),
-		) as unknown as Array<{ id: string }>;
+		const found = unwrap(await sb.from("notes").select("id").in("id", candidateIds));
 		validIds = found.map((row) => row.id);
 	}
 
@@ -78,7 +69,7 @@ export async function syncWikilinks(
 			.select("id, target_note_id")
 			.eq("note_id", noteId)
 			.eq("kind", "wikilink"),
-	) as unknown as Array<{ id: string; target_note_id: string | null }>;
+	);
 
 	const validSet = new Set(validIds);
 	const existingByTarget = new Map(existing.map((row) => [row.target_note_id, row.id]));
@@ -137,7 +128,7 @@ export async function createManualLink(
 
 	try {
 		const data = unwrap(await sb.from("note_links").insert(row).select(NOTE_LINK_SELECT).single());
-		return data as unknown as NoteLinkRow;
+		return data;
 	} catch (err) {
 		if (err instanceof ServiceError && err.code === "23505") {
 			const targetColumn =
@@ -156,7 +147,7 @@ export async function createManualLink(
 					.eq("kind", "manual")
 					.single(),
 			);
-			return existing as unknown as NoteLinkRow;
+			return existing;
 		}
 		throw err;
 	}
@@ -217,7 +208,7 @@ export async function listLinkTargetLabels(
 			: [],
 	]);
 	return {
-		tasks: (tasks ?? []) as LinkTargetLabels["tasks"],
-		events: (events ?? []) as LinkTargetLabels["events"],
+		tasks: tasks ?? [],
+		events: events ?? [],
 	};
 }

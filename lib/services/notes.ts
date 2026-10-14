@@ -25,9 +25,7 @@ export type NoteWriteOpts = {
 
 /** Re-derive a note's wikilinks + mentions from its saved body (an append outside updateNote). */
 export async function resyncNoteGraph(sb: SupabaseClient, noteId: string): Promise<void> {
-	const data = unwrap(await sb.from("notes").select("body").eq("id", noteId).single()) as {
-		body: string;
-	};
+	const data = unwrap(await sb.from("notes").select("body").eq("id", noteId).single());
 	await syncNoteGraph(sb, noteId, data.body, "throw");
 }
 
@@ -90,7 +88,7 @@ export async function createNote(
 			.select(NOTE_LIST_SELECT)
 			.single(),
 	);
-	const note = data as unknown as NoteListRow;
+	const note = data;
 	// Text write owns wikilinks + person graph — callers must not post-sync.
 	await syncNoteGraph(sb, note.id, input.body, opts.graphFail ?? "throw");
 	return note;
@@ -172,12 +170,12 @@ export async function listNotes(
 	else if (filters.pinned === false) q = q.is("pinned_at", null);
 	if (filters.limit !== undefined) q = q.limit(filters.limit);
 	const data = unwrap(await q);
-	return (data ?? []) as unknown as NoteListRow[];
+	return data ?? [];
 }
 
 export async function getNote(sb: SupabaseClient, id: string): Promise<NoteListRow | null> {
 	const data = unwrap(await sb.from("notes").select(NOTE_LIST_SELECT).eq("id", id).maybeSingle());
-	return (data as unknown as NoteListRow | null) ?? null;
+	return data ?? null;
 }
 
 export async function updateNote(
@@ -217,7 +215,7 @@ export async function setPin(
 			: q.update({ pinned_at: null }).eq("id", id).not("pinned_at", "is", null)
 		).select("id"),
 	);
-	return { applied: ((rows ?? []) as unknown[]).length > 0 };
+	return { applied: (rows ?? []).length > 0 };
 }
 
 /** Resolve the never-lose safety net (iron rule #4) without touching the body. */
@@ -255,7 +253,7 @@ export async function listNoteTitles(
 ): Promise<Array<{ id: string; title: string | null; body: string }>> {
 	const data = unwrap(
 		await sb.from("notes").select("id, title, body").order("created_at", { ascending: false }),
-	) as unknown as Array<{ id: string; title: string | null; body: string }> | null;
+	);
 	return (data ?? []).map((note) => ({
 		id: note.id,
 		title: note.title,
