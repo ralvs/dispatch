@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Selected } from "@/lib/database";
 import { formDecoder } from "@/lib/form-decode";
 
 // Journal = daily diary entries, optionally grouped into physical/digital
@@ -66,39 +67,12 @@ export const JournalBookSchema = z.object({
 });
 export type JournalBook = z.infer<typeof JournalBookSchema>;
 
-// ─── Row shape actually returned by the journal entries service ────────
-//
-// Mirrors exactly the columns JOURNAL_ENTRY_SELECT reads
-// (lib/services/journal.ts). No joins for this entity.
-export const JournalEntryRowSchema = z.object({
-	id: z.string().uuid(),
-	book_id: z.string().uuid().nullable(),
-	entry_date: z.string(),
-	image_path: z.string().nullable(),
-	transcription_text: z.string().nullable(),
-	source: JournalEntrySourceSchema,
-	tags: z.array(z.string()),
-	extracted_facts: z.record(z.string(), z.unknown()),
-	attachments: z.array(z.unknown()),
-	resurface_weight: z.number(),
-	created_at: z.string(),
-});
-export type JournalEntryRow = z.infer<typeof JournalEntryRowSchema>;
+// ─── Rows the journal service returns (lib/services/journal.ts) ─────────
 
-export const JOURNAL_ENTRY_SELECT = Object.keys(JournalEntryRowSchema.shape).join(", ");
+export const JOURNAL_ENTRY_SELECT =
+	"id, book_id, entry_date, image_path, transcription_text, source, tags, extracted_facts, attachments, resurface_weight, created_at" as const;
+export type JournalEntryRow = Selected<"journal_entries", typeof JOURNAL_ENTRY_SELECT>;
 
-// ─── Row shape actually returned by the journal books service ──────────
-//
-// Mirrors exactly the columns JOURNAL_BOOK_SELECT reads
-// (lib/services/journal.ts). No joins for this entity.
-export const JournalBookRowSchema = z.object({
-	id: z.string().uuid(),
-	book_number: z.number(),
-	start_date: z.string().nullable(),
-	end_date: z.string().nullable(),
-	notes: z.string().nullable(),
-	created_at: z.string(),
-});
-export type JournalBookRow = z.infer<typeof JournalBookRowSchema>;
-
-export const JOURNAL_BOOK_SELECT = Object.keys(JournalBookRowSchema.shape).join(", ");
+export const JOURNAL_BOOK_SELECT =
+	"id, book_number, start_date, end_date, notes, created_at" as const;
+export type JournalBookRow = Selected<"journal_books", typeof JOURNAL_BOOK_SELECT>;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Selected } from "@/lib/database";
 import { formDecoder } from "@/lib/form-decode";
 
 // Routines = daily habits. The DB layout is simple on purpose: the
@@ -90,43 +91,14 @@ export const ToggleCompletionSchema = z.object({
 	done: z.boolean().optional(),
 });
 
-// ─── Row shape actually returned by the routines service ────────────────
-//
-// Mirrors exactly the columns ROUTINE_SELECT reads (lib/services/routines.ts).
-// ROUTINE_SELECT is derived from this schema's keys. No joins for this
-// entity.
-export const RoutineRowSchema = z.object({
-	id: z.string().uuid(),
-	name: z.string(),
-	description: z.string().nullable(),
-	position: z.number(),
-	active: z.boolean(),
-	time_of_day: TimeOfDayBucketSchema,
-	specific_time: z.string().nullable(),
-	reminder_enabled: z.boolean(),
-	last_reminder_sent_date: z.string().nullable(),
-	goal_days: z.number().nullable(),
-	archived_at: z.string().nullable(),
-	created_at: z.string(),
-	updated_at: z.string(),
-});
-export type RoutineRow = z.infer<typeof RoutineRowSchema>;
+// ─── Rows the routines service returns (lib/services/routines.ts) ───────
 
-export const ROUTINE_SELECT = Object.keys(RoutineRowSchema.shape).join(", ");
+export const ROUTINE_SELECT =
+	"id, name, description, position, active, time_of_day, specific_time, reminder_enabled, last_reminder_sent_date, goal_days, archived_at, created_at, updated_at" as const;
+export type RoutineRow = Selected<"routines", typeof ROUTINE_SELECT>;
 
-// ─── Row shape actually returned by the routine_completions service ─────
-//
-// Mirrors exactly the columns COMPLETION_SELECT reads
-// (lib/services/routines.ts). No joins for this entity.
-export const CompletionRowSchema = z.object({
-	id: z.string().uuid(),
-	routine_id: z.string().uuid(),
-	completed_date: z.string(),
-	created_at: z.string(),
-});
-export type CompletionRow = z.infer<typeof CompletionRowSchema>;
-
-export const COMPLETION_SELECT = Object.keys(CompletionRowSchema.shape).join(", ");
+export const COMPLETION_SELECT = "id, routine_id, completed_date, created_at" as const;
+export type CompletionRow = Selected<"routine_completions", typeof COMPLETION_SELECT>;
 
 /**
  * A routine with its completion dates (YYYY-MM-DD, ascending) since the start

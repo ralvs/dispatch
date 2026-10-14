@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Selected } from "@/lib/database";
 import { formDecoder } from "@/lib/form-decode";
 
 // Spec Addendum 02 §3 — quotes lose `my_notes` (replaced by
@@ -98,42 +99,13 @@ export const UpdateQuoteAnnotationSchema = z.object({
 	tags: z.array(z.string()).optional(),
 });
 
-// ─── Row shape actually returned by the quotes service ──────────────────
-//
-// Mirrors exactly the columns QUOTE_SELECT reads (lib/services/quotes.ts).
-// QUOTE_SELECT is derived from this schema's keys. No joins for this entity.
-export const QuoteRowSchema = z.object({
-	id: z.string().uuid(),
-	text: z.string(),
-	page_number: z.number().nullable(),
-	chapter: z.string().nullable(),
-	source_type: QuoteSourceTypeSchema.nullable(),
-	source_reference: z.string().nullable(),
-	source_url: z.string().nullable(),
-	source_author: z.string().nullable(),
-	tags: z.array(z.string()),
-	added_via: QuoteAddedViaSchema,
-	last_surfaced_at: z.string().nullable(),
-	created_at: z.string(),
-});
-export type QuoteRow = z.infer<typeof QuoteRowSchema>;
+// ─── Rows the quotes service returns (lib/services/quotes.ts) ───────────
 
-export const QUOTE_SELECT = Object.keys(QuoteRowSchema.shape).join(", ");
+export const QUOTE_SELECT =
+	"id, text, page_number, chapter, source_type, source_reference, source_url, source_author, tags, added_via, last_surfaced_at, created_at" as const;
+export type QuoteRow = Selected<"quotes", typeof QUOTE_SELECT>;
 
-// ─── Row shape actually returned by the quote_annotations service ───────
-//
-// Mirrors exactly the columns QUOTE_ANNOTATION_SELECT reads
-// (lib/services/quotes.ts). No joins for this entity.
-export const QuoteAnnotationRowSchema = z.object({
-	id: z.string().uuid(),
-	quote_id: z.string().uuid(),
-	body: z.string(),
-	annotated_at: z.string(),
-	context: AnnotationContextSchema,
-	tags: z.array(z.string()),
-	created_at: z.string(),
-	updated_at: z.string(),
-});
-export type QuoteAnnotationRow = z.infer<typeof QuoteAnnotationRowSchema>;
-
-export const QUOTE_ANNOTATION_SELECT = Object.keys(QuoteAnnotationRowSchema.shape).join(", ");
+/** `context` is nullable in the DB. */
+export const QUOTE_ANNOTATION_SELECT =
+	"id, quote_id, body, annotated_at, context, tags, created_at, updated_at" as const;
+export type QuoteAnnotationRow = Selected<"quote_annotations", typeof QUOTE_ANNOTATION_SELECT>;
