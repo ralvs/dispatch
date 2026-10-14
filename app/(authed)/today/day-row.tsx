@@ -176,7 +176,7 @@ export function TaskDayRow({
 			<ColorDot color={slug} />
 			{/* Read-mostly surface: the title is the task's own URL, which opens
 			    the form over Today rather than an editor in the row
-			    (docs/adr/0079). */}
+			    (docs/adr/0091). */}
 			<Link
 				href={`/tasks/${task.id}`}
 				aria-label={`Open task "${task.title}" for editing`}

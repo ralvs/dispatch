@@ -10,7 +10,7 @@ import { viewKey } from "@/lib/store/keys";
 import { seedOf, stampRead } from "@/lib/store/server";
 
 /**
- * Everything a task opened by its own URL needs (docs/adr/0079), for the two
+ * Everything a task opened by its own URL needs (docs/adr/0091), for the two
  * routes that render it: the row itself, the form's option lists, and today.
  *
  * The row is read uncached, one query, like a note's body: it is the thing

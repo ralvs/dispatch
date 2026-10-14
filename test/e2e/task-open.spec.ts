@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { readLocalStack } from "../integration/stack";
 
 /**
- * A task opens where you are (#97, docs/adr/0079). A task link is the task's
+ * A task opens where you are (#97, docs/adr/0091). A task link is the task's
  * own URL, `/tasks/<id>`: followed inside the app it opens the form over the
  * page it was on; loaded directly it opens over the Tasks board. Either way the
  * dialog appears, whatever the task's place on the board.

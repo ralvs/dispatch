@@ -31,7 +31,7 @@ async function OpenTask({ params }: { params: Params }) {
 }
 
 /**
- * A task loaded by its own URL (docs/adr/0079): a refresh, a notification, a
+ * A task loaded by its own URL (docs/adr/0091): a refresh, a notification, a
  * link from outside. A link followed inside the app never lands here — the
  * `@modal/(.)tasks/[id]` route intercepts it and opens the dialog over the
  * page it was on. Here there is no such page, so the dialog opens over the

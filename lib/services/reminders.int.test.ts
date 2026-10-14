@@ -72,7 +72,7 @@ describe("runTaskReminders against the local database", () => {
 			body: "Due now, at 15:00.",
 			source_ref: task.id,
 			source_url: `/tasks/${task.id}`,
-			// Activity: the push is the delivery, the row lands read (ADR-0080).
+			// Activity: the push is the delivery, the row lands read (ADR-0092).
 			status: "read",
 		});
 		const marked = await sentState(task.id);

@@ -130,7 +130,7 @@ export function TaskRowItem({
 					    overflow-hidden clipping container that would clip the after:. */}
 					<span className="min-w-0">
 						{/* The task's own URL, which opens the form over this page, as on
-						    every other page (docs/adr/0079). */}
+						    every other page (docs/adr/0091). */}
 						<Link
 							href={`/tasks/${task.id}`}
 							className={titleClass}

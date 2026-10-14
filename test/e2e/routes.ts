@@ -8,7 +8,7 @@ const AUTHED = path.join(process.cwd(), "app", "(authed)");
  * covered without touching the suite. Route groups `(x)` drop out of the URL;
  * dynamic segments stay as `[id]` for the caller to fill with a seeded id.
  * Parallel-route slots `@x` are not routes of their own: `@modal` only ever
- * draws over one (docs/adr/0079).
+ * draws over one (docs/adr/0091).
  */
 export function authedRoutes(): string[] {
 	const routes: string[] = [];

@@ -12,7 +12,7 @@ beforeEach(() => {
 	router.replace.mockReset();
 });
 
-// The two ways a task fails to open (#97, docs/adr/0079): it never says
+// The two ways a task fails to open (#97, docs/adr/0091): it never says
 // "loading" for ever, and it never offers a retry that cannot help.
 describe("TaskEditorProblem", () => {
 	it("a failed read says so and retries", async () => {

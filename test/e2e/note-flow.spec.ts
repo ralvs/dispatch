@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { readLocalStack } from "../integration/stack";
 
 /**
- * The open note reads its row from the entity store (docs/adr/0079). An edit
+ * The open note reads its row from the entity store (docs/adr/0091). An edit
  * saved on the page is there when the note is opened again from /notes — the
  * router may replay an older render of the page, and the store's newer row
  * wins — and a filing survives a reload. Uploads are left out: they need R2.

@@ -16,7 +16,7 @@ export async function getCachedNotifications() {
 	return cachedRead(readers.getCachedNotifications, async () => {
 		const sb = createAdminClient();
 		// The exact unread count, not the list's: the list stops at 100 rows.
-		// Unread rows come first (ADR-0080), so a failure is never cut off.
+		// Unread rows come first (ADR-0092), so a failure is never cut off.
 		const [notifications, unread] = await Promise.all([
 			listLedger(sb, { limit: 100 }),
 			unreadCount(sb),

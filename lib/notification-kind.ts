@@ -1,4 +1,4 @@
-// What a ledger row asks of the owner (docs/adr/0080). The table has no
+// What a ledger row asks of the owner (docs/adr/0092). The table has no
 // severity column: `type` is the classifier, so the split is read from it.
 //
 //   alert     something failed and is waiting on the owner. Lands unread,

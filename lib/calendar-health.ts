@@ -1,6 +1,6 @@
 import { calendarDaysBetween, dateOfInstant, formatInstant } from "@/lib/dates";
 
-// Is each calendar feed current? (#96, docs/adr/0080). An empty day and a
+// Is each calendar feed current? (#96, docs/adr/0092). An empty day and a
 // calendar that stopped syncing look the same on Today; this tells them apart.
 //
 // Two feeds, each with a singleton sync-state row:

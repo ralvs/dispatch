@@ -25,7 +25,7 @@ export type TaskFilters = { status?: string; project?: string; domain?: string }
 
 /**
  * The Tasks board: `/tasks` itself, and the page behind a task loaded by its
- * own URL (`tasks/[id]`, docs/adr/0079).
+ * own URL (`tasks/[id]`, docs/adr/0091).
  */
 export async function TasksBody({ filters }: { filters: TaskFilters }) {
 	// The security boundary stays here (iron rule #2). The cached read below

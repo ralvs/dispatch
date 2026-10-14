@@ -5,7 +5,7 @@ import type { NoteListRow } from "@/lib/services/notes";
 import { useView, viewKey } from "@/lib/store";
 
 /**
- * The note this page opened, from the store (docs/adr/0079): its view is a
+ * The note this page opened, from the store (docs/adr/0091): its view is a
  * list of one, seeded by the page. A delete leaves the view at once; the last
  * row the store held stays on screen until the router has left the page.
  * Undefined: the note is gone.

@@ -30,7 +30,8 @@ rule and links. A tick does two writes in one Postgres function,
 was ticked.
 
 **The app computes the date; the database does the gated writes.** The next
-date comes from `lib/recurrence.ts` (`nextCompleteFields`), as before. The
+date comes from `nextCompleteFields`
+(`lib/task-interaction/apply-intent.ts`), as before. The
 functions take it as an argument. Each one is gated on `status = open` and on
 the due date the caller saw (ADR-0037), so a replay — a second tab, a stale
 render, a double click, an assistant's retry — finds the date moved and

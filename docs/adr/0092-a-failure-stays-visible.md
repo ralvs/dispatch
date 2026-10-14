@@ -1,5 +1,7 @@
 # A failure stays visible
 
+Renumbered from 0080 on 2026-10-14: the number was used twice.
+
 Date: 2026-10-06
 
 Every ledger row landed `unread`. By 4 October 2026 the list held 67 unread

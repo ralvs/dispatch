@@ -14,7 +14,7 @@ function at(pathname: string, page: string | null) {
 	return renderHook(() => usePagePathname()).result.current;
 }
 
-// The nav lights the page on screen, not a task open over it (docs/adr/0079).
+// The nav lights the page on screen, not a task open over it (docs/adr/0091).
 describe("usePagePathname", () => {
 	it("is the pathname when the page is the address", () => {
 		expect(at("/today", "today")).toBe("/today");

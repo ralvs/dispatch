@@ -3,7 +3,7 @@ import { Seed } from "@/lib/store/seed";
 import { readTaskToOpen } from "@/lib/task-interaction/open-task";
 
 /**
- * A task link followed inside the app (docs/adr/0079): the task form opens
+ * A task link followed inside the app (docs/adr/0091): the task form opens
  * over the page the link was on, and the address is the task's own,
  * `/tasks/<id>`. Back, Cancel, Save and Delete all return to that page.
  *

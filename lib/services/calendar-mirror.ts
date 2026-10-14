@@ -18,7 +18,7 @@ import type { SupabaseClient } from "@/lib/supabase/types";
 // Cancellation is a windowed set-difference on `caldav_uid`: neither source
 // has tombstones, so a row inside the window that the snapshot did not carry
 // is gone. A failed sync is announced once per outage (working → failed);
-// a success marks that feed's unread alerts read (docs/adr/0080).
+// a success marks that feed's unread alerts read (docs/adr/0092).
 // ─────────────────────────────────────────────────────────────────────────
 
 export type MirrorEvent = {

@@ -1,5 +1,7 @@
 # A task opens where you are
 
+Renumbered from 0079 on 2026-10-14: the number was used twice.
+
 Date: 2026-10-05
 
 A task's address was `/tasks?edit=<id>`. Every task link outside `/tasks` used

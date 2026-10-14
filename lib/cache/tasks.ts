@@ -55,7 +55,7 @@ async function readTaskBoard(sinceUtc: string) {
 }
 
 /**
- * What the task form offers, for a task opened by its own URL (docs/adr/0079):
+ * What the task form offers, for a task opened by its own URL (docs/adr/0091):
  * the domains, the projects and the @mention candidates. The board above
  * carries the same lists; this is them without the rows.
  */

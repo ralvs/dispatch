@@ -73,7 +73,7 @@ function AuthedShell({ children, modal }: { children: React.ReactNode; modal: Re
 				</main>
 				<CapturePalette />
 				<FindPalette />
-				{/* A task opened by its URL, over this page (docs/adr/0079).
+				{/* A task opened by its URL, over this page (docs/adr/0091).
 				    Empty unless `@modal/(.)tasks/[id]` matched. */}
 				{modal}
 				{/* Renders nothing until opened, so an empty fallback is the

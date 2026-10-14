@@ -44,7 +44,8 @@ origin) are the lineage here.
    no credentials, so browser clients can connect and the app's cookies never
    count on this origin.
 7. **Every write writes a ledger row.** A tool that changes a row records a
-   `notifications` row (`mcp.*`) with an undo payload, which also pushes
+   `notifications` row (`mcp.*`) with an `undo_payload` (what an undo would
+   need; nothing replays it yet), which also pushes
    (iron rule #6, ADR-0075), and busts tags through its `EXTERNAL_WRITES`
    entry.
 8. **The tool surface is small and grows by group.** Links first
@@ -77,8 +78,9 @@ origin) are the lineage here.
    the write calendar through the services of docs/adr/0082, which allow
    only a single event there; a refusal (work event, another calendar, a
    series, a change in iCloud since the last sync) answers with its reason.
-   The ledger keeps undo: the id for a create, the previous fields for an
-   update, the whole event for a delete.
+   The ledger row stores what an undo would need: the id for a create, the
+   previous fields for an update, the whole event for a delete. Nothing
+   replays it yet.
 
 ## Consequences
 
@@ -89,7 +91,9 @@ origin) are the lineage here.
   authorization path `/oauth/consent`, dynamic registration on, Site URL);
   `supabase/config.toml` covers only the local stack. See the README.
 - An assistant's changes show up in the ledger and as pushes, so the owner
-  sees what it did and can undo it.
+  sees what it did and can undo it by hand in the app.
 - A new tool group adds a file under `app/api/mcp/tools/` and an
   `EXTERNAL_WRITES` entry; `lib/invalidate.test.ts` scans every file under
   `app/api`, not only `route.ts`.
+
+Amended 2026-10-14: no code reads undo_payload yet; the owner undoes an assistant's change by hand.

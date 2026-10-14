@@ -31,7 +31,7 @@ import { titleOnlyCreate } from "./title-only";
  * The one surface a task is written on (docs/adr/0040, docs/adr/0043) — create
  * and edit are the same fields, the same footer, the same keyboard contract, so
  * they are the same component with two labels. Both entry points (the header's
- * `+ New task`, and a task's own URL `/tasks/<id>`, docs/adr/0079) open this.
+ * `+ New task`, and a task's own URL `/tasks/<id>`, docs/adr/0091) open this.
  *
  * Since ADR-0043 it is also the fast path. `/tasks` used to carry a standing
  * capture line whose only job was to run the natural-language parser without
@@ -123,7 +123,7 @@ export function TaskDialog({
 	const liveDomains = useLiveOptions("domain", domains, toDomainOption);
 	const liveProjects = useLiveOptions("project", projects, toProjectOption);
 	return (
-		// `sheet`: a phone gives the task form the whole screen (docs/adr/0079).
+		// `sheet`: a phone gives the task form the whole screen (docs/adr/0091).
 		<Dialog open={open} onClose={onClose} title={COPY[mode].title} size="lg" sheet>
 			{/* Mounted only while open (Dialog), so every open reseeds from
 			    `defaults` and starts with no errors. */}

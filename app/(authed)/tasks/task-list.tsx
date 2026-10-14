@@ -115,7 +115,7 @@ export function TaskList({
 	// Client state is the source of truth from here on; the URL just mirrors
 	// it so the current view stays shareable (history.replaceState, not a
 	// navigation — filtering is instant and shouldn't add history entries).
-	// Not while the address is a task's own (`/tasks/<id>`, docs/adr/0079): the
+	// Not while the address is a task's own (`/tasks/<id>`, docs/adr/0091): the
 	// board is the page behind that dialog, and the address belongs to it.
 	useEffect(() => {
 		if (window.location.pathname !== "/tasks") return;

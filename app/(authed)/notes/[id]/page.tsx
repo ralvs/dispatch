@@ -229,7 +229,7 @@ async function NoteBody({ params }: { params: Promise<{ id: string }> }) {
 	const [read, clock] = await Promise.all([stampRead(() => loadNote(parsedId.data)), readClock()]);
 	const note = read.data;
 	if (!note) notFound();
-	// The note is a view of one (docs/adr/0079): the editor and the strip read
+	// The note is a view of one (docs/adr/0091): the editor and the strip read
 	// it from the store, so /notes and this page move together. Stamped with
 	// its read, a replayed render loses to an edit made since in this tab.
 	const snapshot = seedOf(read, clock, {
