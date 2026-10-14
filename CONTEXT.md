@@ -74,14 +74,19 @@ resolved by hand later.
 
 ## next occurrence
 
-How a recurring task carries on. Completing a task with a `recurrence_rule`
-closes that row like any other (`status = done`, `completed_at` set) and
-creates a new open row for the next occurrence, which takes the rule with it
-(`completeTask` → `nextCompleteFields`, docs/adr/0059). So the day you ticked
-it keeps a done row, and the series lives on exactly one open row. The next
-date is anchored so an overdue repeat moves to the next future date, never
-into the past. The older **recurrence roll** — one row whose `due_date` moved
-forward — is retired.
+How a recurring task carries on. A recurring task is one permanent row that
+keeps its id. A tick saves a **done snapshot** — a copy with `status = done`,
+`completed_at` set, no rule, `due_date` = the cycle it fulfilled and
+`series_id` = the series row's id — and moves the row's `due_date` to the next
+cycle, both in one database function (`complete_recurring_task`). The app
+computes the next date (`nextCompleteFields`,
+`lib/task-interaction/apply-intent.ts`), anchored so an overdue repeat moves to
+the next future date, never into the past.
+
+Skip moves the row without a snapshot; un-ticking the latest snapshot moves
+the row back. The history of X is the done rows `where series_id = X`.
+ADR-0059's new row per tick is retired (docs/adr/0083), as is the older
+**recurrence roll**.
 
 ## notification ledger
 
