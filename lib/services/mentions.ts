@@ -98,9 +98,7 @@ export async function syncMentions(
 	const candidateIds = [...new Set(matches.map((m) => m.personId))];
 	let validIds = new Set<string>();
 	if (candidateIds.length > 0) {
-		const found = unwrap(
-			await sb.from("people").select("id").in("id", candidateIds),
-		) as unknown as Array<{ id: string }>;
+		const found = unwrap(await sb.from("people").select("id").in("id", candidateIds));
 		validIds = new Set(found.map((row) => row.id));
 	}
 
@@ -111,9 +109,7 @@ export async function syncMentions(
 		if (!desired.has(match.personId)) desired.set(match.personId, match.name);
 	}
 
-	const existing = unwrap(
-		await sb.from("mentions").select("id, person_id").eq(column, source.id),
-	) as unknown as Array<{ id: string; person_id: string }>;
+	const existing = unwrap(await sb.from("mentions").select("id, person_id").eq(column, source.id));
 
 	const existingByPerson = new Map(existing.map((row) => [row.person_id, row.id]));
 
@@ -158,12 +154,15 @@ export async function listMentionsForSources(
 
 	const column = sourceColumn(type);
 	const data = unwrap(
-		await sb.from("mentions").select(`${column}, person:people(${PEOPLE_SELECT})`).in(column, ids),
-	) as unknown as Array<Record<string, unknown>>;
+		await sb
+			.from("mentions")
+			.select(`task_id, note_id, person:people(${PEOPLE_SELECT})`)
+			.in(column, ids),
+	);
 
 	for (const row of data) {
-		const sourceId = row[column] as string | null;
-		const person = row.person as PersonRow | null;
+		const sourceId = row[column];
+		const person = row.person;
 		if (!sourceId || !person) continue;
 		const list = result.get(sourceId);
 		if (list) {
@@ -190,7 +189,7 @@ export async function listMentionsForPerson(
 			.select("source_type, task:tasks(id, title, status), note:notes(id, title, body)")
 			.eq("person_id", personId)
 			.order("created_at", { ascending: false }),
-	) as unknown as Array<{ source_type: "task" | "note"; task: unknown; note: unknown }>;
+	);
 
 	const tasks = data.filter((row) => row.source_type === "task" && row.task).map((row) => row.task);
 	const notes = data.filter((row) => row.source_type === "note" && row.note).map((row) => row.note);

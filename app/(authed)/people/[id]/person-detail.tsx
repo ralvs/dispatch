@@ -18,7 +18,7 @@ import {
 } from "@/components/ui";
 import { formatInstant } from "@/lib/dates";
 import { displayTitle } from "@/lib/note-display";
-import type { PersonFactRow, PersonInteractionRow, PersonRow } from "@/lib/services/people";
+import type { PersonFactRow, PersonInteractionRow } from "@/lib/services/people";
 import { useInlineEdit, useProvisionalIds, useView, useWrites, viewKey } from "@/lib/store";
 import {
 	FACT_TYPES,
