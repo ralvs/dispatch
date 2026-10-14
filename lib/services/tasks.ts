@@ -1,4 +1,5 @@
 import "server-only";
+import type { Database } from "@/lib/database";
 import { dayWindowUtc, nowUtc } from "@/lib/dates";
 import { escapeLike } from "@/lib/like";
 import { notQuietFilter } from "@/lib/quiet";
@@ -206,7 +207,7 @@ export async function createTask(
 		domain_id?: string | null;
 		project_id?: string | null;
 		recurrence_rule?: string | null;
-		source?: string;
+		source?: Database["public"]["Tables"]["tasks"]["Row"]["source"];
 		reminder_offsets?: number[];
 		top3_for_date?: string | null;
 	},

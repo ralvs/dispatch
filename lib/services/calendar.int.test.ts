@@ -10,6 +10,7 @@ vi.mock("@/lib/env", async (importOriginal) => {
 	return { ...actual, env: () => ({ ...actual.env(), ICLOUD_CALENDAR_NAME: "Renan" }) };
 });
 
+import type { CalendarEventSource } from "@/lib/schemas/calendar";
 import {
 	createEventHere,
 	deleteEvent,
@@ -68,7 +69,7 @@ async function insertEvent(row: {
 	caldav_uid: string;
 	start_at: string;
 	end_at: string;
-	source?: string;
+	source?: CalendarEventSource;
 	caldav_etag?: string;
 	caldav_href?: string;
 	calendar_name?: string;
@@ -532,7 +533,11 @@ const RENAN_ICS = [
 const HREF = "https://cal/renan/r-1.ics";
 
 async function insertOnRenan(
-	overrides: { source?: string; calendar_name?: string; recurring?: boolean | null } = {},
+	overrides: {
+		source?: CalendarEventSource;
+		calendar_name?: string;
+		recurring?: boolean | null;
+	} = {},
 ) {
 	return insertEvent({
 		caldav_uid: "r-1",
@@ -617,7 +622,7 @@ describe("updateEvent against the local database", () => {
 	});
 
 	it.each([
-		["a work event", { source: "google" }],
+		["a work event", { source: "google" as const }],
 		["an event on another calendar", { calendar_name: "Nivers" }],
 		["a series", { recurring: true }],
 	])("refuses %s without reaching iCloud", async (_label, overrides) => {
@@ -677,7 +682,7 @@ describe("deleteEvent against the local database", () => {
 	});
 
 	it.each([
-		["a work event", { source: "google" }],
+		["a work event", { source: "google" as const }],
 		["an event on another calendar", { calendar_name: "Nivers" }],
 		["a series", { recurring: true }],
 	])("refuses %s without reaching iCloud", async (_label, overrides) => {

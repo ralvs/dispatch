@@ -1,5 +1,6 @@
 import "server-only";
 import type { z } from "zod";
+import type { Database } from "@/lib/database";
 import type { MentionCandidate } from "@/lib/mentions";
 import {
 	type CreatePersonFactSchema,
@@ -23,7 +24,11 @@ export type CreatePersonInput = z.infer<typeof CreatePersonSchema>;
 
 export async function listPeople(
 	sb: SupabaseClient,
-	filters: { relationshipType?: string } = {},
+	filters: {
+		relationshipType?: NonNullable<
+			Database["public"]["Tables"]["people"]["Row"]["relationship_type"]
+		>;
+	} = {},
 ): Promise<PersonRow[]> {
 	let q = sb.from("people").select(PEOPLE_SELECT).order("name", { ascending: true });
 	if (filters.relationshipType) q = q.eq("relationship_type", filters.relationshipType);

@@ -5,7 +5,7 @@ vi.mock("@/lib/invalidate", async (original) => ({
 	afterExternalMutation: vi.fn(),
 }));
 
-import type { BridgeEvent } from "@/lib/schemas/calendar";
+import type { BridgeEvent, CalendarEventSource } from "@/lib/schemas/calendar";
 import { syncBridgeEvents } from "@/lib/services/calendar-bridge";
 import { readCalendarSyncStates } from "@/lib/services/calendar-mirror";
 import { serviceClient } from "@/test/integration/clients";
@@ -36,7 +36,7 @@ async function sync(events: BridgeEvent[], window = WINDOW) {
 	return syncBridgeEvents(serviceClient(), { events, ...window });
 }
 
-async function rows(source = "google") {
+async function rows(source: CalendarEventSource = "google") {
 	const { data, error } = await serviceClient()
 		.from("calendar_events")
 		.select("caldav_uid, calendar_name, title, start_at, source")

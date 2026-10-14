@@ -4,7 +4,32 @@
 import type { UnstableGetResult } from "@supabase/postgrest-js";
 import type { z } from "zod";
 import type { Database as Generated } from "@/lib/database.types";
+import type { CalendarEventSourceSchema } from "@/lib/schemas/calendar";
+import type {
+	CapturedDataSchema,
+	CaptureSourceSchema,
+	DisplayHintSchema,
+} from "@/lib/schemas/captured";
 import type { FailurePatternSchema } from "@/lib/schemas/domain";
+import type { JournalEntrySourceSchema } from "@/lib/schemas/journal";
+import type { LinkStatusSchema } from "@/lib/schemas/link";
+import type { MentionSourceTypeSchema } from "@/lib/schemas/mention";
+import type { Attachment, NoteSourceTypeSchema } from "@/lib/schemas/note";
+import type { NoteLinkKindSchema, NoteLinkTargetTypeSchema } from "@/lib/schemas/note-link";
+import type { NotificationStatusSchema } from "@/lib/schemas/notification";
+import type {
+	PersonFactTypeSchema,
+	PersonInteractionTypeSchema,
+	RelationshipTypeSchema,
+} from "@/lib/schemas/person";
+import type { ProjectStatusSchema } from "@/lib/schemas/project";
+import type {
+	AnnotationContextSchema,
+	DbAddedVia,
+	QuoteSourceTypeSchema,
+} from "@/lib/schemas/quote";
+import type { TimeOfDayBucketSchema } from "@/lib/schemas/routine";
+import type { TaskSourceSchema, TaskStatusSchema } from "@/lib/schemas/task";
 
 type GenPublic = Generated["public"];
 type GenTables = GenPublic["Tables"];
@@ -47,11 +72,68 @@ export type NullableArgs<
 		: GenFunctions[F]["Returns"];
 };
 
-type FailurePattern = z.infer<typeof FailurePatternSchema>;
+type Infer<S extends z.ZodType> = z.infer<S>;
 
-type Tables = Omit<GenTables, "stewardship_domains"> & {
-	stewardship_domains: Narrow<"stewardship_domains", { failure_patterns: FailurePattern[] }>;
+type Overrides = {
+	calendar_events: Narrow<
+		"calendar_events",
+		{ source: Infer<typeof CalendarEventSourceSchema>; attendees: string[] }
+	>;
+	captured_data: Narrow<
+		"captured_data",
+		{
+			source: Infer<typeof CaptureSourceSchema>;
+			display_hint: Infer<typeof DisplayHintSchema>;
+			processed_status: Infer<typeof CapturedDataSchema>["processed_status"];
+		}
+	>;
+	journal_entries: Narrow<"journal_entries", { source: Infer<typeof JournalEntrySourceSchema> }>;
+	ingest_links: Narrow<"ingest_links", { status: Infer<typeof LinkStatusSchema> }>;
+	mentions: Narrow<"mentions", { source_type: Infer<typeof MentionSourceTypeSchema> }>;
+	note_links: Narrow<
+		"note_links",
+		{
+			target_type: Infer<typeof NoteLinkTargetTypeSchema>;
+			kind: Infer<typeof NoteLinkKindSchema>;
+		}
+	>;
+	notes: Narrow<
+		"notes",
+		{ source_type: Infer<typeof NoteSourceTypeSchema>; attachments: Attachment[] }
+	>;
+	notifications: Narrow<"notifications", { status: Infer<typeof NotificationStatusSchema> }>;
+	people: Narrow<"people", { relationship_type: Infer<typeof RelationshipTypeSchema> | null }>;
+	person_facts: Narrow<"person_facts", { fact_type: Infer<typeof PersonFactTypeSchema> }>;
+	person_interactions: Narrow<
+		"person_interactions",
+		{ interaction_type: Infer<typeof PersonInteractionTypeSchema> }
+	>;
+	projects: Narrow<"projects", { status: Infer<typeof ProjectStatusSchema> }>;
+	// The Web Push keys `lib/services/push.ts` stores (its `PushKeys`).
+	push_subscriptions: Narrow<"push_subscriptions", { keys: { p256dh: string; auth: string } }>;
+	quote_annotations: Narrow<
+		"quote_annotations",
+		{ context: Infer<typeof AnnotationContextSchema> | null }
+	>;
+	quotes: Narrow<
+		"quotes",
+		{
+			source_type: Infer<typeof QuoteSourceTypeSchema> | null;
+			added_via: DbAddedVia;
+		}
+	>;
+	routines: Narrow<"routines", { time_of_day: Infer<typeof TimeOfDayBucketSchema> }>;
+	stewardship_domains: Narrow<
+		"stewardship_domains",
+		{ failure_patterns: Infer<typeof FailurePatternSchema>[] }
+	>;
+	tasks: Narrow<
+		"tasks",
+		{ status: Infer<typeof TaskStatusSchema>; source: Infer<typeof TaskSourceSchema> }
+	>;
 };
+
+type Tables = Omit<GenTables, keyof Overrides> & Overrides;
 
 type Functions = Omit<
 	GenFunctions,

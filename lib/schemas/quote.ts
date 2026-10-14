@@ -39,6 +39,8 @@ export const QuoteSchema = z.object({
 // Source types and added_via values that the DB CHECK constraint accepts.
 const DB_SOURCE_TYPES = ["book", "article", "podcast", "video", "conversation", "other"] as const;
 const DB_ADDED_VIA = ["voice", "readwise_import", "manual", "journal_extraction"] as const;
+/** The values the `quotes.added_via` CHECK constraint accepts today. */
+export type DbAddedVia = (typeof DB_ADDED_VIA)[number];
 
 export const CreateQuoteSchema = z.object({
 	text: z.string({ error: "Write the quote." }).min(1, "Write the quote."),
