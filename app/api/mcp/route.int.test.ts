@@ -166,13 +166,12 @@ describe("POST /api/mcp", () => {
 		expect(link?.status).toBe("read");
 		const { data: rows } = await sb
 			.from("notifications")
-			.select("type, source_ref, undo_payload")
+			.select("type, source_ref")
 			.eq("type", "mcp.link.read");
 		expect(rows).toEqual([
 			{
 				type: "mcp.link.read",
 				source_ref: unread.id,
-				undo_payload: { table: "ingest_links", id: unread.id, prev: { status: "unread" } },
 			},
 		]);
 	});

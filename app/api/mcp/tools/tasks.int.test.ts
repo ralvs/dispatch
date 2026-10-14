@@ -76,13 +76,9 @@ async function seed() {
 async function ledger(type: string) {
 	const { data } = await serviceClient()
 		.from("notifications")
-		.select("type, source_ref, undo_payload")
+		.select("type, source_ref")
 		.eq("type", type);
-	// undo_payload is a Json column; these tools always write { prev: {...} }.
-	return (data ?? []).map((r) => ({
-		...r,
-		undo_payload: r.undo_payload as { prev: Record<string, unknown> },
-	}));
+	return data ?? [];
 }
 
 const titles = (rows: { title: string }[]) => rows.map((r) => r.title).sort();
@@ -125,7 +121,7 @@ describe("MCP task tools", () => {
 			urls: ["https://example.com/paint"],
 		});
 		expect(await ledger("mcp.task.created")).toEqual([
-			{ type: "mcp.task.created", source_ref: task.id, undo_payload: null },
+			{ type: "mcp.task.created", source_ref: task.id },
 		]);
 		expect(afterExternalMutation).toHaveBeenCalledWith(...EXTERNAL_WRITES.mcpTasks);
 
@@ -170,7 +166,7 @@ describe("MCP task tools", () => {
 		expect(await ledger("mcp.task.updated")).toHaveLength(2);
 	});
 
-	it("update_task replace keeps the previous values in the undo payload", async () => {
+	it("update_task replaces the fields and records it", async () => {
 		const { sb } = await seed();
 		const t = await createTask(sb, { title: "Old", notes: "old notes", due_date: "2026-01-02" });
 		const result = await call("update_task", {
@@ -184,11 +180,6 @@ describe("MCP task tools", () => {
 			{
 				type: "mcp.task.updated",
 				source_ref: t.id,
-				undo_payload: {
-					table: "tasks",
-					id: t.id,
-					prev: { title: "Old", notes: "old notes", due_date: "2026-01-02" },
-				},
 			},
 		]);
 	});
@@ -206,7 +197,7 @@ describe("MCP task tools", () => {
 		expect(result.json()).toMatchObject({ project_id: null, project: null });
 	});
 
-	it("update_task appends and retitles in one call, syncs mentions, and snapshots the old note", async () => {
+	it("update_task appends and retitles in one call, syncs mentions, and records it", async () => {
 		const { sb } = await seed();
 		const ana = await createPerson(sb, { name: "Ana" });
 		const t = await createTask(sb, { title: "Old", notes: "before" });
@@ -222,8 +213,7 @@ describe("MCP task tools", () => {
 			.select("person_id")
 			.eq("task_id", t.id);
 		expect(mentions).toEqual([{ person_id: ana.id }]);
-		const [row] = await ledger("mcp.task.updated");
-		expect(row.undo_payload.prev).toEqual({ title: "Old", notes: "before" });
+		expect(await ledger("mcp.task.updated")).toHaveLength(1);
 	});
 
 	it("update_task append stops at exactly 5000 characters", async () => {
@@ -265,7 +255,7 @@ describe("MCP task tools", () => {
 			done: null,
 		});
 		expect(await ledger("mcp.task.completed")).toEqual([
-			{ type: "mcp.task.completed", source_ref: s.late.id, undo_payload: null },
+			{ type: "mcp.task.completed", source_ref: s.late.id },
 		]);
 		expect(afterExternalMutation).toHaveBeenCalledWith(...EXTERNAL_WRITES.mcpTasks);
 
@@ -294,7 +284,7 @@ describe("MCP task tools", () => {
 			series_id: daily.id,
 		});
 		expect(await ledger("mcp.task.completed")).toEqual([
-			{ type: "mcp.task.completed", source_ref: result.done.id, undo_payload: null },
+			{ type: "mcp.task.completed", source_ref: result.done.id },
 		]);
 
 		// A retry with the date it read first finds the task moved on: no second cycle.
@@ -326,11 +316,6 @@ describe("MCP task tools", () => {
 			{
 				type: "mcp.task.skipped",
 				source_ref: daily.id,
-				undo_payload: {
-					table: "tasks",
-					id: daily.id,
-					prev: { due_date: s.today, due_time: null, recurrence_day: null, top3_for_date: null },
-				},
 			},
 		]);
 

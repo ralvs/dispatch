@@ -56,7 +56,6 @@ export function notification(
 		source_ref: null,
 		source_url: null,
 		status: "unread",
-		undo_payload: null,
 		created_at: "2026-07-15T11:00:00.000Z",
 		...partial,
 	};

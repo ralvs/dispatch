@@ -156,7 +156,6 @@ describe("notifications against the local database", () => {
 			body: null,
 			source_ref: null,
 			source_url: null,
-			undo_payload: null,
 			status: "unread",
 		});
 	});

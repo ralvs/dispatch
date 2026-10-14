@@ -51,30 +51,13 @@ function toDetail(row: TaskRow) {
 	};
 }
 
-/** Iron rule #6: the assistant's edit lands in the ledger with what undo needs. */
-async function recordUpdate(
-	sb: SupabaseClient,
-	id: string,
-	before: TaskRow,
-	after: TaskRow,
-): Promise<void> {
-	const prev: Record<string, string | null> = {};
-	for (const key of [
-		"title",
-		"notes",
-		"due_date",
-		"due_time",
-		"project_id",
-		"domain_id",
-	] as const) {
-		if (before[key] !== after[key]) prev[key] = before[key];
-	}
+/** Iron rule #6: the assistant's edit lands in the ledger, and so pushes. */
+async function recordUpdate(sb: SupabaseClient, id: string, after: TaskRow): Promise<void> {
 	await recordNotification(sb, {
 		type: "mcp.task.updated",
 		title: "Assistant updated a task",
 		body: after.title,
 		source_ref: id,
-		undo_payload: { table: "tasks", id, prev },
 	});
 	afterExternalMutation(...EXTERNAL_WRITES.mcpTasks);
 }
@@ -227,7 +210,6 @@ export function registerTaskTools(server: McpServer, sb: SupabaseClient): void {
 				throw new ToolError("Nothing to change: send at least one field.");
 			}
 
-			// The previous values are what the ledger's undo replays.
 			const before = await mustGetTask(sb, id);
 			let appended = false;
 			let after: TaskRow = before;
@@ -235,8 +217,7 @@ export function registerTaskTools(server: McpServer, sb: SupabaseClient): void {
 			try {
 				if (note_append !== undefined) {
 					const line = dated ? `${await todayForRequest(sb)} — ${note_append}` : note_append;
-					// One UPDATE, so two appends at once both survive, and it hands back
-					// the notes it replaced, so the undo snapshot cannot race (the migration).
+					// One UPDATE, so two appends at once both survive (the migration).
 					const { data, error } = await sb.rpc("task_notes_append", {
 						p_task_id: id,
 						p_line: line,
@@ -252,7 +233,6 @@ export function registerTaskTools(server: McpServer, sb: SupabaseClient): void {
 						throw new ToolError(`Note would exceed ${TASK_NOTES_MAX} characters.`);
 					}
 					appended = true;
-					before.notes = row.old_notes;
 				}
 
 				// updateTask re-derives mentions when the title or notes move; an
@@ -267,12 +247,12 @@ export function registerTaskTools(server: McpServer, sb: SupabaseClient): void {
 				// the owner a row for the append, then the error goes on.
 				if (appended) {
 					after = (await getTask(sb, id)) ?? after;
-					await recordUpdate(sb, id, before, after);
+					await recordUpdate(sb, id, after);
 				}
 				throw err;
 			}
 
-			await recordUpdate(sb, id, before, after);
+			await recordUpdate(sb, id, after);
 			return toDetail(after);
 		},
 	);
@@ -338,16 +318,6 @@ export function registerTaskTools(server: McpServer, sb: SupabaseClient): void {
 				title: "Assistant skipped a task's cycle",
 				body: after.title,
 				source_ref: id,
-				undo_payload: {
-					table: "tasks",
-					id,
-					prev: {
-						due_date: before.due_date,
-						due_time: before.due_time,
-						recurrence_day: before.recurrence_day,
-						top3_for_date: before.top3_for_date,
-					},
-				},
 			});
 			afterExternalMutation(...EXTERNAL_WRITES.mcpTasks);
 			return toDetail(after);
