@@ -117,7 +117,7 @@ export async function listEventsOn(
 			.gt("end_at", startUtc)
 			.order("start_at", { ascending: true }),
 	);
-	const rows = (data ?? []) as unknown as CalendarEventRow[];
+	const rows = data ?? [];
 	return rows.filter((event) => eventFallsOnDay(event, dateIso, tz));
 }
 
@@ -141,12 +141,12 @@ export async function listEventsBetween(
 	const { endUtc } = dayWindowUtc(shiftDay(lastIso, 1), tz);
 	let query = sb
 		.from("calendar_events")
-		.select(`${EVENT_SELECT}, recurring`)
+		.select(`${EVENT_SELECT}, recurring` as const)
 		.lt("start_at", endUtc)
 		.gt("end_at", startUtc);
 	if (calendarName !== undefined) query = query.ilike("calendar_name", escapeLike(calendarName));
 	const data = unwrap(await query.order("start_at", { ascending: true }));
-	const rows = (data ?? []) as unknown as CalendarEventWithKind[];
+	const rows = data ?? [];
 	return rows.filter((event) => eventFallsOnDays(event, firstIso, lastIso, tz));
 }
 
@@ -157,18 +157,18 @@ export async function getEventWithKind(
 	const data = unwrap(
 		await sb
 			.from("calendar_events")
-			.select(`${EVENT_SELECT}, recurring`)
+			.select(`${EVENT_SELECT}, recurring` as const)
 			.eq("id", id)
 			.maybeSingle(),
 	);
-	return (data as unknown as CalendarEventWithKind | null) ?? null;
+	return data ?? null;
 }
 
 export async function getEvent(sb: SupabaseClient, id: string): Promise<CalendarEventRow | null> {
 	const data = unwrap(
 		await sb.from("calendar_events").select(EVENT_SELECT).eq("id", id).maybeSingle(),
 	);
-	return (data as unknown as CalendarEventRow | null) ?? null;
+	return data ?? null;
 }
 
 export type EventSearchResult = {
@@ -191,7 +191,7 @@ export async function searchEventsByTitle(
 			.order("start_at", { ascending: false })
 			.limit(limit),
 	);
-	return (data ?? []) as unknown as EventSearchResult[];
+	return data ?? [];
 }
 
 export type CreateEventHereInput = {
@@ -250,7 +250,7 @@ export async function createEventHere(
 			.select(EVENT_SELECT)
 			.single(),
 	);
-	return data as unknown as CalendarEventRow;
+	return data;
 }
 
 /** What `updateEvent` may change. `null` clears description or location. */
@@ -270,10 +270,10 @@ async function loadEditable(
 	const row = unwrap(
 		await sb
 			.from("calendar_events")
-			.select(`${EVENT_SELECT}, caldav_href, caldav_etag, recurring`)
+			.select(`${EVENT_SELECT}, caldav_href, caldav_etag, recurring` as const)
 			.eq("id", id)
 			.maybeSingle(),
-	) as unknown as EditableRow | null;
+	);
 	if (!row) throw new ServiceError("No event with that id.", "NOT_FOUND");
 	const reason = whyNotEditable(row, env().ICLOUD_CALENDAR_NAME);
 	if (reason) throw new ServiceError(reason, "NOT_EDITABLE");
@@ -356,7 +356,7 @@ export async function updateEvent(
 			.select(EVENT_SELECT)
 			.single(),
 	);
-	return data as unknown as CalendarEventRow;
+	return data;
 }
 
 /**
