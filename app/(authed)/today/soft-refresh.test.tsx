@@ -20,7 +20,7 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 function mount() {
-	render(
+	return render(
 		<StoreProvider store={store}>
 			<SoftRefresh todayIso={TODAY} />
 		</StoreProvider>,
@@ -58,5 +58,12 @@ describe("SoftRefresh", () => {
 		expect(router.refresh).not.toHaveBeenCalled();
 		expect(store.getState().clock).toBeNull();
 		error.mockRestore();
+	});
+
+	it("marks <html> while the tick is armed, so a driven clock can wait for it", () => {
+		const { unmount } = mount();
+		expect(document.documentElement.dataset.todayPull).toBe("armed");
+		unmount();
+		expect(document.documentElement.dataset.todayPull).toBeUndefined();
 	});
 });

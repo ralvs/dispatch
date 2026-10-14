@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import { readLocalStack } from "../integration/stack";
 
@@ -15,6 +15,15 @@ const sb = createClient(stack.apiUrl, stack.secretKey, {
 });
 const title = `E2E pulled event ${Date.now()}`;
 
+/**
+ * Wait until SoftRefresh has armed its tick and its listener. The heading is
+ * server HTML and shows before hydration; a clock driven before the effect runs
+ * moves time past a tick that is not set yet, and the pull never comes.
+ */
+async function armed(page: Page) {
+	await expect(page.locator("html[data-today-pull='armed']")).toBeAttached();
+}
+
 test.afterAll(async () => {
 	await sb.from("calendar_events").delete().eq("title", title);
 });
@@ -25,6 +34,7 @@ test("an event synced while Today is open shows after the pull, without a page r
 	await page.clock.install();
 	await page.goto("/today");
 	await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+	await armed(page);
 	await expect(page.getByText(title)).toHaveCount(0);
 
 	// What the caldav cron does: a row, and nothing else.
@@ -64,6 +74,7 @@ test("coming back to a tab hidden past five minutes pulls, without a page render
 	await page.clock.install();
 	await page.goto("/today");
 	await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+	await armed(page);
 
 	const setVisibility = (state: "hidden" | "visible") =>
 		page.evaluate((s) => {

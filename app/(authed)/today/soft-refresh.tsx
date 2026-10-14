@@ -21,6 +21,10 @@ const DEFAULT_MS = 5 * 60 * 1000;
  *
  * Skips ticks while the tab is hidden. A failed pull is invisible: the screen
  * keeps what it had, and the next tick tries again.
+ *
+ * `<html data-today-pull>` says the tick and the listener are armed. The first
+ * paint is server HTML, so a visible page does not mean this effect has run; the
+ * end-to-end test waits for the mark before it drives the clock.
  */
 export function SoftRefresh({
 	todayIso,
@@ -66,9 +70,11 @@ export function SoftRefresh({
 
 		const id = window.setInterval(maybePull, intervalMs);
 		document.addEventListener("visibilitychange", maybePull);
+		document.documentElement.dataset.todayPull = "armed";
 		return () => {
 			window.clearInterval(id);
 			document.removeEventListener("visibilitychange", maybePull);
+			delete document.documentElement.dataset.todayPull;
 		};
 	}, [router, seed, todayIso, intervalMs]);
 
