@@ -20,7 +20,7 @@ vi.mock("@/app/(authed)/notifications/actions", () => ({
 	markNotificationAction: vi.fn(),
 	markAllNotificationsAction: vi.fn(),
 }));
-vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn() }));
+vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 
 type Result = ActionResult<StoreWrite<NotificationRow>>;
 

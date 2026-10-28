@@ -15,7 +15,7 @@ import { getMeasure } from "@/test/component/measure";
 import { LinkList } from "./link-list";
 
 vi.mock("@/app/(authed)/links/actions", () => ({ setLinkStatusAction: vi.fn() }));
-vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn() }));
+vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 
 type Result = ActionResult<StoreWrite<LinkRow>>;
 

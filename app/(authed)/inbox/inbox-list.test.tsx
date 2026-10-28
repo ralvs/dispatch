@@ -17,7 +17,7 @@ vi.mock("@/lib/actions/tasks", () => ({
 	assignDomainAction: vi.fn(),
 	deleteTaskAction: vi.fn(),
 }));
-vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn() }));
+vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 
 type Result = ActionResult<StoreWrite<TaskRow>>;
 

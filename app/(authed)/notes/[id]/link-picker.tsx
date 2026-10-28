@@ -80,6 +80,7 @@ export function LinkPicker({ noteId }: { noteId: string }) {
 			const ok = await runAction(
 				() => attachLinkAction(noteId, targetType, targetId),
 				"Couldn't link that.",
+				"Linked",
 			);
 			if (ok) {
 				close();

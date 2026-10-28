@@ -17,7 +17,7 @@ vi.mock("@/app/(authed)/projects/[id]/actions", () => ({
 	updateProjectAction: vi.fn(),
 }));
 vi.mock("@/lib/actions/tasks", () => ({ createTaskAction: vi.fn() }));
-vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn() }));
+vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 
 const roof = project({ id: "roof", name: "Roof" });
 const domains = [domainItem({ id: "domain-1", name: "Home" })] as unknown as DomainRow[];

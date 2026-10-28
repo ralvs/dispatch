@@ -28,7 +28,7 @@ vi.mock("@/app/(authed)/notes/actions", () => ({
 	deleteNoteAction: vi.fn(),
 	removeAttachmentAction: vi.fn(),
 }));
-vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn() }));
+vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 
 const ID = "n1";
 const opened = note({ id: ID, title: "Plan", body: "Some body", needs_review: true });

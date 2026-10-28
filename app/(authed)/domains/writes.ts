@@ -77,6 +77,7 @@ export const domainWrites = {
 			{ type: "patch", id, patch: { last_shipped_at: nowUtc() } },
 			() => markDomainShippedAction(id),
 			UPDATE_ERROR,
+			"Marked shipped",
 		),
 	archive: (id: string): Write<"domain"> =>
 		write(
@@ -84,6 +85,7 @@ export const domainWrites = {
 			{ type: "patch", id, patch: { active: false, touch: null } },
 			() => archiveDomainAction(id),
 			UPDATE_ERROR,
+			"Domain archived",
 		),
 	reactivate: (id: string): Write<"domain"> =>
 		write(
@@ -91,5 +93,6 @@ export const domainWrites = {
 			{ type: "patch", id, patch: { active: true } },
 			() => reactivateDomainAction(id),
 			UPDATE_ERROR,
+			"Domain reactivated",
 		),
 };

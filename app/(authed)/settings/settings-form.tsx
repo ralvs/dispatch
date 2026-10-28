@@ -9,8 +9,8 @@ import type { ActionResult } from "@/lib/action-result";
  * note under them. The timezone and reminder forms used to be two copies of it
  * that differed only in their fields and strings.
  *
- * Success is silent — the saved value stays on screen. A rejected field shows
- * its message under the field (#23); an unexpected failure is a toast.
+ * Success is a toast, and the saved value stays on screen. A rejected field
+ * shows its message under the field (#23); an unexpected failure is a toast.
  */
 export function SettingsForm({
 	action,
@@ -26,7 +26,10 @@ export function SettingsForm({
 	children: ReactNode;
 }) {
 	const formRef = useRef<HTMLFormElement>(null);
-	const [state, formAction] = useResultAction(action, { errorMessage });
+	const [state, formAction] = useResultAction(action, {
+		errorMessage,
+		successMessage: "Settings saved",
+	});
 
 	useEffect(() => {
 		if (state.fieldErrors) formRef.current?.querySelector<HTMLElement>(FIRST_INVALID)?.focus();

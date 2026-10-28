@@ -14,7 +14,7 @@ import type { StoreWrite } from "@/lib/store/types";
 import { RoutinesCard } from "./routines-card";
 
 vi.mock("@/lib/actions/routines", () => ({ toggleCompletionAction: vi.fn() }));
-vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn() }));
+vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 
 type Result = ActionResult<StoreWrite<RoutineWithHistory>>;
 

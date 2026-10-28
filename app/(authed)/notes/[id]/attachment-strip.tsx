@@ -21,7 +21,7 @@ import {
 	formatBytes,
 	isAllowedContentType,
 } from "@/lib/attachments";
-import { toastError } from "@/lib/client/toast";
+import { toastError, toastSuccess } from "@/lib/client/toast";
 import type { Attachment } from "@/lib/schemas/note";
 import { useWrites } from "@/lib/store";
 import { noteWrites } from "../writes";
@@ -105,8 +105,13 @@ export function AttachmentStrip({
 					const write = body.write;
 					// The route sends the row whenever a file landed; without it the
 					// strip cannot show the file, so say so rather than look unchanged.
-					if (write) adopt("note", { type: "touch", id: noteId }, write);
-					else toastError("The file is attached. Reload to see it.");
+					if (write) {
+						adopt("note", { type: "touch", id: noteId }, write);
+						// One toast shows at a time: a refusal above keeps the screen.
+						if (!body.rejected?.length) {
+							toastSuccess(body.attached.length === 1 ? "File attached" : "Files attached");
+						}
+					} else toastError("The file is attached. Reload to see it.");
 				}
 			} catch {
 				toastError("Couldn't attach the file.");

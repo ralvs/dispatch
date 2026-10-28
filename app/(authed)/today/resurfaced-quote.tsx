@@ -45,14 +45,18 @@ export function ResurfacedQuote(props: Shown) {
 		latest.current = fromServer;
 	}, [fromServer]);
 
-	function act(action: () => Promise<ActionResult<Shown>>, message: string) {
+	function act(action: () => Promise<ActionResult<Shown>>, message: string, success: string) {
 		const started = fromServer;
 		startTransition(async () => {
-			await runAction(async () => {
-				const result = await action();
-				if (!result.ok) throw new Error(result.formError ?? message);
-				if (latest.current === started) setShown(result.data);
-			}, message);
+			await runAction(
+				async () => {
+					const result = await action();
+					if (!result.ok) throw new Error(result.formError ?? message);
+					if (latest.current === started) setShown(result.data);
+				},
+				message,
+				success,
+			);
 		});
 	}
 
@@ -88,7 +92,11 @@ export function ResurfacedQuote(props: Shown) {
 								type="button"
 								disabled={pending}
 								onClick={() =>
-									act(() => skipResurfacedQuoteAction(quote.id), "Couldn't skip quote.")
+									act(
+										() => skipResurfacedQuoteAction(quote.id),
+										"Couldn't skip quote.",
+										"Quote skipped",
+									)
 								}
 								className="text-ink-3 hover:text-ink-2 active:opacity-70 disabled:opacity-50"
 							>
@@ -100,7 +108,9 @@ export function ResurfacedQuote(props: Shown) {
 						<button
 							type="button"
 							disabled={pending}
-							onClick={() => act(() => resetResurfacedAction(), "Couldn't reset skips.")}
+							onClick={() =>
+								act(() => resetResurfacedAction(), "Couldn't reset skips.", "Skips reset")
+							}
 							className="text-ink-4 hover:text-ink-2 active:opacity-70 disabled:opacity-50"
 						>
 							Reset

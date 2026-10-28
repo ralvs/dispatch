@@ -1,16 +1,16 @@
 import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { toastError } from "@/lib/client/toast";
+import { toastError, toastSuccess } from "@/lib/client/toast";
 import { createDispatchStore } from "@/lib/store/create-store";
 import { viewKey } from "@/lib/store/keys";
 import { StoreProvider } from "@/lib/store/provider";
 import { useWrites } from "@/lib/store/run";
 import { NOW, snapshot, T1, T2, TODAY, task } from "@/lib/store/test-fixtures";
-import { type Write, write } from "@/lib/store/write";
+import { successCopy, type Write, write } from "@/lib/store/write";
 import type { TaskIntent } from "@/lib/task-interaction/apply-intent";
 
-vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn() }));
+vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 
 const intent: TaskIntent = { type: "complete", id: "a", observedDueDate: null };
 const done = task({ id: "a", status: "done", completed_at: NOW });
@@ -152,6 +152,57 @@ describe("useWrites", () => {
 		expect(toastError).not.toHaveBeenCalled();
 	});
 
+	it("a confirm toasts the write's success copy: its own, the default, or none", async () => {
+		const { result } = renderHook(() => useWrites(), { wrapper });
+		const ok = async () => ({ ok: true as const, data: { at: T2, rows: [done] } });
+		const del: TaskIntent = { type: "delete", id: "a" };
+
+		vi.mocked(toastSuccess).mockClear();
+		await act(async () => {
+			await result.current.save(write("task", del, ok));
+		});
+		expect(toastSuccess).toHaveBeenCalledWith("Task deleted");
+
+		vi.mocked(toastSuccess).mockClear();
+		await act(async () => {
+			await result.current.save(write("task", del, ok, undefined, "Gone for good"));
+		});
+		expect(toastSuccess).toHaveBeenCalledWith("Gone for good");
+
+		vi.mocked(toastSuccess).mockClear();
+		await act(async () => {
+			await result.current.save(write("task", del, ok, undefined, null));
+		});
+		expect(toastSuccess).not.toHaveBeenCalled();
+	});
+
+	it("submit toasts on confirm, and never on a refusal", async () => {
+		const { result } = renderHook(() => useWrites(), { wrapper });
+		const edit: TaskIntent = { type: "edit", id: "a" };
+		vi.mocked(toastSuccess).mockClear();
+		await act(async () => {
+			await result.current.submit(
+				write("task", edit, async () => ({ ok: false as const, formError: "No" })),
+			);
+		});
+		expect(toastSuccess).not.toHaveBeenCalled();
+		await act(async () => {
+			await result.current.submit(
+				write("task", edit, async () => ({ ok: true as const, data: { at: T2, rows: [done] } })),
+			);
+		});
+		expect(toastSuccess).toHaveBeenCalledWith("Task updated");
+	});
+
+	it("a task tick, skip or reopen confirms silently: toastTaskToggle already spoke", async () => {
+		const { result } = renderHook(() => useWrites(), { wrapper });
+		vi.mocked(toastSuccess).mockClear();
+		await act(async () => {
+			await result.current.save(okWrite());
+		});
+		expect(toastSuccess).not.toHaveBeenCalled();
+	});
+
 	it("adopt: applies and confirms at once", () => {
 		const { result } = renderHook(() => useWrites(), { wrapper });
 		act(() => result.current.adopt("task", intent, { at: T2, rows: [done] }));
@@ -197,5 +248,25 @@ describe("save with onFieldErrors", () => {
 		});
 		expect(onFieldErrors).not.toHaveBeenCalled();
 		expect(toastError).toHaveBeenCalled();
+	});
+});
+
+describe("successCopy", () => {
+	it.each([
+		[{ kind: "quote", intent: { type: "delete", id: "q" } }, "Quote deleted"],
+		[{ kind: "journal", intent: { type: "patch", id: "j", patch: {} } }, "Entry updated"],
+		[{ kind: "note", intent: { type: "pin", id: "n", pinned: false } }, "Unpinned"],
+		[{ kind: "note", intent: { type: "save", id: "n", title: null, body: "" } }, null],
+		[{ kind: "notification", intent: { type: "markAll", status: "dismissed" } }, "All dismissed"],
+		[
+			{ kind: "routine", intent: { type: "toggle", id: "r", date: TODAY, done: true } },
+			"Routine done",
+		],
+		[
+			{ kind: "task", intent: { type: "setTop3", id: "a", starred: true, forDateIso: TODAY } },
+			"Starred",
+		],
+	] as const)("%o → %s", (input, copy) => {
+		expect(successCopy(input as Parameters<typeof successCopy>[0])).toBe(copy);
 	});
 });

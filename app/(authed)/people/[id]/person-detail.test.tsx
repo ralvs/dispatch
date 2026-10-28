@@ -36,7 +36,7 @@ vi.mock("@/app/(authed)/people/[id]/actions", () => ({
 	createInteractionAction: vi.fn(),
 	deleteInteractionAction: vi.fn(),
 }));
-vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn() }));
+vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 
 const ANA = "ana";
 const ana = person({ id: ANA, name: "Ana", company: "Acme" });

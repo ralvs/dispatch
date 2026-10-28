@@ -54,7 +54,7 @@ export function CollapsibleForm({
 	children,
 }: {
 	action: (formData: FormData) => Promise<ActionResult<unknown>>;
-	/** The failure toast, for an unexpected failure. There is no success toast. */
+	/** The failure toast, for an unexpected failure. The success toast is the write's own. */
 	errorMessage?: string;
 	triggerLabel: string;
 	submitLabel: string;

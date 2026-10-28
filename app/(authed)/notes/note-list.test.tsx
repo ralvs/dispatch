@@ -17,7 +17,7 @@ vi.mock("@/app/(authed)/notes/actions", () => ({
 	setPinAction: vi.fn(),
 	createBlankNoteAction: vi.fn(),
 }));
-vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn() }));
+vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 
 type Result = ActionResult<StoreWrite<NoteListRow>>;
 

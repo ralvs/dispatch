@@ -35,11 +35,15 @@ export function QuoteRowItem({ quote }: { quote: QuoteRow }) {
 		const fd = new FormData();
 		fd.set("body", annotationBody);
 		startTransition(async () => {
-			const ok = await runAction(async () => {
-				await createAnnotationAction(quote.id, fd);
-				setAnnotations(await listAnnotationsAction(quote.id));
-				setAnnotationBody("");
-			}, "Couldn't add annotation.");
+			const ok = await runAction(
+				async () => {
+					await createAnnotationAction(quote.id, fd);
+					setAnnotations(await listAnnotationsAction(quote.id));
+					setAnnotationBody("");
+				},
+				"Couldn't add annotation.",
+				"Annotation added",
+			);
 			if (!ok) return;
 		});
 	}
