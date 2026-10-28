@@ -4,9 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	deleteNoteAction,
 	resolveNeedsReviewAction,
+	saveNoteAction,
 	setNoteDomainAction,
 } from "@/app/(authed)/notes/actions";
-import { toastError } from "@/lib/client/toast";
+import { toastError, toastSuccess } from "@/lib/client/toast";
 import { createDispatchStore, type DispatchStore } from "@/lib/store/create-store";
 import { viewKey } from "@/lib/store/keys";
 import { StoreProvider } from "@/lib/store/provider";
@@ -71,6 +72,21 @@ describe("NoteEditor on the entity store", () => {
 			needsReview: { domain_id: string | null }[];
 		};
 		expect(lists.needsReview[0].domain_id).toBe("d1");
+	});
+
+	it("the autosave confirms without a toast", async () => {
+		vi.mocked(saveNoteAction).mockResolvedValue({
+			ok: true,
+			data: { at: T2, rows: [{ ...opened, title: "Plan B" }] },
+		});
+		const user = userEvent.setup();
+		renderEditor();
+
+		await user.type(screen.getByLabelText("Note title"), " B");
+		await user.tab();
+		await waitFor(() => expect(saveNoteAction).toHaveBeenCalled());
+		await waitFor(() => expect(screen.getByText(/Saved/)).toBeInTheDocument());
+		expect(toastSuccess).not.toHaveBeenCalled();
 	});
 
 	it("a rejected filing restores the select and says so", async () => {
