@@ -555,76 +555,56 @@ html[data-standalone] .app-shell {
 	color: var(--ink-4);
 }
 
-/* Sonner slip — pill, overlay, 19px mark. Sonner sets radius/padding with
- * !important, so this block matches that weight. Success is a green filled
- * tick; default/reopen is an outline mark; error is a filled error tick. */
-[data-sonner-toaster] {
-	--toast-icon-margin-start: 0px;
-	--toast-icon-margin-end: 12px;
-	--toast-close-button-transform: none;
+/* notch-toast island. The library paints the shell in --foreground on
+ * --background, so the island is the page inverted: ink in light, paper in
+ * dark. Its own styles are injected after this sheet, so each rule here
+ * carries .nt-root for the extra class. The icon on the left takes a status
+ * colour; each comes from the opposite theme's token, because it sits on the
+ * opposite theme's ground (light island in dark, dark island in light). */
+.nt-root {
+	--foreground: var(--ink);
+	--background: var(--surface);
+	--muted-foreground: var(--ink-3);
+	--island-success: #54b97d;
+	--island-error: #ff6a5e;
+	--island-warning: #d1a44a;
+	--island-info: #318ffe;
 }
-[data-sonner-toaster] [data-sonner-toast] {
-	align-items: center;
-	gap: 4px;
-	width: auto;
-	max-width: min(356px, calc(100vw - 32px));
-	padding: 12px 16px 12px 16px !important;
-	border: 1px solid var(--line-strong) !important;
-	border-radius: var(--radius-pill) !important;
-	background: var(--surface) !important;
-	color: var(--ink) !important;
+[data-theme="dark"] .nt-root {
+	--island-success: #1f8d54;
+	--island-error: #d92d20;
+	--island-warning: #9e6b00;
+	--island-info: #0a7cfe;
+}
+.nt-root .nt-shell {
 	box-shadow: var(--elevation-overlay);
 }
-[data-sonner-toaster] [data-sonner-toast] [data-content] {
-	padding: 2px 4px 2px 0;
+/* Attached to the top edge: an installed PWA draws under the status bar
+ * (viewportFit: cover), so the island grows down past the safe area. */
+.nt-root.nt-attached.nt-top-center .nt-content {
+	padding-top: calc(12px + env(safe-area-inset-top));
 }
-[data-sonner-toaster] [data-sonner-toast] [data-title] {
+.nt-root .nt-label {
+	max-width: min(320px, calc(100vw - 120px));
 	font-weight: 500;
-	line-height: 1.3;
 }
-[data-sonner-toaster] [data-sonner-toast] [data-description] {
-	margin-top: 2px;
-	font-variant-numeric: tabular-nums;
+.nt-root .nt-label-sizer,
+.nt-root .nt-label-slide {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
-[data-sonner-toaster] [data-sonner-toast] [data-icon] {
-	width: 19px;
-	height: 19px;
-	margin: 0 !important;
-	border-radius: var(--radius-mark);
-	display: grid;
-	place-items: center;
-	flex-shrink: 0;
-	background: var(--surface);
-	border: 1.5px solid var(--line-strong);
-	color: var(--ink);
+.nt-root .nt-icon-success {
+	background: var(--island-success);
 }
-[data-sonner-toaster] [data-sonner-toast] [data-icon] svg {
-	width: 12px;
-	height: 12px;
+.nt-root .nt-icon-error {
+	background: var(--island-error);
 }
-[data-sonner-toaster] [data-sonner-toast][data-type="success"] [data-icon] {
-	background: var(--success);
-	border-color: var(--success);
-	color: var(--surface);
+.nt-root .nt-icon-warning {
+	color: var(--island-warning);
 }
-[data-sonner-toaster] [data-sonner-toast][data-type="error"] [data-icon] {
-	background: var(--error);
-	border-color: var(--error);
-	color: var(--surface);
-}
-[data-sonner-toaster] [data-sonner-toast] [data-close-button] {
-	position: static !important;
-	top: auto !important;
-	right: auto !important;
-	left: auto !important;
-	transform: none !important;
-	width: 22px;
-	height: 22px;
-	margin-left: 8px;
-	border: 1px solid var(--line) !important;
-	border-radius: var(--radius-pill) !important;
-	background: var(--surface) !important;
-	color: var(--ink-3) !important;
+.nt-root .nt-icon-info {
+	color: var(--island-info);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -14,7 +14,7 @@ vi.mock("./actions", () => ({
 }));
 // The toast is the edge: runAction calls it from inside its own module.
 const { toastErrorMock } = vi.hoisted(() => ({ toastErrorMock: vi.fn() }));
-vi.mock("sonner", () => ({ toast: { error: toastErrorMock, success: vi.fn() } }));
+vi.mock("notch-toast", () => ({ toast: { error: toastErrorMock, success: vi.fn() } }));
 
 const TZ = "America/Sao_Paulo";
 const TODAY = "2026-10-06";
