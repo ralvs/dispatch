@@ -82,6 +82,7 @@ function MeetingNoteGlyph({ eventId, noteId }: { eventId: string; noteId?: strin
 					await runAction(
 						() => createMeetingNoteForEventAction(eventId),
 						"Couldn't create a note for this event. Try again.",
+						"Meeting note created",
 					);
 				})
 			}

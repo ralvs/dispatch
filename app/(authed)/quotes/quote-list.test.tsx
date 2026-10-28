@@ -20,7 +20,11 @@ vi.mock("@/app/(authed)/quotes/actions", () => ({
 	createAnnotationAction: vi.fn(),
 	listAnnotationsAction: vi.fn(),
 }));
-vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn(), runAction: vi.fn() }));
+vi.mock("@/lib/client/toast", () => ({
+	toastError: vi.fn(),
+	toastSuccess: vi.fn(),
+	runAction: vi.fn(),
+}));
 
 type Result = ActionResult<StoreWrite<QuoteRow>>;
 

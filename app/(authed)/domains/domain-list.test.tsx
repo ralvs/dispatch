@@ -20,7 +20,7 @@ vi.mock("@/app/(authed)/domains/actions", () => ({
 	reactivateDomainAction: vi.fn(),
 	updateDomainAction: vi.fn(),
 }));
-vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn() }));
+vi.mock("@/lib/client/toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 
 const touch = (domainId: string, quiet: boolean) => ({
 	domainId,

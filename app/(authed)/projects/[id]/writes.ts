@@ -38,6 +38,7 @@ export const projectDetailWrites = {
 			{ type: "patch", id, patch: { status: "done", completed_at: nowUtc() } },
 			() => completeProjectAction(id),
 			UPDATE_ERROR,
+			"Project completed",
 		),
 	archive: (id: string): Write<"project"> =>
 		write(
@@ -45,5 +46,6 @@ export const projectDetailWrites = {
 			{ type: "patch", id, patch: { status: "archived" } },
 			() => archiveProjectAction(id),
 			UPDATE_ERROR,
+			"Project archived",
 		),
 };

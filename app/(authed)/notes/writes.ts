@@ -21,12 +21,14 @@ export const noteWrites = {
 			() => setPinAction({ id, pinned }),
 			"Couldn't update pin.",
 		),
+	/** The autosave: no toast, the editor's own "Saved" says so. */
 	save: (id: string, title: string | null, body: string): Write<"note"> =>
 		write(
 			"note",
 			{ type: "save", id, title, body },
 			() => saveNoteAction(id, { title, body }),
 			"Couldn't save note.",
+			null,
 		),
 	/** `domainId` is the select's value: "" unfiles the note. */
 	file: (id: string, domainId: string): Write<"note"> =>

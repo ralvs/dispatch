@@ -89,7 +89,13 @@ export const routineWrites = {
 	},
 	/** Archive has no intent of its own: the row leaves the list when the server's row confirms. */
 	archive: (id: string, archived: boolean): Write<"routine"> =>
-		write("routine", { type: "edit", id, patch: {} }, () => archiveRoutineAction(id, archived)),
+		write(
+			"routine",
+			{ type: "edit", id, patch: {} },
+			() => archiveRoutineAction(id, archived),
+			undefined,
+			archived ? "Routine archived" : "Routine restored",
+		),
 	remove: (id: string): Write<"routine"> =>
 		write("routine", { type: "delete", id }, () => deleteRoutineAction(id), UPDATE_ERROR),
 };

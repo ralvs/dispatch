@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const toastErrorMock = vi.fn();
 const toastSuccessMock = vi.fn();
-const toastMessageMock = vi.fn();
+const toastInfoMock = vi.fn();
 const rethrowMock = vi.fn();
 
-vi.mock("sonner", () => ({
+vi.mock("notch-toast", () => ({
 	toast: {
 		error: (...args: unknown[]) => toastErrorMock(...args),
 		success: (...args: unknown[]) => toastSuccessMock(...args),
-		message: (...args: unknown[]) => toastMessageMock(...args),
+		info: (...args: unknown[]) => toastInfoMock(...args),
 	},
 }));
 
@@ -24,40 +24,60 @@ describe("toastSuccess", () => {
 		toastSuccessMock.mockClear();
 	});
 
-	it("passes the title and optional description to sonner", () => {
+	it("folds the optional description into the title", () => {
 		toastSuccess("Captured", "1 task added.");
-		expect(toastSuccessMock).toHaveBeenCalledWith("Captured", {
-			description: "1 task added.",
+		expect(toastSuccessMock).toHaveBeenCalledWith("Captured · 1 task added.", {
 			duration: 4000,
 		});
+	});
+
+	it("shows the title alone without a description", () => {
+		toastSuccess("Captured");
+		expect(toastSuccessMock).toHaveBeenCalledWith("Captured", { duration: 4000 });
 	});
 });
 
 describe("toastNotice", () => {
 	beforeEach(() => {
-		toastMessageMock.mockClear();
+		toastInfoMock.mockClear();
 	});
 
-	it("fires a message toast with a check icon", () => {
+	it("fires an info toast", () => {
 		toastNotice("Reopened");
-		expect(toastMessageMock).toHaveBeenCalledWith("Reopened", {
-			description: undefined,
-			duration: 4000,
-			icon: expect.anything(),
-		});
+		expect(toastInfoMock).toHaveBeenCalledWith("Reopened", { duration: 4000 });
 	});
 });
 
 describe("runAction", () => {
 	beforeEach(() => {
 		toastErrorMock.mockClear();
+		toastSuccessMock.mockClear();
 		rethrowMock.mockClear();
 	});
 
-	it("returns true and does not toast on success", async () => {
+	it("returns true and does not toast on success without copy", async () => {
 		const ok = await runAction(async () => undefined);
 		expect(ok).toBe(true);
 		expect(toastErrorMock).not.toHaveBeenCalled();
+		expect(toastSuccessMock).not.toHaveBeenCalled();
+	});
+
+	it("toasts the success copy when given", async () => {
+		const ok = await runAction(async () => undefined, "Couldn't link that.", "Linked");
+		expect(ok).toBe(true);
+		expect(toastSuccessMock).toHaveBeenCalledWith("Linked", { duration: 4000 });
+	});
+
+	it("does not toast success on failure", async () => {
+		const ok = await runAction(
+			async () => {
+				throw new Error("boom");
+			},
+			"Couldn't link that.",
+			"Linked",
+		);
+		expect(ok).toBe(false);
+		expect(toastSuccessMock).not.toHaveBeenCalled();
 	});
 
 	it("toasts and returns false on real errors", async () => {

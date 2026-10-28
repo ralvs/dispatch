@@ -121,7 +121,7 @@ export function Dialog({
 			(el): el is HTMLElement =>
 				el instanceof HTMLElement &&
 				el !== overlayRef.current &&
-				!el.matches('[data-sonner-toaster], [aria-live], [role="status"], [role="alert"]'),
+				!el.matches('.nt-root, [aria-live], [role="status"], [role="alert"]'),
 		);
 		for (const el of siblings) el.setAttribute("inert", "");
 		return () => {

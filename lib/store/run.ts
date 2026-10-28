@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import type { FormState } from "@/components/ui/form-state";
 import { GENERIC_FORM_ERROR } from "@/lib/action-result";
 import { isNavigationError, toastFailure } from "@/lib/client/failure";
+import { toastSuccess } from "@/lib/client/toast";
 import { targetsProvisional } from "@/lib/store/core";
 import { useStoreActions } from "@/lib/store/hooks";
 import { useDispatchStore } from "@/lib/store/provider";
@@ -16,7 +17,7 @@ import type {
 	StoreWrite,
 	Token,
 } from "@/lib/store/types";
-import type { Write, WriteResult } from "@/lib/store/write";
+import { type Write, type WriteResult, writeSuccessMessage } from "@/lib/store/write";
 
 export { isNavigationError };
 
@@ -26,11 +27,11 @@ export type SaveOpts = {
 };
 
 export type Writes = {
-	/** Apply → call → confirm | rollback + toastFailure. False: targets a provisional row, nothing applied. */
+	/** Apply → call → confirm + success toast | rollback + toastFailure. False: targets a provisional row, nothing applied. */
 	send<K extends Kind>(w: Write<K>): boolean;
 	/** Awaited. True once confirmed; failure toasts and resolves false; provisional target resolves false silently. */
 	save<K extends Kind>(w: Write<K>, opts?: SaveOpts): Promise<boolean>;
-	/** Awaited for useResultAction forms: returns the result untouched (no toast); a throw rolls back and rethrows. */
+	/** Awaited for useResultAction forms: returns the result untouched (success toast only); a throw rolls back and rethrows. */
 	submit<K extends Kind>(w: Write<K>): Promise<WriteResult<K>>;
 	/** A write made outside a server action (the upload route): apply + confirm at once, as receiveRows does. */
 	adopt<K extends Kind>(kind: K, intent: IntentMap[K], written: StoreWrite<EntityMap[K]>): void;
@@ -40,7 +41,8 @@ export type Writes = {
  * The one runner for a kind's writes (docs/adr/0077). Each method applies the
  * intent, hands the server call the ctx the store applied it with — so a call
  * that names a day names the day the user saw — then confirms or rolls back.
- * Failures toast through toastFailure with the write's own copy.
+ * A confirm toasts the write's success copy (writeSuccessMessage); failures
+ * toast through toastFailure with the write's own copy.
  */
 export function useWrites(): Writes {
 	const { apply, confirm, rollback } = useStoreActions();
@@ -53,6 +55,11 @@ export function useWrites(): Writes {
 			const ctx = api.getState().pending.find((p) => p.token === token)!.ctx;
 			return [token, ctx];
 		}
+		function confirmed<K extends Kind>(w: Write<K>, token: Token, data: StoreWrite): void {
+			confirm(token, data);
+			const message = writeSuccessMessage(w);
+			if (message) toastSuccess(message);
+		}
 		const provisional = <K extends Kind>(w: Write<K>) =>
 			targetsProvisional(api.getState(), { kind: w.kind, intent: w.intent } as AnyIntent);
 
@@ -63,7 +70,7 @@ export function useWrites(): Writes {
 			try {
 				const result = await w.call(ctx);
 				if (result.ok) {
-					confirm(token, result.data as StoreWrite);
+					confirmed(w, token, result.data as StoreWrite);
 					return true;
 				}
 				rollback(token);
@@ -91,7 +98,7 @@ export function useWrites(): Writes {
 				const [token, ctx] = start(w);
 				try {
 					const result = await w.call(ctx);
-					if (result.ok) confirm(token, result.data as StoreWrite);
+					if (result.ok) confirmed(w, token, result.data as StoreWrite);
 					else rollback(token);
 					return result;
 				} catch (error) {

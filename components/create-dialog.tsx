@@ -56,10 +56,10 @@ export function CreateTrigger({
  *
  * A rejected field keeps the dialog open with its message under the field and
  * the typing still in place (#23); focus moves to the first rejected field.
- * An unexpected failure is a toast. Success is silent, because the new row
- * appearing in the list is the confirmation: a call site's `action` submits
- * the kind's write (`useWrites().submit`, docs/adr/0077), so the row shows
- * while the server writes it and the action's `data` confirms it (#30). No page render brings it.
+ * An unexpected failure is a toast. A call site's `action` submits the kind's
+ * write (`useWrites().submit`, docs/adr/0077), so the row shows while the
+ * server writes it, the action's `data` confirms it (#30), and the confirm
+ * toasts the write's success copy. No page render brings it.
  */
 export function CreateDialogButton({
 	label,
@@ -76,7 +76,7 @@ export function CreateDialogButton({
 	title: string;
 	/** Primary button — `Add project`. */
 	submitLabel: string;
-	/** The failure toast. There is no success toast. */
+	/** The failure toast. The success toast is the write's own. */
 	errorMessage: string;
 	action: (formData: FormData) => Promise<ActionResult<unknown>>;
 	/** Widen the panel for a form that runs to a second column of fields. */

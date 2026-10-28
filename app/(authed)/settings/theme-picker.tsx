@@ -27,7 +27,11 @@ export function ThemePicker() {
 		root.dataset.themePref = pref;
 		root.dataset.theme = resolveTheme(pref, matchMedia(DARK_QUERY).matches);
 		startTransition(async () => {
-			const saved = await runAction(() => setTheme(pref), "Couldn't switch theme.");
+			const saved = await runAction(
+				() => setTheme(pref),
+				"Couldn't switch theme.",
+				"Theme updated",
+			);
 			// A failed save would come back on the next load, so undo it now —
 			// unless another pick has already replaced this one.
 			if (!saved && root.dataset.themePref === pref) {

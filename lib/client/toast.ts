@@ -1,9 +1,15 @@
 "use client";
 
-import { Check } from "lucide-react";
 import { unstable_rethrow } from "next/navigation";
-import { createElement } from "react";
-import { toast } from "sonner";
+import { toast } from "notch-toast";
+
+/**
+ * notch-toast shows one toast at a time, title only: a newer toast replaces
+ * the one on screen, and a description rides on the title after a dot.
+ */
+function line(message: string, description?: string): string {
+	return description ? `${message} · ${description}` : message;
+}
 
 export function toastError(message = "Something went wrong. Try again."): void {
 	toast.error(message, {
@@ -11,25 +17,23 @@ export function toastError(message = "Something went wrong. Try again."): void {
 	});
 }
 
-/** Closed-palette capture receipts. In-dialog success is a check on the row. */
+/** Receipts and confirmed writes: a coloured tick. */
 export function toastSuccess(message: string, description?: string): void {
-	toast.success(message, {
-		description,
+	toast.success(line(message, description), {
 		duration: 4000,
 	});
 }
 
 /** Neutral slip — reopen, and anything that is not a success or a failure. */
 export function toastNotice(message: string, description?: string): void {
-	toast.message(message, {
-		description,
+	toast.info(line(message, description), {
 		duration: 4000,
-		icon: createElement(Check, { size: 14, strokeWidth: 2.25 }),
 	});
 }
 
 /**
- * Run a server action / async mutation; toast on failure.
+ * Run a server action / async mutation; toast on failure, and on success when
+ * given `success` copy.
  * Returns true on success so callers can gate follow-up UI (close form, etc.).
  *
  * Rethrows Next.js control-flow errors (`redirect`, `notFound`, …) so actions
@@ -38,13 +42,15 @@ export function toastNotice(message: string, description?: string): void {
 export async function runAction(
 	action: () => Promise<unknown>,
 	message = "Something went wrong. Try again.",
+	success?: string,
 ): Promise<boolean> {
 	try {
 		await action();
-		return true;
 	} catch (error) {
 		unstable_rethrow(error);
 		toastError(message);
 		return false;
 	}
+	if (success) toastSuccess(success);
+	return true;
 }
