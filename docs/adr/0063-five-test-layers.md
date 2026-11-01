@@ -108,9 +108,25 @@ reach (Postgres, GoTrue, PostgREST, Kong), then runs
 `bun run test:integration` and `bun run test:e2e`. It needs no repository
 secret, by design: decision 5 still holds on the runner, and
 `playwright.config.ts` sets every integration key to `""`. The Supabase
-Docker images are pulled on every run, not cached: a `docker save`/`load`
+Docker images were pulled on every run, not cached: a `docker save`/`load`
 cache is usually slower than the pull, and the job takes about three
-minutes.
+minutes. The 2026-11-01 amendment below reverses the cache decision.
 
 `E2E` is not a required check yet. It joins the ruleset on `main` once it
 has run green for a week without a flake.
+
+## Amendment 2026-11-01 — cache the Supabase images
+
+From 2026-10-28 the uncached pull fails on shared runner IPs.
+`public.ecr.aws` answers `toomanyrequests: Data limit exceeded` (the Docker
+Hub wording) while `supabase start` retries it. The CLI then falls through
+to GHCR and start finishes. `supabase gen types` does not fall through: it
+pulls `postgres-meta` from `public.ecr.aws` only, and that is what failed
+the job. No test failed.
+
+The E2E workflow now caches those images, keyed on the Supabase CLI version.
+A hit loads the tarball and start finds the tags locally. A miss sets
+`SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io` — the mirror that succeeded in
+that run, and one that needs no new secret — then saves the tarball.
+`gen types` always names that same registry, so a hit does not pull
+`postgres-meta` from `public.ecr.aws`. `supabase start` retries once.
