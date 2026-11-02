@@ -62,6 +62,14 @@ describe("text", () => {
 		expect(make(out).getText()).toBe("run <port> now");
 	});
 
+	it("still escapes a > at the start of a list item", () => {
+		for (const body of ["- \\> not a quote", "- [ ] > not a quote"]) {
+			const out = roundTrip(body);
+			expect(out).toMatch(/\\> not a quote$/);
+			expect(nodeNames(make(out))).not.toContain("blockquote");
+		}
+	});
+
 	it("still escapes a > at the start of a line", () => {
 		const out = roundTrip("\\> not a quote");
 		expect(out).toBe("\\> not a quote");
@@ -80,6 +88,11 @@ describe("a list that mixes plain and task items", () => {
 		expect(roundTrip("- a\n\n- b\n\n- [x] c\n- [ ] d")).toBe("- a\n\n- b\n\n- [x] c\n- [ ] d");
 	});
 
+	it("keeps a run tight when only a nested list had blank lines", () => {
+		const body = "- a\n  - a1\n\n  - a2\n- b\n\n- [x] c\n- [ ] d";
+		expect(roundTrip(body)).toBe(body);
+	});
+
 	it("keeps an item with two paragraphs loose", () => {
 		const body = "- a\n\n  more a\n- [x] c";
 		expect(roundTrip(body)).toBe("- a\n\n  more a\n\n- [x] c");
@@ -93,8 +106,8 @@ describe("a list that mixes plain and task items", () => {
 
 	it("is stable on a second round trip", () => {
 		const once = roundTrip("- a\n- [ ] b\n- c\n- [x] d");
+		expect(once).toBe("- a\n\n- [ ] b\n\n- c\n\n- [x] d");
 		expect(roundTrip(once)).toBe(once);
-		expect(once).not.toContain("&nbsp;");
 	});
 
 	it("leaves a pure task list alone", () => {
@@ -105,6 +118,11 @@ describe("a list that mixes plain and task items", () => {
 describe("task list spacing", () => {
 	it("keeps a loose task list loose", () => {
 		expect(roundTrip("- [ ] a\n\n- [x] b")).toBe("- [ ] a\n\n- [x] b");
+	});
+
+	it("keeps a task list tight when only its nested list is loose", () => {
+		const body = "- [ ] a\n  - b\n\n  - c\n- [ ] d";
+		expect(roundTrip(body)).toBe(body);
 	});
 
 	it("keeps a nested task list tight", () => {

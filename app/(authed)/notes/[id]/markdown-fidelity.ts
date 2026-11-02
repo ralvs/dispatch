@@ -89,6 +89,12 @@ const withSpacingRule = new WeakSet<MarkdownIt>();
 function markItemSpacing(state: MarkdownItCoreState) {
 	const lines = state.src.split("\n");
 	const isBlank = (line: number) => (lines[line] ?? "").trim() === "";
+	// The last non-blank line before `end`: markdown-it maps include trailing blanks.
+	const lastFilled = (end: number, start: number) => {
+		let line = end - 1;
+		while (line > start && isBlank(line)) line--;
+		return line;
+	};
 	const { tokens } = state;
 	for (let i = 0; i < tokens.length; i++) {
 		const list = tokens[i];
@@ -100,11 +106,20 @@ function markItemSpacing(state: MarkdownItCoreState) {
 			if (token.type === "bullet_list_close" && token.level === list.level) break;
 			if (token.type !== "list_item_open" || token.level !== list.level + 1 || !token.map) continue;
 			const [start, end] = token.map;
-			let last = end - 1;
-			while (last > start && isBlank(last)) last--;
+			const last = lastFilled(end, start);
+			// Blank lines inside a nested list make that list loose, not this item.
+			const nested: [number, number][] = [];
+			for (let k = j + 1; k < tokens.length; k++) {
+				const inner = tokens[k];
+				if (inner.type === "list_item_close" && inner.level === token.level) break;
+				if (inner.type.endsWith("_list_open") && inner.level === token.level + 1 && inner.map) {
+					nested.push([inner.map[0], lastFilled(inner.map[1], inner.map[0])]);
+				}
+			}
+			const inNested = (line: number) => nested.some(([from, to]) => line >= from && line <= to);
 			if (!first && isBlank(start - 1)) token.attrSet(GAP_BEFORE, "");
 			for (let line = start + 1; line < last; line++) {
-				if (isBlank(line)) token.attrSet(BLANK_INSIDE, "");
+				if (isBlank(line) && !inNested(line)) token.attrSet(BLANK_INSIDE, "");
 			}
 			first = false;
 		}
@@ -165,7 +180,8 @@ export const SplitMixedTaskLists = Extension.create({
 
 // tiptap-markdown records whether a bullet or ordered list is tight (no blank
 // line between items) but not a task list, so every task list saved loose.
-// Give task lists the same `tight` attribute, read the same way.
+// Give task lists the same `tight` attribute. Read it from the list's own
+// items only: a loose nested list does not make its parent loose.
 export const TaskListKeepTight = TaskList.extend({
 	addAttributes() {
 		return {
@@ -173,7 +189,8 @@ export const TaskListKeepTight = TaskList.extend({
 			tight: {
 				default: true,
 				parseHTML: (element: HTMLElement) =>
-					element.getAttribute("data-tight") === "true" || !element.querySelector("p"),
+					element.getAttribute("data-tight") === "true" ||
+					!element.querySelector(":scope > li > p"),
 				renderHTML: (attributes: { tight: boolean }) => ({
 					"data-tight": attributes.tight ? "true" : null,
 				}),
