@@ -4,6 +4,8 @@ import StarterKit from "@tiptap/starter-kit";
 import { Markdown, type MarkdownStorage } from "tiptap-markdown";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+	BulletListKeepTight,
+	OrderedListKeepTight,
 	ParagraphKeepBlank,
 	SplitMixedTaskLists,
 	TaskListKeepTight,
@@ -20,9 +22,16 @@ function make(content: string | JSONContent): Editor {
 	editor?.destroy();
 	editor = new Editor({
 		extensions: [
-			StarterKit.configure({ paragraph: false, text: false }),
+			StarterKit.configure({
+				paragraph: false,
+				text: false,
+				bulletList: false,
+				orderedList: false,
+			}),
 			ParagraphKeepBlank,
 			TextKeepGt,
+			BulletListKeepTight,
+			OrderedListKeepTight,
 			TaskListKeepTight,
 			TaskItem.configure({ nested: true }),
 			SplitMixedTaskLists,
@@ -111,6 +120,24 @@ describe("text", () => {
 		expect(make(out).getText()).toContain("> not a quote");
 	});
 
+	it("keeps text that looks like an entity as that text", () => {
+		const body = "write &amp;lt; or &amp;#60; or &amp;amp;";
+		expect(make(body).getText()).toBe("write &lt; or &#60; or &amp;");
+		expect(roundTrip(body)).toBe(body);
+	});
+
+	it("saves an entity as text that means the same and stays put", () => {
+		const out = roundTrip("AT&amp;T and &lt;b&gt; and &#60;");
+		expect(make(out).getText()).toBe("AT&T and <b> and <");
+		expect(roundTrip(out)).toBe(out);
+	});
+
+	it("keeps a bare & and a text that is not an entity as written", () => {
+		for (const body of ["AT&T & co", "a &foo; b", "R&D;"]) {
+			expect(roundTrip(body)).toBe(body);
+		}
+	});
+
 	it("keeps a real quote as a quote", () => {
 		expect(roundTrip("> a real quote")).toBe("> a real quote");
 	});
@@ -157,6 +184,44 @@ describe("a list that mixes plain and task items", () => {
 
 	it("leaves a pure task list alone", () => {
 		expect(roundTrip("- [ ] a\n- [x] b")).toBe("- [ ] a\n- [x] b");
+	});
+});
+
+describe("list spacing", () => {
+	it("keeps a bullet list tight when only its nested list is loose", () => {
+		const body = "- a\n  - b\n\n  - c\n- d";
+		expect(roundTrip(body)).toBe(body);
+	});
+
+	it("keeps an ordered list tight when only its nested list is loose", () => {
+		const body = "1. a\n   - b\n\n   - c\n2. d";
+		expect(roundTrip(body)).toBe(body);
+	});
+
+	it("keeps a loose bullet list loose", () => {
+		expect(roundTrip("- a\n\n- b")).toBe("- a\n\n- b");
+	});
+});
+
+describe("numbered task list", () => {
+	it("keeps the numbers and the tasks", () => {
+		const e = make("1. [ ] a\n2. [x] b");
+		expect(nodeNames(e).filter((n) => n === "taskItem")).toHaveLength(2);
+		expect(nodeNames(e)).not.toContain("orderedList");
+		expect(markdown(e)).toBe("1. [ ] a\n2. [x] b");
+	});
+
+	it("keeps the start number", () => {
+		expect(roundTrip("3. [ ] a\n4. [x] b")).toBe("3. [ ] a\n4. [x] b");
+	});
+
+	it("keeps a loose numbered task list loose", () => {
+		expect(roundTrip("1. [ ] a\n\n2. [x] b")).toBe("1. [ ] a\n\n2. [x] b");
+	});
+
+	it("keeps a nested numbered task list", () => {
+		const body = "- [ ] a\n  1. [x] a1\n  2. [ ] a2\n- [ ] b";
+		expect(roundTrip(body)).toBe(body);
 	});
 });
 

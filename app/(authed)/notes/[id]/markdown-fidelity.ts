@@ -1,4 +1,5 @@
-import { Extension } from "@tiptap/core";
+import { type Editor, Extension } from "@tiptap/core";
+import { BulletList, OrderedList } from "@tiptap/extension-list";
 import Paragraph from "@tiptap/extension-paragraph";
 import TaskList from "@tiptap/extension-task-list";
 import Text from "@tiptap/extension-text";
@@ -16,7 +17,20 @@ type MarkdownState = {
 	atBlockStart: boolean;
 	renderInline(node: PMNode): void;
 	closeBlock(node: PMNode): void;
+	renderList(node: PMNode, delim: string, firstDelim: (index: number) => string): void;
 };
+
+// tiptap-markdown binds each serializer to the editor it runs in.
+type SerializeContext = { editor: Editor };
+
+type MarkdownStorage = {
+	options: { bulletListMarker?: string };
+	parser: { md: { utils: { unescapeAll(text: string): string } } };
+};
+
+function markdownStorage(editor: Editor): MarkdownStorage {
+	return (editor.storage as unknown as { markdown: MarkdownStorage }).markdown;
+}
 
 // Markdown has no syntax for an empty paragraph, so blank lines between blocks
 // were dropped on save — and two different lists left adjacent in the stored
@@ -51,12 +65,24 @@ export const ParagraphKeepBlank = Paragraph.extend({
 // Only `<` can open an HTML tag. A `>` that starts a line could open a
 // blockquote, so it stays escaped; every other `>` stays as written. A real
 // blockquote is a node of its own and still saves as `> `.
+//
+// markdown-it decodes an entity such as `&amp;` into its character, so a body
+// with `&amp;lt;` opens as the text `&lt;`. Saved as is, that text decodes to
+// `<` on the next open. Escape a `&` again where the text after it would decode
+// as an entity; a bare `&` (as in `AT&T`) stays as written. An entity for a
+// plain character (`AT&amp;T`) saves as that character: same text, no entity.
 export const TextKeepGt = Text.extend({
 	addStorage() {
 		return {
 			markdown: {
-				serialize(state: MarkdownState, node: PMNode) {
-					let text = (node.text ?? "").replace(/</g, "&lt;").replace(/\n(\s*)>/g, "\n$1&gt;");
+				serialize(this: SerializeContext, state: MarkdownState, node: PMNode) {
+					const { unescapeAll } = markdownStorage(this.editor).parser.md.utils;
+					let text = (node.text ?? "")
+						.replace(/&[a-z#][a-z0-9]{1,31};/gi, (entity) =>
+							unescapeAll(entity) === entity ? entity : `&amp;${entity.slice(1)}`,
+						)
+						.replace(/</g, "&lt;")
+						.replace(/\n(\s*)>/g, "\n$1&gt;");
 					// The serializer escapes a `>` in column zero of a block only. After
 					// up to three spaces, or on the line after a hard break, it still
 					// opens a blockquote.
@@ -192,22 +218,82 @@ export const SplitMixedTaskLists = Extension.create({
 	},
 });
 
-// tiptap-markdown records whether a bullet or ordered list is tight (no blank
-// line between items) but not a task list, so every task list saved loose.
-// Give task lists the same `tight` attribute. Read it from the list's own
-// items only: a loose nested list does not make its parent loose.
+// tiptap-markdown decides `tight` (no blank line between items) with
+// `!element.querySelector("p")`, which also finds the `<p>`s of a loose nested
+// list. Read it from the list's own items only: a loose nested list does not
+// make its parent loose.
+const ownItemsTight = {
+	default: true,
+	parseHTML: (element: HTMLElement) =>
+		element.getAttribute("data-tight") === "true" || !element.querySelector(":scope > li > p"),
+	renderHTML: (attributes: { tight: boolean }) => ({
+		"data-tight": attributes.tight ? "true" : null,
+	}),
+};
+
+export const BulletListKeepTight = BulletList.extend({
+	addAttributes() {
+		return { ...this.parent?.(), tight: ownItemsTight };
+	},
+});
+
+export const OrderedListKeepTight = OrderedList.extend({
+	addAttributes() {
+		return { ...this.parent?.(), tight: ownItemsTight };
+	},
+});
+
+// tiptap-markdown records `tight` for bullet and ordered lists but not task
+// lists, so every task list saved loose. Give task lists the same attribute.
+//
+// A numbered task list (`1. [ ] a`) parses as an `<ol>`, and the editor's task
+// list read only `<ul>`. The `<ol>` became an ordered list that cannot hold
+// task items, so it gained an empty item and the tasks moved out. Read both,
+// keep `ordered` and `start`, and write the numbers back on save.
 export const TaskListKeepTight = TaskList.extend({
+	parseHTML() {
+		return [
+			{ tag: `ul[data-type="${this.name}"]`, priority: 51 },
+			{ tag: `ol[data-type="${this.name}"]`, priority: 51 },
+		];
+	},
 	addAttributes() {
 		return {
 			...this.parent?.(),
-			tight: {
-				default: true,
+			tight: ownItemsTight,
+			ordered: {
+				default: false,
 				parseHTML: (element: HTMLElement) =>
-					element.getAttribute("data-tight") === "true" ||
-					!element.querySelector(":scope > li > p"),
-				renderHTML: (attributes: { tight: boolean }) => ({
-					"data-tight": attributes.tight ? "true" : null,
+					element.tagName === "OL" || element.getAttribute("data-ordered") === "true",
+				renderHTML: (attributes: { ordered: boolean }) => ({
+					"data-ordered": attributes.ordered ? "true" : null,
 				}),
+			},
+			start: {
+				default: 1,
+				parseHTML: (element: HTMLElement) => Number(element.getAttribute("start") ?? 1),
+				renderHTML: (attributes: { start: number }) => ({
+					start: attributes.start === 1 ? null : attributes.start,
+				}),
+			},
+		};
+	},
+	addStorage() {
+		return {
+			markdown: {
+				serialize(this: SerializeContext, state: MarkdownState, node: PMNode) {
+					if (!node.attrs.ordered) {
+						const marker = markdownStorage(this.editor).options.bulletListMarker || "-";
+						state.renderList(node, "  ", () => `${marker} `);
+						return;
+					}
+					// As tiptap-markdown's ordered list: numbers right-aligned to the widest.
+					const start: number = node.attrs.start;
+					const width = String(start + node.childCount - 1).length;
+					state.renderList(node, " ".repeat(width + 2), (i) =>
+						`${start + i}. `.padStart(width + 2),
+					);
+				},
 			},
 		};
 	},

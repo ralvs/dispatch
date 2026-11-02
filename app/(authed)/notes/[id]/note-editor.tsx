@@ -18,6 +18,8 @@ import { noteWrites } from "../writes";
 import { InkBubble } from "./ink-bubble";
 import { Ink } from "./ink-mark";
 import {
+	BulletListKeepTight,
+	OrderedListKeepTight,
 	ParagraphKeepBlank,
 	SplitMixedTaskLists,
 	TaskListKeepTight,
@@ -142,9 +144,16 @@ function NoteForm({
 		immediatelyRender: false,
 		autofocus: opened.body === "" ? "start" : false,
 		extensions: [
-			StarterKit.configure({ paragraph: false, text: false }),
+			StarterKit.configure({
+				paragraph: false,
+				text: false,
+				bulletList: false,
+				orderedList: false,
+			}),
 			ParagraphKeepBlank,
 			TextKeepGt,
+			BulletListKeepTight,
+			OrderedListKeepTight,
 			TaskListKeepTight,
 			TaskItem.configure({ nested: true }),
 			Wikilink,
