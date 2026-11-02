@@ -256,6 +256,9 @@ export const OrderedListKeepTight = OrderedList.extend({
 // keep `ordered` and `start`, render an `<ol>`, and write the numbers back on
 // save. globals.css draws the numbers: a task item is a flex row, not a list
 // item, so it has no marker of its own.
+const isOrderedList = (node: PMNode) =>
+	node.type.name === "orderedList" || (node.type.name === "taskList" && node.attrs.ordered);
+
 export const TaskListKeepTight = TaskList.extend({
 	parseHTML() {
 		return [
@@ -298,17 +301,28 @@ export const TaskListKeepTight = TaskList.extend({
 	addStorage() {
 		return {
 			markdown: {
-				serialize(this: SerializeContext, state: MarkdownState, node: PMNode) {
+				serialize(
+					this: SerializeContext,
+					state: MarkdownState,
+					node: PMNode,
+					parent: PMNode,
+					index: number,
+				) {
 					if (!node.attrs.ordered) {
 						const marker = markdownStorage(this.editor).options.bulletListMarker || "-";
 						state.renderList(node, "  ", () => `${marker} `);
 						return;
 					}
-					// As tiptap-markdown's ordered list: numbers right-aligned to the widest.
+					// As tiptap-markdown's ordered list: numbers right-aligned to the widest,
+					// and `.` and `)` taking turns, since two adjacent lists with the same
+					// delimiter parse back as one.
+					let adjacent = 0;
+					while (adjacent < index && isOrderedList(parent.child(index - adjacent - 1))) adjacent++;
+					const delimiter = adjacent % 2 ? ")" : ".";
 					const start: number = node.attrs.start;
 					const width = String(start + node.childCount - 1).length;
 					state.renderList(node, " ".repeat(width + 2), (i) =>
-						`${start + i}. `.padStart(width + 2),
+						`${start + i}${delimiter} `.padStart(width + 2),
 					);
 				},
 			},
