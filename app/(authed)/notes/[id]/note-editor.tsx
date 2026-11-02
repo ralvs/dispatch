@@ -27,6 +27,7 @@ import {
 } from "./markdown-fidelity";
 import { Mention } from "./mention-extension";
 import { createMentionSuggestionExtension } from "./mention-suggestion";
+import { NoteTable, NoteTableCell, NoteTableHeader, NoteTableRow } from "./table-extension";
 import { TickRail } from "./tick-rail";
 import { useOpenNote } from "./use-open-note";
 import { Wikilink } from "./wikilink-extension";
@@ -156,6 +157,10 @@ function NoteForm({
 			OrderedListKeepTight,
 			TaskListKeepTight,
 			TaskItem.configure({ nested: true }),
+			NoteTable,
+			NoteTableRow,
+			NoteTableHeader,
+			NoteTableCell,
 			Wikilink,
 			createWikilinkSuggestionExtension(noteTitles, note.id),
 			Mention,

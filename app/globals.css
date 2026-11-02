@@ -454,6 +454,31 @@ html[data-standalone] .app-shell {
 	color: var(--ink-4);
 	font-variant-numeric: tabular-nums;
 }
+/* Pipe tables (docs/adr/0009). The wrapper scrolls a wide table instead of
+ * widening the note; hairlines only, the header row in the one heavy weight. */
+.prose-authored :where(.tableWrapper) {
+	margin: 0 0 1.15em;
+	overflow-x: auto;
+}
+.prose-authored :where(table) {
+	border-collapse: collapse;
+	font-variant-numeric: tabular-nums;
+}
+.prose-authored :where(th, td) {
+	padding: 0.35em 0.9em 0.35em 0;
+	border-bottom: 1px solid var(--line);
+	text-align: left;
+	vertical-align: top;
+}
+.prose-authored :where(th) {
+	font-weight: 600;
+}
+.prose-authored :where(th, td) > p {
+	margin: 0;
+}
+.prose-authored :where(.selectedCell) {
+	background: var(--surface-2);
+}
 /* Named text colour in notes (docs/adr/0009). Tokens, never hex. */
 .prose-authored [data-ink="accent"] { color: var(--accent); }
 .prose-authored [data-ink="error"] { color: var(--error); }
