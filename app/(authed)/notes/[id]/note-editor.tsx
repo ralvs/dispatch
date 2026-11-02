@@ -1,9 +1,6 @@
 "use client";
 
-import Paragraph from "@tiptap/extension-paragraph";
 import TaskItem from "@tiptap/extension-task-item";
-import TaskList from "@tiptap/extension-task-list";
-import type { Node as PMNode } from "@tiptap/pm/model";
 import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "next/link";
@@ -20,47 +17,18 @@ import { useMentionPeople } from "@/lib/store/mention-people";
 import { noteWrites } from "../writes";
 import { InkBubble } from "./ink-bubble";
 import { Ink } from "./ink-mark";
+import {
+	ParagraphKeepBlank,
+	SplitMixedTaskLists,
+	TaskListKeepTight,
+	TextKeepGt,
+} from "./markdown-fidelity";
 import { Mention } from "./mention-extension";
 import { createMentionSuggestionExtension } from "./mention-suggestion";
 import { TickRail } from "./tick-rail";
 import { useOpenNote } from "./use-open-note";
 import { Wikilink } from "./wikilink-extension";
 import { createWikilinkSuggestionExtension, type WikilinkCandidate } from "./wikilink-suggestion";
-
-// Markdown has no syntax for an empty paragraph, so blank lines between blocks
-// were dropped on save — and two different lists left adjacent in the stored
-// markdown re-parse as one merged list, spawning a stray task item. Serialize
-// empty paragraphs as `&nbsp;` (GFM renders it as a blank line) and parse them
-// back to truly empty paragraphs on load.
-type MarkdownState = {
-	write(text: string): void;
-	renderInline(node: PMNode): void;
-	closeBlock(node: PMNode): void;
-};
-
-const ParagraphKeepBlank = Paragraph.extend({
-	addStorage() {
-		return {
-			markdown: {
-				serialize(state: MarkdownState, node: PMNode) {
-					if (node.childCount === 0) {
-						state.write("&nbsp;");
-					} else {
-						state.renderInline(node);
-					}
-					state.closeBlock(node);
-				},
-				parse: {
-					updateDOM(element: HTMLElement) {
-						for (const p of element.querySelectorAll("p")) {
-							if (p.textContent === "\u00a0") p.textContent = "";
-						}
-					},
-				},
-			},
-		};
-	},
-});
 
 function getMarkdown(editor: Editor): string {
 	const storage = editor.storage as unknown as { markdown: MarkdownStorage };
@@ -174,15 +142,17 @@ function NoteForm({
 		immediatelyRender: false,
 		autofocus: opened.body === "" ? "start" : false,
 		extensions: [
-			StarterKit.configure({ paragraph: false }),
+			StarterKit.configure({ paragraph: false, text: false }),
 			ParagraphKeepBlank,
-			TaskList,
+			TextKeepGt,
+			TaskListKeepTight,
 			TaskItem.configure({ nested: true }),
 			Wikilink,
 			createWikilinkSuggestionExtension(noteTitles, note.id),
 			Mention,
 			createMentionSuggestionExtension(() => peopleRef.current),
 			Ink,
+			SplitMixedTaskLists,
 			// html: true so the allowlisted <span data-ink> round-trips
 			// (docs/adr/0009 amendment). The schema only accepts that span.
 			Markdown.configure({ html: true }),
