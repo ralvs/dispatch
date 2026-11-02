@@ -12,7 +12,7 @@ type MarkdownState = {
 
 // Loosely typed: tiptap-markdown ships loose types for its parse.setup hook,
 // and markdown-it isn't a direct dependency here — see ParagraphKeepBlank in
-// note-editor.tsx for the same pattern.
+// markdown-fidelity.ts for the same pattern.
 type MarkdownItToken = {
 	type: string;
 	tag: string;
