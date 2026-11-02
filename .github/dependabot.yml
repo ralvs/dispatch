@@ -11,7 +11,8 @@ updates:
       include: scope
     groups:
       # supabase-js, auth-js and postgrest-js are pinned to one exact version
-      # on purpose. One group bumps them in one PR, so they never drift apart.
+      # on purpose. The group puts their bumps (and @supabase/ssr's) in one PR.
+      # It does not force one version: check the three pins still match.
       supabase:
         patterns:
           - "@supabase/*"
