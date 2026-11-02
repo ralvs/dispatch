@@ -34,3 +34,9 @@ insert into auth.identities (
   ),
   'email', now(), now(), now()
 );
+
+-- The owner RLS checks against (docs/adr/0095). The migration takes the only
+-- account it finds, and on a fresh stack there is none yet.
+insert into private.owner (user_id)
+values ('0b0e0000-0000-4000-8000-000000000001')
+on conflict (id) do update set user_id = excluded.user_id;

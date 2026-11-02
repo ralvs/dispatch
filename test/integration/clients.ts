@@ -46,3 +46,31 @@ export function ownerClient(): Promise<SupabaseClient> {
 	})();
 	return owner;
 }
+
+const STRANGER_EMAIL = "stranger@dispatch.test";
+const STRANGER_PASSWORD = "dispatch-local-stranger";
+
+let stranger: Promise<SupabaseClient> | undefined;
+
+/** Signed in, but not the owner: what anyone gets if hosted sign-ups are ever
+ * on (docs/adr/0095). Created on first use; auth.* survives the per-test reset. */
+export function strangerClient(): Promise<SupabaseClient> {
+	stranger ??= (async () => {
+		const { error: createError } = await serviceClient().auth.admin.createUser({
+			email: STRANGER_EMAIL,
+			password: STRANGER_PASSWORD,
+			email_confirm: true,
+		});
+		if (createError && createError.code !== "email_exists") {
+			throw new Error(`Stranger sign-up failed: ${createError.message}`);
+		}
+		const sb = anonClient();
+		const { error } = await sb.auth.signInWithPassword({
+			email: STRANGER_EMAIL,
+			password: STRANGER_PASSWORD,
+		});
+		if (error) throw new Error(`Stranger sign-in failed: ${error.message}`);
+		return sb;
+	})();
+	return stranger;
+}

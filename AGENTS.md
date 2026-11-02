@@ -38,8 +38,10 @@ never reordered.
    action and session route handler. `proxy.ts` only refreshes sessions and
    redirects page loads. External endpoints use `lib/secret-auth.ts`
    (timing-safe). The MCP endpoint's boundary is `requireOwnerBearer()`, an
-   OAuth bearer token checked against the same owner (docs/adr/0079). There
-   is no unauthenticated surface.
+   OAuth bearer token checked against the same owner (docs/adr/0079). RLS
+   checks that owner again in the database (`private.is_owner()`,
+   docs/adr/0095), so another signed-in account reaches no row. There is
+   no unauthenticated surface.
 3. **Services take `sb` as the first argument** so the same function runs
    RLS-scoped (pages/actions) or service-role (cron/capture).
 4. **Never lose a capture.** The capture pipeline degrades to a `needs_review`
