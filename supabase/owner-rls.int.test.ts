@@ -2,7 +2,8 @@ import postgres from "postgres";
 import { afterAll, describe, expect, inject, it } from "vitest";
 import type { Database } from "@/lib/database";
 import type { SupabaseClient } from "@/lib/supabase/types";
-import { ownerClient, serviceClient, strangerClient } from "@/test/integration/clients";
+import { ownerClient, strangerClient } from "@/test/integration/clients";
+import { OWNER_USER_ID } from "@/test/integration/stack";
 
 // RLS lets the owner in and no one else (docs/adr/0095, #164). The stranger is
 // a real signed-in account, so these are the reads and writes anyone would get
@@ -106,31 +107,59 @@ describe("owner-scoped RLS", () => {
 		}
 	});
 
+	// Straight against storage.objects, as the Storage API would run it: CI
+	// starts the stack without storage-api (.github/workflows/e2e.yml).
 	it("a stranger cannot read or write the media bucket", async () => {
-		const [owner, stranger] = await Promise.all([ownerClient(), strangerClient()]);
-		const path = `owner-rls/${crypto.randomUUID()}.txt`;
+		const stranger = await strangerClient();
+		const { data } = await stranger.auth.getUser();
+		const strangerId = data.user?.id;
+		expect(strangerId).toBeDefined();
+		const name = `owner-rls/${crypto.randomUUID()}.txt`;
 
-		const upload = await owner.storage.from("media").upload(path, new Blob(["owner only"]));
-		expect(upload.error).toBeNull();
+		/** One transaction as `userId`, the way PostgREST and Storage set the role. */
+		function asUser<T>(userId: string, run: (tx: postgres.TransactionSql) => Promise<T>) {
+			return sql.begin(async (tx) => {
+				await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: userId, role: "authenticated" })}, true)`;
+				// Lets a delete reach RLS instead of storage's "use the API" guard.
+				await tx`select set_config('storage.allow_delete_query', 'true', true)`;
+				await tx`set local role authenticated`;
+				return run(tx);
+			}) as Promise<T>;
+		}
+		const count = (tx: postgres.TransactionSql) =>
+			tx<{ n: number }[]>`
+				select count(*)::int as n from storage.objects
+				where bucket_id = 'media' and name = ${name}`.then(([row]) => row.n);
+
+		await sql`insert into storage.objects (bucket_id, name) values ('media', ${name})`;
 		try {
-			const download = await stranger.storage.from("media").download(path);
-			expect(download.error).not.toBeNull();
-			expect(download.data).toBeNull();
+			expect(await asUser(OWNER_USER_ID, count)).toBe(1);
+			expect(await asUser(strangerId as string, count)).toBe(0);
 
-			const list = await stranger.storage.from("media").list("owner-rls");
-			expect(list.error).toBeNull();
-			expect(list.data).toEqual([]);
+			const renamed = await asUser(strangerId as string, (tx) =>
+				tx`update storage.objects set name = ${`${name}.moved`} where name = ${name}`.then(
+					(rows) => rows.count,
+				),
+			);
+			expect(renamed).toBe(0);
+			const removed = await asUser(strangerId as string, (tx) =>
+				tx`delete from storage.objects where name = ${name}`.then((rows) => rows.count),
+			);
+			expect(removed).toBe(0);
+			expect(await asUser(OWNER_USER_ID, count)).toBe(1);
 
-			const theirs = await stranger.storage
-				.from("media")
-				.upload(`owner-rls/${crypto.randomUUID()}.txt`, new Blob(["stranger"]));
-			expect(theirs.error?.message).toMatch(/row-level security/);
-
-			await stranger.storage.from("media").remove([path]);
-			const still = await owner.storage.from("media").download(path);
-			expect(still.error).toBeNull();
+			await expect(
+				asUser(
+					strangerId as string,
+					(tx) =>
+						tx`insert into storage.objects (bucket_id, name) values ('media', ${`${name}.theirs`})`,
+				),
+			).rejects.toMatchObject({ code: "42501" });
 		} finally {
-			await serviceClient().storage.from("media").remove([path]);
+			await sql.begin(async (tx) => {
+				await tx`select set_config('storage.allow_delete_query', 'true', true)`;
+				await tx`delete from storage.objects where name like ${`${name}%`}`;
+			});
 		}
 	});
 });
