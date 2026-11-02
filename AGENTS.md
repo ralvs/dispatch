@@ -13,7 +13,9 @@ what is specific to Dispatch, and wins where the two disagree.
 
 ## Stack
 
-- **Next.js 16** (App Router, Turbopack) — single app, no separate API server
+- **Next.js 16** (App Router, Turbopack) — single app, no separate API server.
+  The installed version is likely newer than your training data: read its
+  bundled docs in `node_modules/next/dist/docs/` before relying on memory
 - **Bun** (package manager + scripts), **Biome** (lint + format, tabs, width 100), **TypeScript strict**
 - **Tailwind CSS v4** — tokens in `app/globals.css` `@theme inline`; semantic names only (`bg-bg`, `text-ink-3`, `border-line`, `text-accent-slip`)
 - **Supabase** — Postgres + Auth + Storage; migrations in `supabase/migrations/`

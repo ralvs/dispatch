@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
 	reactStrictMode: true,
+	// Next 16.4's `next dev` otherwise writes a managed block into AGENTS.md on
+	// every start, in every checkout and worktree, and puts it back when it is
+	// deleted. AGENTS.md is written by hand; the one thing that block said (read
+	// the docs bundled in node_modules/next/dist/docs) is a line under Stack.
+	agentRules: false,
 	// sharp loads libvips through dlopen, which the file tracer cannot follow:
 	// the .node binding gets bundled but libvips-cpp.so does not, so the
 	// attachments route died with ERR_DLOPEN_FAILED on Vercel while working
