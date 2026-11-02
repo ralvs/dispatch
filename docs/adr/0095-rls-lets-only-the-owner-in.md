@@ -28,14 +28,14 @@ repo held it (#89, side finding in run 3; #164).
    policy stay service-role only.
 4. **The migration takes the owner from `auth.users`** instead of writing the
    hosted id into a public repo: the hosted project had one account, the
-   owner's (checked 2026-11-02). It stops with an error if it finds more than
-   one. A fresh local stack has none when migrations run, so
+   owner's (checked 2026-11-02). It counts non-anonymous accounts only, and
+   stops with an error if it finds more than one. A fresh local stack has none when migrations run, so
    `supabase/seed.sql` sets the local owner.
 5. **A test holds the rule.** `supabase/owner-rls.int.test.ts` fails if any
    public or storage policy for a signed-in role leaves out
    `private.is_owner()`, if a public table has RLS off, or if a second,
-   non-owner account (`strangerClient()`) reads a row, writes a row, or
-   touches the media bucket.
+   non-owner account (`strangerClient()`) reads, inserts, updates or deletes
+   a row in any public table, or touches the media bucket.
 
 ## Not chosen
 
@@ -51,7 +51,8 @@ repo held it (#89, side finding in run 3; #164).
 - A new table's policy must use `(select private.is_owner())`. Copying an old
   `using (true)` policy fails the integration test.
 - Service-role callers (crons, `/api/capture`, the admin client) bypass RLS
-  as before and keep their own guards (ADR-0003, ADR-0031). The MCP bearer
-  path runs as the owner's token, so `auth.uid()` is the owner.
+  as before and keep their own guards (ADR-0003, ADR-0031). The MCP endpoint
+  is not one of them: `requireOwnerBearer()` (`lib/auth.ts`) builds an RLS
+  client from the owner's own token, so `auth.uid()` is the owner.
 - The `(select …)` wrapper lets Postgres run the check once per query, not
   once per row.

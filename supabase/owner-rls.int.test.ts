@@ -21,22 +21,37 @@ function from(sb: SupabaseClient, table: string) {
 	return sb.from(table as Table);
 }
 
-async function policyTables(): Promise<string[]> {
-	const rows = await sql<{ tablename: string }[]>`
-		select distinct tablename from pg_policies
-		where schemaname = 'public' order by tablename`;
-	return rows.map((row) => row.tablename);
+/** Every public table, with one column to filter on. Service-only tables
+ * (RLS on, no policy) are in the list too. */
+async function publicTables(): Promise<{ table: string; column: string }[]> {
+	return sql<{ table: string; column: string }[]>`
+		select distinct on (c.table_name) c.table_name as table, c.column_name as column
+		from information_schema.columns c
+		join information_schema.tables t
+			on t.table_schema = c.table_schema and t.table_name = c.table_name
+		where c.table_schema = 'public' and t.table_type = 'BASE TABLE'
+		order by c.table_name, c.ordinal_position`;
+}
+
+/** A fingerprint of every row, read past RLS. */
+async function contents(table: string): Promise<string> {
+	const [row] = await sql<{ digest: string }[]>`
+		select md5(coalesce(string_agg(t::text, ',' order by t::text), '')) as digest
+		from ${sql(`public.${table}`)} t`;
+	return row.digest;
 }
 
 describe("owner-scoped RLS", () => {
 	it("every policy a signed-in role can use checks the owner", async () => {
+		// Both expressions null is a policy that lets everything through.
 		const open = await sql<{ table: string; policy: string }[]>`
 			select schemaname || '.' || tablename as table, policyname as policy
 			from pg_policies
 			where schemaname in ('public', 'storage')
 				and ('authenticated' = any (roles) or 'anon' = any (roles) or 'public' = any (roles))
 				and (
-					(qual is not null and qual not like '%private.is_owner()%')
+					(qual is null and with_check is null)
+					or (qual is not null and qual not like '%private.is_owner()%')
 					or (with_check is not null and with_check not like '%private.is_owner()%')
 				)`;
 		expect(open).toEqual([]);
@@ -52,13 +67,13 @@ describe("owner-scoped RLS", () => {
 
 	it("a stranger reads no row the owner can see", async () => {
 		const [owner, stranger] = await Promise.all([ownerClient(), strangerClient()]);
-		const tables = await policyTables();
+		const tables = await publicTables();
 		expect(tables.length).toBeGreaterThan(0);
 
 		// The migrations seed app_settings, the domains and a welcome note, so
 		// some of these tables hold rows the owner sees.
 		let ownerRows = 0;
-		for (const table of tables) {
+		for (const { table } of tables) {
 			const mine = await from(owner, table).select("*");
 			expect(mine.error, table).toBeNull();
 			ownerRows += mine.data?.length ?? 0;
@@ -72,30 +87,23 @@ describe("owner-scoped RLS", () => {
 
 	it("a stranger cannot insert, update or delete", async () => {
 		const stranger = await strangerClient();
-		for (const table of await policyTables()) {
+		for (const { table, column } of await publicTables()) {
+			const before = await contents(table);
+
 			const insert = await from(stranger, table).insert({} as never);
 			expect(insert.error?.code, table).toBe("42501");
+
+			// Update and delete see no rows, so they change none.
+			const update = await from(stranger, table)
+				.update({ [column]: null } as never)
+				.not(column, "is", null)
+				.select();
+			expect(update.data ?? [], table).toEqual([]);
+			const remove = await from(stranger, table).delete().not(column, "is", null).select();
+			expect(remove.data ?? [], table).toEqual([]);
+
+			expect(await contents(table), table).toBe(before);
 		}
-
-		// Update and delete see no rows, so they change none.
-		const before = await serviceClient().from("app_settings").select("*");
-		const update = await stranger
-			.from("app_settings")
-			.update({ timezone: "UTC" })
-			.not("timezone", "is", null)
-			.select();
-		expect(update.data).toEqual([]);
-		const remove = await stranger
-			.from("stewardship_domains")
-			.delete()
-			.not("id", "is", null)
-			.select();
-		expect(remove.data).toEqual([]);
-
-		const after = await serviceClient().from("app_settings").select("*");
-		expect(after.data).toEqual(before.data);
-		const domains = await serviceClient().from("stewardship_domains").select("id");
-		expect(domains.data?.length).toBeGreaterThan(0);
 	});
 
 	it("a stranger cannot read or write the media bucket", async () => {
@@ -106,15 +114,17 @@ describe("owner-scoped RLS", () => {
 		expect(upload.error).toBeNull();
 		try {
 			const download = await stranger.storage.from("media").download(path);
+			expect(download.error).not.toBeNull();
 			expect(download.data).toBeNull();
 
 			const list = await stranger.storage.from("media").list("owner-rls");
-			expect(list.data ?? []).toEqual([]);
+			expect(list.error).toBeNull();
+			expect(list.data).toEqual([]);
 
 			const theirs = await stranger.storage
 				.from("media")
 				.upload(`owner-rls/${crypto.randomUUID()}.txt`, new Blob(["stranger"]));
-			expect(theirs.error).not.toBeNull();
+			expect(theirs.error?.message).toMatch(/row-level security/);
 
 			await stranger.storage.from("media").remove([path]);
 			const still = await owner.storage.from("media").download(path);
