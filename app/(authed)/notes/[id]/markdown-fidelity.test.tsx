@@ -89,6 +89,32 @@ describe("text", () => {
 		}
 	});
 
+	it("never turns a > after a hard break into a quote", () => {
+		const out = markdown(
+			make({
+				type: "doc",
+				content: [
+					{
+						type: "paragraph",
+						content: [
+							{ type: "text", text: "a" },
+							{ type: "hardBreak" },
+							{ type: "text", text: "> not a quote" },
+						],
+					},
+				],
+			}),
+		);
+		const names = nodeNames(make(out));
+		expect(names).not.toContain("blockquote");
+		expect(names).toContain("hardBreak");
+		expect(make(out).getText()).toContain("> not a quote");
+	});
+
+	it("keeps a real quote as a quote", () => {
+		expect(roundTrip("> a real quote")).toBe("> a real quote");
+	});
+
 	it("still escapes a > at the start of a line", () => {
 		const out = roundTrip("\\> not a quote");
 		expect(out).toBe("\\> not a quote");
