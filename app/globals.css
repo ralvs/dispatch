@@ -423,23 +423,36 @@ html[data-standalone] .app-shell {
 	border-top: 1px solid var(--line);
 }
 /* TipTap task lists */
-.prose-authored :where(ul[data-type="taskList"]) {
+.prose-authored :where([data-type="taskList"]) {
 	list-style: none;
 	padding-left: 0;
 }
-.prose-authored :where(ul[data-type="taskList"] ul[data-type="taskList"]) {
+.prose-authored :where([data-type="taskList"] [data-type="taskList"]) {
 	padding-left: 1.5em;
 }
-.prose-authored :where(ul[data-type="taskList"] li) {
+.prose-authored :where([data-type="taskList"] li) {
 	display: flex;
 	align-items: baseline;
 	gap: 0.5rem;
 }
-.prose-authored :where(ul[data-type="taskList"] li > div) {
+.prose-authored :where([data-type="taskList"] li > div) {
 	flex: 1;
 }
-.prose-authored :where(ul[data-type="taskList"] input) {
+.prose-authored :where([data-type="taskList"] input) {
 	accent-color: var(--accent);
+}
+/* A flex row has no marker, so a numbered task list counts its own items. The
+ * editor sets the counter inline when the list starts past 1. */
+.prose-authored :where(ol[data-type="taskList"]) {
+	counter-reset: task-number;
+}
+.prose-authored :where(ol[data-type="taskList"] > li) {
+	counter-increment: task-number;
+}
+.prose-authored :where(ol[data-type="taskList"] > li)::before {
+	content: counter(task-number) ".";
+	color: var(--ink-4);
+	font-variant-numeric: tabular-nums;
 }
 /* Named text colour in notes (docs/adr/0009). Tokens, never hex. */
 .prose-authored [data-ink="accent"] { color: var(--accent); }
