@@ -46,7 +46,9 @@ One-time setup in the Supabase dashboard (the local stack reads
 - **Authentication → OAuth Server**: enable it, set the authorization path to
   `/oauth/consent`, and allow dynamic client registration.
 - **Authentication → URL Configuration**: Site URL `https://dispatch.alves.id`.
-- **Authentication → Sign In / Providers**: keep sign-ups off.
+- **Authentication → Sign In / Providers**: keep sign-ups off. RLS lets only
+  the owner in (docs/adr/0095), so a stray account sees nothing, but there is
+  no reason to allow one.
 
 ### The capture Shortcuts (iOS share sheet, Siri, Apple Watch)
 
