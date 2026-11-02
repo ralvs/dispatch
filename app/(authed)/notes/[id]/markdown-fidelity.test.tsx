@@ -251,6 +251,19 @@ describe("numbered task list", () => {
 		expect(markdown(e)).toBe(body);
 	});
 
+	it("keeps three adjacent numbered task lists apart", () => {
+		const body = "1. [ ] a\n\n\n1) [ ] b\n\n\n5. [ ] c";
+		const e = make(body);
+		expect(nodeNames(e).filter((n) => n === "taskList")).toHaveLength(3);
+		expect(markdown(e)).toBe(body);
+	});
+
+	it("keeps numbered task lists apart across a blank line", () => {
+		const body = "1. [ ] a\n\n&nbsp;\n\n1. [ ] b";
+		expect(nodeNames(make(body)).filter((n) => n === "taskList")).toHaveLength(2);
+		expect(roundTrip(body)).toBe(body);
+	});
+
 	it("keeps a nested numbered task list", () => {
 		const body = "- [ ] a\n  1. [x] a1\n  2. [ ] a2\n- [ ] b";
 		expect(roundTrip(body)).toBe(body);
