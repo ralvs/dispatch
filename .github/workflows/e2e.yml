@@ -26,6 +26,14 @@ jobs:
     name: E2E
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      # Services `supabase start` leaves out. Only what the app and the
+      # tests reach stays: Postgres, GoTrue (sign-in), PostgREST, Storage
+      # (the media bucket) and Kong in front of them. Kong still routes
+      # every path, so a test that reaches a left-out service fails with
+      # `name resolution failed`. imgproxy stays out while
+      # `[storage.image_transformation]` is off in supabase/config.toml.
+      SUPABASE_EXCLUDE: realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -52,10 +60,12 @@ jobs:
           version: 2.115.0
 
       # Image tags ship inside the CLI release. `ghcr` is in the key because
-      # that is the name `docker save` records on a miss.
+      # that is the name `docker save` records on a miss. The service list
+      # is in the key too: a hit must hold every image `supabase start`
+      # runs, or the missing one pulls from public.ecr.aws.
       - name: Supabase image cache key
         run: >
-          echo "SUPABASE_IMAGE_CACHE_KEY=supabase-images-${{ runner.os }}-${{ runner.arch }}-ghcr-${{ steps.supabase.outputs.version }}"
+          echo "SUPABASE_IMAGE_CACHE_KEY=supabase-images-${{ runner.os }}-${{ runner.arch }}-ghcr-${{ steps.supabase.outputs.version }}-$(echo "$SUPABASE_EXCLUDE" | sha256sum | cut -c1-8)"
           >> "$GITHUB_ENV"
 
       - name: Restore Supabase images
@@ -80,14 +90,13 @@ jobs:
         if: success() && steps.supabase-images.outputs.cache-hit != 'true'
         run: echo "SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io" >> "$GITHUB_ENV"
 
-      # Only what the app and the tests reach: Postgres, GoTrue (sign-in),
-      # PostgREST and Kong in front of them. Applies supabase/migrations/ and
-      # supabase/seed.sql, which adds the owner the tests sign in as.
+      # Starts what SUPABASE_EXCLUDE leaves in. Applies supabase/migrations/
+      # and supabase/seed.sql, which adds the owner the tests sign in as.
       # One retry: a second `supabase start` resumes a half-finished pull.
       - name: Start the local stack
         run: |
           start_stack() {
-            supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+            supabase start -x "$SUPABASE_EXCLUDE"
           }
           if ! start_stack; then
             echo "supabase start failed; retrying once"
