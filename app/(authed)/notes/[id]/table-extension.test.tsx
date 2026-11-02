@@ -150,6 +150,18 @@ describe("saving an edited table", () => {
 		expect(cellTexts(make(out))).toEqual(["th:ab", "td:p|q"]);
 	});
 
+	it("writes an opened table fresh once it moves into a quote", () => {
+		const e = make("| a |\n| --- |\n| 1 |\n\nend");
+		// Wrap the table node itself, as dragging it into a quote would.
+		const { doc, schema, tr } = e.state;
+		const range = doc.resolve(0).blockRange(doc.resolve(doc.child(0).nodeSize));
+		if (!range) throw new Error("no range");
+		e.view.dispatch(tr.wrap(range, [{ type: schema.nodes.blockquote }]));
+		const out = markdown(e);
+		expect(out).toBe("> | a |\n> | --- |\n> | 1 |\n\nend");
+		expect(cellTexts(make(out))).toEqual(["th:a", "td:1"]);
+	});
+
 	it("writes a table inside a list fresh, and it opens as the same table", () => {
 		const out = roundTrip("- item\n\n  |a|\n  |-|\n  |1|");
 		expect(cellTexts(make(out))).toEqual(["th:a", "td:1"]);
@@ -175,7 +187,7 @@ describe("a table only a pipe table can hold", () => {
 		);
 		const out = markdown(e);
 		expect(out).toBe("| a |\n| --- |\n| one<br>two |\n\nend");
-		expect(cellTexts(make(out))).toEqual(["th:a", "td:onetwo"]);
+		expect(make(out).getHTML()).toContain("<p>one<br>two</p></td>");
 	});
 });
 

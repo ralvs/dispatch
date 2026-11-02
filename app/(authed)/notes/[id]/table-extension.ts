@@ -75,7 +75,11 @@ function writeTable(state: MarkdownState, node: PMNode) {
 			if (cellIndex) state.write(" | ");
 			const start = state.out.length;
 			const paragraph = cell.firstChild;
-			if (paragraph?.textContent.trim()) state.renderInline(paragraph);
+			// Spaces alone are an empty cell; an inline atom with no text is not.
+			const blank =
+				!paragraph ||
+				(!paragraph.textContent.trim() && paragraph.content.content.every((child) => child.isText));
+			if (!blank) state.renderInline(paragraph);
 			// A `|` ends the cell wherever it is, even inside code: escape them all.
 			state.out = state.out.slice(0, start) + state.out.slice(start).replace(/\|/g, "\\|");
 		});
@@ -179,8 +183,10 @@ export const NoteTable = Table.extend({
 	addStorage() {
 		return {
 			markdown: {
-				serialize(this: SerializeContext, state: MarkdownState, node: PMNode) {
-					if (isOpened(this.editor, node)) {
+				serialize(this: SerializeContext, state: MarkdownState, node: PMNode, parent: PMNode) {
+					// A table moved into a list or quote is still the same node, but its
+					// source lines lack that block's markers: write it fresh.
+					if (parent.type.name === "doc" && isOpened(this.editor, node)) {
 						state.write(node.attrs.source);
 						state.closeBlock(node);
 						return;
