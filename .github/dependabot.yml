@@ -1,0 +1,34 @@
+# Weekly dependency PRs (#165). Titles come out as `chore(deps): …` and
+# `ci(deps): …`, which pass pr-title.yml (docs/adr/0064).
+version: 2
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      # supabase-js, auth-js and postgrest-js are pinned to one exact version
+      # on purpose. One group bumps them in one PR, so they never drift apart.
+      supabase:
+        patterns:
+          - "@supabase/*"
+      # `tiptap-markdown` is not in this group: it is a separate package, not
+      # `@tiptap/*`, and #166 (switch to @tiptap/markdown) is parked.
+      tiptap:
+        patterns:
+          - "@tiptap/*"
+      ai-sdk:
+        patterns:
+          - ai
+          - "@ai-sdk/*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+      include: scope
