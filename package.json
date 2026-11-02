@@ -21,7 +21,7 @@
 	"dependencies": {
 		"@ai-sdk/gateway": "^4.0.132",
 		"@ai-sdk/react": "^4.0.163",
-		"@hookform/resolvers": "^5.9.1",
+		"@hookform/resolvers": "^6.0.2",
 		"@internationalized/date": "^3.12.4",
 		"@modelcontextprotocol/server": "^2.4.0",
 		"@supabase/auth-js": "2.116.0",
