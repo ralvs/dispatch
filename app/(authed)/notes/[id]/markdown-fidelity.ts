@@ -1,4 +1,4 @@
-import { type Editor, Extension } from "@tiptap/core";
+import { type Editor, Extension, mergeAttributes } from "@tiptap/core";
 import { BulletList, OrderedList } from "@tiptap/extension-list";
 import Paragraph from "@tiptap/extension-paragraph";
 import TaskList from "@tiptap/extension-task-list";
@@ -221,13 +221,17 @@ export const SplitMixedTaskLists = Extension.create({
 // tiptap-markdown decides `tight` (no blank line between items) with
 // `!element.querySelector("p")`, which also finds the `<p>`s of a loose nested
 // list. Read it from the list's own items only: a loose nested list does not
-// make its parent loose.
+// make its parent loose. The editor writes `data-tight` both ways, so a copied
+// list keeps it on paste (a task item's `<p>` sits inside a `<div>`).
 const ownItemsTight = {
 	default: true,
-	parseHTML: (element: HTMLElement) =>
-		element.getAttribute("data-tight") === "true" || !element.querySelector(":scope > li > p"),
+	parseHTML: (element: HTMLElement) => {
+		const tight = element.getAttribute("data-tight");
+		if (tight !== null) return tight === "true";
+		return !element.querySelector(":scope > li > p");
+	},
 	renderHTML: (attributes: { tight: boolean }) => ({
-		"data-tight": attributes.tight ? "true" : null,
+		"data-tight": attributes.tight ? "true" : "false",
 	}),
 };
 
@@ -249,12 +253,21 @@ export const OrderedListKeepTight = OrderedList.extend({
 // A numbered task list (`1. [ ] a`) parses as an `<ol>`, and the editor's task
 // list read only `<ul>`. The `<ol>` became an ordered list that cannot hold
 // task items, so it gained an empty item and the tasks moved out. Read both,
-// keep `ordered` and `start`, and write the numbers back on save.
+// keep `ordered` and `start`, render an `<ol>`, and write the numbers back on
+// save. globals.css draws the numbers: a task item is a flex row, not a list
+// item, so it has no marker of its own.
 export const TaskListKeepTight = TaskList.extend({
 	parseHTML() {
 		return [
 			{ tag: `ul[data-type="${this.name}"]`, priority: 51 },
 			{ tag: `ol[data-type="${this.name}"]`, priority: 51 },
+		];
+	},
+	renderHTML({ node, HTMLAttributes }) {
+		return [
+			node.attrs.ordered ? "ol" : "ul",
+			mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { "data-type": this.name }),
+			0,
 		];
 	},
 	addAttributes() {
@@ -263,18 +276,22 @@ export const TaskListKeepTight = TaskList.extend({
 			tight: ownItemsTight,
 			ordered: {
 				default: false,
-				parseHTML: (element: HTMLElement) =>
-					element.tagName === "OL" || element.getAttribute("data-ordered") === "true",
-				renderHTML: (attributes: { ordered: boolean }) => ({
-					"data-ordered": attributes.ordered ? "true" : null,
-				}),
+				parseHTML: (element: HTMLElement) => element.tagName === "OL",
+				renderHTML: () => ({}),
 			},
 			start: {
 				default: 1,
-				parseHTML: (element: HTMLElement) => Number(element.getAttribute("start") ?? 1),
-				renderHTML: (attributes: { start: number }) => ({
-					start: attributes.start === 1 ? null : attributes.start,
-				}),
+				parseHTML: (element: HTMLElement) => {
+					const start = Number.parseInt(element.getAttribute("start") ?? "", 10);
+					return Number.isSafeInteger(start) && start >= 0 ? start : 1;
+				},
+				renderHTML: (attributes: { ordered: boolean; start: number }) =>
+					attributes.ordered && attributes.start !== 1
+						? {
+								start: attributes.start,
+								style: `counter-reset: task-number ${attributes.start - 1}`,
+							}
+						: {},
 			},
 		};
 	},

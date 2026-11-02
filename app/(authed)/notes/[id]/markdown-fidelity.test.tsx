@@ -201,6 +201,12 @@ describe("list spacing", () => {
 	it("keeps a loose bullet list loose", () => {
 		expect(roundTrip("- a\n\n- b")).toBe("- a\n\n- b");
 	});
+
+	it("keeps loose and tight lists on a copy and paste as HTML", () => {
+		for (const body of ["- a\n\n- b", "- a\n  - b\n\n  - c\n- d", "1. a\n\n2. b"]) {
+			expect(markdown(make(make(body).getHTML()))).toBe(body);
+		}
+	});
 });
 
 describe("numbered task list", () => {
@@ -217,6 +223,25 @@ describe("numbered task list", () => {
 
 	it("keeps a loose numbered task list loose", () => {
 		expect(roundTrip("1. [ ] a\n\n2. [x] b")).toBe("1. [ ] a\n\n2. [x] b");
+	});
+
+	it("renders an <ol> with its start", () => {
+		const html = make("3. [ ] a\n4. [x] b").getHTML();
+		expect(html).toMatch(/^<ol [^>]*data-type="taskList"/);
+		expect(html).toContain('start="3"');
+	});
+
+	it("survives a copy and paste as HTML, loose or tight", () => {
+		for (const body of ["3. [ ] a\n\n4. [x] b", "1. [ ] a\n2. [x] b", "- [ ] a\n\n- [x] b"]) {
+			expect(markdown(make(make(body).getHTML()))).toBe(body);
+		}
+	});
+
+	it("falls back to 1 for a start it cannot read", () => {
+		for (const start of ['start=""', 'start="foo"', 'start="-2"', ""]) {
+			const html = `<ol data-type="taskList" ${start}><li data-type="taskItem" data-checked="false"><p>a</p></li></ol>`;
+			expect(markdown(make(html))).toBe("1. [ ] a");
+		}
 	});
 
 	it("keeps a nested numbered task list", () => {
