@@ -11,6 +11,8 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 type MarkdownState = {
 	write(text: string): void;
 	text(text: string): void;
+	// prosemirror-markdown's own flag for "escape line-start syntax here".
+	atBlockStart: boolean;
 	renderInline(node: PMNode): void;
 	closeBlock(node: PMNode): void;
 };
@@ -45,14 +47,18 @@ export const ParagraphKeepBlank = Paragraph.extend({
 });
 
 // tiptap-markdown escapes both `<` and `>` in text, so `->` saved as `-&gt;`.
-// Only `<` can open an HTML tag; a `>` at the start of a line is already
-// backslash-escaped by the serializer, so leave every other `>` as written.
+// Only `<` can open an HTML tag. A `>` that starts a line could open a
+// blockquote, so it stays escaped; every other `>` stays as written.
 export const TextKeepGt = Text.extend({
 	addStorage() {
 		return {
 			markdown: {
 				serialize(state: MarkdownState, node: PMNode) {
-					state.text((node.text ?? "").replace(/</g, "&lt;"));
+					let text = (node.text ?? "").replace(/</g, "&lt;");
+					// The serializer escapes a `>` in column zero only; after up to three
+					// spaces it still opens a blockquote.
+					if (state.atBlockStart) text = text.replace(/^(\s+)>/, "$1&gt;");
+					state.text(text);
 				},
 				parse: {},
 			},

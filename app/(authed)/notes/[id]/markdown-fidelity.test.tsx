@@ -1,4 +1,4 @@
-import { Editor } from "@tiptap/core";
+import { Editor, type JSONContent } from "@tiptap/core";
 import TaskItem from "@tiptap/extension-task-item";
 import StarterKit from "@tiptap/starter-kit";
 import { Markdown, type MarkdownStorage } from "tiptap-markdown";
@@ -16,7 +16,7 @@ afterEach(() => {
 	editor = undefined;
 });
 
-function make(content: string): Editor {
+function make(content: string | JSONContent): Editor {
 	editor?.destroy();
 	editor = new Editor({
 		extensions: [
@@ -67,6 +67,25 @@ describe("text", () => {
 			const out = roundTrip(body);
 			expect(out).toMatch(/\\> not a quote$/);
 			expect(nodeNames(make(out))).not.toContain("blockquote");
+		}
+	});
+
+	it("never turns a > after leading spaces into a quote", () => {
+		const paragraph: JSONContent = {
+			type: "paragraph",
+			content: [{ type: "text", text: "  > not a quote" }],
+		};
+		const docs: JSONContent[] = [
+			{ type: "doc", content: [paragraph] },
+			{
+				type: "doc",
+				content: [{ type: "bulletList", content: [{ type: "listItem", content: [paragraph] }] }],
+			},
+		];
+		for (const doc of docs) {
+			const out = markdown(make(doc));
+			expect(nodeNames(make(out))).not.toContain("blockquote");
+			expect(make(out).getText()).toContain("> not a quote");
 		}
 	});
 
