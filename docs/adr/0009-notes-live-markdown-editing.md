@@ -40,3 +40,26 @@ The stored body is still markdown text. One inline HTML tag is now legal:
 parses HTML so this span round-trips; the schema only accepts `span[data-ink]`.
 Colour is a selection bubble, not a toolbar. Chrome colour meanings (overdue,
 error) do not apply inside a note.
+
+## Amendment: pipe tables (2026-11-02)
+
+A note can hold a GFM pipe table (#169). `@tiptap/extension-table` builds it
+and `tiptap-markdown` parses it. The editor writes it back itself
+(`table-extension.ts`), for two reasons:
+
+- **An unedited table saves as written.** `tiptap-markdown` writes one
+  spelling (`| a |` and `| --- |`), so a table typed another way (no outer
+  pipes, padded columns, `|:-:|`) changed on open-and-save. The parser keeps
+  each top-level table's source lines, and the editor writes them back while
+  the table node is the one it opened with. ProseMirror replaces a node on
+  any edit inside it, so an edited table is written fresh, keeping each
+  column's alignment. A table inside a list or quote is always written fresh.
+- **Every table is a pipe table.** The schema only holds what a pipe table
+  can say: a cell is one paragraph, and no cell spans. A pasted table with
+  merged cells loses the merge, and a pasted cell with several blocks keeps
+  their text on one line. So the serializer never falls back to an HTML
+  `<table>`. The one tag a table may write is `<br>`, a line break inside a
+  cell, as GFM does.
+
+To start a table, type the header row (`| Name | Age |`) and press Enter. It
+is the same kind of markdown shortcut as `- ` for a list: no toolbar.
