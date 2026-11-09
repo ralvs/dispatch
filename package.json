@@ -19,8 +19,8 @@
 		"check": "biome check . && tsc --noEmit && vitest run --project unit --project component"
 	},
 	"dependencies": {
-		"@ai-sdk/gateway": "^4.0.132",
-		"@ai-sdk/react": "^4.0.163",
+		"@ai-sdk/gateway": "^4.0.136",
+		"@ai-sdk/react": "^4.0.167",
 		"@hookform/resolvers": "^6.0.2",
 		"@internationalized/date": "^3.12.4",
 		"@modelcontextprotocol/server": "^2.4.0",
@@ -38,7 +38,7 @@
 		"@tiptap/react": "^3.32.2",
 		"@tiptap/starter-kit": "^3.32.2",
 		"@tiptap/suggestion": "^3.32.2",
-		"ai": "^7.0.159",
+		"ai": "^7.0.163",
 		"aws4fetch": "^1.0.20",
 		"ical.js": "^2.2.1",
 		"lucide-react": "^1.47.0",
