@@ -350,7 +350,7 @@ export async function getCreditCardBills(ctx: FinanceContext, input: BillsInput)
 // ── spending_summary ────────────────────────────────────────────────────
 
 export const SPENDING_RULE =
-	"Outflows and inflows are unsigned BRL. Transfers between the owner's own accounts (category 'Same person transfer…', or payer and receiver with the same document) and credit-card bill payments (category 'Credit card payment', or the card's 'Pagamento recebido' credit) are left out of the groups and totals and reported under `excluded`: each card purchase already counts once on the card, so the bill payment would count it twice. Pending and posted rows both count.";
+	"Outflows and inflows are unsigned BRL. Transfers between the owner's own accounts (category 'Same person transfer…', or payer and receiver with the same document) and credit-card bill payments (category 'Credit card payment', a bank debit described 'Pagamento de fatura', or the card's 'Pagamento recebido' credit) are left out of the groups and totals and reported under `excluded`: each card purchase already counts once on the card, so the bill payment would count it twice. Pending and posted rows both count.";
 
 export type SummaryInput = { from?: string; to?: string; groupBy: GroupBy; accountId?: string };
 

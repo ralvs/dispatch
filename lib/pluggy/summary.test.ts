@@ -38,6 +38,21 @@ describe("exclusionReason", () => {
 		expect(exclusionReason(row({ category: "Credit card payment" }))).toBe("card_bill_payment");
 	});
 
+	it("drops a bill payment Pluggy filed as a transfer", () => {
+		const r = row({ category: "Transfers", description: "Pagamento de fatura", amount: -500 });
+		expect(exclusionReason(r)).toBe("card_bill_payment");
+	});
+
+	it("keeps money coming in that mentions a bill", () => {
+		const r = row({
+			category: "Transfers",
+			description: "Pagamento de fatura",
+			type: "CREDIT",
+			amount: 500,
+		});
+		expect(exclusionReason(r)).toBeNull();
+	});
+
 	it("drops the payment Nubank books on the card", () => {
 		const r = row(
 			{ category: null, description: "Pagamento recebido", type: "CREDIT", amount: 500 },

@@ -9,8 +9,10 @@ import type { PluggyTransaction } from "./schemas";
 //   1. A transfer between the owner's own accounts — Pluggy category
 //      "Same person transfer…", or a payment whose payer and receiver carry
 //      the same document number.
-//   2. A credit-card bill payment — category "Credit card payment", or, on
-//      the card itself, the credit Nubank books as "Pagamento recebido".
+//   2. A credit-card bill payment — category "Credit card payment"; on a
+//      bank account, money out described "Pagamento de fatura" (Pluggy
+//      files Nubank's under "Transfers"); on the card itself, the credit
+//      Nubank books as "Pagamento recebido".
 //      Each card purchase already counts as an outflow on the card; paying
 //      the bill from checking would count it a second time.
 //
@@ -36,7 +38,11 @@ export function exclusionReason(row: SummaryRow): ExclusionReason | null {
 	const receiver = tx.paymentData?.receiver?.documentNumber?.value;
 	if (payer && receiver && digits(payer) === digits(receiver)) return "own_transfer";
 	if (category === "credit card payment") return "card_bill_payment";
-	if (onCreditCard && !isOutflow(tx, true) && /pagamento recebido/i.test(tx.description)) {
+	const out = isOutflow(tx, onCreditCard);
+	if (onCreditCard && !out && /pagamento recebido/i.test(tx.description)) {
+		return "card_bill_payment";
+	}
+	if (!onCreditCard && out && /pagamento de fatura/i.test(tx.description)) {
 		return "card_bill_payment";
 	}
 	return null;

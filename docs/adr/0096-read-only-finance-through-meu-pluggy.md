@@ -44,8 +44,10 @@ finance surface, so this is a new direction.
    `finance_spending_summary` leaves out of its groups and totals:
    - transfers between own accounts: category `Same person transfer…`, or
      payer and receiver with the same document number;
-   - credit-card bill payments: category `Credit card payment`, or the
-     `Pagamento recebido` credit Nubank books on the card.
+   - credit-card bill payments: category `Credit card payment`; a bank
+     debit described `Pagamento de fatura` (Pluggy files Nubank's under
+     `Transfers`, seen in live data); or the `Pagamento recebido` credit
+     Nubank books on the card.
    Each card purchase counts once, as an outflow on the card; the bill
    payment from checking would count it a second time. Excluded rows come
    back under `excluded` with counts and totals, never dropped silently.
