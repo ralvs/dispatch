@@ -32,10 +32,30 @@ export function brlAmount(tx: PluggyTransaction): number {
 	return Math.abs(amount);
 }
 
-/** Money leaving the account. `type` decides; the sign is the fallback. */
-export function isOutflow(tx: PluggyTransaction): boolean {
+/**
+ * Money leaving the account. `type` decides. Without it the sign decides,
+ * and the sign means opposite things: a bank account books money out as a
+ * negative amount, a credit card books a purchase as a positive one.
+ */
+export function isOutflow(tx: PluggyTransaction, onCreditCard: boolean): boolean {
 	if (tx.type) return tx.type === "DEBIT";
-	return tx.amount < 0;
+	return onCreditCard ? tx.amount > 0 : tx.amount < 0;
+}
+
+// Eight or more digits, maybe split by "." "-" or "/": a CPF, CNPJ,
+// account, card or phone number. Dates are left alone.
+const LONG_NUMBER = /\d(?:[./-]?\d){7,}/g;
+const DATE = /^(\d{2}\/\d{2}\/\d{4}|\d{4}-\d{2}-\d{2})$/;
+
+/**
+ * Masks long numbers inside free text to their last four digits. Banks put
+ * a CPF or an account number into Pix descriptions; tool output must not
+ * carry them.
+ */
+export function maskDigits(text: string): string {
+	return text.replace(LONG_NUMBER, (match) =>
+		DATE.test(match) ? match : `••••${match.replace(/\D/g, "").slice(-4)}`,
+	);
 }
 
 /** Cents-exact rounding for sums of floats. */

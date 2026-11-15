@@ -1,4 +1,4 @@
-import { brlAmount, isOutflow, localDay, round2 } from "./format";
+import { brlAmount, isOutflow, localDay, maskDigits, round2 } from "./format";
 import type { PluggyTransaction } from "./schemas";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -36,7 +36,7 @@ export function exclusionReason(row: SummaryRow): ExclusionReason | null {
 	const receiver = tx.paymentData?.receiver?.documentNumber?.value;
 	if (payer && receiver && digits(payer) === digits(receiver)) return "own_transfer";
 	if (category === "credit card payment") return "card_bill_payment";
-	if (onCreditCard && !isOutflow(tx) && /pagamento recebido/i.test(tx.description)) {
+	if (onCreditCard && !isOutflow(tx, true) && /pagamento recebido/i.test(tx.description)) {
 		return "card_bill_payment";
 	}
 	return null;
@@ -51,7 +51,9 @@ export function groupKey(tx: PluggyTransaction, groupBy: GroupBy, tz: string): s
 		case "category":
 			return tx.category?.trim() || "Uncategorized";
 		case "merchant":
-			return tx.merchant?.name?.trim() || tx.merchant?.businessName?.trim() || tx.description;
+			return maskDigits(
+				tx.merchant?.name?.trim() || tx.merchant?.businessName?.trim() || tx.description,
+			);
 		case "day":
 			return localDay(tx.date, tz);
 		case "month":
@@ -85,7 +87,7 @@ export function summarize(rows: SummaryRow[], groupBy: GroupBy, tz: string): Sum
 	for (const row of rows) {
 		const tx = row.transaction;
 		const amount = brlAmount(tx);
-		const out = isOutflow(tx);
+		const out = isOutflow(tx, row.onCreditCard);
 		const reason = exclusionReason(row);
 		let bucket: Totals;
 		if (reason !== null) {

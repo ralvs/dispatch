@@ -35,7 +35,8 @@ const CreditDataSchema = z.object({
 
 export const AccountSchema = z.object({
 	id: z.string(),
-	type: z.enum(["BANK", "CREDIT"]),
+	// Kept open: an account type we do not show must not fail the whole page.
+	type: z.string(),
 	subtype: z.string(),
 	number: z.string().nullish(),
 	name: z.string(),
@@ -46,6 +47,11 @@ export const AccountSchema = z.object({
 	creditData: CreditDataSchema.nullish(),
 });
 export type PluggyAccount = z.infer<typeof AccountSchema>;
+/** The account types the tools show: checking and credit card. */
+export type ShownAccount = PluggyAccount & { type: "BANK" | "CREDIT" };
+export function isShownAccount(a: PluggyAccount): a is ShownAccount {
+	return a.type === "BANK" || a.type === "CREDIT";
+}
 
 export const TransactionSchema = z.object({
 	id: z.string(),

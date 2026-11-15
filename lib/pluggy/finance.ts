@@ -2,8 +2,13 @@ import { shiftDay, todayInTz } from "@/lib/dates";
 import type { PluggyClient } from "./client";
 import type { ItemRef } from "./config";
 import { checkConsent } from "./consent";
-import { brlAmount, localDay, maskNumber } from "./format";
-import type { PluggyAccount, PluggyItem, PluggyTransaction } from "./schemas";
+import { brlAmount, localDay, maskDigits, maskNumber } from "./format";
+import {
+	isShownAccount,
+	type PluggyItem,
+	type PluggyTransaction,
+	type ShownAccount,
+} from "./schemas";
 import { type GroupBy, summarize } from "./summary";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -33,7 +38,7 @@ export class FinanceInputError extends Error {
 	override name = "FinanceInputError";
 }
 
-type LabeledAccount = { label: string; account: PluggyAccount };
+type LabeledAccount = { label: string; account: ShownAccount };
 
 async function loadItems(ctx: FinanceContext): Promise<{ ref: ItemRef; item: PluggyItem }[]> {
 	return Promise.all(
@@ -44,7 +49,9 @@ async function loadItems(ctx: FinanceContext): Promise<{ ref: ItemRef; item: Plu
 async function loadAccounts(ctx: FinanceContext): Promise<LabeledAccount[]> {
 	const perItem = await Promise.all(
 		ctx.items.map(async (ref) =>
-			(await ctx.client.listAccounts(ref.itemId)).map((account) => ({ label: ref.label, account })),
+			(await ctx.client.listAccounts(ref.itemId))
+				.filter(isShownAccount)
+				.map((account) => ({ label: ref.label, account })),
 		),
 	);
 	return perItem.flat();
@@ -113,7 +120,7 @@ export async function connectionStatus(ctx: FinanceContext) {
 				ctx.client.getItem(ref.itemId),
 				ctx.client.listAccounts(ref.itemId),
 			]);
-			const consent = checkConsent(item, accounts.length, ctx.nowMs);
+			const consent = checkConsent(item, accounts.length, ctx.nowMs, ctx.tz);
 			return {
 				label: ref.label,
 				itemId: ref.itemId,
@@ -190,7 +197,7 @@ function toTransaction(tx: PluggyTransaction, account: LabeledAccount, tz: strin
 			: null;
 	return {
 		date: localDay(tx.date, tz),
-		description: tx.description,
+		description: maskDigits(tx.description),
 		amount: tx.amount,
 		currency: tx.currencyCode,
 		...(tx.currencyCode !== account.account.currencyCode && tx.amountInAccountCurrency != null
@@ -199,12 +206,25 @@ function toTransaction(tx: PluggyTransaction, account: LabeledAccount, tz: strin
 		type: tx.type ?? null,
 		category: tx.category ?? null,
 		status: tx.status ?? null,
-		merchant: tx.merchant?.name ?? tx.merchant?.businessName ?? null,
+		merchant: maskOrNull(tx.merchant?.name ?? tx.merchant?.businessName),
 		installments,
 		card: maskNumber(card?.cardNumber),
 		accountId: tx.accountId,
 		account: account.account.marketingName ?? account.account.name,
 	};
+}
+
+function maskOrNull(text: string | null | undefined): string | null {
+	return text ? maskDigits(text) : null;
+}
+
+/** Newest local day first; the raw timestamp, then the id, break ties. */
+function newestFirst(a: PluggyTransaction, b: PluggyTransaction, tz: string): number {
+	return (
+		localDay(b.date, tz).localeCompare(localDay(a.date, tz)) ||
+		b.date.localeCompare(a.date) ||
+		a.id.localeCompare(b.id)
+	);
 }
 
 export async function getTransactions(ctx: FinanceContext, input: TransactionsInput) {
@@ -229,7 +249,7 @@ export async function getTransactions(ctx: FinanceContext, input: TransactionsIn
 			}
 			return true;
 		})
-		.sort((a, b) => b.tx.date.localeCompare(a.tx.date) || a.tx.id.localeCompare(b.tx.id));
+		.sort((a, b) => newestFirst(a.tx, b.tx, ctx.tz));
 
 	return {
 		dataFreshness: freshness(items),
@@ -243,6 +263,8 @@ export async function getTransactions(ctx: FinanceContext, input: TransactionsIn
 }
 
 // ── get_credit_card_bills ───────────────────────────────────────────────
+
+const BILL_LOOKBACK_DAYS = 366;
 
 export type BillsInput = { accountId?: string; limit: number; includeTransactions: boolean };
 
@@ -262,14 +284,16 @@ export async function getCreditCardBills(ctx: FinanceContext, input: BillsInput)
 			let byBill = new Map<string, PluggyTransaction[]>();
 			if (input.includeTransactions && bills.length > 0) {
 				// One read over the whole span of the chosen bills, then grouped by
-				// the billId Pluggy puts on each card transaction.
+				// the billId Pluggy puts on each card transaction. The read starts
+				// a year before the earliest bill: an installment can sit on a bill
+				// up to twelve months after the purchase.
 				const days = bills.flatMap((b) => [
 					localDay(b.dueDate, ctx.tz),
 					localDay(b.billClosingDate ?? b.dueDate, ctx.tz),
 				]);
 				const first = shiftDay(
 					days.reduce((a, b) => (a < b ? a : b)),
-					-62,
+					-BILL_LOOKBACK_DAYS,
 				);
 				const last = shiftDay(
 					days.reduce((a, b) => (a > b ? a : b)),
@@ -302,7 +326,7 @@ export async function getCreditCardBills(ctx: FinanceContext, input: BillsInput)
 					...(input.includeTransactions
 						? {
 								transactions: (byBill.get(bill.id) ?? [])
-									.sort((a, b) => b.date.localeCompare(a.date))
+									.sort((a, b) => newestFirst(a, b, ctx.tz))
 									.map((tx) => toTransaction(tx, card, ctx.tz)),
 							}
 						: {}),

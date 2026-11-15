@@ -50,12 +50,16 @@ finance surface, so this is a new direction.
    payment from checking would count it a second time. Excluded rows come
    back under `excluded` with counts and totals, never dropped silently.
    Pending and posted rows both count. Amounts are unsigned BRL, using
-   `amountInAccountCurrency` for foreign purchases.
+   `amountInAccountCurrency` for foreign purchases. A row's `type` says
+   which way the money went; without it the sign does, read per account: a
+   bank books money out as negative, a card books a purchase as positive.
 9. **Personal data stays at the edge.** The zod schemas strip every field the
    tools do not show; `paymentData` documents are read only to spot an own
    transfer and are never returned. Account and card numbers come back as
-   the last four digits. Errors name the method, path and status, never a
-   query string, body or key.
+   the last four digits, and so does any run of eight or more digits inside
+   a description or merchant name (a CPF or account number in a Pix text).
+   Errors name the method, path and status, never a query string, body or
+   key.
 
 ## Consequences
 

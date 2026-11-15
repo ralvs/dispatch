@@ -24,19 +24,28 @@ import {
 	resolveRange,
 	spendingSummary,
 } from "./finance";
-import { localDay, maskNumber } from "./format";
+import { localDay, maskDigits, maskNumber } from "./format";
 
 const TZ = "America/Sao_Paulo";
 // 2026-11-15 09:00 in São Paulo.
 const NOW = DateTime.fromISO("2026-11-15T12:00:00Z").toMillis();
 
-function ctxWith(transactions: Record<string, unknown[]>, item = itemFixture()): FinanceContext {
+function ctxWith(
+	transactions: Record<string, unknown[]>,
+	item = itemFixture(),
+	opts: { accounts?: unknown[]; onTransactions?: (url: URL) => void } = {},
+): FinanceContext {
+	const accounts = opts.accounts ?? [checkingFixture, cardFixture];
 	const fetch = fakePluggyFetch({
 		[`/items/${ITEM_ID}`]: () => json(item),
-		"/accounts": () =>
-			json({ page: 1, total: 2, totalPages: 1, results: [checkingFixture, cardFixture] }),
-		"/v2/transactions": (url) =>
-			json({ results: transactions[url.searchParams.get("accountId") ?? ""] ?? [], next: null }),
+		"/accounts": () => json({ page: 1, total: accounts.length, totalPages: 1, results: accounts }),
+		"/v2/transactions": (url) => {
+			opts.onTransactions?.(url);
+			return json({
+				results: transactions[url.searchParams.get("accountId") ?? ""] ?? [],
+				next: null,
+			});
+		},
 		"/bills": () => json({ page: 1, total: 1, totalPages: 1, results: [billFixture] }),
 	});
 	return {
@@ -69,6 +78,15 @@ describe("format", () => {
 		expect(maskNumber("0001/12345-0")).toBe("••••3450");
 		expect(maskNumber("xxxx8670")).toBe("••••8670");
 		expect(maskNumber(null)).toBeNull();
+	});
+
+	it("masks long numbers in free text and leaves dates and amounts", () => {
+		expect(maskDigits("Pix 123.456.789-00 Fulano")).toBe("Pix ••••8900 Fulano");
+		expect(maskDigits("TED conta 0001/12345-0")).toBe("TED conta ••••3450");
+		expect(maskDigits("Fone 11987654321")).toBe("Fone ••••4321");
+		expect(maskDigits("Parcela 2/6 em 15/11/2026, R$ 1.234,56")).toBe(
+			"Parcela 2/6 em 15/11/2026, R$ 1.234,56",
+		);
 	});
 
 	it("keeps day-only dates on their day and converts real instants", () => {
@@ -118,6 +136,14 @@ describe("listAccounts", () => {
 			closingDate: "2026-11-27",
 		});
 		expect(out.dataFreshness.connections[0]?.lastUpdatedAt).toBe("2026-11-14T09:00:00.000Z");
+	});
+
+	it("skips an account type it does not show instead of failing", async () => {
+		const investment = { ...checkingFixture, id: "inv-1", type: "INVESTMENT", subtype: "FUND" };
+		const out = await listAccounts(
+			ctxWith({}, itemFixture(), { accounts: [checkingFixture, investment, cardFixture] }),
+		);
+		expect(out.accounts.map((a) => a.type)).toEqual(["BANK", "CREDIT"]);
 	});
 });
 
@@ -194,6 +220,33 @@ describe("getTransactions", () => {
 		expect(all).not.toContain("00000000000");
 	});
 
+	it("sorts by the local day shown, not the raw timestamp", async () => {
+		const out = await getTransactions(
+			ctxWith({
+				[CHECKING_ID]: [
+					// 22:00 on the 13th in São Paulo, though its UTC stamp sorts later.
+					txFixture({ id: "late", description: "Late", date: "2026-11-14T01:00:00.000Z" }),
+					txFixture({ id: "day", description: "Day", date: "2026-11-14T00:00:00.000Z" }),
+				],
+			}),
+			{ limit: 10 },
+		);
+		expect(out.transactions.map((t) => [t.date, t.description])).toEqual([
+			["2026-11-14", "Day"],
+			["2026-11-13", "Late"],
+		]);
+	});
+
+	it("masks a CPF in the description", async () => {
+		const out = await getTransactions(
+			ctxWith({
+				[CHECKING_ID]: [txFixture({ description: "Pix enviado 123.456.789-00 Fulano" })],
+			}),
+			{ limit: 10 },
+		);
+		expect(out.transactions[0]?.description).toBe("Pix enviado ••••8900 Fulano");
+	});
+
 	it("refuses an account that is not configured", async () => {
 		await expect(getTransactions(ctx(), { accountId: "nope", limit: 10 })).rejects.toThrow(
 			/No account/,
@@ -219,6 +272,16 @@ describe("getCreditCardBills", () => {
 			minimumPayment: 186.58,
 		});
 		expect(bill?.transactions?.map((t) => t.amount)).toEqual([99]);
+	});
+
+	it("reads a year back from the earliest bill, so old installments link", async () => {
+		const asked: string[] = [];
+		const ctx = ctxWith({}, itemFixture(), {
+			onTransactions: (url) => asked.push(url.searchParams.get("dateFrom") ?? ""),
+		});
+		await getCreditCardBills(ctx, { limit: 6, includeTransactions: true });
+		// The bill closes 2026-10-28.
+		expect(asked).toEqual(["2025-10-27"]);
 	});
 
 	it("refuses a checking account", async () => {
@@ -247,5 +310,16 @@ describe("spendingSummary", () => {
 		expect(out.totals.outflow).toBe(540);
 		expect(out.excluded.card_bill_payment.outflow).toBe(500);
 		expect(out.rule).toMatch(/twice/);
+	});
+
+	it("reads a card row with no type by the card's sign", async () => {
+		const ctx = ctxWith({
+			[CARD_ID]: [
+				txFixture({ accountId: CARD_ID, amount: 80, type: null, category: "Shopping" }),
+				txFixture({ accountId: CARD_ID, amount: -30, type: null, category: "Shopping" }),
+			],
+		});
+		const out = await spendingSummary(ctx, { groupBy: "category" });
+		expect(out.totals).toMatchObject({ outflow: 80, inflow: 30 });
 	});
 });
