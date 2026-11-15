@@ -17,6 +17,7 @@ import { useMentionPeople } from "@/lib/store/mention-people";
 import { noteWrites } from "../writes";
 import { InkBubble } from "./ink-bubble";
 import { Ink } from "./ink-mark";
+import { IOSEnter } from "./ios-enter-extension";
 import {
 	BulletListKeepTight,
 	OrderedListKeepTight,
@@ -167,6 +168,7 @@ function NoteForm({
 			createMentionSuggestionExtension(() => peopleRef.current),
 			Ink,
 			SplitMixedTaskLists,
+			IOSEnter,
 			// html: true so the allowlisted <span data-ink> round-trips
 			// (docs/adr/0009 amendment). The schema only accepts that span.
 			Markdown.configure({ html: true }),
