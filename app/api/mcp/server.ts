@@ -1,6 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/server";
+import { isPluggyConfigured } from "@/lib/env";
 import type { SupabaseClient } from "@/lib/supabase/types";
 import { registerEventTools } from "./tools/events";
+import { registerFinanceTools } from "./tools/finance";
 import { registerLinkTools } from "./tools/links";
 import { registerNoteTools } from "./tools/notes";
 import { registerTaskTools } from "./tools/tasks";
@@ -16,5 +18,7 @@ export function createServer(sb: SupabaseClient): McpServer {
 	registerTaskTools(server, sb);
 	registerNoteTools(server, sb);
 	registerEventTools(server, sb);
+	// Read-only finance through Meu Pluggy, only where it is set up (docs/adr/0096).
+	if (isPluggyConfigured()) registerFinanceTools(server, sb);
 	return server;
 }

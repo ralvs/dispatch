@@ -56,6 +56,12 @@ const EnvSchema = z.object({
 	R2_ACCESS_KEY_ID: z.string().optional(),
 	R2_SECRET_ACCESS_KEY: z.string().optional(),
 	R2_BUCKET: z.string().optional(),
+
+	// Pluggy, read-only finance through Meu Pluggy (docs/adr/0096). Item ids
+	// are comma-separated, each with an optional label: `nubank:<uuid>`.
+	PLUGGY_CLIENT_ID: z.string().optional(),
+	PLUGGY_CLIENT_SECRET: z.string().optional(),
+	PLUGGY_ITEM_IDS: z.string().optional(),
 });
 
 let cached: z.infer<typeof EnvSchema> | undefined;
@@ -97,3 +103,6 @@ export const isR2Configured = () =>
 	Boolean(
 		env().R2_ACCOUNT_ID && env().R2_ACCESS_KEY_ID && env().R2_SECRET_ACCESS_KEY && env().R2_BUCKET,
 	);
+
+export const isPluggyConfigured = () =>
+	Boolean(env().PLUGGY_CLIENT_ID && env().PLUGGY_CLIENT_SECRET && env().PLUGGY_ITEM_IDS);

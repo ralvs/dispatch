@@ -50,6 +50,58 @@ One-time setup in the Supabase dashboard (the local stack reads
   the owner in (docs/adr/0095), so a stray account sees nothing, but there is
   no reason to allow one.
 
+### Finance tools (Nubank through Meu Pluggy)
+
+Five read-only `finance_*` tools join `/api/mcp` when Pluggy is configured
+(docs/adr/0096). They read the Nubank checking account and credit card
+through Pluggy's free personal-use route. Nothing is stored and nothing can
+pay or move money. They use the same connector and OAuth as the other tools.
+
+**Data is up to about a day old.** Meu Pluggy syncs each bank once every 24
+hours, and Open Finance transactions can take up to 24 hours more to appear.
+The connection cannot be refreshed by hand, and Pluggy forbids polling.
+
+**1. Connect Nubank in Meu Pluggy.** Sign up at
+[meu.pluggy.ai](https://meu.pluggy.ai), add Nubank through Open Finance, and
+approve it in the Nubank app.
+
+**2. Add MeuPluggy to a Pluggy application.** Sign in to the
+[Pluggy Dashboard](https://dashboard.pluggy.ai) with the same account. Create
+an application. Open **Demo → Connect Account**, choose **MeuPluggy** (not
+Nubank, not Sandbox) and sign in with your Meu Pluggy account. If the widget
+asks for a CPF and bank approval, you picked the bank instead of MeuPluggy.
+
+**3. Copy the ids.** The item id is under **Connected Items** on the Demo
+page. The Client ID is on the application's row. The Client Secret shows
+once; generate a new one if you lost it.
+
+**4. Set the env vars** in `.env.local` and in the Vercel project
+(Settings → Environment Variables, Production and Preview):
+
+```bash
+PLUGGY_CLIENT_ID=<client id>
+PLUGGY_CLIENT_SECRET=<client secret>
+PLUGGY_ITEM_IDS=nubank:<item id>
+```
+
+`PLUGGY_ITEM_IDS` takes several, comma-separated, each with an optional label.
+The free tier allows five connections, for personal use only.
+
+**5. Check it locally.** This calls each tool once and prints a masked
+summary:
+
+```bash
+set -a && . ./.env.local && set +a && bun run smoke:pluggy
+```
+
+**Yearly renewal.** The MeuPluggy authorization lasts one year.
+`finance_connection_status` warns 30 days before. After it lapses, reads come
+back empty and the item ends in `LOGIN_ERROR` / `USER_AUTHORIZATION_EXPIRED`.
+To renew: Pluggy Dashboard → your application → **Demo → Connect Account →
+MeuPluggy**, sign in again. Then open **Connected Items**, check which item
+holds the data, and update `PLUGGY_ITEM_IDS` if the id changed. Redeploy so
+Vercel picks up the new value.
+
 ### The capture Shortcuts (iOS share sheet, Siri, Apple Watch)
 
 `POST /api/capture` is the external capture surface (docs/adr/0022); the other is the MCP endpoint `/api/mcp` (OAuth bearer, docs/adr/0079). Send it
