@@ -53,6 +53,32 @@ it("follows the list's Enter, not a bare paragraph split", () => {
 	expect(e.getHTML()).toBe("<ul><li><p>one</p></li><li><p></p></li></ul><p></p>");
 });
 
+it("gives the editor's handlers an Enter they can read by key or keyCode", () => {
+	const seen: Array<{ key: string; keyCode: number }> = [];
+	// Like the `@` and `[[` menus: an earlier handler takes Enter, so nothing splits.
+	const menu = Extension.create({
+		name: "menu",
+		priority: 10_000,
+		addProseMirrorPlugins: () => [
+			new Plugin({
+				props: {
+					handleKeyDown: (_view, event) => {
+						seen.push({ key: event.key, keyCode: event.keyCode });
+						return true;
+					},
+				},
+			}),
+		],
+	});
+	const e = make("<p>one</p>", [menu]);
+	e.commands.setTextSelection(4);
+	const event = insertParagraph();
+	expect(handleIOSParagraph(e.view, event)).toBe(true);
+	expect(event.defaultPrevented).toBe(true);
+	expect(seen).toEqual([{ key: "Enter", keyCode: 13 }]);
+	expect(e.getHTML()).toBe("<p>one</p>");
+});
+
 it("leaves the press to ProseMirror when a keyCode 13 keydown armed its flag", () => {
 	const e = make("<p>one</p>");
 	e.commands.setTextSelection(4);

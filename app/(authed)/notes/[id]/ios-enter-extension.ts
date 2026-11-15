@@ -37,12 +37,23 @@ export function isIOS(nav: Pick<Navigator, "userAgent" | "platform" | "maxTouchP
 	);
 }
 
+/** An Enter keydown as ProseMirror builds its own: a handler may read `key` or `keyCode`. */
+function enterKeydown(): KeyboardEvent {
+	const event = new KeyboardEvent("keydown", { key: "Enter", code: "Enter", cancelable: true });
+	Object.defineProperty(event, "keyCode", { value: 13 });
+	Object.defineProperty(event, "which", { value: 13 });
+	return event;
+}
+
 /**
  * Runs the editor's Enter for a native paragraph split that ProseMirror will
  * not catch. Returns true when it handled the event (and cancelled it).
  */
 export function handleIOSParagraph(view: EditorView, event: InputEvent): boolean {
 	if (event.inputType !== "insertParagraph" || !event.cancelable) return false;
+	// Mid-composition the keyboard still owns the text, and running Enter can
+	// corrupt it. ProseMirror ends its composition on compositionend, which
+	// WebKit fires before it splits the paragraph.
 	if (view.composing || !view.editable) return false;
 
 	const input = inputState(view);
@@ -52,10 +63,7 @@ export function handleIOSParagraph(view: EditorView, event: InputEvent): boolean
 
 	let handled = false;
 	try {
-		handled =
-			view.someProp("handleKeyDown", (handler) =>
-				handler(view, new KeyboardEvent("keydown", { key: "Enter" })),
-			) === true;
+		handled = view.someProp("handleKeyDown", (handler) => handler(view, enterKeydown())) === true;
 	} catch (error) {
 		// Let WebKit split the paragraph natively rather than lose the press.
 		console.error("[ios-enter] Enter handler failed", error);
