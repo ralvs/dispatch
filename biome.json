@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
 	"files": {
 		"includes": [
 			"**",
@@ -35,17 +35,40 @@
 							"@supabase/supabase-js": {
 								"importNames": ["SupabaseClient"],
 								"message": "Use the typed client type from @/lib/supabase/types (docs/adr/0089)."
+							},
+							"web-push": {
+								"importNames": ["default"],
+								"message": "web-push 4 has no default export: use `import * as webpush from \"web-push\"`."
 							}
 						}
 					}
 				}
+			},
+			"complexity": {
+				"useMathMinMax": "off"
 			}
 		}
 	},
 	"overrides": [
 		{
 			"includes": ["lib/supabase/types.ts"],
-			"linter": { "rules": { "style": { "noRestrictedImports": "off" } } }
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["**/*.test.tsx"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"noComponentHookFactories": "off"
+					}
+				}
+			}
 		}
 	],
 	"formatter": {
@@ -58,6 +81,14 @@
 			"cssModules": false,
 			"tailwindDirectives": true
 		},
+		"formatter": {
+			"enabled": false
+		},
+		"linter": {
+			"enabled": false
+		}
+	},
+	"markdown": {
 		"formatter": {
 			"enabled": false
 		},

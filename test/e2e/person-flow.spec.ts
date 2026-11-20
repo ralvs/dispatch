@@ -39,6 +39,7 @@ test("add a person, open them, delete them: back on /people, never on not-found"
 		const w = window as unknown as { sawNotFound: boolean };
 		w.sawNotFound = false;
 		new MutationObserver(() => {
+			// biome-ignore lint/performance/useDomNodeTextContent: only visible text counts; textContent also reads hidden nodes.
 			if (document.body.innerText.includes("Nothing here")) w.sawNotFound = true;
 		}).observe(document.body, { subtree: true, childList: true, characterData: true });
 	});
