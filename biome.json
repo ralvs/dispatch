@@ -35,6 +35,10 @@
 							"@supabase/supabase-js": {
 								"importNames": ["SupabaseClient"],
 								"message": "Use the typed client type from @/lib/supabase/types (docs/adr/0089)."
+							},
+							"web-push": {
+								"importNames": ["default"],
+								"message": "web-push 4 has no default export: use `import * as webpush from \"web-push\"`."
 							}
 						}
 					}
