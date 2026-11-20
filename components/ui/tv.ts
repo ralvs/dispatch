@@ -1,4 +1,4 @@
-import { createTV } from "tailwind-variants";
+import { createTV } from "tailwind-variants/config";
 
 /**
  * The project's `tv`, taught about our custom type scale.

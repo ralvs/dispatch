@@ -1,5 +1,5 @@
 import "server-only";
-import webpush from "web-push";
+import * as webpush from "web-push";
 import { env, isPushConfigured } from "@/lib/env";
 import { unwrap } from "@/lib/services/errors";
 import type { SupabaseClient } from "@/lib/supabase/types";

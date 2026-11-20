@@ -2,9 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The push service is the external edge: web-push is faked, the database is not.
 const { sendNotification } = vi.hoisted(() => ({ sendNotification: vi.fn() }));
-vi.mock("web-push", () => ({
-	default: { setVapidDetails: vi.fn(), sendNotification },
-}));
+vi.mock("web-push", () => ({ setVapidDetails: vi.fn(), sendNotification }));
 
 const { pushConfigured } = vi.hoisted(() => ({ pushConfigured: { value: true } }));
 vi.mock("@/lib/env", async (importOriginal) => {
