@@ -100,5 +100,5 @@ export const NOTE_SELECT = NOTE_CORE_COLUMNS;
 export type NoteRow = Selected<"notes", typeof NOTE_SELECT>;
 
 export const NOTE_LIST_SELECT =
-	`${NOTE_CORE_COLUMNS}, source_reference, domain_id, related_project_id, related_person_id, related_quote_id, pinned_at, attachments` as const;
+	`${NOTE_CORE_COLUMNS}, source_reference, domain_id, related_project_id, related_person_id, related_quote_id, pinned_at, attachments, updated_at` as const;
 export type NoteListRow = Selected<"notes", typeof NOTE_LIST_SELECT>;

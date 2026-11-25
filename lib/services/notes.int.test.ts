@@ -153,6 +153,21 @@ describe("listNotes", () => {
 		expect(await ids({ needsReview: false })).not.toContain(flagged.id);
 		expect(await ids({ needsReview: false })).toContain(plain.id);
 	});
+
+	it("puts the last-edited note first, below the pinned ones", async () => {
+		const sb = await ownerClient();
+		const pinned = await createNote(sb, { body: "pinned" });
+		await setPin(sb, pinned.id, true);
+		const older = await createNote(sb, { body: "older" });
+		const newer = await createNote(sb, { body: "newer" });
+		// Only these three: the seed has notes of its own.
+		const mine = new Set([pinned.id, older.id, newer.id]);
+		const order = async () => (await listNotes(sb)).map((n) => n.id).filter((id) => mine.has(id));
+		expect(await order()).toEqual([pinned.id, newer.id, older.id]);
+
+		await updateNote(sb, older.id, { body: "older, edited" });
+		expect(await order()).toEqual([pinned.id, older.id, newer.id]);
+	});
 });
 
 describe("resolveNeedsReview", () => {

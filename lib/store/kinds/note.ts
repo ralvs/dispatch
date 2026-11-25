@@ -24,12 +24,21 @@ export type NoteIntent =
 
 export type NoteLists = { needsReview: NoteListRow[]; all: NoteListRow[] };
 
-/** The row after the intent. Undefined: the intent removed it. */
+/**
+ * The row after the intent. Undefined: the intent removed it. A row the
+ * intent changed is stamped `updated_at`, as the notes trigger does on every
+ * UPDATE, so an edit moves the note to the top of its list at once.
+ */
 export function applyNoteIntent(
 	row: NoteListRow,
 	intent: NoteIntent,
 	nowIso: string,
 ): NoteListRow | undefined {
+	const next = changeNote(row, intent, nowIso);
+	return next === undefined || next === row ? next : { ...next, updated_at: nowIso };
+}
+
+function changeNote(row: NoteListRow, intent: NoteIntent, nowIso: string): NoteListRow | undefined {
 	if (intent.type === "create" || intent.id !== row.id) return row;
 	switch (intent.type) {
 		case "pin": {
@@ -80,13 +89,14 @@ export const noteKind: KindAdapter<"note"> = {
 	deltas: noteDeltas,
 };
 
-/** The server's order (listNotes): pinned first, newest pin first, then newest. */
+/** The server's order (listNotes): pinned first, newest pin first, then last touched, then newest. */
 function byListOrder(a: NoteListRow, b: NoteListRow): number {
 	if (a.pinned_at !== b.pinned_at) {
 		if (a.pinned_at === null) return 1;
 		if (b.pinned_at === null) return -1;
 		return a.pinned_at < b.pinned_at ? 1 : -1;
 	}
+	if (a.updated_at !== b.updated_at) return a.updated_at < b.updated_at ? 1 : -1;
 	return a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0;
 }
 
@@ -98,7 +108,7 @@ function inOrder(list: NoteListRow[]): NoteListRow[] {
 	return list;
 }
 
-/** Both lists in the server's order: a pin moves its note to the top of Pinned. */
+/** Both lists in the server's order: a pin moves its note to the top of Pinned, an edit to the top of its list. */
 function ordered(view: NoteLists): NoteLists {
 	const needsReview = inOrder(view.needsReview);
 	const all = inOrder(view.all);
