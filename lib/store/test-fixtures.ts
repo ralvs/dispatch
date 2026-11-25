@@ -77,6 +77,8 @@ export function note(partial: Partial<NoteListRow> & Pick<NoteListRow, "id">): N
 		related_quote_id: null,
 		pinned_at: null,
 		attachments: [],
+		// Never edited unless the test says so: last touched when written.
+		updated_at: partial.created_at ?? "2026-07-10T12:00:00.000Z",
 		...partial,
 	};
 }

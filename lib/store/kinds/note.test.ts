@@ -46,9 +46,9 @@ describe("note adapter", () => {
 		expect(selectView(s2, key)?.all.find((n) => n.id === "older")?.pinned_at).toBeNull();
 	});
 
-	it("filing a flagged note moves it into the list in order, and the count drops", () => {
+	it("filing a flagged note moves it to the top of the list, and the count drops", () => {
 		const [s1] = applyIntent(seeded(), intent({ type: "resolve", id: "flagged" }), NOW);
-		expect(lists(s1)).toEqual({ review: [], all: ["newer", "flagged", "older"] });
+		expect(lists(s1)).toEqual({ review: [], all: ["flagged", "newer", "older"] });
 		expect(selectAggregate(s1, "notes.needsReview")).toBe(3);
 	});
 
@@ -78,8 +78,44 @@ describe("note adapter", () => {
 	it("a pin puts the note first in the list, newest pin first", () => {
 		const [s1] = applyIntent(seeded(), intent({ type: "pin", id: "older", pinned: true }), NOW);
 		expect(lists(s1).all).toEqual(["older", "newer"]);
+		// Unpinning is a write too: the trigger re-stamps updated_at, so the
+		// note leads the unpinned notes.
 		const [s2] = applyIntent(s1, intent({ type: "pin", id: "older", pinned: false }), NOW);
+		expect(lists(s2).all).toEqual(["older", "newer"]);
+	});
+
+	it("an edit stamps updated_at and moves the note to the top; a no-op save does not", () => {
+		const [s1] = applyIntent(
+			seeded(),
+			intent({ type: "save", id: "older", title: "older", body: "changed" }),
+			NOW,
+		);
+		expect(lists(s1).all).toEqual(["older", "newer"]);
+		expect(selectView(s1, key)?.all[0].updated_at).toBe(NOW);
+		const [s2] = applyIntent(
+			seeded(),
+			intent({ type: "save", id: "older", title: "older", body: "" }),
+			NOW,
+		);
 		expect(lists(s2).all).toEqual(["newer", "older"]);
+	});
+
+	it("a pinned note stays above an unpinned note edited later", () => {
+		const pinned = note({ id: "pinned", pinned_at: T1, updated_at: T1 });
+		const s0 = deepFreeze(
+			applySeed(
+				initialState(),
+				snapshot(T1, [
+					{ key, type: "noteLists", data: { needsReview: [], all: [pinned, newer, older] } },
+				]),
+			),
+		);
+		const [s1] = applyIntent(
+			s0,
+			intent({ type: "save", id: "older", title: "older", body: "changed" }),
+			NOW,
+		);
+		expect(lists(s1).all).toEqual(["pinned", "older", "newer"]);
 	});
 
 	it("a confirmed filing survives a stale seed; a fresher seed wins", () => {

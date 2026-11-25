@@ -151,6 +151,9 @@ export async function listNotes(
 		.from("notes")
 		.select(NOTE_LIST_SELECT)
 		.order("pinned_at", { ascending: false, nullsFirst: false })
+		// Last touched first: the updated_at trigger re-stamps a note on every
+		// write, so an edited note rises to the top of its list.
+		.order("updated_at", { ascending: false })
 		.order("created_at", { ascending: false });
 	if (filters.needsReview !== undefined) q = q.eq("needs_review", filters.needsReview);
 	if (filters.query) {
